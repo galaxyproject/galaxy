@@ -10,10 +10,12 @@ var View = Backbone.View.extend({
         id          : '',
         cls         : '',
         error_text  : 'No data available',
+        empty_text  : 'No selection',
         visible     : true,
         wait        : false,
         multiple    : false,
-        searchable  : false
+        searchable  : false,
+        optional    : false
     },
     
     // initialize
@@ -73,39 +75,30 @@ var View = Backbone.View.extend({
     /** Return/Set current selection
     */
     value : function (new_value) {
+        // set new value
         if (new_value !== undefined) {
+            if (new_value === null) {
+                new_value = '__null__';
+            }
             this.$select.val(new_value);
             if (this.$select.select2) {
                 this.$select.select2('val', new_value);
             }
         }
-        return this.$select.val();
+        
+        // validate and return value
+        return this._getValue();
     },
     
     /** Return the first select option
     */
     first: function() {
-        var options = this.$select.find('option');
+        var options = this.$select.find('option').first();
         if (options.length > 0) {
             return options.val();
         } else {
-            return undefined;
+            return null;
         }
-    },
-    
-    /** Validate the current selection
-    */
-    validate: function() {
-        var current = this.value();
-        if (!(current instanceof Array)) {
-            current = [current];
-        }
-        for (var i in current) {
-            if ([null, 'null', undefined].indexOf(current[i]) > -1) {
-                return false;
-            }
-        }
-        return true;
     },
     
     /** Return the label/text of the current selection
@@ -185,10 +178,15 @@ var View = Backbone.View.extend({
     */
     update: function(options) {
         // backup current value
-        var current = this.$select.val();
+        var current = this._getValue();
         
         // remove all options
         this.$select.find('option').remove();
+        
+        // add optional field
+        if (this.options.optional && !this.options.multiple) {
+            this.$select.append(this._templateOption({value : '__null__', label : this.options.empty_text}));
+        }
         
         // add new options
         for (var key in options) {
@@ -202,7 +200,7 @@ var View = Backbone.View.extend({
         this.$select.val(current);
         
         // check if any value was set
-        if (!this.$select.val()) {
+        if (this._getValue() === null) {
             this.$select.val(this.first());
         }
         
@@ -230,15 +228,24 @@ var View = Backbone.View.extend({
     */
     _change: function() {
         if (this.options.onchange) {
-            this.options.onchange(this.$select.val());
+            this.options.onchange(this._getValue());
         }
+    },
+    
+    /** Validate */
+    _getValue: function() {
+        var val = this.$select.val();
+        if (!Utils.validate(val)) {
+            return null;
+        }
+        return val;
     },
     
     /** Refresh the select view
     */
     _refresh: function() {
         // remove placeholder
-        this.$select.find('option[value=null]').remove();
+        this.$select.find('option[value="__undefined__"]').remove();
         
         // count remaining entries
         var remaining = this.$select.find('option').length;
@@ -247,7 +254,7 @@ var View = Backbone.View.extend({
             this.disable();
         
             // append placeholder
-            this.$select.append(this._templateOption({value : 'null', label : this.options.error_text}));
+            this.$select.append(this._templateOption({value : '__undefined__', label : this.options.error_text}));
         } else {
             // enable select field
             this.enable();

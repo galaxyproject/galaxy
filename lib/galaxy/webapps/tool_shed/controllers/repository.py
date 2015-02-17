@@ -1064,6 +1064,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                               message=message,
                                                               status=status ) )
         name = kwd.get( 'name', '' ).strip()
+        remote_repository_url = kwd.get( 'remote_repository_url', '' )
+        homepage_url = kwd.get( 'homepage_url', '' )
         description = kwd.get( 'description', '' )
         long_description = kwd.get( 'long_description', '' )
         category_ids = util.listify( kwd.get( 'category_id', '' ) )
@@ -1086,7 +1088,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                          description,
                                                                          long_description,
                                                                          user_id=trans.user.id,
-                                                                         category_ids=category_ids )
+                                                                         category_ids=category_ids,
+                                                                         remote_repository_url=remote_repository_url,
+                                                                         homepage_url=homepage_url )
                 trans.response.send_redirect( web.url_for( controller='repository',
                                                            action='manage_repository',
                                                            message=message,
@@ -1094,6 +1098,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository_type_select_field = rt_util.build_repository_type_select_field( trans )
         return trans.fill_template( '/webapps/tool_shed/repository/create_repository.mako',
                                     name=name,
+                                    remote_repository_url=remote_repository_url,
+                                    homepage_url=homepage_url,
                                     description=description,
                                     long_description=long_description,
                                     selected_categories=selected_categories,
@@ -1120,11 +1126,11 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         if mark_deprecated:
             # Update the repository registry.
             trans.app.repository_registry.remove_entry( repository )
-            message = 'The repository <b>%s</b> has been marked as deprecated.' % repository.name
+            message = 'The repository <b>%s</b> has been marked as deprecated.' % escape( repository.name )
         else:
             # Update the repository registry.
             trans.app.repository_registry.add_entry( repository )
-            message = 'The repository <b>%s</b> has been marked as not deprecated.' % repository.name
+            message = 'The repository <b>%s</b> has been marked as not deprecated.' % escape( repository.name )
         trans.response.send_redirect( web.url_for( controller='repository',
                                                    action='browse_repositories',
                                                    operation='repositories_i_own',
@@ -1382,8 +1388,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 else:
                     kwd[ 'message' ] = "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
                         ( basic_util.stringify( tool_ids ),
-                          basic_util.stringify( tool_names ),
-                          basic_util.stringify( tool_versions ),
+                          escape( basic_util.stringify( tool_names ) ),
+                          escape( basic_util.stringify( tool_versions ) ),
                           str( exact_matches_checked ) )
                     self.matched_repository_grid.title = "Repositories with matching tools"
                     return self.matched_repository_grid( trans, **kwd )
@@ -1473,7 +1479,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     return self.install_matched_repository_grid( trans, **kwd )
                 else:
                     kwd[ 'message' ] = "workflow name: <b>%s</b><br/>exact matches only: <b>%s</b>" % \
-                        ( basic_util.stringify( workflow_names ), str( exact_matches_checked ) )
+                        ( escape( basic_util.stringify( workflow_names ) ), str( exact_matches_checked ) )
                     self.matched_repository_grid.title = "Repositories with matching workflows"
                     return self.matched_repository_grid( trans, **kwd )
             else:
@@ -1690,7 +1696,10 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     description_lines = []
                     # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
                     # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
-                    time_tested = repository_metadata.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
+                    if repository_metadata.time_last_tested is None:
+                      time_tested = 'Thu, 01 Jan 1970 00:00:00 UT'
+                    else:
+                      time_tested = repository_metadata.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
                     # Generate a citable URL for this repository with owner and changeset revision.
                     repository_citable_url = common_util.url_join( tool_shed_url,
                                                                    'view',
@@ -2243,6 +2252,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
         repo_name = kwd.get( 'repo_name', repository.name )
         changeset_revision = kwd.get( 'changeset_revision', repository.tip( trans.app ) )
+        remote_repository_url = kwd.get( 'remote_repository_url', repository.remote_repository_url )
+        homepage_url = kwd.get( 'homepage_url', repository.homepage_url )
         description = kwd.get( 'description', repository.description )
         long_description = kwd.get( 'long_description', repository.long_description )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
@@ -2271,6 +2282,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                   status='error' ) )
             if repository_type != repository.type:
                 repository.type = repository_type
+                flush_needed = True
+            if remote_repository_url != repository.remote_repository_url:
+                repository.remote_repository_url = remote_repository_url
+                flush_needed = True
+            if homepage_url != repository.homepage_url:
+                repository.homepage_url = homepage_url
                 flush_needed = True
             if description != repository.description:
                 repository.description = description
@@ -2471,6 +2488,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                                    deprecated_only=True )
         return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
+                                    remote_repository_url=remote_repository_url,
+                                    homepage_url=homepage_url,
                                     description=description,
                                     long_description=long_description,
                                     current_allow_push_list=current_allow_push_list,
@@ -2763,7 +2782,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         rmm = repository_metadata_manager.RepositoryMetadataManager( app=trans.app,
                                                                      user=trans.user,
-                                                                     repository=repository )
+                                                                     repository=repository,
+                                                                     resetting_all_metadata_on_repository=True )
         rmm.reset_all_metadata_on_repository_in_tool_shed()
         rmm_metadata_dict = rmm.get_metadata_dict()
         rmm_invalid_file_tups = rmm.get_invalid_file_tups()
@@ -2784,7 +2804,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def reset_metadata_on_my_writable_repositories_in_tool_shed( self, trans, **kwd ):
-        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user )
+        rmm = repository_metadata_manager.RepositoryMetadataManager( trans.app, trans.user, resetting_all_metadata_on_repository=True )
         if 'reset_metadata_on_selected_repositories_button' in kwd:
             message, status = rmm.reset_metadata_on_selected_repositories( **kwd )
         else:
@@ -3056,7 +3076,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                   changeset_revision=changeset_revision ) )
             else:
                 message = "The change log for the repository named <b>%s</b> owned by <b>%s</b> does not include revision <b>%s</b>." % \
-                    ( str( name ), str( owner ), str( changeset_revision ) )
+                    ( escape( str( name ) ), escape( str( owner ) ), escape( str( changeset_revision ) ) )
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='index',
                                                                   repository_id=repository_id,

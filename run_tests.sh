@@ -1,5 +1,7 @@
 #!/bin/sh
 
+./scripts/common_startup.sh
+
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log 
 
@@ -21,6 +23,12 @@ cat <<EOF
 '${0##*/} -unit testscriptath'      running particular tests scripts
 '${0##*/} -qunit'                   for running qunit JavaScript tests
 '${0##*/} -qunit testname'          for running single JavaScript test with given name
+
+Extra options:
+
+ --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
+ --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
+ --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
 EOF
 }
 
@@ -46,6 +54,8 @@ ensure_grunt() {
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
+xunit_report_file=""
+structured_data_report_file=""
 with_framework_test_tools_arg=""
 
 driver="python"
@@ -146,6 +156,24 @@ do
               exit 1
           fi
           ;;
+      --xunit_report_file)
+          if [ $# -gt 1 ]; then
+              xunit_report_file=$2
+              shift 2
+          else
+              echo "--xunit_report_file requires an argument" 1>&2
+              exit 1
+          fi
+          ;;
+      --structured_data_report_file)
+          if [ $# -gt 1 ]; then
+              structured_data_report_file=$2
+              shift 2
+          else
+              echo "--structured_data_report_file requires an argument" 1>&2
+              exit 1
+          fi
+          ;;
       -c|--coverage)
           # Must have coverage installed (try `which coverage`) - only valid with --unit
           # for now. Would be great to get this to work with functional tests though.
@@ -175,6 +203,16 @@ do
           else
               shift 1
           fi
+          ;;
+      --no_cleanup)
+          GALAXY_TEST_NO_CLEANUP=1
+          export GALAXY_TEST_NO_CLEANUP
+          TOOL_SHED_TEST_NO_CLEANUP=1
+          export TOOL_SHED_TEST_NO_CLEANUP
+          GALAXY_INSTALL_TEST_NO_CLEANUP=1
+          export GALAXY_INSTALL_TEST_NO_CLEANUP
+          echo "Skipping Python test clean up."
+          shift
           ;;
       -watch|--watch)
           # Have grunt watch test or directory for changes, only
@@ -234,7 +272,17 @@ else
 fi
 
 if [ "$driver" = "python" ]; then
-    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $with_framework_test_tools_arg $extra_args
+    if [ -n "$xunit_report_file" ]; then
+        xunit_args="--with-xunit --xunit-file $xunit_report_file"
+    else
+        xunit_args=""
+    fi
+    if [ -n "$structured_data_report_file" ]; then
+        structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
+    else
+        structured_data_args=""
+    fi
+    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $with_framework_test_tools_arg $extra_args
 else
     ensure_grunt
     if [ -n "$watch" ]; then

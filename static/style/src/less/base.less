@@ -1,7 +1,7 @@
 // bootstrap.less modified for Galaxy
 @import "bootstrap.less";
 
-// Galaxy specific variables 
+// Galaxy specific variables
 @import "galaxy_variables.less";
 
 @white: #fff;
@@ -15,11 +15,11 @@
 }
 
 @import "select2.less";
-
  /* fix for zero width select2 - remove when fixed there */
 .select2-minwidth {
      min-width: 256px;
 }
+
 // galaxy sub-components
 @import "frame.less";
 @import "upload.less";
@@ -30,12 +30,6 @@
 
 
 // Mixins
-
-/* fix for zero width select2 - remove when fixed there */
-.select2-minwidth {
-    min-width: 256px;
-}
-
 .unselectable {
     .user-select(none);
 }
@@ -98,23 +92,23 @@ body  {
 }
 
 #messagebox {
-    position:absolute; 
+    position:absolute;
     top: @navbar-height + @layout_top_padding + 1;
-    left:0; 
-    width:100%; 
+    left:0;
+    width:100%;
     height: @panel-message-height !important;
-    overflow: hidden; 
+    overflow: hidden;
     border-bottom: solid #999 1px;
     font-size: 90%;
 }
 
 #inactivebox {
-    position:absolute; 
+    position:absolute;
     top: @navbar-height + @layout_top_padding + 1;
-    left:0; 
-    width:100%; 
+    left:0;
+    width:100%;
     height: @panel-message-height !important;
-    overflow: hidden; 
+    overflow: hidden;
     border-bottom: solid #999 1px;
     font-size: 90%;
 }
@@ -122,10 +116,10 @@ body  {
 // Panels
 
 #left, #left-border, #center, #right-border, #right {
-    position: absolute; 
+    position: absolute;
     top: @navbar-height + @layout_top_padding + 1;
     bottom: 0px;
-    overflow: hidden; 
+    overflow: hidden;
     background: #fff;
 }
 #left, #center, #right, #left-border, #right-border {
@@ -151,7 +145,7 @@ body  {
 }
 #right {
     width: 250px;
-    right: 0px; 
+    right: 0px;
     z-index: 200;
     border-left: solid @layout-border-color 1px;
 }
@@ -283,11 +277,11 @@ body.has-message-box.has-inactivity-box {
         }
     }
 }
-  
+
 .menu-bg {
     background: whiteSmoke top repeat-x;
 }
-    
+
 div.unified-panel-body {
     position: absolute;
     top: @panel_header_height;
@@ -332,10 +326,10 @@ div.unified-panel-body {
     z-index: 900; // Bootstrap elements start at 1000
     position: absolute;
     top: 0;
-    left: 0; 
+    left: 0;
     width: 100%;
     height: 100%;
-} 
+}
 
 // Messages for message box, slightly different style
 
@@ -351,19 +345,19 @@ div.unified-panel-body {
     background-position: 6px 50%;
 }
 
-.panel-warning-message 
+.panel-warning-message
 {
     background-image: url(warn_small.png);
     background-color: @state-warning-bg;
 }
 
-.panel-done-message 
+.panel-done-message
 {
     background-image: url(ok_small.png);
     background-color: @state-success-bg;
 }
 
-.panel-info-message 
+.panel-info-message
 {
     background-image: url(info_small.png);
     background-color: @state-info-bg;
@@ -373,9 +367,9 @@ div.unified-panel-body {
 
 #masthead {
 
-    position:absolute; 
-    top:0; 
-    left:0; 
+    position:absolute;
+    top:0;
+    left:0;
     width:100%;
     min-width:990px;
     padding: 0;
@@ -391,7 +385,7 @@ div.unified-panel-body {
             color: gold;
         }
     }
-    
+
     //.dropdown-menu {
       //  z-index: 15002;
     //}
@@ -418,8 +412,8 @@ div.unified-panel-body {
         z-index: 2000;
 
         img {
-            display: inline; 
-            width: 26px; 
+            display: inline;
+            width: 26px;
             vertical-align: top;
         }
         a {
@@ -427,11 +421,11 @@ div.unified-panel-body {
             text-decoration: none;
         }
     }
-    
+
     .iconbar
     {
         position            : absolute;
-        top                 : 6px;
+        top                 : 7px;
         right               : 110px;
         cursor              : pointer;
         color               : @gray-light;
@@ -441,7 +435,6 @@ div.unified-panel-body {
         {
             float           : left;
             margin          : 0px 10px;
-            height          : 26px;
             font-size       : 11px;
         }
 
@@ -454,7 +447,7 @@ div.unified-panel-body {
             left            : 23px;
             top             : -12px;
         }
-        
+
         .toggle
         {
             color           : gold;
@@ -509,113 +502,6 @@ div.unified-panel-body {
     white-space: nowrap;
 }
 
-// ---------------------------------------------------------------------------- pagination & scrolling pagination
-.pagination {
-    margin: 0px;
-}
-
-.pagination-scroll-container {
-    display         : inline-block;
-    background-color: #F8F8F8;
-    border-radius   : 3px;
-    border          : 1px solid #BFBFBF;
-    overflow        : auto;
-}
-
-.pagination-scroll-container .pagination-page-list {
-    margin          : 3px 0px 3px 0px;
-}
-
-.pagination-scroll-container .pagination-page-list > li:first-child > a,
-.pagination-scroll-container .pagination-page-list > li:first-child > span {
-    border-radius   : 0px;
-    border-left     : 0px;
-}
-
-.pagination-scroll-container .pagination-page-list > li:last-child > a,
-.pagination-scroll-container .pagination-page-list > li:last-child > span {
-    border-radius   : 0px;
-}
-
-.pagination-scroll-container .pagination-page-list > li > a {
-    float           : none;
-    position        : static;
-    border          : 1px solid #BFBFBF;
-    border-width    : 0px 0px 0px 1px;
-}
-
-
-// ---------------------------------------------------------------------------- peek-based column chooser
-.peek-control {
-    border-radius: 3px;
-    border: 1px solid rgb(95, 105, 144);
-}
-
-.peek-control td,
-.peek-control th {
-    padding: 4px 10px 4px 4px;
-}
-
-.peek-control th:last-child {
-    width: 100%;
-}
-
-.peek-control .top-left {
-    width: 10%;
-    white-space: normal;
-    vertical-align: top;
-    text-align: right;
-    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
-    font-weight: normal;
-}
-
-.peek-control .renamable-header:hover {
-    background-color: black;
-}
-
-.peek-control .control td.control-prompt {
-    background-color: rgb(95, 105, 144);
-    padding: 0px 4px 0px 8px;
-    text-align: right;
-    color: white;
-}
-
-.peek-control .control td {
-    padding: 1px;
-    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
-    color: grey;
-}
-
-.peek-control .control td .button {
-    min-width: 28px;
-    border: 1px solid grey;
-    border-radius: 3px;
-    padding: 4px;
-    color: grey;
-}
-
-.peek-control .control td:hover .button {
-    background-color: #EEE;
-    border: 1px solid black;
-    cursor: pointer;
-    color: black;
-}
-
-.peek-control .control td.disabled .button,
-.peek-control .control td.disabled:hover .button {
-    background-color: transparent;
-    border: 1px solid #CCC;
-    cursor: not-allowed;
-    color: #CCC;
-}
-
-.peek-control .control td.selected .button {
-    background-color: black;
-    border: 1px solid black;
-    color: white;
-}
-
-
 // ==== Tool form styles ====
 
 div.metadataForm {
@@ -655,7 +541,7 @@ div.metadataFormDisabled {
     border-color:#999;
 }
 
-div.metadataHelpBody { 
+div.metadataHelpBody {
     width:100%;overflow:auto;
 }
 
@@ -666,7 +552,7 @@ div.titleRow {
     padding-bottom: 0.25em;
 }
 
-// Forms 
+// Forms
 
 div.toolFormBody div.toolFormTitle {
     background: transparent;
@@ -700,7 +586,7 @@ div.toolHelpBody {
     border: solid @form-border 1px;
     background: @white;
     &.toolForm-active {
-        border: solid blue 3px;
+        border: solid @brand-primary 3px;
         margin: 4px;
     }
     .toolFormTitle {
@@ -715,7 +601,7 @@ div.form, div.toolForm {
     .border-radius(@panel-border-radius);
 }
 
-div.form-title, div.toolFormTitle { 
+div.form-title, div.toolFormTitle {
     // font-size: @font-size-base * 1.25;
     // line-height: @line-height-base * 1.5;
     padding: 5px 10px;
@@ -723,7 +609,7 @@ div.form-title, div.toolFormTitle {
     border-bottom: solid @form-border 1px;
 }
 
-div.form-body { 
+div.form-body {
     padding: 5px 0;
 }
 
@@ -800,7 +686,7 @@ select, input, textarea {
     font: inherit;
 }
 
-.form-row {   
+.form-row {
     select, textarea, input[type="text"], input[type="file"], input[type="password"] {
         // -webkit-box-sizing: border-box;
         max-width: 90%;
@@ -846,18 +732,18 @@ input[type="submit"], button {
 }
 
 .search-spinner {
-    position: absolute; 
-    display: none; 
-    right: 6px; 
+    position: absolute;
+    display: none;
+    right: 6px;
     top: 9px;
 }
 
 #search-clear-btn {
-    position: absolute; 
-    right: 6px; 
-    top: 5px;
+    position: absolute;
+    right: 6px;
+    top: 9px;
     display: block;
-    font-size: 1.4em;
+    font-size: 1.4em !important;
     text-decoration: none;
     color: #888;
     .fa-icon;
@@ -866,7 +752,7 @@ input[type="submit"], button {
     }
 }
 
-// Messages 
+// Messages
 
 .errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge {
     .alert();
@@ -899,7 +785,7 @@ input[type="submit"], button {
     background-image: url(info_large.png);
 }
 
-.screencastBox {   
+.screencastBox {
     padding-left: 10px;
     border-color: #AAAA66;
     background-color: #FFFFCC;
@@ -1004,7 +890,7 @@ table.colored td, table.colored th {
     line-height: @line-height-base;
 }
 
-table.colored tr.header { 
+table.colored tr.header {
     background: @table-heading-bg;
     color: contrast(@complement-color-3);
     background-repeat: repeat-x;
@@ -1013,11 +899,11 @@ table.colored tr.header {
     font-weight: bold;
 }
 
-table.colored tr { 
+table.colored tr {
     background: @white;
 }
 
-table.colored tr.odd_row { 
+table.colored tr.odd_row {
     background: @table-bg-accent;
 }
 
@@ -1131,7 +1017,7 @@ div.debug {
     height: 18px;
     vertical-align: middle;
     margin-left: 2px;
-    
+
 }
 .search-box-input {
     border: 0;
@@ -1164,7 +1050,7 @@ div.debug {
 div.odd_row {
     background: @table-bg-accent;
 }
-    
+
 #footer {
   display: none;
 }
@@ -1312,15 +1198,15 @@ a.action-button {
     cursor: pointer;
     position: relative;
     .unselectable;
-    
+
     // border: solid transparent 1px;
     // -moz-border-radius: 0.25em;
     // -webkit-border-radius: 0.25em;
     // border-radius: 0.25em;
-    
+
     // padding: 1px 0.25em;
     // margin: -1px -0.25em;
-    
+
     a {
         text-decoration: none;
     }
@@ -1448,28 +1334,28 @@ div.permissionContainer {
             background:#aaa;
             color:#aaa;
     }
-    
+
     table
     {
             border-collapse:collapse;
             border-top:1px solid #ccc;
             border-left:1px solid #ccc;
     }
-    
+
     blockquote {
             color:#666;
     }
-    
+
     fieldset {
             border-color:#ccc;
             border:1px solid #ccc;
     }
-    
+
     th,td {
             border-bottom:1px solid #ddd;
             border-right:1px solid #ccc;
     }
-    
+
     th,td {
             padding:.8em;
     }
@@ -1551,7 +1437,7 @@ div.permissionContainer {
     margin:10px 0;
     padding-left:5px;
 }
-    
+
 // ============================================================================ History
 @import "sprite-history-states.less";
 @import "sprite-history-buttons.less";
@@ -1564,10 +1450,13 @@ div.permissionContainer {
 
 @import "ui/paired-collection-creator.less";
 
+@import "ui/search-input.less";
 @import "ui/dataset-choice.less";
+@import "ui/peek-column-selector.less";
+@import "ui/pagination.less";
 
 
-// ==== Tool menu styles 
+// ==== Tool menu styles
 
 .toolMenuContainer
 {
@@ -1590,7 +1479,7 @@ div.toolSectionWrapper {
 }
 
 div.toolSectionDetailsInner
-{ 
+{
   margin-left: 5px;
   margin-right: 5px;
 }
@@ -1663,13 +1552,21 @@ div.toolTitleNoSection
     text-align:left;
 }
 
+#content_table .dark_row{
+    background-color: #DDD;
+}
+
+#content_table th{
+    background-color: #AAA;
+}
+
 // ==== Integrated tool form styles
 
 .toolMenuAndView .toolForm
 {
-	float: left;
-	background-color: white;
-	margin: 10px;
+    float: left;
+    background-color: white;
+    margin: 10px;
 }
 
 // @import "base_sprites";

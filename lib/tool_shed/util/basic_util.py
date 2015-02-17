@@ -27,24 +27,25 @@ FROM bgruening/galaxy-stable
 
 MAINTAINER Bjoern A. Gruning, bjoern.gruening@gmail.com
 
-RUN sed -i 's|brand.*|brand = deepTools|g' ~/galaxy-central/universe_wsgi.ini
-
 WORKDIR /galaxy-central
 
 ${selected_repositories}
 
-# Mark one folder as imported from the host.
-VOLUME ["/export/"]
+# Mark folders as imported from the host.
+VOLUME ["/export/", "/data/", "/var/lib/docker"]
 
-# Expose port 80 to the host
+# Expose port 80 (webserver), 21 (FTP server), 8800 (Proxy), 9001 (Galaxy report app)
 EXPOSE :80
+EXPOSE :21
+EXPOSE :8800
+EXPOSE :9001
 
 # Autostart script that is invoked during container start
 CMD ["/usr/bin/startup"]
 '''
 
 SELECTED_REPOSITORIES_TEMPLATE = '''
-RUN service postgresql start && service apache2 start && ./run.sh --daemon && sleep 120 && python ./scripts/api/install_tool_shed_repositories.py --api admin -l http://localhost:8080 --url ${tool_shed_url} -o ${repository_owner} --name ${repository_name} --tool-deps --repository-deps --panel-section-name 'Docker'
+RUN install-repository "--url ${tool_shed_url} -o ${repository_owner} --name ${repository_name}"
 '''
 
 

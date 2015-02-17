@@ -1,35 +1,47 @@
-import calendar, operator, os, socket
-from datetime import datetime, date, timedelta
-from time import mktime, strftime, localtime
+import calendar
+from datetime import date, timedelta
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model, util
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.model.orm import and_, not_, or_
+from galaxy.web.framework.helpers import grids
+from galaxy.model.orm import and_
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
+from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+
 import logging
 log = logging.getLogger( __name__ )
 
+
 class SpecifiedDateListGrid( grids.Grid ):
+
     class RequestNameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, request ):
             return request.name
+
     class CreateTimeColumn( grids.DateTimeColumn ):
+
         def get_value( self, trans, grid, request ):
             return request.create_time
+
     class UserColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, request ):
             if request.user:
                 return request.user.email
             return 'unknown'
+
     class EmailColumn( grids.GridColumn ):
+
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
             return query.filter( and_( model.Request.table.c.user_id == model.User.table.c.id,
                                        model.User.table.c.email == column_filter ) )
+
     class SpecifiedDateColumn( grids.GridColumn ):
+
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
@@ -54,14 +66,13 @@ class SpecifiedDateListGrid( grids.Grid ):
     use_async = False
     model_class = model.Request
     title = "Sequencing Requests"
-    template='/webapps/reports/grid.mako'
+    template = '/webapps/reports/grid.mako'
     default_sort_key = "name"
     columns = [
         RequestNameColumn( "Name",
-                            key="name",
-                            #link=( lambda item: dict( operation="workflow_info", id=item.id, webapp="reports" ) ),
-                            attach_popup=False,
-                            filterable="advanced" ),
+                           key="name",
+                           attach_popup=False,
+                           filterable="advanced" ),
         CreateTimeColumn( "Creation Time",
                           key="create_time",
                           attach_popup=False ),
@@ -85,16 +96,18 @@ class SpecifiedDateListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     standard_filters = []
-    default_filter = { 'specified_date' : 'All' }
+    default_filter = { 'specified_date': 'All' }
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ) \
                                .join( model.User ) \
                                .enable_eagerloads( False )
 
-class SampleTracking( BaseUIController ):
+
+class SampleTracking( BaseUIController, ReportQueryBuilder ):
 
     specified_date_list_grid = SpecifiedDateListGrid()
 
@@ -124,19 +137,20 @@ class SampleTracking( BaseUIController ):
                 if request.user:
                     kwd[ 'email' ] = request.user.email
                 else:
-                    kwd[ 'email' ] = None # For anonymous users ( shouldn't happen with requests )
+                    kwd[ 'email' ] = None  # For anonymous users ( shouldn't happen with requests )
                 return trans.response.send_redirect( web.url_for( controller='sample_tracking',
                                                                   action='user_per_month',
                                                                   **kwd ) )
         return self.specified_date_list_grid( trans, **kwd )
+
     @web.expose
     def per_month_all( self, trans, **kwd ):
-        params = util.Params( kwd )
         message = ''
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Request.table.c.create_time ) ).label( 'date' ),sa.func.count( model.Request.table.c.id ).label( 'total' ) ),
-                       from_obj = [ sa.outerjoin( model.Request.table, model.User.table ) ],
-                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.Request.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+        q = sa.select( ( self.select_month( model.Request.table.c.create_time ).label( 'date' ),
+                         sa.func.count( model.Request.table.c.id ).label( 'total' ) ),
+                       from_obj=[ sa.outerjoin( model.Request.table, model.User.table ) ],
+                       group_by=self.group_by_month( model.Request.table.c.create_time ),
+                       order_by=[ sa.desc( 'date' ) ] )
         requests = []
         for row in q.execute():
             requests.append( ( row.date.strftime( "%Y-%m" ),
@@ -146,32 +160,33 @@ class SampleTracking( BaseUIController ):
         return trans.fill_template( '/webapps/reports/requests_per_month_all.mako',
                                     requests=requests,
                                     message=message )
+
     @web.expose
     def per_user( self, trans, **kwd ):
-        params = util.Params( kwd )
         message = ''
         requests = []
         q = sa.select( ( model.User.table.c.email.label( 'user_email' ),
                          sa.func.count( model.Request.table.c.id ).label( 'total' ) ),
-                       from_obj = [ sa.outerjoin( model.Request.table, model.User.table ) ],
-                       group_by = [ 'user_email' ],
-                       order_by = [ sa.desc( 'total' ), 'user_email' ] )
+                       from_obj=[ sa.outerjoin( model.Request.table, model.User.table ) ],
+                       group_by=[ 'user_email' ],
+                       order_by=[ sa.desc( 'total' ), 'user_email' ] )
         for row in q.execute():
             requests.append( ( row.user_email,
                                row.total ) )
         return trans.fill_template( '/webapps/reports/requests_per_user.mako', requests=requests, message=message )
+
     @web.expose
     def user_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
         email = util.restore_text( params.get( 'email', '' ) )
         user_id = trans.security.decode_id( params.get( 'id', '' ) )
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.Request.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_month( model.Request.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.Request.table.c.id ).label( 'total' ) ),
-                       whereclause = model.Request.table.c.user_id == user_id,
-                       from_obj = [ model.Request.table ],
-                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.Request.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+                       whereclause=model.Request.table.c.user_id == user_id,
+                       from_obj=[ model.Request.table ],
+                       group_by=self.group_by_month( model.Request.table.c.create_time ),
+                       order_by=[ sa.desc( 'date' ) ] )
         requests = []
         for row in q.execute():
             requests.append( ( row.date.strftime( "%Y-%m" ),
@@ -183,7 +198,8 @@ class SampleTracking( BaseUIController ):
                                     requests=requests,
                                     message=message )
 
-## ---- Utility methods -------------------------------------------------------
+# ---- Utility methods -------------------------------------------------------
+
 
 def get_request( trans, id ):
     return trans.sa_session.query( trans.model.Workflow ).get( trans.security.decode_id( id ) )

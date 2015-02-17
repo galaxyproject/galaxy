@@ -25,6 +25,7 @@
             "tool_state": "{\"name\": \"Input Dataset\"}", 
             "tool_version": null, 
             "type": "data_input", 
+            "uuid": "58dffcc9-bcb7-4117-a0e1-61513524b3b0",
             "user_outputs": []
         }, 
         "1": {
@@ -54,6 +55,7 @@
             "tool_state": "{\"__page__\": 0, \"num_lines\": \"\\\"8\\\"\", \"seed_source\": \"{\\\"__current_case__\\\": 0, \\\"seed_source_selector\\\": \\\"no_seed\\\"}\", \"input\": \"null\", \"chromInfo\": \"\\\"/home/john/workspace/galaxy-central-workflows-params/tool-data/shared/ucsc/chrom/?.len\\\"\", \"__rerun_remap_job_id__\": null}", 
             "tool_version": null, 
             "type": "tool", 
+            "uuid": "58dffcc9-bcb7-4117-a0e1-61513524b3b1",
             "user_outputs": []
         }, 
         "2": {
@@ -83,6 +85,7 @@
             "tool_state": "{\"__page__\": 0, \"num_lines\": \"\\\"6\\\"\", \"seed_source\": \"{\\\"__current_case__\\\": 0, \\\"seed_source_selector\\\": \\\"no_seed\\\"}\", \"input\": \"null\", \"chromInfo\": \"\\\"/home/john/workspace/galaxy-central-workflows-params/tool-data/shared/ucsc/chrom/?.len\\\"\", \"__rerun_remap_job_id__\": null}", 
             "tool_version": null, 
             "type": "tool", 
+            "uuid": "58dffcc9-bcb7-4117-a0e1-61513524b3b2",
             "user_outputs": []
         }
     }

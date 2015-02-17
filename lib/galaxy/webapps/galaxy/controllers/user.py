@@ -7,7 +7,6 @@ import logging
 import os
 import random
 import socket
-import string
 import urllib
 
 from datetime import datetime, timedelta
@@ -29,17 +28,23 @@ from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
 from galaxy.web.framework.helpers import escape, grids, time_ago
-from galaxy.web.framework.helpers import time_ago, grids
-from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
-require_login_template = """
+REQUIRE_LOGIN_TEMPLATE = """
 <p>
     This %s has been configured such that only users who are logged in may use it.%s
 </p>
 <p/>
 """
+
+PASSWORD_RESET_TEMPLATE = """
+To reset your Galaxy password for the instance at %s, use the following link:
+
+    <a href="%s">%s</a>
+
+If you did not make this request, no action is necessary on your part, though
+you may want to notify an administrator."""
 
 
 class UserOpenIDGrid( grids.Grid ):
@@ -477,14 +482,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
                     web.url_for( controller='user', action='create', cntrller='user' )
                 if trans.webapp.name == 'galaxy':
-                    header = require_login_template % ( "Galaxy instance", create_account_str )
+                    header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy instance", create_account_str )
                 else:
-                    header = require_login_template % ( "Galaxy tool shed", create_account_str )
+                    header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy tool shed", create_account_str )
             else:
                 if trans.webapp.name == 'galaxy':
-                    header = require_login_template % ( "Galaxy instance", "" )
+                    header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy instance", "" )
                 else:
-                    header = require_login_template % ( "Galaxy tool shed", "" )
+                    header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy tool shed", "" )
         return trans.fill_template( '/user/login.mako',
                                     email=email,
                                     header=header,
@@ -569,7 +574,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             username = trans.user.username
         is_activation_sent = self.send_verification_email( trans, email, username )
         if is_activation_sent:
-            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % ( email, url_for( '/' ) )
+            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % ( escape( email ), url_for( '/' ) )
             status = 'error'
         else:
             message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.<br><a target="_top" href="%s">Return to the home page</a>.' % url_for( '/' )
@@ -673,7 +678,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         trans.log_event( "User created a new account" )
                         trans.log_event( "User logged in" )
                     if success and is_admin:
-                        message = 'Created new user account (%s)' % user.email
+                        message = 'Created new user account (%s)' % escape( user.email )
                         trans.response.send_redirect( web.url_for( controller='admin',
                                                                    action='users',
                                                                    cntrller=cntrller,
@@ -770,7 +775,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
                 is_activation_sent = self.send_verification_email( trans, email, username )
                 if is_activation_sent:
-                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % ( escape( user.email ), url_for( '/' ) )
                     success = True
                 else:
                     message = 'Unable to send activation email, please contact your local Galaxy administrator.'
@@ -778,7 +783,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                         message += ' Contact: %s' % trans.app.config.error_email_to
                     success = False
             else:  # User activation is OFF, proceed without sending the activation email.
-                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( user.email, url_for( '/' ) )
+                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % ( escape( user.email ), url_for( '/' ) )
                 success = True
         return ( message, status, user, success )
 
@@ -788,7 +793,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         """
         if username is None:
             username = trans.user.username
-        activation_link = self.prepare_activation_link( trans, email )
+        activation_link = self.prepare_activation_link( trans, escape( email ) )
 
         body = ("Hello %s,\n\n"
                 "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
@@ -796,7 +801,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
                 "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
                 "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % (username, email,
+                "Your Galaxy Team" % (escape( username ), escape( email ),
                                       datetime.utcnow().strftime( "%D"),
                                       trans.request.host, activation_link,
                                       trans.app.config.terms_url,
@@ -1031,38 +1036,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     trans.sa_session.add( user )
                     trans.sa_session.flush()
                 message = 'The login information has been updated with the changes.'
-        elif user and params.get( 'change_password_button', False ):
-            # Editing password.  Do not sanitize passwords, so get from kwd
-            # and not params (which were sanitized).
-            password = kwd.get( 'password', '' )
-            confirm = kwd.get( 'confirm', '' )
-            ok = True
-            if not is_admin:
-                # If the current user is changing their own password, validate their current password
-                current = kwd.get( 'current', '' )
-                if not trans.user.check_password( current ):
-                    message = 'Invalid current password'
-                    status = 'error'
-                    ok = False
-            if ok:
-                # Validate the new password
-                message = validate_password( trans, password, confirm )
-                if message:
-                    status = 'error'
-                else:
-                    # Save new password
-                    user.set_password_cleartext( password )
-                    # Invalidate all other sessions
-                    for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
-                                                     .filter( and_( trans.app.model.GalaxySession.table.c.user_id == trans.user.id,
-                                                                    trans.app.model.GalaxySession.table.c.is_valid is True,
-                                                                    trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id ) ):
-                        other_galaxy_session.is_valid = False
-                        trans.sa_session.add( other_galaxy_session )
-                    trans.sa_session.add( user )
-                    trans.sa_session.flush()
-                    trans.log_event( "User change password" )
-                    message = 'The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).'
         elif user and params.get( 'edit_user_info_button', False ):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
@@ -1105,46 +1078,96 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                                           **kwd ) )
 
     @web.expose
-    def reset_password( self, trans, email=None, **kwd ):
+    def change_password( self, trans, token=None, **kwd):
+        """
+        Provides a form with which one can change their password.  If token is
+        provided, don't require current password.
+        """
+        status = None
+        message = None
+        user = None
+        if kwd.get( 'change_password_button', False ):
+            password = kwd.get( 'password', '' )
+            confirm = kwd.get( 'confirm', '' )
+            current = kwd.get( 'current', '' )
+            token_result = None
+            if token:
+                # If a token was supplied, validate and set user
+                token_result = trans.sa_session.query( trans.app.model.PasswordResetToken ).get(token)
+                if token_result and token_result.expiration_time > datetime.now():
+                    user = token_result.user
+                else:
+                    return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
+            else:
+                # The user is changing their own password, validate their current password
+                if trans.user.check_password( current ):
+                    user = trans.user
+                else:
+                    message = 'Invalid current password'
+                    status = 'error'
+            if user:
+                # Validate the new password
+                message = validate_password( trans, password, confirm )
+                if message:
+                    status = 'error'
+                else:
+                    # Save new password
+                    user.set_password_cleartext( password )
+                    # if we used a token, invalidate it and log the user in.
+                    if token_result:
+                        trans.handle_user_login(token_result.user)
+                        token_result.expiration_time = datetime.now()
+                        trans.sa_session.add(token_result)
+                    # Invalidate all other sessions
+                    for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
+                                                     .filter( and_( trans.app.model.GalaxySession.table.c.user_id == user.id,
+                                                                    trans.app.model.GalaxySession.table.c.is_valid is True,
+                                                                    trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id ) ):
+                        other_galaxy_session.is_valid = False
+                        trans.sa_session.add( other_galaxy_session )
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
+                    trans.log_event( "User change password" )
+                    return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
+        return trans.fill_template( '/user/change_password.mako',
+                                    token=token,
+                                    status=status,
+                                    message=message )
+
+    @web.expose
+    def reset_password( self, trans, email=None, token=None, **kwd ):
         """Reset the user's password. Send an email with the new password."""
         if trans.app.config.smtp_server is None:
-            return trans.show_error_message( "Mail is not configured for this Galaxy instance. Please contact your local Galaxy administrator." )
-        message = util.sanitize_text( util.restore_text( kwd.get( 'message', '' ) ) )
-        status = kwd.get( 'status', 'done' )
+            return trans.show_error_message( "Mail is not configured for this Galaxy instance "
+                                             "and password reset information cannot be sent. "
+                                             "Please contact your local Galaxy administrator." )
+        message = None
+        status = 'done'
         if kwd.get( 'reset_password_button', False ):
+            # Default to a non-userinfo-leaking response message
+            message = "Your reset request for %s has been received.  Please check your email account for more instructions.  If you do not receive an email shortly, please contact an administrator." % ( escape( email ) )
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
             user = trans.get_user()
             if reset_user:
-                if user and user.id != reset_user.id:
-                    message = "You may only reset your own password"
-                    status = 'error'
-                else:
-                    chars = string.letters + string.digits
-                    new_pass = ""
-                    reset_password_length = getattr( trans.app.config, "reset_password_length", 15 )
-                    for i in range(reset_password_length):
-                        new_pass = new_pass + random.choice(chars)
-                    host = trans.request.host.split(':')[0]
-                    if host == 'localhost':
-                        host = socket.getfqdn()
-                    body = 'Your password on %s has been reset to:\n\n  %s\n' % ( host, new_pass )
-                    frm = 'galaxy-no-reply@' + host
-                    subject = 'Galaxy Password Reset'
-                    try:
-                        util.send_mail( frm, email, subject, body, trans.app.config )
-                        reset_user.set_password_cleartext( new_pass )
-                        trans.sa_session.add( reset_user )
-                        trans.sa_session.flush()
-                        trans.log_event( "User reset password: %s" % email )
-                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( escape( email ), web.url_for( controller='user', action='login', noredirect='true' ) )
-                    except Exception, e:
-                        message = 'Failed to reset password: %s' % str( e )
-                        status = 'error'
-            elif email is not None:
-                message = "The specified user does not exist"
-                status = 'error'
-            elif email is None:
-                email = ""
+                prt = trans.app.model.PasswordResetToken( reset_user )
+                trans.sa_session.add( prt )
+                trans.sa_session.flush()
+                host = trans.request.host.split( ':' )[ 0 ]
+                if host == 'localhost':
+                    host = socket.getfqdn()
+                reset_url = url_for( controller='user',
+                                        action="change_password",
+                                        token=prt.token, qualified=True)
+                body = PASSWORD_RESET_TEMPLATE % ( host, reset_url, reset_url )
+                frm = 'galaxy-no-reply@' + host
+                subject = 'Galaxy Password Reset'
+                try:
+                    util.send_mail( frm, email, subject, body, trans.app.config )
+                    trans.sa_session.add( reset_user )
+                    trans.sa_session.flush()
+                    trans.log_event( "User reset password: %s" % email )
+                except Exception, e:
+                    log.exception( 'Unable to reset password.' )
         return trans.fill_template( '/user/reset_password.mako',
                                     message=message,
                                     status=status )
@@ -1155,7 +1178,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if not username:
                 return "A public user name is required in the tool shed."
             if username in [ 'repos' ]:
-                return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % username
+                return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % escape( username )
         message = "\n".join( [ validate_email( trans, email ),
                                validate_password( trans, password, confirm ),
                                validate_publicname( trans, username ) ] ).rstrip()

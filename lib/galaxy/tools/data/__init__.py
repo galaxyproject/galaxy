@@ -9,9 +9,11 @@ to modify the tool configurations.
 import logging
 import os
 import os.path
-import shutil
+import re
 import string
-import tempfile
+import hashlib
+
+from glob import glob
 
 from galaxy import util
 from galaxy.util.odict import odict
@@ -22,6 +24,7 @@ log = logging.getLogger( __name__ )
 
 DEFAULT_TABLE_TYPE = 'tabular'
 
+
 class ToolDataTableManager( object ):
     """Manages a collection of tool data tables"""
 
@@ -31,8 +34,10 @@ class ToolDataTableManager( object ):
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
         # from that file are inserted into this dict at the time of installation.
         self.data_tables = {}
-        if config_filename:
-            self.load_from_config_file( config_filename, self.tool_data_path, from_shed_config=False )
+        for single_config_filename in util.listify( config_filename ):
+            if not single_config_filename:
+                continue
+            self.load_from_config_file( single_config_filename, self.tool_data_path, from_shed_config=False )
 
     def __getitem__( self, key ):
         return self.data_tables.__getitem__( key )
@@ -79,7 +84,7 @@ class ToolDataTableManager( object ):
                     log.debug( "Loaded tool data table '%s'", table.name )
                 else:
                     log.debug( "Loading another instance of data table '%s', attempting to merge content.", table.name )
-                    self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False ) #only merge content, do not persist to disk, do not allow duplicate rows when merging
+                    self.data_tables[ table.name ].merge_tool_data_table( table, allow_duplicates=False )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
                     # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
 
@@ -126,7 +131,7 @@ class ToolDataTableManager( object ):
         """
         if not ( new_elems or remove_elems ):
             log.debug( 'ToolDataTableManager.to_xml_file called without any elements to add or remove.' )
-            return #no changes provided, no need to persist any changes
+            return  # no changes provided, no need to persist any changes
         if not new_elems:
             new_elems = []
         if not remove_elems:
@@ -173,7 +178,7 @@ class ToolDataTable( object ):
         assert table_type in tool_data_table_types, "Unknown data table type '%s'" % type
         return tool_data_table_types[ table_type ]( table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename )
 
-    def __init__( self, config_element, tool_data_path, from_shed_config = False, filename=None ):
+    def __init__( self, config_element, tool_data_path, from_shed_config=False, filename=None ):
         self.name = config_element.get( 'name' )
         self.comment_char = config_element.get( 'comment_char' )
         self.empty_field_value = config_element.get( 'empty_field_value', '' )
@@ -185,7 +190,7 @@ class ToolDataTable( object ):
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ( [ config_element, tool_data_path ], { 'from_shed_config':from_shed_config } )
+        self._load_info = ( [ config_element, tool_data_path ], { 'from_shed_config': from_shed_config } )
         self._merged_load_info = []
 
     def _update_version( self, version=None ):
@@ -210,6 +215,13 @@ class ToolDataTable( object ):
             for entry in entries:
                 self.add_entry( entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
         return self._loaded_content_version
+
+    def _remove_entry(self, values):
+        raise NotImplementedError( "Abstract method" )
+
+    def remove_entry(self, values):
+        self._remove_entry( values )
+        return self._update_version()
 
     def is_current_version( self, other_version ):
         return self._loaded_content_version == other_version
@@ -243,13 +255,13 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
 
     type_key = 'tabular'
 
-    def __init__( self, config_element, tool_data_path, from_shed_config = False, filename=None ):
+    def __init__( self, config_element, tool_data_path, from_shed_config=False, filename=None ):
         super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config, filename)
         self.config_element = config_element
         self.data = []
         self.configure_and_load( config_element, tool_data_path, from_shed_config)
 
-    def configure_and_load( self, config_element, tool_data_path, from_shed_config = False):
+    def configure_and_load( self, config_element, tool_data_path, from_shed_config=False):
         """
         Configure and load table from an XML element.
         """
@@ -314,7 +326,6 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
             else:
                 log.debug( "Filename '%s' already exists in filenames (%s), not adding", filename, self.filenames.keys() )
 
-
     def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % ( self.name, self.columns, other_table.name, other_table.columns )
         #merge filename info
@@ -333,15 +344,24 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
     def get_fields( self ):
         return self.data
 
+    def get_field(self, value):
+        rval = None
+        for i in self.get_named_fields_list():
+            if i['value'] == value:
+                rval = TabularToolDataField(i)
+        return rval
+
     def get_named_fields_list( self ):
         rval = []
-        named_colums = self.get_column_name_list()
+        named_columns = self.get_column_name_list()
         for fields in self.get_fields():
             field_dict = {}
             for i, field in enumerate( fields ):
-                field_name = named_colums[i]
+                if i == len( named_columns ):
+                    break
+                field_name = named_columns[i]
                 if field_name is None:
-                    field_name = i #check that this is supposed to be 0 based.
+                    field_name = i  # check that this is supposed to be 0 based.
                 field_dict[ field_name ] = field
             rval.append( field_dict )
         return rval
@@ -366,6 +386,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 self.columns[ name ] = index
                 self.largest_index = index
         else:
+            self.largest_index = 0
             for column_elem in config_element.findall( 'column' ):
                 name = column_elem.get( 'name', None )
                 assert name is not None, "Required 'name' attribute missing from column def"
@@ -495,16 +516,52 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 try:
                     data_table_fh = open( filename, 'r+b' )
                 except IOError, e:
-                    log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', self.filename, e )
+                    log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e )
                     data_table_fh = open( filename, 'wb' )
                 if os.stat( filename )[6] != 0:
                     # ensure last existing line ends with new line
-                    data_table_fh.seek( -1, 2 ) #last char in file
+                    data_table_fh.seek( -1, 2 )  # last char in file
                     last_char = data_table_fh.read( 1 )
                     if last_char not in [ '\n', '\r' ]:
                         data_table_fh.write( '\n' )
                 data_table_fh.write( "%s\n" % ( self.separator.join( fields ) ) )
         return not is_error
+
+    def _remove_entry( self, values):
+
+        # update every file
+        for filename in self.filenames:
+
+            if os.path.exists( filename ):
+                values = self._replace_field_separators( values )
+                self.filter_file_fields( filename, values )
+            else:
+                log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
+        
+        self.reload_from_files()
+
+    def filter_file_fields( self, loc_file, values ):
+        """
+        Reads separated lines from file and print back only the lines that pass a filter.
+        """
+        separator_char = (lambda c: '<TAB>' if c == '\t' else c)(self.separator)
+
+        with open(loc_file) as reader:
+            rval = ""
+            for i, line in enumerate( reader ):
+                if line.lstrip().startswith( self.comment_char ):
+                    rval += line
+                else:
+                    line_s = line.rstrip( "\n\r" )
+                    if line_s:
+                        fields = line_s.split( self.separator )
+                        if fields != values:
+                            rval += line
+        
+        with open(loc_file, 'wb') as writer:
+            writer.write(rval)
+        
+        return rval
 
     def _replace_field_separators( self, fields, separator=None, replace=None, comment_char=None ):
         #make sure none of the fields contain separator
@@ -532,8 +589,60 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
     def to_dict(self, view='collection'):
         rval = super(TabularToolDataTable, self).to_dict()
         if view == 'element':
-            rval['columns'] = sorted(self.columns.keys(), key=lambda x:self.columns[x])
+            rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
             rval['fields'] = self.get_fields()
+        return rval
+
+
+class TabularToolDataField(Dictifiable, object):
+
+    dict_collection_visible_keys = []
+
+    def __init__(self, data):
+        self.data = data
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def get_base_path(self):
+        return os.path.normpath(os.path.abspath( self.data['path'] ))
+
+    def get_base_dir(self):
+        path = self.get_base_path()
+        if not os.path.isdir(path):
+            path = os.path.dirname(path)
+        return path
+
+    def clean_base_dir(self, path):
+        return re.sub( "^" + self.get_base_dir() + r"/*", "", path )
+
+    def get_files(self):
+        return glob( self.get_base_path() + "*" )
+
+    def get_filesize_map(self, rm_base_dir=False):
+        out = {}
+        for path in self.get_files():
+            if rm_base_dir:
+                out[self.clean_base_dir(path)] = os.path.getsize(path)
+            else:
+                out[path] = os.path.getsize(path)
+        return out
+
+    def get_fingerprint(self):
+        sha1 = hashlib.sha1()
+        fmap = self.get_filesize_map(True)
+        for k in sorted(fmap.keys()):
+            sha1.update(k)
+            sha1.update(str(fmap[k]))
+        return sha1.hexdigest()
+
+    def to_dict(self):
+        rval = super(TabularToolDataField, self).to_dict()
+        rval['name'] = self.data['value']
+        rval['fields'] = self.data
+        rval['base_dir'] = self.get_base_dir(),
+        rval['files'] = self.get_filesize_map(True)
+        rval['fingerprint'] = self.get_fingerprint()
         return rval
 
 

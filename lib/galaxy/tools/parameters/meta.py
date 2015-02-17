@@ -14,6 +14,13 @@ def expand_meta_parameters( trans, tool, incoming ):
     execution).
     """
 
+    to_remove = []
+    for key in incoming.keys():
+        if key.endswith("|__identifier__"):
+            to_remove.append(key)
+    for key in to_remove:
+        incoming.pop(key)
+
     def classify_unmodified_parameter( input_key ):
         value = incoming[ input_key ]
         if isinstance( value, dict ) and 'values' in value:
@@ -118,11 +125,19 @@ def __expand_collection_parameter( trans, input_key, incoming_val, collections_t
         subcollection_elements = subcollections.split_dataset_collection_instance( hdc, subcollection_type )
         return subcollection_elements
     else:
-        hdas = hdc.collection.dataset_instances
+        hdas = []
+        for element in hdc.collection.dataset_elements:
+            hda = element.dataset_instance
+            hda.element_identifier = element.element_identifier
+            hdas.append( hda )
         return hdas
 
 
 def __collection_multirun_parameter( value ):
+    is_batch = value.get( 'batch', False )
+    if not is_batch:
+        return False
+
     batch_values = util.listify( value[ 'values' ] )
     if len( batch_values ) == 1:
         batch_over = batch_values[ 0 ]

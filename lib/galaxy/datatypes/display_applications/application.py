@@ -167,23 +167,21 @@ class PopulatedDisplayApplicationLink( object ):
 class DisplayApplication( object ):
     @classmethod
     def from_file( cls, filename, datatypes_registry ):
-        return cls.from_elem( parse_xml( filename ).getroot(), datatypes_registry )
+        return cls.from_elem( parse_xml( filename ).getroot(), datatypes_registry, filename=filename )
     @classmethod
-    def from_elem( cls, elem, datatypes_registry ):
+    def from_elem( cls, elem, datatypes_registry, filename=None ):
+        att_dict = cls._get_attributes_from_elem( elem )
+        rval = DisplayApplication( att_dict['id'], att_dict['name'], datatypes_registry, att_dict['version'], filename=filename, elem=elem )
+        rval._load_links_from_elem( elem )
+        return rval
+    @classmethod
+    def _get_attributes_from_elem( cls, elem ):
         display_id = elem.get( 'id', None )
         assert display_id, "ID tag is required for a Display Application"
         name = elem.get( 'name', display_id )
         version = elem.get( 'version', None )
-        rval = DisplayApplication( display_id, name, datatypes_registry, version )
-        for link_elem in elem.findall( 'link' ):
-            link = DisplayApplicationLink.from_elem( link_elem, rval )
-            if link:
-                rval.links[ link.id ] = link
-        for dynamic_links in elem.findall( 'dynamic_links' ):
-            for link in DynamicDisplayApplicationBuilder( dynamic_links, rval, datatypes_registry.build_sites ):
-                rval.links[ link.id ] = link
-        return rval
-    def __init__( self, display_id, name, datatypes_registry, version = None ):
+        return dict( id=display_id, name=name, version=version )
+    def __init__( self, display_id, name, datatypes_registry, version = None, filename=None, elem=None ):
         self.id = display_id
         self.name = name
         self.datatypes_registry = datatypes_registry
@@ -191,6 +189,16 @@ class DisplayApplication( object ):
             version = "1.0.0"
         self.version = version
         self.links = odict()
+        self._filename = filename
+        self._elem = elem
+    def _load_links_from_elem( self, elem ):
+        for link_elem in elem.findall( 'link' ):
+            link = DisplayApplicationLink.from_elem( link_elem, self )
+            if link:
+                self.links[ link.id ] = link
+        for dynamic_links in elem.findall( 'dynamic_links' ):
+            for link in DynamicDisplayApplicationBuilder( dynamic_links, self, self.datatypes_registry.build_sites ):
+                self.links[ link.id ] = link
     def get_link( self, link_name, data, dataset_hash, user_hash, trans, app_kwds ):
         #returns a link object with data knowledge to generate links
         return PopulatedDisplayApplicationLink( self.links[ link_name ], data, dataset_hash, user_hash, trans, app_kwds )
@@ -200,3 +208,23 @@ class DisplayApplication( object ):
             if link_value.filter_by_dataset( data, trans ):
                 filtered.links[link_name] = link_value
         return filtered
+    def reload( self ):
+        if self._filename:
+            elem = parse_xml( self._filename ).getroot()
+        elif self._elem:
+            elem = self._elem
+        else:
+            raise Exception( "Unable to reload DisplayApplication %s." % ( self.name ) )
+        # All toolshed-specific attributes added by e.g the registry will remain
+        attr_dict = self._get_attributes_from_elem( elem )
+        # We will not allow changing the id at this time (we'll need to fix several mappings upstream to handle this case)
+        assert attr_dict.get( 'id' ) == self.id, ValueError( "You cannot reload a Display application where the ID has changed. You will need to restart the server instead." )
+        # clear old links
+        for key in self.links.keys():
+            del self.links[key]
+        # Set new attributes
+        for key, value in attr_dict.iteritems():
+            setattr( self, key, value )
+        # Load new links
+        self._load_links_from_elem( elem )
+        return self

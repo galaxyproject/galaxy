@@ -37,6 +37,11 @@ User.table = Table( "galaxy_user", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
+PasswordResetToken.table = Table("password_reset_token", metadata,
+    Column( "token", String( 32 ), primary_key=True, unique=True, index=True ),
+    Column( "expiration_time", DateTime ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
+
 Group.table = Table( "galaxy_group", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -91,7 +96,8 @@ GalaxySession.table = Table( "galaxy_session", metadata,
     Column( "referer", TEXT ),
     Column( "session_key", TrimmedString( 255 ), index=True, unique=True ), # unique 128 bit random number coerced to a string
     Column( "is_valid", Boolean, default=False ),
-    Column( "prev_session_id", Integer ) # saves a reference to the previous session so we have a way to chain them together
+    Column( "prev_session_id", Integer ), # saves a reference to the previous session so we have a way to chain them together
+    Column( "last_action", DateTime)
     )
 
 Repository.table = Table( "repository", metadata,
@@ -100,6 +106,8 @@ Repository.table = Table( "repository", metadata,
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TrimmedString( 255 ), index=True ),
     Column( "type", TrimmedString( 255 ), index=True ),
+    Column( "remote_repository_url", TrimmedString( 255 ) ),
+    Column( "homepage_url", TrimmedString( 255 ) ),
     Column( "description" , TEXT ),
     Column( "long_description" , TEXT ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
@@ -201,6 +209,9 @@ mapper( User, User.table,
     properties=dict( active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      api_keys=relation( APIKeys, backref="user", order_by=desc( APIKeys.table.c.create_time ) ) ) )
+
+mapper( PasswordResetToken, PasswordResetToken.table,
+        properties=dict( user=relation( User, backref="reset_tokens") ) )
 
 mapper( APIKeys, APIKeys.table,
     properties = {} )

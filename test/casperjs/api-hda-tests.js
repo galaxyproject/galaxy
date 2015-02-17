@@ -97,18 +97,11 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
 
         // ------------------------------------------------------------------------------------------- UPDATE
         // ........................................................................................... idiot proofing
-        this.test.comment( 'updating to the current value should return no value (no change)' );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        var returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            name : hdaShow.name
-        });
-        this.test.assert( this.countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
-
         this.test.comment( 'updating using a nonsense key should NOT fail with an error' );
         returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
             konamiCode : 'uuddlrlrba'
         });
-        this.test.assert( this.countKeys( returned ) === 0, "No changed returned: " + this.jsonStr( returned ) );
+        this.test.assert( returned.id === firstHda.id );
 
         this.test.comment( 'updating by attempting to change type should cause an error' );
         this.api.assertRaises( function(){
@@ -116,7 +109,7 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
                 //name : false
                 deleted : 'sure why not'
             });
-        }, 400, 'deleted must be a boolean', 'changing deleted type failed' );
+        }, 400, "must be a type: <type 'bool'>", 'changing deleted type failed' );
 
         // ........................................................................................... name
         this.test.comment( 'update should allow changing the name' );
@@ -127,13 +120,8 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
         this.test.assert( hdaShow.name === 'New name', "Name successfully set via update: " + hdaShow.name );
 
-        this.test.comment( 'update should sanitize any new name' );
-        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            name : 'New name<script type="text/javascript" src="bler">alert("blah");</script>'
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        this.test.assert( hdaShow.name === 'New name', "Update sanitized name: " + hdaShow.name );
+        // no sanitizing input
+        //this.test.comment( 'update should sanitize any new name' );
 
         this.test.comment( 'update should allow unicode in names' );
         var unicodeName = 'Ржевский сапоги';
@@ -195,27 +183,21 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
             "genome_build successfully set via update: " + hdaShow.genome_build );
         this.test.assert( hdaShow.metadata_dbkey === 'hg18',
             "metadata_dbkey successfully set via the same update: " + hdaShow.metadata_dbkey );
-        this.test.comment( 'update should sanitize any genome_build' );
-        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            genome_build : 'hg18<script type="text/javascript" src="bler">alert("blah");</script>'
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        this.test.assert( hdaShow.genome_build === 'hg18',
-            "Update sanitized genome_build: " + hdaShow.genome_build );
-        this.test.assert( hdaShow.metadata_dbkey === 'hg18',
-            "metadata_dbkey successfully set via the same update: " + hdaShow.metadata_dbkey );
 
-        this.test.comment( 'update should allow unicode in genome builds' );
-        var unicodeBuild = 'Ржевский18';
-        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            genome_build : unicodeBuild
-        });
-        this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        this.debug( 'hdaShow:\n' + this.jsonStr( hdaShow ) );
-        this.test.assert( hdaShow.genome_build === unicodeBuild,
-            "Update accepted unicode genome_build: " + hdaShow.genome_build );
+        // no sanitizing input
+        //this.test.comment( 'update should sanitize any genome_build' );
+
+        //TODO: this actually throws an 'invalid genome_build' error
+        //this.test.comment( 'update should allow unicode in genome builds' );
+        //var unicodeBuild = 'Ржевский18';
+        //returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
+        //    genome_build : unicodeBuild
+        //});
+        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+        //hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+        //this.debug( 'hdaShow:\n' + this.jsonStr( hdaShow ) );
+        //this.test.assert( hdaShow.genome_build === unicodeBuild,
+        //    "Update accepted unicode genome_build: " + hdaShow.genome_build );
 
         // ........................................................................................... misc_info/info
         this.test.comment( 'update should allow changing the misc_info' );
@@ -228,15 +210,8 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         this.test.assert( hdaShow.misc_info === newInfo,
             "misc_info successfully set via update: " + hdaShow.misc_info );
 
-        this.test.comment( 'update should sanitize any misc_info' );
-        var newInfo = 'You\'re going to get hop-ons.';
-        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            misc_info : newInfo + '<script type="text/javascript" src="bler">alert("blah");</script>'
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        this.test.assert( hdaShow.misc_info === newInfo,
-            "Update sanitized misc_info: " + hdaShow.misc_info );
+        // no sanitizing input
+        //this.test.comment( 'update should sanitize any misc_info' );
 
         this.test.comment( 'update should allow unicode in misc_info' );
         var unicodeInfo = '여보!';
@@ -260,14 +235,8 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         this.test.assert( hdaShow.annotation === newAnnotation,
             "Annotation successfully set via update: " + hdaShow.annotation );
 
-        this.test.comment( 'update should sanitize any new annotation' );
-        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
-            annotation : 'New annotation<script type="text/javascript" src="bler">alert("blah");</script>'
-        });
-        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
-        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
-        this.test.assert( hdaShow.annotation === 'New annotation',
-            "Update sanitized annotation: " + hdaShow.annotation );
+        // no sanitizing input
+        //this.test.comment( 'update should sanitize any new annotation' );
 
         this.test.comment( 'update should allow unicode in annotations' );
         var unicodeAnnotation = 'お願いは、それが落下させない';
@@ -316,25 +285,32 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         spaceghost.test.comment( 'A bad id should throw an error when using undelete' );
 
         this.test.comment( 'updating by attempting to change type should cause an error' );
-        [ 'name', 'annotation', 'genome_build', 'misc_info' ].forEach( function( key ){
+        [ 'name', 'misc_info' ].forEach( function( key ){
             var updatedAttrs = {};
             updatedAttrs[ key ] = false;
             spaceghost.api.assertRaises( function(){
                 returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, updatedAttrs );
-            }, 400, key + ' must be a string or unicode', 'type validation error' );
+            }, 400, "must be a type: <type 'basestring'>", 'type validation error' );
         });
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, { annotation: false } );
+        }, 400, "must be a type: (<type 'basestring'>, <type 'NoneType'>)", 'type validation error' );
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, { genome_build: false } );
+        }, 400, "invalid reference", 'type validation error' );
         [ 'deleted', 'visible' ].forEach( function( key ){
             var updatedAttrs = {};
             updatedAttrs[ key ] = 'straaang';
             spaceghost.api.assertRaises( function(){
                 returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, updatedAttrs );
-            }, 400, key + ' must be a boolean', 'type validation error' );
+            }, 400, "must be a type: <type 'bool'>", 'type validation error' );
         });
-        [ 'you\'re it', [ true ] ].forEach( function( badVal ){
-            spaceghost.api.assertRaises( function(){
-                returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, { tags: badVal });
-            }, 400, 'tags must be a list', 'type validation error' );
-        });
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, { tags: 'you\'re it' });
+        }, 400, "must be a type: <type 'list'>", 'type validation error' );
+        spaceghost.api.assertRaises( function(){
+            returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, { tags: [ true ] });
+        }, 400, "must be a type: <type 'basestring'>", 'type validation error' );
 
         // ------------------------------------------------------------------------------------------- DELETE
         this.test.comment( 'calling delete on an hda should mark it as deleted but not change the history size' );

@@ -2,9 +2,10 @@ define([
     "mvc/history/history-model",
     "mvc/history/history-panel-edit",
     "mvc/base-mvc",
-    "utils/ajax-queue"
+    "utils/ajax-queue",
+    "ui/mode-button",
+    "ui/search-input"
 ], function( HISTORY_MODEL, HPANEL_EDIT, baseMVC, ajaxQueue ){
-window.HISTORY_MODEL = HISTORY_MODEL;
 //==============================================================================
 /**  */
 function historyCopyDialog( history, options ){
@@ -36,13 +37,18 @@ function historyCopyDialog( history, options ){
             .css( 'margin-top', '8px' );
         Galaxy.modal.$( '.modal-body' ).append( $copyIndicator );
         history.copy( true, name )
-//TODO: make this unneccessary with pub-sub error
+            //TODO: make this unneccessary with pub-sub error
             .fail( function(){
                 alert( _l( 'History could not be copied. Please contact a Galaxy administrator' ) );
             })
             .always( function(){
                 Galaxy.modal.hide();
             });
+    }
+    function checkNameAndCopy(){
+        var name = Galaxy.modal.$( '#copy-modal-title' ).val();
+        if( !validateName( name ) ){ return; }
+        copyHistory( name );
     }
 
     Galaxy.modal.show( _.extend({
@@ -56,14 +62,15 @@ function historyCopyDialog( history, options ){
             ].join('')),
         buttons : {
             'Cancel' : function(){ Galaxy.modal.hide(); },
-            'Copy'   : function(){
-                var name = Galaxy.modal.$( '#copy-modal-title' ).val();
-                if( !validateName( name ) ){ return; }
-                copyHistory( name );
-            }
+            'Copy'   : checkNameAndCopy
         }
     }, options ));
     $( '#copy-modal-title' ).focus().select();
+    $( '#copy-modal-title' ).on( 'keydown', function( ev ){
+        if( ev.keyCode === 13 ){
+            checkNameAndCopy();
+        }
+    });
 }
 
 
@@ -121,12 +128,9 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** set up passed-in panel (if any) and listeners */
     initialize : function initialize( options ){
         options = options || {};
-
-        //this.log( this + '.init', options );
-        // if model, set up model
-            // create panel sub-view
-//TODO: use current-history-panel for current
+        this.purgeAllowed = !_.isUndefined( options.purgeAllowed )? options.purgeAllowed: false;
         this.panel = options.panel || this.createPanel( options );
+
         this.setUpListeners();
     },
 
@@ -136,6 +140,7 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             model       : this.model,
             //el          : this.$panel(),
             // non-current panels should set their hdas to draggable
+            purgeAllowed: this.purgeAllowed,
             dragItems   : true
         }, panelOptions );
         //this.log( 'panelOptions:', panelOptions );
@@ -212,7 +217,7 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     render : function render( speed ){
         speed = ( speed !== undefined )?( speed ):( 'fast' );
         //this.log( this + '.render', this.$el, this.el );
-//TODO: not needed
+        //TODO: not needed
         var modelData = this.model? this.model.toJSON(): {};
         this.$el.html( this.template( modelData ) );
         this.renderPanel( speed );
@@ -233,44 +238,28 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** column body template with inner div for panel based on data (model json) */
     template : function template( data ){
-        data = data || {};
-        var html = [
-                '<div class="panel-controls clear flex-row">',
-                    this.controlsLeftTemplate(),
-                    //'<button class="btn btn-default">Herp</button>',
-                    '<div class="pull-right">',
-                        '<button class="delete-history btn btn-default">',
-                            data.deleted? _l( 'Undelete' ): _l( 'Delete' ),
-                        '</button>',
-                        '<button class="copy-history btn btn-default">', _l( 'Copy' ), '</button>',
-                    '</div>',
-                '</div>',
-                '<div class="inner flex-row flex-column-container">',
-                    '<div id="history-', data.id, '" class="history-column history-panel flex-column"></div>',
-                '</div>'
-            ].join( '' );
-        return $( html );
-    },
-
-    /** controls template displaying controls above the panel based on this.currentHistory */
-    controlsLeftTemplate : function(){
-        return ( this.currentHistory )?
-            [
-                '<div class="pull-left">',
-                    '<button class="create-new btn btn-default">', _l( 'Create new' ), '</button> ',
-                '</div>'
-            ].join( '' )
-            :[
-                '<div class="pull-left">',
-                    '<button class="switch-to btn btn-default">', _l( 'Switch to' ), '</button>',
-                '</div>'
-            ].join( '' );
+        data = _.extend( data || {}, {
+            isCurrentHistory : this.currentHistory
+        });
+        return $([
+            '<div class="panel-controls clear flex-row">',
+                this.controlsLeftTemplate({ history: data, view: this }),
+                //'<button class="btn btn-default">Herp</button>',
+                this.controlsRightTemplate({ history: data, view: this }),
+            '</div>',
+            '<div class="inner flex-row flex-column-container">',
+                '<div id="history-', data.id, '" class="history-column history-panel flex-column"></div>',
+            '</div>'
+        ].join( '' ));
     },
 
     /** render the panel contained in the column using speed for fx speed */
     renderPanel : function renderPanel( speed ){
         speed = ( speed !== undefined )?( speed ):( 'fast' );
         this.panel.setElement( this.$panel() ).render( speed );
+        if( this.currentHistory ){
+            this.panel.$list().before( this.panel._renderDropTargetHelp() );
+        }
         return this;
     },
 
@@ -279,25 +268,41 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     events : {
         // will make this the current history
         'click .switch-to.btn'      : function(){ this.model.setAsCurrent(); },
-        // toggles deleted here and on the server and re-renders
-        'click .delete-history.btn' : function(){
-                var column = this,
-                    xhr;
-                if( this.model.get( 'deleted' ) ){
-                    xhr = this.model.undelete();
-                } else {
-                    xhr = this.model._delete();
-                }
-//TODO: better error handler
-                xhr.fail( function( xhr, status, error ){
+        //TODO: remove boiler plate from next 3
+        'click .delete-history' : function(){
+            var column = this;
+            this.model._delete()
+                .fail( function( xhr, status, error ){
                     alert( _l( 'Could not delete the history' ) + ':\n' + error );
                 })
                 .done( function( data ){
                     column.render();
                 });
-            },
+        },
+        'click .undelete-history' : function(){
+            var column = this;
+            this.model.undelete()
+                .fail( function( xhr, status, error ){
+                    alert( _l( 'Could not undelete the history' ) + ':\n' + error );
+                })
+                .done( function( data ){
+                    column.render();
+                });
+        },
+        'click .purge-history' : function(){
+            if( confirm( _l( 'This will permanently remove the data. Are you sure?' ) ) ){
+                var column = this;
+                this.model.purge()
+                    .fail( function( xhr, status, error ){
+                        alert( _l( 'Could not purge the history' ) + ':\n' + error );
+                    })
+                    .done( function( data ){
+                        column.render();
+                    });
+            }
+        },
         // will copy this history and make the copy the current history
-        'click .copy-history.btn'   : 'copy'
+        'click .copy-history'       : 'copy'
     },
 
     // ------------------------------------------------------------------------ non-current controls
@@ -305,6 +310,53 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     copy : function copy(){
         historyCopyDialog( this.model );
     },
+
+    // ------------------------------------------------------------------------ templates
+    /** controls template displaying controls above the panel based on this.currentHistory */
+    controlsLeftTemplate : _.template([
+        '<div class="pull-left">',
+            '<% if( data.history.isCurrentHistory ){ %>',
+                '<strong class="current-label">', _l( 'Current History' ), '</strong>',
+            '<% } else { %>',
+                '<button class="switch-to btn btn-default">', _l( 'Switch to' ), '</button>',
+            '<% } %>',
+        '</div>'
+    ].join( '' ), { variable : 'data' }),
+
+    /** controls template displaying controls above the panel based on this.currentHistory */
+    controlsRightTemplate : _.template([
+        '<div class="pull-right">',
+            '<% if( !data.history.purged ){ %>',
+                '<div class="panel-menu btn-group">',
+                    '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                        '<span class="caret"></span>',
+                    '</button>',
+                    '<ul class="dropdown-menu pull-right" role="menu">',
+                        '<% if( !data.history.deleted ){ %>',
+                            '<li><a href="javascript:void(0);" class="copy-history">',
+                                _l( 'Copy' ),
+                            '</a></li>',
+                            //'<li><a href="javascript:void(0);" class="publish-history">',
+                            //    _l( 'Publish' ),
+                            //'</a></li>',
+                            '<li><a href="javascript:void(0);" class="delete-history">',
+                                _l( 'Delete' ),
+                            '</a></li>',
+                        '<% } else /* if is deleted */ { %>',
+                            '<li><a href="javascript:void(0);" class="undelete-history">',
+                                _l( 'Undelete' ),
+                            '</a></li>',
+                        '<% } %>',
+                        '<% if( data.view.purgeAllowed ){ %>',
+                            '<li><a href="javascript:void(0);" class="purge-history">',
+                                _l( 'Purge' ),
+                            '</a></li>',
+                        '<% } %>',
+                    '</ul>',
+                '<% } %>',
+            '</div>',
+        '</div>'
+    ].join( '' ), { variable: 'data' }),
 
     // ------------------------------------------------------------------------ misc
     /** String rep */
@@ -320,6 +372,7 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     //logger : console,
+    className : 'multi-panel-history',
 
     // ------------------------------------------------------------------------ set up
     /** Set up internals, history collection, and columns to display the history */
@@ -327,13 +380,16 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         options = options || {};
         this.log( this + '.init', options );
 
+        // add the className here (since we gen. pass the el in options)
+        this.$el.addClass( this.className );
+
         // --- instance vars
         if( !options.currentHistoryId ){
             throw new Error( this + ' requires a currentHistoryId in the options' );
         }
         this.currentHistoryId = options.currentHistoryId;
 
-//TODO: move these to some defaults
+        //TODO: move these to some defaults
         this.options = {
             columnWidth     : 312,
             borderWidth     : 1,
@@ -347,6 +403,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
         /** the order that the collection is rendered in */
         this.order = options.order || 'update';
+        this._initSortOrders();
 
         /** named ajax queue for loading hdas */
         this.hdaQueue = new ajaxQueue.NamedAjaxQueue( [], false );
@@ -358,10 +415,50 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
         /** model id to column map */
         this.columnMap = {};
-//TODO: why create here?
+        //TODO: why create here?
         this.createColumns( options.columnOptions );
-
         this.setUpListeners();
+    },
+
+    _initSortOrders : function(){
+        function _comparator( getter, options ){
+            return function __comparator( a, b, currentHistoryId ){
+                // current always first
+                if( a.id === currentHistoryId ){ return -1; }
+                if( b.id === currentHistoryId ){ return 1; }
+                // then compare by an attribute
+                a = getter( a );
+                b = getter( b );
+                return options.asc?
+                    ( ( a === b )?( 0 ):( a > b ?  1 : -1 ) ):
+                    ( ( a === b )?( 0 ):( a > b ? -1 :  1 ) );
+            };
+        }
+
+        this.sortOrders = {
+            // default
+            update : {
+                text: _l( 'most recent first' ),
+                fn: _comparator( function( h ){ return Date( h.get( 'update_time' ) ); }, { asc : false })
+            },
+            'name' : {
+                text: _l( 'name, a to z' ),
+                fn: _comparator( function( h ){ return h.get( 'name' ); }, { asc : true })
+            },
+            'name-dsc' : {
+                text: _l( 'name, z to a' ),
+                fn: _comparator( function( h ){ return h.get( 'name' ); }, { asc : false })
+            },
+            'size' : {
+                text: _l( 'size, large to small' ),
+                fn: _comparator( function( h ){ return h.get( 'size' ); }, { asc : false })
+            },
+            'size-dsc' : {
+                text: _l( 'size, small to large' ),
+                fn: _comparator( function( h ){ return h.get( 'size' ); }, { asc : true })
+            }
+        };
+        return this.sortOrders;
     },
 
     /** Set up reflexive listeners */
@@ -378,10 +475,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         var multipanel = this;
         multipanel.stopListening( multipanel.collection );
         multipanel.collection = models;
-//TODO: slow... esp. on start up
-        //if( multipanel.order !== 'update' ){
-            multipanel.sortCollection( multipanel.order, { silent: true });
-        //}
+        multipanel.sortCollection( multipanel.order, { silent: true });
         multipanel.setUpCollectionListeners();
         multipanel.trigger( 'new-collection', multipanel );
         return multipanel;
@@ -397,14 +491,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             // handle setting a history as current, triggered by history.setAsCurrent
             'set-as-current': multipanel.setCurrentHistory,
             // handle deleting a history (depends on whether panels is including deleted or not)
-            'change:deleted': multipanel.handleDeletedHistory,
+            'change:deleted change:purged': multipanel.handleDeletedHistory,
 
             'sort' : function(){ multipanel.renderColumns( 0 ); }
-
-            // debugging
-            //'all' : function(){
-            //    console.info( 'collection:', arguments );
-            //}
         });
     },
 
@@ -422,11 +511,6 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
         this.sortCollection();
 
-////TODO: this actually means these render twice (1st from setCollection) - good enough for now
-        //if( oldCurrentColumn ){ oldCurrentColumn.render().delegateEvents(); }
-        //TODO:?? this occasionally causes race with hdaQueue
-        //newCurrentColumn.panel.render( 'fast' ).delegateEvents();
-
         multipanel._recalcFirstColumnHeight();
         return newCurrentColumn;
     },
@@ -435,7 +519,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
      *      based on collection.includeDeleted
      */
     handleDeletedHistory : function handleDeletedHistory( history ){
-        if( history.get( 'deleted' ) ){
+        if( history.get( 'deleted' ) || history.get( 'purged' ) ){
             this.log( 'handleDeletedHistory', this.collection.includeDeleted, history );
             var multipanel = this;
                 column = multipanel.columnMap[ history.id ];
@@ -443,14 +527,14 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
             // if it's the current column, create a new, empty history as the new current
             if( column.model.id === this.currentHistoryId ){
-//TODO: figuring out the order of async here is tricky - for now let the user handle the two step process
+                //TODO: figuring out the order of async here is tricky
+                //  - for now let the user handle the two step process
                 //multipanel.collection.create().done( function(){
                 //    if( !multipanel.collection.includeDeleted ){ multipanel.removeColumn( column, false ); }
                 //});
             } else if( !multipanel.collection.includeDeleted ){
                 multipanel.removeColumn( column );
             }
-//TODO: prob. be done better
        }
     },
 
@@ -458,59 +542,31 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
      *      (sorting the collection will re-render the panel)
      */
     sortCollection : function( order, options ){
-        order = order || this.order;
-        var currentHistoryId = this.currentHistoryId;
-
-        //note: h.id !== currentHistoryId allows the sort to put the current history first
-        switch( order ){
-            case 'name':
-                //TODO: we can use a 2 arg version and return 1/0/-1
-                //this.collection.comparator = function( h1, h2 ){
-                this.collection.comparator = function( h ){
-//TODO: this won't do reverse order well
-                    return [ h.id !== currentHistoryId, h.get( 'name' ).toLowerCase() ];
-                };
-                break;
-            case 'size':
-                this.collection.comparator = function( h ){
-//console.debug( 'name sort', arguments )
-                    return [ h.id !== currentHistoryId, h.get( 'size' ) ];
-                };
-                break;
-            default:
-                this.collection.comparator = function( h ){
-                    return [ h.id !== currentHistoryId, Date( h.get( 'update_time' ) ) ];
-                };
-        }
-        //NOTE: auto fires 'sort' from collection
-        this.collection.sort( options );
-        return this.collection;
-    },
-
-    /** Set the sort order and re-sort */
-    setOrder : function( order ){
-        if( [ 'update', 'name', 'size' ].indexOf( order ) === -1 ){
+        if( !( order in this.sortOrders ) ){
             order = 'update';
         }
         this.order = order;
-        this.sortCollection();
-        return this;
+        var currentHistoryId = this.currentHistoryId,
+            sortOrder = this.sortOrders[ order ];
+
+        this.collection.comparator = function __comparator( a, b ){
+            return sortOrder.fn( a, b, currentHistoryId );
+        };
+        // set the sort order text
+        this.$( '.current-order' ).text( sortOrder.text );
+        if( this.$( '.more-options' ).is( ':visible' ) ){
+            this.$( '.open-more-options.btn' ).popover( 'show' );
+        }
+
+        //NOTE: auto fires 'sort' from collection
+        this.collection.sort( options );
+        return this.collection;
     },
 
     /** create a new history and set it to current */
     create : function( ev ){
         return this.collection.create({ current: true });
     },
-
-    ///** delete the current history */
-    //deleteCurrent : function deleteCurrent(){
-    //    var multipanel = this,
-    //        currentColumn = multipanel.columnMap[ multipanel.currentHistoryId ];
-    //    currentColumn.model._delete()
-    //        .done( function(){
-    //            multipanel.create();
-    //        });
-    //},
 
     // ------------------------------------------------------------------------ columns
     /** create columns from collection */
@@ -528,13 +584,19 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** create a column and its panel and set up any listeners to them */
     createColumn : function createColumn( history, options ){
         // options passed can be re-used, so extend them before adding the model to prevent pollution for the next
-        options = _.extend( {}, options, { model: history });
+        options = _.extend( {}, options, {
+            model       : history,
+            purgeAllowed: Galaxy.config.allow_user_dataset_purge
+        });
         var column = new HistoryPanelColumn( options );
         if( history.id === this.currentHistoryId ){ column.currentHistory = true; }
         this.setUpColumnListeners( column );
         return column;
     },
 
+    /** return array of Columns filtered by filters and sorted to match the collection
+     *  @param: filters Function[] array of filter fns
+     */
     sortedFilteredColumns : function( filters ){
         filters = filters || this.filters;
         if( !filters || !filters.length ){
@@ -549,6 +611,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         });
     },
 
+    /** return array of Columns sorted to match the collection */
     sortedColumns : function(){
         var multipanel = this;
         var sorted = this.collection.map( function( history, index ){
@@ -557,9 +620,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         return sorted;
     },
 
-    /**  */
+    /** add a new column for history and render all columns if render is true */
     addColumn : function add( history, render ){
-//console.debug( 'adding column for:', history );
+        //this.debug( 'adding column for:', history );
         render = render !== undefined? render: true;
         var newColumn = this.createColumn( history );
         this.columnMap[ history.id ] = newColumn;
@@ -569,9 +632,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         return newColumn;
     },
 
-    /**  */
+    /** add a new column for history and make it the current history/column */
     addAsCurrentColumn : function add( history ){
-//console.log( 'adding current column for:', history );
+        //this.log( 'adding current column for:', history );
         var multipanel = this,
             newColumn = this.addColumn( history, false );
         this.setCurrentHistory( history );
@@ -581,7 +644,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         return newColumn;
     },
 
-    /**  */
+    /** remove the given column, it's listeners, and optionally render */
     removeColumn : function remove( column, render ){
         render = render !== undefined? render : true;
         this.log( 'removeColumn', column );
@@ -596,7 +659,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 multipanel._recalcFirstColumnHeight();
             }
 
-//TODO: to freeColumn (where Columns have freePanel)
+        //TODO: to freeColumn (where Columns have freePanel)
             multipanel.stopListening( column.panel );
             multipanel.stopListening( column );
             delete multipanel.columnMap[ column.model.id ];
@@ -606,7 +669,11 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** set up listeners for a column and it's panel - handling: hda lazy-loading, drag and drop */
     setUpColumnListeners : function setUpColumnListeners( column ){
-        var multipanel = this;
+        var multipanel = this,
+            modelClassToSource = {
+                'HistoryDatasetAssociation'             : 'hda',
+                'HistoryDatasetCollectionAssociation'   : 'hdca'
+            };
         multipanel.listenTo( column, {
             //'all': function(){ console.info( 'column ' + column + ':', arguments ) },
             'in-view': multipanel.queueHdaFetch
@@ -624,17 +691,20 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 multipanel.currentColumnDropTargetOff();
             },
            'droptarget:drop': function( ev, data, panel ){
+                //note: this will bad copy sources fail silently
                 var toCopy = multipanel._dropData.filter( function( json ){
-                    return ( _.isObject( json ) && json.id && json.model_class === 'HistoryDatasetAssociation' );
+                    return ( ( _.isObject( json ) && json.id  )
+                          && ( _.contains( _.keys( modelClassToSource ), json.model_class ) ) );
                 });
                 multipanel._dropData = null;
 
                 var queue = new ajaxQueue.NamedAjaxQueue();
-                toCopy.forEach( function( hda ){
+                toCopy.forEach( function( content ){
+                    var contentType = modelClassToSource[ content.model_class ];
                     queue.add({
-                        name : 'copy-' + hda.id,
+                        name : 'copy-' + content.id,
                         fn : function(){
-                            return panel.model.contents.copy( hda.id );
+                            return panel.model.contents.copy( content.id, contentType );
                         }
                     });
                 });
@@ -659,77 +729,15 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         var multipanel = this;
 
         multipanel.log( multipanel + '.render' );
-        multipanel.$el.html( multipanel.template( multipanel.options ) );
-        //console.debug( multipanel.$( '.loading-overlay' ).fadeIn( 0 ) );
+        multipanel.$el.html( multipanel.mainTemplate( multipanel ) );
         multipanel.renderColumns( speed );
-        //console.debug( multipanel.$( '.loading-overlay' ).fadeOut( 'fast' ) );
 
         // set the columns to full height allowed and set up behaviors for thie multipanel
         multipanel.setUpBehaviors();
-//TODO: wrong - has to wait for columns to render
+        //TODO: wrong - has to wait for columns to render
+        //  - create a column listener that fires this when all columns are rendered
         multipanel.trigger( 'rendered', multipanel );
         return multipanel;
-    },
-
-    /** Template - overall structure relies on flex-boxes and is 3 components: header, middle, footer */
-    template : function template( options ){
-        options = options || {};
-        var html = [];
-        if( this.options.headerHeight ){
-            html = html.concat([
-                // a loading overlay
-                '<div class="loading-overlay flex-row"><div class="loading-overlay-message">loading...</div></div>',
-                '<div class="header flex-column-container">',
-                    // page & history controls
-                    '<div class="header-control header-control-left flex-column">',
-                        '<button class="done btn btn-default">', _l( 'Done' ), '</button>',
-                        '<button class="include-deleted btn btn-default"></button>',
-                        '<div class="order btn-group">',
-                            '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
-                                _l( 'Order histories by' ) + '... <span class="caret"></span>',
-                            '</button>',
-                            '<ul class="dropdown-menu" role="menu">',
-                                '<li><a href="javascript:void(0);" class="order-update">',
-                                    _l( 'Time of last update' ),
-                                '</a></li>',
-                                '<li><a href="javascript:void(0);" class="order-name">',
-                                    _l( 'Name' ),
-                                '</a></li>',
-                                '<li><a href="javascript:void(0);" class="order-size">',
-                                    _l( 'Size' ),
-                                '</a></li>',
-                            '</ul>',
-                        '</div>',
-                        '<div id="search-histories" class="header-search"></div>',
-                    '</div>',
-                    // feedback
-                    '<div class="header-control header-control-center flex-column">',
-                        '<div class="header-info">',
-                        '</div>',
-                    '</div>',
-                    // dataset controls
-                    '<div class="header-control header-control-right flex-column">',
-                        '<div id="search-datasets" class="header-search"></div>',
-                        '<button id="toggle-deleted" class="btn btn-default">',
-                            _l( 'Include deleted datasets' ),
-                        '</button>',
-                        '<button id="toggle-hidden" class="btn btn-default">',
-                            _l( 'Include hidden datasets' ),
-                        '</button>',
-                    '</div>',
-                '</div>'
-            ]);
-        }
-
-        html = html.concat([
-            // middle - where the columns go
-            '<div class="outer-middle flex-row flex-row-container">',
-                '<div class="middle flex-column-container flex-row"></div>',
-            '</div>',
-            // footer
-            '<div class="footer flex-column-container">','</div>'
-        ]);
-        return $( html.join( '' ) );
     },
 
     /** Render the columns and panels */
@@ -739,61 +747,21 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         // render columns and track the total number rendered, firing an event when all are rendered
         var multipanel = this,
             sortedAndFiltered = multipanel.sortedFilteredColumns();
-//console.log( '\t columnMapLength:', this.columnMapLength(), this.columnMap );
         //this.log( '\t sortedAndFiltered:', sortedAndFiltered );
 
         // set up width based on collection size
-//console.debug( '(render) width before:', multipanel.$( '.middle' ).width() )
         multipanel.$( '.middle' ).width( sortedAndFiltered.length
             //TODO: magic number 16 === the amount that safely prevents stacking of columns when adding a new one
             * ( this.options.columnWidth + this.options.columnGap ) + this.options.columnGap + 16 );
-//console.debug( '(render) width now:', multipanel.$( '.middle' ).width() )
-
-//console.debug( 'sortedAndFiltered:', sortedAndFiltered )
-        //multipanel.$( '.middle' ).empty();
-
-//        this.$( '.middle' ).html( sortedAndFiltered.map( function( column, i ){
-//            return column.$el.hide();
-//        }));
-//        sortedAndFiltered.forEach( function( column, i ){
-////console.debug( 'rendering:', column, i )
-//            //multipanel.$( '.middle' ).append( column.$el.hide() );
-//            column.delegateEvents();
-////TODO: current column in-view is never fired
-//            multipanel.renderColumn( column, speed ).$el.show();
-//        });
-
-//        var $els = sortedAndFiltered.map( function( column, i ){
-////console.debug( 'rendering:', column, i )
-//            multipanel.renderColumn( column, speed );
-//            return column.$el;
-//        });
-//// this breaks the event map
-//        //this.$( '.middle' ).html( $els );
-//// this doesn't
-//        this.$( '.middle' ).append( $els );
 
         var $middle = multipanel.$( '.middle' );
         $middle.empty();
         sortedAndFiltered.forEach( function( column, i ){
-//console.debug( 'rendering:', column, i, column.panel )
-
             column.$el.appendTo( $middle );
             column.delegateEvents();
             multipanel.renderColumn( column, speed );
-
-            //column.$el.hide().appendTo( $middle );
-            //multipanel.renderColumn( column, speed );
-            //    //.panel.on( 'all', function(){
-            //    //    console.debug( 'column rendered:', arguments );
-            //    //});
-            //// this won't work until we checkColumnsInView after the render
-            ////column.$el.fadeIn( speed );
-            //column.$el.show();
         });
-        //this.log( 'column rendering done' );
-
-//TODO: event columns-rendered
+        //TODO: event columns-rendered
 
         if( this.searchFor && sortedAndFiltered.length <= 1 ){
         } else {
@@ -810,15 +778,11 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     renderColumn : function( column, speed ){
         speed = speed !== undefined? speed: this.fxSpeed;
         return column.render( speed );
-        //TODO: causes weirdness
-        //return _.delay( function(){
-        //    return column.render( speed );
-        //}, 0 );
     },
 
-//TODO: combine the following two more sensibly
-//TODO: could have HistoryContents.haveDetails return false
-//      if column.model.contents.length === 0 && !column.model.get( 'empty' ) then just check that
+    //TODO: combine the following two more sensibly
+    //TODO: could have HistoryContents.haveDetails return false
+    //      if column.model.contents.length === 0 && !column.model.get( 'empty' ) then just check that
     /** Get the *summary* contents of a column's history (and details on any expanded contents),
      *      queueing the ajax call and using a named queue to prevent the call being sent twice
      */
@@ -868,57 +832,83 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** put a text msg in the header */
     renderInfo : function( msg ){
-        this.$( '.header .header-info' ).text( msg );
+        return this.$( '.header .header-info' ).text( msg );
     },
 
     // ------------------------------------------------------------------------ events/behaviors
     /**  */
     events : {
         // will move to the server root (gen. Analyze data)
-        'click .done.btn'                                       : function(){ window.location = '/'; },
-        //TODO:?? could just go back - but that's not always correct/desired behav.
-        //'click .done.btn'                                       : function(){ window.history.back(); },
+        'click .done.btn'                                       : 'close',
         // creates a new empty history and makes it current
         'click .create-new.btn'                                 : 'create',
+        'click #include-deleted'                                : '_clickToggleDeletedHistories',
         // these change the collection and column sort order
-        'click .order .order-update'                            : function( e ){ this.setOrder( 'update' ); },
-        'click .order .order-name'                              : function( e ){ this.setOrder( 'name' ); },
-        'click .order .order-size'                              : function( e ){ this.setOrder( 'size' ); }
+        'click .order .set-order'                               : '_chooseOrder',
+        'click #toggle-deleted'                                 : '_clickToggleDeletedDatasets',
+        'click #toggle-hidden'                                  : '_clickToggleHiddenDatasets'
 
         //'dragstart .list-item .title-bar'                       : function( e ){ console.debug( 'ok' ); }
     },
 
-    /** Include deleted histories in the collection */
-    includeDeletedHistories : function(){
-        //TODO: better through API/limit+offset
-        window.location += ( /\?/.test( window.location.toString() ) )?( '&' ):( '?' )
-            + 'include_deleted_histories=True';
+    close : function( ev ){
+        //TODO: switch to pushState/router
+        var destination = '/';
+        if( Galaxy && Galaxy.options && Galaxy.options.root ){
+            destination = Galaxy.options.root;
+        } else if( galaxy_config && galaxy_config.root ){
+            destination = galaxy_config.root;
+        }
+        window.location = destination;
     },
 
-    /** Show only non-deleted histories */
-    excludeDeletedHistories : function(){
-        //TODO: better through API/limit+offset
-        window.location = window.location.toString().replace( /[&\?]include_deleted_histories=True/g, '' );
+    _clickToggleDeletedHistories : function( ev ){
+        return this.toggleDeletedHistories( $( ev.currentTarget ).is( ':checked' ) );
+    },
+    /** Include deleted histories in the collection */
+    toggleDeletedHistories : function( show ){
+        if( show ){
+            window.location = Galaxy.options.root + 'history/view_multiple?include_deleted_histories=True';
+        } else {
+            window.location = Galaxy.options.root + 'history/view_multiple';
+        }
+    },
+
+    _clickToggleDeletedDatasets : function( ev ){
+        return this.toggleDeletedDatasets( $( ev.currentTarget ).is( ':checked' ) );
+    },
+    toggleDeletedDatasets : function( show ){
+        show = show !== undefined? show : false;
+        var multipanel = this;
+        multipanel.sortedFilteredColumns().forEach( function( column, i ){
+            _.delay( function(){
+                column.panel.toggleShowDeleted( show, false );
+            }, i * 200 );
+        });
+    },
+
+    _clickToggleHiddenDatasets : function( ev ){
+        return this.toggleHiddenDatasets( $( ev.currentTarget ).is( ':checked' ) );
+    },
+    toggleHiddenDatasets : function( show ){
+        show = show !== undefined? show : false;
+        var multipanel = this;
+        multipanel.sortedFilteredColumns().forEach( function( column, i ){
+            _.delay( function(){
+                column.panel.toggleShowHidden( show, false );
+            }, i * 200 );
+        });
+    },
+
+    _chooseOrder : function( ev ){
+        var orderKey = $( ev.currentTarget ).data( 'order' );
+        this.sortCollection( orderKey );
     },
 
     /** Set up any view plugins */
     setUpBehaviors : function(){
         var multipanel = this;
-
-//TODO: currently doesn't need to be a mode button
-        // toggle button for include deleted
-        multipanel.$( '.include-deleted' ).modeButton({
-            initialMode         : this.collection.includeDeleted? 'exclude' : 'include',
-            switchModesOnClick  : false,
-            modes: [
-                { mode: 'include', html: _l( 'Include deleted histories' ),
-                  onclick: _.bind( multipanel.includeDeletedHistories, multipanel )
-                },
-                { mode: 'exclude', html: _l( 'Exclude deleted histories' ),
-                  onclick: _.bind( multipanel.excludeDeletedHistories, multipanel )
-                }
-            ]
-        });
+        multipanel._moreOptionsPopover();
 
         // input to search histories
         multipanel.$( '#search-histories' ).searchInput({
@@ -933,7 +923,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             },
             onclear     : function( searchFor ){
                 multipanel.searchFor = null;
-//TODO: remove specifically not just reset
+                //TODO: remove specifically not just reset
                 multipanel.filters = [];
                 multipanel.renderColumns( 0 );
             }
@@ -977,53 +967,25 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             }
         });
 
-//TODO: each panel stores the hidden/deleted state - and that isn't reflected in the buttons
-        // toggle button for showing deleted history contents
-        multipanel.$( '#toggle-deleted' ).modeButton({
-            initialMode : 'include',
-            modes: [
-                { mode: 'exclude', html: _l( 'Exclude deleted datasets' ) },
-                { mode: 'include', html: _l( 'Include deleted datasets' ) }
-            ]
-        }).click( function(){
-            var show = $( this ).modeButton( 'getMode' ).mode === 'exclude';
-            multipanel.sortedFilteredColumns().forEach( function( column, i ){
-                _.delay( function(){
-                    column.panel.toggleShowDeleted( show, false );
-                }, i * 200 );
-            });
-        });
-
-        // toggle button for showing hidden history contents
-        multipanel.$( '#toggle-hidden' ).modeButton({
-            initialMode : 'include',
-            modes: [
-                { mode: 'exclude', html: _l( 'Exclude hidden datasets' ) },
-                { mode: 'include', html: _l( 'Include hidden datasets' ) }
-            ]
-        }).click( function(){
-            var show = $( this ).modeButton( 'getMode' ).mode === 'exclude';
-            multipanel.sortedFilteredColumns().forEach( function( column, i ){
-                _.delay( function(){
-                    column.panel.toggleShowHidden( show, false );
-                }, i * 200 );
-            });
-        });
-
         // resize first (fixed position) column on page resize
         $( window ).resize( function(){
             multipanel._recalcFirstColumnHeight();
         });
 
         // when scrolling - check for histories now in view: they will fire 'in-view' and queueHdaLoading if necc.
-//TODO:?? might be able to simplify and not use pub-sub
+        //TODO:?? might be able to simplify and not use pub-sub
         var debouncedInView = _.debounce( _.bind( this.checkColumnsInView, this ), 100 );
         this.$( '.middle' ).parent().scroll( debouncedInView );
     },
 
-    ///** Put the in-view columns then the other columns in a queue, rendering each one at a time */
-    //panelRenderQueue : function( columns, fn, args, renderEventName ){
-    //},
+    _moreOptionsPopover : function(){
+        return this.$( '.open-more-options.btn' ).popover({
+            container   : '.header',
+            placement   : 'bottom',
+            html        : true,
+            content     : $( this.optionsPopoverTemplate( this ) )
+        });
+    },
 
     /** Adjust the height of the first, current column since flex-boxes won't work with fixed postiion elements */
     _recalcFirstColumnHeight : function(){
@@ -1043,18 +1005,17 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** returns the columns currently in the viewport */
     columnsInView : function(){
         //TODO: uses offset which is render intensive
-//TODO: 2N - could use arg filter (sortedFilteredColumns( filter )) instead
+        //TODO: 2N - could use arg filter (sortedFilteredColumns( filter )) instead
         var vp = this._viewport();
         return this.sortedFilteredColumns().filter( function( column ){
             return column.currentHistory || column.inView( vp.left, vp.right );
         });
     },
 
-//TODO: sortByInView - return cols in view, then others
+    //TODO: sortByInView - return cols in view, then others
     /** trigger in-view from columns in-view */
     checkColumnsInView : function(){
-//TODO: assbackward
-//console.debug( 'checking columns in view', this.columnsInView() );
+        //TODO: assbackward - don't fire from the column, fire from here and listen from here
         this.columnsInView().forEach( function( column ){
             column.trigger( 'in-view', column );
         });
@@ -1064,7 +1025,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     currentColumnDropTargetOn : function(){
         var currentColumn = this.columnMap[ this.currentHistoryId ];
         if( !currentColumn ){ return; }
-//TODO: fix this - shouldn't need monkeypatch
+        //TODO: fix this - shouldn't need monkeypatch
         currentColumn.panel.dataDropped = function( data ){};
         currentColumn.panel.dropTargetOn();
     },
@@ -1074,14 +1035,78 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         var currentColumn = this.columnMap[ this.currentHistoryId ];
         if( !currentColumn ){ return; }
         currentColumn.panel.dataDropped = HPANEL_EDIT.HistoryPanelEdit.prototype.dataDrop;
-        currentColumn.panel.dropTargetOff();
+        // slight override of dropTargetOff to not erase drop-target-help
+        currentColumn.panel.dropTarget = false;
+        currentColumn.panel.$( '.history-drop-target' ).remove();
     },
 
     // ------------------------------------------------------------------------ misc
     /** String rep */
     toString : function(){
         return 'MultiPanelColumns(' + ( this.columns? this.columns.length : 0 ) + ')';
-    }
+    },
+
+    // ------------------------------------------------------------------------ templates
+    mainTemplate : _.template([
+        '<div class="header flex-column-container">',
+            '<div class="control-column control-column-left flex-column">',
+                '<button class="create-new btn btn-default" tabindex="4">', _l( 'Create new' ), '</button> ',
+                '<div id="search-histories" class="search-control"></div>',
+                '<div id="search-datasets" class="search-control"></div>',
+                '<a class="open-more-options btn btn-default" tabindex="3">',
+                    '<span class="fa fa-ellipsis-h"></span>',
+                '</a>',
+            '</div>',
+            // feedback
+            '<div class="control-column control-column-center flex-column">',
+                '<div class="header-info">', '</div>',
+            '</div>',
+            '<div class="control-column control-column-right flex-column">',
+                '<button class="done btn btn-default" tabindex="1">', _l( 'Done' ), '</button>',
+            '</div>',
+        '</div>',
+        // middle - where the columns go
+        '<div class="outer-middle flex-row flex-row-container">',
+            '<div class="middle flex-column-container flex-row"></div>',
+        '</div>',
+        // footer
+        '<div class="footer flex-column-container">',
+        '</div>'
+    ].join(''), { variable: 'view' }),
+
+    optionsPopoverTemplate : _.template([
+        '<div class="more-options">',
+            '<div class="order btn-group">',
+                '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                    _l( 'Order histories by' ) + ' ',
+                    '<span class="current-order"><%= view.sortOrders[ view.order ].text %></span> ',
+                    '<span class="caret"></span>',
+                '</button>',
+                '<ul class="dropdown-menu" role="menu">',
+                    '<% _.each( view.sortOrders, function( order, key ){ %>',
+                        '<li><a href="javascript:void(0);" class="set-order" data-order="<%= key %>">',
+                            '<%= order.text %>',
+                        '</a></li>',
+                    '<% }); %>',
+                '</ul>',
+            '</div>',
+
+            '<div class="checkbox"><label><input id="include-deleted" type="checkbox"',
+                '<%= view.collection.includeDeleted? " checked" : "" %>>',
+                _l( 'Include deleted histories' ),
+            '</label></div>',
+
+            '<hr />',
+
+            '<div class="checkbox"><label><input id="toggle-deleted" type="checkbox">',
+                _l( 'Include deleted datasets' ),
+            '</label></div>',
+            '<div class="checkbox"><label><input id="toggle-hidden" type="checkbox">',
+                _l( 'Include hidden datasets' ),
+            '</label></div>',
+        '</div>'
+    ].join(''), { variable: 'view' })
+
 });
 
 

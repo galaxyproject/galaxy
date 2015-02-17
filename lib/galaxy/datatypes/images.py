@@ -60,7 +60,7 @@ class Image( data.Data ):
 
 
 class Jpg( Image ):
-    file_ext = "jpeg"
+    file_ext = "jpg"
 
     def sniff(self, filename, image=None):
         """Determine if the file is in jpg format."""

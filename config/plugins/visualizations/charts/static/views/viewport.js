@@ -28,7 +28,15 @@ return Backbone.View.extend({
         this.setElement($(this._template()));
         
         // use full screen for viewer
-        this._fullscreen(this.$el, 100);
+        this._fullscreen(this.$el, 50);
+        
+        // prevent window scrolling
+        var initial_overflow = $('body').css('overflow');
+        this.$el.on('mouseover', function() {
+            $('body').css('overflow', 'hidden');
+        }).on('mouseout', function() {
+            $('body').css('overflow', initial_overflow);
+        });
         
         // create container element
         this._createContainer('div');

@@ -45,7 +45,6 @@ spaceghost.test.begin( 'Testing the form of the main/current history panel', 0, 
         filepathToUpload = '../../test-data/1.txt',
         uploadId = null;
 
-
     // =================================================================== TESTS
     // ------------------------------------------------------------------- set up
     // start a new user

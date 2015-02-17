@@ -2,11 +2,12 @@ import sys, os.path, logging
 
 from galaxy import eggs
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy" )
-pkg_resources.require( "decorator" )
-pkg_resources.require( "sqlalchemy-migrate" )
-pkg_resources.require( "Tempita" )
+eggs.require( "SQLAlchemy" )
+eggs.require( "decorator" )
+eggs.require( "six" )  # Required by sqlalchemy-migrate
+eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
+eggs.require( "sqlalchemy-migrate" )
+eggs.require( "Tempita" )
 
 
 from migrate.versioning import repository, schema

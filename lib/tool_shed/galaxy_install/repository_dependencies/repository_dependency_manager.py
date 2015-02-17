@@ -38,13 +38,13 @@ class RepositoryDependencyInstallManager( object ):
         for repo_info_dict in repo_info_dicts:
             for name, repo_info_tuple in repo_info_dict.items():
                 description, \
-                repository_clone_url, \
-                changeset_revision, \
-                ctx_rev, \
-                repository_owner, \
-                repository_dependencies, \
-                tool_dependencies = \
-                suc.get_repo_info_tuple_contents( repo_info_tuple )
+                    repository_clone_url, \
+                    changeset_revision, \
+                    ctx_rev, \
+                    repository_owner, \
+                    repository_dependencies, \
+                    tool_dependencies = \
+                    suc.get_repo_info_tuple_contents( repo_info_tuple )
                 if repository_dependencies:
                     for key, val in repository_dependencies.items():
                         if key in [ 'root_key', 'description' ]:
@@ -71,12 +71,12 @@ class RepositoryDependencyInstallManager( object ):
                         for repository_dependency_components_list in val:
                             required_repository = None
                             rd_toolshed, \
-                            rd_name, \
-                            rd_owner, \
-                            rd_changeset_revision, \
-                            rd_prior_installation_required, \
-                            rd_only_if_compiling_contained_td = \
-                            common_util.parse_repository_dependency_tuple( repository_dependency_components_list )
+                                rd_name, \
+                                rd_owner, \
+                                rd_changeset_revision, \
+                                rd_prior_installation_required, \
+                                rd_only_if_compiling_contained_td = \
+                                common_util.parse_repository_dependency_tuple( repository_dependency_components_list )
                             # Get the the tool_shed_repository defined by rd_name, rd_owner and rd_changeset_revision.  This
                             # is the repository that will be required by the current d_repository.
                             # TODO: Check tool_shed_repository.tool_shed as well when repository dependencies across tool sheds is supported.
@@ -101,10 +101,10 @@ class RepositoryDependencyInstallManager( object ):
                                 repository_dependency = self.get_repository_dependency_by_repository_id( install_model,
                                                                                                          required_repository.id )
                                 if not repository_dependency:
-                                    log.debug( 'Creating new repository_dependency record for installed revision %s of repository: %s owned by %s.' % \
-                                        ( str( required_repository.installed_changeset_revision ),
-                                          str( required_repository.name ),
-                                          str( required_repository.owner ) ) )
+                                    log.debug( 'Creating new repository_dependency record for installed revision %s of repository: %s owned by %s.' %
+                                               ( str( required_repository.installed_changeset_revision ),
+                                                 str( required_repository.name ),
+                                                   str( required_repository.owner ) ) )
                                     repository_dependency = install_model.RepositoryDependency( tool_shed_repository_id=required_repository.id )
                                     install_model.context.add( repository_dependency )
                                     install_model.context.flush()
@@ -159,13 +159,13 @@ class RepositoryDependencyInstallManager( object ):
                 for name, repo_info_tuple in repo_info_dict.items():
                     can_update_db_record = False
                     description, \
-                    repository_clone_url, \
-                    changeset_revision, \
-                    ctx_rev, \
-                    repository_owner, \
-                    repository_dependencies, \
-                    tool_dependencies = \
-                    suc.get_repo_info_tuple_contents( repo_info_tuple )
+                        repository_clone_url, \
+                        changeset_revision, \
+                        ctx_rev, \
+                        repository_owner, \
+                        repository_dependencies, \
+                        tool_dependencies = \
+                        suc.get_repo_info_tuple_contents( repo_info_tuple )
                     # See if the repository has an existing record in the database.
                     repository_db_record, installed_changeset_revision = \
                         suc.repository_was_previously_installed( self.app, tool_shed_url, name, repo_info_tuple, from_tip=False )
@@ -190,8 +190,6 @@ class RepositoryDependencyInstallManager( object ):
                                 # record in the database.
                                 name = repository_db_record.name
                                 installed_changeset_revision = repository_db_record.installed_changeset_revision
-                                metadata_dict = repository_db_record.metadata
-                                dist_to_shed = repository_db_record.dist_to_shed
                                 can_update_db_record = True
                             elif repository_db_record.status in [ install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
                                 # The current tool shed repository is deactivated, so updating its database record
@@ -209,15 +207,13 @@ class RepositoryDependencyInstallManager( object ):
                     else:
                         # No record exists in the database for the repository currently being processed.
                         installed_changeset_revision = changeset_revision
-                        metadata_dict = {}
-                        dist_to_shed = False
                         can_update_db_record = True
                     if can_update_db_record:
                         # The database record for the tool shed repository currently being processed can be updated.
                         # Get the repository metadata to see where it was previously located in the tool panel.
                         tpm = tool_panel_manager.ToolPanelManager( self.app )
                         if repository_db_record and repository_db_record.metadata:
-                            tool_section, tool_panel_section_key = \
+                            _, tool_panel_section_key = \
                                 tpm.handle_tool_panel_selection( toolbox=self.app.toolbox,
                                                                  metadata=repository_db_record.metadata,
                                                                  no_changes_checked=no_changes_checked,
@@ -225,7 +221,7 @@ class RepositoryDependencyInstallManager( object ):
                                                                  new_tool_panel_section_label=new_tool_panel_section_label )
                         else:
                             # We're installing a new tool shed repository that does not yet have a database record.
-                            tool_panel_section_key, tool_section = \
+                            tool_panel_section_key, _ = \
                                 tpm.handle_tool_panel_section( self.app.toolbox,
                                                                tool_panel_section_id=tool_panel_section_id,
                                                                new_tool_panel_section_label=new_tool_panel_section_label )
@@ -348,13 +344,10 @@ class RepositoryDependencyInstallManager( object ):
                             # a dependency of the dependent repository's contained tool dependency, and only if that
                             # tool dependency requires compilation.
                             # For backward compatibility to the 12/20/12 Galaxy release.
-                            prior_installation_required = 'False'
                             only_if_compiling_contained_td = 'False'
                             if len( components_list ) == 4:
-                                prior_installation_required = 'False'
                                 only_if_compiling_contained_td = 'False'
                             elif len( components_list ) == 5:
-                                prior_installation_required = components_list[ 4 ]
                                 only_if_compiling_contained_td = 'False'
                             if not asbool( only_if_compiling_contained_td ):
                                 if components_list not in required_repository_tups:

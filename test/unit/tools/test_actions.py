@@ -1,3 +1,4 @@
+import string
 import unittest
 
 from galaxy import model
@@ -5,7 +6,7 @@ from galaxy.tools import ToolOutput
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions import on_text_for_names
 from galaxy.tools.actions import determine_output_format
-from elementtree.ElementTree import XML
+from xml.etree.ElementTree import XML
 
 import tools_support
 
@@ -165,14 +166,31 @@ def test_determine_output_format():
     # Test change_format but no match
     __assert_output_format_is("fastq", change_format_output, param_context={"options_type": {"output_type": "sanger"}} )
 
+    change_on_metadata_xml_template = string.Template("""<data><change_format>
+        <when input_dataset="${input}" attribute="random_field" value="1" format="fastqsolexa" />
+        <when input_dataset="${input}" attribute="random_field" value="2" format="fastqillumina" />
+    </change_format></data>""")
+
+    change_on_metadata_illumina = change_on_metadata_xml_template.safe_substitute({'input': "i2"})
+    change_on_metadata_output = quick_output("fastq", change_format_xml=change_on_metadata_illumina)
+    __assert_output_format_is("fastqillumina", change_on_metadata_output, [("i1", "txt"), ("i2", "txt")] )
+
+    change_on_metadata_solexa = change_on_metadata_xml_template.safe_substitute({'input': "i1"})
+    print change_on_metadata_solexa
+    change_on_metadata_output = quick_output("fastq", change_format_xml=change_on_metadata_solexa)
+    __assert_output_format_is("fastqsolexa", change_on_metadata_output, [("i1", "txt"), ("i2", "txt")] )
+
 
 def __assert_output_format_is( expected, output, input_extensions=[], param_context=[] ):
     inputs = {}
     last_ext = "data"
+    i = 1
     for name, ext in input_extensions:
         hda = model.HistoryDatasetAssociation(extension=ext)
+        hda.metadata.random_field = str(i)  # Populate a random metadata field for testing
         inputs[ name ] = hda
         last_ext = ext
+        i += 1
 
     actual_format = determine_output_format( output, param_context, inputs, last_ext )
     assert actual_format == expected, "Actual format %s, does not match expected %s" % (actual_format, expected)

@@ -1,6 +1,6 @@
 from ..types import BaseDatasetCollectionType
 
-from galaxy.model import DatasetCollectionElement
+from galaxy.model import DatasetCollectionElement, HistoryDatasetAssociation
 
 FORWARD_IDENTIFIER = "forward"
 REVERSE_IDENTIFIER = "reverse"
@@ -17,7 +17,7 @@ class PairedDatasetCollectionType( BaseDatasetCollectionType ):
     def __init__( self ):
         pass
 
-    def build_collection( self, elements ):
+    def generate_elements( self, elements ):
         forward_dataset = elements.get( FORWARD_IDENTIFIER, None )
         reverse_dataset = elements.get( REVERSE_IDENTIFIER, None )
         if not forward_dataset or not reverse_dataset:
@@ -30,4 +30,17 @@ class PairedDatasetCollectionType( BaseDatasetCollectionType ):
             element=reverse_dataset,
             element_identifier=REVERSE_IDENTIFIER,
         )
-        return self._new_collection_for_elements([left_association, right_association])
+        yield left_association
+        yield right_association
+
+    def prototype_elements( self ):
+        left_association = DatasetCollectionElement(
+            element=HistoryDatasetAssociation(),
+            element_identifier=FORWARD_IDENTIFIER,
+        )
+        right_association = DatasetCollectionElement(
+            element=HistoryDatasetAssociation(),
+            element_identifier=REVERSE_IDENTIFIER,
+        )
+        yield left_association
+        yield right_association

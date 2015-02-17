@@ -59,6 +59,9 @@ class ToolEvaluator( object ):
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
 
+        out_collections = dict( [ ( obj.name, obj.dataset_collection_instance ) for obj in job.output_dataset_collection_instances ] )
+        out_collections.update( [ ( obj.name, obj.dataset_collection ) for obj in job.output_dataset_collections ] )
+
         if get_special:
 
             # Set up output dataset association for export history jobs. Because job
@@ -84,6 +87,7 @@ class ToolEvaluator( object ):
             incoming,
             inp_data,
             out_data,
+            output_collections=out_collections,
             output_paths=compute_environment.output_paths(),
             job_working_directory=compute_environment.working_directory(),
             input_paths=compute_environment.input_paths()
@@ -98,7 +102,7 @@ class ToolEvaluator( object ):
 
         self.param_dict = param_dict
 
-    def build_param_dict( self, incoming, input_datasets, output_datasets, output_paths, job_working_directory, input_paths=[] ):
+    def build_param_dict( self, incoming, input_datasets, output_datasets, output_collections, output_paths, job_working_directory, input_paths=[] ):
         """
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
@@ -115,6 +119,7 @@ class ToolEvaluator( object ):
         self.__populate_wrappers(param_dict, input_dataset_paths)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets, input_dataset_paths)
         self.__populate_output_dataset_wrappers(param_dict, output_datasets, output_paths, job_working_directory)
+        self.__populate_output_collection_wrappers(param_dict, output_collections, output_paths, job_working_directory)
         self.__populate_unstructured_path_rewrites(param_dict)
         # Call param dict sanitizer, before non-job params are added, as we don't want to sanitize filenames.
         self.__sanitize_param_dict( param_dict )
@@ -149,7 +154,7 @@ class ToolEvaluator( object ):
             if isinstance( input, DataToolParameter ) and input.multiple:
                 dataset_instances = input_values[ input.name ]
                 if isinstance( dataset_instances, model.HistoryDatasetCollectionAssociation ):
-                    dataset_instances = dataset_instances.collection.dataset_instances[:]
+                    dataset_instances = dataset_instances.collection.dataset_elements[:]
                 input_values[ input.name ] = \
                     DatasetListWrapper( dataset_instances,
                                         dataset_paths=input_dataset_paths,
@@ -194,6 +199,9 @@ class ToolEvaluator( object ):
                     tool=self,
                     name=input.name
                 )
+                identifier_key = "%s|__identifier__" % input.name
+                if identifier_key in param_dict:
+                    wrapper_kwds["identifier"] = param_dict[identifier_key]
                 if dataset:
                     #A None dataset does not have a filename
                     real_path = dataset.file_name
@@ -269,6 +277,35 @@ class ToolEvaluator( object ):
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
 
+    def __populate_output_collection_wrappers(self, param_dict, output_collections, output_paths, job_working_directory):
+        output_dataset_paths = dataset_path_rewrites( output_paths )
+        tool = self.tool
+        for name, out_collection in output_collections.items():
+            if name not in tool.output_collections:
+                continue
+                #message_template = "Name [%s] not found in tool.output_collections %s"
+                #message = message_template % ( name, tool.output_collections )
+                #raise AssertionError( message )
+
+            wrapper_kwds = dict(
+                datatypes_registry=self.app.datatypes_registry,
+                dataset_paths=output_dataset_paths,
+                tool=tool,
+                name=name
+            )
+            wrapper = DatasetCollectionWrapper(
+                out_collection,
+                **wrapper_kwds
+            )
+            param_dict[ name ] = wrapper
+            # TODO: Handle nested collections...
+            output_def = tool.output_collections[ name ]
+            for element_identifier, output_def in output_def.outputs.items():
+                if not output_def.implicit:
+                    dataset_wrapper = wrapper[ element_identifier ]
+                    param_dict[ output_def.name ] = dataset_wrapper
+                    log.info("Updating param_dict for %s with %s" % (output_def.name, dataset_wrapper) )
+
     def __populate_output_dataset_wrappers(self, param_dict, output_datasets, output_paths, job_working_directory):
         output_dataset_paths = dataset_path_rewrites( output_paths )
         for name, hda in output_datasets.items():
@@ -308,6 +345,7 @@ class ToolEvaluator( object ):
             if table_name in self.app.tool_data_tables:
                 return self.app.tool_data_tables[ table_name ].get_entry( query_attr, query_val, return_attr )
 
+        param_dict['__tool_directory__'] = self.compute_environment.tool_directory()
         param_dict['__get_data_table_entry__'] = get_data_table_entry
 
         # We add access to app here, this allows access to app.config, etc
@@ -315,8 +353,7 @@ class ToolEvaluator( object ):
         # More convienent access to app.config.new_file_path; we don't need to
         # wrap a string, but this method of generating additional datasets
         # should be considered DEPRECATED
-        # TODO: path munging for cluster/dataset server relocatability
-        param_dict['__new_file_path__'] = os.path.abspath(self.compute_environment.new_file_path())
+        param_dict['__new_file_path__'] = self.compute_environment.new_file_path()
         # The following points to location (xxx.loc) files which are pointers
         # to locally cached data
         param_dict['__tool_data_path__'] = param_dict['GALAXY_DATA_INDEX_DIR'] = self.app.config.tool_data_path
@@ -348,7 +385,7 @@ class ToolEvaluator( object ):
         Note: this method follows the style of the similar populate calls, in that param_dict is modified in-place.
         """
         # chromInfo is a filename, do not sanitize it.
-        skip = [ 'chromInfo' ]
+        skip = [ 'chromInfo' ] + self.tool.template_macro_params.keys()
         if not self.tool or not self.tool.options or self.tool.options.sanitize:
             for key, value in param_dict.items():
                 if key not in skip:

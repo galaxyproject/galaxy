@@ -13,13 +13,14 @@ import time
 from datetime import datetime
 
 from galaxy.exceptions import ObjectNotFound
-from galaxy.util import umask_fix_perms
+from galaxy.util import string_as_bool, umask_fix_perms
 from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sleeper import Sleeper
 from .s3_multipart_upload import multipart_upload
 from ..objectstore import ObjectStore, convert_bytes
 
 try:
+    # Imports are done this way to allow objectstore code to be used outside of Galaxy.
     import boto
     from boto.s3.key import Key
     from boto.s3.connection import S3Connection
@@ -27,7 +28,8 @@ try:
 except ImportError:
     boto = None
 
-NO_BOTO_ERROR_MESSAGE = "S3/Swift object store configured, but no boto dependency available. Please install and properly configure boto or modify object store configuration."
+NO_BOTO_ERROR_MESSAGE = ("S3/Swift object store configured, but no boto dependency available."
+                         "Please install and properly configure boto or modify object store configuration.")
 
 log = logging.getLogger( __name__ )
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
@@ -76,7 +78,8 @@ class S3ObjectStore(ObjectStore):
             self.secret_key = a_xml.get('secret_key')
             b_xml = config_xml.findall('bucket')[0]
             self.bucket = b_xml.get('name')
-            self.use_rr = b_xml.get('use_reduced_redundancy', False)
+            self.use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
+            self.max_chunk_size = int(b_xml.get('max_chunk_size', 250))
             cn_xml = config_xml.findall('connection')
             if not cn_xml:
                 cn_xml = {}
@@ -84,11 +87,20 @@ class S3ObjectStore(ObjectStore):
                 cn_xml = cn_xml[0]
             self.host = cn_xml.get('host', None)
             self.port = int(cn_xml.get('port', 6000))
-            self.is_secure = cn_xml.get('is_secure', True)
+            self.multipart = string_as_bool(cn_xml.get('multipart', 'True'))
+            self.is_secure = string_as_bool(cn_xml.get('is_secure', 'True'))
             self.conn_path = cn_xml.get('conn_path', '/')
             c_xml = config_xml.findall('cache')[0]
             self.cache_size = float(c_xml.get('size', -1))
-            self.cache_path = c_xml.get('path')
+            # for multipart upload
+            self.s3server = {'access_key': self.access_key,
+                             'secret_key': self.secret_key,
+                             'is_secure': self.is_secure,
+                             'max_chunk_size': self.max_chunk_size,
+                             'host': self.host,
+                             'port': self.port,
+                             'use_rr': self.use_rr,
+                             'conn_path': self.conn_path}
         except Exception:
             # Toss it back up after logging, we can't continue loading at this point.
             log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
@@ -100,23 +112,23 @@ class S3ObjectStore(ObjectStore):
             total_size = 0
             # Is this going to be too expensive of an operation to be done frequently?
             file_list = []
-            for dirpath, dirnames, filenames in os.walk(self.staging_path):
-                for f in filenames:
-                    fp = os.path.join(dirpath, f)
-                    file_size = os.path.getsize(fp)
+            for dirpath, _, filenames in os.walk(self.staging_path):
+                for filename in filenames:
+                    filepath = os.path.join(dirpath, filename)
+                    file_size = os.path.getsize(filepath)
                     total_size += file_size
                     # Get the time given file was last accessed
-                    last_access_time = time.localtime(os.stat(fp)[7])
+                    last_access_time = time.localtime(os.stat(filepath)[7])
                     # Compose a tuple of the access time and the file path
-                    file_tuple = last_access_time, fp, file_size
+                    file_tuple = last_access_time, filepath, file_size
                     file_list.append(file_tuple)
             # Sort the file list (based on access time)
             file_list.sort()
             # Initiate cleaning once within 10% of the defined cache size?
             cache_limit = self.cache_size * 0.9
             if total_size > cache_limit:
-                log.info("Initiating cache cleaning: current cache size: %s; clean until smaller than: %s"
-                         % (convert_bytes(total_size), convert_bytes(cache_limit)))
+                log.info("Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
+                         convert_bytes(total_size), convert_bytes(cache_limit))
                 # How much to delete? If simply deleting up to the cache-10% limit,
                 # is likely to be deleting frequently and may run the risk of hitting
                 # the limit - maybe delete additional #%?
@@ -144,10 +156,10 @@ class S3ObjectStore(ObjectStore):
         # exceed delete_this_much; start deleting from the front of the file list,
         # which assumes the oldest files come first on the list.
         deleted_amount = 0
-        for i, f in enumerate(file_list):
+        for entry in enumerate(file_list):
             if deleted_amount < delete_this_much:
-                deleted_amount += f[2]
-                os.remove(f[1])
+                deleted_amount += entry[2]
+                os.remove(entry[1])
                 # Debugging code for printing deleted files' stats
                 # folder, file_name = os.path.split(f[1])
                 # file_date = time.strftime("%m/%d/%y %H:%M:%S", f[0])
@@ -155,7 +167,7 @@ class S3ObjectStore(ObjectStore):
                 #     % (i, file_name, convert_bytes(f[2]), file_date, \
                 #     convert_bytes(deleted_amount), convert_bytes(delete_this_much)))
             else:
-                log.debug("Cache cleaning done. Total space freed: %s" % convert_bytes(deleted_amount))
+                log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
                 return
 
     def _get_bucket(self, bucket_name):
@@ -164,14 +176,14 @@ class S3ObjectStore(ObjectStore):
         for i in range(5):
             try:
                 bucket = self.conn.get_bucket(bucket_name)
-                log.debug("Using cloud object store with bucket '%s'" % bucket.name)
+                log.debug("Using cloud object store with bucket '%s'", bucket.name)
                 return bucket
             except S3ResponseError:
                 try:
-                    log.debug("Bucket not found, creating s3 bucket with handle '%s'" % bucket_name)
+                    log.debug("Bucket not found, creating s3 bucket with handle '%s'", bucket_name)
                     self.conn.create_bucket(bucket_name)
                 except S3ResponseError:
-                    log.exception("Could not get bucket '%s', attempt %s/5" % (bucket_name, i + 1))
+                    log.exception("Could not get bucket '%s', attempt %s/5", bucket_name, i + 1)
                     time.sleep(2)
         # All the attempts have been exhausted and connection was not established,
         # raise error
@@ -179,10 +191,10 @@ class S3ObjectStore(ObjectStore):
 
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
-        for basedir, dirs, files in os.walk(rel_path):
+        for basedir, _, files in os.walk(rel_path):
             umask_fix_perms(basedir, self.config.umask, 0777, self.config.gid)
-            for f in files:
-                path = os.path.join(basedir, f)
+            for filename in files:
+                path = os.path.join(basedir, filename)
                 # Ignore symlinks
                 if os.path.islink(path):
                     continue
@@ -212,11 +224,9 @@ class S3ObjectStore(ObjectStore):
             key = self.bucket.get_key(rel_path)
             if key:
                 return key.size
-        except S3ResponseError, ex:
-            log.error("Could not get size of key '%s' from S3: %s" % (rel_path, ex))
-        except Exception, ex:
-            log.error("Could not get reference to the key object '%s'; returning -1 for key size: %s" % (rel_path, ex))
-        return -1
+        except S3ResponseError:
+            log.exception("Could not get size of key '%s' from S3", rel_path)
+            return -1
 
     def _key_exists(self, rel_path):
         exists = False
@@ -224,16 +234,16 @@ class S3ObjectStore(ObjectStore):
             # A hackish way of testing if the rel_path is a folder vs a file
             is_dir = rel_path[-1] == '/'
             if is_dir:
-                rs = self.bucket.get_all_keys(prefix=rel_path)
-                if len(rs) > 0:
+                keyresult = self.bucket.get_all_keys(prefix=rel_path)
+                if len(keyresult) > 0:
                     exists = True
                 else:
                     exists = False
             else:
                 key = Key(self.bucket, rel_path)
                 exists = key.exists()
-        except S3ResponseError, ex:
-            log.error("Trouble checking existence of S3 key '%s': %s" % (rel_path, ex))
+        except S3ResponseError:
+            log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
         if rel_path[0] == '/':
             raise
@@ -274,36 +284,36 @@ class S3ObjectStore(ObjectStore):
         if not os.path.exists(self._get_cache_path(rel_path_dir)):
             os.makedirs(self._get_cache_path(rel_path_dir))
         # Now pull in the file
-        ok = self._download(rel_path)
+        file_ok = self._download(rel_path)
         self._fix_permissions(self._get_cache_path(rel_path_dir))
-        return ok
+        return file_ok
 
     def _transfer_cb(self, complete, total):
         self.transfer_progress += 10
 
     def _download(self, rel_path):
         try:
-            log.debug("Pulling key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path)))
+            log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
             key = self.bucket.get_key(rel_path)
             # Test if cache is large enough to hold the new file
             if self.cache_size > 0 and key.size > self.cache_size:
-                log.critical("File %s is larger (%s) than the cache size (%s). Cannot download."
-                             % (rel_path, key.size, self.cache_size))
+                log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
+                             rel_path, key.size, self.cache_size)
                 return False
             if self.use_axel:
-                log.debug("Parallel pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path)))
+                log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
                 ret_code = subprocess.call("axel -a -n %s '%s'" % (ncores, url))
                 if ret_code == 0:
                     return True
             else:
-                log.debug("Pulled key '%s' into cache to %s" % (rel_path, self._get_cache_path(rel_path)))
+                log.debug("Pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 self.transfer_progress = 0  # Reset transfer progress counter
                 key.get_contents_to_filename(self._get_cache_path(rel_path), cb=self._transfer_cb, num_cb=10)
                 return True
-        except S3ResponseError, ex:
-            log.error("Problem downloading key '%s' from S3 bucket '%s': %s" % (rel_path, self.bucket.name, ex))
+        except S3ResponseError:
+            log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
         return False
 
     def _push_to_os(self, rel_path, source_file=None, from_string=None):
@@ -319,31 +329,32 @@ class S3ObjectStore(ObjectStore):
             if os.path.exists(source_file):
                 key = Key(self.bucket, rel_path)
                 if os.path.getsize(source_file) == 0 and key.exists():
-                    log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping." % (source_file, rel_path))
+                    log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file, rel_path)
                     return True
                 if from_string:
                     key.set_contents_from_string(from_string, reduced_redundancy=self.use_rr)
-                    log.debug("Pushed data from string '%s' to key '%s'" % (from_string, rel_path))
+                    log.debug("Pushed data from string '%s' to key '%s'", from_string, rel_path)
                 else:
                     start_time = datetime.now()
-                    log.debug("Pushing cache file '%s' of size %s bytes to key '%s'" % (source_file, os.path.getsize(source_file), rel_path))
+                    log.debug("Pushing cache file '%s' of size %s bytes to key '%s'", source_file, os.path.getsize(source_file), rel_path)
                     mb_size = os.path.getsize(source_file) / 1e6
-                    if mb_size < 10 or type(self) == SwiftObjectStore:
+                    if mb_size < 10 or (not self.multipart):
                         self.transfer_progress = 0  # Reset transfer progress counter
                         key.set_contents_from_filename(source_file,
                                                        reduced_redundancy=self.use_rr,
                                                        cb=self._transfer_cb,
                                                        num_cb=10)
                     else:
-                        multipart_upload(self.bucket, key.name, source_file, mb_size, self.access_key, self.secret_key, use_rr=self.use_rr)
+                        multipart_upload(self.s3server, self.bucket, key.name, source_file, mb_size)
                     end_time = datetime.now()
-                    log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)" % (source_file, rel_path, os.path.getsize(source_file), end_time - start_time))
+                    log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
+                              source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
                 return True
             else:
-                log.error("Tried updating key '%s' from source file '%s', but source file does not exist."
-                          % (rel_path, source_file))
-        except S3ResponseError, ex:
-            log.error("Trouble pushing S3 key '%s' from file '%s': %s" % (rel_path, source_file, ex))
+                log.error("Tried updating key '%s' from source file '%s', but source file does not exist.",
+                          rel_path, source_file)
+        except S3ResponseError:
+            log.exception("Trouble pushing S3 key '%s' from file '%s'", rel_path, source_file)
         return False
 
     def file_ready(self, obj, **kwargs):
@@ -356,8 +367,8 @@ class S3ObjectStore(ObjectStore):
         if self._in_cache(rel_path):
             if os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_s3(rel_path):
                 return True
-            log.debug("Waiting for dataset {0} to transfer from OS: {1}/{2}".format(rel_path,
-                      os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_s3(rel_path)))
+            log.debug("Waiting for dataset %s to transfer from OS: %s/%s", rel_path,
+                      os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_s3(rel_path))
         return False
 
     def exists(self, obj, **kwargs):
@@ -429,10 +440,10 @@ class S3ObjectStore(ObjectStore):
             try:
                 return os.path.getsize(self._get_cache_path(rel_path))
             except OSError, ex:
-                log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s" % (rel_path, ex))
+                log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
         elif self.exists(obj, **kwargs):
             return self._get_size_in_s3(rel_path)
-        log.warning("Did not find dataset '%s', returning 0 for size" % rel_path)
+        log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 
     def delete(self, obj, entire_dir=False, **kwargs):
@@ -445,9 +456,9 @@ class S3ObjectStore(ObjectStore):
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path))
-                rs = self.bucket.get_all_keys(prefix=rel_path)
-                for key in rs:
-                    log.debug("Deleting key %s" % key.name)
+                results = self.bucket.get_all_keys(prefix=rel_path)
+                for key in results:
+                    log.debug("Deleting key %s", key.name)
                     key.delete()
                 return True
             else:
@@ -455,14 +466,14 @@ class S3ObjectStore(ObjectStore):
                 os.unlink(self._get_cache_path(rel_path))
                 # Delete from S3 as well
                 if self._key_exists(rel_path):
-                        key = Key(self.bucket, rel_path)
-                        log.debug("Deleting key %s" % key.name)
-                        key.delete()
-                        return True
-        except S3ResponseError, ex:
-            log.error("Could not delete key '%s' from S3: %s" % (rel_path, ex))
-        except OSError, ex:
-            log.error('%s delete error %s' % (self._get_filename(obj, **kwargs), ex))
+                    key = Key(self.bucket, rel_path)
+                    log.debug("Deleting key %s", key.name)
+                    key.delete()
+                    return True
+        except S3ResponseError:
+            log.exception("Could not delete key '%s' from S3", rel_path)
+        except OSError:
+            log.exception('%s delete error', self.get_filename(obj, **kwargs))
         return False
 
     def get_data(self, obj, start=0, count=-1, **kwargs):
@@ -522,8 +533,8 @@ class S3ObjectStore(ObjectStore):
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)
-                except OSError, ex:
-                    log.error("Trouble copying source file '%s' to cache '%s': %s" % (source_file, cache_file, ex))
+                except OSError:
+                    log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
             else:
                 source_file = self._get_cache_path(rel_path)
             # Update the file on S3
@@ -538,8 +549,8 @@ class S3ObjectStore(ObjectStore):
             try:
                 key = Key(self.bucket, rel_path)
                 return key.generate_url(expires_in=86400)  # 24hrs
-            except S3ResponseError, ex:
-                log.warning("Trouble generating URL for dataset '%s': %s" % (rel_path, ex))
+            except S3ResponseError:
+                log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None
 
     def get_store_usage_percent(self):

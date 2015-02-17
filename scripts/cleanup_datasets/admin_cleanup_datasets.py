@@ -47,10 +47,10 @@ log.setLevel(10)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 from cleanup_datasets import CleanupDatasetsApplication
-#import pkg_resources
+import pkg_resources
 #pkg_resources.require("SQLAlchemy >= 0.4")
 
-#pkg_resources.require("Mako")
+pkg_resources.require("Mako")
 from mako.template import Template
 
 import time

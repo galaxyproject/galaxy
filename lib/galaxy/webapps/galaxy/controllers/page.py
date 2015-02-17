@@ -3,18 +3,20 @@ from galaxy import model, web
 from galaxy import managers
 from galaxy.web import error, url_for
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.util.json import loads
 from markupsafe import escape
 
+
 def format_bool( b ):
     if b:
         return "yes"
     else:
         return ""
+
 
 class PageListGrid( grids.Grid ):
     # Custom column.
@@ -26,7 +28,7 @@ class PageListGrid( grids.Grid ):
     use_panels = True
     title = "Pages"
     model_class = model.Page
-    default_filter = { "published" : "All", "tags" : "All", "title" : "All", "sharing" : "All" }
+    default_filter = { "published": "All", "tags": "All", "title": "All", "sharing": "All" }
     default_sort_key = "-update_time"
     columns = [
         grids.TextColumn( "Title", key="title", attach_popup=True, filterable="advanced" ),
@@ -37,12 +39,11 @@ class PageListGrid( grids.Grid ):
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
     ]
-    columns.append(
-        grids.MulticolFilterColumn(
-        "Search",
-        cols_to_filter=[ columns[0], columns[2] ],
-        key="free-text-search", visible=False, filterable="standard" )
-                )
+    columns.append( grids.MulticolFilterColumn(
+                    "Search",
+                    cols_to_filter=[ columns[0], columns[2] ],
+                    key="free-text-search", visible=False, filterable="standard" )
+                    )
     global_actions = [
         grids.GridAction( "Add new page", dict( action='create' ) )
     ]
@@ -53,8 +54,10 @@ class PageListGrid( grids.Grid ):
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", confirm="Are you sure you want to delete this page?" ),
     ]
+
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
+
 
 class PageAllPublishedGrid( grids.Grid ):
     # Grid definition
@@ -74,15 +77,18 @@ class PageAllPublishedGrid( grids.Grid ):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-        "Search title, annotation, owner, and tags",
-        cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ],
-        key="free-text-search", visible=False, filterable="standard" )
-                )
+            "Search title, annotation, owner, and tags",
+            cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ],
+            key="free-text-search", visible=False, filterable="standard" )
+        )
+
     def build_initial_query( self, trans, **kwargs ):
         # Join so that searching history.user makes sense.
         return trans.sa_session.query( self.model_class ).join( model.User.table )
+
     def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
+        return query.filter( self.model_class.deleted == False ).filter( self.model_class.published == True )
+
 
 class ItemSelectionGrid( grids.Grid ):
     """ Base class for pages' item selection grids. """
@@ -97,7 +103,7 @@ class ItemSelectionGrid( grids.Grid ):
     # Grid definition.
     show_item_checkboxes = True
     template = "/page/select_items_grid.mako"
-    default_filter = { "deleted" : "False" , "sharing" : "All" }
+    default_filter = { "deleted": "False" , "sharing": "All" }
     default_sort_key = "-update_time"
     use_async = True
     use_paging = True
@@ -105,6 +111,7 @@ class ItemSelectionGrid( grids.Grid ):
 
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user )
+
 
 class HistorySelectionGrid( ItemSelectionGrid ):
     """ Grid for selecting histories. """
@@ -121,13 +128,14 @@ class HistorySelectionGrid( ItemSelectionGrid ):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-        "Search",
-        cols_to_filter=[ columns[0], columns[1] ],
-        key="free-text-search", visible=False, filterable="standard" )
-                )
+            "Search",
+            cols_to_filter=[ columns[0], columns[1] ],
+            key="free-text-search", visible=False, filterable="standard" )
+        )
 
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, purged=False )
+
 
 class HistoryDatasetAssociationSelectionGrid( ItemSelectionGrid ):
     """ Grid for selecting HDAs. """
@@ -144,10 +152,11 @@ class HistoryDatasetAssociationSelectionGrid( ItemSelectionGrid ):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-        "Search",
-        cols_to_filter=[ columns[0], columns[1] ],
-        key="free-text-search", visible=False, filterable="standard" )
-                )
+            "Search",
+            cols_to_filter=[ columns[0], columns[1] ],
+            key="free-text-search", visible=False, filterable="standard" )
+        )
+
     def apply_query_filter( self, trans, query, **kwargs ):
         # To filter HDAs by user, need to join HDA and History table and then filter histories by user. This is necessary because HDAs do not have
         # a user relation.
@@ -169,10 +178,11 @@ class WorkflowSelectionGrid( ItemSelectionGrid ):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-        "Search",
-        cols_to_filter=[ columns[0], columns[1] ],
-        key="free-text-search", visible=False, filterable="standard" )
-                )
+            "Search",
+            cols_to_filter=[ columns[0], columns[1] ],
+            key="free-text-search", visible=False, filterable="standard" )
+        )
+
 
 class PageSelectionGrid( ItemSelectionGrid ):
     """ Grid for selecting pages. """
@@ -189,10 +199,11 @@ class PageSelectionGrid( ItemSelectionGrid ):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-        "Search",
-        cols_to_filter=[ columns[0], columns[1] ],
-        key="free-text-search", visible=False, filterable="standard" )
-                )
+            "Search",
+            cols_to_filter=[ columns[0], columns[1] ],
+            key="free-text-search", visible=False, filterable="standard" )
+        )
+
 
 class VisualizationSelectionGrid( ItemSelectionGrid ):
     """ Grid for selecting visualizations. """
@@ -208,10 +219,11 @@ class VisualizationSelectionGrid( ItemSelectionGrid ):
     ]
     columns.append(
         grids.MulticolFilterColumn(
-        "Search",
-        cols_to_filter=[ columns[0], columns[2] ],
-        key="free-text-search", visible=False, filterable="standard" )
-                )
+            "Search",
+            cols_to_filter=[ columns[0], columns[2] ],
+            key="free-text-search", visible=False, filterable="standard" )
+        )
+
 
 class _PageContentProcessor( _BaseHTMLProcessor ):
     """ Processes page content to produce HTML that is suitable for display. For now, processor renders embedded objects. """
@@ -276,7 +288,8 @@ class _PageContentProcessor( _BaseHTMLProcessor ):
         # Default behavior:
         _BaseHTMLProcessor.unknown_endtag( self, tag )
 
-class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
+
+class PageController( BaseUIController, SharableMixin,
                       UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings ):
 
     _page_list = PageListGrid()
@@ -289,9 +302,8 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
 
     def __init__( self, app ):
         super( PageController, self ).__init__( app )
-        self.mgrs = util.bunch.Bunch(
-            histories=managers.histories.HistoryManager()
-        )
+        self.history_manager = managers.histories.HistoryManager( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     @web.expose
     @web.require_login()
@@ -303,14 +315,14 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
             operation = kwargs['operation'].lower()
             ids = util.listify( kwargs['id'] )
             for id in ids:
-                item = session.query( model.Page ).get( trans.security.decode_id( id ) )
+                item = session.query( model.Page ).get( self.decode_id( id ) )
                 if operation == "delete":
                     item.deleted = True
                 if operation == "share or publish":
                     return self.sharing( trans, **kwargs )
             session.flush()
 
-        #HACK: to prevent the insertion of an entire html document inside another
+        # HACK: to prevent the insertion of an entire html document inside another
         kwargs[ 'embedded' ] = True
         # Build grid HTML.
         grid = self._page_list( trans, *args, **kwargs )
@@ -336,7 +348,6 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
 
         # Render grid wrapped in panels
         return trans.fill_template( "page/list_published.mako", embedded_grid=grid )
-
 
     @web.expose
     @web.require_login( "create pages" )
@@ -374,7 +385,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
                 session.add( page )
                 session.flush()
                 # Display the management page
-                ## trans.set_message( "Page '%s' created" % page.title )
+                # trans.set_message( "Page '%s' created" % page.title )
                 return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
         return trans.show_form(
             web.FormBuilder( web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit" )
@@ -396,7 +407,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         Edit a page's attributes.
         """
         encoded_id = id
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         session = trans.sa_session
         page = session.query( model.Page ).get( id )
         user = trans.user
@@ -446,7 +457,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         """
         Render the main page editor interface.
         """
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         assert page.user == trans.user
         return trans.fill_template( "page/editor.mako", page=page )
@@ -458,7 +469,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
 
         # Get session and page.
         session = trans.sa_session
-        page = trans.sa_session.query( model.Page ).get( trans.security.decode_id( id ) )
+        page = trans.sa_session.query( model.Page ).get( self.decode_id( id ) )
 
         # Do operation on page.
         if 'make_accessible_via_link' in kwargs:
@@ -475,7 +486,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         elif 'disable_link_access_and_unpublish' in kwargs:
             page.importable = page.published = False
         elif 'unshare_user' in kwargs:
-            user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
+            user = session.query( model.User ).get( self.decode_id( kwargs['unshare_user' ] ) )
             if not user:
                 error( "User not found for provided id" )
             association = session.query( model.PageUserShareAssociation ) \
@@ -492,7 +503,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
     def share( self, trans, id, email="", use_panels=False ):
         """ Handle sharing with an individual user. """
         msg = mtype = None
-        page = trans.sa_session.query( model.Page ).get( trans.security.decode_id( id ) )
+        page = trans.sa_session.query( model.Page ).get( self.decode_id( id ) )
         if email:
             other = trans.sa_session.query( model.User ) \
                                     .filter( and_( model.User.table.c.email==email,
@@ -521,8 +532,8 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
                 trans.set_message( "Page '%s' shared with user '%s'" % ( page_title, other_email ) )
                 return trans.response.send_redirect( url_for( controller='page', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
-                                    message = msg,
-                                    messagetype = mtype,
+                                    message=msg,
+                                    messagetype=mtype,
                                     item=page,
                                     email=email,
                                     use_panels=use_panels )
@@ -530,7 +541,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
     @web.expose
     @web.require_login()
     def save( self, trans, id, content, annotations ):
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         assert page.user == trans.user
 
@@ -547,7 +558,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         # Save annotations.
         annotations = loads( annotations )
         for annotation_dict in annotations:
-            item_id = trans.security.decode_id( annotation_dict[ 'item_id' ] )
+            item_id = self.decode_id( annotation_dict[ 'item_id' ] )
             item_class = self.get_class( annotation_dict[ 'item_class' ] )
             item = trans.sa_session.query( item_class ).filter_by( id=item_id ).first()
             if not item:
@@ -580,7 +591,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
     @web.expose
     @web.require_login()
     def display( self, trans, id ):
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         if not page:
             raise web.httpexceptions.HTTPNotFound()
@@ -615,8 +626,11 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
 
         # Output is string, so convert to unicode for display.
         page_content = unicode( processor.output(), 'utf-8' )
-        return trans.fill_template_mako( "page/display.mako", item=page, item_data=page_content,
-                                         user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+        return trans.fill_template_mako( "page/display.mako", item=page,
+                                         item_data=page_content,
+                                         user_item_rating=user_item_rating,
+                                         ave_item_rating=ave_item_rating,
+                                         num_ratings=num_ratings,
                                          content_only=True )
 
     @web.expose
@@ -626,7 +640,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         page = self.get_page( trans, id )
 
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ['True', 'true', 't', 'T'];
+        importable = accessible in ['True', 'true', 't', 'T']
         if page.importable != importable:
             if importable:
                 self._make_item_accessible( trans.sa_session, page )
@@ -646,7 +660,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
             return trans.show_error_message( "The specified page does not exist." )
 
         # Rate page.
-        page_rating = self.rate_item( trans.sa_session, trans.get_user(), page, rating )
+        self.rate_item( trans.sa_session, trans.get_user(), page, rating )
 
         return self.get_ave_item_rating_data( trans.sa_session, page )
 
@@ -668,7 +682,10 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
 
         if self.create_item_slug( trans.sa_session, page ):
             trans.sa_session.flush()
-        return_dict = { "name" : page.title, "link" : url_for(controller='page', action="display_by_username_and_slug", username=page.user.username, slug=page.slug ) }
+        return_dict = { "name": page.title, "link": url_for(controller='page',
+                                                            action="display_by_username_and_slug",
+                                                            username=page.user.username,
+                                                            slug=page.slug ) }
         return return_dict
 
     @web.expose
@@ -714,7 +731,7 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
     def get_page( self, trans, id, check_ownership=True, check_accessible=False ):
         """Get a page from the database by id."""
         # Load history from database
-        id = trans.security.decode_id( id )
+        id = self.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         if not page:
             error( "Page not found" )
@@ -728,34 +745,26 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
         """
         Returns html suitable for embedding in another page.
         """
-        #TODO: should be moved to history controller and/or called via ajax from the template
-        history = self.get_history( trans, id, False, True )
-        if not history:
-            return None
+        # TODO: should be moved to history controller and/or called via ajax from the template
+        decoded_id = self.decode_id( id )
+        # histories embedded in pages are set to importable when embedded, check for access here
+        history = self.history_manager.get_accessible( trans, decoded_id, trans.user )
 
         # create ownership flag for template, dictify models
         # note: adding original annotation since this is published - get_dict returns user-based annos
         user_is_owner = trans.user == history.user
         history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
 
-        hda_dicts = []
-        datasets = self.get_history_datasets( trans, history )
-        #for hda in datasets:
-        #    hda_dict = self.get_hda_dict( trans, hda )
-        #    hda_dict[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, hda )
-        #    hda_dicts.append( hda_dict )
-        #history_dict = self.get_history_dict( trans, history, hda_dictionaries=hda_dicts )
-        #history_dict[ 'annotation' ] = history.annotation
-
         # include all datasets: hidden, deleted, and purged
-        #TODO!: doubled query (hda_dictionaries + datasets)
-        history_data = self.mgrs.histories._get_history_data( trans, history )
+        history_data = self.history_manager._get_history_data( trans, history )
         history_dictionary = history_data[ 'history' ]
-        hda_dictionaries   = history_data[ 'contents' ]
+        hda_dictionaries = history_data[ 'contents' ]
         history_dictionary[ 'annotation' ] = history.annotation
 
-        filled = trans.fill_template( "history/embed.mako", item=history, item_data=datasets,
-            user_is_owner=user_is_owner, history_dict=history_dictionary, hda_dicts=hda_dictionaries )
+        filled = trans.fill_template( "history/embed.mako", item=history,
+                                      user_is_owner=user_is_owner,
+                                      history_dict=history_dictionary,
+                                      hda_dicts=hda_dictionaries )
         return filled
 
     def _get_embedded_visualization_html( self, trans, id ):
@@ -768,15 +777,16 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
             return None
 
         # Fork to template based on visualization.type (registry or builtin).
-        if( ( trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins )
-        and ( visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS ) ):
+        if(( trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins )
+           and ( visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS ) ):
             # if a registry visualization, load a version into an iframe :(
-            #TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
-            #TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
+            # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
+            # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
             encoded_visualization_id = trans.security.encode_id( visualization.id )
             return trans.fill_template( 'visualization/embed_in_frame.mako',
-                item=visualization, encoded_visualization_id=encoded_visualization_id,
-                content_only=True )
+                                        item=visualization,
+                                        encoded_visualization_id=encoded_visualization_id,
+                                        content_only=True )
 
         return trans.fill_template( "visualization/embed.mako", item=visualization, item_data=None )
 
@@ -787,10 +797,13 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
             return self._get_embedded_history_html( trans, item_id )
 
         elif item_class == model.HistoryDatasetAssociation:
-            dataset = self.get_dataset( trans, item_id, False, True )
+            decoded_id = self.decode_id( item_id )
+            dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+            dataset = self.hda_manager.error_if_uploading( trans, dataset )
+
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
             if dataset:
-                data = self.get_data( dataset )
+                data = self.hda_manager.text_data( dataset )
                 return trans.fill_template( "dataset/embed.mako", item=dataset, item_data=data )
 
         elif item_class == model.StoredWorkflow:
@@ -805,6 +818,3 @@ class PageController( BaseUIController, SharableMixin, UsesHistoryMixin,
 
         elif item_class == model.Page:
             pass
-
-
-

@@ -1,23 +1,29 @@
 """
 API operations on User objects.
 """
-import logging
-from paste.httpexceptions import HTTPBadRequest, HTTPNotImplemented
 
-from galaxy import util, web, exceptions
-from galaxy.security.validate_user_input import validate_email
-from galaxy.security.validate_user_input import validate_password
-from galaxy.security.validate_user_input import validate_publicname
-from galaxy.web.base.controller import BaseAPIController, UsesTagsMixin
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.web.base.controller import CreatesApiKeysMixin
 from galaxy.web.base.controller import CreatesUsersMixin
 
+from galaxy.security.validate_user_input import validate_email
+from galaxy.security.validate_user_input import validate_password
+from galaxy.security.validate_user_input import validate_publicname
+
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy import web
+from galaxy import util
+from galaxy import exceptions
+
+import logging
 log = logging.getLogger( __name__ )
 
 
 class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin ):
 
-    @web.expose_api
+    @expose_api
     def index( self, trans, deleted='False', f_email=None, **kwd ):
         """
         GET /api/users
@@ -46,7 +52,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             rval.append( item )
         return rval
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
         """
         GET /api/users/{encoded_user_id}
@@ -73,30 +79,28 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
                 assert trans.user == user
                 assert not user.deleted
         except:
-            if trans.user_is_admin():
-                raise
-            else:
-                raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
+            raise exceptions.RequestParameterInvalidException( 'Invalid user id specified', id=id )
+
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                             'total_disk_usage': float } )
         # add a list of tags used by the user (as strings)
         item[ 'tags_used' ] = self.get_user_tags_used( trans, user=user )
         # TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
         # TODO: works with other users (from admin)??
-        item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
-        item['is_admin'] = trans.user_is_admin()
+        item[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
+        item[ 'is_admin' ] = trans.user_is_admin()
         return item
 
-    @web.expose_api
+    @expose_api
     def create( self, trans, payload, **kwd ):
         """
         POST /api/users
         Creates a new Galaxy user.
         """
         if not trans.app.config.allow_user_creation:
-            raise HTTPNotImplemented( detail='User creation is not allowed in this Galaxy instance' )
+            raise exceptions.ConfigDoesNotAllowException( 'User creation is not allowed in this Galaxy instance' )
         if trans.app.config.use_remote_user and trans.user_is_admin():
-            user = trans.get_or_create_remote_user(remote_user_email=payload['remote_user_email'])
+            user = trans.get_or_create_remote_user( remote_user_email=payload['remote_user_email'] )
         elif trans.user_is_admin():
             username = payload[ 'username' ]
             email = payload[ 'email' ]
@@ -109,12 +113,12 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
             else:
                 user = self.create_user( trans=trans, email=email, username=username, password=password )
         else:
-            raise HTTPNotImplemented()
+            raise exceptions.NotImplemented()
         item = user.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                             'total_disk_usage': float } )
         return item
 
-    @web.expose_api
+    @expose_api
     @web.require_admin
     def api_key( self, trans, user_id, **kwd ):
         """
@@ -125,17 +129,17 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         key = self.create_api_key( trans, user )
         return key
 
-    @web.expose_api
+    @expose_api
     def update( self, trans, **kwd ):
-        raise HTTPNotImplemented()
+        raise exceptions.NotImplemented()
 
-    @web.expose_api
+    @expose_api
     def delete( self, trans, **kwd ):
-        raise HTTPNotImplemented()
+        raise exceptions.NotImplemented()
 
-    @web.expose_api
+    @expose_api
     def undelete( self, trans, **kwd ):
-        raise HTTPNotImplemented()
+        raise exceptions.NotImplemented()
 
     # TODO: move to more basal, common resource than this
     def anon_user_api_value( self, trans ):

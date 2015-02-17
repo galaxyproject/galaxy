@@ -162,14 +162,14 @@ class LibraryAdmin( BaseUIController ):
             library.root_folder = root_folder
             trans.sa_session.add_all( ( library, root_folder ) )
             trans.sa_session.flush()
-            message = "The new library named '%s' has been created" % library.name
+            message = "The new library named '%s' has been created" % escape( library.name )
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller='library_admin',
                                                               id=trans.security.encode_id( library.id ),
                                                               message=message,
                                                               status='done' ) )
-        return trans.fill_template( '/admin/library/new_library.mako', message=escape( message ), status=escape( status ) )
+        return trans.fill_template( '/admin/library/new_library.mako', message=message, status=escape( status ) )
     @web.expose
     @web.require_admin
     def delete_library( self, trans, id, **kwd  ):
@@ -222,7 +222,7 @@ class LibraryAdmin( BaseUIController ):
             trans.sa_session.add( library_folder )
             trans.sa_session.flush()
         if not library.deleted:
-            message = "Library '%s' has not been marked deleted, so it cannot be purged" % ( library.name )
+            message = "Library '%s' has not been marked deleted, so it cannot be purged" % escape( library.name )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='browse_libraries',
                                                               message=message,
@@ -232,7 +232,7 @@ class LibraryAdmin( BaseUIController ):
             library.purged = True
             trans.sa_session.add( library )
             trans.sa_session.flush()
-            message = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
+            message = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % escape( library.name )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='browse_libraries',
                                                               message=message,

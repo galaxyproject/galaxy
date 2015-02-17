@@ -784,6 +784,8 @@ var Node = Backbone.Model.extend({
         this.tooltip = data.tooltip ? data.tooltip : "";
         this.annotation = data.annotation;
         this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
+        this.label = data.label;
+        this.uuid = data.uuid;
         this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
 
         var node = this;
@@ -803,7 +805,7 @@ var Node = Backbone.Model.extend({
             nodeView.addDataOutput( output );
         } );
         nodeView.render();
-        workflow.node_changed( this );
+        workflow.node_changed( this, true);
     },
     update_field_data : function( data ) {
         var node = this;
@@ -991,6 +993,8 @@ $.extend( Workflow.prototype, {
                 position : $(node.element).position(),
                 annotation: node.annotation,
                 post_job_actions: node.post_job_actions,
+                uuid: node.uuid,
+                label: node.label,
                 workflow_outputs: node.workflow_outputs
             };
             nodes[ node.id ] = node_data;
@@ -1085,17 +1089,25 @@ $.extend( Workflow.prototype, {
         if ( this.active_node != node ) {
             this.check_changes_in_active_form();
             this.clear_active_node();
-            parent.show_form_for_tool( node.form_html + node.tooltip, node );
+            if (parent.__NEWTOOLFORM__) {
+                parent.show_form_for_tool( node.form_html, node );
+            } else {
+                parent.show_form_for_tool( node.form_html + node.tooltip, node );
+            }
             node.make_active();
             this.active_node = node;
         }
     },
-    node_changed : function ( node ) {
+    node_changed : function ( node, force ) {
         this.has_changes = true;
-        if ( this.active_node == node ) {
+        if ( this.active_node == node && (!parent.__NEWTOOLFORM__ || force)) {
             // Reactive with new form_html
             this.check_changes_in_active_form(); //Force changes to be saved even on new connection (previously dumped)
-            parent.show_form_for_tool( node.form_html + node.tooltip, node );
+            if (parent.__NEWTOOLFORM__) {
+                parent.show_form_for_tool( node.form_html, node );
+            } else {
+                parent.show_form_for_tool( node.form_html + node.tooltip, node );
+            }
         }
     },
     layout : function () {
@@ -1300,7 +1312,6 @@ function add_node( type, title_text, tool_id ) {
     workflow.activate_node( node );    
     return node;
 }
-
 
 var ext_to_type = null;
 var type_to_type = null;
@@ -1858,6 +1869,9 @@ $.extend( CanvasManager.prototype, {
             self.cc.css( {
                 left: x,
                 top: y
+            });
+            self.cv.css( { "background-position-x": x,
+                           "background-position-y": y
             });
             self.update_viewport_overlay();
         };

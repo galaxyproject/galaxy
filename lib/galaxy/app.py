@@ -5,9 +5,10 @@ import os
 from galaxy import config, jobs
 import galaxy.model
 import galaxy.security
+import galaxy.queues
 from galaxy.managers.collections import DatasetCollectionManager
 import galaxy.quota
-from galaxy.tags.tag_handler import GalaxyTagHandler
+from galaxy.managers.tags import GalaxyTagManager
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.registry import VisualizationsRegistry
@@ -16,13 +17,13 @@ from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.jobs import metrics as job_metrics
-from galaxy.web.base import pluginframework
 from galaxy.web.proxy import ProxyManager
 from galaxy.queue_worker import GalaxyQueueWorker
 from tool_shed.galaxy_install import update_repository_manager
 
 import logging
 log = logging.getLogger( __name__ )
+app = None
 
 
 class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
@@ -36,11 +37,9 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.config.check()
         config.configure_logging( self.config )
         self.configure_fluent_log()
-
+        self._amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         self._configure_tool_shed_registry()
-
         self._configure_object_store( fsmon=True )
-
         # Setup the database engine and ORM
         config_file = kwargs.get( 'global_conf', {} ).get( '__file__', None )
         if config_file:
@@ -58,7 +57,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Security helper
         self._configure_security()
         # Tag handler
-        self.tag_handler = GalaxyTagHandler()
+        self.tag_handler = GalaxyTagManager( self )
         # Dataset Collection Plugins
         self.dataset_collections_service = DatasetCollectionManager(self)
 
@@ -96,21 +95,22 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load history import/export tools.
         load_history_imp_exp_tools( self.toolbox )
         # visualizations registry: associates resources with visualizations, controls how to render
-        self.visualizations_registry = VisualizationsRegistry( self,
+        self.visualizations_registry = VisualizationsRegistry(
+            self,
             directories_setting=self.config.visualization_plugins_directory,
             template_cache_dir=self.config.template_cache )
         # Load security policy.
         self.security_agent = self.model.security_agent
-        self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )
+        self.host_security_agent = galaxy.security.HostAgent(
+            model=self.security_agent.model,
+            permitted_actions=self.security_agent.permitted_actions )
         # Load quota management.
         if self.config.enable_quotas:
             self.quota_agent = galaxy.quota.QuotaAgent( self.model )
         else:
             self.quota_agent = galaxy.quota.NoQuotaAgent( self.model )
-        # Heartbeat and memdump for thread / heap profiling
+        # Heartbeat for thread profiling
         self.heartbeat = None
-        self.memdump = None
-        self.memory_usage = None
         # Container for OpenID authentication routines
         if self.config.enable_openid:
             from galaxy.web.framework import openid_manager
@@ -125,11 +125,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
                 self.heartbeat = heartbeat.Heartbeat( fname=self.config.heartbeat_log )
                 self.heartbeat.daemon = True
                 self.heartbeat.start()
-        # Enable the memdump signal catcher if configured and available
-        if self.config.use_memdump:
-            from galaxy.util import memdump
-            if memdump.Memdump:
-                self.memdump = memdump.Memdump()
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
             from galaxy.jobs import transfer_manager
@@ -143,16 +138,20 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.job_stop_queue = self.job_manager.job_stop_queue
         self.proxy_manager = ProxyManager( self.config )
         # Initialize the external service types
-        self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
+        self.external_service_types = external_service_types.ExternalServiceTypesCollection(
+            self.config.external_service_type_config_file,
+            self.config.external_service_type_path, self )
 
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager( self )
 
         self.model.engine.dispose()
-        self.control_worker = GalaxyQueueWorker(self,
-                                                galaxy.queues.control_queue_from_config(self.config),
-                                                galaxy.queue_worker.control_message_to_task)
+
+    def setup_control_queue(self):
+        self.control_worker = GalaxyQueueWorker(self, galaxy.queues.control_queue_from_config(self.config),
+                                                galaxy.queue_worker.control_message_to_task,
+                                                self._amqp_internal_connection_obj)
         self.control_worker.daemon = True
         self.control_worker.start()
 

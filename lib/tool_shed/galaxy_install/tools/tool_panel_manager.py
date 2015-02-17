@@ -1,9 +1,6 @@
 import logging
-import os
 import threading
 
-import galaxy.tools
-from galaxy.tools.search import ToolBoxSearch
 from xml.etree import ElementTree as XmlET
 
 from tool_shed.util import basic_util
@@ -43,7 +40,7 @@ class ToolPanelManager( object ):
                            shed_tool_conf, tool_panel_dict, new_install=True ):
         """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
         # We need to change the in-memory version and the file system version of the shed_tool_conf file.
-        index, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
+        shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         # Generate the list of ElementTree Element objects for each section or tool.
         elem_list = self.generate_tool_panel_elem_list( repository_name,
@@ -61,28 +58,15 @@ class ToolPanelManager( object ):
             # Add the new elements to the in-memory list of config_elems.
             config_elems.append( config_elem )
             # Load the tools into the in-memory tool panel.
-            if config_elem.tag == 'section':
-                self.app.toolbox.load_section_tag_set( config_elem, tool_path, load_panel_dict=True )
-            elif config_elem.tag == 'workflow':
-                self.app.toolbox.load_workflow_tag_set( config_elem,
-                                                        self.app.toolbox.tool_panel,
-                                                        self.app.toolbox.integrated_tool_panel,
-                                                        load_panel_dict=True )
-            elif config_elem.tag == 'tool':
-                guid = config_elem.get( 'guid' )
-                self.app.toolbox.load_tool_tag_set( config_elem,
-                                                    self.app.toolbox.tool_panel,
-                                                    self.app.toolbox.integrated_tool_panel,
-                                                    tool_path,
-                                                    load_panel_dict=True,
-                                                    guid=guid )
+            self.app.toolbox.load_item(
+                config_elem,
+                tool_path=tool_path,
+                load_panel_dict=True,
+                guid=config_elem.get( 'guid' ),
+            )
         # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        self.app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
-        if self.app.config.update_integrated_tool_panel:
-            # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
-            self.app.toolbox.write_integrated_tool_panel_config_file()
-        self.app.toolbox_search = ToolBoxSearch( self.app.toolbox )
+        self.app.toolbox.update_shed_config( shed_tool_conf_dict )
 
     def config_elems_to_xml_file( self, config_elems, config_filename, tool_path ):
         """
@@ -111,6 +95,8 @@ class ToolPanelManager( object ):
         else:
             tool_elem = XmlET.Element( 'tool' )
         tool_elem.attrib[ 'file' ] = tool_file_path
+        if not tool.guid:
+            raise ValueError("tool has no guid")
         tool_elem.attrib[ 'guid' ] = tool.guid
         tool_shed_elem = XmlET.SubElement( tool_elem, 'tool_shed' )
         tool_shed_elem.text = tool_shed
@@ -128,8 +114,9 @@ class ToolPanelManager( object ):
 
     def generate_tool_panel_dict_for_new_install( self, tool_dicts, tool_section=None ):
         """
-        When installing a repository that contains tools, all tools must currently be defined
-        within the same tool section in the tool panel or outside of any sections.
+        When installing a repository that contains tools, all tools must
+        currently be defined within the same tool section in the tool panel or
+        outside of any sections.
         """
         tool_panel_dict = {}
         if tool_section:
@@ -172,11 +159,12 @@ class ToolPanelManager( object ):
 
     def generate_tool_panel_dict_from_shed_tool_conf_entries( self, repository ):
         """
-        Keep track of the section in the tool panel in which this repository's tools
-        will be contained by parsing the shed_tool_conf in which the repository's tools
-        are defined and storing the tool panel definition of each tool in the repository.
-        This method is called only when the repository is being deactivated or un-installed
-        and allows for activation or re-installation using the original layout.
+        Keep track of the section in the tool panel in which this repository's
+        tools will be contained by parsing the shed_tool_conf in which the
+        repository's tools are defined and storing the tool panel definition
+        of each tool in the repository. This method is called only when the
+        repository is being deactivated or un-installed and allows for
+        activation or re-installation using the original layout.
         """
         tool_panel_dict = {}
         shed_tool_conf, tool_path, relative_install_dir = \
@@ -255,22 +243,13 @@ class ToolPanelManager( object ):
                     tool_file_path, tup_guid, tool = repository_tool_tup
                     if tup_guid == guid:
                         break
-                if inside_section:
-                    tool_elem = self.generate_tool_elem( tool_shed,
-                                                         repository_name,
-                                                         changeset_revision,
-                                                         owner,
-                                                         tool_file_path,
-                                                         tool,
-                                                         tool_section )
-                else:
-                    tool_elem = self.generate_tool_elem( tool_shed,
-                                                         repository_name,
-                                                         changeset_revision,
-                                                         owner,
-                                                         tool_file_path,
-                                                         tool,
-                                                         None )
+                tool_elem = self.generate_tool_elem( tool_shed,
+                                                     repository_name,
+                                                     changeset_revision,
+                                                     owner,
+                                                     tool_file_path,
+                                                     tool,
+                                                     tool_section if inside_section else None )
                 if inside_section:
                     if section_in_elem_list:
                         elem_list[ index ] = tool_section
@@ -318,44 +297,27 @@ class ToolPanelManager( object ):
         return tool_section
 
     def get_or_create_tool_section( self, toolbox, tool_panel_section_id, new_tool_panel_section_label=None ):
-        tool_panel_section_key = str( tool_panel_section_id )
-        if tool_panel_section_key in toolbox.tool_panel:
-            # Appending a tool to an existing section in toolbox.tool_panel
-            tool_section = toolbox.tool_panel[ tool_panel_section_key ]
-            log.debug( "Appending to tool panel section: %s" % str( tool_section.name ) )
-        else:
-            # Appending a new section to toolbox.tool_panel
-            if new_tool_panel_section_label is None:
-                # This might add an ugly section label to the tool panel, but, oh well...
-                new_tool_panel_section_label = tool_panel_section_id
-            elem = XmlET.Element( 'section' )
-            elem.attrib[ 'name' ] = new_tool_panel_section_label
-            elem.attrib[ 'id' ] = tool_panel_section_id
-            elem.attrib[ 'version' ] = ''
-            tool_section = galaxy.tools.ToolSection( elem )
-            toolbox.tool_panel[ tool_panel_section_key ] = tool_section
-            log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
-        return tool_panel_section_key, tool_section
+        return toolbox.get_section( section_id=tool_panel_section_id, new_label=new_tool_panel_section_label, create_if_needed=True )
 
     def get_shed_tool_conf_dict( self, shed_tool_conf ):
         """
         Return the in-memory version of the shed_tool_conf file, which is stored in
         the config_elems entry in the shed_tool_conf_dict associated with the file.
         """
-        for index, shed_tool_conf_dict in enumerate( self.app.toolbox.shed_tool_confs ):
+        for shed_tool_conf_dict in self.app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
             if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
-                return index, shed_tool_conf_dict
+                return shed_tool_conf_dict
             else:
                 file_name = basic_util.strip_path( shed_tool_conf_dict[ 'config_filename' ] )
                 if shed_tool_conf == file_name:
-                    return index, shed_tool_conf_dict
+                    return shed_tool_conf_dict
 
     def handle_tool_panel_section( self, toolbox, tool_panel_section_id=None, new_tool_panel_section_label=None ):
         """Return a ToolSection object retrieved from the current in-memory tool_panel."""
         # If tool_panel_section_id is received, the section exists in the tool panel.  In this
         # case, the value of the received tool_panel_section_id must be the id retrieved from a
         # tool panel config (e.g., tool_conf.xml, which may have getext).  If new_tool_panel_section_label
-        # is received, a new section will be added to the tool panel.  
+        # is received, a new section will be added to the tool panel.
         if new_tool_panel_section_label:
             section_id = str( new_tool_panel_section_label.lower().replace( ' ', '_' ) )
             tool_panel_section_key, tool_section = \
@@ -363,8 +325,7 @@ class ToolPanelManager( object ):
                                                  tool_panel_section_id=section_id,
                                                  new_tool_panel_section_label=new_tool_panel_section_label )
         elif tool_panel_section_id:
-            tool_panel_section_key = str( tool_panel_section_id )
-            tool_section = toolbox.tool_panel[ tool_panel_section_key ]
+            tool_panel_section_key, tool_section = toolbox.get_section( tool_panel_section_id)
         else:
             return None, None
         return tool_panel_section_key, tool_section
@@ -372,8 +333,8 @@ class ToolPanelManager( object ):
     def handle_tool_panel_selection( self, toolbox, metadata, no_changes_checked, tool_panel_section_id,
                                      new_tool_panel_section_label ):
         """
-        Handle the selected tool panel location for loading tools included in tool shed
-        repositories when installing or reinstalling them.
+        Handle the selected tool panel location for loading tools included in
+        tool shed repositories when installing or reinstalling them.
         """
         # Get the location in the tool panel in which each tool was originally loaded.
         tool_section = None
@@ -396,7 +357,6 @@ class ToolPanelManager( object ):
                     tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
                     tool_section_dict = tool_section_dicts[ 0 ]
                     original_section_id = tool_section_dict[ 'id' ]
-                    original_section_name = tool_section_dict[ 'name' ]
                     if original_section_id:
                         tool_panel_section_key, tool_section = \
                             self.get_or_create_tool_section( toolbox,
@@ -412,10 +372,11 @@ class ToolPanelManager( object ):
 
     def remove_from_shed_tool_config( self, shed_tool_conf_dict, guids_to_remove ):
         """
-        A tool shed repository is being uninstalled so change the shed_tool_conf file.
-        Parse the config file to generate the entire list of config_elems instead of
-        using the in-memory list since it will be a subset of the entire list if one
-        or more repositories have been deactivated.
+        A tool shed repository is being uninstalled so change the
+        shed_tool_conf file. Parse the config file to generate the entire list
+        of config_elems instead of using the in-memory list since it will be a
+        subset of the entire list if one or more repositories have been
+        deactivated.
         """
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
@@ -446,10 +407,10 @@ class ToolPanelManager( object ):
             # Persist the altered in-memory version of the tool config.
             self.config_elems_to_xml_file( config_elems, shed_tool_conf, tool_path )
 
-    def remove_from_tool_panel( self, repository, shed_tool_conf, uninstall ):
+    def remove_repository_contents( self, repository, shed_tool_conf, uninstall ):
         """
-        A tool shed repository is being deactivated or uninstalled, so handle tool panel
-        alterations accordingly.
+        A tool shed repository is being deactivated or uninstalled, so handle
+        tool panel alterations accordingly.
         """
         # Determine where the tools are currently defined in the tool panel and store this
         # information so the tools can be displayed in the same way when the repository is
@@ -461,11 +422,15 @@ class ToolPanelManager( object ):
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
         guids_to_remove = [ k for k in tool_panel_dict.keys() ]
+        self.remove_guids( guids_to_remove, shed_tool_conf, uninstall )
+
+    def remove_guids( self, guids_to_remove, shed_tool_conf, uninstall ):
+        toolbox = self.app.toolbox
         # Remove the tools from the toolbox's tools_by_id dictionary.
         for guid_to_remove in guids_to_remove:
-            if guid_to_remove in self.app.toolbox.tools_by_id:
-                del self.app.toolbox.tools_by_id[ guid_to_remove ]
-        index, shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
+            # remove_from_tool_panel to false, will handling that logic below.
+            toolbox.remove_tool_by_id( guid_to_remove, remove_from_panel=False )
+        shed_tool_conf_dict = self.get_shed_tool_conf_dict( shed_tool_conf )
         if uninstall:
             # Remove from the shed_tool_conf file on disk.
             self.remove_from_shed_tool_config( shed_tool_conf_dict, guids_to_remove )
@@ -485,95 +450,18 @@ class ToolPanelManager( object ):
                         # Remove the tool sub-element from the section element.
                         config_elem.remove( tool_elem )
                     # Remove the tool from the section in the in-memory tool panel.
-                    if section_key in self.app.toolbox.tool_panel:
-                        tool_section = self.app.toolbox.tool_panel[ section_key ]
-                        guid = tool_elem.get( 'guid' )
-                        tool_key = 'tool_%s' % str( guid )
-                        # Get the list of versions of this tool that are currently available in the toolbox.
-                        available_tool_versions = self.app.toolbox.get_loaded_tools_by_lineage( guid )
-                        if tool_key in tool_section.elems:
-                            if available_tool_versions:
-                                available_tool_versions.reverse()
-                                replacement_tool_key = None
-                                replacement_tool_version = None
-                                # Since we are going to remove the tool from the section, replace it with the
-                                # newest loaded version of the tool.
-                                for available_tool_version in available_tool_versions:
-                                    available_tool_section_id, available_tool_section_name = available_tool_version.get_panel_section()
-                                    if available_tool_version.id in tool_section.elems.keys() or section_key == available_tool_section_id:
-                                        replacement_tool_key = 'tool_%s' % str( available_tool_version.id )
-                                        replacement_tool_version = available_tool_version
-                                        break
-                                if replacement_tool_key and replacement_tool_version:
-                                    # Get the index of the tool_key in the tool_section.
-                                    for tool_section_elems_index, key in enumerate( tool_section.elems.keys() ):
-                                        if key == tool_key:
-                                            break
-                                    # Remove the tool from the tool section.
-                                    del tool_section.elems[ tool_key ]
-                                    # Add the replacement tool at the same location in the tool section.
-                                    tool_section.elems.insert( tool_section_elems_index,
-                                                               replacement_tool_key,
-                                                               replacement_tool_version )
-                                else:
-                                    del tool_section.elems[ tool_key ]
-                            else:
-                                del tool_section.elems[ tool_key ]
-                    if uninstall:
-                        # Remove the tool from the section in the in-memory integrated tool panel.
-                        if section_key in self.app.toolbox.integrated_tool_panel:
-                            tool_section = self.app.toolbox.integrated_tool_panel[ section_key ]
-                            tool_key = 'tool_%s' % str( tool_elem.get( 'guid' ) )
-                            if tool_key in tool_section.elems:
-                                del tool_section.elems[ tool_key ]
+                    toolbox.remove_from_panel( tool_elem.get( "guid" ), section_key=section_key, remove_from_config=uninstall )
                 if len( config_elem ) < 1:
                     # Keep a list of all empty section elements so they can be removed.
                     config_elems_to_remove.append( config_elem )
             elif config_elem.tag == 'tool':
                 guid = config_elem.get( 'guid' )
                 if guid in guids_to_remove:
-                    tool_key = 'tool_%s' % str( config_elem.get( 'guid' ) )
-                    # Get the list of versions of this tool that are currently available in the toolbox.
-                    available_tool_versions = self.app.toolbox.get_loaded_tools_by_lineage( guid )
-                    if tool_key in self.app.toolbox.tool_panel:
-                        if available_tool_versions:
-                            available_tool_versions.reverse()
-                            replacement_tool_key = None
-                            replacement_tool_version = None
-                            # Since we are going to remove the tool from the section, replace it with
-                            # the newest loaded version of the tool.
-                            for available_tool_version in available_tool_versions:
-                                available_tool_section_id, available_tool_section_name = available_tool_version.get_panel_section()
-                                if available_tool_version.id in self.app.toolbox.tool_panel.keys() or not available_tool_section_id:
-                                    replacement_tool_key = 'tool_%s' % str( available_tool_version.id )
-                                    replacement_tool_version = available_tool_version
-                                    break
-                            if replacement_tool_key and replacement_tool_version:
-                                # Get the index of the tool_key in the tool_section.
-                                for tool_panel_index, key in enumerate( self.app.toolbox.tool_panel.keys() ):
-                                    if key == tool_key:
-                                        break
-                                # Remove the tool from the tool panel.
-                                del self.app.toolbox.tool_panel[ tool_key ]
-                                # Add the replacement tool at the same location in the tool panel.
-                                self.app.toolbox.tool_panel.insert( tool_panel_index,
-                                                                    replacement_tool_key,
-                                                                    replacement_tool_version )
-                            else:
-                                del self.app.toolbox.tool_panel[ tool_key ]
-                        else:
-                            del self.app.toolbox.tool_panel[ tool_key ]
-                    if uninstall:
-                        if tool_key in self.app.toolbox.integrated_tool_panel:
-                            del self.app.toolbox.integrated_tool_panel[ tool_key ]
+                    toolbox.remove_from_panel( guid, section_key='', remove_from_config=uninstall )
                     config_elems_to_remove.append( config_elem )
         for config_elem in config_elems_to_remove:
             # Remove the element from the in-memory list of elements.
             config_elems.remove( config_elem )
         # Update the config_elems of the in-memory shed_tool_conf_dict.
         shed_tool_conf_dict[ 'config_elems' ] = config_elems
-        self.app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
-        self.app.toolbox_search = ToolBoxSearch( self.app.toolbox )
-        if uninstall and self.app.config.update_integrated_tool_panel:
-            # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
-            self.app.toolbox.write_integrated_tool_panel_config_file()
+        toolbox.update_shed_config( shed_tool_conf_dict, integrated_panel_changes=uninstall )

@@ -31,10 +31,10 @@ return Backbone.View.extend({
         
         // create element
         var $view = $('<div/>');
-        $view.append(Utils.wrap((new Ui.Label({title: 'Provide a label:'})).$el));
-        $view.append(Utils.wrap(this.group_key.$el));
-        $view.append(Utils.wrap((new Ui.Label({title: 'Select columns:'})).$el));
-        $view.append(Utils.wrap(this.table.$el));
+        $view.append((new Ui.Label({title: 'Provide a label:'})).$el);
+        $view.append(this.group_key.$el.addClass('ui-margin-bottom'));
+        $view.append((new Ui.Label({title: 'Select columns:'})).$el.addClass('ui-margin-top'));
+        $view.append(this.table.$el.addClass('ui-margin-bottom'));
         
         // add element
         this.setElement($view);
@@ -254,7 +254,9 @@ return Backbone.View.extend({
         if (key_text === undefined) {
             key_text = '';
         }
-        this.group_key.value(key_text);
+        if (key_text != this.group_key.value()) {
+            this.group_key.value(key_text);
+        }
     }
 });
 

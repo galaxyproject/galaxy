@@ -2,19 +2,6 @@
 
 <%def name="title()">Workflow home</%def>
 
-%if message:
-<%
-    try:
-        messagetype
-    except:
-        messagetype = "done"
-%>
-<p />
-<div class="${messagetype}message">
-    ${message}
-</div>
-%endif
-
 <h2>Your workflows</h2>
 
 <ul class="manage-table-actions">

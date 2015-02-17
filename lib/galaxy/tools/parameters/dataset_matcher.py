@@ -162,6 +162,11 @@ class DatasetCollectionMatcher( object ):
             return self.dataset_collection_match( dataset_collection )
 
     def dataset_collection_match( self, dataset_collection ):
+        # If dataset collection not yet populated, cannot determine if it
+        # would be a valid match for this parameter.
+        if not dataset_collection.populated:
+            return False
+
         valid = True
         for element in dataset_collection.elements:
             if not self.__valid_element( element ):

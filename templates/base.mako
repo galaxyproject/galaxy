@@ -53,7 +53,6 @@
         "libs/backbone/backbone",
         "libs/handlebars.runtime",
         "galaxy.base",
-        "mvc/ui",
         'libs/require'
     )}
 

@@ -1,7 +1,9 @@
 import new
 import sys
 from base.twilltestcase import TwillTestCase
-from base.interactor import build_interactor, stage_data_in_history
+from base.asserts import verify_assertions
+from base.interactor import build_interactor, stage_data_in_history, RunToolException
+from base.instrument import register_job_data
 from galaxy.tools import DataManagerTool
 from galaxy.util import bunch
 import logging
@@ -34,10 +36,49 @@ class ToolTestCase( TwillTestCase ):
 
         stage_data_in_history( galaxy_interactor, testdef.test_data(), test_history, shed_tool_id )
 
-        data_list, jobs = galaxy_interactor.run_tool( testdef, test_history )
-        self.assertTrue( data_list )
+        # Once data is ready, run the tool and check the outputs - record API
+        # input, job info, tool run exception, as well as exceptions related to
+        # job output checking and register they with the test plugin so it can
+        # record structured information.
+        tool_inputs = None
+        job_stdio = None
+        job_output_exceptions = None
+        tool_execution_exception = None
+        try:
+            try:
+                tool_response = galaxy_interactor.run_tool( testdef, test_history )
+                data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
+                data_collection_list = tool_response.output_collections
+            except RunToolException as e:
+                tool_inputs = e.inputs
+                tool_execution_exception = e
+                raise e
+            except Exception as e:
+                tool_execution_exception = e
+                raise e
 
-        self._verify_outputs( testdef, test_history, jobs, shed_tool_id, data_list, galaxy_interactor )
+            self.assertTrue( data_list or data_collection_list )
+
+            try:
+                job_stdio = self._verify_outputs( testdef, test_history, jobs, shed_tool_id, data_list, data_collection_list, galaxy_interactor )
+            except JobOutputsError as e:
+                job_stdio = e.job_stdio
+                job_output_exceptions = e.output_exceptions
+                raise e
+            except Exception as e:
+                job_output_exceptions = [e]
+                raise e
+        finally:
+            job_data = {}
+            if tool_inputs is not None:
+                job_data["inputs"] = tool_inputs
+            if job_stdio is not None:
+                job_data["job"] = job_stdio
+            if job_output_exceptions:
+                job_data["output_problems"] = map(str, job_output_exceptions)
+            if tool_execution_exception:
+                job_data["execution_problem"] = str(tool_execution_exception)
+            register_job_data(job_data)
 
         galaxy_interactor.delete_history( test_history )
 
@@ -52,7 +93,10 @@ class ToolTestCase( TwillTestCase ):
             else:
                 raise Exception( "Test parse failure" )
 
-    def _verify_outputs( self, testdef, history, jobs, shed_tool_id, data_list, galaxy_interactor ):
+    def _verify_outputs( self, testdef, history, jobs, shed_tool_id, data_list, data_collection_list, galaxy_interactor ):
+        assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
+        job = jobs[ 0 ]
+
         maxseconds = testdef.maxseconds
         if testdef.num_outputs is not None:
             expected = testdef.num_outputs
@@ -61,6 +105,43 @@ class ToolTestCase( TwillTestCase ):
                 messaage_template = "Incorrect number of outputs - expected %d, found %s."
                 message = messaage_template % ( expected, actual )
                 raise Exception( message )
+        found_exceptions = []
+
+        def register_exception(e):
+            if not found_exceptions:
+                # Only print this stuff out once.
+                for stream in ['stdout', 'stderr']:
+                    if stream in job_stdio:
+                        print >>sys.stderr, self._format_stream( job_stdio[ stream ], stream=stream, format=True )
+            found_exceptions.append(e)
+
+        if testdef.expect_failure:
+            if testdef.outputs:
+                raise Exception("Cannot specify outputs in a test expecting failure.")
+
+        # Wait for the job to complete and register expections if the final
+        # status was not what test was expecting.
+        job_failed = False
+        try:
+            galaxy_interactor.wait_for_job( job[ 'id' ], history, maxseconds )
+        except Exception as e:
+            job_failed = True
+            if not testdef.expect_failure:
+                found_exceptions.append(e)
+
+        job_stdio = galaxy_interactor.get_job_stdio( job[ 'id' ] )
+
+        if not job_failed and testdef.expect_failure:
+            error = AssertionError("Expected job to fail but Galaxy indicated the job successfully completed.")
+            register_exception(error)
+
+        expect_exit_code = testdef.expect_exit_code
+        if expect_exit_code is not None:
+            exit_code = job_stdio["exit_code"]
+            if str(expect_exit_code) != str(exit_code):
+                error = AssertionError("Expected job to complete with exit code %s, found %s" % (expect_exit_code, exit_code))
+                register_exception(error)
+
         for output_index, output_tuple in enumerate(testdef.outputs):
             # Get the correct hid
             name, outfile, attributes = output_tuple
@@ -78,13 +159,78 @@ class ToolTestCase( TwillTestCase ):
             self.assertTrue( output_data is not None )
             try:
                 galaxy_interactor.verify_output( history, jobs, output_data, output_testdef=output_testdef, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
-            except Exception:
-                for job in jobs:
-                    job_stdio = galaxy_interactor.get_job_stdio( job[ 'id' ] )
-                    for stream in ['stdout', 'stderr']:
-                        if stream in job_stdio:
-                            print >>sys.stderr, self._format_stream( job_stdio[ stream ], stream=stream, format=True )
-                raise
+            except Exception as e:
+                register_exception(e)
+
+        other_checks = {
+            "command_line": "Command produced by the job",
+            "stdout": "Standard output of the job",
+            "stderr": "Standard error of the job",
+        }
+        for what, description in other_checks.items():
+            if getattr( testdef, what, None ) is not None:
+                try:
+                    data = job_stdio[what]
+                    verify_assertions( data, getattr( testdef, what ) )
+                except AssertionError, err:
+                    errmsg = '%s different than expected\n' % description
+                    errmsg += str( err )
+                    register_exception( AssertionError( errmsg ) )
+
+        for output_collection_def in testdef.output_collections:
+            try:
+                name = output_collection_def.name
+                # TODO: data_collection_list is clearly a bad name for dictionary.
+                if name not in data_collection_list:
+                    template = "Failed to find output [%s], tool outputs include [%s]"
+                    message = template % (name, ",".join(data_collection_list.keys()))
+                    raise AssertionError(message)
+
+                # Data collection returned from submission, elements may have been populated after
+                # the job completed so re-hit the API for more information.
+                data_collection_returned = data_collection_list[ name ]
+                data_collection = galaxy_interactor._get( "dataset_collections/%s" % data_collection_returned[ "id" ], data={"instance_type": "history"} ).json()
+                elements = data_collection[ "elements" ]
+                element_dict = dict( map(lambda e: (e["element_identifier"], e["object"]), elements) )
+
+                expected_collection_type = output_collection_def.collection_type
+                if expected_collection_type:
+                    collection_type = data_collection[ "collection_type"]
+                    if expected_collection_type != collection_type:
+                        template = "Expected output collection [%s] to be of type [%s], was of type [%s]."
+                        message = template % (name, expected_collection_type, collection_type)
+                        raise AssertionError(message)
+
+                for element_identifier, ( element_outfile, element_attrib ) in output_collection_def.element_tests.items():
+                    if element_identifier not in element_dict:
+                        template = "Failed to find identifier [%s] for testing, tool generated collection with identifiers [%s]"
+                        message = template % (element_identifier, ",".join(element_dict.keys()))
+                        raise AssertionError(message)
+                    hda = element_dict[ element_identifier ]
+
+                    galaxy_interactor.verify_output_dataset(
+                        history,
+                        hda_id=hda["id"],
+                        outfile=element_outfile,
+                        attributes=element_attrib,
+                        shed_tool_id=shed_tool_id
+                    )
+            except Exception as e:
+                register_exception(e)
+
+        if found_exceptions:
+            raise JobOutputsError(found_exceptions, job_stdio)
+        else:
+            return job_stdio
+
+
+class JobOutputsError(AssertionError):
+
+    def __init__(self, output_exceptions, job_stdio):
+        big_message = "\n".join(map(str, output_exceptions))
+        super(JobOutputsError, self).__init__(big_message)
+        self.job_stdio = job_stdio
+        self.output_exceptions = output_exceptions
 
 
 @nottest

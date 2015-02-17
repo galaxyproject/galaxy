@@ -6,7 +6,9 @@ define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc']
 var View = Backbone.View.extend({
     // default options
     optionsDefault : {
-        max : null
+        title   : 'Section',
+        max     : null,
+        min     : null
     },
 
     /** Initialize
@@ -14,13 +16,13 @@ var View = Backbone.View.extend({
     initialize : function(options) {
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
-        
+
         // create new element
         this.setElement('<div/>');
-        
+
         // link this
         var self = this;
-        
+
         // create button
         this.button_new = new Ui.ButtonIcon({
             icon    : 'fa-plus',
@@ -33,32 +35,44 @@ var View = Backbone.View.extend({
                 }
             }
         });
-        
+
         // create table
         this.table = new Table.View({
             cls     : 'ui-table-plain',
             content : ''
         });
-        
+
         // append button
         this.$el.append(this.table.$el);
-        
+
         // add button
-        this.$el.append(Utils.wrap(this.button_new.$el));
-        
+        this.$el.append($('<div/>').append(this.button_new.$el));
+
         // clear list
         this.list = {};
+
+        // number of available repeats
+        this.n = 0;
     },
-    
+
     /** Number of repeat blocks
     */
     size: function() {
-        return _.size(this.list);
+        return this.n;
     },
-    
+
     /** Add new repeat block
     */
     add: function(options) {
+        // repeat block already exists
+        if (!options.id || this.list[options.id]) {
+            console.debug('tools-repeat::add - Duplicate repeat block id.');
+            return;
+        }
+
+        // increase repeat block counter
+        this.n++;
+
         // delete button
         var button_delete = new Ui.ButtonIcon({
             icon    : 'fa-trash-o',
@@ -70,63 +84,77 @@ var View = Backbone.View.extend({
                 }
             }
         });
-        
+
         // create portlet
         var portlet = new Portlet.View({
             id              : options.id,
-            title           : '<b>' + options.title + '</b>',
+            title           : 'placeholder',
             cls             : 'ui-portlet-repeat',
             operations      : {
                 button_delete : button_delete
             }
         });
-        
-        // hide button
-        if (!options.ondel) {
-            button_delete.remove();
-        }
-        
+
         // append content
         portlet.append(options.$el);
-        
+
         // tag as section row
         portlet.$el.addClass('section-row');
-        
+
         // append to dom
         this.list[options.id] = portlet;
-        
+
         // append to dom
         this.table.add(portlet.$el);
         this.table.append('row_' + options.id, true);
-        
+
         // validate maximum
-        if (this.options.max > 0 && this.size() >= this.options.max) {
+        if (this.options.max > 0 && this.n >= this.options.max) {
             this.button_new.disable();
         }
+
+        // refresh view
+        this._refresh();
     },
-    
+
     /** Delete repeat block
     */
     del: function(id) {
-        if (this.list[id]) {
-            // delete table row
-            var table_row = this.table.get('row_' + id);
-            table_row.remove();
-            
-            // remove from list
-            delete this.list[id];
-            
-            // enable new button
-            this.button_new.enable();
+        // could not find element
+        if (!this.list[id]) {
+            console.debug('tools-repeat::del - Invalid repeat block id.');
+            return;
         }
+
+        // decrease repeat block counter
+        this.n--;
+
+        // delete table row
+        var table_row = this.table.get('row_' + id);
+        table_row.remove();
+
+        // remove from list
+        delete this.list[id];
+
+        // enable new button
+        this.button_new.enable();
+
+        // refresh delete button visibility
+        this._refresh();
     },
-    
-    /** Retitle/Enumerate repeat blocks
+
+    /** Refresh view
     */
-    retitle: function(new_title) {
+    _refresh: function() {
         var index = 0;
         for (var id in this.list) {
-            this.list[id].title(++index + ': ' + new_title);
+            var portlet = this.list[id];
+            portlet.title(++index + ': ' + this.options.title);
+            if (this.n > this.options.min) {
+                portlet.showOperation('button_delete');
+            } else {
+                portlet.hideOperation('button_delete');
+            }
         }
     }
 });

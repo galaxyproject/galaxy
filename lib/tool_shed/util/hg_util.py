@@ -16,7 +16,7 @@ from mercurial import cmdutil
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui
-from mercurial.changegroup import readbundle
+from mercurial.exchange import readbundle
 from mercurial.changegroup import readexactly
 
 from tool_shed.util import basic_util
@@ -26,7 +26,7 @@ log = logging.getLogger( __name__ )
 INITIAL_CHANGELOG_HASH = '000000000000'
 
 def add_changeset( repo_ui, repo, path_to_filename_in_archive ):
-    commands.add( repo_ui, repo, path_to_filename_in_archive )
+    commands.add( repo_ui, repo, str( path_to_filename_in_archive ) )
 
 def archive_repository_revision( app, repository, archive_dir, changeset_revision ):
     '''Create an un-versioned archive of a repository.'''
@@ -49,7 +49,7 @@ def bundle_to_json( fh ):
     command line) to a json object.
     """
     # See http://www.wstein.org/home/wstein/www/home/was/patches/hg_json
-    hg_unbundle10_obj = readbundle( fh, None )
+    hg_unbundle10_obj = readbundle( None, fh, None )
     groups = [ group for group in unpack_groups( hg_unbundle10_obj ) ]
     return json.dumps( groups, indent=4 )
 

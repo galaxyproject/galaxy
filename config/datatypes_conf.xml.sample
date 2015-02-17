@@ -3,6 +3,7 @@
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false" />
+    <datatype extension="arff" type="galaxy.datatypes.text:Arff" mimetype="text/plain" display_in_upload="True" />
     <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true" />
     <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Axt"/>
@@ -112,7 +113,7 @@
       <converter file="interval_to_bed12_converter.xml" target_datatype="bed12"/>
       <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-	    <converter file="interval_to_bigwig_converter.xml" target_datatype="bigwig"/>
+        <converter file="interval_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <!-- <display file="ucsc/interval_as_bed.xml" inherit="True" /> -->
       <display file="ensembl/ensembl_interval_as_bed.xml" inherit="True"/>
       <display file="gbrowse/gbrowse_interval_as_bed.xml" inherit="True"/>
@@ -139,6 +140,9 @@
     <datatype extension="rgb" type="galaxy.datatypes.images:Rgb" mimetype="image/rgb"/>
     <datatype extension="pbm" type="galaxy.datatypes.images:Pbm" mimetype="image/pbm"/>
     <datatype extension="pgm" type="galaxy.datatypes.images:Pgm" mimetype="image/pgm"/>
+    <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="True"/>
+    <datatype extension="searchgui_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="True" display_in_upload="True"/>
+    <datatype extension="peptideshaker_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="True" display_in_upload="True"/>
     <datatype extension="eps" type="galaxy.datatypes.images:Eps" mimetype="image/eps"/>
     <datatype extension="rast" type="galaxy.datatypes.images:Rast" mimetype="image/rast"/>
     <datatype extension="laj" type="galaxy.datatypes.images:Laj"/>
@@ -150,11 +154,11 @@
     <datatype extension="mafcustomtrack" type="galaxy.datatypes.sequence:MafCustomTrack">
       <display file="ucsc/maf_customtrack.xml" />
     </datatype>
-	<datatype extension="encodepeak" type="galaxy.datatypes.interval:ENCODEPeak" display_in_upload="True">
-	  <converter file="encodepeak_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
-	  <converter file="encodepeak_to_bgzip_converter.xml" target_datatype="bgzip"/>
-	  <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
-	</datatype>
+    <datatype extension="encodepeak" type="galaxy.datatypes.interval:ENCODEPeak" display_in_upload="True">
+      <converter file="encodepeak_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+      <converter file="encodepeak_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
+    </datatype>
     <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf"/>
     <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true">
       <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -170,11 +174,16 @@
     <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
     <datatype extension="Roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
-    	<converter file="sam_to_bam.xml" target_datatype="bam"/>
-    	<converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
-	</datatype>
+        <converter file="sam_to_bam.xml" target_datatype="bam"/>
+        <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
+    </datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Scf"/>
     <datatype extension="Sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
+    <datatype extension="snpeffdb" type="galaxy.datatypes.text:SnpEffDb" display_in_upload="True"/>
+    <datatype extension="snpsiftdbnsfp" type="galaxy.datatypes.txt:SnpSiftDbNSFP" display_in_upload="True"/>
+    <datatype extension="dbnsfp.tabular" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True">
+        <converter file="tabular_to_dbnsfp.xml" target_datatype="snpsiftdbnsfp"/>
+    </datatype>
     <datatype extension="sff" type="galaxy.datatypes.binary:Sff" mimetype="application/octet-stream" display_in_upload="true" description="A binary file in 'Standard Flowgram Format' with a '.sff' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Sff"/>
     <datatype extension="svg" type="galaxy.datatypes.images:Image" mimetype="image/svg+xml"/>
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
@@ -300,8 +309,10 @@
     <sniffer type="galaxy.datatypes.data:Newick"/>
     <sniffer type="galaxy.datatypes.data:Nexus"/>
     <sniffer type="galaxy.datatypes.text:Obo"/>
+    <sniffer type="galaxy.datatypes.text:Arff"/>
     <sniffer type="galaxy.datatypes.text:Ipynb"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
+    <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>

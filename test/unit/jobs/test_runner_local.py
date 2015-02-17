@@ -106,6 +106,7 @@ class MockJobWrapper( object ):
         self.tool = tool
         self.state = model.Job.states.QUEUED
         self.command_line = "echo HelloWorld"
+        self.commands_in_new_shell = False
         self.prepare_called = False
         self.write_version_cmd = None
         self.dependency_shell_commands = None

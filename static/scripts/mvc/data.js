@@ -1,5 +1,5 @@
 // Additional dependencies: jQuery, underscore.
-define(['mvc/ui/ui-modal', 'mvc/ui/ui-frames'], function(Modal, Frames) {
+define(['mvc/ui/ui-modal', 'mvc/ui/ui-frames', 'mvc/ui/icon-button'], function(Modal, Frames, mod_icon_btn) {
 
 /**
  * Dataset metedata.
@@ -128,10 +128,6 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         this.row_count = 0;
         this.loading_chunk = false;
 
-        // CSS colors used in table.
-        this.header_color = '#AAA';
-        this.dark_row_color = '#DDD';
-
         // load trackster button
         new TabularButtonTracksterView({
             model   : options.model,
@@ -173,9 +169,14 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         });
         this.$el.append(data_table);
         var column_names = this.model.get_metadata('column_names'),
-            header_row = $('<tr/>').css('background-color', this.header_color).appendTo(data_table);
+            header_container = $('<thead/>').appendTo(data_table),
+            header_row = $('<tr/>').appendTo(header_container);
         if (column_names) {
             header_row.append('<th>' + column_names.join('</th><th>') + '</th>');
+        } else {
+            for (var j = 1; j <= this.model.get_metadata('columns'); j++) {
+                header_row.append('<th>' + j + '</th>');
+            }
         }
 
         // Render first chunk.
@@ -232,7 +233,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             num_columns = this.model.get_metadata('columns');
 
         if (this.row_count % 2 !== 0) {
-            row.css('background-color', this.dark_row_color);
+            row.addClass('dark_row');
         }
 
         if (cells.length === num_columns) {
@@ -447,8 +448,8 @@ var TabularButtonTracksterView = Backbone.View.extend({
         }
 
         // create the icon
-        var btn_viz = new IconButtonView({
-            model : new IconButton({
+        var btn_viz = new mod_icon_btn.IconButtonView({
+            model : new mod_icon_btn.IconButton({
                 title       : 'Visualize',
                 icon_class  : 'chart_curve',
                 id          : 'btn_viz'

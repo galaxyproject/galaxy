@@ -6,8 +6,10 @@ define([
     "mvc/history/hdca-li",
     "mvc/collection/collection-panel",
     "mvc/user/user-model",
+    "ui/fa-icon-button",
     "mvc/base-mvc",
-    "utils/localization"
+    "utils/localization",
+    "ui/search-input"
 ], function(
     LIST_PANEL,
     HISTORY_MODEL,
@@ -16,6 +18,7 @@ define([
     HDCA_LI,
     COLLECTION_PANEL,
     USER,
+    faIconButton,
     BASE_MVC,
     _l
 ){

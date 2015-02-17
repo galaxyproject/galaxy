@@ -5,41 +5,39 @@ import shutil
 import galaxy.tools
 from galaxy import util
 from galaxy.datatypes import checkers
-from galaxy.tools import parameters
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
-from galaxy.tools.actions.upload import UploadToolAction
 
 from tool_shed.util import basic_util
 
 log = logging.getLogger( __name__ )
 
+
 def build_shed_tool_conf_select_field( app ):
     """Build a SelectField whose options are the keys in app.toolbox.shed_tool_confs."""
     options = []
-    for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
-        shed_tool_conf_filename = shed_tool_conf_dict[ 'config_filename' ]
-        if shed_tool_conf_filename != app.config.migrated_tools_config:
-            if shed_tool_conf_filename.startswith( './' ):
-                option_label = shed_tool_conf_filename.replace( './', '', 1 )
-            else:
-                option_label = shed_tool_conf_filename
-            options.append( ( option_label, shed_tool_conf_filename ) )
+    for dynamic_tool_conf_filename in app.toolbox.dynamic_conf_filenames():
+        if dynamic_tool_conf_filename.startswith( './' ):
+            option_label = dynamic_tool_conf_filename.replace( './', '', 1 )
+        else:
+            option_label = dynamic_tool_conf_filename
+        options.append( ( option_label, dynamic_tool_conf_filename ) )
     select_field = SelectField( name='shed_tool_conf' )
     for option_tup in options:
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ] )
     return select_field
 
+
 def build_tool_panel_section_select_field( app ):
     """Build a SelectField whose options are the sections of the current in-memory toolbox."""
     options = []
-    for k, v in app.toolbox.tool_panel.items():
-        if isinstance( v, galaxy.tools.ToolSection ):
-            options.append( ( v.name, v.id ) )
+    for section_id, section_name in app.toolbox.get_sections():
+        options.append( ( section_name, section_id ) )
     select_field = SelectField( name='tool_panel_section_id', display='radio' )
     for option_tup in options:
         select_field.add_option( option_tup[ 0 ], option_tup[ 1 ] )
     return select_field
+
 
 def copy_sample_file( app, filename, dest_path=None ):
     """
@@ -61,6 +59,7 @@ def copy_sample_file( app, filename, dest_path=None ):
     if not os.path.exists( os.path.join( dest_path, copied_file ) ):
         shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
 
+
 def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None ):
     """
     Copy all appropriate files to dest_path in the local Galaxy environment that have not
@@ -75,10 +74,11 @@ def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=No
         filename_sans_path = os.path.split( filename )[ 1 ]
         if filename_sans_path not in filenames_not_to_copy and filename not in sample_files_copied:
             if tool_path:
-                filename=os.path.join( tool_path, filename )
+                filename = os.path.join( tool_path, filename )
             # Attempt to ensure we're copying an appropriate file.
             if is_data_index_sample_file( filename ):
                 copy_sample_file( app, filename, dest_path=dest_path )
+
 
 def generate_message_for_invalid_tools( app, invalid_file_tups, repository, metadata_dict, as_html=True,
                                         displaying_invalid_tool=False ):
@@ -124,6 +124,7 @@ def generate_message_for_invalid_tools( app, invalid_file_tups, repository, meta
         message += "%s%s%s - %s%s" % ( bold_start, tool_file, bold_end, correction_msg, new_line )
     return message
 
+
 def get_headers( fname, sep, count=60, is_multi_byte=False ):
     """Returns a list with the first 'count' lines split by 'sep'."""
     headers = []
@@ -136,6 +137,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
         if idx == count:
             break
     return headers
+
 
 def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems ):
     for elem in config_elems:
@@ -152,6 +154,7 @@ def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_di
                         relative_install_dir = os.path.join( tool_path, partial_install_dir )
                         return tool_path, relative_install_dir
     return None, None
+
 
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups, sample_files_copied ):
     """
@@ -180,6 +183,7 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups, sample_files_copied
 
+
 def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     """See if the file is column based with respect to a separator."""
     headers = get_headers( fname, sep, is_multi_byte=is_multi_byte )
@@ -198,6 +202,7 @@ def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
             if len( hdr ) != count:
                 return False
     return True
+
 
 def is_data_index_sample_file( file_path ):
     """
@@ -224,6 +229,7 @@ def is_data_index_sample_file( file_path ):
     # Default to copying the file if none of the above are true.
     return True
 
+
 def new_state( trans, tool, invalid=False ):
     """Create a new `DefaultToolState` for the received tool.  Only inputs on the first page will be initialized."""
     state = galaxy.tools.DefaultToolState()
@@ -240,9 +246,10 @@ def new_state( trans, tool, invalid=False ):
             state.inputs[ input.name ] = []
     return state
 
+
 def panel_entry_per_tool( tool_section_dict ):
     # Return True if tool_section_dict looks like this.
-    # {<Tool guid> : 
+    # {<Tool guid> :
     #    [{ tool_config : <tool_config_file>,
     #       id: <ToolSection id>,
     #       version : <ToolSection version>,
@@ -258,9 +265,7 @@ def panel_entry_per_tool( tool_section_dict ):
             return True
     return False
 
+
 def reload_upload_tools( app ):
     if hasattr( app, 'toolbox' ):
-        for tool_id in app.toolbox.tools_by_id:
-            tool = app.toolbox.tools_by_id[ tool_id ]
-            if isinstance( tool.tool_action, UploadToolAction ):
-                app.toolbox.reload_tool_by_id( tool_id )
+        app.toolbox.handle_datatypes_changed()

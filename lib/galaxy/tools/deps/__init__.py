@@ -14,7 +14,7 @@ from galaxy.util import plugin_config
 
 
 def build_dependency_manager( config ):
-    if config.use_tool_dependencies:
+    if getattr( config, "use_tool_dependencies", False ):
         dependency_manager_kwds = {
             'default_base_path': config.tool_dependency_dir,
             'conf_file': config.dependency_resolvers_config_file,

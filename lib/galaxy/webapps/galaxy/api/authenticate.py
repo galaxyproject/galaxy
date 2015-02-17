@@ -14,7 +14,7 @@ Returns:
 from base64 import b64decode
 from urllib import unquote
 
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.managers import api_keys
 from galaxy import exceptions
 from galaxy.web.base.controller import BaseAPIController
@@ -29,7 +29,7 @@ class AuthenticationController( BaseAPIController ):
         super( AuthenticationController, self ).__init__( app )
         self.api_keys_manager = api_keys.ApiKeyManager( app )
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def get_api_key( self, trans, **kwd ):
         """
         def get_api_key( self, trans, **kwd )

@@ -13,6 +13,7 @@ import column
 import external
 from galaxy.util import sqlite
 import re
+import sys
 
 from galaxy import eggs
 eggs.require( 'bx-python' )
@@ -726,3 +727,55 @@ class SQliteDataProvider( base.DataProvider ):
         else:
             yield
 
+class SQliteDataTableProvider( base.DataProvider ):
+    """
+    Data provider that uses a sqlite database file as its source.
+    Allows any query to be run and returns the resulting rows as arrays of arrays
+    """
+    settings = {
+        'query': 'str',
+        'headers': 'bool',
+        'limit': 'int'
+    }
+
+    def __init__( self, source, query=None, headers=False, limit=sys.maxint, **kwargs ):
+        self.query = query
+        self.headers = headers
+        self.limit = limit
+        self.connection = sqlite.connect(source.dataset.file_name)
+        super( SQliteDataTableProvider, self ).__init__( source, **kwargs )
+
+    def __iter__( self ):
+        if (self.query is not None) and sqlite.is_read_only_query(self.query):
+            cur = self.connection.cursor()
+            results = cur.execute(self.query)
+            if self.headers:
+                yield [col[0] for col in cur.description]
+            for i,row in enumerate(results):
+                if i >= self.limit:
+                    break
+                yield [val for val in row]
+        else:
+            yield
+
+class SQliteDataDictProvider( base.DataProvider ):
+    """
+    Data provider that uses a sqlite database file as its source.
+    Allows any query to be run and returns the resulting rows as arrays of dicts
+    """
+    settings = {
+        'query': 'str'
+    }
+
+    def __init__( self, source, query=None, **kwargs ):
+        self.query = query
+        self.connection = sqlite.connect(source.dataset.file_name)
+        super( SQliteDataDictProvider, self ).__init__( source, **kwargs )
+
+    def __iter__( self ):
+        if (self.query is not None) and sqlite.is_read_only_query(self.query):
+            cur = self.connection.cursor()
+            for row in cur.execute(self.query):
+                yield [dict((cur.description[i][0], value) for i, value in enumerate(row))]
+        else:
+            yield

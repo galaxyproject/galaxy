@@ -30,9 +30,9 @@ database/openid_consumer_cache
 *.pyc
 
 # Galaxy Runtime Files
-paster.lock
-paster.log
-paster.pid
+*.lock
+*.log
+*.pid
 
 # Tool Shed Runtime Files
 tool_shed_webapp.lock
@@ -89,6 +89,7 @@ tool-data/*.loc
 tool-data/genome/*
 
 # Test output
+test-data-cache
 run_functional_tests.html
 test/tool_shed/tmp/*
 .coverage
@@ -108,12 +109,9 @@ tool-data/shared/jars/
 # CSS build artifacts.
 sprite-*.less
 
-# Local node_modules directories
+# Local node_modules and bower_components directories
 node_modules
-
-# Testing
-selenium-server.jar
-selenium_results.html
+bower_components
 
 # Documentation build files.
 doc/build

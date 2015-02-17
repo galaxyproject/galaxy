@@ -58,7 +58,7 @@
 
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>
+        <div class='unified-panel-header-inner with-upload-button'>
             ${n_('Tools')}
         </div>
     </div>

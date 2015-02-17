@@ -187,7 +187,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         def items( self ):
             return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
 
-    def __init__( self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None ):
+    def __init__( self, dataset, datatypes_registry=None, tool=None, name=None, dataset_path=None, identifier=None ):
         if not dataset:
             try:
                 # TODO: allow this to work when working with grouping
@@ -205,6 +205,14 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
         self.datatypes_registry = datatypes_registry
         self.false_path = getattr( dataset_path, "false_path", None )
         self.false_extra_files_path = getattr( dataset_path, "false_extra_files_path", None )
+        self._element_identifier = identifier
+
+    @property
+    def element_identifier( self ):
+        identifier = self._element_identifier
+        if identifier is None:
+            identifier = self.name
+        return identifier
 
     @property
     def is_collection( self ):
@@ -262,7 +270,7 @@ class HasDatasets:
         return DatasetFilenameWrapper( dataset, **wrapper_kwds )
 
 
-class DatasetListWrapper( list, HasDatasets ):
+class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
     """
     """
     def __init__( self, datasets, dataset_paths=[], **kwargs ):
@@ -270,6 +278,10 @@ class DatasetListWrapper( list, HasDatasets ):
             datasets = [datasets]
 
         def to_wrapper( dataset ):
+            if hasattr(dataset, "element_identifier"):
+                element = dataset
+                dataset = element.dataset_instance
+                kwargs["identifier"] = element.element_identifier
             return self._dataset_wrapper( dataset, dataset_paths, **kwargs )
 
         list.__init__( self, map( to_wrapper, datasets ) )
@@ -277,7 +289,7 @@ class DatasetListWrapper( list, HasDatasets ):
         return ','.join( map( str, self ) )
 
 
-class DatasetCollectionWrapper( object, HasDatasets ):
+class DatasetCollectionWrapper( ToolParameterValueWrapper, HasDatasets ):
 
     def __init__( self, has_collection, dataset_paths=[], **kwargs ):
         super(DatasetCollectionWrapper, self).__init__()
@@ -292,10 +304,13 @@ class DatasetCollectionWrapper( object, HasDatasets ):
             # It is a HistoryDatasetCollectionAssociation
             collection = has_collection.collection
             self.name = has_collection.name
-        else:
+        elif hasattr( has_collection, "child_collection" ):
             # It is a DatasetCollectionElement instance referencing another collection
             collection = has_collection.child_collection
             self.name = has_collection.element_identifier
+        else:
+            collection = has_collection
+            self.name = None
 
         elements = collection.elements
         element_instances = odict.odict()

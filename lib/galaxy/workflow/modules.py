@@ -6,9 +6,8 @@ import logging
 import re
 
 from galaxy import eggs
-eggs.require( "elementtree" )
 
-from elementtree.ElementTree import Element
+from xml.etree.ElementTree import Element
 
 import galaxy.tools
 from galaxy import exceptions
@@ -18,7 +17,7 @@ from galaxy.dataset_collections import matching
 from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
-from galaxy.tools.parameters import check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
+from galaxy.tools.parameters import params_to_incoming, check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
 from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools.execute import execute
@@ -28,6 +27,13 @@ from galaxy.util.json import loads
 from galaxy.util.json import dumps
 
 log = logging.getLogger( __name__ )
+
+# Key into Tool state to describe invocation-specific runtime properties.
+RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
+# Key into step runtime state dict describing invocation-specific post job
+# actions (i.e. PJA specified at runtime on top of the workflow-wide defined
+# ones.
+RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
 
 
 class WorkflowModule( object ):
@@ -320,6 +326,13 @@ class InputModule( SimpleWorkflowModule ):
                     step_outputs[ 'input_ds_copy' ] = new_hdca
                 else:
                     raise Exception("Unknown history content encountered")
+        # If coming from UI - we haven't registered invocation inputs yet,
+        # so do that now so dependent steps can be recalculated. In the future
+        # everything should come in from the API and this can be eliminated.
+        if not invocation.has_input_for_step( step.id ):
+            content = step_outputs.values()[ 0 ]
+            if content:
+                invocation.add_input( content, step.id )
         progress.set_outputs_for_input( step, step_outputs )
         return job
 
@@ -467,11 +480,12 @@ class ToolModule( WorkflowModule ):
 
     type = "tool"
 
-    def __init__( self, trans, tool_id ):
+    def __init__( self, trans, tool_id, tool_version=None ):
         self.trans = trans
         self.tool_id = tool_id
-        self.tool = trans.app.toolbox.get_tool( tool_id )
+        self.tool = trans.app.toolbox.get_tool( tool_id, tool_version=tool_version )
         self.post_job_actions = {}
+        self.runtime_post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
         self.version_changes = []
@@ -493,12 +507,16 @@ class ToolModule( WorkflowModule ):
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
         tool_id = d[ 'tool_id' ]
-        module = Class( trans, tool_id )
+        tool_version = str( d.get( 'tool_version', None ) )
+        module = Class( trans, tool_id, tool_version=tool_version )
         module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
             if d.get('tool_version', 'Unspecified') != module.get_tool_version():
-                module.version_changes.append( "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() ) )
-            module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
+                message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % ( tool_id, d.get( 'tool_version', 'Unspecified' ), module.get_tool_version() )
+                log.debug(message)
+                module.version_changes.append(message)
+            if d[ "tool_state" ]:
+                module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
         module.post_job_actions = d.get( "post_job_actions", {} )
         module.workflow_outputs = d.get( "workflow_outputs", [] )
@@ -506,23 +524,25 @@ class ToolModule( WorkflowModule ):
 
     @classmethod
     def from_workflow_step( Class, trans, step ):
+        toolbox = trans.app.toolbox
         tool_id = step.tool_id
-        if trans.app.toolbox and tool_id not in trans.app.toolbox.tools_by_id:
+        if toolbox:
             # See if we have access to a different version of the tool.
             # TODO: If workflows are ever enhanced to use tool version
             # in addition to tool id, enhance the selection process here
             # to retrieve the correct version of the tool.
-            tool = trans.app.toolbox.get_tool( tool_id )
-            if tool:
-                tool_id = tool.id
-        if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ):
+            tool_id = toolbox.get_tool_id( tool_id )
+        if ( toolbox and tool_id ):
             if step.config:
                 # This step has its state saved in the config field due to the
                 # tool being previously unavailable.
                 return module_factory.from_dict(trans, loads(step.config), secure=False)
-            module = Class( trans, tool_id )
+            tool_version = step.tool_version
+            module = Class( trans, tool_id, tool_version=tool_version )
             if step.tool_version and (step.tool_version != module.tool.version):
-                module.version_changes.append("%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version))
+                message = "%s: using version '%s' instead of version '%s' indicated in this workflow." % (tool_id, module.tool.version, step.tool_version)
+                log.debug(message)
+                module.version_changes.append(message)
             module.recover_state( step.tool_inputs )
             module.errors = step.tool_errors
             module.workflow_outputs = step.workflow_outputs
@@ -551,17 +571,13 @@ class ToolModule( WorkflowModule ):
         state = galaxy.tools.DefaultToolState()
         app = self.trans.app
         state.decode( runtime_state, self.tool, app, secure=False )
+        state_dict = loads( runtime_state )
+        if RUNTIME_STEP_META_STATE_KEY in state_dict:
+            self.__restore_step_meta_runtime_state( loads( state_dict[ RUNTIME_STEP_META_STATE_KEY ] ) )
         return state
 
     def normalize_runtime_state( self, runtime_state ):
         return runtime_state.encode( self.tool, self.trans.app, secure=False )
-
-    @classmethod
-    def __get_tool_version( cls, trans, tool_id ):
-        # Return a ToolVersion if one exists for tool_id.
-        return trans.install_model.context.query( trans.install_model.ToolVersion ) \
-                               .filter( trans.install_model.ToolVersion.table.c.tool_id == tool_id ) \
-                               .first()
 
     def save_to_step( self, step ):
         step.type = self.type
@@ -574,16 +590,19 @@ class ToolModule( WorkflowModule ):
             step.tool_inputs = None
         step.tool_errors = self.errors
         for k, v in self.post_job_actions.iteritems():
-            # Must have action_type, step.  output and a_args are optional.
-            if 'output_name' in v:
-                output_name = v['output_name']
-            else:
-                output_name = None
-            if 'action_arguments' in v:
-                action_arguments = v['action_arguments']
-            else:
-                action_arguments = None
-            self.trans.sa_session.add(PostJobAction(v['action_type'], step, output_name, action_arguments))
+            pja = self.__to_pja( k, v, step )
+            self.trans.sa_session.add( pja )
+
+    def __to_pja( self, key, value, step ):
+        if 'output_name' in value:
+            output_name = value['output_name']
+        else:
+            output_name = None
+        if 'action_arguments' in value:
+            action_arguments = value['action_arguments']
+        else:
+            action_arguments = None
+        return PostJobAction(value['action_type'], step, output_name, action_arguments)
 
     def get_name( self ):
         if self.tool:
@@ -636,7 +655,9 @@ class ToolModule( WorkflowModule ):
         data_outputs = []
         data_inputs = None
         for name, tool_output in self.tool.outputs.iteritems():
-            if tool_output.format_source != None:
+            if tool_output.collection:
+                formats = [ 'input' ]
+            elif tool_output.format_source != None:
                 formats = [ 'input' ]  # default to special name "input" which remove restrictions on connections
                 if data_inputs == None:
                     data_inputs = self.get_data_inputs()
@@ -670,16 +691,20 @@ class ToolModule( WorkflowModule ):
                         input_dicts.append( { "name": name, "description": "runtime parameter for tool %s" % self.get_name() } )
         return input_dicts
 
-    def get_post_job_actions( self ):
-        return self.post_job_actions
+    def get_post_job_actions( self, incoming=None):
+        if incoming is None:
+            return self.post_job_actions
+        else:
+            return ActionBox.handle_incoming(incoming)
 
     def get_config_form( self ):
         self.add_dummy_datasets()
-        return self.trans.fill_template( "workflow/editor_tool_form.mako",
+        return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self,
             tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
 
     def encode_runtime_state( self, trans, state ):
-        return state.encode( self.tool, self.trans.app )
+        encoded = state.encode( self.tool, self.trans.app )
+        return encoded
 
     def update_state( self, incoming ):
         # Build a callback that handles setting an input to be required at
@@ -714,26 +739,46 @@ class ToolModule( WorkflowModule ):
         self.errors = errors or None
 
     def check_and_update_state( self ):
-        return self.tool.check_and_update_param_values( self.state.inputs, self.trans, allow_workflow_parameters=True )
+        inputs = self.state.inputs
+        return self.tool.check_and_update_param_values( inputs, self.trans, allow_workflow_parameters=True )
 
     def compute_runtime_state( self, trans, step_updates=None, source="html" ):
         # Warning: This method destructively modifies existing step state.
         step_errors = None
         state = self.state
+        self.runtime_post_job_actions = {}
         if step_updates:
             # Get the tool
             tool = self.tool
             # Get old errors
             old_errors = state.inputs.pop( "__errors__", {} )
             # Update the state
+            self.runtime_post_job_actions = step_updates.get(RUNTIME_POST_JOB_ACTIONS_KEY, {})
             step_errors = tool.update_state( trans, tool.inputs, state.inputs, step_updates,
                                              update_only=True, old_errors=old_errors, source=source )
+            step_metadata_runtime_state = self.__step_meta_runtime_state()
+            if step_metadata_runtime_state:
+                state.inputs[ RUNTIME_STEP_META_STATE_KEY ] = step_metadata_runtime_state
         return state, step_errors
 
-    def execute( self, trans, progress, invocation, step ):
-        tool = trans.app.toolbox.get_tool( step.tool_id )
-        tool_state = step.state
+    def __step_meta_runtime_state( self ):
+        """ Build a dictionary a of meta-step runtime state (state about how
+        the workflow step - not the tool state) to be serialized with the Tool
+        state.
+        """
+        return { RUNTIME_POST_JOB_ACTIONS_KEY: self.runtime_post_job_actions }
 
+    def __restore_step_meta_runtime_state( self, step_runtime_state ):
+        if RUNTIME_POST_JOB_ACTIONS_KEY in step_runtime_state:
+            self.runtime_post_job_actions = step_runtime_state[ RUNTIME_POST_JOB_ACTIONS_KEY ]
+
+    def execute( self, trans, progress, invocation, step ):
+        tool = trans.app.toolbox.get_tool( step.tool_id, tool_version=step.tool_version )
+        tool_state = step.state
+        # Not strictly needed - but keep Tool state clean by stripping runtime
+        # metadata parameters from it.
+        if RUNTIME_STEP_META_STATE_KEY in tool_state.inputs:
+            del tool_state.inputs[ RUNTIME_STEP_META_STATE_KEY ]
         collections_to_match = self._find_collections_to_match( tool, progress, step )
         # Have implicit collections...
         if collections_to_match.has_collections():
@@ -784,9 +829,10 @@ class ToolModule( WorkflowModule ):
             workflow_invocation_uuid=invocation.uuid.hex
         )
         if collection_info:
-            step_outputs = dict( execution_tracker.created_collections )
+            step_outputs = dict( execution_tracker.implicit_collections )
         else:
             step_outputs = dict( execution_tracker.output_datasets )
+            step_outputs.update( execution_tracker.output_collections )
         progress.set_step_outputs( step, step_outputs )
         jobs = execution_tracker.successful_jobs
         for job in jobs:
@@ -817,7 +863,10 @@ class ToolModule( WorkflowModule ):
         # Create new PJA associations with the created job, to be run on completion.
         # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
         # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
-        for pja in step.post_job_actions:
+        post_job_actions = step.post_job_actions
+        for key, value in self.runtime_post_job_actions.iteritems():
+            post_job_actions.append( self.__to_pja( key, value, step ) )
+        for pja in post_job_actions:
             if pja.action_type in ActionBox.immediate_actions:
                 ActionBox.execute( self.trans.app, self.trans.sa_session, pja, job, replacement_dict )
             else:
@@ -863,6 +912,11 @@ class ToolModule( WorkflowModule ):
             if replacement_value.hidden_beneath_collection_instance:
                 replacement_value = replacement_value.hidden_beneath_collection_instance
             outputs[ replacement_name ] = replacement_value
+        for job_output_collection in job_0.output_dataset_collection_instances:
+            replacement_name = job_output_collection.name
+            replacement_value = job_output_collection.dataset_collection_instance
+            outputs[ replacement_name ] = replacement_value
+
         progress.set_step_outputs( step, outputs )
 
 

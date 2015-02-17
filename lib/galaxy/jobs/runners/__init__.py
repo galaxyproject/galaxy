@@ -12,6 +12,7 @@ import subprocess
 
 from Queue import Queue, Empty
 
+import galaxy.eggs
 import galaxy.jobs
 from galaxy.jobs.command_factory import build_command
 from galaxy import model
@@ -214,23 +215,31 @@ class BaseJobRunner( object ):
         # Walk job's output associations to find and use from_work_dir attributes.
         job = job_wrapper.get_job()
         job_tool = job_wrapper.tool
+        for (joda, dataset) in self._walk_dataset_outputs( job ):
+            if joda and job_tool:
+                hda_tool_output = job_tool.find_output_def( joda.name )
+                if hda_tool_output and hda_tool_output.from_work_dir:
+                    # Copy from working dir to HDA.
+                    # TODO: move instead of copy to save time?
+                    source_file = os.path.join( job_working_directory, hda_tool_output.from_work_dir )
+                    destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
+                    if in_directory( source_file, job_working_directory ):
+                        output_pairs.append( ( source_file, destination ) )
+                    else:
+                        # Security violation.
+                        log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
+        return output_pairs
+
+    def _walk_dataset_outputs( self, job ):
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
                 if isinstance( dataset, self.app.model.HistoryDatasetAssociation ):
                     joda = self.sa_session.query( self.app.model.JobToOutputDatasetAssociation ).filter_by( job=job, dataset=dataset ).first()
-                    if joda and job_tool:
-                        hda_tool_output = job_tool.outputs.get( joda.name, None )
-                        if hda_tool_output and hda_tool_output.from_work_dir:
-                            # Copy from working dir to HDA.
-                            # TODO: move instead of copy to save time?
-                            source_file = os.path.join( job_working_directory, hda_tool_output.from_work_dir )
-                            destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
-                            if in_directory( source_file, job_working_directory ):
-                                output_pairs.append( ( source_file, destination ) )
-                            else:
-                                # Security violation.
-                                log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
-        return output_pairs
+                    yield (joda, dataset)
+        # TODO: why is this not just something easy like:
+        # for dataset_assoc in job.output_datasets + job.output_library_datasets:
+        #      yield (dataset_assoc, dataset_assoc.dataset)
+        #  I don't understand the reworking it backwards.  -John
 
     def _handle_metadata_externally( self, job_wrapper, resolve_requirements=False ):
         """
@@ -261,12 +270,20 @@ class BaseJobRunner( object ):
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta for job %d finished' % job_wrapper.job_id )
 
+    def _get_egg_env_opts(self):
+        env = []
+        crate = galaxy.eggs.Crate()
+        for opt in ('enable_egg_fetch', 'enable_eggs', 'try_dependencies_from_env'):
+            env.append('GALAXY_%s="%s"; export GALAXY_%s' % (opt.upper(), getattr(crate, opt), opt.upper()))
+        return env
+
     def get_job_file(self, job_wrapper, **kwds):
         job_metrics = job_wrapper.app.job_metrics
         job_instrumenter = job_metrics.job_instrumenters[ job_wrapper.job_destination.id ]
 
         env_setup_commands = kwds.get( 'env_setup_commands', [] )
         env_setup_commands.append( job_wrapper.get_env_setup_clause() or '' )
+        env_setup_commands.extend( self._get_egg_env_opts() or [] )
         destination = job_wrapper.job_destination or {}
         envs = destination.get( "env", [] )
         for env in envs:

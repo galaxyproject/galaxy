@@ -15,6 +15,7 @@ from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
 from galaxy.exceptions import MessageException
+from galaxy import exceptions
 
 from galaxy import web
 from galaxy import model
@@ -32,20 +33,19 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
 
 from galaxy.datatypes.interval import ChromatinInteractions
-from galaxy.datatypes.data import Text
 
 from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation, HistoryDatasetAssociation
 
 from galaxy.managers import api_keys
 from galaxy.managers import tags
+from galaxy.managers import workflows
 from galaxy.managers import base as managers_base
+from galaxy.managers import users
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
 from galaxy.tools.parameters.basic import DataCollectionToolParameter
-from galaxy.util.json import dumps
 from galaxy.workflow.modules import ToolModule
-from galaxy.workflow.steps import attach_ordered_steps
 from galaxy.util import validation
 
 
@@ -70,6 +70,7 @@ class BaseController( object ):
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context
+        self.user_manager = users.UserManager( app )
 
     def get_toolbox(self):
         """Returns the application toolbox"""
@@ -101,6 +102,16 @@ class BaseController( object ):
     def get_role( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'Role', check_ownership=False, check_accessible=False, deleted=deleted )
 
+    # ---- parsing query params
+    def decode_id( self, id ):
+        try:
+            # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
+            #   resulting in error for valid id
+            return self.app.security.decode_id( str( id ) )
+        except ( ValueError, TypeError ):
+            msg = "Malformed id ( %s ) specified, unable to decode" % ( str( id ) )
+            raise exceptions.MalformedId( msg, id=str( id ) )
+
     def encode_all_ids( self, trans, rval, recursive=False ):
         """
         Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
@@ -109,16 +120,52 @@ class BaseController( object ):
         """
         return trans.security.encode_all_ids( rval, recursive=recursive )
 
-    # incoming param validation
-    # should probably be in sep. serializer class/object _used_ by controller
-    def validate_and_sanitize_basestring( self, key, val ):
-        return validation.validate_and_sanitize_basestring( key, val )
+    def parse_filter_params( self, qdict, filter_attr_key='q', filter_value_key='qv', attr_op_split_char='-' ):
+        """
+        """
+        #TODO: import DEFAULT_OP from FilterParser
+        DEFAULT_OP = 'eq'
+        if filter_attr_key not in qdict:
+            return []
+        #precondition: attrs/value pairs are in-order in the qstring
+        attrs = qdict.get( filter_attr_key )
+        if not isinstance( attrs, list ):
+            attrs = [ attrs ]
+        # ops are strings placed after the attr strings and separated by a split char (e.g. 'create_time-lt')
+        # ops are optional and default to 'eq'
+        reparsed_attrs = []
+        ops = []
+        for attr in attrs:
+            op = DEFAULT_OP
+            if attr_op_split_char in attr:
+                #note: only split the last (e.g. q=community-tags-in&qv=rna yields ( 'community-tags', 'in', 'rna' )
+                attr, op = attr.rsplit( attr_op_split_char, 1 )
+            ops.append( op )
+            reparsed_attrs.append( attr )
+        attrs = reparsed_attrs
 
-    def validate_and_sanitize_basestring_list( self, key, val ):
-        return validation.validate_and_sanitize_basestring_list( key, val )
+        values = qdict.get( filter_value_key, [] )
+        if not isinstance( values, list ):
+            values = [ values ]
+        #TODO: it may be more helpful to the consumer if we error on incomplete 3-tuples
+        #   (instead of relying on zip to shorten)
+        return zip( attrs, ops, values )
 
-    def validate_boolean( self, key, val ):
-        return validation.validate_boolean( key, val )
+    def parse_limit_offset( self, qdict ):
+        """
+        """
+        def _parse_pos_int( i ):
+            try:
+                new_val = int( i )
+                if new_val >= 0:
+                    return new_val
+            except ( TypeError, ValueError ):
+                pass
+            return None
+
+        limit = _parse_pos_int( qdict.get( 'limit', None ) )
+        offset = _parse_pos_int( qdict.get( 'offset', None ) )
+        return ( limit, offset )
 
 
 Root = BaseController
@@ -187,6 +234,13 @@ class BaseAPIController( BaseController ):
     def not_implemented( self, trans, **kwd ):
         raise HTTPNotImplemented()
 
+    def _parse_serialization_params( self, kwd, default_view ):
+        view = kwd.get( 'view', None )
+        keys = kwd.get( 'keys' )
+        if isinstance( keys, basestring ):
+            keys = keys.split( ',' )
+        return dict( view=view, keys=keys, default_view=default_view )
+
 
 class Datatype( object ):
     """Used for storing in-memory list of datatypes currently in the datatypes registry."""
@@ -225,7 +279,7 @@ class CreatesUsersMixin:
         if trans.webapp.name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
             trans.app.security_agent.user_set_default_permissions( user,
-                                                                   default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
+                default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
         return user
 
 
@@ -248,269 +302,6 @@ class SharableItemSecurityMixin:
         return managers_base.security_check( trans, item, check_ownership=check_ownership, check_accessible=check_accessible )
 
 
-class UsesHistoryMixin( SharableItemSecurityMixin ):
-    """ Mixin for controllers that use History objects. """
-
-    def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
-        """
-        Get a History from the database by id, verifying ownership.
-        """
-        if trans.user is None and trans.history:
-            if id == trans.security.encode_id( trans.history.id ):
-                return trans.history
-            raise ItemOwnershipException( "Must be logged in to manage Galaxy items", type='error' )
-
-        history = self.get_object( trans, id, 'History',
-            check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-        history = self.security_check( trans, history, check_ownership, check_accessible )
-        return history
-
-    def get_user_histories( self, trans, user=None, include_deleted=False, only_deleted=False ):
-        """
-        Get all the histories for a given user (defaulting to `trans.user`)
-        ordered by update time and filtered on whether they've been deleted.
-        """
-        # handle default and/or anonymous user (which still may not have a history yet)
-        user = user or trans.user
-        if not user:
-            current_history = trans.get_history()
-            return [ current_history ] if current_history else []
-
-        history_model = trans.model.History
-        query = ( trans.sa_session.query( history_model )
-            .filter( history_model.user == user )
-            .order_by( desc( history_model.table.c.update_time ) ) )
-        if only_deleted:
-            query = query.filter( history_model.deleted == True )
-        elif not include_deleted:
-            query = query.filter( history_model.deleted == False )
-
-        return query.all()
-
-    def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
-        """ Returns history's datasets. """
-        query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
-            .filter( trans.model.HistoryDatasetAssociation.history == history ) \
-            .options( eagerload( "children" ) ) \
-            .join( "dataset" ) \
-            .options( eagerload_all( "dataset.actions" ) ) \
-            .order_by( trans.model.HistoryDatasetAssociation.hid )
-        if not show_deleted:
-            query = query.filter( trans.model.HistoryDatasetAssociation.deleted == False )
-        if not show_purged:
-            query = query.filter( trans.model.Dataset.purged == False )
-        return query.all()
-
-    def get_hda_state_counts( self, trans, history, include_deleted=False, include_hidden=False ):
-        """
-        Returns a dictionary with state counts for history's HDAs. Key is a
-        dataset state, value is the number of states in that count.
-        """
-        # Build query to get (state, count) pairs.
-        cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ]
-        from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
-
-        conditions = [ trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id ]
-        if not include_deleted:
-            # Only count datasets that have not been deleted.
-            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.deleted == False )
-        if not include_hidden:
-            # Only count datasets that are visible.
-            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.visible == True )
-
-        group_by = trans.app.model.Dataset.table.c.state
-        query = select( columns=cols_to_select,
-                        from_obj=from_obj,
-                        whereclause=and_( *conditions ),
-                        group_by=group_by )
-
-        # Initialize count dict with all states.
-        state_count_dict = {}
-        for state in trans.app.model.Dataset.states.values():
-            state_count_dict[ state ] = 0
-
-        # Process query results, adding to count dict.
-        for row in trans.sa_session.execute( query ):
-            state, count = row
-            state_count_dict[ state ] = count
-
-        return state_count_dict
-
-    def get_hda_summary_dicts( self, trans, history ):
-        """Returns a list of dictionaries containing summary information
-        for each HDA in the given history.
-        """
-        hda_model = trans.model.HistoryDatasetAssociation
-
-        # get state, name, etc.
-        columns = ( hda_model.name, hda_model.hid, hda_model.id, hda_model.deleted,
-                    trans.model.Dataset.state )
-        column_keys = [ "name", "hid", "id", "deleted", "state" ]
-
-        query = ( trans.sa_session.query( *columns )
-                    .enable_eagerloads( False )
-                    .filter( hda_model.history == history )
-                    .join( trans.model.Dataset )
-                    .order_by( hda_model.hid ) )
-
-        # build dictionaries, adding history id and encoding all ids
-        hda_dicts = []
-        for hda_tuple in query.all():
-            hda_dict = dict( zip( column_keys, hda_tuple ) )
-            hda_dict[ 'history_id' ] = history.id
-            trans.security.encode_dict_ids( hda_dict )
-            hda_dicts.append( hda_dict )
-        return hda_dicts
-
-    def _get_hda_state_summaries( self, trans, hda_dict_list ):
-        """Returns two dictionaries (in a tuple): state_counts and state_ids.
-        Each is keyed according to the possible hda states:
-            _counts contains a sum of the datasets in each state
-            _ids contains a list of the encoded ids for each hda in that state
-
-        hda_dict_list should be a list of hda data in dictionary form.
-        """
-        #TODO: doc to rst
-        # init counts, ids for each state
-        state_counts = {}
-        state_ids = {}
-        for state in trans.app.model.Dataset.states.values():
-            state_counts[ state ] = 0
-            state_ids[ state ] = []
-
-        for hda_dict in hda_dict_list:
-            item_state = hda_dict['state']
-            if not hda_dict['deleted']:
-                state_counts[ item_state ] = state_counts[ item_state ] + 1
-            # needs to return all ids (no deleted check)
-            state_ids[ item_state ].append( hda_dict['id'] )
-
-        return ( state_counts, state_ids )
-
-    def _get_history_state_from_hdas( self, trans, history, hda_state_counts ):
-        """Returns the history state based on the states of the HDAs it contains.
-        """
-        states = trans.app.model.Dataset.states
-
-        num_hdas = sum( hda_state_counts.values() )
-        # (default to ERROR)
-        state = states.ERROR
-        if num_hdas == 0:
-            state = states.NEW
-
-        else:
-            if( ( hda_state_counts[ states.RUNNING ] > 0 )
-            or  ( hda_state_counts[ states.SETTING_METADATA ] > 0 )
-            or  ( hda_state_counts[ states.UPLOAD ] > 0 ) ):
-                state = states.RUNNING
-
-            elif hda_state_counts[ states.QUEUED ] > 0:
-                state = states.QUEUED
-
-            elif( ( hda_state_counts[ states.ERROR ] > 0 )
-            or    ( hda_state_counts[ states.FAILED_METADATA ] > 0 ) ):
-                state = states.ERROR
-
-            elif hda_state_counts[ states.OK ] == num_hdas:
-                state = states.OK
-
-        return state
-
-    def get_history_dict( self, trans, history, hda_dictionaries=None ):
-        """Returns history data in the form of a dictionary.
-        """
-        history_dict = history.to_dict( view='element', value_mapper={ 'id':trans.security.encode_id })
-        history_dict[ 'user_id' ] = None
-        if history.user_id:
-            history_dict[ 'user_id' ] = trans.security.encode_id( history.user_id )
-
-        history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
-        history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
-        if not history_dict[ 'annotation' ]:
-            history_dict[ 'annotation' ] = ''
-        #TODO: item_slug url
-        if history_dict[ 'importable' ] and history_dict[ 'slug' ]:
-            #TODO: this should be in History (or a superclass of)
-            username_and_slug = ( '/' ).join(( 'u', history.user.username, 'h', history_dict[ 'slug' ] ))
-            history_dict[ 'username_and_slug' ] = username_and_slug
-
-        hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
-        #TODO remove the following in v2
-        ( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
-        history_dict[ 'state_details' ] = state_counts
-        history_dict[ 'state_ids' ] = state_ids
-        history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
-
-        return history_dict
-
-    def set_history_from_dict( self, trans, history, new_data ):
-        """
-        Changes history data using the given dictionary new_data.
-        """
-        #precondition: ownership of the history has already been checked
-        #precondition: user is not None (many of these attributes require a user to set properly)
-        user = trans.get_user()
-
-        # published histories should always be importable
-        if 'published' in new_data and new_data[ 'published' ] and not history.importable:
-            new_data[ 'importable' ] = True
-        # send what we can down into the model
-        changed = history.set_from_dict( new_data )
-
-        # the rest (often involving the trans) - do here
-        #TODO: the next two could be an aspect/mixin
-        #TODO: also need a way to check whether they've changed - assume they have for now
-        if 'annotation' in new_data:
-            history.add_item_annotation( trans.sa_session, user, history, new_data[ 'annotation' ] )
-            changed[ 'annotation' ] = new_data[ 'annotation' ]
-
-        if 'tags' in new_data:
-            self.set_tags_from_list( trans, history, new_data[ 'tags' ], user=user )
-            changed[ 'tags' ] = new_data[ 'tags' ]
-
-        #TODO: sharing with user/permissions?
-
-        if changed.keys():
-            trans.sa_session.flush()
-
-            # create a slug if none exists (setting importable to false should not remove the slug)
-            if 'importable' in changed and changed[ 'importable' ] and not history.slug:
-                self._create_history_slug( trans, history )
-
-        return changed
-
-    def _create_history_slug( self, trans, history ):
-        #TODO: mixins need to die a quick, horrible death
-        #   (this is duplicate from SharableMixin which can't be added to UsesHistory without exposing various urls)
-        cur_slug = history.slug
-
-        # Setup slug base.
-        if cur_slug is None or cur_slug == "":
-            # Item can have either a name or a title.
-            item_name = history.name
-            slug_base = util.ready_name_for_url( item_name.lower() )
-        else:
-            slug_base = cur_slug
-
-        # Using slug base, find a slug that is not taken. If slug is taken,
-        # add integer to end.
-        new_slug = slug_base
-        count = 1
-        while ( trans.sa_session.query( trans.app.model.History )
-                    .filter_by( user=history.user, slug=new_slug, importable=True )
-                    .count() != 0 ):
-            # Slug taken; choose a new slug based on count. This approach can
-            # handle numerous items with the same name gracefully.
-            new_slug = '%s-%i' % ( slug_base, count )
-            count += 1
-
-        # Set slug and return.
-        trans.sa_session.add( history )
-        history.slug = new_slug
-        trans.sa_session.flush()
-        return history.slug == cur_slug
-
-
 class ExportsHistoryMixin:
 
     def serve_ready_history_export( self, trans, jeha ):
@@ -525,7 +316,6 @@ class ExportsHistoryMixin:
 
     def queue_history_export( self, trans, history, gzip=True, include_hidden=False, include_deleted=False ):
         # Convert options to booleans.
-        #
         if isinstance( gzip, basestring ):
             gzip = ( gzip in [ 'True', 'true', 'T', 't' ] )
         if isinstance( include_hidden, basestring ):
@@ -552,311 +342,6 @@ class ImportsHistoryMixin:
         history_imp_tool = trans.app.toolbox.get_tool( '__IMPORT_HISTORY__' )
         incoming = { '__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type }
         history_imp_tool.execute( trans, incoming=incoming )
-
-
-class UsesHistoryDatasetAssociationMixin:
-    """
-    Mixin for controllers that use HistoryDatasetAssociation objects.
-    """
-
-    def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
-        """
-        Get an HDA object by id performing security checks using
-        the current transaction.
-        """
-        try:
-            dataset_id = trans.security.decode_id( dataset_id )
-        except ( AttributeError, TypeError ):
-            # DEPRECATION: We still support unencoded ids for backward compatibility
-            try:
-                dataset_id = int( dataset_id )
-            except ValueError:
-                raise HTTPBadRequest( "Invalid dataset id: %s." % str( dataset_id ) )
-
-        try:
-            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
-        except:
-            raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
-
-        if check_ownership:
-            # Verify ownership.
-            user = trans.get_user()
-            if not user:
-                error( "Must be logged in to manage Galaxy items" )
-            if data.history.user != user:
-                error( "%s is not owned by current user" % data.__class__.__name__ )
-
-        if check_accessible:
-            current_user_roles = trans.get_current_user_roles()
-
-            if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-                error( "You are not allowed to access this dataset" )
-
-            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
-                return trans.show_error_message( "Please wait until this dataset finishes uploading "
-                                                   + "before attempting to view it." )
-        return data
-
-    def get_history_dataset_association( self, trans, history, dataset_id,
-                                         check_ownership=True, check_accessible=False, check_state=False ):
-        """
-        Get a HistoryDatasetAssociation from the database by id, verifying ownership.
-        """
-        #TODO: duplicate of above? alias to above (or vis-versa)
-        self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
-        hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation',
-                               check_ownership=False, check_accessible=False )
-
-        if check_accessible:
-            if( not trans.user_is_admin()
-            and not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ) ):
-                error( "You are not allowed to access this dataset" )
-
-            if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
-                error( "Please wait until this dataset finishes uploading before attempting to view it." )
-        return hda
-
-    def get_history_dataset_association_from_ids( self, trans, id, history_id ):
-        # Just to echo other TODOs, there seems to be some overlap here, still
-        # this block appears multiple places (dataset show, history_contents
-        # show, upcoming history job show) so I am consolodating it here.
-        # Someone smarter than me should determine if there is some redundancy here.
-
-        # for anon users:
-        #TODO: check login_required?
-        #TODO: this isn't actually most_recently_used (as defined in histories)
-        if( ( trans.user == None )
-        and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
-            history = trans.history
-            #TODO: dataset/hda by id (from history) OR check_ownership for anon user
-            hda = self.get_history_dataset_association( trans, history, id,
-                check_ownership=False, check_accessible=True )
-        else:
-            #TODO: do we really need the history?
-            history = self.get_history( trans, history_id,
-                check_ownership=False, check_accessible=True, deleted=False )
-            hda = self.get_history_dataset_association( trans, history, id,
-                check_ownership=False, check_accessible=True )
-        return hda
-
-    def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
-        """
-        Returns one or more datasets in a list.
-
-        If a dataset is not found or is inaccessible to trans.user,
-        add None in its place in the list.
-        """
-        # precondtion: dataset_ids is a list of encoded id strings
-        hdas = []
-        for id in hda_ids:
-            hda = None
-            try:
-                hda = self.get_dataset( trans, id,
-                    check_ownership=check_ownership,
-                    check_accessible=check_accessible,
-                    check_state=check_state )
-            except Exception:
-                pass
-            hdas.append( hda )
-        return hdas
-
-    def get_data( self, dataset, preview=True ):
-        """
-        Gets a dataset's data.
-        """
-        # Get data from file, truncating if necessary.
-        truncated = False
-        dataset_data = None
-        if os.path.exists( dataset.file_name ):
-            if isinstance( dataset.datatype, Text ):
-                max_peek_size = 1000000 # 1 MB
-                if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
-                    dataset_data = open( dataset.file_name ).read(max_peek_size)
-                    truncated = True
-                else:
-                    dataset_data = open( dataset.file_name ).read(max_peek_size)
-                    truncated = False
-            else:
-                # For now, cannot get data from non-text datasets.
-                dataset_data = None
-        return truncated, dataset_data
-
-    def check_dataset_state( self, trans, dataset ):
-        """
-        Returns a message if dataset is not ready to be used in visualization.
-        """
-        if not dataset:
-            return dataset.conversion_messages.NO_DATA
-        if dataset.state == trans.app.model.Job.states.ERROR:
-            return dataset.conversion_messages.ERROR
-        if dataset.state != trans.app.model.Job.states.OK:
-            return dataset.conversion_messages.PENDING
-        return None
-
-    def get_hda_dict( self, trans, hda ):
-        """Return full details of this HDA in dictionary form.
-        """
-        #precondition: the user's access to this hda has already been checked
-        #TODO:?? postcondition: all ids are encoded (is this really what we want at this level?)
-        expose_dataset_path = trans.user_is_admin() or trans.app.config.expose_dataset_path
-        hda_dict = hda.to_dict( view='element', expose_dataset_path=expose_dataset_path )
-        hda_dict[ 'api_type' ] = "file"
-
-        # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
-        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-        can_access_hda = ( trans.user_is_admin() or can_access_hda )
-        if not can_access_hda:
-            return self.get_inaccessible_hda_dict( trans, hda )
-        hda_dict[ 'accessible' ] = True
-
-        #TODO: I'm unclear as to which access pattern is right
-        hda_dict[ 'annotation' ] = hda.get_item_annotation_str( trans.sa_session, trans.user, hda )
-        #annotation = getattr( hda, 'annotation', hda.get_item_annotation_str( trans.sa_session, trans.user, hda ) )
-
-        # ---- return here if deleted AND purged OR can't access
-        purged = ( hda.purged or hda.dataset.purged )
-        if hda.deleted and purged:
-            #TODO: to_dict should really go AFTER this - only summary data
-            return trans.security.encode_dict_ids( hda_dict )
-
-        if expose_dataset_path:
-            try:
-                hda_dict[ 'file_name' ] = hda.file_name
-            except objectstore.ObjectNotFound:
-                log.exception( 'objectstore.ObjectNotFound, HDA %s.', hda.id )
-
-        hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
-            history_id = trans.security.encode_id( hda.history.id ),
-            history_content_id = trans.security.encode_id( hda.id ) )
-
-        # resubmitted is not a real state
-        hda_dict[ 'resubmitted' ] = False
-        if hda.state == trans.app.model.Dataset.states.RESUBMITTED:
-            hda_dict[ 'state' ] = hda.dataset.state
-            hda_dict[ 'resubmitted' ] = True
-
-        # indeces, assoc. metadata files, etc.
-        meta_files = []
-        for meta_type in hda.metadata.spec.keys():
-            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
-                meta_files.append( dict( file_type=meta_type ) )
-        if meta_files:
-            hda_dict[ 'meta_files' ] = meta_files
-
-        # currently, the viz reg is optional - handle on/off
-        if trans.app.visualizations_registry:
-            hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
-        else:
-            hda_dict[ 'visualizations' ] = hda.get_visualizations()
-        #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
-        #           when the visualizations button is clicked (instead of preloading/pre-checking)
-
-        return trans.security.encode_dict_ids( hda_dict )
-
-    def get_inaccessible_hda_dict( self, trans, hda ):
-        return trans.security.encode_dict_ids({
-            'id'        : hda.id,
-            'history_id': hda.history.id,
-            'hid'       : hda.hid,
-            'name'      : hda.name,
-            'state'     : hda.state,
-            'deleted'   : hda.deleted,
-            'visible'   : hda.visible,
-            'accessible': False
-        })
-
-    def get_hda_dict_with_error( self, trans, hda=None, history_id=None, id=None, error_msg='Error' ):
-        return trans.security.encode_dict_ids({
-            'id'        : hda.id if hda else id,
-            'history_id': hda.history.id if hda else history_id,
-            'hid'       : hda.hid if hda else '(unknown)',
-            'name'      : hda.name if hda else '(unknown)',
-            'error'     : error_msg,
-            'state'     : trans.model.Dataset.states.NEW
-        })
-
-    def get_display_apps( self, trans, hda ):
-        display_apps = []
-        for display_app in hda.get_display_applications( trans ).itervalues():
-
-            app_links = []
-            for link_app in display_app.links.itervalues():
-                app_links.append({
-                    'target': link_app.url.get( 'target_frame', '_blank' ),
-                    'href'  : link_app.get_display_url( hda, trans ),
-                    'text'  : gettext( link_app.name )
-                })
-            if app_links:
-                display_apps.append( dict( label=display_app.name, links=app_links ) )
-
-        return display_apps
-
-    def get_old_display_applications( self, trans, hda ):
-        display_apps = []
-        if not trans.app.config.enable_old_display_applications:
-            return display_apps
-
-        for display_app in hda.datatype.get_display_types():
-            target_frame, display_links = hda.datatype.get_display_links( hda,
-                display_app, trans.app, trans.request.base )
-
-            if len( display_links ) > 0:
-                display_label = hda.datatype.get_display_label( display_app )
-
-                app_links = []
-                for display_name, display_link in display_links:
-                    app_links.append({
-                        'target': target_frame,
-                        'href'  : display_link,
-                        'text'  : gettext( display_name )
-                    })
-                if app_links:
-                    display_apps.append( dict( label=display_label, links=app_links ) )
-
-        return display_apps
-
-    def set_hda_from_dict( self, trans, hda, new_data ):
-        """
-        Changes HDA data using the given dictionary new_data.
-        """
-        # precondition: access of the hda has already been checked
-
-        # send what we can down into the model
-        changed = hda.set_from_dict( new_data )
-        # the rest (often involving the trans) - do here
-        if 'annotation' in new_data.keys() and trans.get_user():
-            hda.add_item_annotation( trans.sa_session, trans.get_user(), hda, new_data[ 'annotation' ] )
-            changed[ 'annotation' ] = new_data[ 'annotation' ]
-        if 'tags' in new_data.keys() and trans.get_user():
-            self.set_tags_from_list( trans, hda, new_data[ 'tags' ], user=trans.user )
-        # sharing/permissions?
-        # purged
-
-        if changed.keys():
-            trans.sa_session.flush()
-
-        return changed
-
-    def get_hda_job( self, hda ):
-        # Get dataset's job.
-        job = None
-        for job_output_assoc in hda.creating_job_associations:
-            job = job_output_assoc.job
-            break
-        return job
-
-    def stop_hda_creating_job( self, hda ):
-        """
-        Stops an HDA's creating job if all the job's other outputs are deleted.
-        """
-        if hda.parent_id is None and len( hda.creating_job_associations ) > 0:
-            # Mark associated job for deletion
-            job = hda.creating_job_associations[0].job
-            if job.state in [ self.app.model.Job.states.QUEUED, self.app.model.Job.states.RUNNING, self.app.model.Job.states.NEW ]:
-                # Are *all* of the job's other output datasets deleted?
-                if job.check_if_output_datasets_deleted():
-                    job.mark_deleted( self.app.config.track_jobs_in_database )
-                    self.app.job_manager.job_stop_queue.put( job.id )
 
 
 class UsesLibraryMixin:
@@ -997,7 +482,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
         return security_agent.get_permissions( ldda )
 
 
-class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
+class UsesVisualizationMixin( UsesLibraryMixinItems ):
     """
     Mixin for controllers that use Visualization objects.
     """
@@ -1286,9 +771,14 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
     def get_tool_def( self, trans, hda ):
         """ Returns definition of an interactive tool for an HDA. """
 
-        job = self.get_hda_job( hda )
+        # Get dataset's job.
+        job = None
+        for job_output_assoc in hda.creating_job_associations:
+            job = job_output_assoc.job
+            break
         if not job:
             return None
+
         tool = trans.app.toolbox.get_tool( job.tool_id )
         if not tool:
             return None
@@ -1426,9 +916,47 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
     def get_hda_or_ldda( self, trans, hda_ldda, dataset_id ):
         """ Returns either HDA or LDDA for hda/ldda and id combination. """
         if hda_ldda == "hda":
-            return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+            return self.get_hda( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:
             return self.get_library_dataset_dataset_association( trans, dataset_id )
+
+    def get_hda( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
+        """
+        Get an HDA object by id performing security checks using
+        the current transaction.
+        """
+        try:
+            dataset_id = trans.security.decode_id( dataset_id )
+        except ( AttributeError, TypeError ):
+            # DEPRECATION: We still support unencoded ids for backward compatibility
+            try:
+                dataset_id = int( dataset_id )
+            except ValueError:
+                raise HTTPBadRequest( "Invalid dataset id: %s." % str( dataset_id ) )
+
+        try:
+            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
+        except:
+            raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
+
+        if check_ownership:
+            # Verify ownership.
+            user = trans.get_user()
+            if not user:
+                error( "Must be logged in to manage Galaxy items" )
+            if data.history.user != user:
+                error( "%s is not owned by current user" % data.__class__.__name__ )
+
+        if check_accessible:
+            current_user_roles = trans.get_current_user_roles()
+
+            if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+                error( "You are not allowed to access this dataset" )
+
+            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
+                return trans.show_error_message( "Please wait until this dataset finishes uploading "
+                                                   + "before attempting to view it." )
+        return data
 
     # -- Helper functions --
 
@@ -1581,220 +1109,26 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
-
-        # Put parameters in workflow mode
-        trans.workflow_building_mode = True
-        # Create new workflow from incoming dict
-        workflow = model.Workflow()
-        # If there's a source, put it in the workflow name.
-        if source:
-            name = "%s (imported from %s)" % ( data['name'], source )
-        else:
-            name = data['name']
-        workflow.name = name
-        if 'uuid' in data:
-            workflow.uuid = data['uuid']
-        # Assume no errors until we find a step that has some
-        workflow.has_errors = False
-        # Create each step
-        steps = []
-        # The editor will provide ids for each step that we don't need to save,
-        # but do need to use to make connections
-        steps_by_external_id = {}
-        # Keep track of tools required by the workflow that are not available in
-        # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
-        # will be ( tool_id, tool_name, tool_version ).
-        missing_tool_tups = []
-        supplied_steps = data[ 'steps' ]
-        # Try to iterate through imported workflow in such a way as to
-        # preserve step order.
-        step_indices = supplied_steps.keys()
-        try:
-            step_indices = sorted( step_indices, key=int )
-        except ValueError:
-            # to defensive, were these ever or will they ever not be integers?
-            pass
-        # First pass to build step objects and populate basic values
-        for step_index in step_indices:
-            step_dict = supplied_steps[ step_index ]
-            # Create the model class for the step
-            step = model.WorkflowStep()
-            steps.append( step )
-            steps_by_external_id[ step_dict['id' ] ] = step
-            # FIXME: Position should be handled inside module
-            step.position = step_dict['position']
-            module = module_factory.from_dict( trans, step_dict, secure=False )
-            module.save_to_step( step )
-            if module.type == 'tool' and module.tool is None:
-                # A required tool is not available in the local Galaxy instance.
-                missing_tool_tup = ( step_dict[ 'tool_id' ], step_dict[ 'name' ], step_dict[ 'tool_version' ] )
-                if missing_tool_tup not in missing_tool_tups:
-                    missing_tool_tups.append( missing_tool_tup )
-                # Save the entire step_dict in the unused config field, be parsed later
-                # when we do have the tool
-                step.config = dumps(step_dict)
-            if step.tool_errors:
-                workflow.has_errors = True
-            # Stick this in the step temporarily
-            step.temp_input_connections = step_dict['input_connections']
-            # Save step annotation.
-            annotation = step_dict[ 'annotation' ]
-            if annotation:
-                annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
-                self.add_item_annotation( trans.sa_session, trans.get_user(), step, annotation )
-        # Second pass to deal with connections between steps
-        for step in steps:
-            # Input connections
-            for input_name, conn_list in step.temp_input_connections.iteritems():
-                if not conn_list:
-                    continue
-                if not isinstance(conn_list, list):  # Older style singleton connection
-                    conn_list = [conn_list]
-                for conn_dict in conn_list:
-                    conn = model.WorkflowStepConnection()
-                    conn.input_step = step
-                    conn.input_name = input_name
-                    conn.output_name = conn_dict['output_name']
-                    conn.output_step = steps_by_external_id[ conn_dict['id'] ]
-            del step.temp_input_connections
-
-        # Order the steps if possible
-        attach_ordered_steps( workflow, steps )
-
-        # Connect up
-        stored = model.StoredWorkflow()
-        stored.name = workflow.name
-        workflow.stored_workflow = stored
-        stored.latest_workflow = workflow
-        stored.user = trans.user
-        stored.published = publish
-        if data[ 'annotation' ]:
-            annotation = sanitize_html( data[ 'annotation' ], 'utf-8', 'text/html' )
-            self.add_item_annotation( trans.sa_session, stored.user, stored, annotation )
-
-        # Persist
-        trans.sa_session.add( stored )
-        trans.sa_session.flush()
-
-        if add_to_menu:
-            if trans.user.stored_workflow_menu_entries == None:
-                trans.user.stored_workflow_menu_entries = []
-            menuEntry = model.StoredWorkflowMenuEntry()
-            menuEntry.stored_workflow = stored
-            trans.user.stored_workflow_menu_entries.append( menuEntry )
-            trans.sa_session.flush()
-
-        return stored, missing_tool_tups
+        # TODO: replace this method with direct access to manager.
+        workflow_contents_manager = workflows.WorkflowContentsManager()
+        created_workflow = workflow_contents_manager.build_workflow_from_dict(
+            trans,
+            data,
+            source=source,
+            add_to_menu=add_to_menu,
+            publish=publish
+        )
+        return created_workflow.stored_workflow, created_workflow.missing_tools
 
     def _workflow_to_dict( self, trans, stored ):
         """
         Converts a workflow to a dict of attributes suitable for exporting.
         """
-        workflow = stored.latest_workflow
-        workflow_annotation = self.get_item_annotation_obj( trans.sa_session, trans.user, stored )
-        annotation_str = ""
-        if workflow_annotation:
-            annotation_str = workflow_annotation.annotation
-        # Pack workflow data into a dictionary and return
-        data = {}
-        data['a_galaxy_workflow'] = 'true' # Placeholder for identifying galaxy workflow
-        data['format-version'] = "0.1"
-        data['name'] = workflow.name
-        data['annotation'] = annotation_str
-        if workflow.uuid is not None:
-            data['uuid'] = str(workflow.uuid)
-        data['steps'] = {}
-        # For each step, rebuild the form and encode the state
-        for step in workflow.steps:
-            # Load from database representation
-            module = module_factory.from_workflow_step( trans, step )
-            if not module:
-                return None
-            # Get user annotation.
-            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
-            annotation_str = ""
-            if step_annotation:
-                annotation_str = step_annotation.annotation
-            # Step info
-            step_dict = {
-                'id': step.order_index,
-                'type': module.type,
-                'tool_id': module.get_tool_id(),
-                'tool_version' : step.tool_version,
-                'name': module.get_name(),
-                'tool_state': module.get_state( secure=False ),
-                'tool_errors': module.get_errors(),
-                ## 'data_inputs': module.get_data_inputs(),
-                ## 'data_outputs': module.get_data_outputs(),
-                'annotation' : annotation_str
-            }
-            # Add post-job actions to step dict.
-            if module.type == 'tool':
-                pja_dict = {}
-                for pja in step.post_job_actions:
-                    pja_dict[pja.action_type+pja.output_name] = dict( action_type = pja.action_type,
-                                                                      output_name = pja.output_name,
-                                                                      action_arguments = pja.action_arguments )
-                step_dict[ 'post_job_actions' ] = pja_dict
-            # Data inputs
-            step_dict['inputs'] = module.get_runtime_input_dicts( annotation_str )
-            # User outputs
-            step_dict['user_outputs'] = []
-#            module_outputs = module.get_data_outputs()
-#            step_outputs = trans.sa_session.query( WorkflowOutput ).filter( step=step )
-#            for output in step_outputs:
-#                name = output.output_name
-#                annotation = ""
-#                for module_output in module_outputs:
-#                    if module_output.get( 'name', None ) == name:
-#                        output_type = module_output.get( 'extension', '' )
-#                        break
-#                data['outputs'][name] = { 'name' : name, 'annotation' : annotation, 'type' : output_type }
-
-            # All step outputs
-            step_dict['outputs'] = []
-            if type( module ) is ToolModule:
-                for output in module.get_data_outputs():
-                    step_dict['outputs'].append( { 'name' : output['name'], 'type' : output['extensions'][0] } )
-            # Connections
-            input_connections = step.input_connections
-            if step.type is None or step.type == 'tool':
-                # Determine full (prefixed) names of valid input datasets
-                data_input_names = {}
-
-                def callback( input, value, prefixed_name, prefixed_label ):
-                    if isinstance( input, DataToolParameter ) or isinstance( input, DataCollectionToolParameter ):
-                        data_input_names[ prefixed_name ] = True
-                # FIXME: this updates modules silently right now; messages from updates should be provided.
-                module.check_and_update_state()
-                visit_input_values( module.tool.inputs, module.state.inputs, callback )
-                # Filter
-                # FIXME: this removes connection without displaying a message currently!
-                input_connections = [ conn for conn in input_connections if conn.input_name in data_input_names ]
-            # Encode input connections as dictionary
-            input_conn_dict = {}
-            unique_input_names = set( [conn.input_name for conn in input_connections] )
-            for input_name in unique_input_names:
-                input_conn_dict[ input_name ] = \
-                    [ dict( id=conn.output_step.order_index, output_name=conn.output_name ) for conn in input_connections if conn.input_name == input_name ]
-            # Preserve backward compatability. Previously Galaxy
-            # assumed input connections would be dictionaries not
-            # lists of dictionaries, so replace any singleton list
-            # with just the dictionary so that workflows exported from
-            # newer Galaxy instances can be used with older Galaxy
-            # instances if they do no include multiple input
-            # tools. This should be removed at some point. Mirrored
-            # hack in _workflow_from_dict should never be removed so
-            # existing workflow exports continue to function.
-            for input_name, input_conn in dict(input_conn_dict).iteritems():
-                if len(input_conn) == 1:
-                    input_conn_dict[input_name] = input_conn[0]
-            step_dict['input_connections'] = input_conn_dict
-            # Position
-            step_dict['position'] = step.position
-            # Add to return value
-            data['steps'][step.order_index] = step_dict
-        return data
+        workflow_contents_manager = workflows.WorkflowContentsManager()
+        return workflow_contents_manager.workflow_to_dict(
+            trans,
+            stored,
+        )
 
 
 class UsesFormDefinitionsMixin:
@@ -2718,8 +2052,8 @@ class UsesTagsMixin( SharableItemSecurityMixin ):
 
     def set_tags_from_list( self, trans, item, new_tags_list, user=None ):
         # Method deprecated - try to use TagsHandler instead.
-        tags_manager = tags.TagsManager( trans.app )
-        return tags_manager.set_tags_from_list( trans, item, new_tags_list, user=user )
+        tags_manager = tags.GalaxyTagManager( trans.app )
+        return tags_manager.set_tags_from_list( user, item, new_tags_list )
 
     def get_user_tags_used( self, trans, user=None ):
         """

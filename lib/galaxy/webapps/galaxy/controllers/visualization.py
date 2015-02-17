@@ -1,25 +1,25 @@
 from __future__ import absolute_import
 
-import os
 import copy
 
 from sqlalchemy import desc, or_, and_
 from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
 
+from galaxy import managers
 from galaxy import model, web
-from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
-from galaxy.web.framework.helpers import time_ago, grids, escape
 from galaxy import util
 from galaxy.datatypes.interval import Bed
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util.json import loads
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util import bunch
-from galaxy import util
 from galaxy.visualization import registry
-from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
+from galaxy.visualization.data_providers.genome import RawBedDataProvider
+from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genomes import GenomeRegion
+from galaxy.web import error
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
+from galaxy.web.framework.helpers import escape, grids, time_ago
 
 from .library import LibraryListGrid
 
@@ -128,7 +128,7 @@ class DbKeyColumn( grids.GridColumn ):
 class HistoryColumn( grids.GridColumn ):
     """ Column for filtering by history id. """
     def filter( self, trans, user, query, history_id ):
-        return query.filter( model.History.id==trans.security.decode_id(history_id) )
+        return query.filter( model.History.id==self.decode_id(history_id) )
 
 class HistoryDatasetsSelectionGrid( grids.Grid ):
     # Grid definition.
@@ -157,7 +157,7 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
         Current item for grid is the history being queried. This is a bit
         of hack since current_item typically means the current item in the grid.
         """
-        return trans.sa_session.query( model.History ).get( trans.security.decode_id( kwargs[ 'f-history' ] ) )
+        return trans.sa_session.query( model.History ).get( self.decode_id( kwargs[ 'f-history' ] ) )
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table ).join( model.Dataset.table )
     def apply_query_filter( self, trans, query, **kwargs ):
@@ -271,15 +271,18 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         return query.filter( self.model_class.deleted==False ).filter( self.model_class.published==True )
 
 
-class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
-                                UsesVisualizationMixin,
-                                UsesItemRatings ):
+class VisualizationController( BaseUIController, SharableMixin, UsesVisualizationMixin,
+                               UsesAnnotations, UsesItemRatings ):
     _user_list_grid = VisualizationListGrid()
     _published_list_grid = VisualizationAllPublishedGrid()
     _libraries_grid = LibrarySelectionGrid()
     _histories_grid = HistorySelectionGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
+
+    def __init__( self, app ):
+        super( VisualizationController, self ).__init__( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     #
     # -- Functions for listing visualizations. --
@@ -298,7 +301,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     def list_library_datasets( self, trans, **kwargs ):
         """List a library's datasets that can be added to a visualization."""
 
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( kwargs.get('f-library') ) )
+        library = trans.sa_session.query( trans.app.model.Library ).get( self.decode_id( kwargs.get('f-library') ) )
         return trans.fill_template( '/tracks/library_datasets_select_grid.mako',
                                     cntrller="library",
                                     use_panels=False,
@@ -367,7 +370,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             operation = kwargs['operation'].lower()
             ids = util.listify( kwargs['id'] )
             for id in ids:
-                item = session.query( model.Visualization ).get( trans.security.decode_id( id ) )
+                item = session.query( model.Visualization ).get( self.decode_id( id ) )
                 if operation == "delete":
                     item.deleted = True
                 if operation == "share or publish":
@@ -511,7 +514,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         elif 'disable_link_access_and_unpublish' in kwargs:
             visualization.importable = visualization.published = False
         elif 'unshare_user' in kwargs:
-            user = session.query( model.User ).get( trans.security.decode_id( kwargs['unshare_user' ] ) )
+            user = session.query( model.User ).get( self.decode_id( kwargs['unshare_user' ] ) )
             if not user:
                 error( "User not found for provided id" )
             association = session.query( model.VisualizationUserShareAssociation ) \
@@ -798,7 +801,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             raise HTTPNotFound( 'No visualization registry (possibly disabled in galaxy.ini)' )
         if visualization_name not in registry.plugins:
             raise HTTPNotFound( 'Unknown or invalid visualization: ' + visualization_name )
-            # or redirect to list?
         plugin = registry.plugins[ visualization_name ]
 
         returned = None
@@ -821,15 +823,21 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             # look up template and render
             template_path = plugin.config[ 'template' ]
             returned = registry.fill_template( trans, plugin, template_path,
-                visualization_name=visualization_name, visualization_display_name=visualization_display_name,
-                title=title, saved_visualization=visualization, visualization_id=encoded_visualization_id,
-                embedded=embedded, query=kwargs, vars={}, config=config, **resources )
-            #NOTE: passing *unparsed* kwargs as query
-            #NOTE: vars is a dictionary for shared data in the template
-            #   this feels hacky to me but it's what mako recommends:
-            #   http://docs.makotemplates.org/en/latest/runtime.html
-            #TODO: should vars contain all the passed in arguments? is that even necessary?
-            #TODO: embedded
+                visualization_name=visualization_name,
+                visualization_display_name=visualization_display_name,
+                title=title,
+                saved_visualization=visualization,
+                visualization_id=encoded_visualization_id,
+                embedded=embedded,
+                #NOTE: passing *unparsed* kwargs as query
+                query=kwargs,
+                #NOTE: vars is a dictionary for shared data in the template
+                #   this feels hacky to me but it's what mako recommends:
+                #   http://docs.makotemplates.org/en/latest/runtime.html
+                vars={},
+                config=config,
+                **resources
+            )
 
         except Exception, exception:
             log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
@@ -862,7 +870,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             # use dbkey from dataset to be added or from incoming parameter
             dbkey = None
             if new_dataset_id:
-                dbkey = self.get_dataset( trans, new_dataset_id ).dbkey
+                decoded_id = self.decode_id( new_dataset_id )
+                hda = self.hda_manager.get_owned( trans, decoded_id, trans.user )
+                dbkey = hda.dbkey
                 if dbkey == '?':
                     dbkey = kwargs.get( "dbkey", None )
 
@@ -970,11 +980,12 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             # Loading a shared visualization.
             viz = self.get_visualization( trans, id )
             viz_config = self.get_visualization_config( trans, viz )
-            dataset = self.get_dataset( trans, viz_config[ 'dataset_id' ] )
+            decoded_id = self.decode_id( viz_config[ 'dataset_id' ] )
+            dataset = self.hda_manager.get_owned( trans, decoded_id, trans.user )
         else:
             # Loading new visualization.
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-            job = self.get_hda_job( dataset )
+            job = self.hda_manager.creating_job( dataset )
             viz_config = {
                 'dataset_id': dataset_id,
                 'tool_id': job.tool_id,
@@ -1004,7 +1015,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # get the hda if we can, then its data using the phyloviz parsers
         if dataset_id:
-            hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+            decoded_id = self.decode_id( dataset_id )
+            hda = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+            hda = self.hda_manager.error_if_uploading( hda )
         else:
             return trans.show_message( "Phyloviz couldn't find a dataset_id" )
 

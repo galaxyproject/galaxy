@@ -107,9 +107,10 @@ return Backbone.View.extend({
         
         // append element
         var $main = $('<div/>');
-        $main.append(Utils.wrap((new Ui.Label({ title : 'Provide a chart title:'})).$el));
-        $main.append(Utils.wrap(this.title.$el));
-        $main.append(Utils.wrap(this.types.$el));
+        $main.append((new Ui.Label({ title : 'Provide a chart title:'}).$el));
+        $main.append(this.title.$el);
+        $main.append($('<div/>').addClass('ui-table-form-info').html('This title will appear in the list of \'Saved Visualizations\'. Charts are saved upon creation.'));
+        $main.append(this.types.$el.addClass('ui-margin-top'));
         
         // add tab
         this.tabs.add({
@@ -133,8 +134,8 @@ return Backbone.View.extend({
         });
         
         // append tabs
-        this.portlet.append(this.message.$el);
-        this.portlet.append(this.tabs.$el);
+        this.portlet.append(this.message.$el.addClass('ui-margin-top'));
+        this.portlet.append(this.tabs.$el.addClass('ui-margin-top'));
         
         // elements
         this.setElement(this.portlet.$el);
@@ -189,7 +190,9 @@ return Backbone.View.extend({
     _refreshTitle: function() {
         var title = this.chart.get('title');
         this.portlet.title(title);
-        this.title.value(title);
+        if (this.title.value() != title) {
+            this.title.value(title);
+        }
     },
     
     // refresh group
@@ -292,7 +295,7 @@ return Backbone.View.extend({
                 return;
             }
             for (var key in chart_def.columns) {
-                if (group.attributes[key] == 'null') {
+                if (group.attributes[key] === '__undefined__') {
                     self.message.update({status: 'danger', message: 'This chart type requires column types not found in your tabular file.'});
                     self.tabs.show(group.id);
                     valid = false;

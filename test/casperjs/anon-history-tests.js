@@ -31,7 +31,6 @@ spaceghost.test.begin( 'Testing histories for anonymous users', 0, function suit
     var filenameToUpload = '1.txt',
         filepathToUpload = '../../test-data/' + filenameToUpload;
 
-
     // ------------------------------------------------------------------- check the anonymous new, history for form
     spaceghost.openHomePage().historypanel.waitForHdas( function testPanelStructure(){
         this.test.comment( 'history panel for anonymous user, new history' );

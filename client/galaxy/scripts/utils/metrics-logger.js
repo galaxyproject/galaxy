@@ -34,7 +34,7 @@ function MetricsLogger( options ){
     var self = this;
 
     ///** get the current user's id from bootstrapped data or options */
-    self.userId = window.bootstrapped? window.bootstrapped.user.id: null;
+    self.userId = ( window.bootstrapped && window.bootstrapped.user )? window.bootstrapped.user.id: null;
     self.userId = self.userId || options.userId || null;
 
     /** the (optional) console to emit logs to */

@@ -1,15 +1,12 @@
 import os
 import re
 from StringIO import StringIO
-from galaxy.tools.parameters import grouping
-from galaxy.tools import test
+from galaxy.tools import TestCollectionDef
 from galaxy import eggs
 eggs.require( "requests" )
 from galaxy import util
 from galaxy.util.odict import odict
-import galaxy.model
-from galaxy.model.orm import and_, desc
-from functional import database_contexts
+from galaxy.util.bunch import Bunch
 from requests import get
 from requests import post
 from json import dumps
@@ -58,12 +55,10 @@ class GalaxyInteractorApi( object ):
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
-        for job in jobs:
-            self.wait_for_job( job[ 'id' ], history_id, maxseconds )
+        self.wait_for_jobs( history_id, jobs, maxseconds )
         hid = self.__output_id( output_data )
-        fetcher = self.__dataset_fetcher( history_id )
         ## TODO: Twill version verifys dataset is 'ok' in here.
-        self.twill_test_case.verify_hid( outfile, hda_id=hid, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+        self.verify_output_dataset( history_id=history_id, hda_id=hid, outfile=outfile, attributes=attributes, shed_tool_id=shed_tool_id )
 
         primary_datasets = attributes.get( 'primary_datasets', {} )
         if primary_datasets:
@@ -83,10 +78,16 @@ class GalaxyInteractorApi( object ):
                 raise Exception( msg_template % msg_args )
 
             primary_hda_id = primary_output[ "dataset" ][ "id" ]
-            self.twill_test_case.verify_hid( primary_outfile, hda_id=primary_hda_id, attributes=primary_attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
-            self._verify_metadata( history_id, primary_hda_id, primary_attributes )
+            self.verify_output_dataset( history_id, primary_hda_id, primary_outfile, primary_attributes, shed_tool_id=shed_tool_id )
 
-        self._verify_metadata( history_id, hid, attributes )
+    def wait_for_jobs( self, history_id, jobs, maxseconds ):
+        for job in jobs:
+            self.wait_for_job( job[ 'id' ], history_id, maxseconds )
+
+    def verify_output_dataset( self, history_id, hda_id, outfile, attributes, shed_tool_id ):
+        fetcher = self.__dataset_fetcher( history_id )
+        self.twill_test_case.verify_hid( outfile, hda_id=hda_id, attributes=attributes, dataset_fetcher=fetcher, shed_tool_id=shed_tool_id )
+        self._verify_metadata( history_id, hda_id, attributes )
 
     def _verify_metadata( self, history_id, hid, attributes ):
         metadata = attributes.get( 'metadata', {} ).copy()
@@ -111,9 +112,6 @@ class GalaxyInteractorApi( object ):
                 except KeyError:
                     msg = "Failed to verify dataset metadata, metadata key [%s] was not found." % key
                     raise Exception( msg )
-
-    def wait_for_history( self, history_id, maxseconds ):
-        self.twill_test_case.wait_for( lambda: not self.__history_ready( history_id ), maxseconds=maxseconds)
 
     def wait_for_job( self, job_id, history_id, maxseconds ):
         self.twill_test_case.wait_for( lambda: not self.__job_ready( job_id, history_id ), maxseconds=maxseconds)
@@ -196,7 +194,7 @@ class GalaxyInteractorApi( object ):
             values = [value] if not isinstance(value, list) else value
             new_values = []
             for value in values:
-                if isinstance( value, test.TestCollectionDef ):
+                if isinstance( value, TestCollectionDef ):
                     hdca_id = self._create_collection( history_id, value )
                     new_values = [ dict( src="hdca", id=hdca_id ) ]
                 elif value in self.uploads:
@@ -210,12 +208,18 @@ class GalaxyInteractorApi( object ):
             if isinstance(value, list) and len(value) == 1:
                 inputs_tree[key] = value[0]
 
-        datasets = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=inputs_tree )
-        datasets_object = datasets.json()
+        submit_response = self.__submit_tool( history_id, tool_id=testdef.tool.id, tool_input=inputs_tree )
+        submit_response_object = submit_response.json()
         try:
-            return self.__dictify_outputs( datasets_object ), datasets_object[ 'jobs' ]
+            return Bunch(
+                inputs=inputs_tree,
+                outputs=self.__dictify_outputs( submit_response_object ),
+                output_collections=self.__dictify_output_collections( submit_response_object ),
+                jobs=submit_response_object[ 'jobs' ],
+            )
         except KeyError:
-            raise Exception( datasets_object[ 'message' ] )
+            message = "Error creating a job for these tool inputs - %s" % submit_response_object[ 'message' ]
+            raise RunToolException( message, inputs_tree )
 
     def _create_collection( self, history_id, collection_def ):
         create_payload = dict(
@@ -229,7 +233,7 @@ class GalaxyInteractorApi( object ):
     def _element_identifiers( self, collection_def ):
         element_identifiers = []
         for ( element_identifier, element ) in collection_def.elements:
-            if isinstance( element, test.TestCollectionDef ):
+            if isinstance( element, TestCollectionDef ):
                 subelement_identifiers = self._element_identifiers( element )
                 element = dict(
                     name=element_identifier,
@@ -243,6 +247,12 @@ class GalaxyInteractorApi( object ):
                 element[ "name" ] = element_name
             element_identifiers.append( element )
         return element_identifiers
+
+    def __dictify_output_collections( self, submit_response ):
+        output_collections_dict = odict()
+        for output_collection in submit_response[ 'output_collections' ]:
+            output_collections_dict[ output_collection.get("output_name") ] = output_collection
+        return output_collections_dict
 
     def __dictify_outputs( self, datasets_object ):
         ## Convert outputs list to a dictionary that can be accessed by
@@ -406,120 +416,13 @@ class GalaxyInteractorApi( object ):
         return get( url, params=data )
 
 
-class GalaxyInteractorTwill( object ):
+class RunToolException(Exception):
 
-    def __init__( self, twill_test_case ):
-        self.twill_test_case = twill_test_case
-
-    def verify_output( self, history, output_data, output_testdef, shed_tool_id, maxseconds ):
-        outfile = output_testdef.outfile
-        attributes = output_testdef.attributes
-
-        hid = output_data.get( 'hid' )
-        self.twill_test_case.verify_dataset_correctness( outfile, hid=hid, attributes=attributes, shed_tool_id=shed_tool_id, maxseconds=maxseconds )
-
-    def get_job_stream( self, history_id, output_data, stream ):
-        data_id = self.twill_test_case.security.encode_id( output_data.get( 'id' ) )
-        return self.twill_test_case._get_job_stream_output( data_id, stream=stream, format=False )
-
-    def stage_data_async( self, test_data, history, shed_tool_id, async=True ):
-            name = test_data.get( 'name', None )
-            if name:
-                async = False
-            self.twill_test_case.upload_file( test_data['fname'],
-                                              ftype=test_data['ftype'],
-                                              dbkey=test_data['dbkey'],
-                                              metadata=test_data['metadata'],
-                                              composite_data=test_data['composite_data'],
-                                              shed_tool_id=shed_tool_id,
-                                              wait=(not async) )
-            if name:
-                hda_id = self.twill_test_case.get_history_as_data_list()[-1].get( 'id' )
-                try:
-                    self.twill_test_case.edit_hda_attribute_info( hda_id=str(hda_id), new_name=name )
-                except:
-                    print "### call to edit_hda failed for hda_id %s, new_name=%s" % (hda_id, name)
-            return lambda: self.twill_test_case.wait()
-
-    def run_tool( self, testdef, test_history ):
-        # We need to handle the case where we've uploaded a valid compressed file since the upload
-        # tool will have uncompressed it on the fly.
-
-        # Lose tons of information to accomodate legacy repeat handling.
-        all_inputs = {}
-        for key, value in testdef.inputs.iteritems():
-            all_inputs[ key.split("|")[-1] ] = value
-
-        # See if we have a grouping.Repeat element
-        repeat_name = None
-        for input_name, input_value in testdef.tool.inputs_by_page[0].items():
-            if isinstance( input_value, grouping.Repeat ) and all_inputs.get( input_name, 1 ) not in [ 0, "0" ]:  # default behavior is to test 1 repeat, for backwards compatibility
-                if not input_value.min:  # If input_value.min == 1, the element is already on the page don't add new element.
-                    repeat_name = input_name
-                break
-
-        #check if we need to verify number of outputs created dynamically by tool
-        if testdef.tool.force_history_refresh:
-            job_finish_by_output_count = len( self.twill_test_case.get_history_as_data_list() )
-        else:
-            job_finish_by_output_count = False
-
-        inputs_tree = testdef.inputs
-        # # # HACK: Flatten single-value lists. Required when using expand_grouping
-        # #for key, value in inputs_tree.iteritems():
-        #    if isinstance(value, list) and len(value) == 1:
-        #        inputs_tree[key] = value[0]
-
-        # Strip out just a given page of inputs from inputs "tree".
-        def filter_page_inputs( n ):
-            page_input_keys = testdef.tool.inputs_by_page[ n ].keys()
-            return dict( [ (k, v) for k, v in inputs_tree.iteritems() if k.split("|")[0] or k.split("|")[0].resplit("_", 1)[0] in page_input_keys ] )
-
-        # Do the first page
-        page_inputs = filter_page_inputs( 0 )
-
-        # Run the tool
-        self.twill_test_case.run_tool( testdef.tool.id, repeat_name=repeat_name, **page_inputs )
-        print "page_inputs (0)", page_inputs
-        # Do other pages if they exist
-        for i in range( 1, testdef.tool.npages ):
-            page_inputs = filter_page_inputs( i )
-            self.twill_test_case.submit_form( **page_inputs )
-            print "page_inputs (%i)" % i, page_inputs
-
-        # Check the results ( handles single or multiple tool outputs ).  Make sure to pass the correct hid.
-        # The output datasets from the tool should be in the same order as the testdef.outputs.
-        data_list = None
-        while data_list is None:
-            data_list = self.twill_test_case.get_history_as_data_list()
-            if job_finish_by_output_count and len( testdef.outputs ) > ( len( data_list ) - job_finish_by_output_count ):
-                data_list = None
-        return data_list
-
-    def new_history( self ):
-        # Start with a new history
-        self.twill_test_case.logout()
-        self.twill_test_case.login( email='test@bx.psu.edu' )
-        admin_user = database_contexts.galaxy_context.query( galaxy.model.User ).filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ).one()
-        self.twill_test_case.new_history()
-        latest_history = database_contexts.galaxy_context.query( galaxy.model.History ) \
-                                   .filter( and_( galaxy.model.History.table.c.deleted == False,
-                                                  galaxy.model.History.table.c.user_id == admin_user.id ) ) \
-                                   .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                                   .first()
-        assert latest_history is not None, "Problem retrieving latest_history from database"
-        if len( self.twill_test_case.get_hids_in_history( self.twill_test_case.get_latest_history()[ 'id' ] ) ) > 0:
-            raise AssertionError("ToolTestCase.do_it failed to create a new empty history")
-        return latest_history
-
-    def delete_history( self, latest_history ):
-        self.twill_test_case.delete_history( id=self.twill_test_case.security.encode_id( latest_history.id ) )
-
-    def output_hid( self, output_data ):
-        return output_data.get( 'hid' )
+    def __init__(self, message, inputs=None):
+        super(RunToolException, self).__init__(message)
+        self.inputs = inputs
 
 
 GALAXY_INTERACTORS = {
     'api': GalaxyInteractorApi,
-    'twill': GalaxyInteractorTwill,
 }

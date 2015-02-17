@@ -1,11 +1,8 @@
-// This file isn't really testing anything useful yet, it is just testing
-// (or demonstrating) qunit+backbone interactions.
 define([
     "utils/graph",
     "jquery",
     "sinon-qunit"
 ], function( GRAPH, $, sinon ){
-    console.debug( '' );
 
     /*globals equal ok, test module expect deepEqual strictEqual */
     "use strict";

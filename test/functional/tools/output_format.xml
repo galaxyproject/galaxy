@@ -64,7 +64,7 @@
       <param name="input_text" value="not_foo_or_bar" />
       <!-- input_text doesn't match any when, default to explicitly declared
       type. -->
-      <output name="change_format_action" ftype="text">
+      <output name="change_format_action" ftype="txt">
         <assert_contents><has_line line="test" /></assert_contents>
       </output>
     </test>

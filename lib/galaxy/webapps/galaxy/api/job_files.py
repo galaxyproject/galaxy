@@ -8,8 +8,8 @@ from galaxy import exceptions
 from galaxy import util
 from galaxy import model
 from galaxy.web.base.controller import BaseAPIController
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api_raw_anonymous as expose_api_raw_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 
 
 import logging
@@ -28,7 +28,7 @@ class JobFilesAPIController( BaseAPIController ):
     security model for tool execution.
     """
 
-    @expose_api_raw_anonymous
+    @expose_api_raw_anonymous_and_sessionless
     def index( self, trans, job_id, **kwargs ):
         """
         index( self, trans, job_id, **kwargs )
@@ -54,7 +54,7 @@ class JobFilesAPIController( BaseAPIController ):
         path = kwargs.get("path", None)
         return open(path, 'rb')
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def create( self, trans, job_id, payload, **kwargs ):
         """
         create( self, trans, job_id, payload, **kwargs )
