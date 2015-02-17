@@ -886,14 +886,15 @@ class SelectToolParameter( ToolParameter ):
         legal_values = self.get_legal_values( trans, context )
         if not legal_values and self.optional:
             return None
-        assert legal_values, "Parameter %s requires a value, but has no legal values defined" % self.name
+        if not legal_values:
+            raise ValueError( "Parameter %s requires a value, but has no legal values defined." % self.name )
         if isinstance( value, list ):
-            if not(self.repeat):
-                assert self.multiple, "Multiple values provided but parameter %s is not expecting multiple values" % self.name
+            if not self.repeat and not self.multiple:
+                raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
             rval = []
             for v in value:
                 if v not in legal_values:
-                    raise ValueError( "An invalid option was selected for %s, %r, please verify" % (self.name, v))
+                    raise ValueError( "An invalid option was selected for %s, %r, please verify." % ( self.name, v ) )
                 rval.append( v )
             return rval
         else:
@@ -903,9 +904,9 @@ class SelectToolParameter( ToolParameter ):
                     if self.optional:
                         return []
                     else:
-                        raise ValueError( "No option was selected for %s but input is not optional." % self.name)
+                        raise ValueError( "No option was selected for %s but input is not optional." % self.name )
             if value not in legal_values:
-                raise ValueError( "An invalid option was selected for %s, %r, please verify" % (self.name, value))
+                raise ValueError( "An invalid option was selected for %s, %r, please verify." % ( self.name, value ) )
             return value
 
     def to_html_value( self, value, app ):
@@ -918,8 +919,8 @@ class SelectToolParameter( ToolParameter ):
         if value is None:
             return "None"
         if isinstance( value, list ):
-            if not( self.repeat ):
-                assert self.multiple, "Multiple values provided but parameter %s is not expecting multiple values" % self.name
+            if not self.repeat and not self.multiple:
+                raise ValueError( "Multiple values provided but parameter %s is not expecting multiple values." % self.name )
             value = map( str, value )
         else:
             value = str( value )
