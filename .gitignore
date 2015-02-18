@@ -1,9 +1,3 @@
-syntax: regexp
-
-\.svn$
-
-syntax: glob
-
 .hg*
 # Downloaded and locally built eggs
 eggs
