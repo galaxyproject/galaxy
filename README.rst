@@ -1,14 +1,8 @@
-Galaxy
-======
-
-.. figure:: https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=galaxyLogoTrimmed.png
-   :alt: Galaxy Logo
-
-   Galaxy Logo
-`galaxyproject.org <http://galaxyproject.org/>`__
+`.. figure:: https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=galaxyLogoTrimmed.png
+   :alt: Galaxy Logo <http://galaxyproject.org/>`__
 
 The latest information about Galaxy is always available via the Galaxy
-website above.
+website: `galaxyproject.org http://galaxyproject.org/>`__
 
 Starting Galaxy
 ---------------
