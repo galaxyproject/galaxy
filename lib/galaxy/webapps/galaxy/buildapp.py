@@ -210,6 +210,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
     webapp.mapper.connect( '/api/tools/{id:.+?}/build', action='build', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/reload', action='reload', controller="tools" )
+    webapp.mapper.connect( '/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/citations', action='citations', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/download', action='download', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
@@ -221,6 +222,18 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
     webapp.mapper.connect( '/api/histories/{history_id}/citations', action='citations', controller="histories" )
+    webapp.mapper.connect(
+        'dynamic_tool_confs',
+        '/api/configuration/dynamic_tool_confs',
+        controller="configuration",
+        action="dynamic_tool_confs"
+    )
+    webapp.mapper.connect(
+        'tool_lineages',
+        '/api/configuration/tool_lineages',
+        controller="configuration",
+        action="tool_lineages"
+    )
     webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     webapp.mapper.connect( "configuration_version",
                            "/api/version", controller="configuration",
