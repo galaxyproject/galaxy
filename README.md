@@ -35,3 +35,9 @@ Not all dependencies are included for the tools provided in the sample
 `tool_conf.xml`. A full list of external dependencies is available at:
 
 https://wiki.galaxyproject.org/Admin/Tools/ToolDependencies
+
+## Issues
+
+Issues can be submitted to trello via the [galaxyproject
+website](http://galaxyproject.org/trello/) and viewed on the [Galaxy Trello
+Board](https://trello.com/b/75c1kASa/galaxy-development)
