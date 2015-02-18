@@ -1,5 +1,7 @@
 # Galaxy
 
+![Galaxy Logo](https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=galaxyLogoTrimmed.png)
+
 [galaxyproject.org](http://galaxyproject.org/)
 
 The latest information about Galaxy is always available via the Galaxy
