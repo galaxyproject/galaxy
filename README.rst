@@ -1,8 +1,8 @@
-`.. figure:: https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=galaxyLogoTrimmed.png
-   :alt: Galaxy Logo <http://galaxyproject.org/>`__
+.. figure:: https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=galaxyLogoTrimmed.png
+   :alt: Galaxy Logo
 
 The latest information about Galaxy is always available via the Galaxy
-website: `galaxyproject.org http://galaxyproject.org/>`__
+website: `http://galaxyproject.org/ <http://galaxyproject.org/>`__
 
 Galaxy Quickstart
 =================
@@ -53,7 +53,7 @@ Syncing a Fork
 
 If you fork Galaxy to work on it, you may be interested in keeping your copy
 up to date with respect to the main repository. Github has `good documentation
-<https://help.github.com/articles/syncing-a-fork/>__` on this.
+<https://help.github.com/articles/syncing-a-fork/>`__ on this.
 
 .. code:: console
 
