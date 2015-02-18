@@ -1,0 +1,21 @@
+---
+add_system_users: no
+galaxyFS_base_dir: /opt/galaxy
+# TODO: use GALAXY_ROOT via cmd line instead
+galaxy_server_dir: "{{ galaxyFS_base_dir }}/galaxy-app"
+galaxy_venv_dir: "{{ galaxy_server_dir }}/.venv"
+galxy_egg_cache: "/home/{{ galaxy_user_name }}/.python-eggs"
+galaxy_repo: https://bitbucket.org/galaxy/galaxy-central
+galaxy_changeset_id: stable
+galaxy_manage_clone: no
+galaxy_manage_download: yes
+galaxy_root: "{{ galaxy_server_dir}}"
+galaxy_db_dir: "{{ galaxyFS_base_dir }}/db"
+galaxy_db_port: 5930
+galaxy_db_log: /tmp/pSQL.log
+psql_galaxyftp_password: ignoredthis
+galaxy_config_file: "{{ galaxy_server_dir }}/config/galaxy.ini"
+configure_docker: no
+postgresql_bin_dir: /usr/lib/postgresql/9.3/bin
+galaxy_manage_database: no
+

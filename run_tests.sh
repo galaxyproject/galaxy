@@ -29,6 +29,9 @@ Extra options:
  --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
  --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
+ --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
+ --db <type>           For use with --dockerize, run tests using partially migrated 'postgres', 'mysql', 
+                       or 'sqlite' databases.
 EOF
 }
 
@@ -59,6 +62,22 @@ structured_data_report_file=""
 with_framework_test_tools_arg=""
 
 driver="python"
+
+if [ "$1" = "--dockerize" ];
+then
+    shift
+    if [ "$1" = "--db" ]; then
+       db_type=$2
+       shift 2
+    else
+       db_type="sqlite"
+    fi
+    DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
+    DOCKER_RUN_EXTRA_ARGS=${DOCKER_ARGS:-""}
+    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxyprojectdotorg/testing-base"}
+    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
+    exit $?
+fi
 
 while :
 do

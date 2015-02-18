@@ -1,0 +1,15 @@
+- hosts: localhost
+  connection: local
+  roles:
+    - role: galaxyprojectdotorg.galaxy-os
+      tags: image
+      sudo: yes
+    - role: galaxyprojectdotorg.cloudman-database
+      sudo: yes
+      sudo_user: postgres
+      tags: database
+    - role: galaxyprojectdotorg.galaxy
+      sudo: yes
+      tags: galaxy
+
+
