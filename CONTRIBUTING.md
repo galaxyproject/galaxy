@@ -25,27 +25,24 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
 
 ## How to Contribute
 
-* If you are new to Mercurial - please check out this [official
-  tutorial](http://mercurial.selenic.com/wiki/Tutorial)
+* If you are new to Git - please check out the very useful tutorials on the [GitHub training hub](https://training.github.com/kit/)
 
-* Make sure you have a free [Bitbucket
-  account](https://bitbucket.org/account/signup/)
+* Make sure you have a free [GitHub account](https://github.com/)
 
-* Fork the galaxy-central repository on
-  [Bitbucket](https://bitbucket.org/galaxy/galaxy-central/fork) to
-  make your changes. (Many Galaxy instances target
-  [galaxy-dist](https://bitbucket.org/galaxy/galaxy-dist) - but active
-  development happens on galaxy-central and this is where pull
-  requests should be made).
+* Fork the galaxy repository on
+  [GitHub](https://github.com/galaxyproject/galaxy) to make your changes.
+  (While many Galaxy instances track
+  [galaxy-dist](https://bitbucket.org/galaxy/galaxy-dist), active development
+  happens in the galaxy GitHub repository and this is where pull requests
+  should be made).
 
-* Choose the correct Mercurial branch to develop your changes against.
+* Choose the correct branch to develop your changes against.
 
-  * Additions to the code base should be pushed to the `default`
-    branch (`hg checkout default`).
+  * Additions to the code base should be pushed to the `dev` branch (`git
+    checkout dev`).
 
-  * Most bug fixes to previously release components (things in
-    galaxy-dist) should be pushed to the `stable` branch (`hg checkout
-    stable`).
+  * Most bug fixes to previously release components (things in galaxy-dist)
+    should be made against the `master` branch (`git checkout master`).
 
   * Serious security problems should not be fixed via pull request -
     please responsibly disclose these by e-mailing them (with or
@@ -76,9 +73,9 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   with these changes. You pull request message should include:
 
    * A description of why the change should be made.
-   
+
    * A description of implementation of the change.
-   
+
    * A description of how to test the change.
 
 ## Ideas
