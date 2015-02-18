@@ -48,6 +48,9 @@ Trello Board <https://trello.com/b/75c1kASa/galaxy-development>`__
 Galaxy Development
 ==================
 
+Galaxy welcomes new development! There is extensive documentation on developing
+with `Galaxy <https://wiki.galaxyproject.org/Develop>`__ on the wiki.
+
 Syncing a Fork
 --------------
 
