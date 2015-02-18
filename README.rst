@@ -4,8 +4,8 @@
 The latest information about Galaxy is always available via the Galaxy
 website: `galaxyproject.org http://galaxyproject.org/>`__
 
-Starting Galaxy
----------------
+Galaxy Quickstart
+=================
 
 Galaxy requires Python 2.6 or 2.7. To check your python version, run:
 
@@ -43,3 +43,22 @@ Issues
 Issues can be submitted to trello via the `galaxyproject
 website <http://galaxyproject.org/trello/>`__ and viewed on the `Galaxy
 Trello Board <https://trello.com/b/75c1kASa/galaxy-development>`__
+
+
+Galaxy Development
+==================
+
+Syncing a Fork
+--------------
+
+If you fork Galaxy to work on it, you may be interested in keeping your copy
+up to date with respect to the main repository. Github has `good documentation
+<https://help.github.com/articles/syncing-a-fork/>__` on this.
+
+.. code:: console
+
+    $ git remote add upstream https://github.com/galaxyproject/galaxy
+    $ git fetch upstream
+    $ git checkout dev
+    $ git merge upstream/dev
+
