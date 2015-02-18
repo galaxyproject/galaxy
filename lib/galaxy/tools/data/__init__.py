@@ -154,7 +154,7 @@ class ToolDataTableManager( object ):
         with open( full_path, 'wb' ) as out:
             out.write( '<?xml version="1.0"?>\n<tables>\n' )
             for elem in out_elems:
-                out.write( util.xml_to_string( elem ) )
+                out.write( util.xml_to_string( elem, pretty=True ) )
             out.write( '</tables>\n' )
         os.chmod( full_path, 0644 )
 
@@ -452,19 +452,53 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
         """
         Returns table entry associated with a col/val pair.
         """
+        rval = self.get_entries( query_attr, query_val, return_attr, default=default, limit=1 )
+        if rval:
+            return rval[0]
+        return default
+
+    def get_entries( self, query_attr, query_val, return_attr, default=None, limit=None ):
+        """
+        Returns table entry associated with a col/val pair.
+        """
         query_col = self.columns.get( query_attr, None )
         if query_col is None:
             return default
-        return_col = self.columns.get( return_attr, None )
-        if return_col is None:
-            return default
-        rval = default
+        if return_attr is not None:
+            return_col = self.columns.get( return_attr, None )
+            if return_col is None:
+                return default
+        rval = []
         # Look for table entry.
         for fields in self.get_fields():
             if fields[ query_col ] == query_val:
-                rval = fields[ return_col ]
+                if return_attr is None:
+                    field_dict = {}
+                    for i, col_name in enumerate( self.get_column_name_list() ):
+                        field_dict[ col_name or i ] = fields[i]
+                    rval.append( field_dict )
+                else:
+                    rval.append( fields[ return_col ] )
+                if limit is not None and len( rval ) == limit:
+                    break
+        return rval or default
+
+    def get_filename_for_source( self, source, default=None ):
+        if source:
+            #if dict, assume is compatible info dict, otherwise call method
+            if isinstance( source, dict ):
+                source_repo_info = source
+            else:
+                source_repo_info = source.get_tool_shed_repository_info_dict()
+        else:
+            source_repo_info = None
+        filename = default
+        for name, value in self.filenames.iteritems():
+            repo_info = value.get( 'tool_shed_repository', None )
+            if ( not source_repo_info and not repo_info ) or ( source_repo_info and repo_info and source_repo_info == repo_info ):
+                filename = name
                 break
-        return rval
+        return filename
 
     def _add_entry( self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         #accepts dict or list of columns
@@ -493,19 +527,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
         filename = None
 
         if persist and ( not is_error or persist_on_error ):
-            if entry_source:
-                #if dict, assume is compatible info dict, otherwise call method
-                if isinstance( entry_source, dict ):
-                    source_repo_info = entry_source
-                else:
-                    source_repo_info = entry_source.get_tool_shed_repository_info_dict()
-            else:
-                source_repo_info = None
-            for name, value in self.filenames.iteritems():
-                repo_info = value.get( 'tool_shed_repository', None )
-                if ( not source_repo_info and not repo_info ) or ( source_repo_info and repo_info and source_repo_info == repo_info ):
-                    filename = name
-                    break
+            filename = self.get_filename_for_source( entry_source )
             if filename is None:
                 #should we default to using any filename here instead?
                 log.error( "Unable to determine filename for persisting data table '%s' values: '%s'.", self.name, fields )
