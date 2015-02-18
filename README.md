@@ -5,7 +5,7 @@
 The latest information about Galaxy is always available via the Galaxy
 website above.
 
-# Starting Galaxy
+## Starting Galaxy
 
 Galaxy requires Python 2.6 or 2.7. To check your python version, run:
 
