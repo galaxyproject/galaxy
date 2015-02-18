@@ -279,6 +279,7 @@ class Tabular( data.Text ):
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
         elif to_ext or not preview:
+            to_ext = to_ext or dataset.extension
             return self._serve_raw(trans, dataset, to_ext)
         elif dataset.metadata.columns > 50:
             #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
