@@ -8,9 +8,11 @@ class ToolShedLineage(ToolLineage):
     """ Representation of tool lineage derived from tool shed repository
     installations. """
 
-    def __init__(self, app, tool_version):
+    def __init__(self, app, tool_version, tool_shed_repository=None):
         self.app = app
         self.tool_version_id = tool_version.id
+        # Only used for logging
+        self._tool_shed_repository = tool_shed_repository
 
     @staticmethod
     def from_tool( app, tool, tool_shed_repository ):
@@ -35,6 +37,16 @@ class ToolShedLineage(ToolLineage):
 
     def get_versions( self, reverse=False ):
         return map( ToolLineageVersion.from_guid, self.get_version_ids( reverse=reverse ) )
+
+    def to_dict(self):
+        tool_shed_repository = self._tool_shed_repository
+        rval = dict(
+            tool_version_id=self.tool_version_id,
+            tool_versions=map(lambda v: v.to_dict(), self.get_versions()),
+            tool_shed_repository=tool_shed_repository if tool_shed_repository is not None else None,
+            lineage_type='tool_shed',
+        )
+        return rval
 
 
 def get_install_tool_version( app, tool_id ):

@@ -40,3 +40,9 @@ class ToolLineageVersion(object):
         externally).
         """
         return self.version is None
+
+    def to_dict(self):
+        return dict(
+            id=self.id,
+            version=self.version,
+        )

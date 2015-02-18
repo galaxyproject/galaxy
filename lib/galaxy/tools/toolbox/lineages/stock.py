@@ -38,6 +38,13 @@ class StockLineage(ToolLineage):
         # method for comparing tool versions.
         return sorted( versions, key=_to_loose_version )
 
+    def to_dict(self):
+        return dict(
+            tool_id=self.tool_id,
+            tool_versions=list(self.tool_versions),
+            lineage_type='stock',
+        )
+
 
 def _to_loose_version( tool_lineage_version ):
     version = str( tool_lineage_version.version )
