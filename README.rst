@@ -49,7 +49,7 @@ Galaxy Development
 ==================
 
 Galaxy welcomes new development! There is extensive documentation on developing
-with `Galaxy <https://wiki.galaxyproject.org/Develop>`__ on the wiki.
+with Galaxy on the `wiki <https://wiki.galaxyproject.org/Develop>`__.
 
 Syncing a Fork
 --------------
