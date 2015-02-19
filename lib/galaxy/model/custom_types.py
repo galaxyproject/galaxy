@@ -1,24 +1,22 @@
-from sqlalchemy.types import *
-
-import json
-import pickle
-import copy
-import uuid
 import binascii
-from galaxy.util.bunch import Bunch
-from galaxy.util.aliaspickler import AliasPickleModule
-
-# For monkeypatching BIGINT
-import sqlalchemy.dialects.sqlite
-import sqlalchemy.dialects.postgresql
-import sqlalchemy.dialects.mysql
-
+import copy
+import json
 import logging
+import uuid
+
+from galaxy import eggs
+eggs.require("SQLAlchemy")
+import sqlalchemy
+
+from galaxy.util.aliaspickler import AliasPickleModule
+from sqlalchemy.types import CHAR, LargeBinary, String, TypeDecorator
+
 log = logging.getLogger( __name__ )
 
 # Default JSON encoder and decoder
 json_encoder = json.JSONEncoder( sort_keys=True )
 json_decoder = json.JSONDecoder( )
+
 
 def _sniffnfix_pg9_hex(value):
     """
@@ -31,8 +29,9 @@ def _sniffnfix_pg9_hex(value):
             return binascii.unhexlify( value[2:] )
         else:
             return value
-    except Exception, ex:
+    except Exception:
         return value
+
 
 class JSONType( TypeDecorator ):
     """
@@ -73,8 +72,9 @@ class JSONType( TypeDecorator ):
 
 
 metadata_pickler = AliasPickleModule( {
-    ( "cookbook.patterns", "Bunch" ) : ( "galaxy.util.bunch" , "Bunch" )
+    ( "cookbook.patterns", "Bunch" ): ( "galaxy.util.bunch", "Bunch" )
 } )
+
 
 class MetadataType( JSONType ):
     """
@@ -95,6 +95,7 @@ class MetadataType( JSONType ):
             except:
                 ret = None
         return ret
+
 
 class UUIDType(TypeDecorator):
     """
@@ -129,31 +130,9 @@ class UUIDType(TypeDecorator):
 
 class TrimmedString( TypeDecorator ):
     impl = String
+
     def process_bind_param( self, value, dialect ):
         """Automatically truncate string values"""
         if self.impl.length and value is not None:
             value = value[0:self.impl.length]
         return value
-
-
-#class BigInteger( Integer ):
-    #"""
-    #A type for bigger ``int`` integers.
-
-    #Typically generates a ``BIGINT`` in DDL, and otherwise acts like
-    #a normal :class:`Integer` on the Python side.
-
-    #"""
-
-#class BIGINT( BigInteger ):
-    #"""The SQL BIGINT type."""
-
-#class SLBigInteger( BigInteger ):
-    #def get_col_spec( self ):
-        #return "BIGINT"
-
-#sqlalchemy.dialects.sqlite.SLBigInteger = SLBigInteger
-#sqlalchemy.dialects.sqlite.colspecs[BigInteger] = SLBigInteger
-#sqlalchemy.dialects.sqlite.ischema_names['BIGINT'] = SLBigInteger
-#sqlalchemy.dialects.postgres.colspecs[BigInteger] = sqlalchemy.dialects.postgres.PGBigInteger
-#sqlalchemy.dialects.mysql.colspecs[BigInteger] = sqlalchemy.dialects.mysql.MSBigInteger
