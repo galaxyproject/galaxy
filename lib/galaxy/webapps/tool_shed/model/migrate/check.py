@@ -1,4 +1,6 @@
-import sys, os.path, logging
+import logging
+import os.path
+import sys
 
 from galaxy import eggs
 
@@ -38,7 +40,7 @@ def create_or_verify_database( url, engine_options={} ):
     try:
         egg = dialect_to_egg[dialect]
         try:
-            pkg_resources.require( egg )
+            eggs.require( egg )
             log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
         except:
             # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
