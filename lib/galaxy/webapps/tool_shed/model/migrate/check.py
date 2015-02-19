@@ -1,4 +1,5 @@
 import sys, os.path, logging
+import pkg_resources
 
 from galaxy import eggs
 
