@@ -5,7 +5,7 @@ Created on 15/07/2014
 """
 
 import traceback
-import galaxy.customauth.base
+import galaxy.auth.base
 
 
 def _getsubs(d, k, vars, default=''):
@@ -14,7 +14,7 @@ def _getsubs(d, k, vars, default=''):
     return str(default).format(**vars)
 
 
-class ActiveDirectory(galaxy.customauth.base.CustomAuthProvider):
+class ActiveDirectory(galaxy.auth.base.AuthProvider):
     """
     Attempts to authenticate users against an Active Directory server.
 

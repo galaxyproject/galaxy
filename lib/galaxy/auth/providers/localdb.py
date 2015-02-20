@@ -4,9 +4,9 @@ Created on 16/07/2014
 @author: Andrew Robinson
 """
 
-import galaxy.customauth.base
+import galaxy.auth.base
 
-class LocalDB(galaxy.customauth.base.CustomAuthProvider):
+class LocalDB(galaxy.auth.base.AuthProvider):
     """Authenticate users against the local Galaxy database (as per usual)."""
 
     def authenticate(self, username, password, options, debug=False):
