@@ -1,8 +1,0 @@
-[Core]
-Name = LocalDB
-Module = localdb
-
-[Documentation]
-Author = Andrew Robinson
-Version = 0.1
-Description = Custom Authentication Provider that checks against the local database as per normal.

@@ -6,8 +6,8 @@ Created on 15/07/2014
 
 from yapsy.IPlugin import IPlugin
 
-class CustomAuthProvider(IPlugin):
-    """A base class for all Custom Auth Providers."""
+class AuthProvider(IPlugin):
+    """A base class for all Auth Providers."""
 
     def authenticate(self, username, password, options, debug=False):
         """
@@ -20,7 +20,7 @@ class CustomAuthProvider(IPlugin):
         :type   username: str
         :param  password: the plain text password they typed
         :type   password: str
-        :param  options: options provided in customauth XML config file
+        :param  options: options provided in auth_config_file
         :type   options: dict
         :param  debug: whether to print debugging info (defaults to False)
         :type   debug: bool
@@ -43,7 +43,7 @@ class CustomAuthProvider(IPlugin):
         :type   username: str
         :param  password: the plain text password they typed
         :type   password: str
-        :param  options: options provided in customauth XML config file
+        :param  options: options provided in auth_config_file
         :type   options: dict
         :param  debug: whether to print debugging info (defaults to False)
         :type   debug: bool

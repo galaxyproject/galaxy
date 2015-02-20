@@ -28,7 +28,7 @@ from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
 from galaxy.web.framework.helpers import escape, grids, time_ago
-import galaxy.customauth
+import galaxy.auth
 
 log = logging.getLogger( __name__ )
 
@@ -514,11 +514,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
-        if trans.app.config.customauth_debug:
-            print ("trans.app.config.customauth_config_file: %s" % trans.app.config.customauth_config_file)
-            print ("trans.app.config.customauth_debug: %s WARNING: don't use in production" % trans.app.config.customauth_debug)
+        if trans.app.config.auth_debug:
+            print ("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
+            print ("trans.app.config.auth_debug: %s WARNING: don't use in production" % trans.app.config.auth_debug)
         if not user:
-            autoreg = galaxy.customauth.check_auto_registration(trans, email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
+            autoreg = galaxy.auth.check_auto_registration(trans, email, password, trans.app.config.auth_config_file, trans.app.config.auth_debug)
             if autoreg[0]:
                 kwd['username'] = autoreg[1]
                 params = util.Params( kwd )
@@ -545,7 +545,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
-        elif not galaxy.customauth.check_password(user, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug):
+        elif not galaxy.auth.check_password(user, password, trans.app.config.auth_config_file, trans.app.config.auth_debug):
             message = "Invalid password"
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if ( trans.app.config.activation_grace_period != 0 ):  # grace period is ON
@@ -674,7 +674,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             status = 'error'
         else:
             # check user is allowed to register
-            message, status = galaxy.customauth.check_registration_allowed(email, password, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
+            message, status = galaxy.auth.check_registration_allowed(email, password, trans.app.config.auth_config_file, trans.app.config.auth_debug)
             if message == '':
                 if not refresh_frames:
                     if trans.webapp.name == 'galaxy':
@@ -1125,7 +1125,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
             else:
                 # The user is changing their own password, validate their current password
-                (ok, message) = galaxy.customauth.check_change_password(trans.user, current, trans.app.config.customauth_config_file, trans.app.config.customauth_debug)
+                (ok, message) = galaxy.auth.check_change_password(trans.user, current, trans.app.config.auth_config_file, trans.app.config.auth_debug)
                 if ok:
                     user = trans.user
                 else:

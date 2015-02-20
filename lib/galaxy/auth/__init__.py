@@ -1,5 +1,5 @@
 """
-Contains implementations of custom auth logic.
+Contains implementations of the authentication logic.
 """
 
 import traceback
@@ -11,7 +11,7 @@ from galaxy.security.validate_user_input import validate_publicname
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-# <customauth>
+# <auth>
 #     <authenticator>
 #         <type>activedirectory</type>
 #         <filter>'[username]'.endswith('@students.latrobe.edu.au')</filter>
@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.DEBUG)
 #         </options>
 #     </authenticator>
 #     ...
-# </customauth>
+# </auth>
 
 def check_registration_allowed(email, password, configfile, debug=False):
     """Checks if the provided email is allowed to register."""
@@ -54,8 +54,9 @@ def check_registration_allowed(email, password, configfile, debug=False):
     return message, status
 
 def check_auto_registration(trans, email, password, configfile, debug=False):
-    """Checks the email/password using custom auth providers and if matches
-    returns the 'auto-register' option for that provider.
+    """
+    Checks the email/password using auth providers in order. If a match is
+    found, returns the 'auto-register' option for that provider.
     """
     for provider, options in activeAuthProviderGenerator(email, password, configfile, debug):
         if provider is None:
@@ -84,10 +85,7 @@ def check_auto_registration(trans, email, password, configfile, debug=False):
     return (False, '')
 
 def check_password(user, password, configfile, debug=False):
-    """Checks the email/password using custom auth providers."""
-    if debug:
-        print ("Checking with CustomAuth")
-
+    """Checks the email/password using auth providers."""
     for provider, options in activeAuthProviderGenerator(user.email, password, configfile, debug):
         if provider is None:
             if debug:
@@ -101,11 +99,9 @@ def check_password(user, password, configfile, debug=False):
     return False
 
 def check_change_password(user, current_password, configfile, debug=False):
-    """Checks that provider allows password changes and current_password
+    """Checks that auth provider allows password changes and current_password
     matches.
     """
-    if debug:
-        print ("Checking password change with CustomAuth")
     for provider, options in activeAuthProviderGenerator(user.email, current_password, configfile, debug):
         if provider is None:
             if debug:
@@ -122,13 +118,13 @@ def check_change_password(user, current_password, configfile, debug=False):
     return (False, 'Invalid current password')
 
 def activeAuthProviderGenerator(username, password, configfile, debug):
-    """Yields CustomAuthProvider instances for the provided configfile that
-    match the filters.
+    """Yields AuthProvider instances for the provided configfile that match the
+    filters.
     """
     try:
         # load the yapsy plugins
         manager = PluginManager()
-        manager.setPluginPlaces(["lib/galaxy/customauth/providers"])
+        manager.setPluginPlaces(["lib/galaxy/auth/providers"])
         manager.collectPlugins()
 
         if debug:
@@ -167,7 +163,7 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
         return
     except:
         if debug:
-            print ('CustomAuth: Exception:\n%s' % (traceback.format_exc(),))
+            print ('Auth: Exception:\n%s' % (traceback.format_exc(),))
 
 def _getBool(d, k, o):
     if k in d:

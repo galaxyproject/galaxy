@@ -4,9 +4,9 @@ Created on 16/07/2014
 @author: Andrew Robinson
 """
 
-import galaxy.customauth.base
+import galaxy.auth.base
 
-class AlwaysReject(galaxy.customauth.base.CustomAuthProvider):
+class AlwaysReject(galaxy.auth.base.AuthProvider):
     """A simple authenticator that just accepts users (does not care about their
     password).
     """
