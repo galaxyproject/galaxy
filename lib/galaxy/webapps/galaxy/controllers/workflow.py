@@ -4,42 +4,31 @@ import json
 import os
 import sgmllib
 import urllib2
-import copy
 
 from sqlalchemy import and_
+
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.datatypes.data import Data
+from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
-from galaxy.tools.parameters.basic import DataToolParameter
-from galaxy.tools.parameters.basic import DataCollectionToolParameter
-from galaxy.tools.parameters import visit_input_values
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
 from galaxy.web.framework.formbuilder import form
-from galaxy.web.framework.helpers import grids, time_ago, to_unicode, escape
-from galaxy.managers import workflows
-from galaxy.workflow.modules import WorkflowModuleInjector
+from galaxy.web.framework.helpers import escape, grids, time_ago, to_unicode
+from galaxy.workflow.extract import extract_workflow
+from galaxy.workflow.extract import summarize
 from galaxy.workflow.modules import MissingToolException
-from galaxy.workflow.modules import module_factory, is_tool_module_type
+from galaxy.workflow.modules import module_factory
+from galaxy.workflow.modules import WorkflowModuleInjector
+from galaxy.workflow.render import WorkflowCanvas
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
-from galaxy.workflow.extract import summarize
-from galaxy.workflow.extract import extract_workflow
-from galaxy.workflow.steps import (
-    attach_ordered_steps,
-    order_workflow_steps,
-    edgelist_for_workflow_steps,
-    order_workflow_steps_with_levels,
-)
-from galaxy.workflow.render import WorkflowCanvas, MARGIN, LINE_SPACING
-from markupsafe import escape
 
 
 class StoredWorkflowListGrid( grids.Grid ):
