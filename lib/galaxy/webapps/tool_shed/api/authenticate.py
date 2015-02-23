@@ -13,13 +13,14 @@ import logging
 
 from galaxy import web
 from galaxy.webapps.galaxy.api.authenticate import AuthenticationController
+from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 
 log = logging.getLogger( __name__ )
 
 
 class ToolShedAuthenticationController( AuthenticationController ):
 
-    @web.expose_api_anonymous
+    @expose_api_raw_anonymous_and_sessionless
     def get_tool_shed_api_key( self, trans, **kwd ):
         """
         def get_api_key( self, trans, **kwd )
