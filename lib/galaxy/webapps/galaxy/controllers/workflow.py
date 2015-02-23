@@ -45,7 +45,11 @@ class StoredWorkflowListGrid( grids.Grid ):
     default_sort_key = "-update_time"
     columns = [
         grids.TextColumn( "Name", key="name", attach_popup=True, filterable="advanced" ),
-        grids.IndividualTagsColumn( "Tags", "tags", model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced", grid_name="StoredWorkflowListGrid" ),
+        grids.IndividualTagsColumn( "Tags",
+                                    "tags",
+                                    model_tag_association_class=model.StoredWorkflowTagAssociation,
+                                    filterable="advanced",
+                                    grid_name="StoredWorkflowListGrid" ),
         StepsColumn( "Steps" ),
         grids.GridColumn( "Created", key="create_time", format=time_ago ),
         grids.GridColumn( "Last Updated", key="update_time", format=time_ago ),
@@ -78,10 +82,15 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
     use_async = True
     columns = [
         grids.PublicURLColumn( "Name", key="name", filterable="advanced", attach_popup=True ),
-        grids.OwnerAnnotationColumn( "Annotation", key="annotation", model_annotation_association_class=model.StoredWorkflowAnnotationAssociation, filterable="advanced" ),
+        grids.OwnerAnnotationColumn( "Annotation",
+                                     key="annotation",
+                                     model_annotation_association_class=model.StoredWorkflowAnnotationAssociation,
+                                     filterable="advanced" ),
         grids.OwnerColumn( "Owner", key="username", model_class=model.User, filterable="advanced" ),
         grids.CommunityRatingColumn( "Community Rating", key="rating" ),
-        grids.CommunityTagsColumn( "Community Tags", key="tags", model_tag_association_class=model.StoredWorkflowTagAssociation, filterable="advanced", grid_name="PublicWorkflowListGrid" ),
+        grids.CommunityTagsColumn( "Community Tags", key="tags",
+                                   model_tag_association_class=model.StoredWorkflowTagAssociation,
+                                   filterable="advanced", grid_name="PublicWorkflowListGrid" ),
         grids.ReverseSortColumn( "Last Updated", key="update_time", format=time_ago )
     ]
     columns.append(
@@ -406,16 +415,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             stored.name = san_new_name
             stored.latest_workflow.name = san_new_name
             trans.sa_session.flush()
-            # For current workflows grid:
             trans.set_message( "Workflow renamed to '%s'." % san_new_name )
             return self.list( trans )
-            # For new workflows grid:
-            #message = "Workflow renamed to '%s'." % new_name
-            #return self.list_grid( trans, message=message, status='done' )
         else:
             return form( url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id) ),
-                         "Rename workflow", submit_text="Rename", use_panels=True ) \
-                .add_text( "new_name", "Workflow Name", value=to_unicode( stored.name ) )
+                         "Rename workflow",
+                         submit_text="Rename",
+                         use_panels=True
+                         ).add_text( "new_name", "Workflow Name", value=to_unicode( stored.name ) )
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
@@ -486,7 +493,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """ Returns workflow's name and link. """
         stored = self.get_stored_workflow( trans, id )
 
-        return_dict = { "name": stored.name, "link": url_for(controller='workflow', action="display_by_username_and_slug", username=stored.user.username, slug=stored.slug ) }
+        return_dict = { "name": stored.name,
+                        "link": url_for(controller='workflow',
+                                        action="display_by_username_and_slug",
+                                        username=stored.user.username,
+                                        slug=stored.slug ) }
         return return_dict
 
     @web.expose
@@ -559,7 +570,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         else:
             return form( url_for(controller="workflow", action="create"), "Create New Workflow", submit_text="Create", use_panels=True ) \
                 .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" ) \
-                .add_text( "workflow_annotation", "Workflow Annotation", value="", help="A description of the workflow; annotation is shown alongside shared or published workflows." )
+                .add_text( "workflow_annotation",
+                           "Workflow Annotation",
+                           value="",
+                           help="A description of the workflow; annotation is shown alongside shared or published workflows." )
 
     @web.expose
     def delete( self, trans, id=None ):
@@ -605,10 +619,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             'tool_id': tool_id,
             'tool_state': tool_state
         } )
-
         # update module state
         module.update_state( incoming )
-        
         if type == 'tool':
             return {
                 'tool_state': module.get_state(),
@@ -684,7 +696,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         except workflows.MissingToolsException as e:
             return dict(
                 name=e.workflow.name,
-                message="This workflow includes missing or invalid tools. It cannot be saved until the following steps are removed or the missing tools are enabled.",
+                message="This workflow includes missing or invalid tools. "
+                        "It cannot be saved until the following steps are removed or the missing tools are enabled.",
                 errors=e.errors,
             )
 
@@ -797,7 +810,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Stream workflow to file.
         stored_dict = self._workflow_to_dict( trans, stored )
         if not stored_dict:
-            #This workflow has a tool that's missing from the distribution
+            # This workflow has a tool that's missing from the distribution
             trans.response.status = 400
             return "Workflow cannot be exported due to missing tools."
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -918,7 +931,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             message += "You can likely install the required tools from one of the Galaxy tool sheds listed below.<br/>"
                             for missing_tool_tup in missing_tool_tups:
                                 missing_tool_id, missing_tool_name, missing_tool_version = missing_tool_tup
-                                message += "<b>Tool name</b> %s, <b>id</b> %s, <b>version</b> %s<br/>" % ( escape( missing_tool_name ), escape( missing_tool_id ), escape( missing_tool_version ) )
+                                message += "<b>Tool name</b> %s, <b>id</b> %s, <b>version</b> %s<br/>" % (
+                                           escape( missing_tool_name ),
+                                           escape( missing_tool_id ),
+                                           escape( missing_tool_version ) )
                             message += "<br/>"
                             for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
                                 if shed_url.endswith( '/' ):
@@ -998,9 +1014,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             )
             # Index page with message
             workflow_id = trans.security.encode_id( stored_workflow.id )
-            return trans.show_message( 'Workflow "%s" created from current history. You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.' %
-                                       ( escape( workflow_name ), url_for( controller='workflow', action='editor', id=workflow_id ),
-                                         url_for( controller='workflow', action='run', id=workflow_id ) ) )
+            return trans.show_message( 'Workflow "%s" created from current history. '
+                                       'You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.'
+                                       % ( escape( workflow_name ), url_for( controller='workflow', action='editor', id=workflow_id ),
+                                           url_for( controller='workflow', action='run', id=workflow_id ) ) )
 
     @web.expose
     def run( self, trans, id, history_id=None, hide_fixed_params=False, **kwargs ):
@@ -1015,7 +1032,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # It is possible for a workflow to have 0 steps
         if len( workflow.steps ) == 0:
             error( "Workflow cannot be run because it does not have any steps" )
-        #workflow = Workflow.from_simple( json.loads( stored.encoded_value ), trans.app )
         if workflow.has_cycles:
             error( "Workflow cannot be run because it contains cycles" )
         if workflow.has_errors:
@@ -1068,7 +1084,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             else:
                                 nh_name = "History from %s workflow" % workflow.name
                             instance_inputs = [kwargs[multi_input_key] for multi_input_key in multi_input_keys]
-                            instance_ds_names = [trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( instance_input ).name for instance_input in instance_inputs]
+                            instance_ds_names = [trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( instance_input ).name
+                                                 for instance_input in instance_inputs]
                             nh_name = '%s%s' % (nh_name, _build_workflow_on_str( instance_ds_names ))
                             new_history = trans.app.model.History( user=trans.user, name=nh_name )
                             new_history.copy_tags_from(trans.user, trans.get_history())
