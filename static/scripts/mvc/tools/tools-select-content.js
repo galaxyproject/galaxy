@@ -75,6 +75,7 @@ var View = Backbone.View.extend({
             });
             this.select_multiple = new Ui.Select.View({
                 multiple    : true,
+                searchable  : false,
                 error_text  : hda_error,
                 onchange    : function() {
                     self.trigger('change');

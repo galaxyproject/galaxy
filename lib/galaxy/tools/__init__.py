@@ -2382,7 +2382,7 @@ class Tool( object, Dictifiable ):
                     del group_state[:]
                     while True:
                         rep_name = "%s_%d" % (key, rep_index)
-                        if not any([incoming_key.startswith(rep_name) for incoming_key in incoming.keys()]):
+                        if not any([incoming_key.startswith(rep_name) for incoming_key in incoming.keys()]) and rep_index >= input.min:
                             break
                         if rep_index < input.max:
                             new_state = {}
