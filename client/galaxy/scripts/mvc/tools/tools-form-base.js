@@ -141,7 +141,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             
                 // scroll to first input element
                 if (!silent) {
-                    $(this.container).animate({
+                    $('html, body').animate({
                         scrollTop: input_element.$el.offset().top - 20
                     }, 500);
                 }
