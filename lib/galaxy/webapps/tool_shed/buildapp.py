@@ -129,6 +129,11 @@ def app_factory( global_conf, **kwargs ):
                            controller='repositories',
                            action='create_changeset_revision',
                            conditions=dict( method=[ "POST" ] ) )
+    webapp.mapper.connect( 'create_repository',
+                           '/api/repositories',
+                           controller='repositories',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
 
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
