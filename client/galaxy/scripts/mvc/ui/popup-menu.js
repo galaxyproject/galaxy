@@ -55,8 +55,11 @@ var PopupMenu = Backbone.View.extend({
                 if( option.func ){
                     $( this ).children( 'a.popupmenu-option' ).click( function( event ){
                         option.func.call( menu, event, option );
+                        // We must preventDefault otherwise clicking "cancel"
+                        // on a purge or something still navigates and causes
+                        // the action.
+                        event.preventDefault();
                         // bubble up so that an option click will call the close behavior
-                        //return false;
                     });
                 }
             });
