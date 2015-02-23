@@ -162,8 +162,11 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         if self.heartbeat:
             self.heartbeat.shutdown()
         self.update_repository_manager.shutdown()
-        if self.control_worker:
+        try:
             self.control_worker.shutdown()
+        except AttributeError:
+            # There is no control_worker
+            pass
         try:
             # If the datatypes registry was persisted, attempt to
             # remove the temporary file in which it was written.
