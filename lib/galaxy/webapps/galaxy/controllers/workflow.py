@@ -6,6 +6,7 @@ import sgmllib
 import urllib2
 
 from sqlalchemy import and_
+from sqlalchemy.sql import expression
 
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -121,7 +122,10 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
 
     def apply_query_filter( self, trans, query, **kwargs ):
         # A public workflow is published, has a slug, and is not deleted.
-        return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
+        return query.filter(
+            self.model_class.published == expression.true() ).filter(
+            self.model_class.slug.isnot(None)).filter(
+            self.model_class.deleted == expression.false())
 
 
 # Simple SGML parser to get all content in a single tag.
@@ -182,7 +186,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             .query( model.StoredWorkflowUserShareAssociation ) \
             .filter_by( user=user ) \
             .join( 'stored_workflow' ) \
-            .filter( model.StoredWorkflow.deleted == False ) \
+            .filter( model.StoredWorkflow.deleted == expression.false() ) \
             .order_by( desc( model.StoredWorkflow.update_time ) ) \
             .all()
 
@@ -213,7 +217,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         shared_by_others = trans.sa_session \
             .query( model.StoredWorkflowUserShareAssociation ) \
             .filter_by( user=user ) \
-            .filter( model.StoredWorkflow.deleted == False ) \
+            .filter( model.StoredWorkflow.deleted == expression.false() ) \
             .order_by( desc( model.StoredWorkflow.table.c.update_time ) ) \
             .all()
         return trans.fill_template( "workflow/list_for_run.mako",
@@ -307,7 +311,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if email:
             other = trans.sa_session.query( model.User ) \
                                     .filter( and_( model.User.table.c.email == email,
-                                                   model.User.table.c.deleted == False ) ) \
+                                                   model.User.table.c.deleted == expression.false() ) ) \
                                     .first()
             if not other:
                 mtype = "error"
@@ -1274,7 +1278,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         shared_by_others = trans.sa_session \
             .query( model.StoredWorkflowUserShareAssociation ) \
             .filter_by( user=user ) \
-            .filter( model.StoredWorkflow.deleted == False ) \
+            .filter( model.StoredWorkflow.deleted == expression.false() ) \
             .all()
         return trans.fill_template( "workflow/configure_menu.mako",
                                     workflows=workflows,
