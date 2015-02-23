@@ -99,13 +99,13 @@
                 <label>Public name:</label>
                 %if t.webapp.name == 'tool_shed':
                     %if user.active_repositories:
-                        <input type="hidden" name="username" value="${username | h}"/>
+                        <input type="hidden" id="name_input" name="username" value="${username | h}"/>
                         ${username | h}
                         <div class="toolParamHelp" style="clear: both;">
                             You cannot change your public name after you have created a repository in this tool shed.
                         </div>
                     %else:
-                        <input type="text" name="username" size="40" value="${username | h}"/>
+                        <input type="text" id="name_input" name="username" size="40" value="${username | h}"/>
                         <div class="toolParamHelp" style="clear: both;">
                             Your public name provides a means of identifying you publicly within this tool shed. Public
                             names must be at least four characters in length and contain only lower-case letters, numbers,
