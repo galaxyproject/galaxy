@@ -381,12 +381,9 @@ var HistoryPanel = _super.extend(
     /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
         // toggle list item selectors
-        'click .show-selectors-btn'                 : 'toggleSelectors'
+        'click .show-selectors-btn'         : 'toggleSelectors',
         // allow (error) messages to be clicked away
-//TODO: switch to common close (X) idiom
-        //'click .messages'               : 'clearMessages',
-//TODO: remove
-        //'click .history-search-btn'     : 'toggleSearchControls'
+        'click .messages [class$=message]'  : 'clearMessages'
     }),
 
     /** Handle the user toggling the deleted visibility by:
@@ -457,14 +454,14 @@ var HistoryPanel = _super.extend(
      */
     errorHandler : function( model, xhr, options, msg, details ){
         this.error( model, xhr, options, msg, details );
-//TODO: getting JSON parse errors from jq migrate
 
         // interrupted ajax
         if( xhr && xhr.status === 0 && xhr.readyState === 0 ){
+            //TODO: gmail style 'retrying in Ns'
 
         // bad gateway
         } else if( xhr && xhr.status === 502 ){
-//TODO: gmail style 'reconnecting in Ns'
+            //TODO: gmail style 'retrying in Ns'
 
         // otherwise, show an error message inside the panel
         } else {
@@ -551,7 +548,7 @@ var HistoryPanel = _super.extend(
                 });
             $msg.append( ' ', $detailsLink );
         }
-        return $msgContainer.html( $msg );
+        return $msgContainer.append( $msg );
     },
 
     /** convert msg and details into modal options usable by Galaxy.modal */
@@ -582,10 +579,12 @@ var HistoryPanel = _super.extend(
 
     /** Remove all messages from the panel. */
     clearMessages : function( ev ){
-        $( ev.currentTarget ).fadeOut( this.fxSpeed, function(){
+        var $target = !_.isUndefined( ev )?
+            $( ev.currentTarget )
+            :this.$messages().children( '[class$="message"]' );
+        $target.fadeOut( this.fxSpeed, function(){
             $( this ).remove();
         });
-        //this.$messages().children().not( '.quota-message' ).remove();
         return this;
     },
 
