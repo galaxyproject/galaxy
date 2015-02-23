@@ -2,8 +2,7 @@
 from galaxy import exceptions
 from galaxy import eggs
 from galaxy import util
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_raw_anonymous as expose_api_raw_anonymous
+from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
 from galaxy.web import url_for
@@ -15,7 +14,7 @@ log = logging.getLogger( __name__ )
 
 class SearchController ( BaseAPIController ):
 
-    @expose_api_raw_anonymous
+    @expose_api_raw_anonymous_and_sessionless
     def search( self, trans, search_term, **kwd ):
         """ 
         Perform a search over the Whoosh index. 
@@ -46,7 +45,7 @@ class SearchController ( BaseAPIController ):
         results = repo_search.search( trans, search_term, page )
         results[ 'hostname' ] = url_for( '/', qualified = True )
 
-        if jsonp:
+        if return_jsonp:
             response = '%s(%s);' % ( callback, json.dumps( results ) )
         else:
             response = json.dumps( results )
