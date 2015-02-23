@@ -133,7 +133,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             });
             extensions.unshift({
                 0 : 'Leave unchanged',
-                1 : ''
+                1 : '__empty__'
             });
 
             // create custom sub section
@@ -153,7 +153,8 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     argument    : 'newtype',
                     label       : 'Change datatype',
                     type        : 'select',
-                    ignore      : '',
+                    ignore      : '__empty__',
+                    value       : '__empty__',
                     options     : extensions,
                     help        : 'This action will change the datatype of the output to the indicated value.'
                 },{
