@@ -6,10 +6,10 @@ import os
 
 import galaxy.tools
 import galaxy.tools.parameters
-import galaxy.webapps.galaxy.controllers.workflow
 from galaxy.util import json
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.render import WorkflowCanvas
+from galaxy.workflow.steps import attach_ordered_steps
 from galaxy.workflow.modules import module_types
 from galaxy.workflow.modules import ToolModule
 from galaxy.workflow.modules import WorkflowModuleFactory
@@ -312,7 +312,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
                 step.input_connections.append( conn )
         del step.temp_input_connections
     # Order the steps if possible.
-    galaxy.webapps.galaxy.controllers.workflow.attach_ordered_steps( workflow, steps )
+    attach_ordered_steps( workflow, steps )
     # Return the in-memory Workflow object for display or later persistence to the Galaxy database.
     return workflow, missing_tool_tups
 
