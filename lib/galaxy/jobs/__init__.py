@@ -445,7 +445,15 @@ class JobConfiguration( object ):
         """
         rval = {}
         for param in parent.findall('param'):
-            rval[param.get('id')] = param.text
+            key = param.get('id')
+            param_value = param.text
+            if 'from_environ' in param.attrib:
+                environ_var = param.attrib['from_environ']
+                param_value = os.environ.get(environ_var, param_value)
+            elif 'from_config' in param.attrib:
+                config_val = param.attrib['from_config']
+                param_value = self.app.config.config_dict.get(config_val, param_value)
+            rval[key] = param_value
         return rval
 
     def __get_envs(self, parent):
