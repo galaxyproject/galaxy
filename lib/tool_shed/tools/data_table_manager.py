@@ -103,7 +103,7 @@ class ToolDataTableManager( object ):
         try:
             new_table_elems, message = self.app.tool_data_tables \
                 .add_new_entries_from_config_file( config_filename=filename,
-                                                   tool_data_path=self.app.config.tool_data_path,
+                                                   tool_data_path=self.app.config.shed_tool_data_path,
                                                    shed_tool_data_table_config=self.app.config.shed_tool_data_table_config,
                                                    persist=persist )
             if message:
