@@ -206,6 +206,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #   https://wiki.galaxyproject.org/Admin/DataIntegration
 #tool_data_path = tool-data
 
+# Directory where Tool Data Table related files will be placed
+# when installed from a ToolShed. Defaults to tool_data_path
+#shed_tool_data_path = tool-data
+
 # File containing old-style genome builds
 #builds_file_path = tool-data/shared/ucsc/builds.txt
 
