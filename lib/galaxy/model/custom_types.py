@@ -34,12 +34,16 @@ def _sniffnfix_pg9_hex(value):
 
 
 class JSONType(sqlalchemy.types.TypeDecorator):
-    """Represents an immutable structure as a json-encoded string.
+    """
+    Represents an immutable structure as a json-encoded string.
 
     If default is, for example, a dict, then a NULL value in the
     database will be exposed as an empty dict.
     """
 
+    # TODO: Figure out why this is a large binary, and provide a migratino to
+    # something like sqlalchemy.String, or even better, when applicable, native
+    # sqlalchemy.dialects.postgresql.JSON
     impl = LargeBinary
 
     def process_bind_param(self, value, dialect):
@@ -131,9 +135,6 @@ class MutationDict(MutationObj, dict):
         return self
 
     def __setitem__(self, key, value):
-        # Due to the way OrderedDict works, this is called during __init__.
-        # At this time we don't have a key set, but what is more, the value
-        # being set has already been coerced. So special case this and skip.
         if hasattr(self, '_key'):
             value = MutationObj.coerce(self._key, value)
         dict.__setitem__(self, key, value)
