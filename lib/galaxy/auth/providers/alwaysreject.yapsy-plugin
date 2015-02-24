@@ -1,8 +1,0 @@
-[Core]
-Name = AlwaysReject
-Module = alwaysreject
-
-[Documentation]
-Author = Andrew Robinson
-Version = 0.1
-Description = Authentication Provider that is used for blacklisting usernames (i.e. accept no password)

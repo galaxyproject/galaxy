@@ -5,7 +5,7 @@ Created on 15/07/2014
 """
 
 import traceback
-import galaxy.auth.base
+from ..providers import AuthProvider
 
 
 def _getsubs(d, k, vars, default=''):
@@ -14,7 +14,7 @@ def _getsubs(d, k, vars, default=''):
     return str(default).format(**vars)
 
 
-class ActiveDirectory(galaxy.auth.base.AuthProvider):
+class ActiveDirectory(AuthProvider):
     """
     Attempts to authenticate users against an Active Directory server.
 
@@ -22,6 +22,9 @@ class ActiveDirectory(galaxy.auth.base.AuthProvider):
     those fields first.  After that it will bind to the AD with the username
     (formatted as specified).
     """
+    @property
+    def plugin_type(self):
+        return 'activedirectory'
 
     def authenticate(self, username, password, options, debug=False):
         """
@@ -48,18 +51,18 @@ class ActiveDirectory(galaxy.auth.base.AuthProvider):
             try:
                 # setup connection
                 ldap.set_option(ldap.OPT_REFERRALS, 0)
-                l = ldap.initialize(_getsubs(options,'server',vars))
+                l = ldap.initialize(_getsubs(options, 'server', vars))
                 l.protocol_version = 3
-                l.simple_bind_s(_getsubs(options,'search-user',vars), _getsubs(options,'search-password',vars))
+                l.simple_bind_s(_getsubs(options, 'search-user', vars), _getsubs(options, 'search-password', vars))
                 scope = ldap.SCOPE_SUBTREE
 
                 # setup search
                 attributes = map(lambda s: s.strip().format(**vars), options['search-fields'].split(','))
-                result = l.search(_getsubs(options,'search-base',vars), scope, _getsubs(options,'search-filter',vars), attributes)
+                result = l.search(_getsubs(options, 'search-base', vars), scope, _getsubs(options, 'search-filter', vars), attributes)
 
                 # parse results
-                _,suser = l.result(result,60)
-                _,attrs = suser[0]
+                _, suser = l.result(result, 60)
+                _, attrs = suser[0]
                 if debug:
                     print ("AD Search attributes: %s" % attrs)
                 if hasattr(attrs, 'has_key'):
@@ -78,20 +81,23 @@ class ActiveDirectory(galaxy.auth.base.AuthProvider):
         try:
             # setup connection
             ldap.set_option(ldap.OPT_REFERRALS, 0)
-            l = ldap.initialize(_getsubs(options,'server',vars))
+            l = ldap.initialize(_getsubs(options, 'server', vars))
             l.protocol_version = 3
-            l.simple_bind_s(_getsubs(options,'bind-user',vars), _getsubs(options,'bind-password',vars))
+            l.simple_bind_s(_getsubs(options, 'bind-user', vars), _getsubs(options, 'bind-password', vars))
         except Exception:
             if debug:
-                print('User: %s, ACTIVEDIRECTORY: Authenticate Exception:\n%s' % (username, traceback.format_exc(),))
+                print('User: %s, ACTIVEDIRECTORY: Authenticate Exception:\n%s' % (username, traceback.format_exc()))
             return (failuremode, '')
 
         if debug:
             print "User: %s, ACTIVEDIRECTORY: True" % (username)
-        return (True, _getsubs(options,'auto-register-username',vars))
+        return (True, _getsubs(options, 'auto-register-username', vars))
 
     def authenticateUser(self, user, password, options, debug=False):
         """
         See abstract method documentation.
         """
         return self.authenticate(user.email, password, options, debug)[0]
+
+
+__all__ = ['ActiveDirectory']

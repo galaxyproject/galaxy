@@ -4,10 +4,14 @@ Created on 16/07/2014
 @author: Andrew Robinson
 """
 
-import galaxy.auth.base
+from ..providers import AuthProvider
 
-class LocalDB(galaxy.auth.base.AuthProvider):
+
+class LocalDB(AuthProvider):
     """Authenticate users against the local Galaxy database (as per usual)."""
+    @property
+    def plugin_type(self):
+        return 'localdb'
 
     def authenticate(self, username, password, options, debug=False):
         """
@@ -23,3 +27,6 @@ class LocalDB(galaxy.auth.base.AuthProvider):
         if debug:
             print ("User: %s, LOCALDB: %s" % (user.email, user_ok))
         return user_ok
+
+
+__all__ = ['LocalDB']
