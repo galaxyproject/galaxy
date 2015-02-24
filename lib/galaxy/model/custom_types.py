@@ -1,4 +1,5 @@
 import binascii
+import copy
 import json
 import logging
 import uuid
@@ -61,6 +62,12 @@ class JSONType(sqlalchemy.types.TypeDecorator):
             return dialect.type_descriptor(sqlalchemy.dialects.mysql.MEDIUMBLOB)
         else:
             return self.impl
+
+    def copy_value( self, value ):
+        return copy.deepcopy( value )
+
+    def compare_values( self, x, y ):
+        return ( x == y )
 
 
 class MutationObj(Mutable):
@@ -195,12 +202,6 @@ class MutationList(MutationObj, list):
     def remove(self, value):
         list.remove(self, value)
         self.changed()
-
-    def __getstate__(self):
-        return list(self)
-
-    def __setstate__(self, state):
-        self.update(state)
 
 
 MutationObj.associate_with(JSONType)
