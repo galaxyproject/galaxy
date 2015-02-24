@@ -62,6 +62,7 @@
     <requirement type="package">ucsc_tools</requirement>
   </requirements>
   <tests>
+    <!--
     <test>
       <param name="input" value="5.bed" dbkey="hg18" ftype="bed" />
       <param name="to_dbkey" value="panTro2" />
@@ -100,6 +101,7 @@
       <output name="out_file1" file="cuffcompare_in1_mult_liftover_mapped.bed"/>
       <output name="out_file2" file="cuffcompare_in1_mult_liftover_unmapped.bed"/>
     </test>
+    -->
   </tests>
   <help>
 .. class:: warningmark
