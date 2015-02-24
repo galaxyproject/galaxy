@@ -1,5 +1,4 @@
 import binascii
-import copy
 import json
 import logging
 import uuid
@@ -34,67 +33,33 @@ def _sniffnfix_pg9_hex(value):
         return value
 
 
-class MutableDict(Mutable, dict):
-    # MutableDict following http://docs.sqlalchemy.org/en/latest/orm/extensions/mutable.html
-    @classmethod
-    def coerce(cls, key, value):
-        "Convert plain dictionaries to MutableDict."
-
-        if not isinstance(value, MutableDict):
-            if isinstance(value, dict):
-                return MutableDict(value)
-
-            # this call will raise ValueError
-            return Mutable.coerce(key, value)
-        else:
-            return value
-
-    def __setitem__(self, key, value):
-        "Detect dictionary set events and emit change events."
-
-        dict.__setitem__(self, key, value)
-        self.changed()
-
-    def __delitem__(self, key):
-        "Detect dictionary del events and emit change events."
-
-        dict.__delitem__(self, key)
-        self.changed()
-
-    def __getstate__(self):
-        return dict(self)
-
-    def __setstate__(self, state):
-        self.update(state)
+# Mutable JSONType for SQLAlchemy from original gist:
+# https://gist.github.com/dbarnett/1730610
+#
+# Also using minor changes from this fork of the gist:
+# https://gist.github.com/miracle2k/52a031cced285ba9b8cd
+#
+# And other minor changes to make it work for us.
 
 
-class JSONType( TypeDecorator ):
+class JSONType(sqlalchemy.types.TypeDecorator):
+    """Represents an immutable structure as a json-encoded string.
+
+    If default is, for example, a dict, then a NULL value in the
+    database will be exposed as an empty dict.
     """
-    Defines a JSONType for SQLAlchemy.  Takes a primitive as input and
-    JSONifies it.  This should replace PickleType throughout Galaxy.
-    """
+
     impl = LargeBinary
 
-    def process_bind_param( self, value, dialect ):
-        if value is None:
-            return None
-        return json_encoder.encode( value )
-
-    def process_result_value( self, value, dialect ):
+    def process_bind_param(self, value, dialect):
         if value is not None:
-            try:
-                return json_decoder.decode( str( _sniffnfix_pg9_hex( value ) ) )
-            except Exception, e:
-                log.error( 'Failed to decode JSON (%s): %s', value, e )
-        return None
+            value = json_encoder.encode(value)
+        return value
 
-    def copy_value( self, value ):
-        # return json_decoder.decode( json_encoder.encode( value ) )
-        return copy.deepcopy( value )
-
-    def compare_values( self, x, y ):
-        # return json_encoder.encode( x ) == json_encoder.encode( y )
-        return ( x == y )
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            value = json_decoder.decode( str( _sniffnfix_pg9_hex( value ) ) )
+        return value
 
     def load_dialect_impl(self, dialect):
         if dialect.name == "mysql":
@@ -103,8 +68,136 @@ class JSONType( TypeDecorator ):
             return self.impl
 
 
-MutableDict.associate_with(JSONType)
+class MutationObj(Mutable):
+    @classmethod
+    def coerce(cls, key, value):
+        if isinstance(value, dict) and not isinstance(value, MutationDict):
+            return MutationDict.coerce(key, value)
+        if isinstance(value, list) and not isinstance(value, MutationList):
+            return MutationList.coerce(key, value)
+        return value
 
+    @classmethod
+    def _listen_on_attribute(cls, attribute, coerce, parent_cls):
+        key = attribute.key
+        if parent_cls is not attribute.class_:
+            return
+
+        # rely on "propagate" here
+        parent_cls = attribute.class_
+
+        def load(state, *args):
+            val = state.dict.get(key, None)
+            if coerce:
+                val = cls.coerce(key, val)
+                state.dict[key] = val
+            if isinstance(val, cls):
+                val._parents[state.obj()] = key
+
+        def set(target, value, oldvalue, initiator):
+            if not isinstance(value, cls):
+                value = cls.coerce(key, value)
+            if isinstance(value, cls):
+                value._parents[target.obj()] = key
+            if isinstance(oldvalue, cls):
+                oldvalue._parents.pop(target.obj(), None)
+            return value
+
+        def pickle(state, state_dict):
+            val = state.dict.get(key, None)
+            if isinstance(val, cls):
+                if 'ext.mutable.values' not in state_dict:
+                    state_dict['ext.mutable.values'] = []
+                state_dict['ext.mutable.values'].append(val)
+
+        def unpickle(state, state_dict):
+            if 'ext.mutable.values' in state_dict:
+                for val in state_dict['ext.mutable.values']:
+                    val._parents[state.obj()] = key
+
+        sqlalchemy.event.listen(parent_cls, 'load', load, raw=True, propagate=True)
+        sqlalchemy.event.listen(parent_cls, 'refresh', load, raw=True, propagate=True)
+        sqlalchemy.event.listen(attribute, 'set', set, raw=True, retval=True, propagate=True)
+        sqlalchemy.event.listen(parent_cls, 'pickle', pickle, raw=True, propagate=True)
+        sqlalchemy.event.listen(parent_cls, 'unpickle', unpickle, raw=True, propagate=True)
+
+
+class MutationDict(MutationObj, dict):
+    @classmethod
+    def coerce(cls, key, value):
+        """Convert plain dictionary to MutationDict"""
+        self = MutationDict((k, MutationObj.coerce(key, v)) for (k, v) in value.items())
+        self._key = key
+        return self
+
+    def __setitem__(self, key, value):
+        # Due to the way OrderedDict works, this is called during __init__.
+        # At this time we don't have a key set, but what is more, the value
+        # being set has already been coerced. So special case this and skip.
+        if hasattr(self, '_key'):
+            value = MutationObj.coerce(self._key, value)
+        dict.__setitem__(self, key, value)
+        self.changed()
+
+    def __delitem__(self, key):
+        dict.__delitem__(self, key)
+        self.changed()
+
+
+class MutationList(MutationObj, list):
+    @classmethod
+    def coerce(cls, key, value):
+        """Convert plain list to MutationList"""
+        self = MutationList((MutationObj.coerce(key, v) for v in value))
+        self._key = key
+        return self
+
+    def __setitem__(self, idx, value):
+        list.__setitem__(self, idx, MutationObj.coerce(self._key, value))
+        self.changed()
+
+    def __setslice__(self, start, stop, values):
+        list.__setslice__(self, start, stop, (MutationObj.coerce(self._key, v) for v in values))
+        self.changed()
+
+    def __delitem__(self, idx):
+        list.__delitem__(self, idx)
+        self.changed()
+
+    def __delslice__(self, start, stop):
+        list.__delslice__(self, start, stop)
+        self.changed()
+
+    def append(self, value):
+        list.append(self, MutationObj.coerce(self._key, value))
+        self.changed()
+
+    def insert(self, idx, value):
+        list.insert(self, idx, MutationObj.coerce(self._key, value))
+        self.changed()
+
+    def extend(self, values):
+        list.extend(self, (MutationObj.coerce(self._key, v) for v in values))
+        self.changed()
+
+    def pop(self, *args, **kw):
+        value = list.pop(self, *args, **kw)
+        self.changed()
+        return value
+
+    def remove(self, value):
+        list.remove(self, value)
+        self.changed()
+
+
+MutationObj.associate_with(JSONType)
+
+"""A type to encode/decode JSON on the fly
+
+sqltype is the string type for the underlying DB column::
+
+    Column(JSON)
+"""
 
 metadata_pickler = AliasPickleModule( {
     ( "cookbook.patterns", "Bunch" ): ( "galaxy.util.bunch", "Bunch" )
