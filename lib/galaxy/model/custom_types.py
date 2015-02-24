@@ -143,6 +143,12 @@ class MutationDict(MutationObj, dict):
         dict.__delitem__(self, key)
         self.changed()
 
+    def __getstate__(self):
+        return dict(self)
+
+    def __setstate__(self, state):
+        self.update(state)
+
 
 class MutationList(MutationObj, list):
     @classmethod
