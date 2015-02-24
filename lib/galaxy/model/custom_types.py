@@ -33,15 +33,6 @@ def _sniffnfix_pg9_hex(value):
         return value
 
 
-# Mutable JSONType for SQLAlchemy from original gist:
-# https://gist.github.com/dbarnett/1730610
-#
-# Also using minor changes from this fork of the gist:
-# https://gist.github.com/miracle2k/52a031cced285ba9b8cd
-#
-# And other minor changes to make it work for us.
-
-
 class JSONType(sqlalchemy.types.TypeDecorator):
     """Represents an immutable structure as a json-encoded string.
 
@@ -69,6 +60,15 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
 
 class MutationObj(Mutable):
+    """
+    Mutable JSONType for SQLAlchemy from original gist:
+    https://gist.github.com/dbarnett/1730610
+
+    Using minor changes from this fork of the gist:
+    https://gist.github.com/miracle2k/52a031cced285ba9b8cd
+
+    And other minor changes to make it work for us.
+    """
     @classmethod
     def coerce(cls, key, value):
         if isinstance(value, dict) and not isinstance(value, MutationDict):
@@ -191,13 +191,6 @@ class MutationList(MutationObj, list):
 
 
 MutationObj.associate_with(JSONType)
-
-"""A type to encode/decode JSON on the fly
-
-sqltype is the string type for the underlying DB column::
-
-    Column(JSON)
-"""
 
 metadata_pickler = AliasPickleModule( {
     ( "cookbook.patterns", "Bunch" ): ( "galaxy.util.bunch", "Bunch" )
