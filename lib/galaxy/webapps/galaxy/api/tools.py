@@ -102,6 +102,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         Return diagnostic information to help debug panel
         and dependency related problems.
         """
+        # TODO: Move this into tool.
         to_dict = lambda x: x.to_dict()
         tool = self._get_tool( id, user=trans.user )
         if hasattr( tool, 'lineage' ):
@@ -113,7 +114,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             tool_shed_dependencies_dict = map(to_dict, tool_shed_dependencies)
         else:
             tool_shed_dependencies_dict = None
-        tool = self._get_tool( id, user=trans.user )
         return {
             "tool_id": tool.id,
             "tool_version": tool.version,
@@ -122,6 +122,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             "requirements": map(to_dict, tool.requirements),
             "installed_tool_shed_dependencies": tool_shed_dependencies_dict,
             "tool_dir": tool.tool_dir,
+            "tool_shed": tool.tool_shed,
+            "repository_name": tool.repository_name,
+            "repository_owner": tool.repository_owner,
+            "installed_changeset_revision": None,
+            "guid": tool.guid,
         }
 
     @_future_expose_api_anonymous
