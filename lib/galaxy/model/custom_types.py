@@ -195,6 +195,12 @@ class MutationList(MutationObj, list):
         list.remove(self, value)
         self.changed()
 
+    def __getstate__(self):
+        return list(self)
+
+    def __setstate__(self, state):
+        self.update(state)
+
 
 MutationObj.associate_with(JSONType)
 
