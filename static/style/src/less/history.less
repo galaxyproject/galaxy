@@ -744,7 +744,7 @@
         // current history
         &:first-child {
             position: fixed;
-            z-index : 2;
+            z-index : 10;
 
             // visually differentiate the current history
             .history-panel {
@@ -758,6 +758,9 @@
         }
         &:last-child {
             margin-right: 0px;
+        }
+        .dropdown-menu {
+            z-index: inherit;
         }
 
         .panel-controls {
