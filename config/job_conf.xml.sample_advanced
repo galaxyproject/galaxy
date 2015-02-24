@@ -427,9 +427,9 @@
             <param id="nativeSpecification">--mem-per-cpu=512</param>
             <resubmit condition="memory_limit_reached" destination="bigmem" />
         </destination>
-        <!-- Any tag param in this file can be set using an enviornment variable or using
+        <!-- Any tag param in this file can be set using an environment variable or using
              values from galaxy.ini using the from_environ and from_config attributes
-             repectively. The text of the param will still be used if that enviornment variable
+             repectively. The text of the param will still be used if that environment variable
              or config value isn't set.
         -->
         <destination id="params_from_environment" runner="slurm">

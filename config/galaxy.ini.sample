@@ -176,7 +176,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # install from in the admin interface (.sample used if default does not exist).
 #tool_sheds_config_file = config/tool_sheds_conf.xml
 
-# Set to True to Enable monitoring of tools and tool directories
+# Set to True to enable monitoring of tools and tool directories
 # listed in any tool config file specified in tool_config_file option.
 # If changes are found, tools are automatically reloaded.  Watchdog (
 # https://pypi.python.org/pypi/watchdog ) must be installed and
@@ -184,7 +184,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # which will attempt to watch tools if the watchdog library is available
 # but won't fail to load Galaxy if it is not and 'polling' which will use
 # a less efficient monitoring scheme that may work in wider range of scenarios
-# then the watchdog default montiory.
+# than the watchdog default.
 #watch_tools = False
 
 # Enable automatic polling of relative tool sheds to see if any updates
