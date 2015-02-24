@@ -379,21 +379,31 @@ var CurrentHistoryPanel = _super.extend(
     },
 
 //TODO: this seems more like a per user message than a history message; IOW, this doesn't belong here
+    /** Override to preserve the quota message */
+    clearMessages : function( ev ){
+        var $target = !_.isUndefined( ev )?
+            $( ev.currentTarget )
+            :this.$messages().children( '[class$="message"]' );
+        $target = $target.not( '.quota-message' );
+        $target.fadeOut( this.fxSpeed, function(){
+            $( this ).remove();
+        });
+        return this;
+    },
+
     /** Show the over quota message (which happens to be in the history panel).
      */
     showQuotaMessage : function(){
-        var msg = this.$el.find( '.quota-message' );
-        //this.log( this + ' showing quota message:', msg, userData );
-        if( msg.is( ':hidden' ) ){ msg.slideDown( this.fxSpeed ); }
+        var $msg = this.$( '.quota-message' );
+        if( $msg.is( ':hidden' ) ){ $msg.slideDown( this.fxSpeed ); }
     },
 
 //TODO: this seems more like a per user message than a history message
     /** Hide the over quota message (which happens to be in the history panel).
      */
     hideQuotaMessage : function(){
-        var msg = this.$el.find( '.quota-message' );
-        //this.log( this + ' hiding quota message:', msg, userData );
-        if( !msg.is( ':hidden' ) ){ msg.slideUp( this.fxSpeed ); }
+        var $msg = this.$( '.quota-message' );
+        if( !$msg.is( ':hidden' ) ){ $msg.slideUp( this.fxSpeed ); }
     },
 
     /** Return a string rep of the history

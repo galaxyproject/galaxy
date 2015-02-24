@@ -2,9 +2,11 @@ import os.path
 try:
     from watchdog.events import FileSystemEventHandler
     from watchdog.observers import Observer
+    from watchdog.observers.polling import PollingObserver
     can_watch = True
 except ImportError:
     FileSystemEventHandler = object
+    PollingObserver = object
     can_watch = False
 
 import logging
@@ -12,23 +14,34 @@ log = logging.getLogger( __name__ )
 
 
 def get_watcher(toolbox, config):
-    watch_tools = getattr(config, "watch_tools", False)
-    if watch_tools:
+    watch_tools_val = str( getattr(config, "watch_tools", False) ).lower()
+    if watch_tools_val in ( 'true', 'yes', 'on' ):
         return ToolWatcher(toolbox)
+    elif watch_tools_val == "auto":
+        try:
+            return ToolWatcher(toolbox)
+        except Exception:
+            log.info("Failed to load ToolWatcher (watchdog is likely unavailable) - proceeding without tool monitoring.")
+            return NullWatcher()
+    elif watch_tools_val == "polling":
+        log.info("Using less ineffecient polling toolbox watcher.")
+        return ToolWatcher(toolbox, observer_class=PollingObserver)
     else:
         return NullWatcher()
 
 
 class ToolWatcher(object):
 
-    def __init__(self, toolbox):
+    def __init__(self, toolbox, observer_class=None):
         if not can_watch:
             raise Exception("Watchdog library unavailble, cannot watch tools.")
+        if observer_class is None:
+            observer_class = Observer
         self.toolbox = toolbox
         self.tool_file_ids = {}
         self.tool_dir_callbacks = {}
         self.monitored_dirs = {}
-        self.observer = Observer()
+        self.observer = observer_class()
         self.event_handler = ToolFileEventHandler(self)
         self.start()
 

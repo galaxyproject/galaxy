@@ -176,11 +176,15 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # install from in the admin interface (.sample used if default does not exist).
 #tool_sheds_config_file = config/tool_sheds_conf.xml
 
-# Enable monitoring of tools and tool directories listed in any tool config file
-# specified in tool_config_file option.  If changes are found, tools are
-# automatically reloaded.
-# Watchdog ( https://pypi.python.org/pypi/watchdog ) must be installed and
-# available to Galaxy to use this option.
+# Set to True to Enable monitoring of tools and tool directories
+# listed in any tool config file specified in tool_config_file option.
+# If changes are found, tools are automatically reloaded.  Watchdog (
+# https://pypi.python.org/pypi/watchdog ) must be installed and
+# available to Galaxy to use this option. Other options include 'auto'
+# which will attempt to watch tools if the watchdog library is available
+# but won't fail to load Galaxy if it is not and 'polling' which will use
+# a less efficient monitoring scheme that may work in wider range of scenarios
+# then the watchdog default montiory.
 #watch_tools = False
 
 # Enable automatic polling of relative tool sheds to see if any updates
@@ -212,6 +216,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # directory and the wiki for help:
 #   https://wiki.galaxyproject.org/Admin/DataIntegration
 #tool_data_path = tool-data
+
+# Directory where Tool Data Table related files will be placed
+# when installed from a ToolShed. Defaults to tool_data_path
+#shed_tool_data_path = tool-data
 
 # File containing old-style genome builds
 #builds_file_path = tool-data/shared/ucsc/builds.txt
