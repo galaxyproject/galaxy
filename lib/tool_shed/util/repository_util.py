@@ -313,8 +313,11 @@ def handle_role_associations( app, role, repository, **kwd ):
     return associations_dict
 
 def validate_repository_name( app, name, user ):
-    # Repository names must be unique for each user, must be at least four characters
-    # in length and must contain only lower-case letters, numbers, and the '_' character.
+    """
+    Validate whether the given name qualifies as a new TS repo name.
+    Repository names must be unique for each user, must be at least two characters
+    in length and must contain only lower-case letters, numbers, and the '_' character.
+    """
     if name in [ 'None', None, '' ]:
         return 'Enter the required repository name.'
     if name in [ 'repos' ]:
@@ -322,13 +325,13 @@ def validate_repository_name( app, name, user ):
     check_existing = suc.get_repository_by_name_and_owner( app, name, user.username )
     if check_existing is not None:
         if check_existing.deleted:
-            return 'You have a deleted repository named <b>%s</b>, so choose a different name.' % name
+            return 'You own a deleted repository named <b>%s</b>, please choose a different name.' % escape( name )
         else:
-            return "You already have a repository named <b>%s</b>, so choose a different name." % name
+            return "You already own a repository named <b>%s</b>, please choose a different name." % escape( name )
     if len( name ) < 2:
         return "Repository names must be at least 2 characters in length."
     if len( name ) > 80:
         return "Repository names cannot be more than 80 characters in length."
     if not( VALID_REPOSITORYNAME_RE.match( name ) ):
-        return "Repository names must contain only lower-case letters, numbers and underscore <b>_</b>."
+        return "Repository names must contain only lower-case letters, numbers and underscore."
     return ''

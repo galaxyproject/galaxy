@@ -10,8 +10,10 @@ from cgi import FieldStorage
 
 from galaxy import util
 from galaxy import web
+from galaxy import exceptions
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
+from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
@@ -30,6 +32,7 @@ from tool_shed.util import repository_util
 from tool_shed.util import repository_content_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
+
 
 log = logging.getLogger( __name__ )
 
@@ -577,13 +580,72 @@ class RepositoriesController( BaseAPIController ):
                                                 id=trans.security.encode_id( repository.id ) )
         return repository_dict
 
+    @expose_api
+    def create( self, trans, payload, **kwd ):
+        """
+        create( self, trans, payload, **kwd )
+        * POST /api/repositories:
+            Creates a new repository.
+            Only ``name`` and ``synopsis`` parameters are required.
+
+        :param payload: dictionary structure containing::
+            'name':                  new repo's name (required)
+            'synopsis':              new repo's synopsis (required)
+            'description':           new repo's description (optional)
+            'remote_repository_url': new repo's remote repo (optional)
+            'homepage_url':          new repo's homepage url (optional)
+            'category_ids[]':        list of existing encoded TS category ids
+                                     the new repo should be associated with (optional)
+            'type':                  new repo's type, defaults to ``unrestricted`` (optional)
+
+        :type payload: dict
+
+        :returns:   detailed repository information
+        :rtype:     dict
+
+        :raises: RequestParameterMissingException
+        """
+        params = util.Params( payload )
+        name = util.restore_text( params.get( 'name', None ) )
+        if not name:
+            raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
+        synopsis = util.restore_text( params.get( 'synopsis', None ) )
+        if not synopsis:
+            raise exceptions.RequestParameterMissingException( "Missing required parameter 'synopsis'." )
+
+        description = util.restore_text( params.get( 'description', '' ) )
+        remote_repository_url = util.restore_text( params.get( 'remote_repository_url', '' ) )
+        homepage_url = util.restore_text( params.get( 'homepage_url', '' ) )
+        category_ids = util.listify( params.get( 'category_ids[]', '' ) )
+        selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
+
+        repo_type = kwd.get( 'type', rt_util.UNRESTRICTED )
+        if repo_type not in rt_util.types:
+            raise exceptions.RequestParameterInvalidException( 'This repository type is not valid' )
+
+        invalid_message = repository_util.validate_repository_name( trans.app, name, trans.user )
+        if invalid_message:
+            raise exceptions.RequestParameterInvalidException( invalid_message )
+
+        repo, message = repository_util.create_repository( app=trans.app,
+                                                  name=name,
+                                                  type=repo_type,
+                                                  description=synopsis,
+                                                  long_description=description,
+                                                  user_id = trans.user.id,
+                                                  category_ids=category_ids,
+                                                  remote_repository_url=remote_repository_url,
+                                                  homepage_url=homepage_url )
+
+        return repo.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
+
     @web.expose_api
     def create_changeset_revision( self, trans, id, payload, **kwd ):
         """
         POST /api/repositories/{encoded_repository_id}/changeset_revision
 
         Create a new tool shed repository commit - leaving PUT on parent
-        resource open for updating meta-attirbutes of the repository (and
+        resource open for updating meta-attributes of the repository (and
         Galaxy doesn't allow PUT multipart data anyway
         https://trello.com/c/CQwmCeG6).
 
