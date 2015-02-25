@@ -480,7 +480,7 @@ class Sam( Tabular ):
         if result != 0:
             raise Exception('Result %s from %s' % (result, cmd))
         if len(split_files) > 1:
-            cmd = 'egrep -v "^@" %s >> %s' % ( ' '.join(split_files[1:]), output_file )
+            cmd = 'egrep -v -h "^@" %s >> %s' % ( ' '.join(split_files[1:]), output_file )
         result = os.system(cmd)
         if result != 0:
             raise Exception('Result %s from %s' % (result, cmd))
