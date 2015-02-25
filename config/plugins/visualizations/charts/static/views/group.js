@@ -189,7 +189,7 @@ return Backbone.View.extend({
             if (valid) {
                 // add to selection
                 columns.push({
-                    'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
+                    'label' : 'Column: ' + (parseInt(key) + 1),
                     'value' : key
                 });
             }
