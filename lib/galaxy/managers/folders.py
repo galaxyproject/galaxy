@@ -2,9 +2,7 @@
 Manager and Serializer for Library Folders.
 """
 
-import galaxy.web
 from galaxy import exceptions
-from galaxy.model import orm
 
 import logging
 log = logging.getLogger( __name__ )
@@ -156,7 +154,7 @@ class FolderManager( object ):
 
     def get_current_roles( self, trans, folder ):
         """
-        Find all roles currently connected to relevant permissions 
+        Find all roles currently connected to relevant permissions
         on the folder.
 
         :param  folder:      the model object
@@ -165,7 +163,7 @@ class FolderManager( object ):
         :returns:   dict of current roles for all available permission types
         :rtype:     dictionary
         """
-        # Omit duplicated roles by converting to set 
+        # Omit duplicated roles by converting to set
         modify_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY ) )
         manage_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_MANAGE ) )
         add_roles = set( trans.app.security_agent.get_roles_for_action( folder, trans.app.security_agent.permitted_actions.LIBRARY_ADD ) )
@@ -173,7 +171,9 @@ class FolderManager( object ):
         modify_folder_role_list = [ ( modify_role.name, trans.security.encode_id( modify_role.id ) ) for modify_role in modify_roles ]
         manage_folder_role_list = [ ( manage_role.name, trans.security.encode_id( manage_role.id ) ) for manage_role in manage_roles ]
         add_library_item_role_list = [ ( add_role.name, trans.security.encode_id( add_role.id ) ) for add_role in add_roles ]
-        return dict( modify_folder_role_list=modify_folder_role_list, manage_folder_role_list=manage_folder_role_list, add_library_item_role_list=add_library_item_role_list )
+        return dict( modify_folder_role_list=modify_folder_role_list,
+                     manage_folder_role_list=manage_folder_role_list,
+                     add_library_item_role_list=add_library_item_role_list )
 
     def can_add_item( self, trans, folder ):
         """
