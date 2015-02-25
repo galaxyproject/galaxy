@@ -2,7 +2,7 @@
 A simple WSGI application/framework.
 """
 
-import cgi # For FieldStorage
+import cgi  # For FieldStorage
 import logging
 import os.path
 import socket
@@ -67,7 +67,7 @@ class WebApplication( object ):
         # FIXME: The following two options are deprecated and should be
         # removed.  Consult the Routes documentation.
         self.mapper.minimization = True
-        #self.mapper.explicit = False
+        # self.mapper.explicit = False
         self.transaction_factory = DefaultWebTransaction
         # Set if trace logging is enabled
         self.trace_logger = None
@@ -79,12 +79,12 @@ class WebApplication( object ):
         method use `add_route`.
         """
         log.debug( "Enabling '%s' controller, class: %s",
-            controller_name, controller.__class__.__name__ )
+                   controller_name, controller.__class__.__name__ )
         self.controllers[ controller_name ] = controller
 
     def add_api_controller( self, controller_name, controller ):
         log.debug( "Enabling '%s' API controller, class: %s",
-            controller_name, controller.__class__.__name__ )
+                   controller_name, controller.__class__.__name__ )
         self.api_controllers[ controller_name ] = controller
 
     def add_route( self, route, **kwargs ):
@@ -148,7 +148,7 @@ class WebApplication( object ):
         else:
             environ[ 'is_api_request' ] = False
             controllers = self.controllers
-        if map == None:
+        if map is None:
             raise httpexceptions.HTTPNotFound( "No route for " + path_info )
         self.trace( path_info=path_info, map=map )
         # Setup routes
@@ -239,11 +239,13 @@ class WSGIEnvironmentProperty( object ):
     associated object (provides property style access to keys in the WSGI
     environment)
     """
-    def __init__( self, key, default = '' ):
+    def __init__( self, key, default='' ):
         self.key = key
         self.default = default
-    def __get__( self, obj, type = None ):
-        if obj is None: return self
+
+    def __get__( self, obj, type=None ):
+        if obj is None:
+            return self
         return obj.environ.get( self.key, self.default )
 
 
@@ -254,8 +256,10 @@ class LazyProperty( object ):
     """
     def __init__( self, func ):
         self.func = func
-    def __get__(self, obj, type = None ):
-        if obj is None: return self
+
+    def __get__(self, obj, type=None ):
+        if obj is None:
+            return self
         value = self.func( obj )
         setattr( obj, self.func.func_name, value )
         return value
@@ -273,6 +277,7 @@ class DefaultWebTransaction( object ):
         self.environ = environ
         self.request = Request( environ )
         self.response = Response()
+
     @lazy_property
     def session( self ):
         """
@@ -291,11 +296,14 @@ class DefaultWebTransaction( object ):
 # but for performance reasons it's way better to use Paste's tempfile than to
 # create a new one and copy.
 import tempfile
+
+
 class FieldStorage( cgi.FieldStorage ):
     def make_file(self, binary=None):
         return tempfile.NamedTemporaryFile()
+
     def read_lines(self):
-    # Always make a new file
+        # Always make a new file
         self.file = self.make_file()
         self.__file = None
         if self.outerboundary:
@@ -313,45 +321,58 @@ class Request( webob.Request ):
         """
         Create a new request wrapping the WSGI environment `environ`
         """
-        ## self.environ = environ
+        #  self.environ = environ
         webob.Request.__init__( self, environ, charset='utf-8', decode_param_names=False )
     # Properties that are computed and cached on first use
+
     @lazy_property
     def remote_host( self ):
         try:
             return socket.gethostbyname( self.remote_addr )
         except socket.error:
             return self.remote_addr
+
     @lazy_property
     def remote_hostname( self ):
         try:
             return socket.gethostbyaddr( self.remote_addr )[0]
         except socket.error:
             return self.remote_addr
+
     @lazy_property
     def cookies( self ):
         return get_cookies( self.environ )
+
     @lazy_property
     def base( self ):
         return ( self.scheme + "://" + self.host )
-    ## @lazy_property
-    ## def params( self ):
-    ##     return parse_formvars( self.environ )
+
+    # @lazy_property
+    # def params( self ):
+    #     return parse_formvars( self.environ )
+
     @lazy_property
     def path( self ):
         return self.environ['SCRIPT_NAME'] + self.environ['PATH_INFO']
+
     @lazy_property
     def browser_url( self ):
         return self.base + self.path
+
     # Descriptors that map properties to the associated environment
-    ## scheme = WSGIEnvironmentProperty( 'wsgi.url_scheme' )
-    ## remote_addr = WSGIEnvironmentProperty( 'REMOTE_ADDR' )
+
+    # scheme = WSGIEnvironmentProperty( 'wsgi.url_scheme' )
+    # remote_addr = WSGIEnvironmentProperty( 'REMOTE_ADDR' )
+
     remote_port = WSGIEnvironmentProperty( 'REMOTE_PORT' )
-    ## method = WSGIEnvironmentProperty( 'REQUEST_METHOD' )
-    ## script_name = WSGIEnvironmentProperty( 'SCRIPT_NAME' )
+
+    # method = WSGIEnvironmentProperty( 'REQUEST_METHOD' )
+    # script_name = WSGIEnvironmentProperty( 'SCRIPT_NAME' )
+
     protocol = WSGIEnvironmentProperty( 'SERVER_PROTOCOL' )
-    ## query_string = WSGIEnvironmentProperty( 'QUERY_STRING' )
-    ## path_info = WSGIEnvironmentProperty( 'PATH_INFO' )
+
+    # query_string = WSGIEnvironmentProperty( 'QUERY_STRING' )
+    # path_info = WSGIEnvironmentProperty( 'PATH_INFO' )
 
 
 class Response( object ):
@@ -406,7 +427,8 @@ class Response( object ):
 
 # ---- Utilities ------------------------------------------------------------
 
-CHUNK_SIZE = 2**16
+CHUNK_SIZE = 2 ** 16
+
 
 def send_file( start_response, trans, body ):
     # If configured use X-Accel-Redirect header for nginx
@@ -426,6 +448,7 @@ def send_file( start_response, trans, body ):
                     trans.response.wsgi_headeritems() )
     return body
 
+
 def iterate_file( file ):
     """
     Progressively return chunks from `file`.
@@ -436,13 +459,14 @@ def iterate_file( file ):
             break
         yield chunk
 
+
 def flatten( seq ):
     """
     Flatten a possible nested set of iterables
     """
     for x in seq:
         if isinstance( x, ( types.GeneratorType, list, tuple ) ):
-            for y in flatten( x, encoding ):
+            for y in flatten( x ):
                 yield y
         else:
             yield x
