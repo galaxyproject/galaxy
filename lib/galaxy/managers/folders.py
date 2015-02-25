@@ -2,8 +2,7 @@
 Manager and Serializer for Library Folders.
 """
 
-from galaxy import exceptions
-
+import galaxy.exceptions
 import logging
 log = logging.getLogger( __name__ )
 
@@ -30,12 +29,12 @@ class FolderManager( object ):
         """
         try:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).filter( trans.app.model.LibraryFolder.table.c.id == decoded_folder_id ).one()
-        except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase( 'Multiple folders found with the same id.' )
-        except NoResultFound:
-            raise exceptions.RequestParameterInvalidException( 'No folder found with the id provided.' )
+        except galaxy.exceptions.MultipleResultsFound:
+            raise galaxy.exceptions.InconsistentDatabase( 'Multiple folders found with the same id.' )
+        except galaxy.exceptions.NoResultFound:
+            raise galaxy.exceptions.RequestParameterInvalidException( 'No folder found with the id provided.' )
         except Exception, e:
-            raise exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
+            raise galaxy.exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
         folder = self.secure( trans, folder, check_manageable, check_accessible )
         return folder
 
@@ -72,10 +71,10 @@ class FolderManager( object ):
         :raises: AuthenticationRequired, InsufficientPermissionsException
         """
         if not trans.user:
-            raise exceptions.AuthenticationRequired( "Must be logged in to manage Galaxy items.", type='error' )
+            raise galaxy.exceptions.AuthenticationRequired( "Must be logged in to manage Galaxy items.", type='error' )
         current_user_roles = trans.get_current_user_roles()
         if not trans.app.security_agent.can_manage_library_item( current_user_roles, folder ):
-            raise exceptions.InsufficientPermissionsException( "You don't have permissions to manage this folder.", type='error' )
+            raise galaxy.exceptions.InsufficientPermissionsException( "You don't have permissions to manage this folder.", type='error' )
         else:
             return folder
 
@@ -123,7 +122,7 @@ class FolderManager( object ):
         parent_folder = self.get( trans, parent_folder_id )
         current_user_roles = trans.get_current_user_roles()
         if not ( trans.user_is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, parent_folder ) ):
-            raise exceptions.InsufficientPermissionsException( 'You do not have proper permission to create folders under given folder.' )
+            raise galaxy.exceptions.InsufficientPermissionsException( 'You do not have proper permission to create folders under given folder.' )
         new_folder = trans.app.model.LibraryFolder( name=new_folder_name, description=new_folder_description )
         # We are associating the last used genome build with folders, so we will always
         # initialize a new folder with the first dbkey in genome builds list which is currently
@@ -195,7 +194,7 @@ class FolderManager( object ):
         if ( ( len( encoded_folder_id ) % 16 == 1 ) and encoded_folder_id.startswith( 'F' ) ):
             cut_id = encoded_folder_id[ 1: ]
         else:
-            raise exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
+            raise galaxy.exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
         return cut_id
 
     def decode_folder_id( self, trans, encoded_folder_id ):
@@ -205,7 +204,7 @@ class FolderManager( object ):
         try:
             decoded_id = trans.security.decode_id( encoded_folder_id )
         except ValueError:
-            raise exceptions.MalformedId( "Malformed folder id ( %s ) specified, unable to decode" % ( str( encoded_folder_id ) ) )
+            raise galaxy.exceptions.MalformedId( "Malformed folder id ( %s ) specified, unable to decode" % ( str( encoded_folder_id ) ) )
         return decoded_id
 
     def cut_and_decode( self, trans, encoded_folder_id ):
