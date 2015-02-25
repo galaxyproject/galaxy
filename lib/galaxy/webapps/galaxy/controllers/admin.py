@@ -25,23 +25,17 @@ log = logging.getLogger( __name__ )
 
 class UserListGrid( grids.Grid ):
 
-
     class EmailColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, user ):
             return user.email
 
-
     class UserNameColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.username:
                 return user.username
             return 'not set'
 
-
     class StatusColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.purged:
                 return "purged"
@@ -49,47 +43,35 @@ class UserListGrid( grids.Grid ):
                 return "deleted"
             return ""
 
-
     class GroupsColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.groups:
                 return len( user.groups )
             return 0
 
-
     class RolesColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.roles:
                 return len( user.roles )
             return 0
 
-
     class ExternalColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.external:
                 return 'yes'
             return 'no'
 
-
     class LastLoginColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.galaxy_sessions:
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
 
-
     class TimeCreatedColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             return user.create_time.strftime('%x')
 
-
     class ActivatedColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.active:
                 return 'Y'
@@ -99,7 +81,7 @@ class UserListGrid( grids.Grid ):
     # Grid definition
     title = "Users"
     model_class = model.User
-    template='/admin/user/grid.mako'
+    template = '/admin/user/grid.mako'
     default_sort_key = "email"
     columns = [
         EmailColumn( "Email",
@@ -158,46 +140,33 @@ class UserListGrid( grids.Grid ):
 
 class RoleListGrid( grids.Grid ):
 
-
     class NameColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, role ):
             return role.name
 
-
     class DescriptionColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, role ):
             if role.description:
                 return role.description
             return ''
 
-
     class TypeColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, role ):
             return role.type
 
-
     class StatusColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, role ):
             if role.deleted:
                 return "deleted"
             return ""
 
-
     class GroupsColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, role ):
             if role.groups:
                 return len( role.groups )
             return 0
 
-
     class UsersColumn( grids.GridColumn ):
-
-
         def get_value( self, trans, grid, role ):
             if role.users:
                 return len( role.users )
@@ -206,7 +175,7 @@ class RoleListGrid( grids.Grid ):
     # Grid definition
     title = "Roles"
     model_class = model.Role
-    template='/admin/dataset_security/role/grid.mako'
+    template = '/admin/dataset_security/role/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -270,31 +239,23 @@ class RoleListGrid( grids.Grid ):
 
 class GroupListGrid( grids.Grid ):
 
-
     class NameColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, group ):
             return group.name
 
-
     class StatusColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, group ):
             if group.deleted:
                 return "deleted"
             return ""
 
-
     class RolesColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, group ):
             if group.roles:
                 return len( group.roles )
             return 0
 
-
     class UsersColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, group ):
             if group.members:
                 return len( group.members )
@@ -303,7 +264,7 @@ class GroupListGrid( grids.Grid ):
     # Grid definition
     title = "Groups"
     model_class = model.Group
-    template='/admin/dataset_security/group/grid.mako'
+    template = '/admin/dataset_security/group/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -351,31 +312,24 @@ class GroupListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
+
 class QuotaListGrid( grids.Grid ):
 
-
     class NameColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, quota ):
             return quota.name
 
-
     class DescriptionColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, quota ):
             if quota.description:
                 return quota.description
             return ''
 
-
     class AmountColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, quota ):
             return quota.operation + quota.display_amount
 
-
     class StatusColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, quota ):
             if quota.deleted:
                 return "deleted"
@@ -383,17 +337,13 @@ class QuotaListGrid( grids.Grid ):
                 return "<strong>default for %s users</strong>" % quota.default[0].type
             return ""
 
-
     class UsersColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, quota ):
             if quota.users:
                 return len( quota.users )
             return 0
 
-
     class GroupsColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, quota ):
             if quota.groups:
                 return len( quota.groups )
@@ -402,7 +352,7 @@ class QuotaListGrid( grids.Grid ):
     # Grid definition
     title = "Quotas"
     model_class = model.Quota
-    template='/admin/quota/grid.mako'
+    template = '/admin/quota/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -417,10 +367,10 @@ class QuotaListGrid( grids.Grid ):
                            attach_popup=False,
                            filterable="advanced" ),
         AmountColumn( "Amount",
-                    key='amount',
-                    model_class=model.Quota,
-                    attach_popup=False,
-                    filterable="advanced" ),
+                      key='amount',
+                      model_class=model.Quota,
+                      attach_popup=False,
+                      filterable="advanced" ),
         UsersColumn( "Users", attach_popup=False ),
         GroupsColumn( "Groups", attach_popup=False ),
         StatusColumn( "Status", attach_popup=False ),
@@ -483,9 +433,7 @@ class QuotaListGrid( grids.Grid ):
 
 class ToolVersionListGrid( grids.Grid ):
 
-
     class ToolIdColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, tool_version ):
             toolbox = trans.app.toolbox
             if toolbox.has_tool( tool_version.tool_id, exact=True ):
@@ -494,9 +442,7 @@ class ToolVersionListGrid( grids.Grid ):
                 return '<div class="count-box state-color-ok">%s%s</a></div>' % ( link_str, tool_version.tool_id )
             return tool_version.tool_id
 
-
     class ToolVersionsColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, tool_version ):
             tool_ids_str = ''
             toolbox = trans.app.toolbox
@@ -508,10 +454,11 @@ class ToolVersionListGrid( grids.Grid ):
                 else:
                     tool_ids_str += '%s<br/>' % tool_id
             return tool_ids_str
+
     # Grid definition
     title = "Tool versions"
     model_class = install_model.ToolVersion
-    template='/admin/tool_version/grid.mako'
+    template = '/admin/tool_version/grid.mako'
     default_sort_key = "tool_id"
     columns = [
         ToolIdColumn( "Tool id",
@@ -531,7 +478,7 @@ class ToolVersionListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    
+
     def build_initial_query( self, trans, **kwd ):
         return trans.install_model.context.query( self.model_class )
 
@@ -899,10 +846,11 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                               kwargs={'display_application_ids': kwd.get( 'id' )} )
         reloaded, failed = trans.app.datatypes_registry.reload_display_applications( kwd.get( 'id' ) )
         if not reloaded and failed:
-            return trans.show_error_message( 'Unable to reload any of the %i requested display applications ("%s").' % ( len( failed ), '", "'.join( failed ) ) )
+            return trans.show_error_message( 'Unable to reload any of the %i requested display applications ("%s").'
+                                             % ( len( failed ), '", "'.join( failed ) ) )
         if failed:
             return trans.show_warn_message( 'Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
-                                             % ( len( reloaded ), '", "'.join( reloaded ), len( failed ), '", "'.join( failed ) ) )
+                                            % ( len( reloaded ), '", "'.join( reloaded ), len( failed ), '", "'.join( failed ) ) )
         if not reloaded:
             return trans.show_warn_message( 'You need to request at least one display application to reload.' )
         return trans.show_ok_message( 'Reloaded %i requested display applications ("%s").' % ( len( reloaded ), '", "'.join( reloaded ) ) )
