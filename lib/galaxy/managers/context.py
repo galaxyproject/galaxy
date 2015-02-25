@@ -139,7 +139,11 @@ class ProvidesUserContext( object ):
     @property
     def user_ftp_dir( self ):
         identifier = self.app.config.ftp_upload_dir_identifier
-        return os.path.join( self.app.config.ftp_upload_dir, getattr( self.user, identifier ) )
+        if self.app.config.ftp_upload_subdir is None:
+            return os.path.join( self.app.config.ftp_upload_dir, getattr(self.user, identifier) )
+        else:
+            return os.path.join( self.app.config.ftp_upload_dir, getattr(self.user, identifier), self.app.config.ftp_upload_subdir)
+#        return os.path.join( self.app.config.ftp_upload_dir, getattr( self.user, identifier ) )
 
 
 class ProvidesHistoryContext( object ):
