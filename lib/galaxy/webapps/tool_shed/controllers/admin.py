@@ -250,7 +250,7 @@ class AdminController( BaseUIController, Admin ):
                     flush_needed = True
                 if original_category_description != new_description:
                     category.description = new_description
-                    if not flus_needed:
+                    if not flush_needed:
                         flush_needed = True
                 if flush_needed:
                     trans.sa_session.add( category )
