@@ -115,7 +115,7 @@ return Backbone.View.extend({
         });
         
         // append portlet
-        this.portlet.append(this.message.$el);
+        this.portlet.append(this.message.$el.addClass('ui-margin-top'));
         this.portlet.append(this.viewport_view.$el);
         
         // set element
