@@ -203,7 +203,26 @@ class Sequence( data.Text ):
             return None
         raise NotImplementedError("Can't split generic sequence files")
 
+    def get_split_commands_sequential(is_compressed, input_name, output_name, start_sequence, sequence_count):
+        """
+        Does a brain-dead sequential scan & extract of certain sequences
+        >>> Sequence.get_split_commands_sequential(True, './input.gz', './output.gz', start_sequence=0, sequence_count=10)
+        ['zcat "./input.gz" | ( tail -n +1 2> /dev/null) | head -40 | gzip -c > "./output.gz"']
+        >>> Sequence.get_split_commands_sequential(False, './input.fastq', './output.fastq', start_sequence=10, sequence_count=10)
+        ['tail -n +41 "./input.fastq" 2> /dev/null | head -40 > "./output.fastq"']
+        """
+        start_line = start_sequence * 4
+        line_count = sequence_count * 4
+        # TODO: verify that tail can handle 64-bit numbers
+        if is_compressed:
+            cmd = 'zcat "%s" | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c' % (input_name, start_line+1, line_count)
+        else:
+            cmd = 'tail -n +%s "%s" 2> /dev/null | head -%s'  % (start_line+1, input_name, line_count)
+        cmd += ' > "%s"' % output_name
 
+        return [cmd]
+    get_split_commands_sequential = staticmethod(get_split_commands_sequential)
+    
 class Alignment( data.Text ):
     """Class describing an alignment"""
 
