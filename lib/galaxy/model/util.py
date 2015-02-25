@@ -7,8 +7,6 @@ def pgcalc( sa_session, id, dryrun=False ):
     """
     Utility method for quickly recalculating user disk usage in postgres.
 
-    TODO: Move this elsewhere and update scripts/set_user_disk_usage.py
-
     TODO: Check against the recently updated versions of sqlalchemy if this
     'special' postgresql version is even necessary.
     """
