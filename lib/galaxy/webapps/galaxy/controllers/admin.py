@@ -10,6 +10,7 @@ from galaxy import web
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import MessageException
 from galaxy.model import tool_shed_install as install_model
+from galaxy.model.util import pgcalc
 from galaxy.util import nice_size, sanitize_text
 from galaxy.util.odict import odict
 from galaxy.web import url_for
@@ -896,32 +897,3 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                           action='users',
                                                           message=sanitize_text( message ),
                                                           status='info' ) )
-
-
-def pgcalc( sa_session, id, dryrun=False ):
-    """
-    Utility method for quickly recalculating user disk usage in postgres.
-    TODO: Move this elsewhere and update scripts/set_user_disk_usage.py
-    """
-    sql = """
-           UPDATE galaxy_user
-              SET disk_usage = (SELECT COALESCE(SUM(total_size), 0)
-                                  FROM (  SELECT DISTINCT ON (d.id) d.total_size, d.id
-                                            FROM history_dataset_association hda
-                                                 JOIN history h ON h.id = hda.history_id
-                                                 JOIN dataset d ON hda.dataset_id = d.id
-                                           WHERE h.user_id = :id
-                                                 AND h.purged = false
-                                                 AND hda.purged = false
-                                                 AND d.purged = false
-                                                 AND d.id NOT IN (SELECT dataset_id
-                                                                    FROM library_dataset_dataset_association)
-                                         ) sizes)
-            WHERE id = :id
-        RETURNING disk_usage;
-    """
-    r = sa_session.execute(sql, {'id': id})
-    new = r.fetchone()[0]
-    if dryrun:
-        sa_session.rollback()
-    return new

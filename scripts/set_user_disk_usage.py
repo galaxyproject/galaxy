@@ -1,8 +1,21 @@
 #!/usr/bin/env python
 
-import os, sys
+import os
+import sys
+
 from ConfigParser import ConfigParser
 from optparse import OptionParser
+
+sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
+
+from galaxy import eggs
+import pkg_resources
+
+import galaxy.config
+from galaxy.model.util import pgcalc
+from galaxy.util import nice_size
+from galaxy.objectstore import build_object_store_from_config
+
 
 default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'config/galaxy.ini') )
 
@@ -13,6 +26,7 @@ parser.add_option( '-e', '--email', dest='email', help='Email address of user to
 parser.add_option( '--dry-run', dest='dryrun', help='Dry run (show changes but do not save to database)', action='store_true', default=False )
 ( options, args ) = parser.parse_args()
 
+
 def init():
 
     options.config = os.path.abspath( options.config )
@@ -21,19 +35,8 @@ def init():
     if options.email == 'all':
         options.email = None
 
-    sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
-
-    from galaxy import eggs
-    import pkg_resources
-
-    import galaxy.config
-    from galaxy.objectstore import build_object_store_from_config
-
-    # lazy
-    globals()['nice_size'] = __import__( 'galaxy.util', globals(), locals(), ( 'nice_size', ) ).nice_size
-
-    config_parser = ConfigParser( dict( here = os.getcwd(),
-                                        database_connection = 'sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
+    config_parser = ConfigParser( dict( here=os.getcwd(),
+                                        database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
     config_parser.read( options.config )
 
     config_dict = {}
@@ -45,31 +48,10 @@ def init():
 
     from galaxy.model import mapping
 
-    return mapping.init( config.file_path, config.database_connection, create_tables = False, object_store = object_store ), object_store, config.database_connection.split(':')[0]
+    return (mapping.init( config.file_path, config.database_connection, create_tables=False, object_store=object_store ),
+            object_store,
+            config.database_connection.split(':')[0])
 
-def pgcalc( sa_session, id ):
-    sql = """
-           UPDATE galaxy_user
-              SET disk_usage = (SELECT COALESCE(SUM(total_size), 0)
-                                  FROM (  SELECT DISTINCT ON (d.id) d.total_size, d.id
-                                            FROM history_dataset_association hda
-                                                 JOIN history h ON h.id = hda.history_id
-                                                 JOIN dataset d ON hda.dataset_id = d.id
-                                           WHERE h.user_id = :id
-                                                 AND h.purged = false
-                                                 AND hda.purged = false
-                                                 AND d.purged = false
-                                                 AND d.id NOT IN (SELECT dataset_id
-                                                                    FROM library_dataset_dataset_association)
-                                         ) sizes)
-            WHERE id = :id
-        RETURNING disk_usage;
-    """
-    r = sa_session.execute(sql, {'id':id})
-    new = r.fetchone()[0]
-    if options.dryrun:
-        sa_session.rollback()
-    return new
 
 def quotacheck( sa_session, users, engine ):
     sa_session.refresh( user )
@@ -83,7 +65,7 @@ def quotacheck( sa_session, users, engine ):
             print 'usage changed while calculating, trying again...'
             return quotacheck( sa_session, user, engine )
     else:
-        new = pgcalc( sa_session, user.id )
+        new = pgcalc( sa_session, user.id, dryrun=options.dryrun )
     # yes, still a small race condition between here and the flush
     print 'old usage:', nice_size( current ), 'change:',
     if new in ( current, None ):
