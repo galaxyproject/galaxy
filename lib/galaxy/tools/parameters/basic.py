@@ -1332,7 +1332,12 @@ class ColumnListParameter( SelectToolParameter ):
         if self.data_ref not in context:
             return False
         # Get the selected dataset if selected
-        datasets = util.listify( context[ self.data_ref ] )
+        referent = context[ self.data_ref ]
+        if getattr( referent, 'history_content_type', None ) == "dataset_collection":
+            # TODO: also check datasets have been populated.
+            referent = referent.collection.dataset_instances
+
+        datasets = util.listify( referent )
         for dataset in datasets:
             if dataset:
                 # Check if the dataset does not have the expected metadata for columns
