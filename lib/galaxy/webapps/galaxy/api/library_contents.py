@@ -128,7 +128,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             content = self.get_library_folder( trans, content_id, check_ownership=False, check_accessible=True )
             rval = content.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
             rval[ 'id' ] = 'F' + str( rval[ 'id' ] )
-            rval[ 'parent_id' ] = 'F' + str( trans.security.encode_id( rval[ 'parent_id' ] ) )
+            if rval[ 'parent_id' ] is not None:  # This can happen for root folders.
+                rval[ 'parent_id' ] = 'F' + str( trans.security.encode_id( rval[ 'parent_id' ] ) )
             rval[ 'parent_library_id' ] = trans.security.encode_id( rval[ 'parent_library_id' ] )
         else:
             content = self.get_library_dataset( trans, content_id, check_ownership=False, check_accessible=True )
