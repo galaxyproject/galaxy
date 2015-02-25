@@ -139,6 +139,10 @@ class Configuration( object ):
         self.citation_cache_data_dir = resolve_path( kwargs.get( "citation_cache_data_dir", "database/tool_shed_citations/data" ), self.root )
         self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "database/tool_shed_citations/locks" ), self.root )
 
+    @property
+    def shed_tool_data_path( self ):
+        return self.tool_data_path
+
     def __parse_config_file_options( self, kwargs ):
         defaults = dict(
             datatypes_config_file = [ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
