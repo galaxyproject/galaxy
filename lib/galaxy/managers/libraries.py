@@ -54,7 +54,7 @@ class LibraryManager( object ):
             raise exceptions.ItemAccessibilityException( 'Only administrators can create libraries.' )
         else:
             library = trans.app.model.Library( name=name, description=description, synopsis=synopsis )
-            root_folder = trans.app.model.LibraryFolder( name=name, description='' )
+            root_folder = trans.app.model.LibraryFolder( name='/', description='' )
             library.root_folder = root_folder
             trans.sa_session.add_all( ( library, root_folder ) )
             trans.sa_session.flush()
