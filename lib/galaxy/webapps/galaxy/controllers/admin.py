@@ -2,6 +2,8 @@ import imp
 import logging
 import os
 
+from sqlalchemy.sql import expression
+
 import galaxy.queue_worker
 import galaxy.util
 from galaxy import model
@@ -540,14 +542,14 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         new_in_users = []
         new_in_groups = []
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
+                                    .filter( trans.app.model.User.table.c.deleted == expression.false() ) \
                                     .order_by( trans.app.model.User.table.c.email ):
             if user.id in in_users:
                 new_in_users.append( ( user.id, user.email ) )
             else:
                 params.out_users.append( ( user.id, user.email ) )
         for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
+                                     .filter( trans.app.model.Group.table.c.deleted == expression.false() ) \
                                      .order_by( trans.app.model.Group.table.c.name ):
             if group.id in in_groups:
                 new_in_groups.append( ( group.id, group.name ) )
@@ -592,14 +594,14 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         in_groups = []
         out_groups = []
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
+                                    .filter( trans.app.model.User.table.c.deleted == expression.false() ) \
                                     .order_by( trans.app.model.User.table.c.email ):
             if user in [ x.user for x in quota.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
                 out_users.append( ( user.id, user.email ) )
         for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
+                                     .filter( trans.app.model.Group.table.c.deleted == expression.false()) \
                                      .order_by( trans.app.model.Group.table.c.name ):
             if group in [ x.group for x in quota.groups ]:
                 in_groups.append( ( group.id, group.name ) )
@@ -722,7 +724,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                                         webapp=params.webapp,
                                                                         message=sanitize_text( str( e ) ),
                                                                         status='error' ) )
-        if do_op == True or ( do_op != False and params.get( do_op, False ) ):
+        if do_op is True or ( do_op is not False and params.get( do_op, False ) ):
             try:
                 message = op_method( quota, params )
                 return None, trans.response.send_redirect( web.url_for( controller='admin',
