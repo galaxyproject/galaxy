@@ -88,7 +88,7 @@ var View = Backbone.View.extend({
         }
 
         // add collection selector
-        if (this.mode == 'single' || this.mode == 'collection') {
+        if (this.mode == 'single' || this.mode == 'multiple' || this.mode == 'collection') {
             radio_buttons.push({
                 icon    : 'fa-folder-o',
                 value   : 'collection',
