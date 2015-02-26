@@ -3,7 +3,6 @@ Provides factory methods to assemble the Galaxy web application
 """
 
 import atexit
-import time
 import os
 import os.path
 import sys
@@ -114,8 +113,6 @@ def app_factory( global_conf, **kwargs ):
         galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
     except:
         pass
-
-    app.server_starttime = int(time.time())  # used for cachebusting
 
     if not app.config.is_uwsgi:
         postfork_setup()
