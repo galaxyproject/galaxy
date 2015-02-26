@@ -58,7 +58,8 @@
             shim: {
                 "libs/underscore": { exports: "_" },
                 "libs/backbone/backbone": { exports: "Backbone" },
-            }
+            },
+            urlArgs: 'v=${int(app.server_starttime)}'
         });
         require( ["viz/trackster"], function(trackster) {
 

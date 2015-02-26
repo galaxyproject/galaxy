@@ -97,7 +97,8 @@
                 "libs/underscore": { exports: "_" },
                 "libs/d3": { exports: "d3" },
                 "libs/backbone/backbone": { exports: "Backbone" },
-            }
+            },
+            urlArgs: 'v=${int(app.server_starttime)}'
         });
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
         
