@@ -2299,6 +2299,8 @@ class Tool( object, Dictifiable ):
 
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize = False )
+        expanded_incomings, _ = expand_meta_parameters( trans, self, params.__dict__ )
+        params.__dict__ = expanded_incomings[ 0 ]
 
         # convert value to jsonifiable value
         def jsonify(v):

@@ -4,6 +4,8 @@ and configuration settings.
 """
 
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import require_admin
 from galaxy.web.base.controller import BaseAPIController
 
 from galaxy.managers import base
@@ -33,6 +35,13 @@ class ConfigurationController( BaseAPIController ):
 
     @expose_api_anonymous
     def version( self, trans, **kwds ):
+        """
+        GET /api/version
+        Return a description of the major version of Galaxy (e.g. 15.03).
+
+        :rtype:     dict
+        :returns:   dictionary with major version keyed on 'version_major'
+        """
         return {"version_major": self.app.config.version_major }
 
     def get_config_dict( self, trans, return_admin=False, view=None, keys=None, default_view='all' ):
@@ -51,6 +60,29 @@ class ConfigurationController( BaseAPIController ):
         serialized = serializer.serialize_to_view( trans, self.app.config,
                                                    view=view, keys=keys, default_view=default_view )
         return serialized
+
+    @expose_api
+    @require_admin
+    def dynamic_tool_confs(self, trans):
+        confs = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
+        return map(_tool_conf_to_dict, confs)
+
+    @expose_api
+    @require_admin
+    def tool_lineages(self, trans):
+        rval = []
+        for id, tool in self.app.toolbox.tools():
+            if hasattr( tool, 'lineage' ):
+                lineage_dict = tool.lineage.to_dict()
+            else:
+                lineage_dict = None
+
+            entry = dict(
+                id=id,
+                lineage=lineage_dict
+            )
+            rval.append(entry)
+        return rval
 
 
 #TODO: for lack of a manager file for the config. May well be better in config.py? Circ imports?
@@ -122,3 +154,10 @@ class AdminConfigSerializer( ConfigSerializer ):
             'allow_user_creation'       : _defaults_to( False ),
             'allow_user_deletion'       : _defaults_to( False ),
         })
+
+
+def _tool_conf_to_dict(conf):
+    return dict(
+        config_filename=conf['config_filename'],
+        tool_path=conf['tool_path'],
+    )
