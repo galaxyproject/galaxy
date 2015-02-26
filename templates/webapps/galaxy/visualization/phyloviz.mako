@@ -147,7 +147,8 @@
             shim: {
                 "libs/underscore": { exports: "_" },
                 "libs/d3": { exports: "d3" }
-            }
+            },
+            urlArgs: 'v=${int(app.server_starttime)}'
         });
 
         require(["viz/phyloviz"], function(phyloviz_mod) {

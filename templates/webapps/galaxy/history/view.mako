@@ -177,7 +177,8 @@ a.btn {
         baseUrl : "${h.url_for( '/static/scripts' )}",
         paths   : {
             'jquery' : 'libs/jquery/jquery'
-        }
+        },
+        urlArgs: 'v=${int(app.server_starttime)}'
     })([
         'mvc/user/user-model',
         panelToUse.location,
