@@ -346,7 +346,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'form_html': module.get_config_form(),
                 'annotation': annotation_str,
                 'post_job_actions': {},
-                'uuid': str(step.uuid),
+                'uuid': str(step.uuid) if step.uuid else None,
                 'label': step.label or None,
                 'workflow_outputs': []
             }
