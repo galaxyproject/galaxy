@@ -14,7 +14,7 @@
             shim: {
                 "libs/backbone/backbone": { exports: "Backbone" },
             },
-            urlArgs: 'v=${int(app.server_starttime)}'
+            urlArgs: 'v=${app.server_starttime}'
         });
 
         require(['mvc/data'], function(data) {

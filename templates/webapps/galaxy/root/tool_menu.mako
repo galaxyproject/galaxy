@@ -10,7 +10,7 @@
                 shim: {
                     "libs/underscore": { exports: "_" }
                 },
-                urlArgs: 'v=${int(app.server_starttime)}'
+                urlArgs: 'v=${app.server_starttime}'
         });
 
         require(["mvc/tools"], function(tools_mod) {
