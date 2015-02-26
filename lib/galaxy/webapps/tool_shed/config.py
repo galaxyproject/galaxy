@@ -137,6 +137,10 @@ class Configuration( object ):
         self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "database/tool_shed_citations/locks" ), self.root )
 
     @property
+    def shed_tool_data_path( self ):
+        return self.tool_data_path
+
+    @property
     def sentry_dsn_public( self ):
         """
         Sentry URL with private key removed for use in client side scripts,

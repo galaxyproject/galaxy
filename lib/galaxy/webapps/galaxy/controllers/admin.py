@@ -1,15 +1,17 @@
 import imp
 import logging
 import os
+from sqlalchemy.sql import expression
 
 import galaxy.queue_worker
 import galaxy.util
 from galaxy import model
-from galaxy.model import tool_shed_install as install_model
 from galaxy import web
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import MessageException
-from galaxy.util import sanitize_text
+from galaxy.model import tool_shed_install as install_model
+from galaxy.model.util import pgcalc
+from galaxy.util import nice_size, sanitize_text
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
@@ -25,23 +27,17 @@ log = logging.getLogger( __name__ )
 
 class UserListGrid( grids.Grid ):
 
-
     class EmailColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, user ):
             return user.email
 
-
     class UserNameColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.username:
                 return user.username
             return 'not set'
 
-
     class StatusColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.purged:
                 return "purged"
@@ -49,47 +45,35 @@ class UserListGrid( grids.Grid ):
                 return "deleted"
             return ""
 
-
     class GroupsColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.groups:
                 return len( user.groups )
             return 0
 
-
     class RolesColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.roles:
                 return len( user.roles )
             return 0
 
-
     class ExternalColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.external:
                 return 'yes'
             return 'no'
 
-
     class LastLoginColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.galaxy_sessions:
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
 
-
     class TimeCreatedColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             return user.create_time.strftime('%x')
 
-
     class ActivatedColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, user ):
             if user.active:
                 return 'Y'
@@ -99,7 +83,7 @@ class UserListGrid( grids.Grid ):
     # Grid definition
     title = "Users"
     model_class = model.User
-    template='/admin/user/grid.mako'
+    template = '/admin/user/grid.mako'
     default_sort_key = "email"
     columns = [
         EmailColumn( "Email",
@@ -140,7 +124,11 @@ class UserListGrid( grids.Grid ):
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=True,
                              allow_popup=False,
-                             url_args=dict( webapp="galaxy", action="reset_user_password" ) )
+                             url_args=dict( webapp="galaxy", action="reset_user_password" ) ),
+        grids.GridOperation( "Recalculate Disk Usage",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( webapp="galaxy", action="recalculate_user_disk_usage" ) )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
@@ -158,46 +146,33 @@ class UserListGrid( grids.Grid ):
 
 class RoleListGrid( grids.Grid ):
 
-
     class NameColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, role ):
             return role.name
 
-
     class DescriptionColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, role ):
             if role.description:
                 return role.description
             return ''
 
-
     class TypeColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, role ):
             return role.type
 
-
     class StatusColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, role ):
             if role.deleted:
                 return "deleted"
             return ""
 
-
     class GroupsColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, role ):
             if role.groups:
                 return len( role.groups )
             return 0
 
-
     class UsersColumn( grids.GridColumn ):
-
-
         def get_value( self, trans, grid, role ):
             if role.users:
                 return len( role.users )
@@ -206,7 +181,7 @@ class RoleListGrid( grids.Grid ):
     # Grid definition
     title = "Roles"
     model_class = model.Role
-    template='/admin/dataset_security/role/grid.mako'
+    template = '/admin/dataset_security/role/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -270,31 +245,23 @@ class RoleListGrid( grids.Grid ):
 
 class GroupListGrid( grids.Grid ):
 
-
     class NameColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, group ):
             return group.name
 
-
     class StatusColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, group ):
             if group.deleted:
                 return "deleted"
             return ""
 
-
     class RolesColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, group ):
             if group.roles:
                 return len( group.roles )
             return 0
 
-
     class UsersColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, group ):
             if group.members:
                 return len( group.members )
@@ -303,7 +270,7 @@ class GroupListGrid( grids.Grid ):
     # Grid definition
     title = "Groups"
     model_class = model.Group
-    template='/admin/dataset_security/group/grid.mako'
+    template = '/admin/dataset_security/group/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -351,31 +318,24 @@ class GroupListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
+
 class QuotaListGrid( grids.Grid ):
 
-
     class NameColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, quota ):
             return quota.name
 
-
     class DescriptionColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, quota ):
             if quota.description:
                 return quota.description
             return ''
 
-
     class AmountColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, quota ):
             return quota.operation + quota.display_amount
 
-
     class StatusColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, quota ):
             if quota.deleted:
                 return "deleted"
@@ -383,17 +343,13 @@ class QuotaListGrid( grids.Grid ):
                 return "<strong>default for %s users</strong>" % quota.default[0].type
             return ""
 
-
     class UsersColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, quota ):
             if quota.users:
                 return len( quota.users )
             return 0
 
-
     class GroupsColumn( grids.GridColumn ):
-
         def get_value( self, trans, grid, quota ):
             if quota.groups:
                 return len( quota.groups )
@@ -402,7 +358,7 @@ class QuotaListGrid( grids.Grid ):
     # Grid definition
     title = "Quotas"
     model_class = model.Quota
-    template='/admin/quota/grid.mako'
+    template = '/admin/quota/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -417,10 +373,10 @@ class QuotaListGrid( grids.Grid ):
                            attach_popup=False,
                            filterable="advanced" ),
         AmountColumn( "Amount",
-                    key='amount',
-                    model_class=model.Quota,
-                    attach_popup=False,
-                    filterable="advanced" ),
+                      key='amount',
+                      model_class=model.Quota,
+                      attach_popup=False,
+                      filterable="advanced" ),
         UsersColumn( "Users", attach_popup=False ),
         GroupsColumn( "Groups", attach_popup=False ),
         StatusColumn( "Status", attach_popup=False ),
@@ -483,9 +439,7 @@ class QuotaListGrid( grids.Grid ):
 
 class ToolVersionListGrid( grids.Grid ):
 
-
     class ToolIdColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, tool_version ):
             toolbox = trans.app.toolbox
             if toolbox.has_tool( tool_version.tool_id, exact=True ):
@@ -494,9 +448,7 @@ class ToolVersionListGrid( grids.Grid ):
                 return '<div class="count-box state-color-ok">%s%s</a></div>' % ( link_str, tool_version.tool_id )
             return tool_version.tool_id
 
-
     class ToolVersionsColumn( grids.TextColumn ):
-
         def get_value( self, trans, grid, tool_version ):
             tool_ids_str = ''
             toolbox = trans.app.toolbox
@@ -508,10 +460,11 @@ class ToolVersionListGrid( grids.Grid ):
                 else:
                     tool_ids_str += '%s<br/>' % tool_id
             return tool_ids_str
+
     # Grid definition
     title = "Tool versions"
     model_class = install_model.ToolVersion
-    template='/admin/tool_version/grid.mako'
+    template = '/admin/tool_version/grid.mako'
     default_sort_key = "tool_id"
     columns = [
         ToolIdColumn( "Tool id",
@@ -531,7 +484,7 @@ class ToolVersionListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-    
+
     def build_initial_query( self, trans, **kwd ):
         return trans.install_model.context.query( self.model_class )
 
@@ -593,14 +546,14 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         new_in_users = []
         new_in_groups = []
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
+                                    .filter( trans.app.model.User.table.c.deleted == expression.false() ) \
                                     .order_by( trans.app.model.User.table.c.email ):
             if user.id in in_users:
                 new_in_users.append( ( user.id, user.email ) )
             else:
                 params.out_users.append( ( user.id, user.email ) )
         for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
+                                     .filter( trans.app.model.Group.table.c.deleted == expression.false() ) \
                                      .order_by( trans.app.model.Group.table.c.name ):
             if group.id in in_groups:
                 new_in_groups.append( ( group.id, group.name ) )
@@ -645,14 +598,14 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         in_groups = []
         out_groups = []
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
+                                    .filter( trans.app.model.User.table.c.deleted == expression.false() ) \
                                     .order_by( trans.app.model.User.table.c.email ):
             if user in [ x.user for x in quota.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
                 out_users.append( ( user.id, user.email ) )
         for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
+                                     .filter( trans.app.model.Group.table.c.deleted == expression.false()) \
                                      .order_by( trans.app.model.Group.table.c.name ):
             if group in [ x.group for x in quota.groups ]:
                 in_groups.append( ( group.id, group.name ) )
@@ -775,7 +728,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                                                         webapp=params.webapp,
                                                                         message=sanitize_text( str( e ) ),
                                                                         status='error' ) )
-        if do_op == True or ( do_op != False and params.get( do_op, False ) ):
+        if do_op is True or ( do_op is not False and params.get( do_op, False ) ):
             try:
                 message = op_method( quota, params )
                 return None, trans.response.send_redirect( web.url_for( controller='admin',
@@ -899,10 +852,48 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                               kwargs={'display_application_ids': kwd.get( 'id' )} )
         reloaded, failed = trans.app.datatypes_registry.reload_display_applications( kwd.get( 'id' ) )
         if not reloaded and failed:
-            return trans.show_error_message( 'Unable to reload any of the %i requested display applications ("%s").' % ( len( failed ), '", "'.join( failed ) ) )
+            return trans.show_error_message( 'Unable to reload any of the %i requested display applications ("%s").'
+                                             % ( len( failed ), '", "'.join( failed ) ) )
         if failed:
             return trans.show_warn_message( 'Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
-                                             % ( len( reloaded ), '", "'.join( reloaded ), len( failed ), '", "'.join( failed ) ) )
+                                            % ( len( reloaded ), '", "'.join( reloaded ), len( failed ), '", "'.join( failed ) ) )
         if not reloaded:
             return trans.show_warn_message( 'You need to request at least one display application to reload.' )
         return trans.show_ok_message( 'Reloaded %i requested display applications ("%s").' % ( len( reloaded ), '", "'.join( reloaded ) ) )
+
+    @web.expose
+    @web.require_admin
+    def recalculate_user_disk_usage( self, trans, **kwd ):
+        user_id = kwd.get( 'id', None )
+        user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
+        if not user:
+            return trans.show_error_message( "User not found for id (%s)" % sanitize_text( str( user_id ) ) )
+        engine = None
+        if trans.app.config.database_connection:
+            engine = trans.app.config.database_connection.split(':')[0]
+        if engine not in ( 'postgres', 'postgresql' ):
+            done = False
+            while not done:
+                current = user.get_disk_usage()
+                new = user.calculate_disk_usage()
+                trans.sa_session.refresh( user )
+                # make sure usage didn't change while calculating, set done
+                if user.get_disk_usage() == current:
+                    done = True
+                if new not in (current, None):
+                    user.set_disk_usage( new )
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
+        else:
+            # We can use the lightning fast pgcalc!
+            current = user.get_disk_usage()
+            new = pgcalc( self.sa_session, user.id )
+        # yes, still a small race condition between here and the flush
+        if new in ( current, None ):
+            message = 'Usage is unchanged at %s.' % nice_size( current )
+        else:
+            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( current )  )
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='users',
+                                                          message=sanitize_text( message ),
+                                                          status='info' ) )

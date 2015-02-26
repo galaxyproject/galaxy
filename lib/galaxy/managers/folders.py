@@ -3,6 +3,8 @@ Manager and Serializer for Library Folders.
 """
 
 import galaxy.exceptions
+from sqlalchemy.orm.exc import MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound
 import logging
 log = logging.getLogger( __name__ )
 
@@ -19,19 +21,21 @@ class FolderManager( object ):
 
         :param  decoded_folder_id:       decoded folder id
         :type   decoded_folder_id:       int
-        :param  check_manageable:         flag whether the check that user can manage item
-        :type   check_manageable:         bool
+        :param  check_manageable:        flag whether the check that user can manage item
+        :type   check_manageable:        bool
         :param  check_accessible:        flag whether to check that user can access item
         :type   check_accessible:        bool
 
         :returns:   the requested folder
         :rtype:     LibraryFolder
+
+        :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
         """
         try:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).filter( trans.app.model.LibraryFolder.table.c.id == decoded_folder_id ).one()
-        except galaxy.exceptions.MultipleResultsFound:
+        except MultipleResultsFound:
             raise galaxy.exceptions.InconsistentDatabase( 'Multiple folders found with the same id.' )
-        except galaxy.exceptions.NoResultFound:
+        except NoResultFound:
             raise galaxy.exceptions.RequestParameterInvalidException( 'No folder found with the id provided.' )
         except Exception, e:
             raise galaxy.exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
@@ -139,6 +143,14 @@ class FolderManager( object ):
         """
         Mark given folder deleted/undeleted based on the flag.
 
+        :param  folder:      the model object
+        :type   folder:      LibraryFolder
+        :param  undelete:      flag whether to delete (when False) or undelete
+        :type   undelete:      Bool
+
+        :returns:   the folder
+        :rtype:     LibraryFolder
+
         :raises: ItemAccessibilityException
         """
         if not trans.user_is_admin():
@@ -190,6 +202,14 @@ class FolderManager( object ):
     def cut_the_prefix( self, encoded_folder_id ):
         """
         Remove the prefix from the encoded folder id.
+
+        :param encoded_folder_id: encoded id of the Folder object with 'F' prepended
+        :type  encoded_folder_id: string
+
+        :returns:  encoded Folder id without the 'F' prefix
+        :rtype:    string
+
+        :raises: MalformedId
         """
         if ( ( len( encoded_folder_id ) % 16 == 1 ) and encoded_folder_id.startswith( 'F' ) ):
             cut_id = encoded_folder_id[ 1: ]
@@ -200,6 +220,14 @@ class FolderManager( object ):
     def decode_folder_id( self, trans, encoded_folder_id ):
         """
         Decode the folder id given that it has already lost the prefixed 'F'.
+
+        :param encoded_folder_id: encoded id of the Folder object
+        :type  encoded_folder_id: string
+
+        :returns:  decoded Folder id
+        :rtype:    int
+
+        :raises: MalformedId
         """
         try:
             decoded_id = trans.security.decode_id( encoded_folder_id )
@@ -210,5 +238,11 @@ class FolderManager( object ):
     def cut_and_decode( self, trans, encoded_folder_id ):
         """
         Cuts the folder prefix (the prepended 'F') and returns the decoded id.
+
+        :param encoded_folder_id: encoded id of the Folder object
+        :type  encoded_folder_id: string
+
+        :returns:  decoded Folder id
+        :rtype:    int
         """
         return self.decode_folder_id( trans, self.cut_the_prefix( encoded_folder_id ) )
