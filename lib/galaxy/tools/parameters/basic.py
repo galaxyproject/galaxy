@@ -1977,7 +1977,7 @@ class DataToolParameter( BaseDataToolParameter ):
             return None
         if not value and not self.optional:
             raise ValueError( "History does not include a dataset of the required format / build" )
-        if value in [None, "None"]:
+        if value in [None, "None", '']:
             return None
         if isinstance( value, str ) and value.find( "," ) > 0:
             value = [ int( value_part ) for value_part in value.split( "," ) ]
