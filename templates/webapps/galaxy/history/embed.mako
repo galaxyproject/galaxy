@@ -48,7 +48,8 @@
         $embeddedHistory = $( thisScript ).prev();
 
     require.config({
-        baseUrl : "${h.url_for( '/static/scripts' )}"
+        baseUrl : "${h.url_for( '/static/scripts' )}",
+        urlArgs: 'v=${int(app.server_starttime)}'
     });
     require([ 'mvc/history/history-panel-annotated' ], function( panelMod ){
 
