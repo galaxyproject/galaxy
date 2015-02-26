@@ -2369,24 +2369,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return True  # TODO
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
-        d = super( DataCollectionToolParameter, self ).to_dict( trans )
-        if other_values is None:
-            # No need to produce lists of datasets for history.
-            return d
-
-        dataset_matcher = DatasetMatcher( trans, self, None, other_values )
-        history = trans.history
-
-        for hdca in self.match_collections( trans, history, dataset_matcher ):
-            pass
-
-        for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
-            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
-            pass
-
-        return d
-
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         # create dictionary and fill default parameters
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
@@ -2419,7 +2401,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                     'id_uncoded'    : hdca.id,
                     'hid'           : hdca.hid,
                     'name'          : hdca.name,
-                    'src'           : 'hdca'
+                    'src'           : 'hdca',
+                    'map_over_type' : subcollection_type
                 })
 
         # sort both lists
