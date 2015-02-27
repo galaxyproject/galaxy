@@ -14,6 +14,8 @@ import string
 import hashlib
 
 from glob import glob
+from tempfile import NamedTemporaryFile
+from urllib2 import urlopen
 
 from galaxy import util
 from galaxy.util.odict import odict
@@ -279,7 +281,22 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
             repo_info = None
         # Read every file
         for file_element in config_element.findall( 'file' ):
-            filename = file_path = expand_here_template( file_element.get( 'path', None ), here=self.here )
+            tmp_file = None
+            filename = file_element.get( 'path', None )
+            if filename is None:
+                # Handle URLs as files
+                filename = file_element.get( 'url', None )
+                if filename:
+                    tmp_file = NamedTemporaryFile( prefix='TTDT_URL_%s-' % self.name )
+                    try:
+                        tmp_file.write( urlopen( filename ).read() )
+                    except Exception, e:
+                        log.error( 'Error loading Data Table URL "%s": %s', filename, e )
+                        continue
+                    log.debug( 'Loading Data Table URL "%s" as filename "%s".', filename, tmp_file.name )
+                    filename = tmp_file.name
+                    tmp_file.flush()
+            filename = file_path = expand_here_template( filename, here=self.here )
             found = False
             if file_path is None:
                 log.debug( "Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.", util.xml_to_string( file_element ), self.name )
@@ -325,6 +342,9 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                                                    config_element=config_element, tool_shed_repository=repo_info, errors=errors )
             else:
                 log.debug( "Filename '%s' already exists in filenames (%s), not adding", filename, self.filenames.keys() )
+            # Remove URL tmp file
+            if tmp_file is not None:
+                tmp_file.close()
 
     def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % ( self.name, self.columns, other_table.name, other_table.columns )

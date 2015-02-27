@@ -1335,6 +1335,10 @@ class ColumnListParameter( SelectToolParameter ):
         datasets = util.listify( context[ self.data_ref ] )
         for dataset in datasets:
             if dataset:
+                # Check if metadata is available
+                if not hasattr(dataset, 'metadata'):
+                    return True
+
                 # Check if the dataset does not have the expected metadata for columns
                 if not dataset.metadata.columns:
                     # Only allow late validation if the dataset is not yet ready
@@ -2012,7 +2016,7 @@ class DataToolParameter( BaseDataToolParameter ):
         for v in values:
             if v:
                 if v.deleted:
-                    raise ValueError( "The previously selected dataset has been previously deleted" )
+                    raise ValueError( "The previously selected dataset has been deleted." )
                 if hasattr( v, "dataset" ) and v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         if not self.multiple:
@@ -2416,6 +2420,7 @@ class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
         DataToolParameter.__init__( self, tool, elem )
         self.value = "None"
         self.type = "hidden_data"
+        self.hidden = True
 
     def get_initial_value( self, trans, context, history=None ):
         return None
