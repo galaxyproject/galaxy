@@ -43,4 +43,4 @@ class CoreWorkflowSchedulingPlugin( ActiveWorkflowSchedulingPlugin ):
             workflow_invocation=workflow_invocation,
         )
 
-__all__ = [ CoreWorkflowSchedulingPlugin ]
+__all__ = [ 'CoreWorkflowSchedulingPlugin' ]
