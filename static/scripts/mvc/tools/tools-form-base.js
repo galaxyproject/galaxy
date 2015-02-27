@@ -108,7 +108,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     var new_state = self.tree.finalize();
                     if (!_.isEqual(new_state, current_state)) {
                         current_state = new_state;
-                        self._updateModel($.extend({}, current_state));
+                        self._updateModel($.extend(true, {}, current_state));
                     }
                 });
             });
