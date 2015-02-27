@@ -804,7 +804,7 @@ class InstallRepositoryManager( object ):
                     installed_tool_shed_repositories.append( tool_shed_repository )
         else:
             # We're attempting to install more than 1 repository, and all of them have already been installed.
-            raise exceptions.RequestParameterInvalidException( 'All repositories that you are attempting to install have been previously installed.' )
+            raise RepositoriesInstalledException()
         return installed_tool_shed_repositories
 
     def install_tool_shed_repository( self, tool_shed_repository, repo_info_dict, tool_panel_section_key, shed_tool_conf, tool_path,
@@ -959,6 +959,12 @@ class InstallRepositoryManager( object ):
             no_tool_dependency_dir_message += "the value of your 'tool_dependency_dir' setting in your Galaxy "
             no_tool_dependency_dir_message += "configuration file (galaxy.ini) and restart your Galaxy server.  "
             raise exceptions.ConfigDoesNotAllowException( no_tool_dependency_dir_message )
+
+
+class RepositoriesInstalledException(exceptions.RequestParameterInvalidException):
+
+    def __init__(self):
+        super(RepositoriesInstalledException, self).__init__('All repositories that you are attempting to install have been previously installed.')
 
 
 def fetch_tool_versions( app, tool_shed_repository ):
