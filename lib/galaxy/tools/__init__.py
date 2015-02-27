@@ -2366,7 +2366,7 @@ class Tool( object, Dictifiable ):
                 else:
                     value, error = check_param(trans, input, default_value, context)
             except Exception, err:
-                log.error('Checking parameter failed. %s', str(err))
+                log.error('Checking parameter %s failed. %s', input.name, str(err))
                 pass
             return [value, error]
 
@@ -2481,6 +2481,11 @@ class Tool( object, Dictifiable ):
                         sanitize_state(state[k])
                     else:
                         state[k] = jsonify(state[k])
+
+        # expand incoming parameters (parameters might trigger multiple tool executions,
+        # here we select the first execution only in order to resolve dynamic parameters)
+        expanded_incomings, _ = expand_meta_parameters( trans, self, params.__dict__ )
+        params.__dict__ = expanded_incomings[ 0 ]
 
         # do param translation here, used by datasource tools
         if self.input_translator:
