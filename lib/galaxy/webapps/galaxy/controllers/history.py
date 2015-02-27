@@ -543,8 +543,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     def structure( self, trans, id=None, **kwargs ):
         """
         """
-        id = self.decode_id( id ) if id else trans.history.id
-        history_to_view = self.history_manager.get_accessible( trans, id, trans.user )
+        unencoded_history_id = trans.history.id
+        if id:
+            unencoded_history_id = self.decode_id( id )
+        history_to_view = self.history_manager.get_accessible( trans, unencoded_history_id, trans.user )
 
         history_data = self.history_manager._get_history_data( trans, history_to_view )
         history_dictionary = history_data[ 'history' ]
@@ -552,7 +554,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         jobs = ( trans.sa_session.query( trans.app.model.Job )
             .filter( trans.app.model.Job.user == trans.user )
-            .filter( trans.app.model.Job.history_id == self.decode_id( id ) ) ).all()
+            .filter( trans.app.model.Job.history_id == unencoded_history_id ) ).all()
         jobs = map( lambda j: self.encode_all_ids( trans, j.to_dict( 'element' ), True ), jobs )
 
         tools = {}
