@@ -709,8 +709,6 @@ class InstallRepositoryManager( object ):
         return installed_tool_shed_repositories
 
     def __install_repositories( self, tool_shed_url, repository_revision_dict, repo_info_dicts, install_options ):
-        # Keep track of all repositories that are installed - there may be more than one if repository dependencies are installed.
-        installed_tool_shed_repositories = []
         try:
             has_repository_dependencies = repository_revision_dict[ 'has_repository_dependencies' ]
         except KeyError:
@@ -790,6 +788,10 @@ class InstallRepositoryManager( object ):
             # we'll order the list of tsr_ids to ensure all repositories
             # install in the required order.
             tsr_ids = [ self.app.security.encode_id( tool_shed_repository.id ) for tool_shed_repository in tool_shed_repositories ]
+
+            # Keep track of all repositories that are installed - there may be more than one if repository dependencies are installed.
+            installed_tool_shed_repositories = []
+
             ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
                 self.order_components_for_installation( tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys )
             # Install the repositories, keeping track of each one for later display.
@@ -808,10 +810,10 @@ class InstallRepositoryManager( object ):
                                                        install_tool_dependencies,
                                                        reinstalling=False )
                     installed_tool_shed_repositories.append( tool_shed_repository )
+            return installed_tool_shed_repositories
         else:
             # We're attempting to install more than 1 repository, and all of them have already been installed.
             raise RepositoriesInstalledException()
-        return installed_tool_shed_repositories
 
     def install_web( self, trans, decoded_kwd, reinstalling ):
         shed_tool_conf = decoded_kwd.get( 'shed_tool_conf', '' )
