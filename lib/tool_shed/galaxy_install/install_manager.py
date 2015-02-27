@@ -728,11 +728,7 @@ class InstallRepositoryManager( object ):
         install_repository_dependencies = install_options.get( 'install_repository_dependencies', False )
         install_tool_dependencies = install_options.get( 'install_tool_dependencies', False )
         if install_tool_dependencies:
-            if self.app.config.tool_dependency_dir is None:
-                no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set "
-                no_tool_dependency_dir_message += "the value of your 'tool_dependency_dir' setting in your Galaxy "
-                no_tool_dependency_dir_message += "configuration file (galaxy.ini) and restart your Galaxy server.  "
-                raise exceptions.ConfigDoesNotAllowException( no_tool_dependency_dir_message )
+            self.__assert_can_install_dependencies()
         new_tool_panel_section_label = install_options.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = install_options.get( 'shed_tool_conf', None )
         if shed_tool_conf:
@@ -956,6 +952,13 @@ class InstallRepositoryManager( object ):
             tool_shed_repository.error_message = str( error_message )
         self.install_model.context.add( tool_shed_repository )
         self.install_model.context.flush()
+
+    def __assert_can_install_dependencies(self):
+        if self.app.config.tool_dependency_dir is None:
+            no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set "
+            no_tool_dependency_dir_message += "the value of your 'tool_dependency_dir' setting in your Galaxy "
+            no_tool_dependency_dir_message += "configuration file (galaxy.ini) and restart your Galaxy server.  "
+            raise exceptions.ConfigDoesNotAllowException( no_tool_dependency_dir_message )
 
 
 def fetch_tool_versions( app, tool_shed_repository ):
