@@ -237,7 +237,7 @@ class AbstractToolBox( object, Dictifiable ):
                 'version': '',
             }
             tool_section = ToolSection( section_dict )
-            self._tool_panel[ tool_panel_section_key ] = tool_section
+            self._tool_panel.append_section( tool_panel_section_key, tool_section )
             log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
         else:
             tool_section = None
