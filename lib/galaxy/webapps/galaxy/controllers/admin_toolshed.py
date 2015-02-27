@@ -679,10 +679,11 @@ class AdminToolshed( AdminGalaxy ):
                 encoded_kwd = kwd[ 'encoded_kwd' ]
                 decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
                 install_tool_dependencies = CheckboxField.is_checked( decoded_kwd.get( 'install_tool_dependencies', '' ) )
+                tsr_ids = decoded_kwd[ 'tool_shed_repository_ids' ]
                 decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
                 try:
-                    tool_shed_repositories = irm.install_web(
-                        trans=trans,
+                    tool_shed_repositories = irm.install_repositories(
+                        tsr_ids=tsr_ids,
                         decoded_kwd=decoded_kwd,
                         reinstalling=reinstalling,
                     )

@@ -702,13 +702,15 @@ class InstallRepositoryManager( object ):
                                                                                             name,
                                                                                             owner,
                                                                                             changeset_revision )
-        installed_tool_shed_repositories = self.__install_repositories( tool_shed_url,
-                                                                        repository_revision_dict,
-                                                                        repo_info_dicts,
-                                                                        install_options )
+        installed_tool_shed_repositories = self.__initiate_and_install_repositories(
+            tool_shed_url,
+            repository_revision_dict,
+            repo_info_dicts,
+            install_options
+        )
         return installed_tool_shed_repositories
 
-    def __install_repositories( self, tool_shed_url, repository_revision_dict, repo_info_dicts, install_options ):
+    def __initiate_and_install_repositories( self, tool_shed_url, repository_revision_dict, repo_info_dicts, install_options ):
         try:
             has_repository_dependencies = repository_revision_dict[ 'has_repository_dependencies' ]
         except KeyError:
@@ -789,36 +791,18 @@ class InstallRepositoryManager( object ):
             # install in the required order.
             tsr_ids = [ self.app.security.encode_id( tool_shed_repository.id ) for tool_shed_repository in tool_shed_repositories ]
 
-            # Keep track of all repositories that are installed - there may be more than one if repository dependencies are installed.
-            installed_tool_shed_repositories = []
+            decoded_kwd = dict(
+                shed_tool_conf=shed_tool_conf,
+                tool_path=tool_path,
+                tool_panel_section_keys=tool_panel_section_keys,
+                repo_info_dicts=repo_info_dicts,
+                install_tool_dependencies=install_tool_dependencies,
+            )
+            return self.install_repositories(tsr_ids, decoded_kwd, reinstalling=False)
 
-            ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
-                self.order_components_for_installation( tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys )
-            # Install the repositories, keeping track of each one for later display.
-            for index, tsr_id in enumerate( ordered_tsr_ids ):
-                tool_shed_repository = self.install_model.context.query( self.install_model.ToolShedRepository ) \
-                                                                 .get( self.app.security.decode_id( tsr_id ) )
-                if tool_shed_repository.status in [ self.install_model.ToolShedRepository.installation_status.NEW,
-                                                    self.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
-                    repo_info_dict = ordered_repo_info_dicts[ index ]
-                    tool_panel_section_key = ordered_tool_panel_section_keys[ index ]
-                    self.install_tool_shed_repository( tool_shed_repository,
-                                                       repo_info_dict,
-                                                       tool_panel_section_key,
-                                                       shed_tool_conf,
-                                                       tool_path,
-                                                       install_tool_dependencies,
-                                                       reinstalling=False )
-                    installed_tool_shed_repositories.append( tool_shed_repository )
-            return installed_tool_shed_repositories
-        else:
-            # We're attempting to install more than 1 repository, and all of them have already been installed.
-            raise RepositoriesInstalledException()
-
-    def install_web( self, trans, decoded_kwd, reinstalling ):
+    def install_repositories( self, tsr_ids, decoded_kwd, reinstalling ):
         shed_tool_conf = decoded_kwd.get( 'shed_tool_conf', '' )
         tool_path = decoded_kwd[ 'tool_path' ]
-        tsr_ids = decoded_kwd[ 'tool_shed_repository_ids' ]
         tool_panel_section_keys = util.listify( decoded_kwd[ 'tool_panel_section_keys' ] )
         repo_info_dicts = util.listify( decoded_kwd[ 'repo_info_dicts' ] )
         install_tool_dependencies = decoded_kwd['install_tool_dependencies']
@@ -833,10 +817,10 @@ class InstallRepositoryManager( object ):
                                                     repo_info_dicts,
                                                     tool_panel_section_keys=tool_panel_section_keys )
         for tsr_id in ordered_tsr_ids:
-            repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                                    .get( trans.security.decode_id( tsr_id ) )
-            if repository.status in [ trans.install_model.ToolShedRepository.installation_status.NEW,
-                                      trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
+            repository = self.install_model.context.query( self.install_model.ToolShedRepository ) \
+                .get( self.app.security.decode_id( tsr_id ) )
+            if repository.status in [ self.install_model.ToolShedRepository.installation_status.NEW,
+                                      self.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
                 repositories_for_installation.append( repository )
                 repo_info_dict, tool_panel_section_key = \
                     self.get_repository_components_for_installation( tsr_id,
