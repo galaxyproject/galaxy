@@ -7,6 +7,7 @@ import traceback
 
 from galaxy import exceptions
 from galaxy import eggs
+from galaxy import util
 
 eggs.require( 'paramiko' )
 eggs.require( 'ssh' )
@@ -804,6 +805,54 @@ class InstallRepositoryManager( object ):
                     installed_tool_shed_repositories.append( tool_shed_repository )
         else:
             # We're attempting to install more than 1 repository, and all of them have already been installed.
+            raise RepositoriesInstalledException()
+        return installed_tool_shed_repositories
+
+    def install_web( self, trans, decoded_kwd, reinstalling ):
+        shed_tool_conf = decoded_kwd.get( 'shed_tool_conf', '' )
+        tool_path = decoded_kwd[ 'tool_path' ]
+        tsr_ids = decoded_kwd[ 'tool_shed_repository_ids' ]
+        tool_panel_section_keys = util.listify( decoded_kwd[ 'tool_panel_section_keys' ] )
+        repo_info_dicts = util.listify( decoded_kwd[ 'repo_info_dicts' ] )
+        install_tool_dependencies = decoded_kwd['install_tool_dependencies']
+        filtered_repo_info_dicts = []
+        filtered_tool_panel_section_keys = []
+        repositories_for_installation = []
+        # Some repositories may have repository dependencies that are required to be installed before the
+        # dependent repository, so we'll order the list of tsr_ids to ensure all repositories install in the
+        # required order.
+        ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
+            self.order_components_for_installation( tsr_ids,
+                                                    repo_info_dicts,
+                                                    tool_panel_section_keys=tool_panel_section_keys )
+        for tsr_id in ordered_tsr_ids:
+            repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
+                                                    .get( trans.security.decode_id( tsr_id ) )
+            if repository.status in [ trans.install_model.ToolShedRepository.installation_status.NEW,
+                                      trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
+                repositories_for_installation.append( repository )
+                repo_info_dict, tool_panel_section_key = \
+                    self.get_repository_components_for_installation( tsr_id,
+                                                                     ordered_tsr_ids,
+                                                                     ordered_repo_info_dicts,
+                                                                     ordered_tool_panel_section_keys )
+                filtered_repo_info_dicts.append( repo_info_dict )
+                filtered_tool_panel_section_keys.append( tool_panel_section_key )
+
+        installed_tool_shed_repositories = []
+        if repositories_for_installation:
+            for index, tool_shed_repository in enumerate( repositories_for_installation ):
+                repo_info_dict = filtered_repo_info_dicts[ index ]
+                tool_panel_section_key = filtered_tool_panel_section_keys[ index ]
+                self.install_tool_shed_repository( tool_shed_repository,
+                                                   repo_info_dict=repo_info_dict,
+                                                   tool_panel_section_key=tool_panel_section_key,
+                                                   shed_tool_conf=shed_tool_conf,
+                                                   tool_path=tool_path,
+                                                   install_tool_dependencies=install_tool_dependencies,
+                                                   reinstalling=reinstalling )
+                installed_tool_shed_repositories.append( tool_shed_repository )
+        else:
             raise RepositoriesInstalledException()
         return installed_tool_shed_repositories
 
