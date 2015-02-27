@@ -110,17 +110,6 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 inputs          : current_state
             }
 
-            // patch data tool parameters
-            // TODO: This needs to be removed and handled in the api
-            for (var i in current_state.inputs) {
-                var dict = current_state.inputs[i];
-                try {
-                    if (dict && dict.values[0].src === 'hda') {
-                        current_state.inputs[i] = self.content.get({id: dict.values[0].id, src: 'hda'}).id_uncoded;
-                    }
-                } catch (err) {}
-            }
-
             // activates/disables spinner for dynamic fields to indicate that they are currently being updated
             function wait(active) {
                 for (var i in self.input_list) {
