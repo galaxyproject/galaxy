@@ -1092,7 +1092,7 @@ class AdminToolshed( AdminGalaxy ):
                                       tool_path=tool_path,
                                       tool_shed_url=tool_shed_url )
             created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
-                install_repository_manager.handle_tool_shed_repositories( installation_dict, using_api=False )
+                install_repository_manager.handle_tool_shed_repositories( installation_dict )
             if created_or_updated_tool_shed_repositories:
                 installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,
                                           filtered_repo_info_dicts=filtered_repo_info_dicts,

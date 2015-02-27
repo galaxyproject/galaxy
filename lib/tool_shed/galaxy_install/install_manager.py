@@ -623,7 +623,7 @@ class InstallRepositoryManager( object ):
                 # Load proprietary datatype display applications
                 self.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
 
-    def handle_tool_shed_repositories( self, installation_dict, using_api=False ):
+    def handle_tool_shed_repositories( self, installation_dict ):
         # The following installation_dict entries are all required.
         install_repository_dependencies = installation_dict[ 'install_repository_dependencies' ]
         new_tool_panel_section_label = installation_dict[ 'new_tool_panel_section_label' ]
@@ -759,7 +759,7 @@ class InstallRepositoryManager( object ):
                                   tool_shed_url=tool_shed_url )
         # Create the tool_shed_repository database records and gather additional information for repository installation.
         created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
-            self.handle_tool_shed_repositories( installation_dict, using_api=True )
+            self.handle_tool_shed_repositories( installation_dict )
         if created_or_updated_tool_shed_repositories:
             # Build the dictionary of information necessary for installing the repositories.
             installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,
