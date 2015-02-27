@@ -277,6 +277,11 @@ var View = Backbone.View.extend({
             }
         }
 
+        // sort by history ids
+        result.values.sort(function(a, b){
+            return a.hid - b.hid;
+        });
+
         // return
         return result;
     },
