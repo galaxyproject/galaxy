@@ -2016,7 +2016,7 @@ class DataToolParameter( BaseDataToolParameter ):
         for v in values:
             if v:
                 if v.deleted:
-                    raise ValueError( "The previously selected dataset has been previously deleted" )
+                    raise ValueError( "The previously selected dataset has been deleted." )
                 if hasattr( v, "dataset" ) and v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         if not self.multiple:
