@@ -457,9 +457,9 @@ class AbstractToolBox( object, Dictifiable ):
         if tool_id in self._tools_by_id and not get_all_versions:
             if tool_version and tool_version in self._tool_versions_by_id[ tool_id ]:
                 return self._tool_versions_by_id[ tool_id ][ tool_version ]
-            #tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
+            # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
             return self._tools_by_id[ tool_id ]
-        #exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
+        # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
         rval = []
         tool_lineage = self._lineage_map.get( tool_id )
         if tool_lineage:
@@ -469,7 +469,7 @@ class AbstractToolBox( object, Dictifiable ):
                 if lineage_tool:
                     rval.append( lineage_tool )
         if not rval:
-            #still no tool, do a deeper search and try to match by old ids
+            # still no tool, do a deeper search and try to match by old ids
             for tool in self._tools_by_id.itervalues():
                 if tool.old_id == tool_id:
                     rval.append( tool )
@@ -478,14 +478,14 @@ class AbstractToolBox( object, Dictifiable ):
                 return rval
             else:
                 if tool_version:
-                    #return first tool with matching version
+                    # return first tool with matching version
                     for tool in rval:
                         if tool.version == tool_version:
                             return tool
-                #No tool matches by version, simply return the first available tool found
+                # No tool matches by version, simply return the first available tool found
                 return rval[0]
-        #We now likely have a Toolshed guid passed in, but no supporting database entries
-        #If the tool exists by exact id and is loaded then provide exact match within a list
+        # We now likely have a Toolshed guid passed in, but no supporting database entries
+        # If the tool exists by exact id and is loaded then provide exact match within a list
         if tool_id in self._tools_by_id:
             return[ self._tools_by_id[ tool_id ] ]
         return None
@@ -1012,7 +1012,7 @@ class AbstractToolBox( object, Dictifiable ):
                             break
                 if tool_id in self.data_manager_tools:
                     del self.data_manager_tools[ tool_id ]
-            #TODO: do we need to manually remove from the integrated panel here?
+            # TODO: do we need to manually remove from the integrated panel here?
             message = "Removed the tool:<br/>"
             message += "<b>name:</b> %s<br/>" % tool.name
             message += "<b>id:</b> %s<br/>" % tool.id
