@@ -2420,6 +2420,7 @@ class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
         DataToolParameter.__init__( self, tool, elem )
         self.value = "None"
         self.type = "hidden_data"
+        self.hidden = True
 
     def get_initial_value( self, trans, context, history=None ):
         return None
