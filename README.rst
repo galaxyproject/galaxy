@@ -38,7 +38,7 @@ Not all dependencies are included for the tools provided in the sample
 https://wiki.galaxyproject.org/Admin/Tools/ToolDependencies
 
 Issues
-------
+======
 
 Issues can be submitted to trello via the `galaxyproject
 website <http://galaxyproject.org/trello/>`__ and viewed on the `Galaxy
@@ -50,6 +50,19 @@ Galaxy Development
 
 Galaxy welcomes new development! There is extensive documentation on developing
 with Galaxy on the `wiki <https://wiki.galaxyproject.org/Develop>`__.
+
+Source Repository
+-----------------
+
+Galaxy development has moved to `Github
+<https://github.com/galaxyproject/galaxy>`__.
+
+**Developers** should develop against the ``dev`` branch in the Github
+repository.
+
+**Deployers** can continue to pull Galaxy changes from Bitbucket without
+interruption. Alternatively, deployers can track the ``master`` branch in
+Github.
 
 Syncing a Fork
 --------------
