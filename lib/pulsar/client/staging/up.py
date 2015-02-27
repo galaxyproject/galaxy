@@ -349,14 +349,18 @@ class TransferTracker(object):
             local_action = action.staging_action_local
             if local_action:
                 response = self.client.put_file(path, type, name=name, contents=contents)
-                get_path = lambda: response['path']
+
+                def get_path():
+                    return response['path']
             else:
                 job_directory = self.client.job_directory
                 assert job_directory, "job directory required for action %s" % action
                 if not name:
                     name = basename(path)
                 self.__add_remote_staging_input(action, name, type)
-                get_path = lambda: job_directory.calculate_path(name, type)
+
+                def get_path():
+                    return job_directory.calculate_path(name, type)
             register = self.rewrite_paths or type == 'tool'  # Even if inputs not rewritten, tool must be.
             if register:
                 self.register_rewrite(path, get_path(), type, force=True)
@@ -417,4 +421,4 @@ def _read(path):
         input.close()
 
 
-__all__ = [submit_job]
+__all__ = ['submit_job']

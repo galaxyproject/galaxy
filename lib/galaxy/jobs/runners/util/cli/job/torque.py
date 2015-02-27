@@ -1,3 +1,4 @@
+from logging import getLogger
 try:
     import xml.etree.cElementTree as et
 except:
@@ -13,10 +14,10 @@ except ImportError:
 
 from ..job import BaseJobExec
 
-__all__ = ('Torque',)
-
-from logging import getLogger
 log = getLogger(__name__)
+
+ERROR_MESSAGE_UNRECOGNIZED_ARG = 'Unrecognized long argument passed to Torque CLI plugin: %s'
+
 
 argmap = {'destination': '-q',
           'Execution_Time': '-a',
@@ -58,8 +59,8 @@ class Torque(BaseJobExec):
                 if not k.startswith('-'):
                     k = argmap[k]
                 pbsargs[k] = v
-            except:
-                log.warning('Unrecognized long argument passed to Torque CLI plugin: %s' % k)
+            except KeyError:
+                log.warning(ERROR_MESSAGE_UNRECOGNIZED_ARG % k)
         template_pbsargs = ''
         for k, v in pbsargs.items():
             template_pbsargs += '#PBS %s %s\n' % (k, v)
@@ -118,3 +119,6 @@ class Torque(BaseJobExec):
             }.get(state)
         except KeyError:
             raise KeyError("Failed to map torque status code [%s] to job state." % state)
+
+
+__all__ = ('Torque',)

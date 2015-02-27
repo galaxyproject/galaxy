@@ -41,6 +41,12 @@ class BaseJobClient(object):
             )
         else:
             job_directory = None
+
+        if "ssh_key" in (destination_params or {}):
+            self.ssh_key = destination_params["ssh_key"]
+        else:
+            self.ssh_key = None
+
         self.env = destination_params.get("env", [])
         self.files_endpoint = destination_params.get("files_endpoint", None)
         self.job_directory = job_directory
@@ -271,6 +277,7 @@ class BaseMessageJobClient(BaseJobClient):
             launch_params['env'] = env
         if remote_staging:
             launch_params['remote_staging'] = remote_staging
+            launch_params['remote_staging']['ssh_key'] = self.ssh_key
         if job_config and self.setup_handler.local:
             # Setup not yet called, job properties were inferred from
             # destination arguments. Hence, must have Pulsar setup job

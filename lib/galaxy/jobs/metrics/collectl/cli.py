@@ -12,7 +12,8 @@ MODE_PLAYBACK = "playback"
 
 
 class CollectlCli( object ):
-    """ Abstraction over (some of) the command-line arguments of collectl.
+    """
+    Abstraction over (some of) the command-line arguments of collectl.
     Ideally this will be useful for building up command line arguments for
     remote execution as well as runnning directly on local host.
 
@@ -20,33 +21,43 @@ class CollectlCli( object ):
     collectl CLI - logic more directly related to the Galaxy job metric plugin
     plugin should be placed in other modules.
 
-    Keyword Arguments:
-        collectl_path: Path to collectl executable (defaults to collectl - i.e.
-            search the PATH).
+    **Keyword Arguments:**
 
-        playback_path (defaults to None): If this is None collectl will run in
-            record mode, else it will playback specified file.
+    ``collectl_path``
+        Path to collectl executable (defaults to collectl - i.e.
+        search the PATH).
 
-        Playback Mode Options:
-        
-        sep : Separator used in playback mode (set to 9 to produce tsv)
-            (defaults to None).
+    ``playback_path`` (defaults to ``None``)
+        If this is ``None``, collectl will run in
+        record mode, else it will playback specified file.
 
-        Record Mode Options (some of these may work in playback mode also):
+    **Playback Mode Options:**
 
-        destination_path: Location of path files to write to (defaults to None
-            and collectl will just use cwd). Really this is just to prefix -
-            collectl will append hostname and datetime to file.
-        interval: Setup polling interval (secs) for most subsystems (defaults
-            to None and when unspecified collectl will use default of 1 second).
-        interval2: Setup polling interval (secs) for process information
-            (defaults to None and when unspecified collectl will use default to
-            60 seconds).
-        interval3: Setup polling interval (secs) for environment information
-            (defaults to None and when unspecified collectl will use default to
-            300 seconds).
-        procfilt: Optional argument to procfilt. (defaults to None).
-        flush : Optional flush interval (defaults to None).
+    ``sep``
+        Separator used in playback mode (set to 9 to produce tsv)
+        (defaults to None).
+
+    **Record Mode Options** (some of these may work in playback mode also)
+
+    ``destination_path``
+        Location of path files to write to (defaults to None
+        and collectl will just use cwd). Really this is just to prefix -
+        collectl will append hostname and datetime to file.
+    ``interval``
+        Setup polling interval (secs) for most subsystems (defaults
+        to None and when unspecified collectl will use default of 1 second).
+    ``interval2``
+        Setup polling interval (secs) for process information
+        (defaults to None and when unspecified collectl will use default to
+        60 seconds).
+    ``interval3``
+        Setup polling interval (secs) for environment information
+        (defaults to None and when unspecified collectl will use default to
+        300 seconds).
+    ``procfilt``
+        Optional argument to procfilt. (defaults to None).
+    ``flush``
+        Optional flush interval (defaults to None).
     """
 
     def __init__( self, **kwargs ):
@@ -125,4 +136,4 @@ class CollectlCli( object ):
         if return_code:
             raise Exception( "Problem running collectl command." )
 
-__all__ = [ CollectlCli ]
+__all__ = [ 'CollectlCli' ]

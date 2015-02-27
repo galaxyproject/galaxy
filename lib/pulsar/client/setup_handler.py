@@ -82,6 +82,7 @@ def build_job_config(job_id, job_directory, system_properties={}, tool_id=None, 
     unstructured_files_directory = job_directory.unstructured_files_directory()
     sep = system_properties.get("sep", os.sep)
     job_config = {
+        "job_directory": job_directory.path,
         "working_directory": working_directory,
         "outputs_directory": outputs_directory,
         "configs_directory": configs_directory,
@@ -100,4 +101,4 @@ def build_job_config(job_id, job_directory, system_properties={}, tool_id=None, 
     return job_config
 
 
-__all__ = [build_job_config, build]
+__all__ = ['build_job_config', 'build']

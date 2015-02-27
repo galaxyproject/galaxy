@@ -1,6 +1,6 @@
 """
 pulsar client
-======
+=================
 
 This module contains logic for interfacing with an external Pulsar server.
 
@@ -50,13 +50,13 @@ from .destination import url_to_destination_params
 from .path_mapper import PathMapper
 
 __all__ = [
-    build_client_manager,
-    OutputNotFoundException,
-    url_to_destination_params,
-    finish_job,
-    submit_job,
-    ClientJobDescription,
-    PulsarOutputs,
-    ClientOutputs,
-    PathMapper,
+    'build_client_manager',
+    'OutputNotFoundException',
+    'url_to_destination_params',
+    'finish_job',
+    'submit_job',
+    'ClientJobDescription',
+    'PulsarOutputs',
+    'ClientOutputs',
+    'PathMapper',
 ]

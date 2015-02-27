@@ -6,6 +6,9 @@ from os import getcwd
 
 DEFAULT_SHELL_PLUGIN = 'LocalShell'
 
+ERROR_MESSAGE_NO_JOB_PLUGIN = "No job plugin parameter found, cannot create CLI job interface"
+ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN = "Failed to find job_plugin of type %s, available types include %s"
+
 
 class CliInterface(object):
     """
@@ -53,8 +56,14 @@ class CliInterface(object):
         return shell
 
     def get_job_interface(self, job_params):
-        job_plugin = job_params['plugin']
-        job_interface = self.cli_job_interfaces[job_plugin](**job_params)
+        job_plugin = job_params.get('plugin', None)
+        if not job_plugin:
+            raise ValueError(ERROR_MESSAGE_NO_JOB_PLUGIN)
+        job_plugin_class = self.cli_job_interfaces.get(job_plugin, None)
+        if not job_plugin_class:
+            raise ValueError(ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN % (job_plugin, self.cli_job_interfaces.keys()))
+        job_interface = job_plugin_class(**job_params)
+
         return job_interface
 
 
