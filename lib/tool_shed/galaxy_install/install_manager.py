@@ -455,10 +455,12 @@ class InstallRepositoryManager( object ):
     def get_repository_components_for_installation( self, encoded_tsr_id, encoded_tsr_ids, repo_info_dicts,
                                                     tool_panel_section_keys ):
         """
-        The received encoded_tsr_ids, repo_info_dicts, and tool_panel_section_keys are 3 lists that
-        contain associated elements at each location in the list.  This method will return the elements
-        from repo_info_dicts and tool_panel_section_keys associated with the received encoded_tsr_id
-        by determining its location in the received encoded_tsr_ids list.
+        The received encoded_tsr_ids, repo_info_dicts, and
+        tool_panel_section_keys are 3 lists that contain associated elements
+        at each location in the list.  This method will return the elements
+        from repo_info_dicts and tool_panel_section_keys associated with the
+        received encoded_tsr_id by determining its location in the received
+        encoded_tsr_ids list.
         """
         for index, tsr_id in enumerate( encoded_tsr_ids ):
             if tsr_id == encoded_tsr_id:
@@ -775,15 +777,18 @@ class InstallRepositoryManager( object ):
                                       tool_panel_section_keys=tool_panel_section_keys,
                                       tool_path=tool_path,
                                       tool_shed_url=tool_shed_url )
-            # Prepare the repositories for installation.  Even though this method receives a single combination
-            # of tool_shed_url, name, owner and changeset_revision, there may be multiple repositories for installation
-            # at this point because repository dependencies may have added additional repositories for installation
-            # along with the single specified repository.
+            # Prepare the repositories for installation.  Even though this
+            # method receives a single combination of tool_shed_url, name,
+            # owner and changeset_revision, there may be multiple repositories
+            # for installation at this point because repository dependencies
+            # may have added additional repositories for installation along
+            # with the single specified repository.
             encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                 self.initiate_repository_installation( installation_dict )
-            # Some repositories may have repository dependencies that are required to be installed before the
-            # dependent repository, so we'll order the list of tsr_ids to ensure all repositories install in
-            # the required order.
+            # Some repositories may have repository dependencies that are
+            # required to be installed before the dependent repository, so
+            # we'll order the list of tsr_ids to ensure all repositories
+            # install in the required order.
             tsr_ids = [ self.app.security.encode_id( tool_shed_repository.id ) for tool_shed_repository in tool_shed_repositories ]
             ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
                 self.order_components_for_installation( tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys )
