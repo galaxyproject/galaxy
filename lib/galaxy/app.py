@@ -88,7 +88,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
-        self.datatypes_registry.load_display_applications()
+        self.datatypes_registry.load_display_applications( self )
         # Load datatype converters defined in local datatypes_conf.xml
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load external metadata tool

@@ -214,5 +214,5 @@ class CustomDatatypeLoader( object ):
 
     def load_installed_display_applications( self, installed_repository_dict, deactivate=False ):
         """Load or deactivate custom datatype display applications."""
-        self.app.datatypes_registry.load_display_applications( installed_repository_dict=installed_repository_dict,
+        self.app.datatypes_registry.load_display_applications( self.app, installed_repository_dict=installed_repository_dict,
                                                                deactivate=deactivate )
