@@ -710,19 +710,19 @@ class InstallRepositoryManager( object ):
         installed_tool_shed_repositories = []
         try:
             has_repository_dependencies = repository_revision_dict[ 'has_repository_dependencies' ]
-        except:
+        except KeyError:
             raise exceptions.InternalServerError( "Tool shed response missing required parameter 'has_repository_dependencies'." )
         try:
             includes_tools = repository_revision_dict[ 'includes_tools' ]
-        except:
+        except KeyError:
             raise exceptions.InternalServerError( "Tool shed response missing required parameter 'includes_tools'." )
         try:
             includes_tool_dependencies = repository_revision_dict[ 'includes_tool_dependencies' ]
-        except:
+        except KeyError:
             raise exceptions.InternalServerError( "Tool shed response missing required parameter 'includes_tool_dependencies'." )
         try:
             includes_tools_for_display_in_tool_panel = repository_revision_dict[ 'includes_tools_for_display_in_tool_panel' ]
-        except:
+        except KeyError:
             raise exceptions.InternalServerError( "Tool shed response missing required parameter 'includes_tools_for_display_in_tool_panel'." )
         # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository information.
         install_repository_dependencies = install_options.get( 'install_repository_dependencies', False )
