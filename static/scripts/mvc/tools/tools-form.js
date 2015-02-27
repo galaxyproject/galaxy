@@ -22,6 +22,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     }
                 })
             }
+            options.initial_errors = options.job_id;
             ToolFormBase.prototype.initialize.call(this, options);
         },
 
