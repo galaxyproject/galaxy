@@ -624,7 +624,7 @@ class InstallRepositoryManager( object ):
                 self.app.datatypes_registry.load_datatype_converters( self.app.toolbox, installed_repository_dict=repository_dict )
             if display_path:
                 # Load proprietary datatype display applications
-                self.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
+                self.app.datatypes_registry.load_display_applications( self.app, installed_repository_dict=repository_dict )
 
     def handle_tool_shed_repositories( self, installation_dict ):
         # The following installation_dict entries are all required.

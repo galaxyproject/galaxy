@@ -93,7 +93,20 @@
             #end if
         </param>
     </dynamic_links>
-    
+
+
+    <dynamic_links from_data_table="igv_broad_genomes" skip_startswith="#" id="value" name="name">
+
+        <!-- Our input data table is one line per dbkey -->
+        <filter>${ $dataset.dbkey == $value }</filter>
+
+        <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
+        <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${bam_file.qp}&amp;genome=${bam_file.dbkey}&amp;merge=true&amp;name=${qp( $bam_file.name )}</url>
+
+        <param type="data" name="bam_file" url="galaxy_${DATASET_HASH}.bam" />
+        <param type="data" name="bai_file" url="galaxy_${DATASET_HASH}.bam.bai" metadata="bam_index" />
+
+    </dynamic_links>
     
 </display>
 <!-- Dan Blankenberg -->
