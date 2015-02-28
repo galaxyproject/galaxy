@@ -35,7 +35,7 @@ return Backbone.Model.extend({
         
         // show progress modal
         var user_is_waiting = true;
-        this.app.modal.show({title: 'Please wait...', body: 'progress', closing_events: true, buttons: {
+        this.app.modal.show({title: 'Please wait...', body: 'progress', buttons: {
             'Close' : function () {
                 self.app.modal.hide();
                 user_is_waiting = false;
