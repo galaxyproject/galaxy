@@ -145,12 +145,13 @@ return Backbone.View.extend({
         // link this
         var self = this;
         
-        // is a numeric number required
+        // available column options
         var is_label    = column_definition.is_label;
         var is_auto     = column_definition.is_auto;
         var is_numeric  = column_definition.is_numeric;
         var is_unique   = column_definition.is_unique;
         var is_zero     = column_definition.is_zero;
+        var is_text     = column_definition.is_text;
         
         // configure columns
         var columns = [];
@@ -182,7 +183,7 @@ return Backbone.View.extend({
             if (meta[key] == 'int' || meta[key] == 'float') {
                 valid = is_numeric;
             } else {
-                valid = is_label;
+                valid = is_text || is_label;
             }
             
             // check type

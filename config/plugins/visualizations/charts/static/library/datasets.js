@@ -299,7 +299,7 @@ return Backbone.Collection.extend(
                             
                             // get/fix value
                             var v = column_data[j];
-                            if (isNaN(v) && !column.is_label) {
+                            if (isNaN(v) && !column.is_label && !column.is_text) {
                                 v = 0;
                             }
                             
