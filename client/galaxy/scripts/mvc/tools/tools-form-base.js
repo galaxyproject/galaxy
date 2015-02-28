@@ -230,7 +230,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     title   : 'Search',
                     tooltip : 'Search help for this tool (Biostar)',
                     onclick : function() {
-                        window.open(options.biostar_url + '/t/' + options.id + '/');
+                        window.open(options.biostar_url + '/local/search/page/?q=' + options.name);
                     }
                 });
             };
