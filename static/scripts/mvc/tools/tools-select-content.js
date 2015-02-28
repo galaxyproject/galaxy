@@ -179,6 +179,7 @@ var View = Backbone.View.extend({
     /** Update content selector */
     update: function(options) {
         // update a particular select field
+        var self = this;
         function _update(field, options) {
             if (field) {
                 // identify available options
@@ -189,6 +190,8 @@ var View = Backbone.View.extend({
                         label: item.hid + ': ' + item.name,
                         value: item.id
                     });
+                    // backup to local history
+                    self.app.history[item.id + '_' + item.src] = item;
                 }
                 // update field
                 field.update(select_options);
@@ -199,9 +202,6 @@ var View = Backbone.View.extend({
         _update(this.select_single, options.hda);
         _update(this.select_multiple, options.hda);
         _update(this.select_collection, options.hdca);
-
-        // add to content list
-        this.app.content.add(options);
     },
 
     /** Return the currently selected dataset values */
@@ -266,7 +266,7 @@ var View = Backbone.View.extend({
 
         // append to dataset ids
         for (var i in id_list) {
-            var details = this.app.content.get({
+            var details = _.findWhere(this.app.history, {
                 id  : id_list[i],
                 src : this.list[this.current].type
             });
@@ -312,7 +312,7 @@ var View = Backbone.View.extend({
     /** Assists in identifying the batch mode */
     _batch: function() {
         if (this.current == 'collection') {
-            var hdca = this.app.content.get({
+            var hdca = _.findWhere(this.app.history, {
                 id  : this._select().value(),
                 src : 'hdca'
             });
