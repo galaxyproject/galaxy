@@ -639,32 +639,6 @@ class AdminToolshed( AdminGalaxy ):
 
     @web.expose
     @web.require_admin
-    def install_tool_shed_repositories( self, trans, tool_shed_repositories, reinstalling=False, **kwd  ):
-        """Install specified tool shed repositories."""
-        shed_tool_conf = kwd.get( 'shed_tool_conf', '' )
-        tool_path = kwd[ 'tool_path' ]
-        install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
-        # There must be a one-to-one mapping between items in the 3 lists: tool_shed_repositories, tool_panel_section_keys, repo_info_dicts.
-        tool_panel_section_keys = util.listify( kwd[ 'tool_panel_section_keys' ] )
-        repo_info_dicts = util.listify( kwd[ 'repo_info_dicts' ] )
-        irm = install_manager.InstallRepositoryManager( trans.app )
-        for index, tool_shed_repository in enumerate( tool_shed_repositories ):
-            repo_info_dict = repo_info_dicts[ index ]
-            tool_panel_section_key = tool_panel_section_keys[ index ]
-            irm.install_tool_shed_repository( tool_shed_repository,
-                                              repo_info_dict,
-                                              tool_panel_section_key,
-                                              shed_tool_conf,
-                                              tool_path,
-                                              install_tool_dependencies,
-                                              reinstalling=reinstalling )
-        tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
-        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                          action='monitor_repository_installation',
-                                                          tool_shed_repository_ids=tsr_ids_for_monitoring ) )
-
-    @web.expose
-    @web.require_admin
     def manage_repositories( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
@@ -704,41 +678,21 @@ class AdminToolshed( AdminGalaxy ):
                 reinstalling = util.string_as_bool( kwd.get( 'reinstalling', False ) )
                 encoded_kwd = kwd[ 'encoded_kwd' ]
                 decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
+                install_tool_dependencies = CheckboxField.is_checked( decoded_kwd.get( 'install_tool_dependencies', '' ) )
                 tsr_ids = decoded_kwd[ 'tool_shed_repository_ids' ]
-                tool_panel_section_keys = decoded_kwd[ 'tool_panel_section_keys' ]
-                repo_info_dicts = decoded_kwd[ 'repo_info_dicts' ]
-                filtered_repo_info_dicts = []
-                filtered_tool_panel_section_keys = []
-                repositories_for_installation = []
-                # Some repositories may have repository dependencies that are required to be installed before the
-                # dependent repository, so we'll order the list of tsr_ids to ensure all repositories install in the
-                # required order.
-                ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
-                    irm.order_components_for_installation( tsr_ids,
-                                                           repo_info_dicts,
-                                                           tool_panel_section_keys=tool_panel_section_keys )
-                for tsr_id in ordered_tsr_ids:
-                    repository = trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                                            .get( trans.security.decode_id( tsr_id ) )
-                    if repository.status in [ trans.install_model.ToolShedRepository.installation_status.NEW,
-                                              trans.install_model.ToolShedRepository.installation_status.UNINSTALLED ]:
-                        repositories_for_installation.append( repository )
-                        repo_info_dict, tool_panel_section_key = \
-                            irm.get_repository_components_for_installation( tsr_id,
-                                                                            ordered_tsr_ids,
-                                                                            ordered_repo_info_dicts,
-                                                                            ordered_tool_panel_section_keys )
-                        filtered_repo_info_dicts.append( repo_info_dict )
-                        filtered_tool_panel_section_keys.append( tool_panel_section_key )
-                if repositories_for_installation:
-                    decoded_kwd[ 'repo_info_dicts' ] = filtered_repo_info_dicts
-                    decoded_kwd[ 'tool_panel_section_keys' ] = filtered_tool_panel_section_keys
-                    self.install_tool_shed_repositories( trans,
-                                                         repositories_for_installation,
-                                                         reinstalling=reinstalling,
-                                                         **decoded_kwd )
-                else:
-                    kwd[ 'message' ] = 'All selected tool shed repositories are already installed.'
+                decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
+                try:
+                    tool_shed_repositories = irm.install_repositories(
+                        tsr_ids=tsr_ids,
+                        decoded_kwd=decoded_kwd,
+                        reinstalling=reinstalling,
+                    )
+                    tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
+                    trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                               action='monitor_repository_installation',
+                                                               tool_shed_repository_ids=tsr_ids_for_monitoring ) )
+                except install_manager.RepositoriesInstalledException as e:
+                    kwd[ 'message' ] = e.message
                     kwd[ 'status' ] = 'error'
         return self.repository_installation_grid( trans, **kwd )
 
@@ -1092,7 +1046,7 @@ class AdminToolshed( AdminGalaxy ):
                                       tool_path=tool_path,
                                       tool_shed_url=tool_shed_url )
             created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts = \
-                install_repository_manager.handle_tool_shed_repositories( installation_dict, using_api=False )
+                install_repository_manager.handle_tool_shed_repositories( installation_dict )
             if created_or_updated_tool_shed_repositories:
                 installation_dict = dict( created_or_updated_tool_shed_repositories=created_or_updated_tool_shed_repositories,
                                           filtered_repo_info_dicts=filtered_repo_info_dicts,
