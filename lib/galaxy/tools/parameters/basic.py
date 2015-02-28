@@ -2172,7 +2172,6 @@ class DataToolParameter( BaseDataToolParameter ):
                 m = match.hda
                 d['options']['hda'].append({
                     'id'            : trans.security.encode_id( m.id ),
-                    'id_uncoded'    : m.id,
                     'hid'           : m.hid,
                     'name'          : m.name,
                     'src'           : 'hda'
@@ -2184,7 +2183,6 @@ class DataToolParameter( BaseDataToolParameter ):
             if dataset_collection_matcher.hdca_match( hdca, reduction=multiple ):
                 d['options']['hdca'].append({
                     'id'            : trans.security.encode_id( hdca.id ),
-                    'id_uncoded'    : hdca.id,
                     'hid'           : hdca.hid,
                     'name'          : hdca.name,
                     'src'           : 'hdca'
@@ -2391,7 +2389,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         for hdca in self.match_collections( trans, history, dataset_matcher ):
             d['options']['hdca'].append({
                     'id'            : trans.security.encode_id( hdca.id ),
-                    'id_uncoded'    : hdca.id,
                     'hid'           : hdca.hid,
                     'name'          : hdca.name,
                     'src'           : 'hdca'
@@ -2402,7 +2399,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
             subcollection_type = self._history_query( trans ).collection_type_description.collection_type
             d['options']['hdca'].append({
                     'id'            : trans.security.encode_id( hdca.id ),
-                    'id_uncoded'    : hdca.id,
                     'hid'           : hdca.hid,
                     'name'          : hdca.name,
                     'src'           : 'hdca',
