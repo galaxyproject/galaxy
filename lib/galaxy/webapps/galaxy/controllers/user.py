@@ -28,6 +28,7 @@ from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
 from galaxy.web.framework.helpers import escape, grids, time_ago
+import galaxy.auth
 
 log = logging.getLogger( __name__ )
 
@@ -513,8 +514,29 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
+        if trans.app.config.auth_debug:
+            print ("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
+            print ("trans.app.config.auth_debug: %s WARNING: don't use in production" % trans.app.config.auth_debug)
         if not user:
-            message = "No such user (please note that login is case sensitive)"
+            autoreg = galaxy.auth.check_auto_registration(trans, email, password, trans.app.config.auth_config_file, trans.app.config.auth_debug)
+            if autoreg[0]:
+                kwd['username'] = autoreg[1]
+                params = util.Params( kwd )
+                message = validate_email( trans, email )  #self.__validate( trans, params, email, password, password, username )
+                if not message:
+                    message, status, user, success = self.__register( trans, 'user', False, **kwd )
+                    if success:
+                        # The handle_user_login() method has a call to the history_set_default_permissions() method
+                        # (needed when logging in with a history), user needs to have default permissions set before logging in
+                        trans.handle_user_login( user )
+                        trans.log_event( "User (auto) created a new account" )
+                        trans.log_event( "User logged in" )
+                    else:
+                        message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+                else:
+                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+            else:
+                message = "No such user or invalid password"
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
@@ -523,7 +545,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
-        elif not user.check_password( password ):
+        elif not galaxy.auth.check_password(user, password, trans.app.config.auth_config_file, trans.app.config.auth_debug):
             message = "Invalid password"
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if ( trans.app.config.activation_grace_period != 0 ):  # grace period is ON
@@ -651,41 +673,44 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 message += ' Contact: %s' % trans.app.config.error_email_to
             status = 'error'
         else:
-            if not refresh_frames:
-                if trans.webapp.name == 'galaxy':
-                    if trans.app.config.require_login:
-                        refresh_frames = [ 'masthead', 'history', 'tools' ]
+            # check user is allowed to register
+            message, status = galaxy.auth.check_registration_allowed(email, password, trans.app.config.auth_config_file, trans.app.config.auth_debug)
+            if message == '':
+                if not refresh_frames:
+                    if trans.webapp.name == 'galaxy':
+                        if trans.app.config.require_login:
+                            refresh_frames = [ 'masthead', 'history', 'tools' ]
+                        else:
+                            refresh_frames = [ 'masthead', 'history' ]
                     else:
-                        refresh_frames = [ 'masthead', 'history' ]
-                else:
-                    refresh_frames = [ 'masthead' ]
-            # Create the user, save all the user info and login to Galaxy
-            if params.get( 'create_user_button', False ):
-                # Check email and password validity
-                message = self.__validate( trans, params, email, password, confirm, username )
-                if not message:
-                    # All the values are valid
-                    message, status, user, success = self.__register( trans,
-                                                                      cntrller,
-                                                                      subscribe_checked,
-                                                                      **kwd )
-                    if trans.webapp.name == 'tool_shed':
-                        redirect_url = url_for( '/' )
-                    if success and not is_admin:
-                        # The handle_user_login() method has a call to the history_set_default_permissions() method
-                        # (needed when logging in with a history), user needs to have default permissions set before logging in
-                        trans.handle_user_login( user )
-                        trans.log_event( "User created a new account" )
-                        trans.log_event( "User logged in" )
-                    if success and is_admin:
-                        message = 'Created new user account (%s)' % escape( user.email )
-                        trans.response.send_redirect( web.url_for( controller='admin',
-                                                                   action='users',
-                                                                   cntrller=cntrller,
-                                                                   message=message,
-                                                                   status=status ) )
-                else:
-                    status = 'error'
+                        refresh_frames = [ 'masthead' ]
+                # Create the user, save all the user info and login to Galaxy
+                if params.get( 'create_user_button', False ):
+                    # Check email and password validity
+                    message = self.__validate( trans, params, email, password, confirm, username )
+                    if not message:
+                        # All the values are valid
+                        message, status, user, success = self.__register( trans,
+                                                                          cntrller,
+                                                                          subscribe_checked,
+                                                                          **kwd )
+                        if trans.webapp.name == 'tool_shed':
+                            redirect_url = url_for( '/' )
+                        if success and not is_admin:
+                            # The handle_user_login() method has a call to the history_set_default_permissions() method
+                            # (needed when logging in with a history), user needs to have default permissions set before logging in
+                            trans.handle_user_login( user )
+                            trans.log_event( "User created a new account" )
+                            trans.log_event( "User logged in" )
+                        if success and is_admin:
+                            message = 'Created new user account (%s)' % escape( user.email )
+                            trans.response.send_redirect( web.url_for( controller='admin',
+                                                                       action='users',
+                                                                       cntrller=cntrller,
+                                                                       message=message,
+                                                                       status=status ) )
+                    else:
+                        status = 'error'
         if trans.webapp.name == 'galaxy':
             user_type_form_definition = self.__get_user_type_form_definition( trans, user=None, **kwd )
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
@@ -1100,10 +1125,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
             else:
                 # The user is changing their own password, validate their current password
-                if trans.user.check_password( current ):
+                (ok, message) = galaxy.auth.check_change_password(trans.user, current, trans.app.config.auth_config_file, trans.app.config.auth_debug)
+                if ok:
                     user = trans.user
                 else:
-                    message = 'Invalid current password'
                     status = 'error'
             if user:
                 # Validate the new password

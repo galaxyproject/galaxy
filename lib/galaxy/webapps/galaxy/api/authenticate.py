@@ -18,6 +18,7 @@ from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_ap
 from galaxy.managers import api_keys
 from galaxy import exceptions
 from galaxy.web.base.controller import BaseAPIController
+import galaxy.auth
 
 import logging
 log = logging.getLogger( __name__ )
@@ -45,15 +46,15 @@ class AuthenticationController( BaseAPIController ):
 
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).all()
 
-        if ( len( user ) == 0 ):
+        if len( user ) == 0:
             raise exceptions.ObjectNotFound( 'The user does not exist.' )
-        elif ( len( user ) > 1 ):
+        elif len( user ) > 1:
             # DB is inconsistent and we have more users with the same email.
             raise exceptions.InconsistentDatabase( 'An error occured, please contact your administrator.' )
         else:
             user = user[0]
-            is_valid_user = user.check_password( password )
-        if ( is_valid_user ):
+            is_valid_user = galaxy.auth.check_password(user, password, trans.app.config.auth_config_file, trans.app.config.auth_debug)
+        if is_valid_user:
             key = self.api_keys_manager.get_or_create_api_key( user )
             return dict( api_key=key )
         else:

@@ -844,8 +844,15 @@ use_interactive = True
 #openid_config_file = config/openid_conf.xml
 #openid_consumer_cache_path = database/openid_consumer_cache
 
+# XML config file that allows the use of different authentication providers
+# (e.g. Active Directory) instead or in addition to local authentication
+# (.sample is used if default does not exist).
+#auth_config_file = config/auth_conf.xml
+# Print debugging info for auth
+#auth_debug = False
+
 # Optional list of email addresses of API users who can make calls on behalf of
-# other users
+# other users.
 #api_allow_run_as = None
 
 # Master key that allows many API admin actions to be used without actually
