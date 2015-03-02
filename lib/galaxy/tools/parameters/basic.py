@@ -1992,10 +1992,19 @@ class DataToolParameter( BaseDataToolParameter ):
             value = [ int( value_part ) for value_part in value.split( "," ) ]
         if isinstance( value, list ):
             rval = []
+            found_hdca = False
             for single_value in value:
-                if isinstance( single_value, dict ):
-                    assert single_value['src'] == 'hda'
-                    rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id( single_value[ 'id' ] ) ) )
+                if found_hdca:
+                    raise ValueError("Only one collection may be supplied to parameter.")
+                if isinstance( single_value, dict ) and 'src' in single_value and 'id' in single_value:
+                    if single_value['src'] == 'hda':
+                        rval.append(trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(single_value['id']) ))
+                    elif single_value['src'] == 'hdca':
+                        found_hdca = True
+                        decoded_id = trans.app.security.decode_id( single_value[ 'id' ] )
+                        rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+                    else:
+                        raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
                 else:
                     rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( single_value ) )
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
