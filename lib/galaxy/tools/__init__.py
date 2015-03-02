@@ -2316,6 +2316,11 @@ class Tool( object, Dictifiable ):
                     'id'  : trans.security.encode_id(v.id),
                     'src' : 'hda'
                 }
+            elif isinstance(v, trans.app.model.HistoryDatasetCollectionAssociation):
+                return {
+                    'id'  : trans.security.encode_id(v.id),
+                    'src' : 'hdca'
+                }
             elif isinstance(v, bool):
                 if v is True:
                     return 'true'
