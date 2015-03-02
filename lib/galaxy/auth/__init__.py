@@ -53,26 +53,26 @@ class AuthManager(object):
     def __init_authenticators(self, auth_config_file):
         # parse XML
         ct = xml.etree.ElementTree.parse(auth_config_file)
-        confroot = ct.getroot()
+        conf_root = ct.getroot()
 
         authenticators = []
         # process authenticators
-        for authelem in confroot.getchildren():
-            typeelem = authelem.iter('type').next()
-            plugin = self.__plugins_dict.get(typeelem.text)()
+        for auth_elem in conf_root.getchildren():
+            type_elem = auth_elem.iter('type').next()
+            plugin = self.__plugins_dict.get(type_elem.text)()
 
             # check filterelem
-            filter_elem = _get_child_element(authelem, 'filter')
+            filter_elem = _get_child_element(auth_elem, 'filter')
             if filter_elem is not None:
                 filter_template = str(filter_elem.text)
             else:
                 filter_template = None
 
             # extract options
-            optionselem = _get_child_element(authelem, 'options')
+            options_elem = _get_child_element(auth_elem, 'options')
             options = {}
-            if optionselem is not None:
-                for opt in optionselem:
+            if options_elem is not None:
+                for opt in options_elem:
                     options[opt.tag] = opt.text
             authenticator = Authenticator(
                 plugin=plugin,
@@ -87,18 +87,18 @@ class AuthManager(object):
         message = ''
         status = 'done'
         for provider, options in self.active_authenticators(email, password):
-            allowreg = _get_tri_state(options, 'allow-register', True)
-            if allowreg is None:  # i.e. challenge
-                authresult, msg = provider.authenticate(email, password, options)
-                if authresult is True:
+            allow_reg = _get_tri_state(options, 'allow-register', True)
+            if allow_reg is None:  # i.e. challenge
+                auth_result, msg = provider.authenticate(email, password, options)
+                if auth_result is True:
                     break
-                if authresult is None:
+                if auth_result is None:
                     message = 'Invalid email address or password'
                     status = 'error'
                     break
-            elif allowreg is True:
+            elif allow_reg is True:
                 break
-            elif allowreg is False:
+            elif allow_reg is False:
                 message = 'Account registration not required for your account.  Please simply login.'
                 status = 'error'
                 break
@@ -114,23 +114,23 @@ class AuthManager(object):
                 if debug:
                     log.debug( "Unable to find module: %s" % options )
             else:
-                authresult, autousername = provider.authenticate(email, password, options, debug)
-                autousername = str(autousername).lower()
-                if authresult is True:
+                auth_result, auto_username = provider.authenticate(email, password, options, debug)
+                auto_username = str(auto_username).lower()
+                if auth_result is True:
                     # make username unique
-                    if validate_publicname( trans, autousername ) != '':
+                    if validate_publicname( trans, auto_username ) != '':
                         i = 1
                         while i <= 10:  # stop after 10 tries
-                            if validate_publicname( trans, "%s-%i" % (autousername, i) ) == '':
-                                autousername = "%s-%i" % (autousername, i)
+                            if validate_publicname( trans, "%s-%i" % (auto_username, i) ) == '':
+                                auto_username = "%s-%i" % (auto_username, i)
                                 break
                             i += 1
                         else:
                             break  # end for loop if we can't make a unique username
                     if debug:
-                        log.debug( "Email: %s, auto-register with username: %s" % (email, autousername) )
-                    return (_get_bool(options, 'auto-register', False), autousername)
-                elif authresult is None:
+                        log.debug( "Email: %s, auto-register with username: %s" % (email, auto_username) )
+                    return (_get_bool(options, 'auto-register', False), auto_username)
+                elif auth_result is None:
                     log.debug( "Email: %s, stopping due to failed non-continue" % (email) )
                     break  # end authentication (skip rest)
         return (False, '')
@@ -142,10 +142,10 @@ class AuthManager(object):
                 if self.debug:
                     log.debug( "Unable to find module: %s" % options )
             else:
-                authresult = provider.authenticate_user(user, password, options)
-                if authresult is True:
+                auth_result = provider.authenticate_user(user, password, options)
+                if auth_result is True:
                     return True  # accept user
-                elif authresult is None:
+                elif auth_result is None:
                     break  # end authentication (skip rest)
         return False
 
@@ -159,10 +159,10 @@ class AuthManager(object):
                     log.debug( "Unable to find module: %s" % options )
             else:
                 if _get_bool(options, "allow-password-change", False):
-                    authresult = provider.authenticate_user(user, current_password, options)
-                    if authresult is True:
+                    auth_result = provider.authenticate_user(user, current_password, options)
+                    if auth_result is True:
                         return (True, '')  # accept user
-                    elif authresult is None:
+                    elif auth_result is None:
                         break  # end authentication (skip rest)
                 else:
                     return (False, 'Password change not supported')

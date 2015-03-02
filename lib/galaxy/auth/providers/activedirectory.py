@@ -35,16 +35,16 @@ class ActiveDirectory(AuthProvider):
             log.debug("Username: %s" % username)
             log.debug("Options: %s" % options)
 
-        failuremode = False  # reject but continue
+        failure_mode = False  # reject but continue
         if options.get('continue-on-failure', 'False') == 'False':
-            failuremode = None  # reject and do not continue
+            failure_mode = None  # reject and do not continue
 
         try:
             import ldap
         except:
             if debug:
                 log.debug("User: %s, ACTIVEDIRECTORY: False (no ldap)" % (username))
-            return (failuremode, '')
+            return (failure_mode, '')
 
         # do AD search (if required)
         vars = {'username': username, 'password': password}
@@ -75,7 +75,7 @@ class ActiveDirectory(AuthProvider):
             except Exception:
                 if debug:
                     log.debug('User: %s, ACTIVEDIRECTORY: Search Exception:\n%s' % (username, traceback.format_exc(),))
-                return (failuremode, '')
+                return (failure_mode, '')
         # end search
 
         # bind as user to check their credentials
@@ -88,7 +88,7 @@ class ActiveDirectory(AuthProvider):
         except Exception:
             if debug:
                 log.debug('User: %s, ACTIVEDIRECTORY: Authenticate Exception:\n%s' % (username, traceback.format_exc()))
-            return (failuremode, '')
+            return (failure_mode, '')
 
         if debug:
             log.debug("User: %s, ACTIVEDIRECTORY: True" % (username))
