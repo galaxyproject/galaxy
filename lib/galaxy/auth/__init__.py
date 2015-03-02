@@ -58,7 +58,7 @@ class AuthManager(object):
         authenticators = []
         # process authenticators
         for auth_elem in conf_root.getchildren():
-            type_elem = auth_elem.iter('type').next()
+            type_elem = auth_elem.find('type')
             plugin = self.__plugins_dict.get(type_elem.text)()
 
             # check filterelem
@@ -204,7 +204,4 @@ def _get_tri_state(d, k, o):
 
 
 def _get_child_element(parent, childname):
-    try:
-        return parent.iter(childname).next()
-    except StopIteration:
-        return None
+    return parent.find(childname)
