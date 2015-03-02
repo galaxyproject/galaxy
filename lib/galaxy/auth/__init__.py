@@ -4,7 +4,6 @@ Contains implementations of the authentication logic.
 
 import traceback
 import xml.etree.ElementTree
-from yapsy.PluginManager import PluginManager
 
 from galaxy.security.validate_user_input import validate_publicname
 
@@ -12,6 +11,9 @@ from galaxy.util import (
     string_as_bool,
     string_as_bool_or_none,
 )
+
+from galaxy.util import plugin_config
+
 
 import logging
 log = logging.getLogger(__name__)
@@ -132,15 +134,13 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
     filters.
     """
     try:
-        # load the yapsy plugins
-        manager = PluginManager()
-        manager.setPluginPlaces(["lib/galaxy/auth/providers"])
-        manager.collectPlugins()
+        import galaxy.auth.providers
+        plugins_dict = plugin_config.plugins_dict( galaxy.auth.providers, 'plugin_type' )
 
         if debug:
             log.debug( ("Plugins found:") )
-            for plugin in manager.getAllPlugins():
-                log.debug( ("- %s" % (plugin.path)) )
+            for plugin in plugins_dict:
+                log.debug( ("- %s" % (plugin)) )
 
         # parse XML
         ct = xml.etree.ElementTree.parse(configfile)
@@ -167,7 +167,7 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
                     options[opt.tag] = opt.text
 
             # get the instance
-            plugin = manager.getPluginByName(typeelem.text)
+            plugin = plugins_dict.get(typeelem.text)
             yield (plugin.plugin_object, options)  # excepts if type is spelled incorrectly
     except GeneratorExit:
         return
