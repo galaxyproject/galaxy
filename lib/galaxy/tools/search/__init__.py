@@ -1,18 +1,27 @@
-from galaxy.eggs import require
+"""
+Module for building and searching the index of tools
+installed within this Galaxy.
+"""
+from galaxy import eggs
 from galaxy.web.framework.helpers import to_unicode
-require( "Whoosh" )
 
+eggs.require( "Whoosh" )
 from whoosh.filedb.filestore import RamStorage
 from whoosh.fields import Schema, STORED, TEXT
 from whoosh.scoring import BM25F
 from whoosh.qparser import MultifieldParser
-schema = Schema( id=STORED, title=TEXT, description=TEXT, help=TEXT )
-
+schema = Schema( id=STORED,
+                 title=TEXT,
+                 description=TEXT,
+                 section=TEXT,
+                 help=TEXT )
+import logging
+log = logging.getLogger( __name__ )
 
 class ToolBoxSearch( object ):
     """
     Support searching tools in a toolbox. This implementation uses
-    the "whoosh" search library.
+    the Whoosh search library.
     """
 
     def __init__( self, toolbox, index_help=True ):
@@ -26,13 +35,13 @@ class ToolBoxSearch( object ):
         self.storage = RamStorage()
         self.index = self.storage.create_index( schema )
         writer = self.index.writer()
-        ## TODO: would also be nice to search section headers.
         for id, tool in self.toolbox.tools():
             add_doc_kwds = {
                 "id": id,
-                "title": to_unicode(tool.name),
-                "description": to_unicode(tool.description),
-                "help": to_unicode(""),
+                "title": to_unicode( tool.name ),
+                "description": to_unicode( tool.description ),
+                "section": to_unicode( tool.get_panel_section()[1] if len( tool.get_panel_section() ) == 2 else '' ),
+                "help": to_unicode( "" ),
             }
             if index_help and tool.help:
                 try:
@@ -45,13 +54,18 @@ class ToolBoxSearch( object ):
         writer.commit()
 
     def search( self, query, return_attribute='id' ):
-        # Change field boosts for searcher to place more weight on title, description than help.
+        # Change field boosts for searcher
         searcher = self.index.searcher(
             weighting=BM25F(
-                field_B={ 'title_B': 3, 'description_B': 2, 'help_B': 1 }
+                field_B={ 'title_B': 9,
+                          'section_B': 3,
+                          'description_B': 2,
+                          'help_B': 0.5 }
             )
         )
-        # Set query to search title, description, and help.
-        parser = MultifieldParser( [ 'title', 'description', 'help' ], schema=schema )
-        results = searcher.search( parser.parse( query ) )
-        return [ result[ return_attribute ] for result in results ]
+        # Set query to search title, description, section, and help.
+        parser = MultifieldParser( [ 'title', 'description', 'section', 'help' ], schema=schema )
+        # Perform the search
+        hits = searcher.search( parser.parse( '*' + query + '*' ), limit=20 )
+
+        return [ hit[ return_attribute ] for hit in hits ]
