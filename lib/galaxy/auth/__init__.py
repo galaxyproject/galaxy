@@ -59,7 +59,7 @@ class AuthManager(object):
         # process authenticators
         for authelem in confroot.getchildren():
             typeelem = authelem.iter('type').next()
-            plugin = self.__plugins_dict.get(typeelem.text)
+            plugin = self.__plugins_dict.get(typeelem.text)()
 
             # check filterelem
             filter_elem = _getChildElement(authelem, 'filter')
@@ -177,7 +177,8 @@ class AuthManager(object):
                 filter_template = authenticator.filter_template
                 if filter_template:
                     filter_str = filter_template.format(username=username, password=password)
-                    if not eval(filter_str, {"__builtins__": None}, {'str': str}):
+                    passed_filter = eval(filter_str, {"__builtins__": None}, {'str': str})
+                    if not passed_filter:
                         continue  # skip to next
                 yield authenticator.plugin, authenticator.options
         except Exception:

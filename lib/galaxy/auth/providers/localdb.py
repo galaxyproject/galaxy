@@ -5,13 +5,13 @@ Created on 16/07/2014
 """
 
 from ..providers import AuthProvider
+import logging
+log = logging.getLogger(__name__)
 
 
 class LocalDB(AuthProvider):
     """Authenticate users against the local Galaxy database (as per usual)."""
-    @property
-    def plugin_type(self):
-        return 'localdb'
+    plugin_type = 'localdb'
 
     def authenticate(self, username, password, options, debug=False):
         """

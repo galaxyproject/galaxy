@@ -11,9 +11,7 @@ class AlwaysReject(AuthProvider):
     """A simple authenticator that just accepts users (does not care about their
     password).
     """
-    @property
-    def plugin_type(self):
-        return 'alwaysreject'
+    plugin_type = 'alwaysreject'
 
     def authenticate(self, username, password, options, debug=False):
         """

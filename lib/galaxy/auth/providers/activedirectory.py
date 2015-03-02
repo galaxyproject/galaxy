@@ -22,9 +22,7 @@ class ActiveDirectory(AuthProvider):
     those fields first.  After that it will bind to the AD with the username
     (formatted as specified).
     """
-    @property
-    def plugin_type(self):
-        return 'activedirectory'
+    plugin_type = 'activedirectory'
 
     def authenticate(self, username, password, options, debug=False):
         """
