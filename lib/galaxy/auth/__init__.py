@@ -109,7 +109,7 @@ class AuthManager(object):
         Checks the email/password using auth providers in order. If a match is
         found, returns the 'auto-register' option for that provider.
         """
-        for provider, options in self.active_authenticators(email, password, debug):
+        for provider, options in self.active_authenticators(email, password):
             if provider is None:
                 if debug:
                     log.debug( "Unable to find module: %s" % options )
