@@ -18,17 +18,24 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             this.post_job_actions = this.node.post_job_actions || {};
 
             // initialize parameters
-            this.options = options;
+            options = Utils.merge(options, {
+                // set labels
+                text_enable     : 'Set in Advance',
+                text_disable    : 'Set at Runtime',
 
-            // set labels
-            this.options.text_enable    = 'Set in Advance';
-            this.options.text_disable   = 'Set at Runtime';
+                // configure workflow style
+                is_dynamic      : false,
+                narrow          : true,
+                initial_errors  : true,
+                cls             : 'ui-portlet-narrow',
 
-            // configure workflow style
-            this.options.is_dynamic     = false;
-            this.options.narrow         = true;
-            this.options.initial_errors = true;
-            this.options.cls_portlet    = 'ui-portlet-narrow';
+                // configure model update
+                update_url      : galaxy_config.root + 'api/workflows/build_module',
+                update          : function(data) {
+                    self.node.update_field_data(data);
+                    self.form.errors(data && data.tool_model)
+                }
+            });
 
             // declare fields as optional
             Utils.deepeach(options.inputs, function(item) {
@@ -257,73 +264,6 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
 
             // return final configuration
             return input_config;
-        },
-
-        /** Builds a new model through api call and recreates the entire form
-        */
-        _buildModel: function() {
-            Galaxy.modal.show({
-                title   : 'Coming soon...',
-                body    : 'This feature has not been implemented yet.',
-                buttons : {
-                    'Close' : function() {
-                        Galaxy.modal.hide();
-                    }
-                }
-            });
-        },
-
-        /** Request a new model for an already created tool form and updates the form inputs
-        */
-        _updateModel: function(current_state) {
-            // link self
-            var self = this;
-
-            // create the request dictionary
-            current_state = {
-                tool_id         : this.options.id,
-                tool_version    : this.options.version,
-                inputs          : current_state
-            }
-        
-            // log tool state
-            console.debug('tools-form-workflow::_refreshForm() - Refreshing states.');
-            console.debug(current_state);
-
-            // register process
-            var process_id = this.deferred.register();
-
-            // build model url for request
-            var model_url = galaxy_config.root + 'api/workflows/build_module';
-
-            // post job
-            Utils.request({
-                type    : 'POST',
-                url     : model_url,
-                data    : current_state,
-                success : function(data) {
-                    // update node in workflow module
-                    self.node.update_field_data(data);
-
-                    // highlight errors
-                    self.form.errors(data && data.tool_model);
-
-                    // process completed
-                    self.deferred.done(process_id);
-            
-                    // log success
-                    console.debug('tools-form::_refreshForm() - States refreshed.');
-                    console.debug(data);
-                },
-                error   : function(response) {
-                    // process completed
-                    self.deferred.done(process_id);
-                    
-                    // log error
-                    console.debug('tools-form::_refreshForm() - Refresh request failed.');
-                    console.debug(response);
-                }
-            });
         }
     });
 

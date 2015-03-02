@@ -37,11 +37,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             // link this
             var self = this;
 
-            // configure options
-            this.options = Utils.merge(options, this.optionsDefault);
-
             // merge form options
-            var form_options = Utils.merge({
+            this.options = Utils.merge(options, this.options);
+            this.options = Utils.merge({
                 icon            : 'fa-wrench',
                 title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Tool Version ' + options.version + ')',
                 operations      : this._operations(),
@@ -49,13 +47,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     // by resetting the deferred ajax queue the number of redundant calls is reduced
                     self.deferred.reset();
                     self.deferred.execute(function(){
-                        self._updateModel($.extend(true, {}, self.form.data.create()));
+                        self._updateModel();
                     });
                 }
-            }, options);
+            }, this.options);
 
             // create form
-            this.form = new Form(form_options);
+            this.form = new Form(this.options);
 
             // create footer
             this._footer();
@@ -63,6 +61,139 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             // create element
             this.$el.empty();
             this.$el.append(this.form.$el);
+        },
+
+        /** Builds a new model through api call and recreates the entire form
+        */
+        _buildModel: function(options) {
+            // link this
+            var self = this;
+
+            // construct url
+            var build_url = galaxy_config.root + 'api/tools/' + options.id + '/build?';
+            if (options.job_id) {
+                build_url += 'job_id=' + options.job_id;
+            } else {
+                if (options.dataset_id) {
+                    build_url += 'dataset_id=' + options.dataset_id;
+                } else {
+                    build_url += 'tool_version=' + options.version + '&';
+                    var loc = top.location.href;
+                    var pos = loc.indexOf('?');
+                    if (loc.indexOf('tool_id=') != -1 && pos !== -1) {
+                        build_url += loc.slice(pos + 1);
+                    }
+                }
+            }
+
+            // register process
+            var process_id = this.deferred.register();
+
+            // get initial model
+            Utils.request({
+                type    : 'GET',
+                url     : build_url,
+                success : function(new_model) {
+                    // rebuild form
+                    self._buildForm(new_model['tool_model'] || new_model);
+
+                    // show version message
+                    self.form.message.update({
+                        status      : 'success',
+                        message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
+                        persistent  : false
+                    });
+
+                    // process completed
+                    self.deferred.done(process_id);
+
+                    // log success
+                    console.debug('tools-form::initialize() - Initial tool model ready.');
+                    console.debug(new_model);
+                },
+                error   : function(response) {
+                    // process completed
+                    self.deferred.done(process_id);
+
+                    // log error
+                    console.debug('tools-form::initialize() - Initial tool model request failed.');
+                    console.debug(response);
+
+                    // show error
+                    var error_message = response.error || 'Uncaught error.';
+                    self.form.modal.show({
+                        title   : 'Tool cannot be executed',
+                        body    : error_message,
+                        buttons : {
+                            'Close' : function() {
+                                self.form.modal.hide();
+                            }
+                        }
+                    });
+                }
+            });
+        },
+
+        /** Request a new model for an already created tool form and updates the form inputs
+        */
+        _updateModel: function() {
+            // model url for request
+            var model_url = this.options.update_url;
+
+            // link this
+            var self = this;
+
+            // create the request dictionary
+            var form = this.form;
+
+            // create the request dictionary
+            var current_state = {
+                tool_id         : this.options.id,
+                tool_version    : this.options.version,
+                inputs          : $.extend(true, {}, self.form.data.create())
+            }
+
+            // set wait mode
+            form.wait(true);
+
+            // register process
+            var process_id = this.deferred.register();
+
+            // log tool state
+            console.debug('tools-form-base::_updateModel() - Sending current state (see below).');
+            console.debug(current_state);
+
+            // post job
+            Utils.request({
+                type    : 'POST',
+                url     : model_url,
+                data    : current_state,
+                success : function(new_model) {
+                    // update form with new model
+                    self.form.update(new_model['tool_model'] || new_model);
+
+                    // custom update
+                    self.options.update && self.options.update(new_model);
+
+                    // unset wait mode
+                    form.wait(false);
+
+                    // log success
+                    console.debug('tools-form-base::_updateModel() - Received new model (see below).');
+                    console.debug(new_model);
+
+                    // process completed
+                    self.deferred.done(process_id);
+                },
+                error   : function(response) {
+                    // process completed
+                    self.deferred.done(process_id);
+
+                    // log error
+                    console.debug('tools-form-base::_updateModel() - Refresh request failed.');
+                    console.debug(response);
+                }
+            });
         },
 
         // create tool operation menu
@@ -87,12 +218,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                             icon    : 'fa-cube',
                             onclick : function() {
                                 // here we update the tool version (some tools encode the version also in the id)
-                                options.id = options.id.replace(options.version, this.version);
-                                options.version = this.version;
-                                
-                                // rebuild the model and form
+                                var id = options.id.replace(options.version, this.version);
+                                var version = this.version;
+                                // queue model request
                                 self.deferred.reset();
-                                self.deferred.execute(function(){self._buildModel()});
+                                self.deferred.execute(function() {
+                                    self._buildModel({id: id, version: version})
+                                });
                             }
                         });
                     }

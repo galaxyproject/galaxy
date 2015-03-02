@@ -42,6 +42,42 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this._build();
         },
 
+        /** Update available options */
+        update: function(new_model){
+            var self = this;
+            this.data.matchModel(new_model, function(input_id, node) {
+                var input = self.input_list[input_id];
+                if (input && input.options) {
+                    if (!_.isEqual(input.options, node.options)) {
+                        // backup new options
+                        input.options = node.options;
+
+                        // get/update field
+                        var field = self.field_list[input_id];
+                        if (field.update) {
+                            var new_options = [];
+                            if ((['data', 'data_collection', 'drill_down']).indexOf(input.type) != -1) {
+                                new_options = input.options;
+                            } else {
+                                for (var i in node.options) {
+                                    var opt = node.options[i];
+                                    if (opt.length > 2) {
+                                        new_options.push({
+                                            'label': opt[0],
+                                            'value': opt[1]
+                                        });
+                                    }
+                                }
+                            }
+                            field.update(new_options);
+                            field.trigger('change');
+                            console.debug('Updating options for ' + input_id);
+                        }
+                    }
+                }
+            });
+        },
+
         /** Set form into wait mode */
         wait: function(active) {
             for (var i in this.input_list) {
