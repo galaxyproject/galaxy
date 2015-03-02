@@ -62,14 +62,14 @@ class AuthManager(object):
             plugin = self.__plugins_dict.get(type_elem.text)()
 
             # check filterelem
-            filter_elem = _get_child_element(auth_elem, 'filter')
+            filter_elem = auth_elem.find('filter')
             if filter_elem is not None:
                 filter_template = str(filter_elem.text)
             else:
                 filter_template = None
 
             # extract options
-            options_elem = _get_child_element(auth_elem, 'options')
+            options_elem = auth_elem.find('options')
             options = {}
             if options_elem is not None:
                 for opt in options_elem:
@@ -201,7 +201,3 @@ def _get_tri_state(d, k, o):
         return string_as_bool_or_none(d[k])
     else:
         return o
-
-
-def _get_child_element(parent, childname):
-    return parent.find(childname)
