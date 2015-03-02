@@ -22,7 +22,7 @@ class AlwaysReject(AuthProvider):
         """
         return (None, '')
 
-    def authenticateUser(self, user, password, options, debug=False):
+    def authenticate_user(self, user, password, options, debug=False):
         """
         See abstract method documentation.
         """

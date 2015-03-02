@@ -38,7 +38,7 @@ class AuthProvider(object):
         """
 
     @abc.abstractmethod
-    def authenticateUser(self, user, password, options, debug=False):
+    def authenticate_user(self, user, password, options, debug=False):
         """
         Same as authenticate() method, except an User object is provided instead
         of a username.

@@ -11,7 +11,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def _getsubs(d, k, vars, default=''):
+def _get_subs(d, k, vars, default=''):
     if k in d:
         return str(d[k]).format(**vars)
     return str(default).format(**vars)
@@ -52,14 +52,14 @@ class ActiveDirectory(AuthProvider):
             try:
                 # setup connection
                 ldap.set_option(ldap.OPT_REFERRALS, 0)
-                l = ldap.initialize(_getsubs(options, 'server', vars))
+                l = ldap.initialize(_get_subs(options, 'server', vars))
                 l.protocol_version = 3
-                l.simple_bind_s(_getsubs(options, 'search-user', vars), _getsubs(options, 'search-password', vars))
+                l.simple_bind_s(_get_subs(options, 'search-user', vars), _get_subs(options, 'search-password', vars))
                 scope = ldap.SCOPE_SUBTREE
 
                 # setup search
                 attributes = map(lambda s: s.strip().format(**vars), options['search-fields'].split(','))
-                result = l.search(_getsubs(options, 'search-base', vars), scope, _getsubs(options, 'search-filter', vars), attributes)
+                result = l.search(_get_subs(options, 'search-base', vars), scope, _get_subs(options, 'search-filter', vars), attributes)
 
                 # parse results
                 _, suser = l.result(result, 60)
@@ -82,9 +82,9 @@ class ActiveDirectory(AuthProvider):
         try:
             # setup connection
             ldap.set_option(ldap.OPT_REFERRALS, 0)
-            l = ldap.initialize(_getsubs(options, 'server', vars))
+            l = ldap.initialize(_get_subs(options, 'server', vars))
             l.protocol_version = 3
-            l.simple_bind_s(_getsubs(options, 'bind-user', vars), _getsubs(options, 'bind-password', vars))
+            l.simple_bind_s(_get_subs(options, 'bind-user', vars), _get_subs(options, 'bind-password', vars))
         except Exception:
             if debug:
                 log.debug('User: %s, ACTIVEDIRECTORY: Authenticate Exception:\n%s' % (username, traceback.format_exc()))
@@ -92,9 +92,9 @@ class ActiveDirectory(AuthProvider):
 
         if debug:
             log.debug("User: %s, ACTIVEDIRECTORY: True" % (username))
-        return (True, _getsubs(options, 'auto-register-username', vars))
+        return (True, _get_subs(options, 'auto-register-username', vars))
 
-    def authenticateUser(self, user, password, options, debug=False):
+    def authenticate_user(self, user, password, options, debug=False):
         """
         See abstract method documentation.
         """

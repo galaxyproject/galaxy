@@ -19,7 +19,7 @@ class LocalDB(AuthProvider):
         """
         return (False, '')  # it can never auto-create based of localdb (chicken-egg)
 
-    def authenticateUser(self, user, password, options, debug=False):
+    def authenticate_user(self, user, password, options, debug=False):
         """
         See abstract method documentation.
         """
