@@ -1,11 +1,8 @@
 /**
-    This class creates a tool form input element wrapper
+    This class creates a form input element wrapper
 */
 define([], function() {
-
-    // input field element wrapper
     return Backbone.View.extend({
-        // initialize input wrapper
         initialize: function(app, options) {
             // link app
             this.app = app;

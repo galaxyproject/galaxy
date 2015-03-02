@@ -1,5 +1,9 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-template'], function(Utils, Ui, Tabs, ToolTemplate) {
+define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-template'],
+        function(Utils, Ui, Tabs, ToolTemplate) {
+
+
+history = {};
 
 var View = Backbone.View.extend({
     // initialize
@@ -14,7 +18,7 @@ var View = Backbone.View.extend({
         // add element
         this.setElement('<div class="ui-select-content"/>');
 
-        // list of select fields
+        // list of select fieldsFormSection
         this.list = {};
 
         // radio button options
@@ -119,7 +123,7 @@ var View = Backbone.View.extend({
         });
 
         // add batch mode information
-        this.$batch = $(ToolTemplate.batchMode());
+        this.$batch = $(this.template_batch());
 
         // number of radio buttons
         var n_buttons = _.size(this.list);
@@ -191,7 +195,7 @@ var View = Backbone.View.extend({
                         value: item.id
                     });
                     // backup to local history
-                    self.app.history[item.id + '_' + item.src] = item;
+                    history[item.id + '_' + item.src] = item;
                 }
                 // update field
                 field.update(select_options);
@@ -266,7 +270,7 @@ var View = Backbone.View.extend({
 
         // append to dataset ids
         for (var i in id_list) {
-            var details = _.findWhere(this.app.history, {
+            var details = _.findWhere(history, {
                 id  : id_list[i],
                 src : this.list[this.current].type
             });
@@ -312,7 +316,7 @@ var View = Backbone.View.extend({
     /** Assists in identifying the batch mode */
     _batch: function() {
         if (this.current == 'collection') {
-            var hdca = _.findWhere(this.app.history, {
+            var hdca = _.findWhere(history, {
                 id  : this._select().value(),
                 src : 'hdca'
             });
@@ -326,6 +330,14 @@ var View = Backbone.View.extend({
             }
         }
         return false;
+    },
+    
+    /** Batch message template */
+    template_batch: function() {
+        return  '<div class="ui-table-form-info">' +
+                    '<i class="fa fa-sitemap" style="font-size: 1.2em; padding: 2px 5px;"/>' +
+                    'This is a batch mode input field. A separate job will be triggered for each dataset.' +
+                '</div>';
     }
 });
 

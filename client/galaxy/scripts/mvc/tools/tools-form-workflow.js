@@ -278,7 +278,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
         _updateModel: function(current_state) {
             // link self
             var self = this;
-            
+
             // create the request dictionary
             current_state = {
                 tool_id         : this.options.id,
@@ -306,7 +306,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     self.node.update_field_data(data);
 
                     // highlight errors
-                    self._errors(data && data.tool_model);
+                    self.form.errors(data && data.tool_model);
 
                     // process completed
                     self.deferred.done(process_id);

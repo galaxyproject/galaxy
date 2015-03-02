@@ -9,8 +9,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
         // initialize
         initialize: function(options) {
             var self = this;
-            this.job_handler = new ToolJobs(this);
-            this.buttons = {
+            options.buttons = {
                 execute : new Ui.Button({
                     icon     : 'fa-check',
                     tooltip  : 'Execute: ' + options.name,
@@ -18,11 +17,10 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     cls      : 'btn btn-primary',
                     floating : 'clear',
                     onclick  : function() {
-                        self.job_handler.submit();
+                        ToolJobs.submit(self.form, options);
                     }
                 })
-            }
-            options.initial_errors = options.job_id;
+            };
             ToolFormBase.prototype.initialize.call(this, options);
         },
 
@@ -58,10 +56,10 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 url     : model_url,
                 success : function(response) {
                     // build new tool form
-                    self.build(response);
+                    self._buildForm(response);
 
                     // notification
-                    self.message.update({
+                    self.form.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
                         persistent  : false
@@ -84,12 +82,12 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
 
                     // show error
                     var error_message = response.error || 'Uncaught error.';
-                    self.modal.show({
+                    self.form.modal.show({
                         title   : 'Tool cannot be executed',
                         body    : error_message,
                         buttons : {
                             'Close' : function() {
-                                self.modal.hide();
+                                self.form.modal.hide();
                             }
                         }
                     });
@@ -100,8 +98,11 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
         /** Request a new model for an already created tool form and updates the form inputs
         */
         _updateModel: function(current_state) {
-            // create the request dictionary
+            // link this
             var self = this;
+            
+            // create the request dictionary
+            var form = this.form;
 
             // create the request dictionary
             var current_state = {
@@ -110,23 +111,8 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 inputs          : current_state
             }
 
-            // activates/disables spinner for dynamic fields to indicate that they are currently being updated
-            function wait(active) {
-                for (var i in self.input_list) {
-                    var field = self.field_list[i];
-                    var input = self.input_list[i];
-                    if (input.is_dynamic && field.wait && field.unwait) {
-                        if (active) {
-                            field.wait();
-                        } else {
-                            field.unwait();
-                        }
-                    }
-                }
-            }
-
             // set wait mode
-            wait(true);
+            form.wait(true);
 
             // register process
             var process_id = this.deferred.register();
@@ -145,15 +131,15 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 data    : current_state,
                 success : function(new_model) {
                     // update form
-                    self.tree.matchModel(new_model, function(input_id, node) {
-                        var input = self.input_list[input_id];
+                    form.data.matchModel(new_model, function(input_id, node) {
+                        var input = form.input_list[input_id];
                         if (input && input.options) {
                             if (!_.isEqual(input.options, node.options)) {
                                 // backup new options
                                 input.options = node.options;
                                 
                                 // get/update field
-                                var field = self.field_list[input_id];
+                                var field = form.field_list[input_id];
                                 if (field.update) {
                                     var new_options = [];
                                     if ((['data', 'data_collection', 'drill_down']).indexOf(input.type) != -1) {
@@ -178,7 +164,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     });
 
                     // unset wait mode
-                    wait(false);
+                    form.wait(false);
 
                     // log success
                     console.debug('tools-form::_refreshForm() - Received new model (see below).');
