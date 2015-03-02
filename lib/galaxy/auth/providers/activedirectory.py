@@ -34,9 +34,9 @@ class ActiveDirectory(AuthProvider):
             print ("Username: %s" % username)
             print ("Options: %s" % options)
 
-        failuremode = False # reject but continue
+        failuremode = False  # reject but continue
         if options.get('continue-on-failure', 'False') == 'False':
-            failuremode = None # reject and do not continue
+            failuremode = None  # reject and do not continue
 
         try:
             import ldap
@@ -45,7 +45,7 @@ class ActiveDirectory(AuthProvider):
                 print ("User: %s, ACTIVEDIRECTORY: False (no ldap)" % (username))
             return (failuremode, '')
 
-        ## do AD search (if required) ##
+        # do AD search (if required)
         vars = {'username': username, 'password': password}
         if 'search-fields' in options:
             try:
@@ -67,7 +67,7 @@ class ActiveDirectory(AuthProvider):
                     print ("AD Search attributes: %s" % attrs)
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
-                        if attrs.has_key(attr):
+                        if attr in attrs:
                             vars[attr] = str(attrs[attr][0])
                         else:
                             vars[attr] = ""

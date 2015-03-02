@@ -36,15 +36,16 @@ log = logging.getLogger(__name__)
 #     ...
 # </auth>
 
+
 def check_registration_allowed(email, password, configfile, debug=False):
     """Checks if the provided email is allowed to register."""
     message = ''
     status = 'done'
     for provider, options in activeAuthProviderGenerator(email, password, configfile, debug):
         allowreg = _getTriState(options, 'allow-register', True)
-        if allowreg is None: # i.e. challenge
+        if allowreg is None:  # i.e. challenge
             authresult, msg = provider.authenticate(email, password, options, debug)
-            if authresult == True:
+            if authresult is True:
                 break
             if authresult is None:
                 message = 'Invalid email address or password'
@@ -57,6 +58,7 @@ def check_registration_allowed(email, password, configfile, debug=False):
             status = 'error'
             break
     return message, status
+
 
 def check_auto_registration(trans, email, password, configfile, debug=False):
     """
@@ -74,20 +76,21 @@ def check_auto_registration(trans, email, password, configfile, debug=False):
                 # make username unique
                 if validate_publicname( trans, autousername ) != '':
                     i = 1
-                    while i <= 10: # stop after 10 tries
+                    while i <= 10:  # stop after 10 tries
                         if validate_publicname( trans, "%s-%i" % (autousername, i) ) == '':
                             autousername = "%s-%i" % (autousername, i)
                             break
                         i += 1
                     else:
-                        break # end for loop if we can't make a unique username
+                        break  # end for loop if we can't make a unique username
                 if debug:
                     log.debug( "Email: %s, auto-register with username: %s" % (email, autousername) )
                 return (_getBool(options, 'auto-register', False), autousername)
             elif authresult is None:
                 log.debug( "Email: %s, stopping due to failed non-continue" % (email) )
-                break # end authentication (skip rest)
+                break  # end authentication (skip rest)
     return (False, '')
+
 
 def check_password(user, password, configfile, debug=False):
     """Checks the email/password using auth providers."""
@@ -98,10 +101,11 @@ def check_password(user, password, configfile, debug=False):
         else:
             authresult = provider.authenticateUser(user, password, options, debug)
             if authresult is True:
-                return True # accept user
+                return True  # accept user
             elif authresult is None:
-                break # end authentication (skip rest)
+                break  # end authentication (skip rest)
     return False
+
 
 def check_change_password(user, current_password, configfile, debug=False):
     """Checks that auth provider allows password changes and current_password
@@ -115,12 +119,13 @@ def check_change_password(user, current_password, configfile, debug=False):
             if _getBool(options, "allow-password-change", False):
                 authresult = provider.authenticateUser(user, current_password, options, debug)
                 if authresult is True:
-                    return (True, '') # accept user
+                    return (True, '')  # accept user
                 elif authresult is None:
-                    break # end authentication (skip rest)
+                    break  # end authentication (skip rest)
             else:
                 return (False, 'Password change not supported')
     return (False, 'Invalid current password')
+
 
 def activeAuthProviderGenerator(username, password, configfile, debug):
     """Yields AuthProvider instances for the provided configfile that match the
@@ -150,9 +155,9 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
             if filterelem is not None:
                 filterstr = str(filterelem.text).format(username=username, password=password)
                 if debug:
-                    log.debug( ("Filter: %s == %s" % (filterstr, eval(filterstr, {"__builtins__":None},{'str':str}))) )
-                if not eval(filterstr, {"__builtins__":None},{'str':str}):
-                    continue # skip to next
+                    log.debug( ("Filter: %s == %s" % (filterstr, eval(filterstr, {"__builtins__": None}, {'str': str}))) )
+                if not eval(filterstr, {"__builtins__": None}, {'str': str}):
+                    continue  # skip to next
 
             # extract options
             optionselem = _getChildElement(authelem, 'options')
@@ -170,17 +175,20 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
         if debug:
             log.debug( ('Auth: Exception:\n%s' % (traceback.format_exc(),)) )
 
+
 def _getBool(d, k, o):
     if k in d:
         return string_as_bool(d[k])
     else:
         return o
 
+
 def _getTriState(d, k, o):
     if k in d:
         return string_as_bool_or_none(d[k])
     else:
         return o
+
 
 def _getChildElement(parent, childname):
     try:

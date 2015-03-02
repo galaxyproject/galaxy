@@ -6,6 +6,7 @@ Created on 15/07/2014
 
 import abc
 
+
 class AuthProvider(object):
     """A base class for all Auth Providers."""
     __metaclass__ = abc.ABCMeta
