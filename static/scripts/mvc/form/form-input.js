@@ -52,7 +52,7 @@ define([], function() {
                 self._refresh();
 
                 // refresh state
-                self.app.trigger('refresh');
+                self.app.trigger('change');
             });
         },
 
