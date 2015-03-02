@@ -1,9 +1,8 @@
 """
 Execute an external process to set_meta() on a provided list of pickled datasets.
 
-This should not be called directly!  Use the set_metadata.sh script in Galaxy's
-top level directly.
-
+This was formerly scripts/set_metadata.py and expects the same arguments as
+that script.
 """
 
 import logging
@@ -16,11 +15,7 @@ import os
 import sys
 
 # ensure supported version
-from check_python import check_python
-try:
-    check_python()
-except:
-    sys.exit(1)
+assert sys.version_info[:2] >= ( 2, 6 ) and sys.version_info[:2] <= ( 2, 7 ), 'Python version must be 2.6 or 2.7, this is: %s' % sys.version
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[ 1: ] )  # remove scripts/ from the path
@@ -50,7 +45,9 @@ def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds ):
     for metadata_name, metadata_value in file_dict.get( 'metadata', {} ).iteritems():
         setattr( dataset_instance.metadata, metadata_name, metadata_value )
 
-def __main__():
+def set_metadata():
+    # set cwd to galaxy root
+    os.chdir(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir)))
     file_path = sys.argv.pop( 1 )
     tool_job_working_directory = tmp_dir = sys.argv.pop( 1 ) #this is also the job_working_directory now
     galaxy.model.Dataset.file_path = file_path
@@ -145,5 +142,3 @@ def __main__():
     clear_mappers()
     # Shut down any additional threads that might have been created via the ObjectStore
     object_store.shutdown()
-
-__main__()
