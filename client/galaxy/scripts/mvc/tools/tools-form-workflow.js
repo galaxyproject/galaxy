@@ -1,5 +1,5 @@
 /**
-    This is the main class of the tool form plugin. It is referenced as 'app' in all lower level modules.
+    This is the workflow tool form.
 */
 define(['utils/utils', 'mvc/tools/tools-form-base'],
     function(Utils, ToolFormBase) {

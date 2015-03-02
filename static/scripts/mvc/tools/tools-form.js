@@ -1,5 +1,5 @@
 /**
-    This is the main class of the tool form plugin. It is referenced as 'app' in all lower level modules.
+    This is the regular tool form.
 */
 define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools/tools-jobs'],
     function(Utils, Ui, ToolFormBase, ToolJobs) {

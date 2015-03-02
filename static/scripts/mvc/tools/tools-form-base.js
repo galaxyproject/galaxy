@@ -1,5 +1,5 @@
 /**
-    This is the base class of the tool form plugin. It is referenced as 'app' in all lower level modules.
+    This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
 define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         'mvc/tools/tools-template', 'mvc/citation/citation-model', 'mvc/citation/citation-view'],

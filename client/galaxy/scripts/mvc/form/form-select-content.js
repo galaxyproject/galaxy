@@ -2,9 +2,10 @@
 define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-template'],
         function(Utils, Ui, Tabs, ToolTemplate) {
 
-
+// track current history elements
 history = {};
 
+// hda/hdca content selector ui element
 var View = Backbone.View.extend({
     // initialize
     initialize : function(app, options) {
@@ -251,12 +252,12 @@ var View = Backbone.View.extend({
         if (id_list === null) {
             return null;
         }
-        
+
         // transform into an array
         if (!(id_list instanceof Array)) {
             id_list = [id_list];
         }
-        
+
         // check if value exists
         if (id_list.length === 0) {
             return null;
@@ -331,7 +332,7 @@ var View = Backbone.View.extend({
         }
         return false;
     },
-    
+
     /** Batch message template */
     template_batch: function() {
         return  '<div class="ui-table-form-info">' +
