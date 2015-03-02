@@ -58,7 +58,7 @@ class Mobile( BaseUIController ):
         # error = password_error = None
         # user = trans.sa_session.query( model.User ).filter_by( email = email ).first()
         # if not user:
-        #     autoreg = galaxy.auth.check_auto_registration(trans, email, password, trans.app.config.auth_config_file, trans.app.config.auth_debug)
+        #     autoreg = galaxy.auth.check_auto_registration(trans, email, password, trans.app.config.auth_config_file)
         #     if autoreg[0]:
         #         kwd = {}
         #         kwd['username'] = autoreg[1]
@@ -82,7 +82,7 @@ class Mobile( BaseUIController ):
         #     error = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
         # elif user.external:
         #     error = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-        # elif not galaxy.auth.check_password(user, password, trans.app.config.auth_config_file, trans.app.config.auth_debug):
+        # elif not galaxy.auth.check_password(user, password, trans.app.config.auth_config_file):
         #     error = "Invalid password"
         # else:
         #     trans.handle_user_login( user )

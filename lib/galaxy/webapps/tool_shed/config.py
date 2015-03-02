@@ -132,7 +132,6 @@ class Configuration( object ):
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
-        self.auth_debug = string_as_bool( kwargs.get( 'auth_debug', False ) )
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = resolve_path( kwargs.get( "citation_cache_data_dir", "database/tool_shed_citations/data" ), self.root )
         self.citation_cache_lock_dir = resolve_path( kwargs.get( "citation_cache_lock_dir", "database/tool_shed_citations/locks" ), self.root )

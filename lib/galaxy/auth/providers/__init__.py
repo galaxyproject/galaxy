@@ -16,7 +16,7 @@ class AuthProvider(object):
         """ Short string providing labelling this plugin """
 
     @abc.abstractmethod
-    def authenticate(self, username, password, options, debug=False):
+    def authenticate(self, username, password, options):
         """
         Check that the username and password are correct.
 
@@ -29,8 +29,6 @@ class AuthProvider(object):
         :type   password: str
         :param  options: options provided in auth_config_file
         :type   options: dict
-        :param  debug: whether to print debugging info (defaults to False)
-        :type   debug: bool
         :returns:   True: accept user, False: reject user and None: reject user
             and don't try any other providers.  str is the username to register
             with if accepting
@@ -38,7 +36,7 @@ class AuthProvider(object):
         """
 
     @abc.abstractmethod
-    def authenticate_user(self, user, password, options, debug=False):
+    def authenticate_user(self, user, password, options):
         """
         Same as authenticate() method, except an User object is provided instead
         of a username.
@@ -52,8 +50,6 @@ class AuthProvider(object):
         :type   password: str
         :param  options: options provided in auth_config_file
         :type   options: dict
-        :param  debug: whether to print debugging info (defaults to False)
-        :type   debug: bool
         :returns:   True: accept user, False: reject user and None: reject user
             and don't try any other providers
         :rtype:     bool

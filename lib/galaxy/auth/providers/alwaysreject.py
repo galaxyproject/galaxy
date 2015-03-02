@@ -16,18 +16,17 @@ class AlwaysReject(AuthProvider):
     """
     plugin_type = 'alwaysreject'
 
-    def authenticate(self, username, password, options, debug=False):
+    def authenticate(self, username, password, options):
         """
         See abstract method documentation.
         """
         return (None, '')
 
-    def authenticate_user(self, user, password, options, debug=False):
+    def authenticate_user(self, user, password, options):
         """
         See abstract method documentation.
         """
-        if debug:
-            log.debug("User: %s, ALWAYSREJECT: None" % (user.email))
+        log.debug("User: %s, ALWAYSREJECT: None" % (user.email))
         return None
 
 

@@ -441,8 +441,6 @@ class Configuration( object ):
 
         # Default chunk size for chunkable datatypes -- 64k
         self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )
-        # auth
-        self.auth_debug = string_as_bool( kwargs.get( 'auth_debug', False ) )
 
         self.citation_cache_type = kwargs.get( "citation_cache_type", "file" )
         self.citation_cache_data_dir = self.resolve_path( kwargs.get( "citation_cache_data_dir", "database/citations/data" ) )

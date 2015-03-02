@@ -514,9 +514,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         success = False
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
-        if trans.app.config.auth_debug:
-            print ("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
-            print ("trans.app.config.auth_debug: %s WARNING: don't use in production" % trans.app.config.auth_debug)
+        log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if not user:
             autoreg = trans.app.auth_manager.check_auto_registration(trans, email, password)
             if autoreg[0]:
