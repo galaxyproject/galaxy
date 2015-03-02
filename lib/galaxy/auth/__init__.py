@@ -9,7 +9,7 @@ from yapsy.PluginManager import PluginManager
 from galaxy.security.validate_user_input import validate_publicname
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 # <auth>
 #     <authenticator>
@@ -61,7 +61,7 @@ def check_auto_registration(trans, email, password, configfile, debug=False):
     for provider, options in activeAuthProviderGenerator(email, password, configfile, debug):
         if provider is None:
             if debug:
-                print "Unable to find module: %s" % options
+                log.debug( "Unable to find module: %s" % options )
         else:
             authresult, autousername = provider.authenticate(email, password, options, debug)
             autousername = str(autousername).lower()
@@ -77,10 +77,10 @@ def check_auto_registration(trans, email, password, configfile, debug=False):
                     else:
                         break # end for loop if we can't make a unique username
                 if debug:
-                    print "Email: %s, auto-register with username: %s" % (email, autousername)
+                    log.debug( "Email: %s, auto-register with username: %s" % (email, autousername) )
                 return (_getBool(options, 'auto-register', False), autousername)
             elif authresult is None:
-                print "Email: %s, stopping due to failed non-continue" % (email)
+                log.debug( "Email: %s, stopping due to failed non-continue" % (email) )
                 break # end authentication (skip rest)
     return (False, '')
 
@@ -89,7 +89,7 @@ def check_password(user, password, configfile, debug=False):
     for provider, options in activeAuthProviderGenerator(user.email, password, configfile, debug):
         if provider is None:
             if debug:
-                print "Unable to find module: %s" % options
+                log.debug( "Unable to find module: %s" % options )
         else:
             authresult = provider.authenticateUser(user, password, options, debug)
             if authresult is True:
@@ -105,7 +105,7 @@ def check_change_password(user, current_password, configfile, debug=False):
     for provider, options in activeAuthProviderGenerator(user.email, current_password, configfile, debug):
         if provider is None:
             if debug:
-                print "Unable to find module: %s" % options
+                log.debug( "Unable to find module: %s" % options )
         else:
             if _getBool(options, "allow-password-change", False):
                 authresult = provider.authenticateUser(user, current_password, options, debug)
@@ -128,9 +128,9 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
         manager.collectPlugins()
 
         if debug:
-            print ("Plugins found:")
+            log.debug( ("Plugins found:") )
             for plugin in manager.getAllPlugins():
-                print ("- %s" % (plugin.path))
+                log.debug( ("- %s" % (plugin.path)) )
 
         # parse XML
         ct = xml.etree.ElementTree.parse(configfile)
@@ -145,7 +145,7 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
             if filterelem is not None:
                 filterstr = str(filterelem.text).format(username=username, password=password)
                 if debug:
-                    print ("Filter: %s == %s" % (filterstr, eval(filterstr, {"__builtins__":None},{'str':str})))
+                    log.debug( ("Filter: %s == %s" % (filterstr, eval(filterstr, {"__builtins__":None},{'str':str}))) )
                 if not eval(filterstr, {"__builtins__":None},{'str':str}):
                     continue # skip to next
 
@@ -163,7 +163,7 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
         return
     except:
         if debug:
-            print ('Auth: Exception:\n%s' % (traceback.format_exc(),))
+            log.debug( ('Auth: Exception:\n%s' % (traceback.format_exc(),)) )
 
 def _getBool(d, k, o):
     if k in d:
