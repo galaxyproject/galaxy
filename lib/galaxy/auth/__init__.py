@@ -8,6 +8,11 @@ from yapsy.PluginManager import PluginManager
 
 from galaxy.security.validate_user_input import validate_publicname
 
+from galaxy.util import (
+    string_as_bool,
+    string_as_bool_or_none,
+)
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -167,21 +172,13 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
 
 def _getBool(d, k, o):
     if k in d:
-        if d[k] in ('True', 'true', 'Yes', 'yes', '1', 1, True):
-            return True
-        else:
-            return False
+        return string_as_bool(d[k])
     else:
         return o
 
 def _getTriState(d, k, o):
     if k in d:
-        if d[k] in ('True', 'true', 'Yes', 'yes', '1', 1, True):
-            return True
-        elif d[k] in ('False', 'false', 'No', 'no', '0', 0, False):
-            return False
-        else:
-            return None
+        return string_as_bool_or_none(d[k])
     else:
         return o
 
