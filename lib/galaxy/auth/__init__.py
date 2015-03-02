@@ -2,6 +2,7 @@
 Contains implementations of the authentication logic.
 """
 
+from collections import namedtuple
 import traceback
 import xml.etree.ElementTree
 
@@ -39,125 +40,33 @@ log = logging.getLogger(__name__)
 # </auth>
 
 
-def check_registration_allowed(email, password, configfile, debug=False):
-    """Checks if the provided email is allowed to register."""
-    message = ''
-    status = 'done'
-    for provider, options in activeAuthProviderGenerator(email, password, configfile, debug):
-        allowreg = _getTriState(options, 'allow-register', True)
-        if allowreg is None:  # i.e. challenge
-            authresult, msg = provider.authenticate(email, password, options, debug)
-            if authresult is True:
-                break
-            if authresult is None:
-                message = 'Invalid email address or password'
-                status = 'error'
-                break
-        elif allowreg is True:
-            break
-        elif allowreg is False:
-            message = 'Account registration not required for your account.  Please simply login.'
-            status = 'error'
-            break
-    return message, status
+class AuthManager(object):
 
-
-def check_auto_registration(trans, email, password, configfile, debug=False):
-    """
-    Checks the email/password using auth providers in order. If a match is
-    found, returns the 'auto-register' option for that provider.
-    """
-    for provider, options in activeAuthProviderGenerator(email, password, configfile, debug):
-        if provider is None:
-            if debug:
-                log.debug( "Unable to find module: %s" % options )
-        else:
-            authresult, autousername = provider.authenticate(email, password, options, debug)
-            autousername = str(autousername).lower()
-            if authresult is True:
-                # make username unique
-                if validate_publicname( trans, autousername ) != '':
-                    i = 1
-                    while i <= 10:  # stop after 10 tries
-                        if validate_publicname( trans, "%s-%i" % (autousername, i) ) == '':
-                            autousername = "%s-%i" % (autousername, i)
-                            break
-                        i += 1
-                    else:
-                        break  # end for loop if we can't make a unique username
-                if debug:
-                    log.debug( "Email: %s, auto-register with username: %s" % (email, autousername) )
-                return (_getBool(options, 'auto-register', False), autousername)
-            elif authresult is None:
-                log.debug( "Email: %s, stopping due to failed non-continue" % (email) )
-                break  # end authentication (skip rest)
-    return (False, '')
-
-
-def check_password(user, password, configfile, debug=False):
-    """Checks the email/password using auth providers."""
-    for provider, options in activeAuthProviderGenerator(user.email, password, configfile, debug):
-        if provider is None:
-            if debug:
-                log.debug( "Unable to find module: %s" % options )
-        else:
-            authresult = provider.authenticateUser(user, password, options, debug)
-            if authresult is True:
-                return True  # accept user
-            elif authresult is None:
-                break  # end authentication (skip rest)
-    return False
-
-
-def check_change_password(user, current_password, configfile, debug=False):
-    """Checks that auth provider allows password changes and current_password
-    matches.
-    """
-    for provider, options in activeAuthProviderGenerator(user.email, current_password, configfile, debug):
-        if provider is None:
-            if debug:
-                log.debug( "Unable to find module: %s" % options )
-        else:
-            if _getBool(options, "allow-password-change", False):
-                authresult = provider.authenticateUser(user, current_password, options, debug)
-                if authresult is True:
-                    return (True, '')  # accept user
-                elif authresult is None:
-                    break  # end authentication (skip rest)
-            else:
-                return (False, 'Password change not supported')
-    return (False, 'Invalid current password')
-
-
-def activeAuthProviderGenerator(username, password, configfile, debug):
-    """Yields AuthProvider instances for the provided configfile that match the
-    filters.
-    """
-    try:
+    def __init__(self, app):
+        self.__app = app
         import galaxy.auth.providers
-        plugins_dict = plugin_config.plugins_dict( galaxy.auth.providers, 'plugin_type' )
+        self.__plugins_dict = plugin_config.plugins_dict( galaxy.auth.providers, 'plugin_type' )
+        auth_config_file = app.config.auth_config_file
+        self.__init_authenticators(auth_config_file)
+        self.debug = getattr(app.config, 'auth_debug', False)
 
-        if debug:
-            log.debug( ("Plugins found:") )
-            for plugin in plugins_dict:
-                log.debug( ("- %s" % (plugin)) )
-
+    def __init_authenticators(self, auth_config_file):
         # parse XML
-        ct = xml.etree.ElementTree.parse(configfile)
+        ct = xml.etree.ElementTree.parse(auth_config_file)
         confroot = ct.getroot()
 
+        authenticators = []
         # process authenticators
         for authelem in confroot.getchildren():
             typeelem = authelem.iter('type').next()
+            plugin = self.__plugins_dict.get(typeelem.text)
 
             # check filterelem
-            filterelem = _getChildElement(authelem, 'filter')
-            if filterelem is not None:
-                filterstr = str(filterelem.text).format(username=username, password=password)
-                if debug:
-                    log.debug( ("Filter: %s == %s" % (filterstr, eval(filterstr, {"__builtins__": None}, {'str': str}))) )
-                if not eval(filterstr, {"__builtins__": None}, {'str': str}):
-                    continue  # skip to next
+            filter_elem = _getChildElement(authelem, 'filter')
+            if filter_elem is not None:
+                filter_template = str(filter_elem.text)
+            else:
+                filter_template = None
 
             # extract options
             optionselem = _getChildElement(authelem, 'options')
@@ -165,15 +74,118 @@ def activeAuthProviderGenerator(username, password, configfile, debug):
             if optionselem is not None:
                 for opt in optionselem:
                     options[opt.tag] = opt.text
+            authenticator = Authenticator(
+                plugin=plugin,
+                filter_template=filter_template,
+                options=options,
+            )
+            authenticators.append(authenticator)
+        self.authenticators = authenticators
 
-            # get the instance
-            plugin = plugins_dict.get(typeelem.text)
-            yield (plugin.plugin_object, options)  # excepts if type is spelled incorrectly
-    except GeneratorExit:
-        return
-    except:
-        if debug:
-            log.debug( ('Auth: Exception:\n%s' % (traceback.format_exc(),)) )
+    def check_registration_allowed(self, email, password):
+        """Checks if the provided email is allowed to register."""
+        message = ''
+        status = 'done'
+        for provider, options in self.activeAuthProviderGenerator(email, password):
+            allowreg = _getTriState(options, 'allow-register', True)
+            if allowreg is None:  # i.e. challenge
+                authresult, msg = provider.authenticate(email, password, options)
+                if authresult is True:
+                    break
+                if authresult is None:
+                    message = 'Invalid email address or password'
+                    status = 'error'
+                    break
+            elif allowreg is True:
+                break
+            elif allowreg is False:
+                message = 'Account registration not required for your account.  Please simply login.'
+                status = 'error'
+                break
+        return message, status
+
+    def check_auto_registration(self, trans, email, password, debug=False):
+        """
+        Checks the email/password using auth providers in order. If a match is
+        found, returns the 'auto-register' option for that provider.
+        """
+        for provider, options in self.activeAuthProviderGenerator(email, password, debug):
+            if provider is None:
+                if debug:
+                    log.debug( "Unable to find module: %s" % options )
+            else:
+                authresult, autousername = provider.authenticate(email, password, options, debug)
+                autousername = str(autousername).lower()
+                if authresult is True:
+                    # make username unique
+                    if validate_publicname( trans, autousername ) != '':
+                        i = 1
+                        while i <= 10:  # stop after 10 tries
+                            if validate_publicname( trans, "%s-%i" % (autousername, i) ) == '':
+                                autousername = "%s-%i" % (autousername, i)
+                                break
+                            i += 1
+                        else:
+                            break  # end for loop if we can't make a unique username
+                    if debug:
+                        log.debug( "Email: %s, auto-register with username: %s" % (email, autousername) )
+                    return (_getBool(options, 'auto-register', False), autousername)
+                elif authresult is None:
+                    log.debug( "Email: %s, stopping due to failed non-continue" % (email) )
+                    break  # end authentication (skip rest)
+        return (False, '')
+
+    def check_password(self, user, password):
+        """Checks the email/password using auth providers."""
+        for provider, options in self.activeAuthProviderGenerator(user.email, password):
+            if provider is None:
+                if self.debug:
+                    log.debug( "Unable to find module: %s" % options )
+            else:
+                authresult = provider.authenticateUser(user, password, options)
+                if authresult is True:
+                    return True  # accept user
+                elif authresult is None:
+                    break  # end authentication (skip rest)
+        return False
+
+    def check_change_password(self, user, current_password):
+        """Checks that auth provider allows password changes and current_password
+        matches.
+        """
+        for provider, options in self.activeAuthProviderGenerator(user.email, current_password):
+            if provider is None:
+                if self.debug:
+                    log.debug( "Unable to find module: %s" % options )
+            else:
+                if _getBool(options, "allow-password-change", False):
+                    authresult = provider.authenticateUser(user, current_password, options)
+                    if authresult is True:
+                        return (True, '')  # accept user
+                    elif authresult is None:
+                        break  # end authentication (skip rest)
+                else:
+                    return (False, 'Password change not supported')
+        return (False, 'Invalid current password')
+
+    def activeAuthProviderGenerator(self, username, password):
+        """Yields AuthProvider instances for the provided configfile that match the
+        filters.
+        """
+        try:
+            for authenticator in self.authenticators:
+                filter_template = authenticator.filter_template
+                if filter_template:
+                    filter_str = filter_template.format(username=username, password=password)
+                    if not eval(filter_str, {"__builtins__": None}, {'str': str}):
+                        continue  # skip to next
+                yield authenticator.plugin, authenticator.options
+        except Exception:
+            if self.debug:
+                log.debug( ('Auth: Exception:\n%s' % (traceback.format_exc(),)) )
+            raise
+
+Authenticator = namedtuple('Authenticator', ['plugin', 'filter_template', 'options'])
 
 
 def _getBool(d, k, o):

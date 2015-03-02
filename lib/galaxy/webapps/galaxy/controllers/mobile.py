@@ -1,7 +1,6 @@
 from galaxy import web
 from galaxy.web.base.controller import *
 
-import galaxy.auth
 
 class Mobile( BaseUIController ):
 

@@ -18,7 +18,6 @@ from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_ap
 from galaxy.managers import api_keys
 from galaxy import exceptions
 from galaxy.web.base.controller import BaseAPIController
-import galaxy.auth
 
 import logging
 log = logging.getLogger( __name__ )
@@ -53,7 +52,7 @@ class AuthenticationController( BaseAPIController ):
             raise exceptions.InconsistentDatabase( 'An error occured, please contact your administrator.' )
         else:
             user = user[0]
-            is_valid_user = galaxy.auth.check_password(user, password, trans.app.config.auth_config_file, trans.app.config.auth_debug)
+            is_valid_user = self.auth_manager.check_password(user, password)
         if is_valid_user:
             key = self.api_keys_manager.get_or_create_api_key( user )
             return dict( api_key=key )
