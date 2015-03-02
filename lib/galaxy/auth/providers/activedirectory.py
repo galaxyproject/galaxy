@@ -4,7 +4,6 @@ Created on 15/07/2014
 @author: Andrew Robinson
 """
 
-import traceback
 from ..providers import AuthProvider
 
 import logging
@@ -70,7 +69,7 @@ class ActiveDirectory(AuthProvider):
                         else:
                             vars[attr] = ""
             except Exception:
-                log.debug('User: %s, ACTIVEDIRECTORY: Search Exception:\n%s' % (username, traceback.format_exc(),))
+                log.exception('ACTIVEDIRECTORY Search Exception for User: %s' % username)
                 return (failure_mode, '')
         # end search
 
@@ -82,7 +81,7 @@ class ActiveDirectory(AuthProvider):
             l.protocol_version = 3
             l.simple_bind_s(_get_subs(options, 'bind-user', vars), _get_subs(options, 'bind-password', vars))
         except Exception:
-            log.debug('User: %s, ACTIVEDIRECTORY: Authenticate Exception:\n%s' % (username, traceback.format_exc()))
+            log.exception('ACTIVEDIRECTORY Authenticate Exception for User %s' % username)
             return (failure_mode, '')
 
         log.debug("User: %s, ACTIVEDIRECTORY: True" % (username))

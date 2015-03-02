@@ -3,7 +3,6 @@ Contains implementations of the authentication logic.
 """
 
 from collections import namedtuple
-import traceback
 import xml.etree.ElementTree
 
 from galaxy.security.validate_user_input import validate_publicname
@@ -177,7 +176,7 @@ class AuthManager(object):
                         continue  # skip to next
                 yield authenticator.plugin, authenticator.options
         except Exception:
-            log.debug( ('Auth: Exception:\n%s' % (traceback.format_exc(),)) )
+            log.exception( "Active Authenticators Failure" )
             raise
 
 Authenticator = namedtuple('Authenticator', ['plugin', 'filter_template', 'options'])
