@@ -385,13 +385,15 @@ var ToolSearch = Backbone.Model.extend({
         $("#search-clear-btn").hide();
         $("#search-spinner").show();
         var self = this;
+        // log the search to analytics
+        ga( 'send', 'pageview', galaxy_config.root + '?q=' + q );
         this.timer = setTimeout(function () {
             $.get(self.attributes.search_url, { query: q }, function (data) {
                 self.set("results", data);
                 $("#search-spinner").hide();
                 $("#search-clear-btn").show();
             }, "json" );
-        }, 200 );
+        }, 400 );
     },
 
     clear_search: function() {
