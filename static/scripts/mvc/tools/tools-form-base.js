@@ -69,7 +69,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         _operations: function() {
             // link this
             var self = this;
-            var options = self.options;
+            var options = this.options;
 
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
@@ -142,7 +142,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             });
 
             // add admin operations
-            if (self.is_admin) {
+            if (this.is_admin) {
                 // create download button
                 menu_button.addMenu({
                     icon    : 'fa-download',
