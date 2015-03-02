@@ -6,6 +6,9 @@ Created on 16/07/2014
 
 from ..providers import AuthProvider
 
+import logging
+log = logging.getLogger(__name__)
+
 
 class AlwaysReject(AuthProvider):
     """A simple authenticator that just accepts users (does not care about their
@@ -24,7 +27,7 @@ class AlwaysReject(AuthProvider):
         See abstract method documentation.
         """
         if debug:
-            print ("User: %s, ALWAYSREJECT: None" % (user.email))
+            log.debug("User: %s, ALWAYSREJECT: None" % (user.email))
         return None
 
 

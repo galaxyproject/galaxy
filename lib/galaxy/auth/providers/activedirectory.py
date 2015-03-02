@@ -7,6 +7,9 @@ Created on 15/07/2014
 import traceback
 from ..providers import AuthProvider
 
+import logging
+log = logging.getLogger(__name__)
+
 
 def _getsubs(d, k, vars, default=''):
     if k in d:
@@ -29,8 +32,8 @@ class ActiveDirectory(AuthProvider):
         See abstract method documentation.
         """
         if debug:
-            print ("Username: %s" % username)
-            print ("Options: %s" % options)
+            log.debug("Username: %s" % username)
+            log.debug("Options: %s" % options)
 
         failuremode = False  # reject but continue
         if options.get('continue-on-failure', 'False') == 'False':
@@ -40,7 +43,7 @@ class ActiveDirectory(AuthProvider):
             import ldap
         except:
             if debug:
-                print ("User: %s, ACTIVEDIRECTORY: False (no ldap)" % (username))
+                log.debug("User: %s, ACTIVEDIRECTORY: False (no ldap)" % (username))
             return (failuremode, '')
 
         # do AD search (if required)
@@ -62,7 +65,7 @@ class ActiveDirectory(AuthProvider):
                 _, suser = l.result(result, 60)
                 _, attrs = suser[0]
                 if debug:
-                    print ("AD Search attributes: %s" % attrs)
+                    log.debug(("AD Search attributes: %s" % attrs))
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
                         if attr in attrs:
@@ -71,7 +74,7 @@ class ActiveDirectory(AuthProvider):
                             vars[attr] = ""
             except Exception:
                 if debug:
-                    print('User: %s, ACTIVEDIRECTORY: Search Exception:\n%s' % (username, traceback.format_exc(),))
+                    log.debug('User: %s, ACTIVEDIRECTORY: Search Exception:\n%s' % (username, traceback.format_exc(),))
                 return (failuremode, '')
         # end search
 
@@ -84,11 +87,11 @@ class ActiveDirectory(AuthProvider):
             l.simple_bind_s(_getsubs(options, 'bind-user', vars), _getsubs(options, 'bind-password', vars))
         except Exception:
             if debug:
-                print('User: %s, ACTIVEDIRECTORY: Authenticate Exception:\n%s' % (username, traceback.format_exc()))
+                log.debug('User: %s, ACTIVEDIRECTORY: Authenticate Exception:\n%s' % (username, traceback.format_exc()))
             return (failuremode, '')
 
         if debug:
-            print "User: %s, ACTIVEDIRECTORY: True" % (username)
+            log.debug("User: %s, ACTIVEDIRECTORY: True" % (username))
         return (True, _getsubs(options, 'auto-register-username', vars))
 
     def authenticateUser(self, user, password, options, debug=False):

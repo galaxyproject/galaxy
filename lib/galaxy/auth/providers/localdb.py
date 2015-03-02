@@ -25,7 +25,7 @@ class LocalDB(AuthProvider):
         """
         user_ok = user.check_password(password)
         if debug:
-            print ("User: %s, LOCALDB: %s" % (user.email, user_ok))
+            log.debug("User: %s, LOCALDB: %s" % (user.email, user_ok))
         return user_ok
 
 
