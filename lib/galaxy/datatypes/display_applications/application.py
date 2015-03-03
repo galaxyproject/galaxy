@@ -244,9 +244,12 @@ class DisplayApplication( object ):
             link = DisplayApplicationLink.from_elem( link_elem, self )
             if link:
                 self.links[ link.id ] = link
-        for dynamic_links in elem.findall( 'dynamic_links' ):
-            for link in DynamicDisplayApplicationBuilder( dynamic_links, self, self.app.datatypes_registry.build_sites ):
-                self.links[ link.id ] = link
+        try:
+            for dynamic_links in elem.findall( 'dynamic_links' ):
+                for link in DynamicDisplayApplicationBuilder( dynamic_links, self, self.app.datatypes_registry.build_sites ):
+                    self.links[ link.id ] = link
+        except Exception, e:
+            log.error( "Error loading a set of Dynamic Display Application links: %s", e )
     def get_link( self, link_name, data, dataset_hash, user_hash, trans, app_kwds ):
         #returns a link object with data knowledge to generate links
         self._check_and_reload()
