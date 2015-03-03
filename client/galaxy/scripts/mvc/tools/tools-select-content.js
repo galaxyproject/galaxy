@@ -217,7 +217,7 @@ var View = Backbone.View.extend({
                     }
                     
                     // identify suitable select field
-                    if (new_value && new_value.values.length > 0 && new_value.values[0].src == 'hcda') {
+                    if (new_value && new_value.values.length > 0 && new_value.values[0].src == 'hdca') {
                         this.current = 'collection';
                         this.select_collection.value(list[0]);
                     } else {

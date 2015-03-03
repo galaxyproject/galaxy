@@ -2005,6 +2005,8 @@ class DataToolParameter( BaseDataToolParameter ):
                         rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
                     else:
                         raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
+                elif isinstance( single_value, trans.app.model.HistoryDatasetAssociation ):
+                    rval.append( single_value )
                 else:
                     rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( single_value ) )
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
@@ -2021,6 +2023,8 @@ class DataToolParameter( BaseDataToolParameter ):
             encoded_id = str( value )[ len( "__collection_reduce__|" ): ]
             decoded_id = trans.app.security.decode_id( encoded_id )
             rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+        elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
+            rval = value
         else:
             rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
         if isinstance( rval, list ):
