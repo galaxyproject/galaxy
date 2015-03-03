@@ -614,10 +614,10 @@ class AdminToolshed( AdminGalaxy ):
                 self.initiate_tool_dependency_installation( trans, tool_dependencies, message=message, status=status )
         # Handle tool dependencies check box.
         if trans.app.config.tool_dependency_dir is None:
-            if includes_tool_dependencies:
-                message = "Tool dependencies defined in this repository can be automatically installed if you set "
-                message += "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
-                message += "(galaxy.ini) and restart your Galaxy server."
+            if tool_dependencies_dict:
+                message = ("Tool dependencies defined in this repository can be automatically installed if you set "
+                           "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
+                           "(galaxy.ini) and restart your Galaxy server.")
                 status = "warning"
             install_tool_dependencies_check_box_checked = False
         else:
