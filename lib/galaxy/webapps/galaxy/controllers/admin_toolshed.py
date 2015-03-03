@@ -589,7 +589,6 @@ class AdminToolshed( AdminGalaxy ):
         encoded_updated_metadata = kwd.get( 'encoded_updated_metadata', None )
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
-        install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
         if 'install_tool_dependencies_with_update_button' in kwd:
             # Now that the user has chosen whether to install tool dependencies or not, we can
             # update the repository record with the changes in the updated revision.
@@ -601,7 +600,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                        updated_metadata_dict=updated_metadata,
                                                                                        updated_changeset_revision=updating_to_changeset_revision,
                                                                                        updated_ctx_rev=updating_to_ctx_rev )
-            if includes_tool_dependencies:
+            if tool_dependencies_dict:
                 tool_dependencies = tool_dependency_util.create_tool_dependency_objects( trans.app,
                                                                                          repository,
                                                                                          relative_install_dir,
