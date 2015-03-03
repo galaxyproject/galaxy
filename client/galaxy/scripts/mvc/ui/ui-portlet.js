@@ -8,6 +8,7 @@ var View = Backbone.View.extend({
     
     // defaults options
     optionsDefault: {
+        id              : Utils.uuid(),
         title           : '',
         icon            : '',
         buttons         : null,
