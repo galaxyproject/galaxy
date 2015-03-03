@@ -82,6 +82,8 @@ def inherit(context):
         		if (!$(".errormessage").size()) {
                     $('<div/>').addClass('errormessage').insertBefore('#registrationForm');
                 }
+                console.debug( $( '#registrationForm' ) );
+                console.debug( '.errormessage:', $( '.errormessage' ) );
     			$(".errormessage").html(message);
     		}
 
@@ -117,7 +119,7 @@ def inherit(context):
     	});
     </script>
 
-    <div id="registration-form" class="toolForm">
+    <div id="registrationForm" class="toolForm">
         <form name="registration" id="registration" action="${form_action}" method="post" >
             <div class="toolFormTitle">Create account</div>
             <div class="form-row">
