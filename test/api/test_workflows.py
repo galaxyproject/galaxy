@@ -168,6 +168,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
         return RunJobsSummary(
             history_id=history_id,
             workflow_id=workflow_id,
+            invocation_id=invocation_id,
             inputs=inputs,
             jobs=jobs,
         )
@@ -733,7 +734,7 @@ test_data:
         time.sleep( 2 )
         history_id = run_summary.history_id
         workflow_id = run_summary.workflow_id
-        invocation_id = run_summary.workflow_id
+        invocation_id = run_summary.invocation_id
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         invocation = self._invocation_details( workflow_id, invocation_id )
         assert invocation[ 'state' ] != 'scheduled'
@@ -1174,4 +1175,4 @@ test_data:
                 'input_steps',
             )
 
-RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'inputs', 'jobs'])
+RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs'])
