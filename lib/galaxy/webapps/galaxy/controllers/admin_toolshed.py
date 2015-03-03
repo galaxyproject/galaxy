@@ -1763,9 +1763,9 @@ class AdminToolshed( AdminGalaxy ):
             message = "Tool versions have been set for all included tools."
             status = 'done'
         else:
-            message = "Version information for the tools included in the <b>%s</b> repository is missing.  " % escape( repository.name )
-            message += "Reset all of this reppository's metadata in the tool shed, then set the installed tool versions "
-            message ++ "from the installed repository's <b>Repository Actions</b> menu.  "
+            message = ("Version information for the tools included in the <b>%s</b> repository is missing.  "
+                       "Reset all of this reppository's metadata in the tool shed, then set the installed tool versions "
+                       "from the installed repository's <b>Repository Actions</b> menu.  " % escape( repository.name ))
             status = 'error'
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
