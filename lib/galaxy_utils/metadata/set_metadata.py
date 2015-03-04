@@ -1,8 +1,14 @@
 """
 Execute an external process to set_meta() on a provided list of pickled datasets.
 
-This was formerly scripts/set_metadata.py and expects the same arguments as
-that script.
+This was formerly scripts/set_metadata.py and expects these arguments:
+
+    %prog datatypes_conf.xml job_metadata_file metadata_in,metadata_kwds,metadata_out,metadata_results_code,output_filename_override,metadata_override...
+
+Galaxy should be importable on sys.path and output_filename_override should be
+set to the path of the dataset on which metadata is being set
+(output_filename_override could previously be left empty and the path would be
+constructed automatically).
 """
 
 import logging
@@ -46,32 +52,14 @@ def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds ):
         setattr( dataset_instance.metadata, metadata_name, metadata_value )
 
 def set_metadata():
-    # set cwd to galaxy root
-    os.chdir(os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir)))
-    file_path = sys.argv.pop( 1 )
-    tool_job_working_directory = tmp_dir = sys.argv.pop( 1 ) #this is also the job_working_directory now
-    galaxy.model.Dataset.file_path = file_path
-    galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tmp_dir
-
-    config_root = sys.argv.pop( 1 )
-    config_file_name = sys.argv.pop( 1 )
-    if not os.path.isabs( config_file_name ):
-        config_file_name = os.path.join( config_root, config_file_name )
-
-    # Set up reference to object store
-    # First, read in the main config file for Galaxy; this is required because
-    # the object store configuration is stored there
-    conf_dict = load_app_properties( ini_file=config_file_name )
-    # config object is required by ObjectStore class so create it now
-    universe_config = config.Configuration(**conf_dict)
-    universe_config.ensure_tempdir()
-    object_store = build_object_store_from_config(universe_config)
-    galaxy.model.Dataset.object_store = object_store
+    # locate galaxy_root for loading datatypes
+    galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
+    tool_job_working_directory = os.path.abspath(os.getcwd())
 
     # Set up datatypes registry
     datatypes_config = sys.argv.pop( 1 )
     datatypes_registry = galaxy.datatypes.registry.Registry()
-    datatypes_registry.load_datatypes( root_dir=config_root, config=datatypes_config )
+    datatypes_registry.load_datatypes( root_dir=galaxy_root, config=datatypes_config )
     galaxy.model.set_datatypes_registry( datatypes_registry )
 
     job_metadata = sys.argv.pop( 1 )
@@ -105,8 +93,7 @@ def set_metadata():
         set_meta_kwds = stringify_dictionary_keys( json.load( open( filename_kwds ) ) )  # load kwds; need to ensure our keywords are not unicode
         try:
             dataset = cPickle.load( open( filename_in ) )  # load DatasetInstance
-            if dataset_filename_override:
-                dataset.dataset.external_filename = dataset_filename_override
+            dataset.dataset.external_filename = dataset_filename_override
             files_path = os.path.abspath(os.path.join( tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id) ))
             dataset.dataset.external_extra_files_path = files_path
             if dataset.dataset.id in existing_job_metadata_dict:
@@ -123,6 +110,7 @@ def set_metadata():
             dataset.metadata.to_JSON_dict( filename_out )  # write out results of set_meta
             json.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) )  # setting metadata has succeeded
         except Exception, e:
+            raise
             json.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) )  # setting metadata has failed somehow
 
     for i, ( filename, file_dict ) in enumerate( new_job_metadata_dict.iteritems(), start=1 ):
@@ -140,5 +128,3 @@ def set_metadata():
                 job_metadata_fh.write( "%s\n" % ( json.dumps( value ) ) )
 
     clear_mappers()
-    # Shut down any additional threads that might have been created via the ObjectStore
-    object_store.shutdown()
