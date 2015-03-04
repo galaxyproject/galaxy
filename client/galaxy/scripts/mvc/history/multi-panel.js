@@ -1043,7 +1043,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     mainTemplate : _.template([
         '<div class="header flex-column-container">',
             '<div class="control-column control-column-left flex-column">',
-                '<button class="create-new btn btn-default" tabindex="4">', _l( 'Create new' ), '</button> ',
+                '<button class="done btn btn-default" tabindex="1">', _l( 'Done' ), '</button>',
                 '<div id="search-histories" class="search-control"></div>',
                 '<div id="search-datasets" class="search-control"></div>',
                 '<a class="open-more-options btn btn-default" tabindex="3">',
@@ -1055,7 +1055,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 '<div class="header-info">', '</div>',
             '</div>',
             '<div class="control-column control-column-right flex-column">',
-                '<button class="done btn btn-default" tabindex="1">', _l( 'Done' ), '</button>',
+                '<button class="create-new btn btn-default" tabindex="4">', _l( 'Create new' ), '</button> ',
             '</div>',
         '</div>',
         // middle - where the columns go
