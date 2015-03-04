@@ -52,7 +52,7 @@ class AuthenticationController( BaseAPIController ):
             raise exceptions.InconsistentDatabase( 'An error occured, please contact your administrator.' )
         else:
             user = user[0]
-            is_valid_user = self.auth_manager.check_password(user, password)
+            is_valid_user = self.app.auth_manager.check_password(user, password)
         if is_valid_user:
             key = self.api_keys_manager.get_or_create_api_key( user )
             return dict( api_key=key )
