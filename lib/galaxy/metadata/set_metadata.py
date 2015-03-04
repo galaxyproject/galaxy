@@ -33,10 +33,6 @@ import galaxy.model.mapping  # need to load this before we unpickle, in order to
 galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 from galaxy.util import stringify_dictionary_keys
 from sqlalchemy.orm import clear_mappers
-from galaxy.objectstore import build_object_store_from_config
-from galaxy import config
-import ConfigParser
-from galaxy.util.properties import load_app_properties
 
 
 def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds ):

@@ -772,10 +772,10 @@ class JobExternalOutputMetadataWrapper( object ):
             #return command required to build
             fd, fp = tempfile.mkstemp( suffix='.py', dir = tmp_dir, prefix = "set_metadata_" )
             metadata_script_file = abspath( fp )
-            os.fdopen( fd, 'w' ).write( 'from galaxy_utils.metadata.set_metadata import set_metadata; set_metadata()' )
+            os.fdopen( fd, 'w' ).write( 'from galaxy.metadata.set_metadata import set_metadata; set_metadata()' )
             return "python %s %s" % ( metadata_script_file, args )
         else:
-            # return args to galaxy_utils.metadata.set_metadata required to build
+            # return args to galaxy.metadata.set_metadata required to build
             return args
 
     def external_metadata_set_successfully( self, dataset, sa_session ):
