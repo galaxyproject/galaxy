@@ -1,25 +1,24 @@
+import bz2
 import gzip
 import json
 import logging
 import os
 import shutil
 import tempfile
-import bz2
 
 from galaxy.datatypes import checkers
 
+import tool_shed.repository_types.util as rt_util
 from tool_shed.tools import data_table_manager
-
 from tool_shed.util import basic_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
-
-import tool_shed.repository_types.util as rt_util
 
 log = logging.getLogger( __name__ )
 
 UNDESIRABLE_DIRS = [ '.hg', '.svn', '.git', '.cvs' ]
 UNDESIRABLE_FILES = [ '.hg_archival.txt', 'hgrc', '.DS_Store', 'tool_test_output.html', 'tool_test_output.json' ]
+
 
 def check_archive( repository, archive ):
     for member in archive.getmembers():
@@ -47,6 +46,7 @@ def check_archive( repository, archive ):
             return False, message
     return True, ''
 
+
 def check_file_contents_for_email_alerts( app ):
     """
     See if any admin users have chosen to receive email alerts when a repository is updated.
@@ -62,6 +62,7 @@ def check_file_contents_for_email_alerts( app ):
                 return True
     return False
 
+
 def check_file_content_for_html_and_images( file_path ):
     message = ''
     if checkers.check_html( file_path ):
@@ -69,6 +70,7 @@ def check_file_content_for_html_and_images( file_path ):
     elif checkers.check_image( file_path ):
         message = 'The file "%s" contains image content.\n' % str( file_path )
     return message
+
 
 def get_change_lines_in_file_for_tag( tag, change_dict ):
     """
@@ -87,6 +89,7 @@ def get_change_lines_in_file_for_tag( tag, change_dict ):
                 line = line[ index: ]
                 cleaned_lines.append( line )
     return cleaned_lines
+
 
 def get_upload_point( repository, **kwd ):
     upload_point = kwd.get( 'upload_point', None )
@@ -109,6 +112,7 @@ def get_upload_point( repository, **kwd ):
             upload_point = None
     return upload_point
 
+
 def handle_bz2( repository, uploaded_file_name ):
     fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_bunzip2_' % repository.id,
                                          dir=os.path.dirname( uploaded_file_name ),
@@ -120,7 +124,7 @@ def handle_bz2( repository, uploaded_file_name ):
         except IOError:
             os.close( fd )
             os.remove( uncompressed )
-            log.exception( 'Problem uncompressing bz2 data "%s": %s' % ( uploaded_file_name, str( e ) ) )
+            log.exception( 'Problem uncompressing bz2 data "%s"' % uploaded_file_name )
             return
         if not chunk:
             break
@@ -128,6 +132,7 @@ def handle_bz2( repository, uploaded_file_name ):
     os.close( fd )
     bzipped_file.close()
     shutil.move( uncompressed, uploaded_file_name )
+
 
 def handle_directory_changes( app, host, username, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar,
                               new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed ):
@@ -207,6 +212,7 @@ def handle_directory_changes( app, host, username, repository, full_path, filena
                              admin_only=admin_only )
     return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
 
+
 def handle_gzip( repository, uploaded_file_name ):
     fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id,
                                          dir=os.path.dirname( uploaded_file_name ),
@@ -226,6 +232,7 @@ def handle_gzip( repository, uploaded_file_name ):
     os.close( fd )
     gzipped_file.close()
     shutil.move( uncompressed, uploaded_file_name )
+
 
 def uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip=False, isbz2=False ):
     if isgzip:
