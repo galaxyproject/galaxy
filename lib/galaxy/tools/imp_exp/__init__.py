@@ -17,12 +17,15 @@ EXPORT_HISTORY_TEXT = """
         <tool id="__EXPORT_HISTORY__" name="Export History" version="0.1" tool_type="export_history">
           <type class="ExportHistoryTool" module="galaxy.tools"/>
           <action module="galaxy.tools.actions.history_imp_exp" class="ExportHistoryToolAction"/>
-          <command>$__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__ $output_file</command>
+          <command>python $export_history $__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__ $output_file</command>
           <inputs>
             <param name="__HISTORY_TO_EXPORT__" type="hidden"/>
             <param name="compress" type="boolean"/>
             <param name="__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__" type="hidden"/>
           </inputs>
+          <configfiles>
+            <configfile name="export_history">from galaxy.tools.imp_exp.export_history import main; main()</configfile>
+          </configfiles>
           <outputs>
             <data format="gzip" name="output_file"/>
           </outputs>
@@ -530,11 +533,9 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
         options = ""
         if jeha.compressed:
             options = "-G"
-        return "python %s %s %s %s %s" % ( os.path.join( os.path.abspath( os.getcwd() ),
-                                           "lib/galaxy/tools/imp_exp/export_history.py" ),
-                                           options, history_attrs_filename,
-                                           datasets_attrs_filename,
-                                           jobs_attrs_filename )
+        return "%s %s %s %s" % ( options, history_attrs_filename,
+                                 datasets_attrs_filename,
+                                 jobs_attrs_filename )
 
     def cleanup_after_job( self, db_session ):
         """ Remove temporary directory and attribute files generated during setup for this job. """
