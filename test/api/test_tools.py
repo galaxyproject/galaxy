@@ -58,7 +58,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self._assert_has_keys( case2, "value", "inputs" )
         case2_inputs = case2[ "inputs" ]
         assert len( case2_inputs ) == 1
-        self._assert_has_keys( case2_inputs[ 0 ], 'name', 'type', 'label', 'help' )
+        self._assert_has_keys( case2_inputs[ 0 ], 'name', 'type', 'label', 'help', 'argument' )
         assert case2_inputs[ 0 ][ "name" ] == "seed"
 
     def _show_valid_tool( self, tool_id ):
