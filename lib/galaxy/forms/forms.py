@@ -218,7 +218,7 @@ class FormDefinitionWorkflowFieldFactory( FormDefinitionFieldFactory ):
         Return FormDefinition field created from an xml element.
         """
         rval = super( FormDefinitionWorkflowFieldFactory, self ).from_elem( elem, layout=layout )
-        rval['type'] = self.__get_stored_field_type( area )
+        rval['type'] = self.__get_stored_field_type()
         return rval
 
 
@@ -244,7 +244,7 @@ class FormDefinitionWorkflowMappingFieldFactory( FormDefinitionFieldFactory ):
         Return FormDefinition field created from an xml element.
         """
         rval = super( FormDefinitionWorkflowMappingFieldFactory, self ).from_elem( elem, layout=layout )
-        rval['type'] = self.__get_stored_field_type( area )
+        rval['type'] = self.__get_stored_field_type()
         return rval
 
 
@@ -254,7 +254,7 @@ class FormDefinitionHistoryFieldFactory( FormDefinitionFieldFactory ):
     def __get_stored_field_type( self ):
         return 'HistoryField'
 
-    def new( self, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
+    def new( self, name=None, label=None, required=False, helptext=None, default=None, visible=True, layout=None ):
         """
         Return new FormDefinition field.
         """
@@ -270,7 +270,7 @@ class FormDefinitionHistoryFieldFactory( FormDefinitionFieldFactory ):
         Return FormDefinition field created from an xml element.
         """
         rval = super( FormDefinitionHistoryFieldFactory, self ).from_elem( elem, layout=layout )
-        rval['type'] = self.__get_stored_field_type( area )
+        rval['type'] = self.__get_stored_field_type()
         return rval
 
 
