@@ -4,6 +4,7 @@ from galaxy import exceptions
 from galaxy import web, util
 from galaxy import managers
 from galaxy.web import _future_expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
@@ -59,7 +60,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             trans.response.status = 500
             return { 'error': str( exc ) }
 
-    @_future_expose_api_anonymous
+    @_future_expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}
@@ -129,7 +130,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             "guid": tool.guid,
         }
 
-    @_future_expose_api_anonymous
+    @_future_expose_api_anonymous_and_sessionless
     def citations( self, trans, id, **kwds ):
         tool = self._get_tool( id, user=trans.user )
         rval = []
