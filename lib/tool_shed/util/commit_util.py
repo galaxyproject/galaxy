@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 import tempfile
+import bz2
 
 from galaxy.datatypes import checkers
 
