@@ -378,19 +378,19 @@ class SafeStringWrapper( object ):
     # Do not implement in-place operands
 
     def __neg__( self ):
-        return __safe_string_wrapper_function__( -self.unsanitized )
+        return self.__safe_string_wrapper_function__( -self.unsanitized )
 
     def __pos__( self ):
-        return __safe_string_wrapper_function__( +self.unsanitized )
+        return self.__safe_string_wrapper_function__( +self.unsanitized )
 
     def __abs__( self ):
-        return __safe_string_wrapper_function__( abs( self.unsanitized ) )
+        return self.__safe_string_wrapper_function__( abs( self.unsanitized ) )
 
     def __invert__( self ):
-        return __safe_string_wrapper_function__( ~self.unsanitized )
+        return self.__safe_string_wrapper_function__( ~self.unsanitized )
 
     def __complex__( self ):
-        return __safe_string_wrapper_function__( complex( self.unsanitized ) )
+        return self.__safe_string_wrapper_function__( complex( self.unsanitized ) )
 
     def __int__( self ):
         return int( self.unsanitized )
