@@ -439,7 +439,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
             // default
             update : {
                 text: _l( 'most recent first' ),
-                fn: _comparator( function( h ){ return Date( h.get( 'update_time' ) ); }, { asc : false })
+                fn: _comparator( function( h ){ return new Date( h.get( 'update_time' ) ); }, { asc : false })
             },
             'name' : {
                 text: _l( 'name, a to z' ),
@@ -542,6 +542,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
      *      (sorting the collection will re-render the panel)
      */
     sortCollection : function( order, options ){
+        order = !_.isUndefined( order )? order : this.order;
         if( !( order in this.sortOrders ) ){
             order = 'update';
         }
