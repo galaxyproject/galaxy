@@ -182,6 +182,12 @@ class MutationList(MutationObj, list):
         list.__delslice__(self, start, stop)
         self.changed()
 
+    def __copy__(self):
+        return MutationList(MutationObj.coerce(self._key, self[:]))
+
+    def __deepcopy__(self, memo):
+        return MutationList(MutationObj.coerce(self._key, copy.deepcopy(self[:])))
+
     def append(self, value):
         list.append(self, MutationObj.coerce(self._key, value))
         self.changed()

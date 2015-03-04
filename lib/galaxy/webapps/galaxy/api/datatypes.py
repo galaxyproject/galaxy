@@ -2,7 +2,7 @@
 API operations allowing clients to determine datatype supported by Galaxy.
 """
 
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy import exceptions
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.util import asbool
@@ -14,7 +14,7 @@ log = logging.getLogger( __name__ )
 
 class DatatypesController( BaseAPIController ):
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def index( self, trans, **kwd ):
         """
         GET /api/datatypes
@@ -47,7 +47,7 @@ class DatatypesController( BaseAPIController ):
             else:
                 raise
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def mapping( self, trans, **kwd ):
         '''
         GET /api/datatypes/mapping
@@ -81,7 +81,7 @@ class DatatypesController( BaseAPIController ):
             else:
                 raise
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def sniffers( self, trans, **kwd ):
         '''
         GET /api/datatypes/sniffers
@@ -101,7 +101,7 @@ class DatatypesController( BaseAPIController ):
             else:
                 raise
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def converters( self, trans, **kwd ):
         converters = []
         for (source_type, targets) in self._datatypes_registry.datatype_converters.iteritems():
