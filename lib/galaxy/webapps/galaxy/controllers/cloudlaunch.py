@@ -112,11 +112,11 @@ class CloudController(BaseUIController):
         else:
             kp_material_tag = None
         return dumps({'cluster_name': cluster_name,
-                               'instance_id': result['rs'].instances[0].id,
-                               'image_id': result['rs'].instances[0].image_id,
-                               'public_dns_name': result['rs'].instances[0].public_dns_name,
-                               'kp_name': result['kp_name'],
-                               'kp_material_tag': kp_material_tag})
+                      'instance_id': result['rs'].instances[0].id,
+                      'image_id': result['rs'].instances[0].image_id,
+                      'public_dns_name': result['rs'].instances[0].public_dns_name,
+                      'kp_name': result['kp_name'],
+                      'kp_material_tag': kp_material_tag})
 
     @web.expose
     def get_pkey(self, trans, kp_material_tag=None):
