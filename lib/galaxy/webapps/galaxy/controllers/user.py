@@ -42,10 +42,14 @@ REQUIRE_LOGIN_TEMPLATE = """
 PASSWORD_RESET_TEMPLATE = """
 To reset your Galaxy password for the instance at %s, use the following link:
 
-    <a href="%s">%s</a>
+<a href="%s">%s</a>
 
 If you did not make this request, no action is necessary on your part, though
-you may want to notify an administrator."""
+you may want to notify an administrator.
+
+If you're having trouble using the link when clicking it from email client, you
+can also copy and paste it into your browser.
+"""
 
 
 class UserOpenIDGrid( grids.Grid ):
