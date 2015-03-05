@@ -1,8 +1,10 @@
 import urllib
 
-from galaxy import exceptions
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import ObjectNotFound
 from galaxy import web, util
 from galaxy import managers
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api_anonymous
 from galaxy.web import _future_expose_api
 from galaxy.web.base.controller import BaseAPIController
@@ -33,6 +35,60 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         super( ToolsController, self ).__init__( app )
         self.history_manager = managers.histories.HistoryManager( app )
         self.hda_manager = managers.hdas.HDAManager( app )
+
+    @expose_api_anonymous_and_sessionless
+    def detect( self, trans, **kwds ):
+        """
+        GET /api/tools/detect?full_id=toolshed.g2.bx.psu.edu/repos/blankenberg/naive_variant_caller/naive_variant_caller/0.0.1
+
+        Detect whether the tool with the given id is installed.
+
+        :param full_id: exact id of the tool
+        :type full_id:  str
+
+        :return:      flag indicating presence
+        "return type: bool
+        """
+        full_id = kwds.get( 'full_id', None )
+        if full_id:
+            if self.app.toolbox.get_tool( full_id ):
+                return True
+            else:
+                return False
+
+    @expose_api_anonymous_and_sessionless
+    def search( self, trans, **kwds ):
+        """
+        GET /api/tools/search?q=fastq
+
+        Perform the search on the given query.
+        Boosts and numer of results are configurable in galaxy.ini file.
+
+        :param q: the query to search with
+        :type  q: str
+
+        :return:      Dictionary containing the tools' ids of the best hits.
+        :return type: dict
+        """
+        q = kwds.get( 'q', '' )
+        if len( q ) < 3:
+            raise RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
+
+        tool_name_boost = self.app.config.get( 'tool_name_boost', 9 )
+        tool_section_boost = self.app.config.get( 'tool_section_boost', 3 )
+        tool_description_boost = self.app.config.get( 'tool_description_boost', 2 )
+        tool_help_boost = self.app.config.get( 'tool_help_boost', 0.5 )
+        tool_search_limit = self.app.config.get( 'tool_search_limit', 20 )
+
+        # log.debug(str(tool_name_boost), str(tool_section_boost), str(tool_description_boost), str(tool_help_boost), str(tool_search_limit))
+        
+        results = self.app.toolbox_search.search( q=q,
+                                                  tool_name_boost=tool_name_boost,
+                                                  tool_section_boost=tool_section_boost,
+                                                  tool_description_boost=tool_description_boost,
+                                                  tool_help_boost=tool_help_boost,
+                                                  tool_search_limit=tool_search_limit )
+        return results
 
     @web.expose_api
     def index( self, trans, **kwds ):
@@ -267,7 +323,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         id = urllib.unquote_plus( id )
         tool = self.app.toolbox.get_tool( id, tool_version )
         if not tool or not tool.allow_user_access( user ):
-            raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
+            raise ObjectNotFound("Could not find tool with id '%s'" % id)
         return tool
 
     def _rerun_tool( self, trans, payload, **kwargs ):

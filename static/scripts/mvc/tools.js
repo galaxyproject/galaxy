@@ -368,6 +368,7 @@ var ToolSearch = Backbone.Model.extend({
      */
     do_search: function() {
         var query = this.attributes.query;
+        var tool_search_url = galaxy_config.root + 'api/tools/search';
 
         // If query is too short, do not search.
         if (query.length < this.attributes.min_chars_for_search) {
@@ -388,7 +389,7 @@ var ToolSearch = Backbone.Model.extend({
         this.timer = setTimeout(function () {
             // log the search to analytics
             ga( 'send', 'pageview', galaxy_config.root + '?q=' + q );
-            $.get(self.attributes.search_url, { query: q }, function (data) {
+            $.get( tool_search_url, { q: q }, function ( data ) {
                 self.set("results", data);
                 $("#search-spinner").hide();
                 $("#search-clear-btn").show();

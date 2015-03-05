@@ -31,8 +31,9 @@ $( function() {
             }
             // Start a new ajax-request in X ms
             $("#search-spinner").show();
+            var tool_search_url = galaxy_config.root + 'api/tools/search';
             this.timer = setTimeout(function () {
-                $.get(tool_search_url, { query: q }, function (data) {
+                $.get(tool_search_url, { q: q }, function (data) {
                     // input.removeClass(config.loadingClass);
                     // Show live-search if results and search-term aren't empty
                     $("#search-no-results").hide();
@@ -72,7 +73,7 @@ $( function() {
                     }
                     $("#search-spinner").hide();
                 }, "json" );
-            }, 200 );
+            }, 400 );
         }
         this.lastValue = this.value;
     });
