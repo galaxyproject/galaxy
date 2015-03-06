@@ -35,7 +35,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         self.history_manager = managers.histories.HistoryManager( app )
         self.hda_manager = managers.hdas.HDAManager( app )
 
-    @web.expose_api
+    @_future_expose_api_anonymous_and_sessionless
     def index( self, trans, **kwds ):
         """
         GET /api/tools: returns a list of tools defined by parameters::
