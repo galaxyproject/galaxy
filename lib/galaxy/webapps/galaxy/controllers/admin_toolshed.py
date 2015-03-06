@@ -341,8 +341,9 @@ class AdminToolshed( AdminGalaxy ):
             repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
             if repository:
                 repo_files_dir = repository.repo_files_directory( trans.app )
+                # The following line sometimes returns None.  TODO: Figure out why.
                 path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
-                if os.path.exists( path_to_file ):
+                if path_to_file and os.path.exists( path_to_file ):
                     file_name = os.path.basename( relative_path_to_image_file )
                     try:
                         extension = file_name.split( '.' )[ -1 ]
