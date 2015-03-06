@@ -27,7 +27,9 @@ def __main__():
             if sequence:
                 sequence_count += 1
                 seq_hash[( sequence_count, title )] = sequence
-            title = line[1:]  # strip off the '>'
+            # Strip off the leading '>' and remove any pre-existing
+            # tabs which would trigger extra columns:
+            title = line[1:].replace('\t', ' ')
             sequence = ''
         else:
             if line:
