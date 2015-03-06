@@ -1,6 +1,7 @@
 import urllib
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import RequestParameterMissingException
 from galaxy.exceptions import ObjectNotFound
 from galaxy import web, util
 from galaxy import managers
@@ -11,6 +12,7 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import dumps
+from galaxy.util import string_as_bool
 from galaxy.visualization.data_providers.genome import *
 from galaxy.tools.parameters import check_param
 from galaxy.tools.parameters import visit_input_values
@@ -35,60 +37,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         super( ToolsController, self ).__init__( app )
         self.history_manager = managers.histories.HistoryManager( app )
         self.hda_manager = managers.hdas.HDAManager( app )
-
-    @expose_api_anonymous_and_sessionless
-    def detect( self, trans, **kwds ):
-        """
-        GET /api/tools/detect?full_id=toolshed.g2.bx.psu.edu/repos/blankenberg/naive_variant_caller/naive_variant_caller/0.0.1
-
-        Detect whether the tool with the given id is installed.
-
-        :param full_id: exact id of the tool
-        :type full_id:  str
-
-        :return:      flag indicating presence
-        "return type: bool
-        """
-        full_id = kwds.get( 'full_id', None )
-        if full_id:
-            if self.app.toolbox.get_tool( full_id ):
-                return True
-            else:
-                return False
-
-    @expose_api_anonymous_and_sessionless
-    def search( self, trans, **kwds ):
-        """
-        GET /api/tools/search?q=fastq
-
-        Perform the search on the given query.
-        Boosts and numer of results are configurable in galaxy.ini file.
-
-        :param q: the query to search with
-        :type  q: str
-
-        :return:      Dictionary containing the tools' ids of the best hits.
-        :return type: dict
-        """
-        q = kwds.get( 'q', '' )
-        if len( q ) < 3:
-            raise RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
-
-        tool_name_boost = self.app.config.get( 'tool_name_boost', 9 )
-        tool_section_boost = self.app.config.get( 'tool_section_boost', 3 )
-        tool_description_boost = self.app.config.get( 'tool_description_boost', 2 )
-        tool_help_boost = self.app.config.get( 'tool_help_boost', 0.5 )
-        tool_search_limit = self.app.config.get( 'tool_search_limit', 20 )
-
-        # log.debug(str(tool_name_boost), str(tool_section_boost), str(tool_description_boost), str(tool_help_boost), str(tool_search_limit))
-        
-        results = self.app.toolbox_search.search( q=q,
-                                                  tool_name_boost=tool_name_boost,
-                                                  tool_section_boost=tool_section_boost,
-                                                  tool_description_boost=tool_description_boost,
-                                                  tool_help_boost=tool_help_boost,
-                                                  tool_search_limit=tool_search_limit )
-        return results
 
     @web.expose_api
     def index( self, trans, **kwds ):
@@ -185,6 +133,64 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             "guid": tool.guid,
         }
 
+    @expose_api_anonymous_and_sessionless
+    def detect( self, trans, **kwds ):
+        """
+        GET /api/tools/detect?any_version=true&id=toolshed.g2.bx.psu.edu/repos/blankenberg/naive_variant_caller/naive_variant_caller/0.0.1
+
+        Detect whether the tool with the given id is installed.
+
+        :param full_id: exact id of the tool
+        :type full_id:  str
+
+        :param any_version: flag indicating whether any version suffices
+        :type any_version:  bool
+
+        :return:      flag indicating presence
+        "return type: bool
+        """
+        tool_id = kwds.get( 'id', None )
+        any_version = string_as_bool( kwds.get( 'any_version', False ) )
+        if tool_id:
+            tools = self.app.toolbox.get_tool( tool_id, get_all_versions=any_version )
+            for tool in tools:
+                if tool and tool.allow_user_access( trans.user ):
+                    return True
+            return False
+        else:
+            raise RequestParameterMissingException( 'Required parameter "id" is missing.' )
+
+    @expose_api_anonymous_and_sessionless
+    def search( self, trans, **kwds ):
+        """
+        GET /api/tools/search?q=fastq
+
+        Perform the search on the given query.
+        Boosts and numer of results are configurable in galaxy.ini file.
+
+        :param q: the query to search with
+        :type  q: str
+
+        :return:      Dictionary containing the tools' ids of the best hits.
+        :return type: dict
+        """
+        q = kwds.get( 'q', '' )
+        if len( q ) < 3:
+            raise RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
+
+        tool_name_boost = self.app.config.get( 'tool_name_boost', 9 )
+        tool_section_boost = self.app.config.get( 'tool_section_boost', 3 )
+        tool_description_boost = self.app.config.get( 'tool_description_boost', 2 )
+        tool_help_boost = self.app.config.get( 'tool_help_boost', 0.5 )
+        tool_search_limit = self.app.config.get( 'tool_search_limit', 20 )
+
+        results = self.app.toolbox_search.search( q=q,
+                                                  tool_name_boost=tool_name_boost,
+                                                  tool_section_boost=tool_section_boost,
+                                                  tool_description_boost=tool_description_boost,
+                                                  tool_help_boost=tool_help_boost,
+                                                  tool_search_limit=tool_search_limit )
+        return results
     @_future_expose_api_anonymous
     def citations( self, trans, id, **kwds ):
         tool = self._get_tool( id, user=trans.user )
