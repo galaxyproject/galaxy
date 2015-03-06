@@ -50,7 +50,7 @@ def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds ):
 def set_metadata():
     # locate galaxy_root for loading datatypes
     galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
-    tool_job_working_directory = os.path.abspath(os.getcwd())
+    galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
 
     # Set up datatypes registry
     datatypes_config = sys.argv.pop( 1 )
