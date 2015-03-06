@@ -175,8 +175,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             var current_check = this.data.checksum();
             this.on('change', function() {
                 var new_check = self.data.checksum();
-                console.log(new_check);
-                console.log(current_check);
                 if (new_check != current_check) {
                     current_check = new_check;
                     self.options.onchange && self.options.onchange();
