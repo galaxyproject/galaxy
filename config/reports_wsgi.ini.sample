@@ -8,9 +8,36 @@ host = 127.0.0.1
 use_threadpool = true
 threadpool_workers = 10
 
+# ---- Filters --------------------------------------------------------------
+
+# Filters sit between Galaxy and the HTTP server.
+
+# These filters are disabled by default.  They can be enabled with
+# 'filter-with' in the [app:main] section below.
+
+# Define the proxy-prefix filter.
+[filter:proxy-prefix]
+use = egg:PasteDeploy#prefix
+prefix = /reports
+
 # ---- Galaxy Webapps Report Interface -------------------------------------------------
 
 [app:main]
+
+# -- Application and filtering
+
+# If running behind a proxy server and Galaxy is served from a subdirectory,
+# enable the proxy-prefix filter and set the prefix in the
+# [filter:proxy-prefix] section above.
+#filter-with = proxy-prefix
+
+# If proxy-prefix is enabled and you're running more than one Galaxy instance
+# behind one hostname, you will want to set this to the same path as the prefix
+# in the filter above.  This value becomes the "path" attribute set in the
+# cookie so the cookies from each instance will not clobber each other.
+#cookie_path = None
+
+# -- Report 
 
 # Specifies the factory for the universe WSGI application
 paste.app_factory = galaxy.webapps.reports.buildapp:app_factory
