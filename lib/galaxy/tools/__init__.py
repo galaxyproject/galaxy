@@ -2571,7 +2571,6 @@ class Tool( object, Dictifiable ):
     def _get_job_remap ( self, job):
         if job:
             if job.state == job.states.ERROR:
-                return True
                 try:
                     if [ hda.dependent_jobs for hda in [ jtod.dataset for jtod in job.output_datasets ] if hda.dependent_jobs ]:
                         return True
