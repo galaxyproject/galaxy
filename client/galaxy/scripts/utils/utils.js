@@ -218,7 +218,8 @@ function bytesToString (size, normal_font) {
  * Create a unique id
  */
 function uuid(){
-    return 'x' + Math.random().toString(36).substring(2, 9);
+    top.__utils__uuid__ = top.__utils__uuid__ || 0;
+    return top.__utils__uuid__++;
 };
 
 /**

@@ -271,10 +271,7 @@ var View = Backbone.View.extend({
 
         // append to dataset ids
         for (var i in id_list) {
-            var details = _.findWhere(history, {
-                id  : id_list[i],
-                src : this.list[this.current].type
-            });
+            var details = history[id_list[i] + '_' + this.list[this.current].type];
             if (details) {
                 result.values.push(details);
             } else {
@@ -317,10 +314,7 @@ var View = Backbone.View.extend({
     /** Assists in identifying the batch mode */
     _batch: function() {
         if (this.current == 'collection') {
-            var hdca = _.findWhere(history, {
-                id  : this._select().value(),
-                src : 'hdca'
-            });
+            var hdca = history[this._select().value() + '_hdca'];
             if (hdca && hdca.map_over_type) {
                 return true;
             }
