@@ -584,7 +584,13 @@
 
     // for some reason, .flex-row-container below won't be applied to multi-panel-history since it's the enclosing node
     // re-apply here
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+
+    -webkit-flex-direction: column;
+    -ms-flex-direction: column;
     flex-direction: column;
 
     .flex-row-container,
@@ -770,6 +776,8 @@
             background-color: white;
             text-align: center;
 
+            -webkit-flex: 0 0 auto;
+            -ms-flex: 0 0 auto;
             flex: 0 0 auto;
 
             -webkit-align-self: auto;

@@ -29,14 +29,23 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
     def test_index_state_filter( self ):
         # Initial number of ok jobs
         original_count = len( self.__uploads_with_state( "ok" ) )
-
         # Run through dataset upload to ensure num uplaods at least greater
         # by 1.
         self.__history_with_ok_dataset()
 
         # Verify number of ok jobs is actually greater.
-        new_count = len( self.__uploads_with_state( "ok" ) )
-        assert original_count < new_count
+        count_increased = False
+        for i in range(10):
+            new_count = len( self.__uploads_with_state( "ok" ) )
+            if original_count < new_count:
+                count_increased = True
+                break
+            time.sleep(.1)
+
+        if not count_increased:
+            template = "Jobs in ok state did not increase (was %d, now %d)"
+            message = template % (original_count, new_count)
+            raise AssertionError(message)
 
     def test_index_date_filter( self ):
         self.__history_with_new_dataset()

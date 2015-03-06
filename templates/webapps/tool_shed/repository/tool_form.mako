@@ -78,18 +78,21 @@
                     field.add_option( param.name, param.name )
                     field_html = field.get_html()
                 elif isinstance( param, SelectToolParameter ) and hasattr( param, 'data_ref' ):
-                    field = SelectField( param.name, display=param.display )
+                    field = SelectField( param.name, display=param.display, multiple=param.multiple )
                     field.add_option( param.data_ref, param.data_ref )
                     field_html = field.get_html( prefix )
                 elif isinstance( param, SelectToolParameter ) and param.is_dynamic:
-                    field = SelectField( param.name, display=param.display )
+                    field = SelectField( param.name, display=param.display, multiple=param.multiple )
                     dynamic_options = param.options
-                    if dynamic_options.index_file:
-                        option_label = "Dynamically generated from entries in file %s" % str( dynamic_options.index_file )
-                        field.add_option( option_label, "none" )
-                    elif dynamic_options.missing_index_file:
-                        option_label = "Dynamically generated from entries in missing file %s" % str( dynamic_options.missing_index_file )
-                        field.add_option( option_label, "none" )
+                    if dynamic_options is not None:
+                        if dynamic_options.index_file:
+                            option_label = "Dynamically generated from entries in file %s" % str( dynamic_options.index_file )
+                            field.add_option( option_label, "none" )
+                        elif dynamic_options.missing_index_file:
+                            option_label = "Dynamically generated from entries in missing file %s" % str( dynamic_options.missing_index_file )
+                            field.add_option( option_label, "none" )
+                    else:
+                        field.add_option( "Dynamically generated from old-style Dynamic Options.", "none" )
                     field_html = field.get_html( prefix )
                 else:
                     field = param.get_html_field( trans, None, other_values )
