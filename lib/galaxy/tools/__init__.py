@@ -1215,7 +1215,8 @@ class Tool( object, Dictifiable ):
         if 'rerun_remap_job_id' in incoming:
             try:
                 rerun_remap_job_id = trans.app.security.decode_id( incoming[ 'rerun_remap_job_id' ] )
-            except Exception:
+            except Exception, exception:
+                log.error( str( exception ) )
                 message = 'Failure executing tool (attempting to rerun invalid job).'
                 return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
 
@@ -2296,6 +2297,7 @@ class Tool( object, Dictifiable ):
                 params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
             except Exception, exception:
                 trans.response.status = 500
+                log.error( str( exception ) )
                 return { 'error': str( exception ) }
 
         # create parameter object
@@ -2555,7 +2557,8 @@ class Tool( object, Dictifiable ):
             'versions'      : tool_versions,
             'requirements'  : tool_requirements,
             'errors'        : state_errors,
-            'state_inputs'  : state_inputs
+            'state_inputs'  : state_inputs,
+            'job_remap'     : self._get_job_remap(job)
         })
 
         # check for errors
@@ -2564,6 +2567,17 @@ class Tool( object, Dictifiable ):
 
         # return enriched tool model
         return tool_model
+
+    def _get_job_remap ( self, job):
+        if job:
+            if job.state == job.states.ERROR:
+                try:
+                    if [ hda.dependent_jobs for hda in [ jtod.dataset for jtod in job.output_datasets ] if hda.dependent_jobs ]:
+                        return True
+                except Exception, exception:
+                    log.error( str( exception ) )
+                    pass
+        return False
 
     def _map_source_to_history(self, trans, tool_inputs, params):
         # Need to remap dataset parameters. Job parameters point to original
