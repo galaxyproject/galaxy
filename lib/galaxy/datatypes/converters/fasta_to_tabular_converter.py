@@ -1,9 +1,14 @@
 #!/usr/bin/env python
-# This code exists in 2 places: ~/datatypes/converters and ~/tools/fasta_tools
+# Variants of this code exists in 2 places, this file which has no
+# user facing options which is called for implicit data conversion,
+# lib/galaxy/datatypes/converters/fasta_to_tabular_converter.py
+# and the user-facing Galaxy tool of the same name which has many
+# options. That version is now on GitHub and the Galaxy Tool Shed:
+# https://github.com/galaxyproject/tools-devteam/tree/master/tools/fasta_to_tabular
+# https://toolshed.g2.bx.psu.edu/view/devteam/fasta_to_tabular
 """
-Input: fasta, minimal length, maximal length
-Output: fasta
-Return sequences whose lengths are within the range.
+Input: fasta
+Output: tabular
 """
 
 import sys, os
@@ -22,7 +27,7 @@ def __main__():
             if sequence:
                 sequence_count += 1
                 seq_hash[( sequence_count, title )] = sequence
-            title = line
+            title = line[1:]  # strip off the '>'
             sequence = ''
         else:
             if line:
@@ -31,7 +36,6 @@ def __main__():
                     sequence += ' '
     if sequence:
         seq_hash[( sequence_count, title )] = sequence
-    # return only those lengths are in the range
     out = open( outfile, 'w' )
     title_keys = seq_hash.keys()
     title_keys.sort()
