@@ -295,6 +295,20 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 });
             }
 
+            // add remap button
+            if (this.options.job_id && this.options.job_remap) {
+                options.inputs['rerun_remap_job_id'] = {
+                    label       : 'Resume dependencies from this job',
+                    name        : 'rerun_remap_job_id',
+                    type        : 'select',
+                    display     : 'radio',
+                    ignore      : '__ignore__',
+                    value       : '__ignore__',
+                    options     : [['Yes', this.options.job_id], ['No', '__ignore__']],
+                    help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully, use this option to resume those tools using the outputs of this tool run.'
+                }
+            }
+
             // create tool form section
             this.section = new ToolSection.View(self, {
                 inputs : options.inputs
