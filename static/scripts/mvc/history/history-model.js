@@ -257,7 +257,7 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
 
     setAsCurrent : function(){
         var history = this,
-            xhr = jQuery.getJSON( '/history/set_as_current?id=' + this.id );
+            xhr = jQuery.getJSON( galaxy_config.root + '/history/set_as_current?id=' + this.id );
 
         xhr.done( function(){
             history.trigger( 'set-as-current', history );
