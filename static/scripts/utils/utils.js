@@ -219,7 +219,7 @@ function bytesToString (size, normal_font) {
  */
 function uid(){
     top.__utils__uid__ = top.__utils__uid__ || 0;
-    return top.__utils__uid__++;
+    return 'uid-' + top.__utils__uid__++;
 };
 
 /**
