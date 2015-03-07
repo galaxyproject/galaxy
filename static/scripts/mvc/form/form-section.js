@@ -62,7 +62,7 @@ define(['utils/utils',
             var input_def = jQuery.extend(true, {}, input);
 
             // create unique id
-            input_def.id = input.id = Utils.uuid();
+            input_def.id = input.id = Utils.uid();
 
             // add to sequential list of inputs
             this.app.input_list[input_def.id] = input_def;

@@ -70,7 +70,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
         */
         _makeSections: function(inputs){
             // for annotation
-            inputs[Utils.uuid()] = {
+            inputs[Utils.uid()] = {
                 label   : 'Annotation / Notes',
                 name    : 'annotation',
                 type    : 'text',
@@ -83,7 +83,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             var output_id = this.node.output_terminals && Object.keys(this.node.output_terminals)[0];
             if (output_id) {
                 // send email on job completion
-                inputs[Utils.uuid()] = {
+                inputs[Utils.uid()] = {
                     name        : 'pja__' + output_id + '__EmailAction',
                     label       : 'Email notification',
                     type        : 'boolean',
@@ -96,7 +96,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 };
 
                 // delete non-output files
-                inputs[Utils.uuid()] = {
+                inputs[Utils.uid()] = {
                     name        : 'pja__' + output_id + '__DeleteIntermediatesAction',
                     label       : 'Output cleanup',
                     type        : 'boolean',
@@ -107,7 +107,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
 
                 // add output specific actions
                 for (var i in this.node.output_terminals) {
-                    inputs[Utils.uuid()] = this._makeSection(i);
+                    inputs[Utils.uid()] = this._makeSection(i);
                 }
             }
         },

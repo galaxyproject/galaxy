@@ -35,11 +35,11 @@ var View = Backbone.View.extend({
         }
         
         // generate unique id
-        this.uuid = Utils.uuid();
+        this.uid = Utils.uid();
         
         // add event to hide if click is outside of popup
         var self = this;
-        $('body').on('mousedown.' + this.uuid,  function(e) { self._hide(e) });
+        $('body').on('mousedown.' + this.uid,  function(e) { self._hide(e) });
     },
     
     // title
@@ -121,7 +121,7 @@ var View = Backbone.View.extend({
     // remove
     remove: function() {
         // remove event handler
-        $('body').off('mousedown.' + this.uuid);
+        $('body').off('mousedown.' + this.uid);
     
         // remove element from dom
         this.$el.remove();

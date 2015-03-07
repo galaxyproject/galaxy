@@ -9,7 +9,7 @@ var Base = Backbone.View.extend({
         this.optionsDefault = {
             visible     : true,
             data        : [],
-            id          : Utils.uuid(),
+            id          : Utils.uid(),
             error_text  : 'No data available.',
             wait_text   : 'Please wait...',
             multiple    : false
@@ -260,7 +260,7 @@ var Base = Backbone.View.extend({
 /** Iconized **/
 var BaseIcons = Base.extend({
     _templateOption: function(pair) {
-        var id = Utils.uuid();
+        var id = Utils.uid();
         return  '<div class="ui-option">' +
                     '<input id="' + id + '" type="' + this.options.type + '" name="' + this.options.id + '" value="' + pair.value + '"/>' +
                     '<label class="ui-options-label" for="' + id + '">' + pair.label + '</label>' +

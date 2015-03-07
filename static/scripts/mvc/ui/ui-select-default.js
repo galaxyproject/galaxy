@@ -7,7 +7,7 @@ define(['utils/utils'], function(Utils) {
 var View = Backbone.View.extend({
     // options
     optionsDefault : {
-        id          : '',
+        id          : Utils.uid(),
         cls         : 'ui-select',
         error_text  : 'No data available',
         empty_text  : 'No selection',

@@ -37,7 +37,7 @@ return Backbone.Model.extend({
     /** This is called to register a new process
     */
     register: function() {
-        var id = Utils.uuid();
+        var id = Utils.uid();
         this.process[id] = true;
         this.counter++;
         console.debug('Deferred:register() - Registering ' + id);
