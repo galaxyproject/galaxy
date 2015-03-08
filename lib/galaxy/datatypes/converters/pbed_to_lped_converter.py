@@ -53,7 +53,7 @@ def main():
     """
     nparm = 4
     if len(sys.argv) < nparm:
-        sys.stderr.write('## %s called with %s - needs %d parameters \n' % (myname, sys.argv, nparm))
+        sys.stderr.write('PBED to LPED converter called with %s - needs %d parameters \n' % (sys.argv, nparm))
         sys.exit(1)
     inpedfilepath = sys.argv[1]
     outhtmlname = sys.argv[2]
