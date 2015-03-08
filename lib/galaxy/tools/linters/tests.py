@@ -1,7 +1,7 @@
 
 
 # Misspelled so as not be picked up by nosetests.
-def lint_tsts(tool_xml, lint_ctx):
+def lint_tests(tool_xml, lint_ctx):
     tests = tool_xml.findall("./tests/test")
     if not tests:
         lint_ctx.warn("No tests found, most tools should define test cases.")
