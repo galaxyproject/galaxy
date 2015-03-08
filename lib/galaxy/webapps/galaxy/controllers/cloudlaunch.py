@@ -21,8 +21,6 @@ eggs.require('simplejson')
 eggs.require('bioblend')
 
 from boto.exception import EC2ResponseError
-
-
 from bioblend import cloudman
 
 log = logging.getLogger(__name__)
