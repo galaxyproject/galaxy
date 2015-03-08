@@ -31,6 +31,7 @@ class LintContext(object):
         self.found_warns = False
 
     def lint(self, module, name, lint_func, tool_xml):
+        name = name.replace("tsts", "tests")
         self.printed_linter_info = False
         self.valid_messages = []
         self.info_messages = []
