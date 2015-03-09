@@ -40,7 +40,7 @@ return Backbone.Model.extend({
         var id = Utils.uid();
         this.process[id] = true;
         this.counter++;
-        console.debug('Deferred:register() - Registering ' + id);
+        console.debug('Deferred:register() - Register ' + id);
         return id;
     },
     
@@ -50,7 +50,7 @@ return Backbone.Model.extend({
         if (this.process[id]) {
             delete this.process[id];
             this.counter--;
-            console.debug('Deferred:done() - Unregistering ' + id);
+            console.debug('Deferred:done() - Unregister ' + id);
             this.trigger('refresh');
         }
     },
