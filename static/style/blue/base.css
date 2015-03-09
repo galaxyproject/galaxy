@@ -1471,7 +1471,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close{left:auto;
 .ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box{cursor:pointer;float:left;margin-right:5px;border:solid 1px #c0c0c0;width:15px;height:15px;border-radius:2px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box .ui-color-picker-check{color:black;font-size:1.2em;position:relative;left:1px}
 .ui-select{position:relative}.ui-select .button{position:absolute;top:5px;right:5px}
 .ui-select select{position:relative;top:0px;height:27px;width:100%;padding-right:20px;cursor:pointer;padding-left:5px}
-.ui-select .select2-container{width:100%}.ui-select .select2-container .select2-choice{height:27px;padding-left:5px}.ui-select .select2-container .select2-choice .select2-arrow{background-image:none;background:transparent;border:none}.ui-select .select2-container .select2-choice .select2-arrow b{background:none}
+.ui-select .select2-container{width:100%}.ui-select .select2-container .select2-choice{height:27px;padding-left:5px}.ui-select .select2-container .select2-choice .select2-arrow{display:none}
 .ui-select .select2-container-multi .select2-choices{padding:0px}
 .ui-select-multiple select{height:80px !important;-webkit-box-shadow:inset 0 1px 1px rgba(0,0,0,0.075);box-shadow:inset 0 1px 1px rgba(0,0,0,0.075)}
 .ui-select-content .ui-options{float:left;padding-top:2px}
