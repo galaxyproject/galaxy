@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool name="UCSC Main" id="ucsc_proxy">
+<tool name="UCSC Main" id="ucsc_proxy" version="1.0.0">
 	
 	<description>table browser proxy</description>
 	

@@ -1,4 +1,4 @@
-<tool id="Show beginning1" name="Select first">
+<tool id="Show beginning1" name="Select first" version="1.0.0">
   <description>lines from a dataset</description>
   <command interpreter="perl">headWrapper.pl $input $lineNum $out_file1</command>
   <inputs>

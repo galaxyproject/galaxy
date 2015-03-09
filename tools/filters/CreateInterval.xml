@@ -1,4 +1,4 @@
-<tool id="createInterval" name="Create single interval">
+<tool id="createInterval" name="Create single interval" version="1.0.0">
   <description>as a new dataset</description>
   <command interpreter="perl">CreateInterval.pl $chrom $start $end "$name" $strand $out_file1</command>
   <inputs>

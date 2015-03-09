@@ -1,4 +1,4 @@
-<tool id="addValue" name="Add column">
+<tool id="addValue" name="Add column" version="1.0.0">
   <description>to an existing dataset</description>
   <command interpreter="perl">fixedValueColumn.pl $input $out_file1 "$exp" $iterate</command>
   <inputs>

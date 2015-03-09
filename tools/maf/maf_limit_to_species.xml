@@ -1,4 +1,4 @@
-<tool id="MAF_Limit_To_Species1" name="Filter MAF blocks">
+<tool id="MAF_Limit_To_Species1" name="Filter MAF blocks" version="1.0.0">
   <description>by Species</description>
   <macros>
       <import>macros.xml</import>
