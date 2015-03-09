@@ -5,7 +5,8 @@
 # This script accepts an input file, an output file, a column
 # delimiter, and a list of columns.  The script then grabs unique
 # lines based on the columns, and returns those records with a count
-# of occurences of each unique column, inserted before the columns.
+# of occurences of each unique column (ignoring trailing spaces),
+# inserted before the columns.
 #
 # This executes the command pipeline:
 #       cut -f $fields | sort  | uniq -C
@@ -49,6 +50,7 @@ def main():
         print "                     P   Pipe"
         print "                     Dt  Dot"
         print "                     Sp  Space"
+        print " -s        Sorting: value (default), largest, or smallest"
         return 0
 
     outputfile = opts.get("-o")
@@ -71,6 +73,13 @@ def main():
         print "Columns not specified."
         return -4
 
+    sorting = opts.get("-s")
+    if sorting is None:
+        sorting = "value"
+    if sorting not in ["value", "largest", "smallest"]:
+        print "Unknown sorting option %r" % sorting
+        return -5
+
     # All inputs have been specified at this point, now validate.
     fileRegEx = re.compile("^[A-Za-z0-9./\-_]+$")
     columnRegEx = re.compile("([0-9]{1,},?)+")
@@ -86,9 +95,7 @@ def main():
         return -6
 
     column_list = re.split(",",columns)
-    columns_for_display = ""
-    for col in column_list:
-        columns_for_display += "c"+col+", "
+    columns_for_display = "c" + ", c".join(column_list)
 
     commandline = "cut "
     # Set delimiter
@@ -107,7 +114,16 @@ def main():
 
     # set columns
     commandline += "-f " + columns
-    commandline += " " + inputfile + " | sed s/\ //g | sort | uniq -c | sed s/^\ *// | tr \" \" \"\t\" > " + outputfile
+    commandline += " " + inputfile + " | sed 's/[ \t]*$//' | sort | uniq -c"
+    # uniq -C produces lines with leading spaces, so we can sort by value
+    if sorting == "largest":
+        commandline += " | sort -r"
+    elif sorting == "smallest":
+        commandline += " | sort"
+    # uniq -C produces lines with leading spaces, use sed to remove that
+    # uniq -C puts a space between the count and the field, want a tab.
+    # To replace just first tab, use sed again with 1 as the index
+    commandline += " | sed 's/^\ *//' | sed 's/ /\t/1' > " + outputfile
     errorcode, stdout = commands.getstatusoutput(commandline)
     
     print "Count of unique values in " + columns_for_display
