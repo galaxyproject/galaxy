@@ -5,7 +5,8 @@
 # This script accepts an input file, an output file, a column
 # delimiter, and a list of columns.  The script then grabs unique
 # lines based on the columns, and returns those records with a count
-# of occurences of each unique column, inserted before the columns.
+# of occurences of each unique column (ignoring trailing spaces),
+# inserted before the columns.
 #
 # This executes the command pipeline:
 #       cut -f $fields | sort  | uniq -C
@@ -107,7 +108,10 @@ def main():
 
     # set columns
     commandline += "-f " + columns
-    commandline += " " + inputfile + " | sed s/\ //g | sort | uniq -c | sed s/^\ *// | tr \" \" \"\t\" > " + outputfile
+    # uniq -C produces lines with leading spaces, use sed to remove that
+    # uniq -C puts a space between the count and the field, want a tab.
+    # To replace just first tab, use sed again with 1 as the index
+    commandline += " " + inputfile + " | sed 's/[ \t]*$//' | sort | uniq -c | sed 's/^\ *//' | sed 's/ /\t/1' > " + outputfile
     errorcode, stdout = commands.getstatusoutput(commandline)
     
     print "Count of unique values in " + columns_for_display
