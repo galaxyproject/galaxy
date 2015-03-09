@@ -50,6 +50,7 @@ def main():
         print "                     P   Pipe"
         print "                     Dt  Dot"
         print "                     Sp  Space"
+        print " -s        Sorting: value (default), largest, or smallest"
         return 0
 
     outputfile = opts.get("-o")
@@ -71,6 +72,13 @@ def main():
     if columns == None or columns == 'None':
         print "Columns not specified."
         return -4
+
+    sorting = opts.get("-s")
+    if sorting is None:
+        sorting = "value"
+    if sorting not in ["value", "largest", "smallest"]:
+        print "Unknown sorting option %r" % sorting
+        return -5
 
     # All inputs have been specified at this point, now validate.
     fileRegEx = re.compile("^[A-Za-z0-9./\-_]+$")
@@ -110,12 +118,17 @@ def main():
     # so look for spaces then tab (for first and middle selected columns)
     # and replacw with just tab, and remove any spaces at end of the line
     # (for the final selected column):
-    commandline += " " + inputfile + " | sed 's/\ *\t/\t/' | sed 's/\ *$//' | sort"
+    commandline += " " + inputfile + " | sed 's/\ *\t/\t/' | sed 's/\ *$//'"
+    commandline += " | sort | uniq -c"
+    # uniq -C puts counts at the start, so we can sort lines by numerical value
+    if sorting == "largest":
+        commandline += " | sort -n -r"
+    elif sorting == "smallest":
+        commandline += " | sort -n"
     # uniq -C produces lines with leading spaces, use sed to remove that
     # uniq -C puts a space between the count and the field, want a tab.
     # To replace just first tab, use sed again with 1 as the index
-    commandline += " | uniq -c | sed 's/^\ *//' | sed 's/\ /\t/1' > " + outputfile
-    print commandline
+    commandline += " | sed 's/^\ *//' | sed 's/ /\t/1' > " + outputfile
     errorcode, stdout = commands.getstatusoutput(commandline)
 
     print "Count of unique values in " + columns_for_display
