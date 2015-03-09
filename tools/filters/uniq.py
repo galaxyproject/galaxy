@@ -87,9 +87,7 @@ def main():
         return -6
 
     column_list = re.split(",",columns)
-    columns_for_display = ""
-    for col in column_list:
-        columns_for_display += "c"+col+", "
+    columns_for_display = "c" + ", c".join(column_list)
 
     commandline = "cut "
     # Set delimiter
