@@ -18,8 +18,10 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 floating : 'clear',
                 onclick  : function() {
                     execute.wait();
+                    self.form.portlet.disable();
                     ToolJobs.submit(self.form, options, function() {
                         execute.unwait();
+                        self.form.portlet.enable();
                     });
                 }
             });
