@@ -9,7 +9,7 @@ the supporting resources as well. These models also have the boolean
 attribute 'purged'.
 """
 
-# ---- Deletable and Purgable models
+
 class DeletableManagerMixin( object ):
     """
     A mixin/interface for a model that is deletable (i.e. has a 'deleted' attr).
@@ -63,7 +63,7 @@ class DeletableFiltersMixin( object ):
 
     def _add_parsers( self ):
         self.orm_filter_parsers.update({
-            'deleted'       : { 'op': ( 'eq' ), 'val': self.parse_bool }
+            'deleted': { 'op': ( 'eq' ), 'val': self.parse_bool }
         })
 
 
@@ -113,5 +113,5 @@ class PurgableFiltersMixin( DeletableFiltersMixin ):
     def _add_parsers( self ):
         DeletableFiltersMixin._add_parsers( self )
         self.orm_filter_parsers.update({
-            'purged'        : { 'op': ( 'eq' ), 'val': self.parse_bool }
+            'purged': { 'op': ( 'eq' ), 'val': self.parse_bool }
         })
