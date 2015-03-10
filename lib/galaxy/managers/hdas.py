@@ -85,6 +85,8 @@ class HDAManager( datasets.DatasetAssociationManager,
                                                 sa_session=self.app.model.context, **kwargs )
 
         if history:
+            # TODO Probably Bug:  set_hid is never used, and should be passed
+            # to history.add_dataset here.
             set_hid = not ( 'hid' in kwargs )
             history.add_dataset( hda )
         #TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
