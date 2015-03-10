@@ -12,7 +12,7 @@ define(['utils/utils',
 /**
  *  This class contains backbone wrappers for basic ui elements such as Images, Labels, Buttons, Input fields etc.
  */
- 
+
 // plugin
 var Image = Backbone.View.extend({
     // options
@@ -20,7 +20,7 @@ var Image = Backbone.View.extend({
         url  : '',
         cls  : ''
     },
-    
+
     // initialize
     initialize : function(options) {
         // get options
@@ -29,7 +29,7 @@ var Image = Backbone.View.extend({
         // create new element
         this.setElement(this._template(this.options));
     },
-    
+
     // template
     _template: function(options) {
         return '<img class="ui-image ' + options.cls + '" src="' + options.url + '"/>';
@@ -43,7 +43,7 @@ var Label = Backbone.View.extend({
         title  : '',
         cls    : ''
     },
-    
+
     // initialize
     initialize : function(options) {
         // get options
@@ -52,17 +52,17 @@ var Label = Backbone.View.extend({
         // create new element
         this.setElement(this._template(this.options));
     },
-    
+
     // title
     title: function(new_title) {
         this.$el.html(new_title);
     },
-    
+
     // template
     _template: function(options) {
         return '<label class="ui-label ' + options.cls + '">' + options.title + '</label>';
     },
-    
+
     // value
     value: function() {
         return options.title;
@@ -80,19 +80,19 @@ var Icon = Backbone.View.extend({
         title       : '',
         cls         : ''
     },
-    
+
     // initialize
     initialize : function(options) {
         // get options
         this.options = Utils.merge(options, this.optionsDefault);
-            
+
         // create new element
         this.setElement(this._template(this.options));
-        
+
         // add tooltip
         $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
     },
-    
+
     // element
     _template: function(options) {
         return  '<div>' +
@@ -112,37 +112,51 @@ var Button = Backbone.View.extend({
         cls         : 'ui-button btn btn-default',
         icon        : ''
     },
-    
+
     // initialize
     initialize : function(options) {
         // get options
         this.options = Utils.merge(options, this.optionsDefault);
-            
+
         // create new element
         this.setElement(this._template(this.options));
-        
+
         // add event
         $(this.el).on('click', function() {
             // hide all tooltips
             $('.tooltip').hide();
-            
+
             // execute onclick callback
             if (options.onclick) {
                 options.onclick();
             }
         });
-        
+
         // add tooltip
         $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
     },
-    
+
+    // show spinner
+    wait: function() {
+        this.$el.removeClass(this.options.cls).addClass('btn btn-info').prop('disabled', true);
+        this.$('.icon').removeClass(this.options.icon).addClass('fa-spinner fa-spin');
+        this.$('.title').html('Sending...');
+    },
+
+    // hide spinner
+    unwait: function() {
+        this.$el.removeClass('btn btn-info').addClass(this.options.cls).prop('disabled', false);
+        this.$('.icon').removeClass('fa-spinner fa-spin').addClass(this.options.icon);
+        this.$('.title').html(this.options.title);
+    },
+
     // element
     _template: function(options) {
         var str =   '<button id="' + options.id + '" type="submit" style="float: ' + options.floating + ';" type="button" class="' + options.cls + '">';
         if (options.icon) {
-            str +=      '<i class="icon fa ' + options.icon + '"></i>&nbsp;' ;
+            str +=      '<i class="icon fa ' + options.icon + '"></i>&nbsp;';
         }
-        str +=          options.title +
+        str +=          '<span class="title">' + options.title + '</span>' +
                     '</button>';
         return str;
     }
@@ -160,52 +174,52 @@ var ButtonIcon = Backbone.View.extend({
         tooltip     : '',
         onclick     : null
     },
-    
+
     // initialize
     initialize : function(options) {
         // get options
         this.options = Utils.merge(options, this.optionsDefault);
-            
+
         // create new element
         this.setElement(this._template(this.options));
-        
+
         // link button element
         this.$button = this.$el.find('.button');
-        
+
         // add event
         var self = this;
         $(this.el).on('click', function() {
             // hide all tooltips
             $('.tooltip').hide();
-            
+
             // execute onclick callback
             if (options.onclick && !self.disabled) {
                 options.onclick();
             }
         });
-        
+
         // add tooltip
         $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
     },
-    
+
     // disable
     disable: function() {
         this.$button.addClass('disabled');
         this.disabled = true;
     },
-    
+
     // enable
     enable: function() {
         this.$button.removeClass('disabled');
         this.disabled = false;
     },
-    
+
     // change icon
     setIcon: function(icon_cls) {
         this.$('i').removeClass(this.options.icon).addClass(icon_cls);
         this.options.icon = icon_cls;
     },
-    
+
     // template
     _template: function(options) {
         // width
@@ -213,10 +227,10 @@ var ButtonIcon = Backbone.View.extend({
         if (options.title) {
             width = 'width: auto;';
         }
-        
+
         // string
         var str =   '<div id="' + options.uid+ '" style="float: ' + options.floating + '; ' + width + '" class="' + options.cls + '">';
-    
+
         // title
         if (options.title) {
             str +=      '<div class="button">' +
@@ -238,19 +252,19 @@ var Anchor = Backbone.View.extend({
         title  : '',
         cls    : ''
     },
-    
+
     // initialize
     initialize : function(options) {
         // get options
         this.options = Utils.merge(options, this.optionsDefault);
-            
+
         // create new element
         this.setElement(this._template(this.options));
-        
+
         // add event
         $(this.el).on('click', options.onclick);
     },
-    
+
     // element
     _template: function(options) {
         return '<div><a href="javascript:void(0)" class="ui-anchor ' + options.cls + '">' + options.title + '</a></div>';
@@ -265,37 +279,37 @@ var Message = Backbone.View.extend({
         status      : 'info',
         persistent  : false
     },
-    
+
     // initialize
     initialize : function(options) {
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
-        
+
         // create new element
         this.setElement('<div></div>');
-        
+
         // show initial message
         if (this.options.message) {
             this.update(this.options);
         }
     },
-    
+
     // update
     update : function(options) {
         // get options
         this.options = Utils.merge(options, this.optionsDefault);
-        
+
         // show message
         if (options.message != '') {
             this.$el.html(this._template(this.options));
             this.$el.find('.alert').append(options.message);
             this.$el.fadeIn();
-            
+
             // clear previous timeouts
             if (this.timeout) {
                 window.clearTimeout(this.timeout);
             }
-            
+
             // set timeout if message is not persistent
             if (!options.persistent) {
                 var self = this;
@@ -311,7 +325,7 @@ var Message = Backbone.View.extend({
             this.$el.fadeOut();
         }
     },
-    
+
     // element
     _template: function(options) {
         return '<div class="ui-message alert alert-' + options.status + '"/>';
@@ -325,15 +339,15 @@ var Searchbox = Backbone.View.extend({
         onclick : null,
         searchword : ''
     },
-    
+
     // initialize
     initialize : function(options) {
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
-        
+
         // create new element
         this.setElement(this._template(this.options));
-        
+
         // add click event
         var self = this;
         if (this.options.onclick) {
@@ -343,7 +357,7 @@ var Searchbox = Backbone.View.extend({
             });
         }
     },
-    
+
     // element
     _template: function(options) {
         return  '<div class="ui-search">' +
@@ -368,30 +382,30 @@ var Input = Backbone.View.extend({
         cls             : '',
         area            : false
     },
-    
+
     // initialize
     initialize : function(options) {
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
-            
+
         // create new element
         this.setElement(this._template(this.options));
-        
+
         // set initial value
         if (this.options.value !== undefined) {
             this.value(this.options.value);
         }
-        
+
         // disable input field
         if (this.options.disabled) {
             this.$el.prop('disabled', true);
         }
-        
+
         // hide input field
         if (!this.options.visible) {
             this.$el.hide();
         }
-        
+
         // onchange event handler. fires on user activity.
         var self = this;
         this.$el.on('input', function() {
@@ -400,7 +414,7 @@ var Input = Backbone.View.extend({
             }
         });
     },
-    
+
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
@@ -408,7 +422,7 @@ var Input = Backbone.View.extend({
         }
         return this.$el.val();
     },
-    
+
     // element
     _template: function(options) {
         if (options.area) {
@@ -425,16 +439,16 @@ var Hidden = Backbone.View.extend({
     initialize : function(options) {
         // configure options
         this.options = options;
-        
+
         // create new element
         this.setElement(this._template(this.options));
-        
+
         // set initial value
         if (this.options.value !== undefined) {
             this.value(this.options.value);
         }
     },
-    
+
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
@@ -442,7 +456,7 @@ var Hidden = Backbone.View.extend({
         }
         return this.$('hidden').val();
     },
-    
+
     // element
     _template: function(options) {
         var tmpl =  '<div id="' + options.id + '" >';

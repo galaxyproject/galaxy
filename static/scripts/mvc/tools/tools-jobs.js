@@ -3,7 +3,7 @@
 */
 define(['utils/utils', 'mvc/tools/tools-template'], function(Utils, ToolTemplate) {
 return {
-    submit: function(form, options) {
+    submit: function(form, options, callback) {
         // link this
         var self = this;
 
@@ -20,20 +20,12 @@ return {
         // validate job definition
         if (!this._validation(form, job_def)) {
             console.debug('tools-jobs::submit - Submission canceled. Validation failed.');
+            callback && callback();
             return;
         }
 
         // debug
         console.debug(job_def);
-
-        // show progress modal
-        var user_is_waiting = true;
-        form.modal.show({title: 'Please wait...', body: 'progress', buttons: {
-            'Close' : function () {
-                form.modal.hide();
-                user_is_waiting = false;
-            }
-        }});
 
         // post job
         Utils.request({
@@ -41,12 +33,12 @@ return {
             url     : galaxy_config.root + 'api/tools',
             data    : job_def,
             success : function(response) {
-                form.modal.hide();
+                callback && callback();
                 form.reciept(ToolTemplate.success(response));
                 self._refreshHdas();
             },
             error   : function(response, response_full) {
-                form.modal.hide();
+                callback && callback();
                 if (response && response.message && response.message.data) {
                     var error_messages = form.data.matchResponse(response.message.data);
                     for (var input_id in error_messages) {
@@ -56,7 +48,7 @@ return {
                 } else {
                     // show error message with details
                     console.debug(response);
-                    user_is_waiting && form.modal.show({
+                    response && form.modal.show({
                         title   : 'Job submission failed',
                         body    : ToolTemplate.error(job_def),
                         buttons : {

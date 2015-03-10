@@ -8,6 +8,21 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
     var View = ToolFormBase.extend({
         // initialize
         initialize: function(options) {
+            // execute button
+            var self = this;
+            var execute = new Ui.Button({
+                icon     : 'fa-check',
+                tooltip  : 'Execute: ' + options.name,
+                title    : 'Execute',
+                cls      : 'btn btn-primary',
+                floating : 'clear',
+                onclick  : function() {
+                    execute.wait();
+                    ToolJobs.submit(self.form, options, function() {
+                        execute.unwait();
+                    });
+                }
+            });
             // add remap button
             if (options.job_id && options.job_remap) {
                 options.inputs['rerun_remap_job_id'] = {
@@ -22,20 +37,10 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 }
             }
             // create options dictionary
-            var self = this;
             options = Utils.merge(options, {
                 update_url  : galaxy_config.root + 'api/tools/' + options.id + '/build',
                 buttons     : {
-                    execute : new Ui.Button({
-                        icon     : 'fa-check',
-                        tooltip  : 'Execute: ' + options.name,
-                        title    : 'Execute',
-                        cls      : 'btn btn-primary',
-                        floating : 'clear',
-                        onclick  : function() {
-                            ToolJobs.submit(self.form, options);
-                        }
-                    })
+                    execute : execute
                 }
             });
             ToolFormBase.prototype.initialize.call(this, options);
