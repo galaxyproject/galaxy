@@ -106,12 +106,18 @@ def main():
 
     # set columns
     commandline += "-f " + columns
+    # we want to remove *trailing* spaces from each field,
+    # so look for spaces then tab (for first and middle selected columns)
+    # and replacw with just tab, and remove any spaces at end of the line
+    # (for the final selected column):
+    commandline += " " + inputfile + " | sed 's/\ *\t/\t/' | sed 's/\ *$//' | sort"
     # uniq -C produces lines with leading spaces, use sed to remove that
     # uniq -C puts a space between the count and the field, want a tab.
     # To replace just first tab, use sed again with 1 as the index
-    commandline += " " + inputfile + " | sed 's/[ \t]*$//' | sort | uniq -c | sed 's/^\ *//' | sed 's/ /\t/1' > " + outputfile
+    commandline += " | uniq -c | sed 's/^\ *//' | sed 's/\ /\t/1' > " + outputfile
+    print commandline
     errorcode, stdout = commands.getstatusoutput(commandline)
-    
+
     print "Count of unique values in " + columns_for_display
     return errorcode
 
