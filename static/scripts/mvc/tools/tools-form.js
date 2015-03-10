@@ -18,7 +18,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     ignore      : '__ignore__',
                     value       : '__ignore__',
                     options     : [['Yes', options.job_id], ['No', '__ignore__']],
-                    help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully, use this option to resume those tools using the outputs of this tool run.'
+                    help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.'
                 }
             }
             // create options dictionary
