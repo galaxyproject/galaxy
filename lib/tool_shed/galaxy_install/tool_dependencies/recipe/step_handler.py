@@ -498,7 +498,7 @@ class Chmod( RecipeStep ):
             if os.path.exists( target_file ):
                 os.chmod( target_file, mode )
             else:
-                log.debug( 'Invalid file %s specified, ignoring %s action.', target_file, action_type )
+                log.debug( 'Invalid file %s specified, ignoring %s action.', target_file, self.type )
         return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):

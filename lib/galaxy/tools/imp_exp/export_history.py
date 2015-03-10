@@ -6,9 +6,14 @@ usage: %prog history_attrs dataset_attrs job_attrs out_file
     -G, --gzip: gzip archive file
 """
 
+import optparse
+import os
+import sys
+import tarfile
+
 from galaxy import eggs
-from galaxy.util.json import *
-import optparse, sys, os, tempfile, tarfile
+from galaxy.util.json import dumps, loads
+
 
 def get_dataset_filename( name, ext ):
     """
@@ -17,6 +22,7 @@ def get_dataset_filename( name, ext ):
     valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     base = ''.join( c in valid_chars and c or '_' for c in name )
     return base + ".%s" % ext
+
 
 def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, out_file, gzip=False ):
     """ Create archive from the given attribute/metadata files and save it to out_file. """
@@ -45,7 +51,7 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
         # TODO: security check to ensure that files added are in Galaxy dataset directory?
         for dataset_attrs in datasets_attrs:
             if dataset_attrs['exported']:
-                dataset_file_name = dataset_attrs[ 'file_name' ] # Full file name.
+                dataset_file_name = dataset_attrs[ 'file_name' ]  # Full file name.
                 dataset_archive_name = os.path.join( 'datasets',
                                                      get_dataset_filename( dataset_attrs[ 'name' ], dataset_attrs[ 'extension' ] ) )
                 history_archive.add( dataset_file_name, arcname=dataset_archive_name )
@@ -61,7 +67,7 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
         history_archive.add( history_attrs_file, arcname="history_attrs.txt" )
         history_archive.add( datasets_attrs_file, arcname="datasets_attrs.txt" )
         if os.path.exists( datasets_attrs_file + ".provenance" ):
-            history_archive.add( datasets_attrs_file + ".provenance", arcname="datasets_attrs.txt.provenance" )            
+            history_archive.add( datasets_attrs_file + ".provenance", arcname="datasets_attrs.txt.provenance" )
         history_archive.add( jobs_attrs_file, arcname="jobs_attrs.txt" )
         history_archive.close()
 
@@ -70,7 +76,8 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
     except Exception, e:
         return 'Error creating history archive: %s' % str( e ), sys.stderr
 
-if __name__ == "__main__":
+
+def main():
     # Parse command line.
     parser = optparse.OptionParser()
     parser.add_option( '-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.' )
@@ -81,3 +88,6 @@ if __name__ == "__main__":
     # Create archive.
     status = create_archive( history_attrs, dataset_attrs, job_attrs, out_file, gzip )
     print status
+
+if __name__ == "__main__":
+    main()

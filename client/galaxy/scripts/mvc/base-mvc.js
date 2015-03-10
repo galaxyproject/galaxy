@@ -94,7 +94,7 @@ var SessionStorageModel = Backbone.Model.extend({
         if( !options.silent ){
             model.trigger( 'request', model, {}, options );
         }
-        var returned;
+        var returned = {};
         switch( method ){
             case 'create'   : returned = this._create( model ); break;
             case 'read'     : returned = this._read( model );   break;
@@ -111,9 +111,19 @@ var SessionStorageModel = Backbone.Model.extend({
 
     /** set storage to the stringified item */
     _create : function( model ){
-        var json = model.toJSON(),
-            set = sessionStorage.setItem( model.id, JSON.stringify( json ) );
-        return ( set === null )?( set ):( json );
+        try {
+            var json = model.toJSON(),
+                set = sessionStorage.setItem( model.id, JSON.stringify( json ) );
+            return ( set === null )?( set ):( json );
+        // DOMException is thrown in Safari if in private browsing mode and sessionStorage is attempted:
+        // http://stackoverflow.com/questions/14555347
+        // TODO: this could probably use a more general soln - like detecting priv. mode + safari => non-ajaxing Model
+        } catch( err ){
+            if( !( ( err instanceof DOMException ) && ( navigator.userAgent.indexOf("Safari") > -1 ) ) ){
+                throw err;
+            }
+        }
+        return null;
     },
 
     /** read and parse json from storage */

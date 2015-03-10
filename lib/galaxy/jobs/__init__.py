@@ -12,7 +12,6 @@ import logging
 import os
 import pwd
 import random
-import re
 import shutil
 import subprocess
 import sys
@@ -132,7 +131,9 @@ class JobConfiguration( object ):
             tree = util.parse_xml(job_config_file)
             self.__parse_job_conf_xml(tree)
         except IOError:
-            log.warning( 'Job configuration "%s" does not exist, using legacy job configuration from Galaxy config file "%s" instead' % ( self.app.config.job_config_file, self.app.config.config_file ) )
+            log.warning( 'Job configuration "%s" does not exist, using legacy'
+                         ' job configuration from Galaxy config file "%s" instead'
+                         % ( self.app.config.job_config_file, self.app.config.config_file ) )
             self.__parse_job_conf_legacy()
         except Exception as e:
             raise config_exception(e, job_config_file)
@@ -262,7 +263,7 @@ class JobConfiguration( object ):
         if limits is not None:
             for limit in self.__findall_with_required(limits, 'limit', ('type',)):
                 type = limit.get('type')
-                # concurrent_jobs renamed to destination_user_concurrent_jobs in job_conf.xml 
+                # concurrent_jobs renamed to destination_user_concurrent_jobs in job_conf.xml
                 if type in ( 'destination_user_concurrent_jobs', 'concurrent_jobs', 'destination_total_concurrent_jobs' ):
                     id = limit.get('tag', None) or limit.get('id')
                     if type == 'destination_total_concurrent_jobs':
@@ -284,7 +285,8 @@ class JobConfiguration( object ):
         log.debug('Loading job configuration from %s' % self.app.config.config_file)
 
         # Always load local and lwr
-        self.runner_plugins = [dict(id='local', load='local', workers=self.app.config.local_job_queue_workers), dict(id='lwr', load='lwr', workers=self.app.config.cluster_job_queue_workers)]
+        self.runner_plugins = [dict(id='local', load='local', workers=self.app.config.local_job_queue_workers),
+                               dict(id='lwr', load='lwr', workers=self.app.config.cluster_job_queue_workers)]
         # Load tasks if configured
         if self.app.config.use_tasked_jobs:
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
@@ -326,7 +328,11 @@ class JobConfiguration( object ):
                     runner_config['destination'] = runner_config.pop('url')
                     self.tools[id].append(JobToolConfiguration(**runner_config))
 
-        self.destinations[self.app.config.default_cluster_job_runner] = (JobDestination(id=self.app.config.default_cluster_job_runner, runner=self.app.config.default_cluster_job_runner.split(':', 1)[0], url=self.app.config.default_cluster_job_runner, legacy=True, converted=False),)
+        self.destinations[self.app.config.default_cluster_job_runner] = (JobDestination(id=self.app.config.default_cluster_job_runner,
+                                                                                        runner=self.app.config.default_cluster_job_runner.split(':', 1)[0],
+                                                                                        url=self.app.config.default_cluster_job_runner,
+                                                                                        legacy=True,
+                                                                                        converted=False),)
         self.default_destination_id = self.app.config.default_cluster_job_runner
 
         # Set the job limits
@@ -384,12 +390,15 @@ class JobConfiguration( object ):
             # stripping it off when making it available to dynamic job
             # destination. Not needed because resource parameters are wrapped
             # in a conditional.
-            ## expanded_name = "__job_resource_param__%s" % name
-            ## parameter_elem.set( "name", expanded_name )
+            # # expanded_name = "__job_resource_param__%s" % name
+            # # parameter_elem.set( "name", expanded_name )
             self.resource_parameters[ name ] = parameter_elem
 
     def __get_default(self, parent, names):
-        """Returns the default attribute set in a parent tag like <handlers> or <destinations>, or return the ID of the child, if there is no explicit default and only one child.
+        """
+        Returns the default attribute set in a parent tag like <handlers> or
+        <destinations>, or return the ID of the child, if there is no explicit
+        default and only one child.
 
         :param parent: Object representing a tag that may or may not have a 'default' attribute.
         :type parent: ``xml.etree.ElementTree.Element``
@@ -494,7 +503,10 @@ class JobConfiguration( object ):
 
     @property
     def default_job_tool_configuration(self):
-        """The default JobToolConfiguration, used if a tool does not have an explicit defintion in the configuration.  It consists of a reference to the default handler and default destination.
+        """
+        The default JobToolConfiguration, used if a tool does not have an
+        explicit defintion in the configuration.  It consists of a reference to
+        the default handler and default destination.
 
         :returns: JobToolConfiguration -- a representation of a <tool> element that uses the default handler and destination
         """
@@ -502,7 +514,10 @@ class JobConfiguration( object ):
 
     # Called upon instantiation of a Tool object
     def get_job_tool_configurations(self, ids):
-        """Get all configured JobToolConfigurations for a tool ID, or, if given a list of IDs, the JobToolConfigurations for the first id in ``ids`` matching a tool definition.
+        """
+        Get all configured JobToolConfigurations for a tool ID, or, if given
+        a list of IDs, the JobToolConfigurations for the first id in ``ids``
+        matching a tool definition.
 
         .. note::
 
@@ -650,7 +665,8 @@ class JobConfiguration( object ):
                 try:
                     rval[id] = runner_class( self.app, runner[ 'workers' ], **runner.get( 'kwds', {} ) )
                 except TypeError:
-                    log.exception( "Job runner '%s:%s' has not been converted to a new-style runner or encountered TypeError on load" % ( module_name, class_name ) )
+                    log.exception( "Job runner '%s:%s' has not been converted to a new-style runner or encountered TypeError on load"
+                                   % ( module_name, class_name ) )
                     rval[id] = runner_class( self.app )
                 log.debug( "Loaded job runner '%s:%s' as '%s'" % ( module_name, class_name, id ) )
         return rval
@@ -839,8 +855,7 @@ class JobWrapper( object ):
 
         self.command_line, self.extra_filenames = tool_evaluator.build()
         # FIXME: for now, tools get Galaxy's lib dir in their path
-        if self.command_line and self.command_line.startswith( 'python' ):
-            self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
+        self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
@@ -944,12 +959,12 @@ class JobWrapper( object ):
                 log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
             job.stderr = stderr
             # Let the exit code be Null if one is not provided:
-            if ( exit_code != None ):
+            if ( exit_code is not None ):
                 job.exit_code = exit_code
 
             self.sa_session.add( job )
             self.sa_session.flush()
-        #Perform email action even on failure.
+        # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
             ActionBox.execute(self.app, self.sa_session, pja, job)
         # If the job was deleted, call tool specific fail actions (used for e.g. external metadata) and clean up
@@ -1080,7 +1095,8 @@ class JobWrapper( object ):
                     # finish method - the false_path file has already moved,
                     # and when the job is recovered, it won't be found.
                     if os.path.exists( dataset_path.real_path ) and os.stat( dataset_path.real_path ).st_size > 0:
-                        log.warning( "finish(): %s not found, but %s is not empty, so it will be used instead" % ( dataset_path.false_path, dataset_path.real_path ) )
+                        log.warning( "finish(): %s not found, but %s is not empty, so it will be used instead"
+                                     % ( dataset_path.false_path, dataset_path.real_path ) )
                     else:
                         # Prior to fail we need to set job.state
                         job.set_state( final_job_state )
@@ -1089,8 +1105,10 @@ class JobWrapper( object ):
         job_context = ExpressionContext( dict( stdout=job.stdout, stderr=job.stderr ) )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
-            #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
-            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:  # need to update all associated output hdas, i.e. history was shared with job running
+            # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
+            # lets not allow this to occur
+            # need to update all associated output hdas, i.e. history was shared with job running
+            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
                 trynum = 0
                 while trynum < self.app.config.retry_job_output_collection:
                     try:
@@ -1108,10 +1126,10 @@ class JobWrapper( object ):
                 dataset.peek = 'no peek'
                 dataset.info = (dataset.info or '')
                 if context['stdout'].strip():
-                    #Ensure white space between entries
+                    # Ensure white space between entries
                     dataset.info = dataset.info.rstrip() + "\n" + context['stdout'].strip()
                 if context['stderr'].strip():
-                    #Ensure white space between entries
+                    # Ensure white space between entries
                     dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
                 dataset.tool_version = self.version_string
                 dataset.set_size()
@@ -1128,20 +1146,23 @@ class JobWrapper( object ):
                     if dataset.ext == 'auto':
                         dataset.extension = context.get( 'ext', 'data' )
                         dataset.init_meta( copy_from=dataset )
-                    #if a dataset was copied, it won't appear in our dictionary:
-                    #either use the metadata from originating output dataset, or call set_meta on the copies
-                    #it would be quicker to just copy the metadata from the originating output dataset,
-                    #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and self.app.config.retry_metadata_internally ):
-                        dataset.datatype.set_meta( dataset, overwrite=False )  # call datatype.set_meta directly for the initial set_meta call during dataset creation
-                    elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != final_job_state:
+                    # if a dataset was copied, it won't appear in our dictionary:
+                    # either use the metadata from originating output dataset, or call set_meta on the copies
+                    # it would be quicker to just copy the metadata from the originating output dataset,
+                    # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
+                    if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
+                         and self.app.config.retry_metadata_internally ):
+                        # call datatype.set_meta directly for the initial set_meta call during dataset creation
+                        dataset.datatype.set_meta( dataset, overwrite=False )
+                    elif ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
+                           and job.states.ERROR != final_job_state ):
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
-                        #load metadata from file
-                        #we need to no longer allow metadata to be edited while the job is still running,
-                        #since if it is edited, the metadata changed on the running output will no longer match
-                        #the metadata that was stored to disk for use via the external process,
-                        #and the changes made by the user will be lost, without warning or notice
+                        # load metadata from file
+                        # we need to no longer allow metadata to be edited while the job is still running,
+                        # since if it is edited, the metadata changed on the running output will no longer match
+                        # the metadata that was stored to disk for use via the external process,
+                        # and the changes made by the user will be lost, without warning or notice
                         output_filename = self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out
 
                         def path_rewriter( path ):
@@ -1225,8 +1246,10 @@ class JobWrapper( object ):
             if not data:
                 continue
             input_ext = data.ext
-
-        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )  # why not re-use self.param_dict here? ##dunno...probably should, this causes tools.parameters.basic.UnvalidatedValue to be used in following methods instead of validated and transformed values during i.e. running workflows
+        # why not re-use self.param_dict here? ##dunno...probably should, this causes
+        # tools.parameters.basic.UnvalidatedValue to be used in following methods
+        # instead of validated and transformed values during i.e. running workflows
+        param_dict = dict( [ ( p.name, p.value ) for p in job.parameters ] )
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         # Check for and move associated_files
         self.tool.collect_associated_files(out_data, self.working_directory)
@@ -1319,11 +1342,15 @@ class JobWrapper( object ):
             for outfile, size in self.get_output_sizes():
                 if size > self.app.job_config.limits.output_size:
                     log.warning( '(%s) Job output size %s has exceeded the global output size limit', self.get_id_tag(), os.path.basename( outfile ) )
-                    return JobState.runner_states.OUTPUT_SIZE_LIMIT, 'Job output file grew too large (greater than %s), please try different inputs or parameters' % util.nice_size( self.app.job_config.limits.output_size )
+                    return ( JobState.runner_states.OUTPUT_SIZE_LIMIT,
+                             'Job output file grew too large (greater than %s), please try different inputs or parameters'
+                             % util.nice_size( self.app.job_config.limits.output_size ) )
         if self.app.job_config.limits.walltime_delta is not None and runtime is not None:
             if runtime > self.app.job_config.limits.walltime_delta:
                 log.warning( '(%s) Job runtime %s has exceeded the global walltime, it will be terminated', self.get_id_tag(), runtime )
-                return JobState.runner_states.GLOBAL_WALLTIME_REACHED, 'Job ran longer than the maximum allowed execution time (runtime: %s, limit: %s), please try different inputs or parameters' % ( str(runtime).split('.')[0], self.app.job_config.limits.walltime )
+                return ( JobState.runner_states.GLOBAL_WALLTIME_REACHED,
+                         'Job ran longer than the maximum allowed execution time (runtime: %s, limit: %s), please try different inputs or parameters'
+                         % ( str(runtime).split('.')[0], self.app.job_config.limits.walltime ) )
         return None
 
     def has_limits( self ):
@@ -1342,11 +1369,11 @@ class JobWrapper( object ):
             return ''
         return '[ -f "%s" ] && . %s' % ( self.app.config.environment_setup_file, self.app.config.environment_setup_file )
 
-    def get_input_dataset_fnames( self,  ds ):
+    def get_input_dataset_fnames( self, ds ):
         filenames = []
         filenames = [ ds.file_name ]
-        #we will need to stage in metadata file names also
-        #TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
+        # we will need to stage in metadata file names also
+        # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
         for key, value in ds.metadata.items():
             if isinstance( value, model.MetadataFile ):
                 filenames.append( value.file_name )
@@ -1387,7 +1414,7 @@ class JobWrapper( object ):
             self.compute_outputs()
         return self.output_hdas_and_paths
 
-    def compute_outputs( self ) :
+    def compute_outputs( self ):
         dataset_path_rewriter = self.dataset_path_rewriter
 
         job = self.get_job()
@@ -1403,7 +1430,7 @@ class JobWrapper( object ):
             results.append( ( da.name, da.dataset, dataset_path ) )
 
         self.output_paths = [t[2] for t in results]
-        self.output_hdas_and_paths = dict([(t[0],  t[1:]) for t in results])
+        self.output_hdas_and_paths = dict([(t[0], t[1:]) for t in results])
         if special:
             false_path = dataset_path_rewriter.rewrite_dataset_path( special.dataset, 'output' )
             dsp = DatasetPath( special.dataset.id, special.dataset.file_name, false_path )
@@ -1455,7 +1482,10 @@ class JobWrapper( object ):
                 return ExpressionContext( meta, job_context )
         return job_context
 
-    def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None, config_root=None, config_file=None, datatypes_config=None, set_extension=True, **kwds ):
+    def setup_external_metadata( self, exec_dir=None, tmp_dir=None,
+                                 dataset_files_path=None, config_root=None,
+                                 config_file=None, datatypes_config=None,
+                                 set_extension=True, **kwds ):
         # extension could still be 'auto' if this is the upload tool.
         job = self.get_job()
         if set_extension:
@@ -1465,7 +1495,7 @@ class JobWrapper( object ):
                     output_dataset_assoc.dataset.extension = context.get( 'ext', 'data' )
             self.sa_session.flush()
         if tmp_dir is None:
-            #this dir should should relative to the exec_dir
+            # this dir should should relative to the exec_dir
             tmp_dir = self.app.config.new_file_path
         if dataset_files_path is None:
             dataset_files_path = self.app.model.Dataset.file_path
@@ -1475,7 +1505,9 @@ class JobWrapper( object ):
             config_file = self.app.config.config_file
         if datatypes_config is None:
             datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
-        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for output_dataset_assoc in job.output_datasets + job.output_library_datasets ],
+        return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for
+                                                                        output_dataset_assoc in
+                                                                        job.output_datasets + job.output_library_datasets ],
                                                                       self.sa_session,
                                                                       exec_dir=exec_dir,
                                                                       tmp_dir=tmp_dir,
@@ -1692,8 +1724,8 @@ class TaskWrapper(JobWrapper):
 
         # This may have ended too soon
         log.debug( 'task %s for job %d ended; exit code: %d'
-                 % (self.task_id, self.job_id,
-                    tool_exit_code if tool_exit_code != None else -256 ) )
+                   % (self.task_id, self.job_id,
+                      tool_exit_code if tool_exit_code is not None else -256 ) )
         # default post job setup_external_metadata
         self.sa_session.expunge_all()
         task = self.get_task()
@@ -1749,7 +1781,9 @@ class TaskWrapper(JobWrapper):
         # Handled at the parent job level.  Do nothing here.
         pass
 
-    def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None, config_root=None, config_file=None, datatypes_config=None, set_extension=True, **kwds ):
+    def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None,
+                                 config_root=None, config_file=None, datatypes_config=None,
+                                 set_extension=True, **kwds ):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
         return ""
 

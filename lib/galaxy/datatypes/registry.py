@@ -482,14 +482,6 @@ class Registry( object ):
             data.init_meta( copy_from=data )
         return data
 
-    def old_change_datatype( self, data, ext ):
-        """Creates and returns a new datatype based on an existing data and an extension"""
-        newdata = factory( ext )( id=data.id )
-        for key, value in data.__dict__.items():
-            setattr( newdata, key, value )
-        newdata.ext = ext
-        return newdata
-
     def load_datatype_converters( self, toolbox, installed_repository_dict=None, deactivate=False ):
         """
         If deactivate is False, add datatype converters from self.converters or self.proprietary_converters
@@ -653,12 +645,15 @@ class Registry( object ):
                   <requirement type="package">samtools</requirement>
               </requirements>
               <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
-              <command>$__SET_EXTERNAL_METADATA_COMMAND_LINE__</command>
+              <command>python $set_metadata $__SET_EXTERNAL_METADATA_COMMAND_LINE__</command>
               <inputs>
                 <param format="data" name="input1" type="data" label="File to set metadata on."/>
                 <param name="__ORIGINAL_DATASET_STATE__" type="hidden" value=""/>
                 <param name="__SET_EXTERNAL_METADATA_COMMAND_LINE__" type="hidden" value=""/>
               </inputs>
+              <configfiles>
+                <configfile name="set_metadata">from galaxy.metadata.set_metadata import set_metadata; set_metadata()</configfile>
+              </configfiles>
             </tool>
             """
         tmp_name = tempfile.NamedTemporaryFile()

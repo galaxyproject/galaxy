@@ -462,6 +462,7 @@ class Configuration( object ):
         Backwards compatibility for config files moved to the config/ dir.
         """
         defaults = dict(
+            auth_config_file=[ 'config/auth_conf.xml', 'config/auth_conf.xml.sample' ],
             data_manager_config_file=[ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
             datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],

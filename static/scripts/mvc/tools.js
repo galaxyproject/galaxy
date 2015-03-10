@@ -376,7 +376,7 @@ var ToolSearch = Backbone.Model.extend({
         }
 
         // Do search via AJAX.
-        var q = query + '*';
+        var q = query;
         // Stop previous ajax-request
         if (this.timer) {
             clearTimeout(this.timer);
@@ -386,12 +386,14 @@ var ToolSearch = Backbone.Model.extend({
         $("#search-spinner").show();
         var self = this;
         this.timer = setTimeout(function () {
+            // log the search to analytics
+            ga( 'send', 'pageview', galaxy_config.root + '?q=' + q );
             $.get(self.attributes.search_url, { query: q }, function (data) {
                 self.set("results", data);
                 $("#search-spinner").hide();
                 $("#search-clear-btn").show();
             }, "json" );
-        }, 200 );
+        }, 400 );
     },
 
     clear_search: function() {

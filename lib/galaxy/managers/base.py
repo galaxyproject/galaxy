@@ -789,10 +789,13 @@ class ModelValidator( object ):
         # TODO: is this correct?
         if val is None:
             return '?'
-        for genome_build_shortname, longname in self.app.genome_builds.get_genome_build_names( trans=trans ):
-            if val == genome_build_shortname:
-                return val
-        raise exceptions.RequestParameterInvalidException( "invalid reference", key=key, val=val )
+        # currently, data source sites like UCSC are able to set the genome build to non-local build names
+        # afterwards, attempting to validate the whole model will choke here
+        # for genome_build_shortname, longname in self.app.genome_builds.get_genome_build_names( trans=trans ):
+        #     if val == genome_build_shortname:
+        #         return val
+        # raise exceptions.RequestParameterInvalidException( "invalid reference", key=key, val=val )
+        return val
 
     # def slug( self, trans, item, key, val ):
     #    """validate slug"""

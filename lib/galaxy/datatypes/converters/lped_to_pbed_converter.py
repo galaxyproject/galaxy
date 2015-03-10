@@ -52,7 +52,7 @@ def getMissval(inped=''):
                return missval
    if not missval:
        missval = 'N' # punt
-   close(f)
+   f.close()
    return missval
 
 def rgConv(inpedfilepath,outhtmlname,outfilepath,plink):

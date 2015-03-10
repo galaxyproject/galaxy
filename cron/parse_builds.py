@@ -2,7 +2,7 @@
 
 """
 Connects to the URL specified and outputs builds available at that
-DSN in tabular format.  USCS Test gateway is used as default.
+DSN in tabular format.  UCSC Main gateway is used as default.
 build   description
 """
 
@@ -10,7 +10,10 @@ import sys
 import urllib
 import xml.etree.ElementTree as ElementTree
 
-URL = "http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
+try:
+    URL = sys.argv[1]
+except IndexError:
+    URL = "http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
 
 def getbuilds(url):
     try:
@@ -28,7 +31,7 @@ def getbuilds(url):
         print "?\tunspecified (?)"
         sys.exit(1)
 
-    print "#Harvested from http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
+    print "#Harvested from " + URL
     print "?\tunspecified (?)"
     for dsn in tree:
         build = dsn.find("SOURCE").attrib['id']

@@ -120,6 +120,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         else:
             self.openid_providers = OpenIDProviders()
         # Start the heartbeat process if configured and available
+        from galaxy import auth
+        self.auth_manager = auth.AuthManager( self )
         if self.config.use_heartbeat:
             from galaxy.util import heartbeat
             if heartbeat.Heartbeat:

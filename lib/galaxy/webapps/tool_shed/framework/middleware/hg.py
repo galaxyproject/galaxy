@@ -12,6 +12,7 @@ from paste.httpheaders import REMOTE_USER
 from galaxy.util import asbool
 from galaxy.util.hash_util import new_secure_hash
 from tool_shed.util import hg_util
+from tool_shed.util import commit_util
 import tool_shed.repository_types.util as rt_util
 
 from galaxy import eggs
@@ -291,7 +292,7 @@ class Hg( object ):
                 error_msg += 'the Tool Shed upload utility.  '
                 return False, error_msg
         return True, ''
-    
+
     def repository_tags_are_valid( self, filename, change_list ):
         """
         Make sure the any complex repository dependency definitions contain valid <repository> tags when pushing
@@ -299,9 +300,9 @@ class Hg( object ):
         """
         tag = '<repository'
         for change_dict in change_list:
-            lines = get_change_lines_in_file_for_tag( tag, change_dict )
+            lines = commit_util.get_change_lines_in_file_for_tag( tag, change_dict )
             for line in lines:
-                is_valid, error_msg = repository_tag_is_valid( filename, line )
+                is_valid, error_msg = self.repository_tag_is_valid( filename, line )
                 if not is_valid:
                     return False, error_msg
         return True, ''

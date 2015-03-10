@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<auth>
+    <authenticator>
+        <type>localdb</type>
+        <options>
+            <allow-password-change>true</allow-password-change>
+        </options>
+    </authenticator>
+</auth>

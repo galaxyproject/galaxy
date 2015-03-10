@@ -263,7 +263,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
         self.data = []
         self.configure_and_load( config_element, tool_data_path, from_shed_config)
 
-    def configure_and_load( self, config_element, tool_data_path, from_shed_config=False):
+    def configure_and_load( self, config_element, tool_data_path, from_shed_config=False, url_timeout=10 ):
         """
         Configure and load table from an XML element.
         """
@@ -289,7 +289,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 if filename:
                     tmp_file = NamedTemporaryFile( prefix='TTDT_URL_%s-' % self.name )
                     try:
-                        tmp_file.write( urlopen( filename ).read() )
+                        tmp_file.write( urlopen( filename, timeout=url_timeout ).read() )
                     except Exception, e:
                         log.error( 'Error loading Data Table URL "%s": %s', filename, e )
                         continue

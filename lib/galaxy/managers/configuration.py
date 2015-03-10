@@ -8,6 +8,7 @@ Used by both the API and bootstrapped data.
 #   but doesn't have a model like them. It might be better in config.py or a
 #   totally new area, but I'm leaving it in managers for now for class consistency.
 
+from galaxy import web
 from galaxy.managers import base
 
 import logging
