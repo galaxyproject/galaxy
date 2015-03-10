@@ -1419,7 +1419,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close{left:auto;
 .ui-message{padding:2px 10px 2px 10px;margin:0px}
 .ui-icon{font-size:1.2em}
 .ui-button-icon{height:auto !important}.ui-button-icon ul i{font-size:1.2em;margin-right:5px;position:relative;top:1px}
-.ui-button-icon .button{margin-right:5px;margin-left:5px}.ui-button-icon .button .title{position:relative;font-size:0.8em;font-weight:normal;top:-1px}
+.ui-button-icon .button{margin-right:5px;margin-left:5px}.ui-button-icon .button .title{position:relative;font-size:0.8em;font-weight:normal;top:-1px;word-break:break-word}
 .ui-button-icon .button.disabled{filter:alpha(opacity=65);opacity:.65;-ms-filter:progid:DXImageTransform.Microsoft.Alpha(Opacity=65);filter:alpha(opacity=65)}
 .ui-button-menu .dropdown-menu{min-width:50px}
 .ui-button-menu .dropdown-item{text-align:left}
@@ -1429,12 +1429,12 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close{left:auto;
 .ui-table tbody,.ui-table-plain tbody{cursor:pointer}
 .ui-table-plain{table-layout:fixed}.ui-table-plain tbody{cursor:auto !important}.ui-table-plain tbody td{padding:0px !important;border:none !important}
 .ui-table-plain .ui-table-section{border-left:solid 3px #ebd9b2;border-radius:5px !important;margin-bottom:5px;padding-left:10px}
-.ui-table-form-element{margin-top:5px;margin-bottom:5px;overflow:visible}.ui-table-form-element .ui-table-form-title{font-weight:bold}.ui-table-form-element .ui-table-form-title .ui-table-form-optional{cursor:pointer}.ui-table-form-element .ui-table-form-title .ui-table-form-optional .icon{margin-right:5px;font-size:1.2em}
+.ui-table-form-element{margin-top:5px;margin-bottom:5px;overflow:visible}.ui-table-form-element .ui-table-form-title{word-break:break-word;font-weight:bold}.ui-table-form-element .ui-table-form-title .ui-table-form-optional{cursor:pointer}.ui-table-form-element .ui-table-form-title .ui-table-form-optional .icon{margin-right:5px;font-size:1.2em}
 .ui-table-form-element .ui-table-form-field{margin-top:5px}
 .ui-table-form-separator{font-weight:bold;font-size:0.9em}
 .ui-table-form-info{clear:both !important}
 .ui-table-form-error{display:none}.ui-table-form-error .ui-table-form-error-text{padding-left:5px}
-.ui-portlet,.ui-portlet-repeat,.ui-portlet-limited,.ui-portlet-section,.ui-portlet-narrow{border:solid #d6b161 1px;border-radius:3px;position:relative;clear:both;width:auto;height:100%}.ui-portlet .portlet-header,.ui-portlet-limited .portlet-header,.ui-portlet-narrow .portlet-header{background:#ebd9b2;border-bottom:solid #d6b161 1px;padding:2px 8px;overflow:visible;float:right;width:100%}.ui-portlet .portlet-header .portlet-title,.ui-portlet-limited .portlet-header .portlet-title,.ui-portlet-narrow .portlet-header .portlet-title{display:inline;vertical-align:middle}.ui-portlet .portlet-header .portlet-title .portlet-title-text,.ui-portlet-limited .portlet-header .portlet-title .portlet-title-text,.ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text{vertical-align:middle;line-height:22px}
+.ui-portlet,.ui-portlet-repeat,.ui-portlet-limited,.ui-portlet-section,.ui-portlet-narrow{border:solid #d6b161 1px;border-radius:3px;position:relative;clear:both;width:auto;height:100%}.ui-portlet .portlet-header,.ui-portlet-limited .portlet-header,.ui-portlet-narrow .portlet-header{background:#ebd9b2;border-bottom:solid #d6b161 1px;padding:2px 8px;overflow:visible;float:right;width:100%}.ui-portlet .portlet-header .portlet-title,.ui-portlet-limited .portlet-header .portlet-title,.ui-portlet-narrow .portlet-header .portlet-title{word-break:break-word;display:inline;vertical-align:middle}.ui-portlet .portlet-header .portlet-title .portlet-title-text,.ui-portlet-limited .portlet-header .portlet-title .portlet-title-text,.ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text{vertical-align:middle;line-height:22px}
 .ui-portlet .portlet-header .portlet-title .icon,.ui-portlet-limited .portlet-header .portlet-title .icon,.ui-portlet-narrow .portlet-header .portlet-title .icon{font-size:1.2em;vertical-align:middle}
 .ui-portlet .portlet-header .portlet-operations .ui-button-icon,.ui-portlet-limited .portlet-header .portlet-operations .ui-button-icon,.ui-portlet-narrow .portlet-header .portlet-operations .ui-button-icon{margin-left:5px}
 .ui-portlet .portlet-content,.ui-portlet-limited .portlet-content,.ui-portlet-narrow .portlet-content{height:inherit;padding-left:10px;padding-right:10px;clear:both}.ui-portlet .portlet-content .content,.ui-portlet-limited .portlet-content .content,.ui-portlet-narrow .portlet-content .content{padding:0px;height:100%;width:100%}
