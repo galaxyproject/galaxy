@@ -12,7 +12,6 @@
         url             : '',
         paramname       : 'content',
         maxfilesize     : 2048,
-        maxfilenumber   : 50,
         dragover        : function() {},
         dragleave       : function() {},
         announce        : function() {},
@@ -129,9 +128,6 @@
             // add files to queue
             for (var i = 0; i < files.length; i++)
             {
-                // check
-                if(queue_length >= opts.maxfilenumber)
-                    break;
 
                 // new identifier
                 var index = String(queue_index++);

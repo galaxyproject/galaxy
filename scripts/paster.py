@@ -7,6 +7,11 @@ top level directly.
 
 import os, sys
 
+try:
+    import configparser
+except:
+    import ConfigParser as configparser
+
 # ensure supported version
 from check_python import check_python
 try:
@@ -19,15 +24,14 @@ new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
 from galaxy import eggs
-import pkg_resources
 
 if 'LOG_TEMPFILES' in os.environ:
     from log_tempfile import TempFile
     _log_tempfile = TempFile()
     import tempfile
 
-pkg_resources.require( "Paste" )
-pkg_resources.require( "PasteDeploy" )
+eggs.require( "Paste" )
+eggs.require( "PasteDeploy" )
 
 from galaxy.util.pastescript import serve
 serve.run()

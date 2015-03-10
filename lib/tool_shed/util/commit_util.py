@@ -18,7 +18,7 @@ import tool_shed.repository_types.util as rt_util
 log = logging.getLogger( __name__ )
 
 UNDESIRABLE_DIRS = [ '.hg', '.svn', '.git', '.cvs' ]
-UNDESIRABLE_FILES = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
+UNDESIRABLE_FILES = [ '.hg_archival.txt', 'hgrc', '.DS_Store', 'tool_test_output.html', 'tool_test_output.json' ]
 
 def check_archive( repository, archive ):
     for member in archive.getmembers():

@@ -199,7 +199,7 @@ define([], function() {
      */
     
     var Jstree = Backbone.Model.extend({
-      urlRoot: '/api/ftp_files'
+      urlRoot: '/api/remote_files'
     });
 
 return {

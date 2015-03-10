@@ -11,6 +11,7 @@ DEFAULT_MEMORY = None
 DEFAULT_VOLUMES_FROM = None
 DEFAULT_AUTO_REMOVE = True
 DEFAULT_SET_USER = "$UID"
+DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
 class DockerVolume(object):
@@ -116,6 +117,7 @@ def build_docker_run_command(
     working_directory=DEFAULT_WORKING_DIRECTORY,
     name=None,
     net=DEFAULT_NET,
+    run_extra_arguments=DEFAULT_RUN_EXTRA_ARGUMENTS,
     docker_cmd=DEFAULT_DOCKER_COMMAND,
     sudo=DEFAULT_SUDO,
     sudo_cmd=DEFAULT_SUDO_COMMAND,
@@ -148,6 +150,8 @@ def build_docker_run_command(
         command_parts.extend(["--net", net])
     if auto_rm:
         command_parts.append("--rm")
+    if run_extra_arguments:
+        command_parts.append(run_extra_arguments)
     if set_user:
         user = set_user
         if set_user == DEFAULT_SET_USER:

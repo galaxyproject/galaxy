@@ -25,7 +25,10 @@ class DataManagers( object ):
         self.managed_data_tables = odict()
         self.tool_path = None
         self.filename = xml_filename or self.app.config.data_manager_config_file
-        self.load_from_xml( self.filename )
+        for filename in util.listify( self.filename ):
+            if not filename:
+                continue
+            self.load_from_xml( filename )
         if self.app.config.shed_data_manager_config_file:
             self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=False, replace_existing=True )
 
@@ -114,6 +117,7 @@ class DataManager( object ):
         self.move_by_data_table_column = {}
         self.value_translation_by_data_table_column = {}
         self.tool_shed_repository_info_dict = None
+        self.undeclared_tables = False
         if elem is not None:
             self.load_from_element( elem, tool_path or self.data_managers.tool_path )
 
@@ -172,6 +176,7 @@ class DataManager( object ):
                         tool_shed_repository_id=tool_shed_repository_id )
         self.name = elem.get( 'name', self.tool.name )
         self.description = elem.get( 'description', self.tool.description )
+        self.undeclared_tables = util.asbool( elem.get( 'undeclared_tables', self.undeclared_tables ) )
 
         for data_table_elem in elem.findall( 'data_table' ):
             data_table_name = data_table_elem.get( "name" )
@@ -241,12 +246,12 @@ class DataManager( object ):
         return self.guid or self.declared_id #if we have a guid, we will use that as the data_manager id
 
     def load_tool( self, tool_filename, guid=None, data_manager_id=None, tool_shed_repository_id=None ):
-        tool = self.data_managers.app.toolbox.load_tool( tool_filename,
-                                                         guid=guid,
-                                                         data_manager_id=data_manager_id,
-                                                         repository_id=tool_shed_repository_id )
+        toolbox = self.data_managers.app.toolbox
+        tool = toolbox.load_hidden_tool( tool_filename,
+                                         guid=guid,
+                                         data_manager_id=data_manager_id,
+                                         repository_id=tool_shed_repository_id )
         self.data_managers.app.toolbox.data_manager_tools[ tool.id ] = tool
-        self.data_managers.app.toolbox.tools_by_id[ tool.id ] = tool
         self.tool = tool
         return tool
 
@@ -296,11 +301,28 @@ class DataManager( object ):
                         moved = self.process_move( data_table_name, name, output_ref_values[ name ].extra_files_path, **data_table_value )
                         data_table_value[ name ] = self.process_value_translation( data_table_name, name, **data_table_value )
                 data_table.add_entry( data_table_value, persist=True, entry_source=self )
-
-        for data_table_name, data_table_values in data_tables_dict.iteritems():
-            #tool returned extra data table entries, but data table was not declared in data manager
-            #do not add these values, but do provide messages
-            log.warning( 'The data manager "%s" returned an undeclared data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % ( self.id, data_table_name, data_table_values, data_table_name, self.data_managers.filename ) )
+        if self.undeclared_tables and data_tables_dict:
+            # We handle the data move, by just moving all the data out of the extra files path
+            # moving a directory and the target already exists, we move the contents instead
+            log.debug( 'Attempting to add entries for undeclared tables: %s.', ', '.join( data_tables_dict.keys() ) )
+            for ref_file in out_data.values():
+                util.move_merge( ref_file.extra_files_path, self.data_managers.app.config.galaxy_data_manager_data_path )
+            path_column_names = [ 'path' ]
+            for data_table_name, data_table_values in data_tables_dict.iteritems():
+                data_table = self.data_managers.app.tool_data_tables.get( data_table_name, None )
+                if not isinstance( data_table_values, list ):
+                    data_table_values = [ data_table_values ]
+                for data_table_row in data_table_values:
+                    data_table_value = dict( **data_table_row ) #keep original values here
+                    for name, value in data_table_row.iteritems():
+                        if name in path_column_names:
+                            data_table_value[ name ] = os.path.abspath( os.path.join( self.data_managers.app.config.galaxy_data_manager_data_path, value ) )
+                    data_table.add_entry( data_table_value, persist=True, entry_source=self )
+        else:
+            for data_table_name, data_table_values in data_tables_dict.iteritems():
+                # tool returned extra data table entries, but data table was not declared in data manager
+                # do not add these values, but do provide messages
+                log.warning( 'The data manager "%s" returned an undeclared data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % ( self.id, data_table_name, data_table_values, data_table_name, self.data_managers.filename ) )
 
     def process_move( self, data_table_name, column_name, source_base_path, relative_symlinks=False, **kwd ):
         if data_table_name in self.move_by_data_table_column and column_name in self.move_by_data_table_column[ data_table_name ]:

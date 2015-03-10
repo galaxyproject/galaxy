@@ -9,6 +9,8 @@ from galaxy import eggs
 eggs.require( "decorator" )
 eggs.require( "Tempita" )
 eggs.require( "SQLAlchemy" )
+eggs.require( "six" )  # required by sqlalchemy-migrate
+eggs.require( "sqlparse" )  # required by sqlalchemy-migrate
 eggs.require( "sqlalchemy_migrate" )
 
 from galaxy.util.properties import load_app_properties

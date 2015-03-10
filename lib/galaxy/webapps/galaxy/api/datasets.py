@@ -2,17 +2,28 @@
 API operations on the contents of a history dataset.
 """
 from galaxy import web
-from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider, SamDataProvider, BamDataProvider
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin
-from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.framework.helpers import is_true
+from galaxy import util
+
+from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
+from galaxy.visualization.data_providers.genome import SamDataProvider
+from galaxy.visualization.data_providers.genome import BamDataProvider
 from galaxy.datatypes import dataproviders
-from galaxy.util import string_as_bool_or_none
+
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import UsesVisualizationMixin
+from galaxy import managers
+
 import logging
 log = logging.getLogger( __name__ )
 
-class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin,
-                          UsesHistoryDatasetAssociationMixin ):
+
+class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
+
+    def __init__( self, app ):
+        super( DatasetsController, self ).__init__( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
+        self.hda_serializer = managers.hdas.HDASerializer( self.app )
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -32,7 +43,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         # Get dataset.
         try:
             dataset = self.get_hda_or_ldda( trans, hda_ldda=hda_ldda, dataset_id=id )
-        except Exception, e:
+        except Exception as e:
             return str( e )
 
         # Use data type to return particular type of data.
@@ -55,14 +66,11 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             else:
                 # Default: return dataset as dict.
                 if hda_ldda == 'hda':
-                    rval = self.get_hda_dict( trans, dataset )
-                    # add these to match api/history_contents.py, show
-                    rval[ 'display_types' ] = self.get_old_display_applications( trans, dataset )
-                    rval[ 'display_apps' ] = self.get_display_apps( trans, dataset )
+                    return self.hda_serializer.serialize_to_view( trans, dataset, view=kwd.get( 'view', 'detailed' ) )
                 else:
                     rval = dataset.to_dict()
 
-        except Exception, e:
+        except Exception as e:
             rval = "Error in dataset API at listing contents: " + str( e )
             log.error( rval + ": %s" % str(e), exc_info=True )
             trans.response.status = 500
@@ -72,7 +80,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         """
         Returns state of dataset.
         """
-        msg = self.check_dataset_state( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( trans, dataset )
         if not msg:
             msg = dataset.conversion_messages.DATA
 
@@ -83,7 +91,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
         """
-        msg = self.check_dataset_state( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( trans, dataset )
         if msg:
             return msg
 
@@ -132,7 +140,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             return dataset.conversion_messages.NO_DATA
 
         # Dataset check.
-        msg = self.check_dataset_state( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( trans, dataset )
         if msg:
             return msg
 
@@ -202,8 +210,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 # FIXME: increase region 1M each way to provide sequence for
                 # spliced/gapped reads. Probably should provide refseq object
                 # directly to data provider.
-                region = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, 
-                                                     low=( max( 0, int( low  ) - 1000000 ) ), 
+                region = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom,
+                                                     low=( max( 0, int( low  ) - 1000000 ) ),
                                                      high=( int( high ) + 1000000 ) )
 
             # Get mean depth.
@@ -225,7 +233,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         be slow because indexes need to be created.
         """
         # Dataset check.
-        msg = self.check_dataset_state( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( trans, dataset )
         if msg:
             return msg
 
@@ -267,27 +275,28 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
-        raw = string_as_bool_or_none( raw )
+        decoded_content_id = self.decode_id( history_content_id )
+        raw = util.string_as_bool_or_none( raw )
+
         rval = ''
         try:
-            hda = self.get_history_dataset_association_from_ids( trans, history_content_id, history_id )
+            hda = self.hda_manager.get_accessible( trans, decoded_content_id, trans.user )
 
-            display_kwd = kwd.copy()
-            try:
-                del display_kwd["key"]
-            except KeyError:
-                pass
             if raw:
                 if filename and filename != 'index':
-                    file_path = trans.app.object_store.get_filename(hda.dataset, extra_dir='dataset_%s_files' % hda.dataset.id, alt_name=filename)
+                    file_path = trans.app.object_store.get_filename( hda.dataset,
+                        extra_dir=( 'dataset_%s_files' % hda.dataset.id ), alt_name=filename)
                 else:
                     file_path = hda.file_name
                 rval = open( file_path )
 
             else:
+                display_kwd = kwd.copy()
+                if 'key' in display_kwd:
+                    del display_kwd["key"]
                 rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **display_kwd )
 
-        except Exception, exception:
+        except Exception as exception:
             log.error( "Error getting display data for dataset (%s) from history (%s): %s",
                        history_content_id, history_id, str( exception ), exc_info=True )
             trans.response.status = 500

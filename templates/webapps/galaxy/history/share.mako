@@ -36,10 +36,10 @@
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
+                    <% existing_emails = ','.join([ d.user.email for d in history.users_shared_with ]) %>
                     <label>Galaxy user emails with which to share histories</label>
-                    <div style="float: left; width: 250px; margin-right: 10px;">
-                        <input type="text" name="email" value="${email}" size="40">
-                    </div>
+                    <input type="hidden" id="email_select" name="email" value="${ existing_emails }" style="float: left; width: 250px; margin-right: 10px;">
+                    </input>
                     <div class="toolParamHelp" style="clear: both;">
                         Enter a Galaxy user email address or a comma-separated list of addresses if sharing with multiple users
                     </div>
@@ -55,6 +55,94 @@
                     <input type="submit" name="share_button" value="Submit">
                 </div>
             </form>
+            <script type="text/javascript">
+            // stolen from templates/admin/impersonate.mako
+            /*  This should be ripped out and made generic at some point for the
+             *  various API bindings available, and once the API can filter list
+             *  queries (term, below) */
+
+            var user_id = "${trans.security.encode_id(trans.user.id)}";
+            var history_id = "${trans.security.encode_id( history.id )}";
+
+            function item_to_label(item){
+                var text = "";
+                if(typeof(item.username) === "string" && typeof(item.email) === "string"){
+                    text = item.username + " <" + item.email + ">";
+                }else if(typeof(item.username) === "string"){
+                    text = item.username;
+                }else{
+                    text = item.email;
+                }
+                return text;
+                //return "id:" + item.id + "|e:" + item.email + "|u:" + item.username;
+            }
+
+            $("#email_select").select2({
+                placeholder: "Select a user",
+                multiple: true,
+                initSelection: function(element, callback) {
+                    var data = [
+                    // Must be here to loop across the users that this has been shared with.
+                    %for i, association in enumerate( history.users_shared_with ):
+                        <% shared_with = association.user %>
+                        {
+                            email: "${ shared_with.email }",
+                            id: "${trans.security.encode_id(shared_with.id)}",
+                            text: item_to_label({"email": "${ shared_with.email }", "username": "${ shared_with.username }" })
+                        }, 
+                    %endfor
+                    ];
+                    callback(data);
+                },
+                tokenSeparators: [',', ' '],
+                // Required for initSelection
+                id: function(object) {
+                    return object.id;
+                },
+                ajax: {
+                    url: "${h.url_for(controller="/api/users", action="index")}",
+                    data: function (term) {
+                        return {
+                            f_email: term
+                        };
+                    },
+                    dataType: 'json',
+                    quietMillis: 250,
+                    results: function (data) {
+                        var results = [];
+                        // For every user returned by the API call,
+                        $.each(data, function(index, item){
+                            // If they aren't the requesting user, add to the
+                            // list that will populate the select
+                            if(item.id != "${trans.security.encode_id(trans.user.id)}"){
+                                results.push({
+                                  id: item.id,
+                                  name: item.username,
+                                  text: item_to_label(item),
+                                });
+                            }
+                        });
+                        return {
+                            results: results
+                        };
+                    }
+                },
+                createSearchChoice: function(term, data) {
+                    // Check for a user with a matching email.
+                    var matches = _.filter(data, function(user){
+                        return user.text.indexOf(term) > -1;
+                    });
+                    // If there aren't any users with matching object labels, then 
+                    // display a "default" entry with whatever text they're entering.
+                    // id is set to term as that will be used in 
+                    if(matches.length == 0){
+                        return {id: term, text:term};
+                    }else{
+                        // No extra needed
+                    }
+                }
+            });
+            </script>
         %else:
             ## We are sharing restricted histories
             %if no_change_needed or can_change:

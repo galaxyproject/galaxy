@@ -113,16 +113,20 @@ class ToolDataTableManager( object ):
             error = True
         return error, message
 
-    def install_tool_data_tables( self, tool_shed_repository, tool_index_sample_files ):
-        TOOL_DATA_TABLE_FILE_NAME = 'tool_data_table_conf.xml'
-        TOOL_DATA_TABLE_FILE_SAMPLE_NAME = '%s.sample' % ( TOOL_DATA_TABLE_FILE_NAME )
-        SAMPLE_SUFFIX = '.sample'
-        SAMPLE_SUFFIX_OFFSET = -len( SAMPLE_SUFFIX )
+    def get_target_install_dir( self, tool_shed_repository ):
         tool_path, relative_target_dir = tool_shed_repository.get_tool_relative_path( self.app )
         # This is where index files will reside on a per repo/installed version basis.
         target_dir = os.path.join( self.app.config.shed_tool_data_path, relative_target_dir )
         if not os.path.exists( target_dir ):
             os.makedirs( target_dir )
+        return target_dir, tool_path, relative_target_dir
+
+    def install_tool_data_tables( self, tool_shed_repository, tool_index_sample_files ):
+        TOOL_DATA_TABLE_FILE_NAME = 'tool_data_table_conf.xml'
+        TOOL_DATA_TABLE_FILE_SAMPLE_NAME = '%s.sample' % ( TOOL_DATA_TABLE_FILE_NAME )
+        SAMPLE_SUFFIX = '.sample'
+        SAMPLE_SUFFIX_OFFSET = -len( SAMPLE_SUFFIX )
+        target_dir, tool_path, relative_target_dir = self.get_target_install_dir( tool_shed_repository )
         for sample_file in tool_index_sample_files:
             path, filename = os.path.split ( sample_file )
             target_filename = filename

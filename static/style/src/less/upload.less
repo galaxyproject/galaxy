@@ -52,14 +52,9 @@
     cursor: pointer;
 }
 
-.upload-info {
-    font-weight: normal;
-    text-align: center;
-}
-
 .upload-box {
     width           : 100%;
-    height          : 95%;
+    height          : 90%;
     text-align      : center;
     overflow        : scroll;
     font-size       : @font-size-base;
@@ -100,6 +95,10 @@
                 background: transparent;
             }
         }
+    }
+
+    .name-column {
+        position: relative;
     }
 
     .mode {
@@ -199,6 +198,20 @@
         text-align: center;
         margin-top: 20px;
     }
+
+    .upload-ftp-row {
+        cursor: pointer;
+        .label {
+            width: 240px;
+            p {
+                width: inherit;
+                word-wrap: break-word;
+            }
+        }
+        .nonlabel {
+            white-space: nowrap;
+        }
+    }
 }
 
 
@@ -212,5 +225,44 @@
         background: @white;
         opacity: 0.4;
         cursor: no-drop;
+    }
+}
+
+.upload-header {
+    height:5%;
+    text-align:left;
+    max-height:20px;
+    line-height:18px;
+    margin-top: 10px;
+    .header-title {
+        font-weight: bold;
+        padding-left: 60px;
+        padding-right: 20px;
+    }
+    .header-selection{
+        width:200px;
+        min-width:200px;
+        font-size:11px;
+        padding-right: 10px;
+    }
+    .select2-choice {
+        .select2-arrow b {
+            background-position: 0 -3px;
+        }
+        max-height: 20px;
+        line-height: 18px;
+        background: transparent;
+        text-align:center;
+        font-weight: normal;
+    }
+}
+
+.upload-top {
+    height:5%;
+    text-align:center;
+    .upload-info {
+        margin-top: 0px;
+        font-weight: normal;
+        text-align: center;
     }
 }

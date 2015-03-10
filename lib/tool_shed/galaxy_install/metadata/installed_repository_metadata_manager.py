@@ -66,7 +66,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
         in the received tool shed repository metadata.
         """
         repository_tools_tups = []
-        index, shed_conf_dict = self.tpm.get_shed_tool_conf_dict( self.metadata_dict.get( 'shed_config_filename' ) )
+        shed_conf_dict = self.tpm.get_shed_tool_conf_dict( self.metadata_dict.get( 'shed_config_filename' ) )
         if 'tools' in self.metadata_dict:
             for tool_dict in self.metadata_dict[ 'tools' ]:
                 load_relative_path = relative_path = tool_dict.get( 'tool_config', None )

@@ -7,6 +7,7 @@ from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
 eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
+from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
 import logging
 log = logging.getLogger( __name__ )
@@ -15,20 +16,24 @@ log = logging.getLogger( __name__ )
 class SpecifiedDateListGrid( grids.Grid ):
 
     class WorkflowNameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, stored_workflow ):
             return stored_workflow.name
 
     class CreateTimeColumn( grids.DateTimeColumn ):
+
         def get_value( self, trans, grid, stored_workflow ):
             return stored_workflow.create_time
 
     class UserColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, stored_workflow ):
             if stored_workflow.user:
                 return stored_workflow.user.email
             return 'unknown'
 
     class EmailColumn( grids.GridColumn ):
+
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
@@ -36,6 +41,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                                        model.User.table.c.email == column_filter ) )
 
     class SpecifiedDateColumn( grids.GridColumn ):
+
         def filter( self, trans, user, query, column_filter ):
             if column_filter == 'All':
                 return query
@@ -60,12 +66,11 @@ class SpecifiedDateListGrid( grids.Grid ):
     use_async = False
     model_class = model.StoredWorkflow
     title = "Workflows"
-    template='/webapps/reports/grid.mako'
+    template = '/webapps/reports/grid.mako'
     default_sort_key = "name"
     columns = [
         WorkflowNameColumn( "Name",
                             key="name",
-                            #link=( lambda item: dict( operation="workflow_info", id=item.id, webapp="reports" ) ),
                             attach_popup=False,
                             filterable="advanced" ),
         CreateTimeColumn( "Creation Time",
@@ -91,17 +96,18 @@ class SpecifiedDateListGrid( grids.Grid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     standard_filters = []
-    default_filter = { 'specified_date' : 'All' }
+    default_filter = { 'specified_date': 'All' }
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class ) \
                                .join( model.User ) \
                                .enable_eagerloads( False )
 
 
-class Workflows( BaseUIController ):
+class Workflows( BaseUIController, ReportQueryBuilder ):
 
     specified_date_list_grid = SpecifiedDateListGrid()
 
@@ -131,7 +137,7 @@ class Workflows( BaseUIController ):
                 if workflow.user:
                     kwd[ 'email' ] = workflow.user.email
                 else:
-                    kwd[ 'email' ] = None # For anonymous users ( shouldn't happen with workflows )
+                    kwd[ 'email' ] = None  # For anonymous users ( shouldn't happen with workflows )
                 return trans.response.send_redirect( web.url_for( controller='workflows',
                                                                   action='user_per_month',
                                                                   **kwd ) )
@@ -140,10 +146,10 @@ class Workflows( BaseUIController ):
     @web.expose
     def per_month_all( self, trans, **kwd ):
         message = ''
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.StoredWorkflow.table.c.create_time ) ).label( 'date' ),sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
-                       from_obj = [ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
-                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.StoredWorkflow.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+        q = sa.select( ( self.select_month( model.StoredWorkflow.table.c.create_time ).label( 'date' ), sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
+                       from_obj=[ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
+                       group_by=self.group_by_month( model.StoredWorkflow.table.c.create_time ),
+                       order_by=[ sa.desc( 'date' ) ] )
         workflows = []
         for row in q.execute():
             workflows.append( ( row.date.strftime( "%Y-%m" ),
@@ -160,9 +166,9 @@ class Workflows( BaseUIController ):
         workflows = []
         q = sa.select( ( model.User.table.c.email.label( 'user_email' ),
                          sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
-                       from_obj = [ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
-                       group_by = [ 'user_email' ],
-                       order_by = [ sa.desc( 'total_workflows' ), 'user_email' ] )
+                       from_obj=[ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
+                       group_by=[ 'user_email' ],
+                       order_by=[ sa.desc( 'total_workflows' ), 'user_email' ] )
         for row in q.execute():
             workflows.append( ( row.user_email,
                                 row.total_workflows ) )
@@ -174,12 +180,12 @@ class Workflows( BaseUIController ):
         message = ''
         email = util.restore_text( params.get( 'email', '' ) )
         user_id = trans.security.decode_id( params.get( 'id', '' ) )
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( model.StoredWorkflow.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_month( model.StoredWorkflow.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
-                       whereclause = model.StoredWorkflow.table.c.user_id == user_id,
-                       from_obj = [ model.StoredWorkflow.table ],
-                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( model.StoredWorkflow.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+                       whereclause=model.StoredWorkflow.table.c.user_id == user_id,
+                       from_obj=[ model.StoredWorkflow.table ],
+                       group_by=self.group_by_month( model.StoredWorkflow.table.c.create_time ),
+                       order_by=[ sa.desc( 'date' ) ] )
         workflows = []
         for row in q.execute():
             workflows.append( ( row.date.strftime( "%Y-%m" ),
@@ -191,7 +197,8 @@ class Workflows( BaseUIController ):
                                     workflows=workflows,
                                     message=message )
 
-## ---- Utility methods -------------------------------------------------------
+# ---- Utility methods -------------------------------------------------------
+
 
 def get_workflow( trans, id ):
     return trans.sa_session.query( trans.model.Workflow ).get( trans.security.decode_id( id ) )

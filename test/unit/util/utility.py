@@ -29,7 +29,7 @@ def add_galaxy_lib_to_path( this_dir_relative_to_root ):
         utility.add_galaxy_lib_to_path( '/test/unit/datatypes/dataproviders' )
     """
     glx_lib = os.path.join( os.getcwd().replace( this_dir_relative_to_root, '' ), 'lib' )
-    sys.path.append( glx_lib )
+    sys.path.insert( 1, glx_lib )
 
 def clean_multiline_string( multiline_string, sep='\n' ):
     """

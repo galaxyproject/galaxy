@@ -5,7 +5,7 @@ from galaxy import model, util
 import logging, os, sys
 from galaxy.web.form_builder import *
 from galaxy.tools.parameters.basic import parameter_types
-from elementtree.ElementTree import XML, Element
+from xml.etree.ElementTree import XML, Element
 from galaxy.util.odict import odict
 import copy
 from galaxy.web.framework.helpers import time_ago, iff, grids
@@ -65,7 +65,7 @@ class FormsGrid( grids.Grid ):
     global_actions = [
         grids.GridAction( "Create new form", dict( controller='forms', action='create_form_definition' ) )
     ]
-    
+
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join (model.FormDefinition, self.model_class.latest_form_id == model.FormDefinition.id)
 

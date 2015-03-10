@@ -47,15 +47,77 @@ module.exports = function(grunt) {
         options: {
           spawn: false
         }
+    },
+
+    // call bower to install libraries and other external resources
+    "bower-install-simple" : {
+      options: {
+          color: true
+      },
+      "prod": {
+          options: {
+              production: true
+          }
+      },
+      "dev": {
+          options: {
+              production: false
+          }
+      }
+    },
+    // where to move fetched bower components into the build structure (libName: [ bower-location, libs-location ])
+    libraryLocations : {
+      "jquery": [ "dist/jquery.js", "jquery/jquery.js" ],
+      "jquery-migrate": [ "jquery-migrate.js", "jquery/jquery.migrate.js" ],
+      "traceKit": [ "tracekit.js", "tracekit.js" ],
+      "ravenjs": [ "dist/raven.js", "raven.js" ],
+      "underscore": [ "underscore.js", "underscore.js" ],
+      "handlebars": [ "handlebars.runtime.js", "handlebars.runtime.js" ],
+      "lunr.js": [ "lunr.js", "lunr.js" ]
+      //"backbone": [ "backbone.js", "backbone/backbone.js" ],
+
+      // these need to be updated and tested
+      //"require": [ "build/require.js", "require.js" ],
+      //"d3": [ "d3.js", "d3.js" ],
+      //"farbtastic": [ "src/farbtastic.js", "farbtastic.js" ],
+      //"jQTouch": [ "src/reference/jqtouch.js", "jquery/jqtouch.js" ],
+      //"bib2json": [ "Parser.js", "bibtex.js" ],
+      //"jquery-form": [ "jquery.form.js", "jquery/jquery.form.js" ],
+      //"jquery-autocomplete": [ "src/jquery.autocomplete.js", "jquery/jquery.autocomplete.js" ],
+      //"select2": [ "select2.js", "jquery/select2.js" ],
+      //"jStorage": [ "jstorage.js", "jquery/jstorage.js" ],
+      //"jquery.cookie": [ "", "jquery/jquery.cookie.js" ],
+      //"dynatree": [ "dist/jquery.dynatree.js", "jquery/jquery.dynatree.js" ],
+      //"jquery-mousewheel": [ "jquery.mousewheel.js", "jquery/jquery.mousewheel.js" ],
+      //"jquery.event.drag-drop": [
+      //  [ "event.drag/jquery.event.drag.js", "jquery/jquery.event.drag.js" ],
+      //  [ "event.drag/jquery.event.drop.js", "jquery/jquery.event.drop.js" ]
+      //],
+
+      // these are complicated by additional css/less
+      //"toastr": [ "toastr.js", "toastr.js" ],
+      //"wymeditor": [ "dist/wymeditor/jquery.wymeditor.js", "jquery/jquery.wymeditor.js" ],
+      //"jstree": [ "jstree.js", "jquery/jstree.js" ],
+
+      // these have been customized by Galaxy
+      //"bootstrap": [ "dist/js/bootstrap.js", "bootstrap.js" ],
+      //"jquery-ui": [
+      //  // multiple components now
+      //  [ "", "jquery/jquery-ui.js" ]
+      //],
+
     }
+
   });
 
   grunt.loadNpmTasks( 'grunt-contrib-watch' );
   grunt.loadNpmTasks( 'grunt-contrib-copy');
-  grunt.loadNpmTasks('grunt-exec');
+  grunt.loadNpmTasks( 'grunt-bower-install-simple');
+  grunt.loadNpmTasks( 'grunt-exec' );
 
   grunt.registerTask( 'pack', [ 'exec' ] );
-  grunt.registerTask( 'default', [ 'copy', 'pack' ] );
+  grunt.registerTask( 'default', [ 'copy:main', 'pack' ] );
+
 
   // -------------------------------------------------------------------------- copy,pack only those changed
   // adapted from grunt-contrib-watch jslint example
@@ -84,5 +146,26 @@ module.exports = function(grunt) {
     changedFiles[filepath] = action;
     onChange();
   });
+
+  // -------------------------------------------------------------------------- fetch/update external libraries
+  /** copy external libraries from bower components to scripts/libs */
+  function copyLibs(){
+    var libraryLocations = grunt.config( 'libraryLocations' );
+    for( var libName in libraryLocations ){
+      if( libraryLocations.hasOwnProperty( libName ) ){
+
+        var BOWER_DIR = 'bower_components',
+            location = libraryLocations[ libName ],
+            source = [ BOWER_DIR, libName, location[0] ].join( '/' ),
+            destination = 'galaxy/scripts/libs/' + location[1];
+        grunt.log.writeln( source + ' -> ' + destination );
+        grunt.file.copy( source, destination );
+      }
+    }
+  }
+
+  grunt.registerTask( 'copy-libs', 'copy external libraries to src', copyLibs );
+  grunt.registerTask( 'install-libs', 'fetch external libraries and copy to src',
+                      [ 'bower-install-simple:prod', 'copy-libs' ] );
 
 };

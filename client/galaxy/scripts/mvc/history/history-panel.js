@@ -6,8 +6,11 @@ define([
     "mvc/history/hdca-li",
     "mvc/collection/collection-panel",
     "mvc/user/user-model",
+    "ui/fa-icon-button",
+    "mvc/ui/popup-menu",
     "mvc/base-mvc",
-    "utils/localization"
+    "utils/localization",
+    "ui/search-input"
 ], function(
     LIST_PANEL,
     HISTORY_MODEL,
@@ -16,6 +19,8 @@ define([
     HDCA_LI,
     COLLECTION_PANEL,
     USER,
+    faIconButton,
+    PopupMenu,
     BASE_MVC,
     _l
 ){
@@ -299,7 +304,8 @@ var HistoryPanel = _super.extend(
     /** In this override, add a btn to toggle the selectors */
     _buildNewRender : function(){
         var $newRender = _super.prototype._buildNewRender.call( this );
-        if( this.multiselectActions.length ){
+        //if( this.views.length && this.multiselectActions().length ){
+        if( this.multiselectActions().length ){
             $newRender.find( '.controls .actions' ).prepend( this._renderSelectButton() );
         }
         return $newRender;
@@ -375,12 +381,9 @@ var HistoryPanel = _super.extend(
     /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
         // toggle list item selectors
-        'click .show-selectors-btn'                 : 'toggleSelectors'
+        'click .show-selectors-btn'         : 'toggleSelectors',
         // allow (error) messages to be clicked away
-//TODO: switch to common close (X) idiom
-        //'click .messages'               : 'clearMessages',
-//TODO: remove
-        //'click .history-search-btn'     : 'toggleSearchControls'
+        'click .messages [class$=message]'  : 'clearMessages'
     }),
 
     /** Handle the user toggling the deleted visibility by:
@@ -451,14 +454,14 @@ var HistoryPanel = _super.extend(
      */
     errorHandler : function( model, xhr, options, msg, details ){
         this.error( model, xhr, options, msg, details );
-//TODO: getting JSON parse errors from jq migrate
 
         // interrupted ajax
         if( xhr && xhr.status === 0 && xhr.readyState === 0 ){
+            //TODO: gmail style 'retrying in Ns'
 
         // bad gateway
         } else if( xhr && xhr.status === 502 ){
-//TODO: gmail style 'reconnecting in Ns'
+            //TODO: gmail style 'retrying in Ns'
 
         // otherwise, show an error message inside the panel
         } else {
@@ -545,7 +548,7 @@ var HistoryPanel = _super.extend(
                 });
             $msg.append( ' ', $detailsLink );
         }
-        return $msgContainer.html( $msg );
+        return $msgContainer.append( $msg );
     },
 
     /** convert msg and details into modal options usable by Galaxy.modal */
@@ -576,10 +579,12 @@ var HistoryPanel = _super.extend(
 
     /** Remove all messages from the panel. */
     clearMessages : function( ev ){
-        $( ev.currentTarget ).fadeOut( this.fxSpeed, function(){
+        var $target = !_.isUndefined( ev )?
+            $( ev.currentTarget )
+            :this.$messages().children( '[class$="message"]' );
+        $target.fadeOut( this.fxSpeed, function(){
             $( this ).remove();
         });
-        //this.$messages().children().not( '.quota-message' ).remove();
         return this;
     },
 
@@ -614,9 +619,17 @@ HistoryPanel.prototype.templates = (function(){
             '<div class="actions"></div>',
 
             '<div class="messages">',
-                '<% if( history.deleted ){ %>',
+                '<% if( history.deleted && history.purged ){ %>',
+                    '<div class="deleted-msg warningmessagesmall">',
+                        _l( 'This history has been purged and deleted' ),
+                    '</div>',
+                '<% } else if( history.deleted ){ %>',
                     '<div class="deleted-msg warningmessagesmall">',
                         _l( 'This history has been deleted' ),
+                    '</div>',
+                '<% } else if( history.purged ){ %>',
+                    '<div class="deleted-msg warningmessagesmall">',
+                        _l( 'This history has been purged' ),
                     '</div>',
                 '<% } %>',
 
@@ -643,8 +656,8 @@ HistoryPanel.prototype.templates = (function(){
                     '<button class="deselect-all btn btn-default"',
                             'data-mode="select">', _l( 'None' ), '</button>',
                 '</div>',
-                '<button class="list-action-popup-btn btn btn-default">',
-                    _l( 'For all selected' ), '...</button>',
+                '<div class="list-action-menu btn-group">',
+                '</div>',
             '</div>',
         '</div>'
     ], 'history' );

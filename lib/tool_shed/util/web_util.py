@@ -4,7 +4,7 @@ ALLOWED_ELEMENTS = ["<b>", "</b>", "<br/>"]
 ALLOWED_MAP = dict(map(lambda x: (x, raw_escape(x)), ALLOWED_ELEMENTS))
 
 
-def escape( value ):
+def escape( string ):
     """ A tool shed variant of markupsafe.escape that allows a select few
     HTML elements that are repeatedly used in messages created deep
     in the toolshed components. Ideally abstract things would be produced
@@ -14,7 +14,7 @@ def escape( value ):
     >>> escape("A <b>repo</b>")
     u'A <b>repo</b>'
     """
-    escaped = str( raw_escape( value ) )
+    escaped = str( raw_escape( string ) )
     # Unescape few selected tags.
     for key, value in ALLOWED_MAP.iteritems():
         escaped = escaped.replace(value, key)

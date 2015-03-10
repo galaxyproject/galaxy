@@ -13,6 +13,7 @@ from markupsafe import escape
 from webhelpers import date
 from webhelpers.html.tags import stylesheet_link, javascript_link
 
+eggs.require( "repoze.lru" )  # used by Routes
 eggs.require( "Routes" )
 from routes import url_for
 

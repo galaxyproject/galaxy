@@ -99,7 +99,6 @@ return Backbone.View.extend({
         this.portlet = new Portlet.View({
             icon : 'fa-bar-chart-o',
             title: 'Viewport',
-            scrollable: false,
             operations: {
                 edit_button: new Ui.ButtonIcon({
                     icon    : 'fa-edit',
@@ -116,7 +115,7 @@ return Backbone.View.extend({
         });
         
         // append portlet
-        this.portlet.append(this.message.$el);
+        this.portlet.append(this.message.$el.addClass('ui-margin-top'));
         this.portlet.append(this.viewport_view.$el);
         
         // set element

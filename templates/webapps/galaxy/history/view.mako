@@ -65,8 +65,7 @@ a.btn {
 
 ## ----------------------------------------------------------------------------
 <%def name="javascripts()">
-${parent.javascripts()}
-
+    ${parent.javascripts()}
 </%def>
 
 ## ----------------------------------------------------------------------------
@@ -144,7 +143,7 @@ ${parent.javascripts()}
                 window.location = "${ switch_to_url }";
             }
         });
-        
+
         $( '#import' ).modeButton({
             switchModesOnClick : false,
             initialMode : "${ 'with_deleted' if show_deleted else 'without_deleted' }",
@@ -175,8 +174,17 @@ ${parent.javascripts()}
             ({ location: 'mvc/history/history-panel',       className: 'HistoryPanel' });
 
     require.config({
-        baseUrl : "${h.url_for( '/static/scripts' )}"
-    })([ 'mvc/user/user-model', panelToUse.location, 'utils/localization' ], function( user, panelMod, _l ){
+        baseUrl : "${h.url_for( '/static/scripts' )}",
+        paths   : {
+            'jquery' : 'libs/jquery/jquery'
+        },
+        urlArgs: 'v=${int(app.server_starttime)}'
+    })([
+        'mvc/user/user-model',
+        panelToUse.location,
+        'utils/localization',
+        'ui/mode-button'
+    ], function( user, panelMod, _l ){
         $(function(){
             setUpBehaviors();
             if( hasMasthead ){

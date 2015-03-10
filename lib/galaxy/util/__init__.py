@@ -12,7 +12,6 @@ import errno
 import grp
 import logging
 import os
-import pickle
 import random
 import re
 import shutil
@@ -22,8 +21,10 @@ import string
 import sys
 import tempfile
 import threading
+import urlparse
 
 from galaxy.util import json
+from datetime import datetime
 
 from email.MIMEText import MIMEText
 
@@ -31,16 +32,13 @@ from os.path import relpath
 from hashlib import md5
 from itertools import izip
 
-from urlparse import urlparse
-
 from galaxy import eggs
 
 eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
-eggs.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
+from xml.etree import ElementTree, ElementInclude
 
 eggs.require( "wchartype" )
 import wchartype
@@ -169,11 +167,15 @@ def unique_id(KEY_SIZE=128):
     return md5(str( random.getrandbits( KEY_SIZE ) )).hexdigest()
 
 
-def parse_xml(fname):
+def parse_xml( fname ):
     """Returns a parsed xml tree"""
-    tree = ElementTree.parse(fname)
-    root = tree.getroot()
-    ElementInclude.include(root)
+    # handle deprecation warning for XMLParsing a file with DOCTYPE
+    class DoctypeSafeCallbackTarget( ElementTree.TreeBuilder ):
+        def doctype( *args ):
+            pass
+    tree = ElementTree.ElementTree()
+    root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
+    ElementInclude.include( root )
     return tree
 
 
@@ -336,6 +338,63 @@ def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginnin
     return value
 
 
+def pretty_print_time_interval( time=False, precise=False ):
+    """
+    Get a datetime object or a int() Epoch timestamp and return a
+    pretty string like 'an hour ago', 'Yesterday', '3 months ago',
+    'just now', etc
+    credit: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
+    """
+    now = datetime.now()
+    if type( time ) is int:
+        diff = now - datetime.fromtimestamp( time )
+    elif isinstance( time, datetime ):
+        diff = now - time
+    elif not time:
+        diff = now - now
+    second_diff = diff.seconds
+    day_diff = diff.days
+
+    if day_diff < 0:
+        return ''
+
+    if precise:
+        if day_diff == 0:
+                if second_diff < 10:
+                    return "just now"
+                if second_diff < 60:
+                    return str(second_diff) + " seconds ago"
+                if second_diff < 120:
+                    return "a minute ago"
+                if second_diff < 3600:
+                    return str(second_diff / 60) + " minutes ago"
+                if second_diff < 7200:
+                    return "an hour ago"
+                if second_diff < 86400:
+                    return str(second_diff / 3600) + " hours ago"
+        if day_diff == 1:
+            return "yesterday"
+        if day_diff < 7:
+            return str( day_diff ) + " days ago"
+        if day_diff < 31:
+            return str( day_diff / 7 ) + " weeks ago"
+        if day_diff < 365:
+            return str( day_diff / 30 ) + " months ago"
+        return str( day_diff / 365 ) + " years ago"
+    else:
+        if day_diff == 0:
+            return "today"
+        if day_diff == 1:
+            return "yesterday"
+        if day_diff < 7:
+            return "less than a week"
+        if day_diff < 31:
+            return "less than a month"
+        if day_diff < 365:
+            return "less than a year"
+        return "a few years ago"
+
+
 def pretty_print_json(json_data, is_json_string=False):
     if is_json_string:
         json_data = json.loads(json_data)
@@ -380,6 +439,7 @@ def sanitize_text( text, valid_characters=valid_chars, character_map=mapped_char
         text = smart_str( text )
     return _sanitize_text_helper( text, valid_characters=valid_characters, character_map=character_map )
 
+
 def _sanitize_text_helper( text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X' ):
     """Restricts the characters that are allowed in a string"""
 
@@ -398,7 +458,10 @@ def sanitize_lists_to_string( values, valid_characters=valid_chars, character_ma
     if isinstance( values, list ):
         rval = []
         for value in values:
-            rval.append( sanitize_lists_to_string( value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character ) )
+            rval.append( sanitize_lists_to_string( value,
+                                                   valid_characters=valid_characters,
+                                                   character_map=character_map,
+                                                   invalid_character=invalid_character ) )
         values = ",".join( rval )
     else:
         values = sanitize_text( values, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character )
@@ -435,6 +498,30 @@ def sanitize_for_filename( text, default=None ):
             return sanitize_for_filename( str( unique_id() ) )
         return default
     return out
+
+
+def mask_password_from_url( url ):
+    """
+    Masks out passwords from connection urls like the database connection in galaxy.ini
+
+    >>> mask_password_from_url( 'sqlite+postgresql://user:password@localhost/' )
+    'sqlite+postgresql://user:********@localhost/'
+    >>> mask_password_from_url( 'amqp://user:amqp@localhost' )
+    'amqp://user:********@localhost'
+    >>> mask_password_from_url( 'amqp://localhost')
+    'amqp://localhost'
+    """
+    split = urlparse.urlsplit(url)
+    if split.password:
+        if url.count(split.password) == 1:
+            url = url.replace(split.password, "********")
+        else:
+            # This can manipulate the input other than just masking password,
+            # so the previous string replace method is preferred when the
+            # password doesn't appear twice in the url
+            split = split._replace(netloc=split.netloc.replace("%s:%s" % (split.username, split.password), '%s:********' % split.username))
+            url = urlparse.urlunsplit(split)
+    return url
 
 
 def ready_name_for_url( raw_name ):
@@ -553,7 +640,12 @@ class Params( object ):
     def __init__( self, params, sanitize=True ):
         if sanitize:
             for key, value in params.items():
-                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for nonsanitize_parameter in self.NEVER_SANITIZE ]:  # sanitize check both ungrouped and grouped parameters by name. Anything relying on NEVER_SANITIZE should be changed to not require this and NEVER_SANITIZE should be removed.
+                # sanitize check both ungrouped and grouped parameters by
+                # name. Anything relying on NEVER_SANITIZE should be
+                # changed to not require this and NEVER_SANITIZE should be
+                # removed.
+                if key not in self.NEVER_SANITIZE and True not in [ key.endswith( "|%s" % nonsanitize_parameter ) for
+                                                                    nonsanitize_parameter in self.NEVER_SANITIZE ]:
                     self.__dict__[ key ] = sanitize_param( value )
                 else:
                     self.__dict__[ key ] = value
@@ -603,7 +695,9 @@ def rst_to_html( s ):
                 log.warn( str )
     return unicodify( docutils.core.publish_string( s,
                       writer=docutils.writers.html4css1.Writer(),
-                      settings_overrides={ "embed_stylesheet": False, "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"), "warning_stream": FakeStream() } ) )
+                      settings_overrides={ "embed_stylesheet": False,
+                                           "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
+                                           "warning_stream": FakeStream() } ) )
 
 
 def xml_text(root, name=None):
@@ -700,7 +794,7 @@ def roundify(amount, sfs=2):
     if len(amount) <= sfs:
         return amount
     else:
-        return amount[0:sfs] + '0'*(len(amount) - sfs)
+        return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
 def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None ):
@@ -785,8 +879,8 @@ class ParamsWithSpecs( collections.defaultdict ):
 
 
 def compare_urls( url1, url2, compare_scheme=True, compare_hostname=True, compare_path=True ):
-    url1 = urlparse( url1 )
-    url2 = urlparse( url2 )
+    url1 = urlparse.urlparse( url1 )
+    url2 = urlparse.urlparse( url2 )
     if compare_scheme and url1.scheme and url2.scheme and url1.scheme != url2.scheme:
         return False
     if compare_hostname and url1.hostname and url2.hostname and url1.hostname != url2.hostname:
@@ -851,7 +945,7 @@ def read_dbnames(filename):
     except Exception, e:
         print "ERROR: Unable to read builds file:", e
     if len(db_names) < 1:
-        db_names = DBNames( [( db_names.default_value,  db_names.default_name )] )
+        db_names = DBNames( [( db_names.default_value, db_names.default_name )] )
     return db_names
 
 
@@ -1014,8 +1108,12 @@ def nice_size(size):
     '95.4 MB'
     """
     words = [ 'bytes', 'KB', 'MB', 'GB', 'TB' ]
+    prefix = ''
     try:
         size = float( size )
+        if size < 0:
+            size = abs( size )
+            prefix = '-'
     except:
         return '??? bytes'
     for ind, word in enumerate(words):
@@ -1023,8 +1121,8 @@ def nice_size(size):
         if step > size:
             size = size / float(1024 ** ind)
             if word == 'bytes':  # No decimals for bytes
-                return "%d bytes" % size
-            return "%.1f %s" % (size, word)
+                return "%s%d bytes" % ( prefix, size )
+            return "%s%.1f %s" % ( prefix, size, word )
     return '??? bytes'
 
 
@@ -1044,11 +1142,11 @@ def size_to_bytes( size ):
     size = float( size_match.group(1) )
     multiple = size_match.group(2)
     if multiple.startswith( 't' ):
-        return int( size * 1024**4 )
+        return int( size * 1024 ** 4 )
     elif multiple.startswith( 'g' ):
-        return int( size * 1024**3 )
+        return int( size * 1024 ** 3 )
     elif multiple.startswith( 'm' ):
-        return int( size * 1024**2 )
+        return int( size * 1024 ** 2 )
     elif multiple.startswith( 'k' ):
         return int( size * 1024 )
     elif multiple.startswith( 'b' ):
@@ -1130,6 +1228,8 @@ def move_merge( source, target ):
 
 
 def safe_str_cmp(a, b):
+    """safely compare two strings in a timing-attack-resistant manner
+    """
     if len(a) != len(b):
         return False
     rv = 0

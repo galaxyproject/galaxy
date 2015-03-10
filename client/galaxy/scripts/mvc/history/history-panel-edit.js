@@ -7,6 +7,8 @@ define([
     "mvc/history/hdca-li-edit",
     "mvc/tags",
     "mvc/annotations",
+    "ui/fa-icon-button",
+    "mvc/ui/popup-menu",
     "utils/localization"
 ], function(
     HPANEL,
@@ -17,6 +19,8 @@ define([
     HDCA_LI_EDIT,
     TAGS,
     ANNOTATIONS,
+    faIconButton,
+    PopupMenu,
     _l
 ){
 /* =============================================================================
@@ -65,19 +69,21 @@ var HistoryPanelEdit = _super.extend(
         /** is the panel currently showing the dataset selection controls? */
         this.annotationEditorShown  = attributes.annotationEditorShown || false;
         this.tagsEditorShown  = attributes.tagsEditorShown || false;
-
-        this.multiselectActions = attributes.multiselectActions || this._getActions();
     },
 
     /** Override to handle history as drag-drop target */
     _setUpListeners : function(){
-        _super.prototype._setUpListeners.call( this );
+        var panel = this;
+        _super.prototype._setUpListeners.call( panel );
 
-        this.on( 'drop', function( ev, data ){
-            this.dataDropped( data );
+        panel.on( 'drop', function( ev, data ){
+            panel.dataDropped( data );
             // remove the drop target
-            this.dropTargetOff();
+            panel.dropTargetOff();
         });
+        panel.on( 'view:attached view:removed', function(){
+            panel._renderCounts();
+        }, panel );
     },
 
     // ------------------------------------------------------------------------ listeners
@@ -202,11 +208,6 @@ var HistoryPanelEdit = _super.extend(
         _super.prototype._setUpBehaviors.call( this, $where );
         if( !this.model ){ return; }
 
-        // set up the pupup for actions available when multi selecting
-        if( this.multiselectActions.length ){
-            this.actionsPopup = new PopupMenu( $where.find( '.list-action-popup-btn' ), this.multiselectActions );
-        }
-
         // anon users shouldn't have access to any of the following
         if( ( !Galaxy.currUser || Galaxy.currUser.isAnonymous() )
         ||  ( Galaxy.currUser.id !== this.model.get( 'user_id' ) ) ){
@@ -237,7 +238,7 @@ var HistoryPanelEdit = _super.extend(
     /** return a new popup menu for choosing a multi selection action
      *  ajax calls made for multiple datasets are queued
      */
-    _getActions : function(){
+    multiselectActions : function(){
         var panel = this,
             actions = [
                 {   html: _l( 'Hide datasets' ), func: function(){
@@ -303,12 +304,15 @@ var HistoryPanelEdit = _super.extend(
                 });
             });
         } else {
-            //Galaxy.modal.show({
-            //    body : _l( 'No valid datasets were selected' ),
-            //    buttons : {
-            //        'Ok': function(){ Galaxy.modal.hide(); }
-            //    }
-            //});
+            Galaxy.modal.show({
+                title   : _l( 'No valid datasets were selected' ),
+                body    : _l([
+                              'Use the checkboxes at the left of the dataset names to select them.',
+                              'Selected datasets should be error-free and should have completed running.'
+                          ].join(' ')),
+                buttons : { 'Ok': function(){ Galaxy.modal.hide(); } },
+                closing_events: true
+            });
         }
     },
 
@@ -328,7 +332,10 @@ var HistoryPanelEdit = _super.extend(
         // override to control where the view is added, how/whether it's rendered
         panel.views.unshift( view );
         panel.$list().prepend( view.render( 0 ).$el.hide() );
-        view.$el.slideDown( panel.fxSpeed );
+        panel.trigger( 'view:attached', view );
+        view.$el.slideDown( panel.fxSpeed, function(){
+            panel.trigger( 'view:attached:rendered' );
+        });
     },
 
     /** In this override, add purgeAllowed and whether tags/annotation editors should be shown */
@@ -431,6 +438,7 @@ var HistoryPanelEdit = _super.extend(
 
     /**  */
     _renderDropTarget : function(){
+        this.$( '.history-drop-target' ).remove();
         return $( '<div/>' ).addClass( 'history-drop-target' )
             .css({
                 'height': '64px',
@@ -442,6 +450,7 @@ var HistoryPanelEdit = _super.extend(
 
     /**  */
     _renderDropTargetHelp : function(){
+        this.$( '.history-drop-target-help' ).remove();
         return $( '<div/>' ).addClass( 'history-drop-target-help' )
             .css({
                 'margin'        : '10px 10px 4px 10px',
@@ -457,14 +466,13 @@ var HistoryPanelEdit = _super.extend(
         if( !this.dropTarget ){ return this; }
         //this.log( 'dropTargetOff' );
         this.dropTarget = false;
-        //
-        //var dropTarget = this.$( '.history-drop-target' ).get(0);
-        //for( var evName in this._dropHandlers ){
-        //    if( this._dropHandlers.hasOwnProperty( evName ) ){
-        //        console.debug( evName, this._dropHandlers[ evName ] );
-        //        dropTarget.off( evName, this._dropHandlers[ evName ] );
-        //    }
-        //}
+        var dropTarget = this.$( '.history-drop-target' ).get(0);
+        for( var evName in this._dropHandlers ){
+            if( this._dropHandlers.hasOwnProperty( evName ) ){
+                console.debug( evName, this._dropHandlers[ evName ] );
+                dropTarget.off( evName, this._dropHandlers[ evName ] );
+            }
+        }
         this.$( '.history-drop-target' ).remove();
         this.$( '.history-drop-target-help' ).remove();
         return this;

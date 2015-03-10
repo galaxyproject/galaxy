@@ -16,6 +16,7 @@ from galaxy.util import asbool
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework.webapp
+from galaxy.util.properties import load_app_properties
 
 log = logging.getLogger( __name__ )
 
@@ -46,6 +47,9 @@ def add_ui_controllers( webapp, app ):
 def app_factory( global_conf, **kwargs ):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy application unless passed in
+    kwargs = load_app_properties(
+        kwds=kwargs
+    )
     if 'app' in kwargs:
         app = kwargs.pop( 'app' )
     else:
@@ -62,7 +66,7 @@ def app_factory( global_conf, **kwargs ):
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
-    if kwargs.get( 'static_enabled', True ):
+    if asbool( kwargs.get( 'static_enabled', True ) ):
         webapp = wrap_in_static( webapp, global_conf, **kwargs )
     # Close any pooled database connections before forking
     try:
@@ -135,25 +139,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     return app
 
 def wrap_in_static( app, global_conf, **local_conf ):
-    from paste.urlmap import URLMap
-    from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
-    urlmap = URLMap()
-    # Merge the global and local configurations
-    conf = global_conf.copy()
-    conf.update(local_conf)
-    # Get cache time in seconds
-    cache_time = conf.get( "static_cache_time", None )
-    if cache_time is not None:
-        cache_time = int( cache_time )
-    # Send to dynamic app by default
-    urlmap["/"] = app
-    # Define static mappings from config
-    urlmap["/static"] = Static( conf.get( "static_dir" ), cache_time )
-    urlmap["/images"] = Static( conf.get( "static_images_dir" ), cache_time )
-    urlmap["/static/scripts"] = Static( conf.get( "static_scripts_dir" ), cache_time )
-    urlmap["/static/style"] = Static( conf.get( "static_style_dir" ), cache_time )
-    urlmap["/favicon.ico"] = Static( conf.get( "static_favicon_dir" ), cache_time )
-    # URL mapper becomes the root webapp
+    urlmap, _ = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     return urlmap
 
 def build_template_error_formatters():

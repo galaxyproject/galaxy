@@ -13,6 +13,7 @@ var API = function API( spaceghost, apikey ){
     this.configuration = new ConfigurationAPI( this );
     this.histories  = new HistoriesAPI( this );
     this.hdas       = new HDAAPI( this );
+    this.datasets   = new DatasetsAPI( this );
     this.tools      = new ToolsAPI( this );
     this.workflows  = new WorkflowsAPI( this );
     this.users      = new UsersAPI( this );
@@ -80,7 +81,10 @@ API.prototype._ajax = function _ajax( url, options ){
             ( resp.responseJSON? this.spaceghost.jsonStr( resp.responseJSON ) : resp.responseText ) );
         throw new APIError( resp.responseText, resp.status );
     }
-    return JSON.parse( resp.responseText );
+    if( options.dataType === undefined || options.dataType === 'json' ){
+        return JSON.parse( resp.responseText );
+    }
+    return resp.responseText;
 };
 
 // =================================================================== TESTING
@@ -187,7 +191,7 @@ ConfigurationAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 ConfigurationAPI.prototype.urlTpls = {
-    index   : 'api/configuration'
+    index   : '/api/configuration'
 };
 
 ConfigurationAPI.prototype.index = function index( deleted ){
@@ -209,30 +213,42 @@ HistoriesAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 HistoriesAPI.prototype.urlTpls = {
-    index   : 'api/histories',
-    show    : 'api/histories/%s',
-    create  : 'api/histories',
-    delete_ : 'api/histories/%s',
-    undelete: 'api/histories/deleted/%s/undelete',
-    update  : 'api/histories/%s',
+    index   : '/api/histories',
+    show    : '/api/histories/%s',
+    create  : '/api/histories',
+    delete_ : '/api/histories/%s',
+    undelete: '/api/histories/deleted/%s/undelete',
+    update  : '/api/histories/%s',
 };
 
-HistoriesAPI.prototype.index = function index( deleted ){
-    this.api.spaceghost.info( 'histories.index: ' + (( deleted )?( 'w deleted' ):( '(wo deleted)' )) );
-
-    deleted = deleted || false;
+HistoriesAPI.prototype.index = function index( params ){
+    var spaceghost = this.api.spaceghost;
+    spaceghost.info( 'histories.index:\n' + spaceghost.jsonStr( params ) );
+    if( params === undefined ){
+        params = { deleted: false };
+    }
+    if( params.deleted === undefined ){
+        params.deleted = false;
+    }
+    spaceghost.debug( 'params (now):' + spaceghost.jsonStr( params ) );
     return this.api._ajax( this.urlTpls.index, {
-        data : { deleted: deleted }
+        data : params
     });
 };
 
-HistoriesAPI.prototype.show = function show( id, deleted ){
-    this.api.spaceghost.info( 'histories.show: ' + [ id, (( deleted )?( 'w deleted' ):( '' )) ] );
-
-    id = ( id === 'most_recently_used' || id === 'current' )?( id ):( this.api.ensureId( id ) );
-    deleted = deleted || false;
+HistoriesAPI.prototype.show = function show( id, params ){
+    var spaceghost = this.api.spaceghost;
+    this.api.spaceghost.info( 'histories.show: ' + id + '\n' + spaceghost.jsonStr( params ) );
+    id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
+    if( params === undefined ){
+        params = { deleted: false };
+    }
+    if( params.deleted === undefined ){
+        params.deleted = false;
+    }
+    spaceghost.debug( 'params (now):' + spaceghost.jsonStr( params ) );
     return this.api._ajax( utils.format( this.urlTpls.show, id ), {
-        data : { deleted: deleted }
+        data : params
     });
 };
 
@@ -251,10 +267,12 @@ HistoriesAPI.prototype.delete_ = function delete_( id, purge ){
     this.api.spaceghost.info( 'histories.delete: ' + [ id, (( purge )?( '(purge!)' ):( '' )) ] );
 
     // py.payload <-> ajax.data
-    var payload = ( purge )?({ purge: true }):({});
-    return this.api._ajax( utils.format( this.urlTpls.delete_, this.api.ensureId( id ) ), {
-        type : 'DELETE',
-        data : payload
+    var url = utils.format( this.urlTpls.delete_, this.api.ensureId( id ) );
+    if( purge ){
+        url += '?purge=True';
+    }
+    return this.api._ajax( url, {
+        type : 'DELETE'
     });
 };
 
@@ -292,10 +310,10 @@ HDAAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 HDAAPI.prototype.urlTpls = {
-    index   : 'api/histories/%s/contents',
-    show    : 'api/histories/%s/contents/%s',
-    create  : 'api/histories/%s/contents',
-    update  : 'api/histories/%s/contents/%s'
+    index   : '/api/histories/%s/contents',
+    show    : '/api/histories/%s/contents/%s',
+    create  : '/api/histories/%s/contents',
+    update  : '/api/histories/%s/contents/%s'
 };
 
 HDAAPI.prototype.index = function index( historyId, ids ){
@@ -365,8 +383,55 @@ HDAAPI.prototype.delete_ = function create( historyId, id, purge ){
 //TODO: delete_
 
 
+// =================================================================== HDAS
+var DatasetsAPI = function DatasetsAPI( api ){
+    this.api = api;
+};
+DatasetsAPI.prototype.toString = function toString(){
+    return this.api + '.DatasetsAPI';
+};
+
+// -------------------------------------------------------------------
+DatasetsAPI.prototype.urlTpls = {
+    index   : '/api/datasets',
+    show    : '/api/datasets/%s',
+    // wut.
+    display : '/api/histories/%s/contents/%s/display'
+};
+
+DatasetsAPI.prototype.index = function index(){
+    this.api.spaceghost.info( 'datasets.index: ' );
+    var data = {};
+
+    return this.api._ajax( utils.format( this.urlTpls.index ), {
+        data : data
+    });
+};
+
+DatasetsAPI.prototype.show = function show( id ){
+    this.api.spaceghost.info( 'datasets.show: ' + [ id ] );
+    var data = {};
+
+    return this.api._ajax( utils.format( this.urlTpls.show, id ), {
+        data : data
+    });
+};
+
+DatasetsAPI.prototype.display = function show( historyId, id, params ){
+    this.api.spaceghost.info( 'datasets.display: ' + [ historyId, id ] );
+    if( params === undefined ){
+        params = {};
+    }
+    return this.api._ajax( utils.format( this.urlTpls.display, this.api.ensureId( historyId ), id ), {
+        data : params,
+        dataType : 'text'
+    });
+};
+
+
+
 // =================================================================== TOOLS
-var ToolsAPI = function HDAAPI( api ){
+var ToolsAPI = function ToolsAPI( api ){
     this.api = api;
 };
 ToolsAPI.prototype.toString = function toString(){
@@ -375,9 +440,9 @@ ToolsAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 ToolsAPI.prototype.urlTpls = {
-    index   : 'api/tools',
-    show    : 'api/tools/%s',
-    create  : 'api/tools'
+    index   : '/api/tools',
+    show    : '/api/tools/%s',
+    create  : '/api/tools'
 };
 
 ToolsAPI.prototype.index = function index( in_panel, trackster ){
@@ -489,7 +554,7 @@ ToolsAPI.prototype.uploadByPaste = function upload( historyId, options ){
 
 /** post a file to the upload1 tool over ajax */
 ToolsAPI.prototype.upload = function upload( historyId, options ){
-    this.api.spaceghost.info( 'tools.upload: ' + [ historyId, this.api.spaceghost.jsonStr( options ) ] );
+    this.api.spaceghost.info( 'api.tools.upload: ' + [ historyId, this.api.spaceghost.jsonStr( options ) ] );
     this.api.ensureId( historyId );
     options = options || {};
 
@@ -512,6 +577,7 @@ ToolsAPI.prototype.upload = function upload( historyId, options ){
     if( options.tabs ){
         inputs[ 'files_0|space_to_tab' ] = 'Yes';
     }
+
     var response = this.api.spaceghost.evaluate( function( url, historyId, inputs ){
         var file = $( 'input[name="casperjs-upload-file"]' )[0].files[0],
             formData = new FormData();
@@ -560,7 +626,6 @@ ToolsAPI.prototype.thenUpload = function thenUpload( historyId, options, then ){
         this.debug( 'uploadedId: ' + uploadedId );
     });
 
-    // wait for upload/queued/running to stop
     spaceghost.then( function(){
         var hda = null;
         this.waitFor(
@@ -651,14 +716,14 @@ WorkflowsAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 WorkflowsAPI.prototype.urlTpls = {
-    index   : 'api/workflows',
-    show    : 'api/workflows/%s',
+    index   : '/api/workflows',
+    show    : '/api/workflows/%s',
     // run a workflow
-    create  : 'api/workflows',
-    update  : 'api/workflows/%s',
+    create  : '/api/workflows',
+    update  : '/api/workflows/%s',
 
-    upload  : 'api/workflows/upload', // POST
-    download: 'api/workflows/download/%s' // GET
+    upload  : '/api/workflows/upload', // POST
+    download: '/api/workflows/download/%s' // GET
 };
 
 WorkflowsAPI.prototype.index = function index(){
@@ -712,12 +777,12 @@ UsersAPI.prototype.toString = function toString(){
 // -------------------------------------------------------------------
 //NOTE: lots of admin only functionality in this section
 UsersAPI.prototype.urlTpls = {
-    index   : 'api/users',
-    show    : 'api/users/%s',
-    create  : 'api/users',
-    delete_ : 'api/users/%s',
-    undelete: 'api/users/deleted/%s/undelete',
-    update  : 'api/users/%s'
+    index   : '/api/users',
+    show    : '/api/users/%s',
+    create  : '/api/users',
+    delete_ : '/api/users/%s',
+    undelete: '/api/users/deleted/%s/undelete',
+    update  : '/api/users/%s'
 };
 
 UsersAPI.prototype.index = function index( deleted ){
@@ -795,12 +860,12 @@ VisualizationsAPI.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 VisualizationsAPI.prototype.urlTpls = {
-    index   : 'api/visualizations',
-    show    : 'api/visualizations/%s',
-    create  : 'api/visualizations',
-    //delete_ : 'api/visualizations/%s',
-    //undelete: 'api/visualizations/deleted/%s/undelete',
-    update  : 'api/visualizations/%s'
+    index   : '/api/visualizations',
+    show    : '/api/visualizations/%s',
+    create  : '/api/visualizations',
+    //delete_ : '/api/visualizations/%s',
+    //undelete: '/api/visualizations/deleted/%s/undelete',
+    update  : '/api/visualizations/%s'
 };
 
 VisualizationsAPI.prototype.index = function index(){

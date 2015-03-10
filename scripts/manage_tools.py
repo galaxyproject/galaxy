@@ -8,11 +8,12 @@ sys.path = new_path
 
 from galaxy import eggs
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy" )
-pkg_resources.require( "decorator" )
-pkg_resources.require( "Tempita " )
-pkg_resources.require( "sqlalchemy-migrate" )
+eggs.require( "SQLAlchemy" )
+eggs.require( "decorator" )
+eggs.require( "Tempita " )
+eggs.require( "six" )  # Required by sqlalchemy-migrate
+eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
+eggs.require( "sqlalchemy-migrate" )
 
 from migrate.versioning.shell import main
 from ConfigParser import SafeConfigParser

@@ -5,7 +5,7 @@ import logging
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
 from galaxy.sample_tracking.request_types import request_type_factory
-from elementtree.ElementTree import XML
+from xml.etree.ElementTree import XML
 
 log = logging.getLogger( __name__ )
 

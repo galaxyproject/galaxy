@@ -15,9 +15,6 @@ define(['utils/utils'], function(Utils){
                     this.summary[c.id + '_' + c.src] = c;
                 }
             }
-            
-            // log
-            console.debug('tools-content::initialize() - Completed.');
         },
         
         /** Returns matched content from summary.

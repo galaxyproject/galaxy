@@ -3,8 +3,8 @@
  * genomic visualization.
  */
 
-define(["libs/underscore", "libs/d3", "viz/trackster/util", "viz/visualization", "viz/trackster/tracks", "mvc/tools", "mvc/data", "utils/config"], 
-       function(_, d3, util, visualization, tracks, tools, data, config) {
+define(["libs/underscore", "libs/d3", "viz/trackster/util", "viz/visualization", "viz/trackster/tracks", "mvc/tools", "mvc/data", "utils/config", "mvc/ui/icon-button"],
+       function(_, d3, util, visualization, tracks, tools, data, config, mod_icon_btn) {
 
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings 
@@ -375,7 +375,7 @@ var SweepsterTrackView = Backbone.View.extend({
                 settings_div.toggle();
                 self.trigger('run_on_dataset', settings);
             });
-        var icon_menu = create_icon_buttons_menu([
+        var icon_menu = mod_icon_btn.create_icon_buttons_menu([
             {
                 title: 'Settings',
                 icon_class: 'gear track-settings',
@@ -486,7 +486,7 @@ var ToolInputValOrSweepView = Backbone.View.extend({
 
         // Add buttons for adding/removing parameter.
         var self = this,
-            menu = create_icon_buttons_menu([
+            menu = mod_icon_btn.create_icon_buttons_menu([
             {
                 title: 'Add parameter to tree',
                 icon_class: 'plus-button',
@@ -723,7 +723,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
 
         // Help includes text and a close button.
         var help_div = $(this.helpText).addClass('help'),
-            close_button = create_icon_buttons_menu([
+            close_button = mod_icon_btn.create_icon_buttons_menu([
             {
                 title: 'Close',
                 icon_class: 'cross-circle',
@@ -745,7 +745,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
         this.handle_node_clicks();
 
         // Set up visualization menu.
-        var menu = create_icon_buttons_menu(
+        var menu = mod_icon_btn.create_icon_buttons_menu(
             [
                 // Save.
                 /*

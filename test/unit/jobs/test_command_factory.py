@@ -140,6 +140,7 @@ class MockJobWrapper(object):
         self.configured_external_metadata_kwds = None
         self.working_directory = "job1"
         self.prepare_input_files_cmds = None
+        self.commands_in_new_shell = False
 
     def get_command_line(self):
         return self.command_line

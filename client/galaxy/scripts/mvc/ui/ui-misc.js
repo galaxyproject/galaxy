@@ -1,6 +1,13 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-select-default', 'mvc/ui/ui-slider', 'mvc/ui/ui-options', 'mvc/ui/ui-drilldown', 'mvc/ui/ui-button-menu', 'mvc/ui/ui-modal'],
-        function(Utils, Select, Slider, Options, Drilldown, ButtonMenu, Modal) {
+define(['utils/utils',
+    'mvc/ui/ui-select-default',
+    'mvc/ui/ui-slider',
+    'mvc/ui/ui-options',
+    'mvc/ui/ui-drilldown',
+    'mvc/ui/ui-button-menu',
+    'mvc/ui/ui-button-check',
+    'mvc/ui/ui-modal'],
+    function(Utils, Select, Slider, Options, Drilldown, ButtonMenu, ButtonCheck, Modal) {
 
 /**
  *  This class contains backbone wrappers for basic ui elements such as Images, Labels, Buttons, Input fields etc.
@@ -193,6 +200,12 @@ var ButtonIcon = Backbone.View.extend({
         this.disabled = false;
     },
     
+    // change icon
+    setIcon: function(icon_cls) {
+        this.$('i').removeClass(this.options.icon).addClass(icon_cls);
+        this.options.icon = icon_cls;
+    },
+    
     // template
     _template: function(options) {
         // width
@@ -248,9 +261,9 @@ var Anchor = Backbone.View.extend({
 var Message = Backbone.View.extend({
     // options
     optionsDefault: {
-        message : '',
-        status : 'info',
-        persistent : false
+        message     : null,
+        status      : 'info',
+        persistent  : false
     },
     
     // initialize
@@ -260,6 +273,11 @@ var Message = Backbone.View.extend({
         
         // create new element
         this.setElement('<div></div>');
+        
+        // show initial message
+        if (this.options.message) {
+            this.update(this.options);
+        }
     },
     
     // update
@@ -273,11 +291,15 @@ var Message = Backbone.View.extend({
             this.$el.find('.alert').append(options.message);
             this.$el.fadeIn();
             
-            // check if message is persistent
+            // clear previous timeouts
+            if (this.timeout) {
+                window.clearTimeout(this.timeout);
+            }
+            
+            // set timeout if message is not persistent
             if (!options.persistent) {
-                // set timer
                 var self = this;
-                window.setTimeout(function() {
+                this.timeout = window.setTimeout(function() {
                     if (self.$el.is(':visible')) {
                         self.$el.fadeOut();
                     } else {
@@ -403,7 +425,7 @@ var Hidden = Backbone.View.extend({
     initialize : function(options) {
         // configure options
         this.options = options;
-            
+        
         // create new element
         this.setElement(this._template(this.options));
         
@@ -416,14 +438,20 @@ var Hidden = Backbone.View.extend({
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
-            this.$el.val(new_val);
+            this.$('hidden').val(new_val);
         }
-        return this.$el.val();
+        return this.$('hidden').val();
     },
     
     // element
     _template: function(options) {
-        return '<hidden id="' + options.id + '" value="' + options.value + '"/>';
+        var tmpl =  '<div id="' + options.id + '" >';
+        if (options.info) {
+            tmpl +=     '<div>' + options.info + '</div>';
+        }
+        tmpl +=         '<hidden value="' + options.value + '"/>' +
+                    '</div>';
+        return tmpl;
     }
 });
 
@@ -432,6 +460,7 @@ return {
     Anchor      : Anchor,
     Button      : Button,
     ButtonIcon  : ButtonIcon,
+    ButtonCheck : ButtonCheck,
     ButtonMenu  : ButtonMenu,
     Icon        : Icon,
     Image       : Image,

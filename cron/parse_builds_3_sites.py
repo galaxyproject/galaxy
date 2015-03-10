@@ -5,12 +5,7 @@ Connects to sites and determines which builds are available at each.
 
 import sys
 import urllib
-if sys.version_info[:2] >= ( 2, 5 ):
-    import xml.etree.ElementTree as ElementTree
-else:
-    from galaxy import eggs
-    import pkg_resources; pkg_resources.require( "elementtree" )
-    from elementtree import ElementTree
+import xml.etree.ElementTree as ElementTree
 
 sites = ['http://genome.ucsc.edu/cgi-bin/',
         'http://archaea.ucsc.edu/cgi-bin/',
@@ -38,7 +33,7 @@ def main():
             print "#Invalid xml passed back from " + site
             continue
         print "#Harvested from",site
-        
+
         for dsn in tree:
             build = dsn.find("SOURCE").attrib['id']
             builds.append(build)

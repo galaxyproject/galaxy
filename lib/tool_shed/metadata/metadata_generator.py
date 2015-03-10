@@ -7,7 +7,7 @@ from galaxy import util
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.tools.data_manager.manager import DataManager
-from galaxy.tools.test import TestCollectionDef
+from galaxy.tools import TestCollectionDef
 from galaxy.web import url_for
 
 from tool_shed.repository_types import util as rt_util

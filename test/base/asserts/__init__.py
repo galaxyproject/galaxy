@@ -8,7 +8,7 @@ assertion_module_names = ['text', 'tabular', 'xml']
 # Code for loading modules containing assertion checking functions, to
 # create a new module of assertion functions, create the needed python
 # source file "test/base/asserts/<MODULE_NAME>.py" and add
-# <MODULE_NAME> to the list of assertion module names defined above. 
+# <MODULE_NAME> to the list of assertion module names defined above.
 assertion_modules = []
 for assertion_module_name in assertion_module_names:
     full_assertion_module_name = 'base.asserts.' + assertion_module_name
@@ -19,13 +19,15 @@ for assertion_module_name in assertion_module_names:
         assertion_module = sys.modules[full_assertion_module_name]
         assertion_modules.append(assertion_module)
     except Exception, e:
-        log.exception( 'Failed to load assertion module: %s %s' % (assertion_module_name, str(e))) 
+        log.exception('Failed to load assertion module: %s %s' % (assertion_module_name, str(e)))
+
 
 def verify_assertions(data, assertion_description_list):
     """ This function takes a list of assertions and a string to check
     these assertions against. """
     for assertion_description in assertion_description_list:
         verify_assertion(data, assertion_description)
+
 
 def verify_assertion(data, assertion_description):
     tag = assertion_description["tag"]
@@ -73,4 +75,3 @@ def verify_assertion(data, assertion_description):
         
     # TODO: Verify all needed function arguments are specified.
     assert_function(**args)
-    

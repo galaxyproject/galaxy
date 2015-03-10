@@ -5,7 +5,7 @@ import logging
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
 from galaxy.forms.forms import form_factory
-from elementtree.ElementTree import XML
+from xml.etree.ElementTree import XML
 
 log = logging.getLogger( __name__ )
 

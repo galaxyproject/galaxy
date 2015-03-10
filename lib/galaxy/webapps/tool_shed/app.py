@@ -1,17 +1,18 @@
 import config
 import sys
-from galaxy import tools
-import galaxy.tools.data
-import galaxy.quota
+import time
 import galaxy.datatypes.registry
+import galaxy.quota
+import galaxy.tools.data
 import galaxy.webapps.tool_shed.model
+from galaxy import tools
+from galaxy.managers.tags import CommunityTagManager
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web import security
-from galaxy.tags.tag_handler import CommunityTagHandler
-from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
+from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
 
 
 class UniverseApplication( object ):
@@ -44,10 +45,10 @@ class UniverseApplication( object ):
         self.model = mapping.init( self.config.file_path,
                                    db_url,
                                    self.config.database_engine_options )
-        # Initialize the Tool SHed security helper.
+        # Initialize the Tool Shed security helper.
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
         # initialize the Tool Shed tag handler.
-        self.tag_handler = CommunityTagHandler()
+        self.tag_handler = CommunityTagManager( self )
         # Initialize the Tool Shed tool data tables.  Never pass a configuration file here
         # because the Tool Shed should always have an empty dictionary!
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_path )
@@ -70,6 +71,8 @@ class UniverseApplication( object ):
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
         # Initialize the repository registry.
         self.repository_registry = tool_shed.repository_registry.Registry( self )
+        #  used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.
+        self.server_starttime = int(time.time())
         print >> sys.stderr, "Tool shed hgweb.config file is: ", self.hgweb_config_manager.hgweb_config
 
     def shutdown( self ):

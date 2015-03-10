@@ -25,6 +25,24 @@
                 <div style="clear: both"></div>
             </div>
             ${render_repository_type_select_field( repository_type_select_field, render_help=True )}
+
+            <div class="form-row">
+                <label>Remote repository URL:</label>
+                <input name="remote_repository_url" placeholder="optional" type="textfield" value="${remote_repository_url | h}" size="80"/>
+                <div class="toolParamHelp" style="clear: both;">
+                    A link to your public development repository.
+                </div>
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <label>Homepage URL:</label>
+                <input name="homepage_url" placeholder="optional" type="textfield" value="${homepage_url | h}" size="80"/>
+                <div class="toolParamHelp" style="clear: both;">
+                    Link to tool's homepage.
+                </div>
+                <div style="clear: both"></div>
+            </div>
+
             <div class="form-row">
                 <label>Synopsis:</label>
                 <input  name="description" type="textfield" value="${description | h}" size="80"/>

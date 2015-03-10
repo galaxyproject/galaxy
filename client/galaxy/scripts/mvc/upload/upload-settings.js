@@ -8,35 +8,35 @@ return Backbone.View.extend({
         class_check     : 'upload-icon-button fa fa-check-square-o',
         class_uncheck   : 'upload-icon-button fa fa-square-o'
     },
-    
+
     // render
     initialize: function(app) {
         // link app
         this.app = app;
-        
+
         // link this
         var self = this;
-        
+
         // set template
         this.setElement(this._template());
-        
+
         // link model
         this.model = this.app.model;
-        
+
         // ui event: space to tabs
         this.$el.find('#upload-space-to-tabs').on('click', function() {
             self._switchState('#upload-space-to-tabs', 'space_to_tabs');
         });
-        
+
         // ui event: to posix
         this.$el.find('#upload-to-posix-lines').on('click', function() {
             self._switchState('#upload-to-posix-lines', 'to_posix_lines');
         });
-        
+
         // render
         this.render();
     },
-    
+
     // events
     events: {
         'mousedown' : function(e) { e.preventDefault(); }
@@ -47,7 +47,7 @@ return Backbone.View.extend({
         // render states
         this._renderState('#upload-space-to-tabs', this.model.get('space_to_tabs'));
         this._renderState('#upload-to-posix-lines', this.model.get('to_posix_lines'));
-        
+
         // disable options
         var $cover = this.$el.find('#upload-settings-cover');
         if (this.model.get('status') != 'init') {
@@ -56,7 +56,7 @@ return Backbone.View.extend({
             $cover.hide();
         }
     },
-    
+
     // switch state
     _switchState: function (element_id, parameter_id) {
         if (this.model.get('status') == 'init') {
@@ -65,7 +65,7 @@ return Backbone.View.extend({
             this._renderState(element_id, checked);
         }
     },
-    
+
     // render state
     _renderState: function (element_id, checked) {
         // swith icon class
@@ -77,7 +77,7 @@ return Backbone.View.extend({
             $it.addClass(this.options.class_uncheck);
         }
     },
-    
+
     // load template
     _template: function() {
         return  '<div class="upload-settings" style="position: relative;">' +

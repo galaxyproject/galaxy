@@ -1,6 +1,9 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<% from galaxy.tools import Tool, ToolSection %>
+<%
+   from galaxy.tools import Tool
+   from galaxy.tools.toolbox import ToolSection
+%>
 
 <script type="text/javascript">
 $().ready(function() {
@@ -26,7 +29,7 @@ $().ready(function() {
                 Tool to reload:
             </label>
             <select name="tool_id">
-                %for key, val in toolbox.tool_panel.items():
+                %for val in toolbox.tool_panel_contents( trans ):
                     %if isinstance( val, Tool ):
                         <option value="${val.id}">${val.name|h}</option>
                     %elif isinstance( val, ToolSection ):

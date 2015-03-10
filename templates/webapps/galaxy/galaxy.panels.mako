@@ -8,7 +8,7 @@
     ## set defaults
     self.galaxy_config = {
         ## template options
-        'title'         : '',
+        'title'         : 'Galaxy - Data Intensive Biology for Everyone',
         'master'        : True,
         'left_panel'    : False,
         'right_panel'   : False,
@@ -35,12 +35,11 @@
         'libs/bootstrap',
         'libs/underscore',
         'libs/backbone/backbone',
+        'libs/handlebars.runtime',
         'libs/require',
         'libs/d3',
         'galaxy.base',
-        'galaxy.panels',
-        'libs/handlebars.runtime',
-        "mvc/ui"
+        'galaxy.panels'
     )}
     
     ## send errors to Sntry server if configured
@@ -98,7 +97,8 @@
                 "libs/underscore": { exports: "_" },
                 "libs/d3": { exports: "d3" },
                 "libs/backbone/backbone": { exports: "Backbone" },
-            }
+            },
+            urlArgs: 'v=${int(app.server_starttime)}'
         });
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
         
@@ -160,7 +160,11 @@
 ## document
 <html>
     <head>
-        <title></title>
+        <title>
+            %if self.galaxy_config['title']:
+                ${self.galaxy_config['title']}
+            %endif
+            </title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         
         ## for mobile browsers, don't scale up

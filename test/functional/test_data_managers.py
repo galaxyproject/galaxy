@@ -27,7 +27,7 @@ class DataManagerToolTestCase( ToolTestCase ):
 
         stage_data_in_history( galaxy_interactor, testdef.test_data(), test_history, shed_tool_id )
 
-        data_list = galaxy_interactor.run_tool( testdef, test_history ) #test_history will have inputs only, outputs are placed in the specialized data manager history
+        galaxy_interactor.run_tool( testdef, test_history ) #test_history will have inputs only, outputs are placed in the specialized data manager history
         
         #FIXME: Move history determination and switching into the interactor
         data_manager_history = None

@@ -3,7 +3,7 @@ Dataproviders that iterate over lines from their sources.
 """
 
 import line
-import xml.etree.ElementTree as elementtree
+from xml.etree.ElementTree import Element, iterparse
 
 _TODO = """
 """
@@ -30,7 +30,7 @@ class XMLDataProvider( HierarchalDataProvider ):
     """
     Data provider that converts selected XML elements to dictionaries.
     """
-    # using elementtree's iterparse method to keep mem down
+    # using xml.etree's iterparse method to keep mem down
     #TODO:   this, however (AFAIK), prevents the use of xpath
     settings = {
         'selector'  : 'str', #urlencoded
@@ -54,7 +54,7 @@ class XMLDataProvider( HierarchalDataProvider ):
         """
         Returns true if the ``element`` matches the ``selector``.
 
-        :param  element:    an XML ``ElementTree.Element``
+        :param  element:    an XML ``Element``
         :param  selector:   some partial string in the desired tags to return
 
         Change point for more sophisticated selectors.
@@ -64,13 +64,13 @@ class XMLDataProvider( HierarchalDataProvider ):
         #TODO: fails with '#' - browser thinks it's an anchor - use urlencode
         #TODO: need removal/replacement of etree namespacing here - then move to string match
         return bool( ( selector == None )
-                  or ( isinstance( element, elementtree.Element ) and selector in element.tag ) )
+                  or ( isinstance( element, Element ) and selector in element.tag ) )
 
     def element_as_dict( self, element ):
         """
         Converts an XML element (its text, tag, and attributes) to dictionary form.
 
-        :param  element:    an XML ``ElementTree.Element``
+        :param  element:    an XML ``Element``
         """
         #TODO: Key collision is unlikely here, but still should be better handled
         return {
@@ -84,7 +84,7 @@ class XMLDataProvider( HierarchalDataProvider ):
         """
         Yield all children of element (and their children - recursively)
         in dictionary form.
-        :param  element:    an XML ``ElementTree.Element``
+        :param  element:    an XML ``Element``
         :param  max_depth:  the number of generations of descendents to return
         """
         if not isinstance( max_depth, int ) or max_depth >= 1:
@@ -99,7 +99,7 @@ class XMLDataProvider( HierarchalDataProvider ):
                 yield child_data
 
     def __iter__( self ):
-        context = elementtree.iterparse( self.source, events=self.ITERPARSE_ALL_EVENTS )
+        context = iterparse( self.source, events=self.ITERPARSE_ALL_EVENTS )
         context = iter( context )
 
         selected_element = None

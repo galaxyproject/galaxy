@@ -15,6 +15,7 @@ import urllib
 import zipfile
 
 from base.asserts import verify_assertions
+from base.test_data import TestDataResolver
 from galaxy.util import asbool
 from galaxy.util.json import loads
 from galaxy.web import security
@@ -22,10 +23,9 @@ from galaxy.web.framework.helpers import iff, escape
 from urlparse import urlparse
 
 from galaxy import eggs
-eggs.require( "elementtree" )
 eggs.require( 'twill' )
 
-from elementtree import ElementTree
+from xml.etree import ElementTree
 
 import twill
 import twill.commands as tc
@@ -50,7 +50,7 @@ class TwillTestCase( unittest.TestCase ):
         self.host = os.environ.get( 'GALAXY_TEST_HOST' )
         self.port = os.environ.get( 'GALAXY_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
-        self.file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', None )
+        self.test_data_resolver = TestDataResolver( 'GALAXY_TEST_FILE_DIR' )
         self.tool_shed_test_file = os.environ.get( 'GALAXY_TOOL_SHED_TEST_FILE', None )
         if self.tool_shed_test_file:
             f = open( self.tool_shed_test_file, 'r' )
@@ -1225,11 +1225,9 @@ class TwillTestCase( unittest.TestCase ):
     def get_filename( self, filename, shed_tool_id=None ):
         if shed_tool_id and self.shed_tools_dict:
             file_dir = self.shed_tools_dict[ shed_tool_id ]
-            if not file_dir:
-                file_dir = self.file_dir
-        else:
-            file_dir = self.file_dir
-        return os.path.abspath( os.path.join( file_dir, filename ) )
+            if file_dir:
+                return os.path.abspath( os.path.join( file_dir, filename))
+        return self.test_data_resolver.get_filename( filename )
 
     def get_form_controls( self, form ):
         formcontrols = []
@@ -1506,10 +1504,6 @@ class TwillTestCase( unittest.TestCase ):
                 break
         self.assertNotEqual(count, maxiter)
 
-    def load_cookies( self, file, shed_tool_id=None ):
-        filename = self.get_filename( file, shed_tool_id=shed_tool_id )
-        tc.load_cookies(filename)
-
     def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = \
@@ -1770,20 +1764,6 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( "1", "confirm", password )
         tc.submit( "reset_user_password_button" )
         self.check_page_for_string( "Passwords reset for 1 user." )
-
-    def run_tool( self, tool_id, repeat_name=None, **kwd ):
-        """Runs the tool 'tool_id' and passes it the key/values from the *kwd"""
-        params = dict( tool_id=tool_id )
-        self.visit_url( "/tool_runner/index", params )
-        # Must click somewhere in tool_form, to disambiguate what form
-        # is being targetted.
-        tc.browser.clicked( tc.browser.get_form( 'tool_form' ), None )
-        if repeat_name is not None:
-            repeat_button = '%s_add' % repeat_name
-            # Submit the "repeat" form button to add an input)
-            tc.submit( repeat_button )
-        tc.find( 'runtool_btn' )
-        self.submit_form( **kwd )
 
     def run_ucsc_main( self, track_params, output_params ):
         """Gets Data From UCSC"""

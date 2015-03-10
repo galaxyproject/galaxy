@@ -160,6 +160,7 @@ if 'repository_name' in os.environ and 'repository_owner' in os.environ:
 REPOSITORIES_WITH_TOOLS = 'repositories_with_tools'
 TOOL_DEPENDENCY_DEFINITIONS = 'tool_dependency_definitions'
 
+
 class ReportResults( Plugin ):
     '''Simple Nose plugin to record the IDs of all tests run, regardless of success.'''
     name = "reportresults"
@@ -221,6 +222,7 @@ class RepositoryMetadataApplication( object ):
     def shutdown( self ):
         pass
 
+
 def display_repositories_by_owner( repository_tups ):
     """Group summary display by repository owner."""
     repository_tups_by_owner = {}
@@ -239,6 +241,7 @@ def display_repositories_by_owner( repository_tups ):
         for repository_tup in repository_tups:
             name, owner, changeset_revision = repository_tup
             print "# Revision %s of repository %s owned by %s" % ( changeset_revision, name, owner )
+
 
 def display_tool_dependencies_by_name( tool_dependency_tups ):
     """Group summary display by repository owner."""
@@ -259,11 +262,15 @@ def display_tool_dependencies_by_name( tool_dependency_tups ):
             name, type, version = tool_dependency_tup
             print "# %s %s version %s" % ( type, name, version )
 
+
 def get_database_version( app ):
     '''
-    This method returns the value of the version column from the migrate_version table, using the provided app's SQLAlchemy session to determine
-    which table to get that from. This way, it's provided with an instance of a Galaxy UniverseApplication, it will return the Galaxy instance's
-    database migration version. If a tool shed UniverseApplication is provided, it returns the tool shed's database migration version.
+    This method returns the value of the version column from the
+    migrate_version table, using the provided app's SQLAlchemy session to
+    determine which table to get that from. This way, it's provided with an
+    instance of a Galaxy UniverseApplication, it will return the Galaxy
+    instance's database migration version. If a tool shed UniverseApplication
+    is provided, it returns the tool shed's database migration version.
     '''
     sa_session = app.model.context.current
     result = sa_session.execute( 'SELECT version FROM migrate_version LIMIT 1' )
@@ -275,6 +282,7 @@ def get_database_version( app ):
         version = row[ 0 ]
         break
     return version
+
 
 def get_missing_repository_dependencies( repository, all_missing_repository_dependencies=None ):
     """
@@ -1058,6 +1066,10 @@ def remove_protocol_from_tool_shed_url( base_url ):
     return base_url
 
 def run_tests( test_config ):
+    ## TODO: replace whole method with...
+    # from base import nose_util
+    # result = nose_util.run( test_config, plugins=[ new ReportResults() ] )
+    # return result, test_config.plugins._plugins
     loader = nose.loader.TestLoader( config=test_config )
     test_config.plugins.addPlugin( ReportResults() )
     plug_loader = test_config.plugins.prepareTestLoader( loader )

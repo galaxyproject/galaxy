@@ -326,7 +326,6 @@ spaceghost.test.begin( 'Test the form of various HDA states', 0, function suite(
 
             var uploadSelector = '#dataset-' + uploadId;
             this.test.assertVisible( uploadSelector, 'HDA is visible' );
-
             // should have proper title and hid
             testTitle.call( spaceghost, uploadSelector, filenameToUpload );
 

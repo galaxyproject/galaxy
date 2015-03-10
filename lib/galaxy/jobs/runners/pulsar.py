@@ -708,3 +708,6 @@ class PulsarComputeEnvironment( ComputeEnvironment ):
 
     def unstructured_path_rewriter( self ):
         return self.rewriter
+
+    def tool_directory( self ):
+        return self._tool_dir

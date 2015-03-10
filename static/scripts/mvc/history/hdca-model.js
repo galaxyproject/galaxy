@@ -23,6 +23,10 @@ var hcontentMixin = HISTORY_CONTENT.HistoryContentMixin,
 var HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
 /** @lends HistoryListDatasetCollection.prototype */{
 
+    defaults : _.extend( _.clone( ListDC.prototype.defaults ), {
+        model_class : 'HistoryDatasetCollectionAssociation'
+    }),
+
     initialize : function( model, options ){
         ListDC.prototype.initialize.call( this, model, options );
         hcontentMixin.initialize.call( this, model, options );
@@ -42,6 +46,10 @@ var HistoryListDatasetCollection = ListDC.extend( hcontentMixin ).extend(
 var HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
 /** @lends HistoryPairDatasetCollection.prototype */{
 
+    defaults : _.extend( _.clone( PairDC.prototype.defaults ), {
+        model_class : 'HistoryDatasetCollectionAssociation'
+    }),
+
     initialize : function( model, options ){
         PairDC.prototype.initialize.call( this, model, options );
         hcontentMixin.initialize.call( this, model, options );
@@ -60,6 +68,10 @@ var HistoryPairDatasetCollection = PairDC.extend( hcontentMixin ).extend(
  */
 var HistoryListPairedDatasetCollection = ListPairedDC.extend( hcontentMixin ).extend(
 /** @lends HistoryListPairedDatasetCollection.prototype */{
+
+    defaults : _.extend( _.clone( ListPairedDC.prototype.defaults ), {
+        model_class : 'HistoryDatasetCollectionAssociation'
+    }),
 
     initialize : function( model, options ){
         ListPairedDC.prototype.initialize.call( this, model, options );

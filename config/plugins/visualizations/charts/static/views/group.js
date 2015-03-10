@@ -31,10 +31,10 @@ return Backbone.View.extend({
         
         // create element
         var $view = $('<div/>');
-        $view.append(Utils.wrap((new Ui.Label({title: 'Provide a label:'})).$el));
-        $view.append(Utils.wrap(this.group_key.$el));
-        $view.append(Utils.wrap((new Ui.Label({title: 'Select columns:'})).$el));
-        $view.append(Utils.wrap(this.table.$el));
+        $view.append((new Ui.Label({title: 'Provide a label:'})).$el);
+        $view.append(this.group_key.$el.addClass('ui-margin-bottom'));
+        $view.append((new Ui.Label({title: 'Select columns:'})).$el.addClass('ui-margin-top'));
+        $view.append(this.table.$el.addClass('ui-margin-bottom'));
         
         // add element
         this.setElement($view);
@@ -145,12 +145,13 @@ return Backbone.View.extend({
         // link this
         var self = this;
         
-        // is a numeric number required
+        // available column options
         var is_label    = column_definition.is_label;
         var is_auto     = column_definition.is_auto;
         var is_numeric  = column_definition.is_numeric;
         var is_unique   = column_definition.is_unique;
         var is_zero     = column_definition.is_zero;
+        var is_text     = column_definition.is_text;
         
         // configure columns
         var columns = [];
@@ -182,14 +183,14 @@ return Backbone.View.extend({
             if (meta[key] == 'int' || meta[key] == 'float') {
                 valid = is_numeric;
             } else {
-                valid = is_label;
+                valid = is_text || is_label;
             }
             
             // check type
             if (valid) {
                 // add to selection
                 columns.push({
-                    'label' : 'Column: ' + (parseInt(key) + 1) + ' [' + meta[key] + ']',
+                    'label' : 'Column: ' + (parseInt(key) + 1),
                     'value' : key
                 });
             }
@@ -254,7 +255,9 @@ return Backbone.View.extend({
         if (key_text === undefined) {
             key_text = '';
         }
-        this.group_key.value(key_text);
+        if (key_text != this.group_key.value()) {
+            this.group_key.value(key_text);
+        }
     }
 });
 

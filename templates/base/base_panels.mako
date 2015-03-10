@@ -59,8 +59,7 @@
         'libs/backbone/backbone',
         'libs/handlebars.runtime',
         'galaxy.base',
-        'libs/require',
-        "mvc/ui"
+        'libs/require'
     )}
 
     <script type="text/javascript">
@@ -90,7 +89,8 @@
             shim: {
                 "libs/underscore": { exports: "_" },
                 "libs/backbone/backbone": { exports: "Backbone" }
-            }
+            },
+            urlArgs: 'v=${int(app.server_starttime)}'
         });
     </script>
 

@@ -59,7 +59,7 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
     @property
     def formats( self ):
         if self.extensions:
-            return tuple( map( type, map( self.link.display_application.datatypes_registry.get_datatype_by_extension, self.extensions ) ) )
+            return tuple( map( type, map( self.link.display_application.app.datatypes_registry.get_datatype_by_extension, self.extensions ) ) )
         return None
     def _get_dataset_like_object( self, other_values ):
         #this returned object has file_name, state, and states attributes equivalent to a DatasetAssociation

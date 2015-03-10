@@ -1,32 +1,35 @@
 from datetime import datetime, date, timedelta
-from time import strftime
-import calendar, operator
+import calendar
+import operator
 from galaxy.web.base.controller import BaseUIController, web
 import galaxy.model
 from galaxy import util
-from galaxy.model.orm import and_, not_, or_
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
+from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 import logging
 from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
-class Users( BaseUIController ):
+
+class Users( BaseUIController, ReportQueryBuilder ):
+
     @web.expose
     def registered_users( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         num_users = trans.sa_session.query( galaxy.model.User ).count()
         return trans.fill_template( '/webapps/reports/registered_users.mako', num_users=num_users, message=message )
+
     @web.expose
     def registered_users_per_month( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
-        q = sa.select( ( sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_month( galaxy.model.User.table.c.create_time ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
-                       from_obj = [ galaxy.model.User.table ],
-                       group_by = [ sa.func.date_trunc( 'month', sa.func.date( galaxy.model.User.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+                       from_obj=[ galaxy.model.User.table ],
+                       group_by=self.group_by_month( galaxy.model.User.table.c.create_time ),
+                       order_by=[ sa.desc( 'date' ) ] )
         users = []
         for row in q.execute():
             users.append( ( row.date.strftime( "%Y-%m" ),
@@ -36,6 +39,7 @@ class Users( BaseUIController ):
         return trans.fill_template( '/webapps/reports/registered_users_per_month.mako',
                                     users=users,
                                     message=message )
+
     @web.expose
     def specified_month( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
@@ -47,13 +51,13 @@ class Users( BaseUIController ):
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
         month_label = start_date.strftime( "%B" )
         year_label = start_date.strftime( "%Y" )
-        q = sa.select( ( sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_day( galaxy.model.User.table.c.create_time ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
-                       whereclause = sa.and_( galaxy.model.User.table.c.create_time >= start_date,
-                                              galaxy.model.User.table.c.create_time < end_date ),
-                       from_obj = [ galaxy.model.User.table ],
-                       group_by = [ sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ) ],
-                       order_by = [ sa.desc( 'date' ) ] )
+                       whereclause=sa.and_( galaxy.model.User.table.c.create_time >= start_date,
+                                            galaxy.model.User.table.c.create_time < end_date ),
+                       from_obj=[ galaxy.model.User.table ],
+                       group_by=self.group_by_day( galaxy.model.User.table.c.create_time ),
+                       order_by=[ sa.desc( 'date' ) ] )
         users = []
         for row in q.execute():
             users.append( ( row.date.strftime( "%Y-%m-%d" ),
@@ -66,6 +70,7 @@ class Users( BaseUIController ):
                                     month=month,
                                     users=users,
                                     message=message )
+
     @web.expose
     def specified_date( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
@@ -78,12 +83,12 @@ class Users( BaseUIController ):
         day_label = start_date.strftime( "%A" )
         month_label = start_date.strftime( "%B" )
         year_label = start_date.strftime( "%Y" )
-        q = sa.select( ( sa.func.date_trunc( 'day', sa.func.date( galaxy.model.User.table.c.create_time ) ).label( 'date' ),
+        q = sa.select( ( self.select_day( galaxy.model.User.table.c.create_time ).label( 'date' ),
                          galaxy.model.User.table.c.email ),
-                       whereclause = sa.and_( galaxy.model.User.table.c.create_time >= start_date,
-                                              galaxy.model.User.table.c.create_time < end_date ),
-                       from_obj = [ galaxy.model.User.table ],
-                       order_by = [ galaxy.model.User.table.c.email ] )
+                       whereclause=sa.and_( galaxy.model.User.table.c.create_time >= start_date,
+                                            galaxy.model.User.table.c.create_time < end_date ),
+                       from_obj=[ galaxy.model.User.table ],
+                       order_by=[ galaxy.model.User.table.c.email ] )
         users = []
         for row in q.execute():
             users.append( ( row.email ) )
@@ -95,6 +100,7 @@ class Users( BaseUIController ):
                                     day_of_month=day_of_month,
                                     users=users,
                                     message=message )
+
     @web.expose
     def last_access_date( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
@@ -102,10 +108,9 @@ class Users( BaseUIController ):
         if not not_logged_in_for_days:
             not_logged_in_for_days = 0
         cutoff_time = datetime.utcnow() - timedelta( days=int( not_logged_in_for_days ) )
-        now = strftime( "%Y-%m-%d %H:%M:%S" )
         users = []
         for user in trans.sa_session.query( galaxy.model.User ) \
-                                    .filter( galaxy.model.User.table.c.deleted==False ) \
+                                    .filter( galaxy.model.User.table.c.deleted == False ) \
                                     .order_by( galaxy.model.User.table.c.email ):
             if user.galaxy_sessions:
                 last_galaxy_session = user.galaxy_sessions[ 0 ]

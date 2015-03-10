@@ -139,9 +139,6 @@ HistoryPanel.prototype.waitForHda = function waitForHda( hdaName, then, timeout,
 
                 var hdaOpacity = this.evaluate( function( name ){
                     // locate the hda by name and return its opacity
-                    console.debug( name );
-                    console.debug( $( '.name:contains("' + name + '")' ) );
-                    console.debug( $( '.name:contains("' + name + '")' ).parents( '.hda' ) );
                     return $( '.name:contains("' + name + '")' ).parents( '.dataset' ).css( 'opacity' );
                 }, hdaName );
                 //this.debug( 'fading in: ' + hdaOpacity );

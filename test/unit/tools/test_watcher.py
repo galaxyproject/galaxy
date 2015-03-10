@@ -4,7 +4,7 @@ from shutil import rmtree
 import tempfile
 import time
 
-from galaxy.tools import watcher
+from galaxy.tools.toolbox import watcher
 from galaxy.util import bunch
 
 

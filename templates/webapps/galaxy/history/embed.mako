@@ -23,7 +23,8 @@
             </a>
         </h4>
         %if hasattr( item, "annotation") and item.annotation:
-        <div class="annotation">${item.annotation | h}</div>
+        <% print type( item.annotation ), item.annotation %>
+        <div class="annotation">${ item.annotation | h }</div>
         %endif
     </div>
     <div class='summary-content'>
@@ -47,7 +48,8 @@
         $embeddedHistory = $( thisScript ).prev();
 
     require.config({
-        baseUrl : "${h.url_for( '/static/scripts' )}"
+        baseUrl : "${h.url_for( '/static/scripts' )}",
+        urlArgs: 'v=${int(app.server_starttime)}'
     });
     require([ 'mvc/history/history-panel-annotated' ], function( panelMod ){
 

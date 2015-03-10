@@ -7,18 +7,19 @@ API operations on a history.
 import pkg_resources
 pkg_resources.require( "Paste" )
 
+pkg_resources.require( "SQLAlchemy >= 0.4" )
+import sqlalchemy
+
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_raw as expose_api_raw
 
 from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesHistoryMixin
-from galaxy.web.base.controller import UsesTagsMixin
 from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ImportsHistoryMixin
 
-from galaxy.managers import histories, citations
+from galaxy.managers import histories, citations, users
 
 from galaxy import util
 from galaxy.util import string_as_bool
@@ -29,22 +30,16 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
-                           ExportsHistoryMixin, ImportsHistoryMixin ):
+class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistoryMixin ):
 
     def __init__( self, app ):
         super( HistoriesController, self ).__init__( app )
         self.citations_manager = citations.CitationsManager( app )
-        self.mgrs = util.bunch.Bunch(
-            histories=histories.HistoryManager()
-        )
-
-    def _decode_id( self, trans, id ):
-        try:
-            return trans.security.decode_id( id )
-        except:
-            raise exceptions.MalformedId( "Malformed History id ( %s ) specified, unable to decode"
-                                          % ( str( id ) ), type='error' )
+        self.user_manager = users.UserManager( app )
+        self.history_manager = histories.HistoryManager( app )
+        self.history_serializer = histories.HistorySerializer( app )
+        self.history_deserializer = histories.HistoryDeserializer( app )
+        self.history_filters = histories.HistoryFilters( app )
 
     @expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
@@ -61,18 +56,97 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
 
         :rtype:     list
         :returns:   list of dictionaries containing summary history information
+
+        The following are optional parameters:
+            view:   string, one of ('summary','detailed'), defaults to 'summary'
+                    controls which set of properties to return
+            keys:   comma separated strings, unused by default
+                    keys/names of individual properties to return
+
+        If neither keys or views are sent, the default view (set of keys) is returned.
+        If both a view and keys are sent, the key list and the view's keys are
+        combined.
+        If keys are send and no view, only those properties in keys are returned.
+
+        For which properties are available see:
+            galaxy/managers/histories/HistorySerializer
+
+        The list returned can be filtered by using two optional parameters:
+            q:      string, generally a property name to filter by followed
+                    by an (often optional) hyphen and operator string.
+            qv:     string, the value to filter by
+
+        ..example:
+            To filter the list to only those created after 2015-01-29,
+            the query string would look like:
+                '?q=create_time-gt&qv=2015-01-29'
+
+            Multiple filters can be sent in using multiple q/qv pairs:
+                '?q=create_time-gt&qv=2015-01-29&q=tag-has&qv=experiment-1'
+
+        The list returned can be paginated using two optional parameters:
+            limit:  integer, defaults to no value and no limit (return all)
+                    how many items to return
+            offset: integer, defaults to 0 and starts at the beginning
+                    skip the first ( offset - 1 ) items and begin returning
+                    at the Nth item
+
+        ..example:
+            limit and offset can be combined. Skip the first two and return five:
+                '?limit=5&offset=3'
         """
-        #TODO: query (by name, date, etc.)
+        serialization_params = self._parse_serialization_params( kwd, 'summary' )
+        limit, offset = self.parse_limit_offset( kwd )
+        filter_params = self.parse_filter_params( kwd )
+
+        # bail early with current history if user is anonymous
+        current_user = self.user_manager.current_user( trans )
+        if self.user_manager.is_anonymous( current_user ):
+            current_history = self.history_manager.get_current( trans )
+            #note: ignores filters, limit, offset
+            return [ self.history_serializer.serialize_to_view( trans, current_history, **serialization_params ) ]
+
+        filters = []
+        # support the old default of not-returning/filtering-out deleted histories
+        filters += self._get_deleted_filter( deleted, filter_params )
+        # users are limited to requesting only their own histories (here)
+        filters += [ self.app.model.History.user == current_user ]
+        # and any sent in from the query string
+        filters += self.history_filters.parse_filters( filter_params )
+
+        #TODO: eventually make order_by a param as well
+        order_by = sqlalchemy.desc( self.app.model.History.create_time )
+        histories = self.history_manager.list( trans, filters=filters, order_by=order_by, limit=limit, offset=offset )
+
         rval = []
-        deleted = string_as_bool( deleted )
-
-        histories = self.mgrs.histories.by_user( trans, user=trans.user, only_deleted=deleted )
         for history in histories:
-            item = history.to_dict( value_mapper={ 'id': trans.security.encode_id } )
-            item['url'] = url_for( 'history', id=trans.security.encode_id( history.id ) )
-            rval.append( item )
-
+            history_dict = self.history_serializer.serialize_to_view( trans, history, **serialization_params )
+            rval.append( history_dict )
         return rval
+
+    def _get_deleted_filter( self, deleted, filter_params ):
+        #TODO: this should all be removed (along with the default) in v2
+        # support the old default of not-returning/filtering-out deleted histories
+        try:
+            # the consumer must explicitly ask for both deleted and non-deleted
+            #   but pull it from the parsed params (as the filter system will error on None)
+            deleted_filter_index = filter_params.index( ( 'deleted', 'eq', 'None' ) )
+            filter_params.pop( deleted_filter_index )
+            return []
+        except ValueError:
+            pass
+
+        # the deleted string bool was also used as an 'include deleted' flag
+        if deleted in ( 'True', 'true' ):
+            return [ self.app.model.History.deleted == True ]
+
+        # the third option not handled here is 'return only deleted'
+        #   if this is passed in (in the form below), simply return and let the filter system handle it
+        if ( 'deleted', 'eq', 'True' ) in filter_params:
+            return []
+
+        # otherwise, do the default filter of removing the deleted histories
+        return [ self.app.model.History.deleted == False ]
 
     @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
@@ -90,30 +164,29 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         :type   deleted: boolean
         :param  deleted: if True, allow information on a deleted history to be shown.
 
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
+
         :rtype:     dictionary
-        :returns:   detailed history information from
-            :func:`galaxy.web.base.controller.UsesHistoryMixin.get_history_dict`
+        :returns:   detailed history information
         """
         history_id = id
         deleted = string_as_bool( deleted )
 
         if history_id == "most_recently_used":
-            if not trans.user or len( trans.user.galaxy_sessions ) <= 0:
-                return None
-            # Most recent active history for user sessions, not deleted
-            history = trans.user.galaxy_sessions[0].histories[-1].history
-
+            history = self.history_manager.most_recent( trans, trans.user,
+                filters=( self.app.model.History.deleted == False ) )
         else:
-            history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
-                                               check_ownership=False, check_accessible=True, deleted=deleted )
+            history = self.history_manager.get_accessible( trans, self.decode_id( history_id ), trans.user )
 
-        history_data = self.get_history_dict( trans, history )
-        history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
-        return history_data
+        return self.history_serializer.serialize_to_view( trans, history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api_anonymous
     def citations( self, trans, history_id, **kwd ):
-        history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ), check_ownership=False, check_accessible=True )
+        """
+        """
+        history = self.history_manager.get_accessible( trans, self.decode_id( history_id ), trans.user )
         tool_ids = set([])
         for dataset in history.datasets:
             job = dataset.creating_job
@@ -123,7 +196,8 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             if not tool_id:
                 continue
             tool_ids.add(tool_id)
-        return map( lambda citation: citation.to_dict( "bibtex" ), self.citations_manager.citations_for_tool_ids( tool_ids ) )
+        return map( lambda citation: citation.to_dict( "bibtex" ),
+                    self.citations_manager.citations_for_tool_ids( tool_ids ) )
 
     @expose_api
     def create( self, trans, payload, **kwd ):
@@ -138,6 +212,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             * history_id:       the id of the history to copy
             * archive_source:   the url that will generate the archive to import
             * archive_type:     'url' (default)
+
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
 
         :rtype:     dict
         :returns:   element view of new history
@@ -156,22 +233,20 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         new_history = None
         # if a history id was passed, copy that history
         if copy_this_history_id:
-            original_history = self.mgrs.histories.get( trans, self._decode_id( trans, copy_this_history_id ),
-                check_ownership=False, check_accessible=True )
+            decoded_id = self.decode_id( copy_this_history_id )
+            original_history = self.history_manager.get_accessible( trans, decoded_id, trans.user )
             hist_name = hist_name or ( "Copy of '%s'" % original_history.name )
             new_history = original_history.copy( name=hist_name, target_user=trans.user )
 
         # otherwise, create a new empty history
         else:
-            new_history = trans.app.model.History( user=trans.user, name=hist_name )
+            new_history = self.history_manager.create( trans, user=trans.user, name=hist_name )
 
         trans.sa_session.add( new_history )
         trans.sa_session.flush()
 
-        item = {}
-        item = self.get_history_dict( trans, new_history )
-        item['url'] = url_for( 'history', id=item['id'] )
-        return item
+        return self.history_serializer.serialize_to_view( trans, new_history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def delete( self, trans, id, **kwd ):
@@ -184,60 +259,33 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         :type   id:     str
         :param  id:     the encoded id of the history to delete
         :type   kwd:    dict
-        :param  kwd:    (optional) dictionary structure containing:
+        :param  kwd:    (optional) dictionary structure containing extra parameters
 
-            * payload:     a dictionary itself containing:
-                * purge:   if True, purge the history and all of its HDAs
+        You can purge a history, removing all it's datasets from disk (if unshared),
+        by passing in ``purge=True`` in the url.
+
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
 
         :rtype:     dict
-        :returns:   an error object if an error occurred or a dictionary containing:
-            * id:         the encoded id of the history,
-            * deleted:    if the history was marked as deleted,
-            * purged:     if the history was purged
+        :returns:   the deleted or purged history
         """
         history_id = id
         # a request body is optional here
         purge = False
+        if 'purge' in kwd:
+            purge = string_as_bool( kwd.get( 'purge' ) )
+        # for backwards compat, keep the payload sub-dictionary
         if kwd.get( 'payload', None ):
             purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
 
-        rval = { 'id' : history_id }
-        history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
-            check_ownership=True, check_accessible=False )
-        history.deleted = True
+        history = self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user )
+        self.history_manager.delete( trans, history )
         if purge:
-            if not trans.app.config.allow_user_dataset_purge and not trans.user_is_admin():
-                raise exceptions.ConfigDoesNotAllowException( 'This instance does not allow user dataset purging' )
+            self.history_manager.purge( trans, history )
 
-            # First purge all the datasets
-            for hda in history.datasets:
-                if hda.purged:
-                    continue
-                if hda.creating_job_associations:
-                    job = hda.creating_job_associations[0].job
-                    job.mark_deleted( self.app.config.track_jobs_in_database )
-                    self.app.job_manager.job_stop_queue.put( job.id )
-                hda.purged = True
-                trans.sa_session.add( hda )
-                trans.sa_session.flush()
-
-                if hda.dataset.user_can_purge:
-                    try:
-                        hda.dataset.full_delete()
-                        trans.sa_session.add( hda.dataset )
-                    except:
-                        pass
-                    # flush now to preserve deleted state in case of later interruption
-                    trans.sa_session.flush()
-
-            # Now mark the history as purged
-            history.purged = True
-            self.sa_session.add( history )
-            rval[ 'purged' ] = True
-
-        trans.sa_session.flush()
-        rval[ 'deleted' ] = True
-        return rval
+        return self.history_serializer.serialize_to_view( trans, history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def undelete( self, trans, id, **kwd ):
@@ -249,16 +297,18 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         :type   id:     str
         :param  id:     the encoded id of the history to undelete
 
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
+
         :rtype:     str
         :returns:   'OK' if the history was undeleted
         """
         history_id = id
-        history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
-            check_ownership=True, check_accessible=False, deleted=True )
-        history.deleted = False
-        trans.sa_session.add( history )
-        trans.sa_session.flush()
-        return 'OK'
+        history = self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user )
+        self.history_manager.undelete( trans, history )
+
+        return self.history_serializer.serialize_to_view( trans, history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def update( self, trans, id, payload, **kwd ):
@@ -268,28 +318,26 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             updates the values for the history with the given ``id``
 
         :type   id:      str
-        :param  id:      the encoded id of the history to undelete
+        :param  id:      the encoded id of the history to update
         :type   payload: dict
         :param  payload: a dictionary containing any or all the
             fields in :func:`galaxy.model.History.to_dict` and/or the following:
 
             * annotation: an annotation for the history
 
+        :param  keys: same as the use of `keys` in the `index` function above
+        :param  view: same as the use of `view` in the `index` function above
+
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing
             any values that were different from the original and, therefore, updated
         """
         #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
-        history_id = id
+        history = self.history_manager.get_owned( trans, self.decode_id( id ), trans.user )
 
-        history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
-            check_ownership=True, check_accessible=True )
-        # validation handled here and some parsing, processing, and conversion
-        payload = self._validate_and_parse_update_payload( payload )
-        # additional checks here (security, etc.)
-        changed = self.set_history_from_dict( trans, history, payload )
-
-        return changed
+        self.history_deserializer.deserialize( trans, history, payload )
+        return self.history_serializer.serialize_to_view( trans, history,
+            **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def archive_export( self, trans, id, **kwds ):
@@ -300,16 +348,14 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             history.
 
         :type   id:     str
-        :param  id:     the encoded id of the history to undelete
+        :param  id:     the encoded id of the history to export
 
         :rtype:     dict
         :returns:   object containing url to fetch export from.
         """
         # PUT instead of POST because multiple requests should just result
         # in one object being created.
-        history_id = id
-        history = self.mgrs.histories.get( trans, self._decode_id( trans, history_id ),
-            check_ownership=False, check_accessible=True )
+        history = self.history_manager.get_accessible( trans, self.decode_id( id ), trans.user )
         jeha = history.latest_export
         up_to_date = jeha and jeha.up_to_date
         if 'force' in kwds:
@@ -342,9 +388,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
         """
         # Seems silly to put jeha_id in here, but want GET to be immuatable?
         # and this is being accomplished this way.
-        history_id = id
-        history = self.mgrs.histories.get( trans, trans.security.decode_id( history_id ),
-            check_ownership=False, check_accessible=True )
+        history = self.history_manager.get_accessible( trans, self.decode_id( id ), trans.user )
         matching_exports = filter( lambda e: trans.security.encode_id( e.id ) == jeha_id, history.exports )
         if not matching_exports:
             raise exceptions.ObjectNotFound()
@@ -356,35 +400,3 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin, UsesTagsMixin,
             raise exceptions.MessageException( "Export not available or not yet ready." )
 
         return self.serve_ready_history_export( trans, jeha )
-
-    def _validate_and_parse_update_payload( self, payload ):
-        """
-        Validate and parse incomming data payload for a history.
-        """
-        # This layer handles (most of the stricter idiot proofing):
-        #   - unknown/unallowed keys
-        #   - changing data keys from api key to attribute name
-        #   - protection against bad data form/type
-        #   - protection against malicious data content
-        # all other conversions and processing (such as permissions, etc.) should happen down the line
-
-        # keys listed here don't error when attempting to set, but fail silently
-        #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
-        valid_but_uneditable_keys = (
-            'id', 'model_class', 'nice_size', 'contents_url', 'purged', 'tags',
-            'state', 'state_details', 'state_ids'
-        )
-        validated_payload = {}
-        for key, val in payload.items():
-            if val is None:
-                continue
-            if key in ( 'name', 'genome_build', 'annotation' ):
-                validated_payload[ key ] = self.validate_and_sanitize_basestring( key, val )
-            if key in ( 'deleted', 'published', 'importable' ):
-                validated_payload[ key ] = self.validate_boolean( key, val )
-            elif key == 'tags':
-                validated_payload[ key ] = self.validate_and_sanitize_basestring_list( key, val )
-            elif key not in valid_but_uneditable_keys:
-                pass
-                #log.warn( 'unknown key: %s', str( key ) )
-        return validated_payload

@@ -11,13 +11,10 @@ class ListDatasetCollectionType( BaseDatasetCollectionType ):
     def __init__( self ):
         pass
 
-    def build_collection( self, elements ):
-        associations = []
+    def generate_elements( self, elements ):
         for identifier, element in elements.iteritems():
             association = DatasetCollectionElement(
                 element=element,
                 element_identifier=identifier,
             )
-            associations.append( association )
-
-        return self._new_collection_for_elements( associations )
+            yield association

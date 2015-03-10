@@ -3,7 +3,7 @@ Classes related to parameter validation.
 """
 
 import os, re, logging
-from elementtree.ElementTree import XML
+from xml.etree.ElementTree import XML
 from galaxy import model
 
 log = logging.getLogger( __name__ )

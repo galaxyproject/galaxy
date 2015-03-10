@@ -259,9 +259,6 @@
                     });
                     tool_dependency_status_updater( dependency_status_list ); 
                 },
-                error: function() {
-                    alert( "tool_dependency_status_updater_callback failed..." );
-                }
             });
         };
     </script>
@@ -317,9 +314,6 @@
                     });
                     tool_shed_repository_status_updater( repository_status_list ); 
                 },
-                error: function() {
-                    alert( "tool_shed_repository_status_updater_callback failed..." );
-                }
             });
         };
     </script>

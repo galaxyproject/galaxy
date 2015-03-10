@@ -4,6 +4,7 @@ from various states, tracking results, and building implicit dataset
 collections from matched collections.
 """
 import collections
+import galaxy.tools
 from galaxy.tools.actions import on_text_for_names
 
 import logging
@@ -23,7 +24,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params[ '__workflow_invocation_uuid__' ]
-        job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history )
+        job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history, collection_info )
         if job:
             execution_tracker.record_success( job, result )
         else:
@@ -46,14 +47,23 @@ class ToolExecutionTracker( object ):
         self.failed_jobs = 0
         self.execution_errors = []
         self.output_datasets = []
+        self.output_collections = []
         self.outputs_by_output_name = collections.defaultdict(list)
-        self.created_collections = {}
+        self.implicit_collections = {}
 
     def record_success( self, job, outputs ):
         self.successful_jobs.append( job )
         self.output_datasets.extend( outputs )
         for output_name, output_dataset in outputs:
+            if galaxy.tools.ToolOutputCollectionPart.is_named_collection_part_name( output_name ):
+                # Skip known collection outputs, these will be covered by
+                # output collections.
+                continue
             self.outputs_by_output_name[ output_name ].append( output_dataset )
+        for job_output in job.output_dataset_collections:
+            self.outputs_by_output_name[ job_output.name ].append( job_output.dataset_collection )
+        for job_output in job.output_dataset_collection_instances:
+            self.output_collections.append( ( job_output.name, job_output.dataset_collection_instance ) )
 
     def record_error( self, error ):
         self.failed_jobs += 1
@@ -120,8 +130,13 @@ class ToolExecutionTracker( object ):
                 collection_type=collection_type,
                 implicit_collection_info=implicit_collection_info,
             )
+            for job in self.successful_jobs:
+                # TODO: Think through this, may only want this for output
+                # collections - or we may be already recording data in some
+                # other way.
+                job.add_output_dataset_collection( output_name, collection )
             collections[ output_name ] = collection
 
-        self.created_collections = collections
+        self.implicit_collections = collections
 
 __all__ = [ execute ]

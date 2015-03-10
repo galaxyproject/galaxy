@@ -55,6 +55,11 @@
     "message": "The request contains unknown type of contents."
     },
    {
+    "name": "USER_IDENTIFIER_DUPLICATE",
+    "code": 400011,
+    "message": "Request contained a duplicated identifier that must be unique."
+    },
+   {
     "name": "USER_TOOL_META_PARAMETER_PROBLEM",
     "code": 400011,
     "message": "Supplied incorrect or incompatible tool meta parameters."

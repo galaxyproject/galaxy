@@ -32,6 +32,11 @@
     <![endif]-->
 
     <script type='text/javascript'>
+        // Switch for new tool form
+        %if util.string_as_bool(trans.app.config.get('workflow_toolform_upgrade',  False)):
+        __NEWTOOLFORM__ = true;
+        %endif
+        
         // Globals
         workflow = null;
         canvas_manager = null;
@@ -269,7 +274,10 @@
 </%def>
 
 <%def name="left_panel()">
-    <% from galaxy.tools import Tool, ToolSection, ToolSectionLabel %>
+    <%
+       from galaxy.tools import Tool
+       from galaxy.tools.toolbox import ToolSection, ToolSectionLabel
+    %>
 
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>
@@ -284,7 +292,7 @@
                 <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner" />
             </div>
             <div class="toolSectionList">
-                %for key, val in app.toolbox.tool_panel.items():
+                %for val in app.toolbox.tool_panel_contents( trans ):
                     <div class="toolSectionWrapper">
                     %if isinstance( val, Tool ):
                         ${render_tool( val, False )}

@@ -1,20 +1,17 @@
 define([
     "utils/levenshtein",
+    "utils/natural-sort",
     "mvc/base-mvc",
     "utils/localization"
-], function( levelshteinDistance, baseMVC, _l ){
+], function( levenshteinDistance, naturalSort, baseMVC, _l ){
 /* ============================================================================
 TODO:
-    _adjPairedOnScrollBar
-    parition drag now doesn't stop when dragging down
-        can push footer out of modal
-        only *after* partition is all the way down once?
 
 
 PROGRAMMATICALLY:
 currPanel.once( 'rendered', function(){
     currPanel.showSelectors();
-    currPanel.selectAllDatasets();
+    currPanel.selectAll();
     _.last( currPanel.actionsPopup.options ).func();
 });
 
@@ -27,25 +24,23 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     className   : 'dataset paired',
 
     initialize : function( attributes ){
-        //console.debug( 'PairView.initialize:', attributes );
         this.pair = attributes.pair || {};
     },
+
+    template : _.template([
+        '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
+        '<span class="pair-name-column flex-column">',
+            '<span class="pair-name"><%= pair.name %></span>',
+        '</span>',
+        '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
+    ].join('')),
 
     render : function(){
         this.$el
             .attr( 'draggable', true )
             .data( 'pair', this.pair )
-            .html( _.template([
-                '<span class="forward-dataset-name flex-column"><%= pair.forward.name %></span>',
-                '<span class="pair-name-column flex-column">',
-                    '<span class="pair-name"><%= pair.name %></span>',
-                '</span>',
-                '<span class="reverse-dataset-name flex-column"><%= pair.reverse.name %></span>'
-            ].join(''), { pair: this.pair }))
+            .html( this.template({ pair: this.pair }) )
             .addClass( 'flex-column-container' );
-
-//TODO: would be good to get the unpair-btn into this view - but haven't found a way with css
-
         return this;
     },
 
@@ -58,24 +53,17 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** dragging pairs for re-ordering */
     _dragstart : function( ev ){
-        //console.debug( this, '_dragstartPair', ev );
         ev.currentTarget.style.opacity = '0.4';
         if( ev.originalEvent ){ ev = ev.originalEvent; }
 
         ev.dataTransfer.effectAllowed = 'move';
         ev.dataTransfer.setData( 'text/plain', JSON.stringify( this.pair ) );
 
-        //ev.dataTransfer.setDragImage( null, 0, 0 );
-
-        // the canvas can be used to create the image
-        //ev.dataTransfer.setDragImage( canvasCrossHairs(), 25, 25 );
-
-        //console.debug( 'ev.dataTransfer:', ev.dataTransfer );
         this.$el.parent().trigger( 'pair.dragstart', [ this ] );
     },
+
     /** dragging pairs for re-ordering */
     _dragend : function( ev ){
-        //console.debug( this, '_dragendPair', ev );
         ev.currentTarget.style.opacity = '1.0';
         this.$el.parent().trigger( 'pair.dragend', [ this ] );
     },
@@ -89,9 +77,109 @@ var PairView = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     toString : function(){
         return 'PairView(' + this.pair.name + ')';
     }
-
 });
 
+
+// ============================================================================
+/** returns an autopair function that uses the provided options.match function */
+function autoPairFnBuilder( options ){
+    options = options || {};
+    options.createPair = options.createPair || function _defaultCreatePair( params ){
+        this.debug( 'creating pair:', params.listA[ params.indexA ].name, params.listB[ params.indexB ].name );
+        params = params || {};
+        return this._pair(
+            params.listA.splice( params.indexA, 1 )[0],
+            params.listB.splice( params.indexB, 1 )[0],
+            { silent: true }
+        );
+    };
+    // compile these here outside of the loop
+    var _regexps = [];
+    function getRegExps(){
+        if( !_regexps.length ){
+            _regexps = [
+                new RegExp( this.filters[0] ),
+                new RegExp( this.filters[1] )
+            ];
+        }
+        return _regexps;
+    }
+    // mangle params as needed
+    options.preprocessMatch = options.preprocessMatch || function _defaultPreprocessMatch( params ){
+        var regexps = getRegExps.call( this );
+        return _.extend( params, {
+            matchTo     : params.matchTo.name.replace( regexps[0], '' ),
+            possible    : params.possible.name.replace( regexps[1], '' )
+        });
+    };
+
+    return function _strategy( params ){
+        this.debug( 'autopair _strategy ---------------------------' );
+        params = params || {};
+        var listA = params.listA,
+            listB = params.listB,
+            indexA = 0, indexB,
+            bestMatch = {
+                score : 0.0,
+                index : null
+            },
+            paired = [];
+        //console.debug( 'params:', JSON.stringify( params, null, '  ' ) );
+        this.debug( 'starting list lens:', listA.length, listB.length );
+        this.debug( 'bestMatch (starting):', JSON.stringify( bestMatch, null, '  ' ) );
+
+        while( indexA < listA.length ){
+            var matchTo = listA[ indexA ];
+            bestMatch.score = 0.0;
+
+            for( indexB=0; indexB<listB.length; indexB++ ){
+                var possible = listB[ indexB ];
+                this.debug( indexA + ':' + matchTo.name );
+                this.debug( indexB + ':' + possible.name );
+
+                // no matching with self
+                if( listA[ indexA ] !== listB[ indexB ] ){
+                    bestMatch = options.match.call( this, options.preprocessMatch.call( this, {
+                        matchTo : matchTo,
+                        possible: possible,
+                        index   : indexB,
+                        bestMatch : bestMatch
+                    }));
+                    this.debug( 'bestMatch:', JSON.stringify( bestMatch, null, '  ' ) );
+                    if( bestMatch.score === 1.0 ){
+                        this.debug( 'breaking early due to perfect match' );
+                        break;
+                    }
+                }
+            }
+            var scoreThreshold = options.scoreThreshold.call( this );
+            this.debug( 'scoreThreshold:', scoreThreshold );
+            this.debug( 'bestMatch.score:', bestMatch.score );
+
+            if( bestMatch.score >= scoreThreshold ){
+                this.debug( 'creating pair' );
+                paired.push( options.createPair.call( this, {
+                    listA   : listA,
+                    indexA  : indexA,
+                    listB   : listB,
+                    indexB  : bestMatch.index
+                }));
+                this.debug( 'list lens now:', listA.length, listB.length );
+            } else {
+                indexA += 1;
+            }
+            if( !listA.length || !listB.length ){
+                return paired;
+            }
+        }
+        this.debug( 'paired:', JSON.stringify( paired, null, '  ' ) );
+        this.debug( 'autopair _strategy ---------------------------' );
+        return paired;
+    };
+}
+
+
+// ============================================================================
 /** An interface for building collections of paired datasets.
  */
 var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
@@ -100,20 +188,17 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** set up initial options, instance vars, behaviors, and autopair (if set to do so) */
     initialize : function( attributes ){
+        this.metric( 'PairedCollectionCreator.initialize', attributes );
         //this.debug( '-- PairedCollectionCreator:', attributes );
 
         attributes = _.defaults( attributes, {
             datasets            : [],
             filters             : this.DEFAULT_FILTERS,
-            //automaticallyPair   : false,
             automaticallyPair   : true,
-            matchPercentage     : 1.0,
-            //matchPercentage     : 0.9,
-            //matchPercentage     : 0.8,
-            //strategy            : 'levenshtein'
-            strategy            : 'lcs'
+            strategy            : 'lcs',
+            matchPercentage     : 0.9,
+            twoPassAutopairing  : true
         });
-        //this.debug( 'attributes now:', attributes );
 
         /** unordered, original list */
         this.initialList = attributes.datasets;
@@ -130,14 +215,17 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         /** try to auto pair the unpaired datasets on load? */
         this.automaticallyPair = attributes.automaticallyPair;
 
-        /** distance/mismatch level allowed for autopairing */
-        this.matchPercentage = attributes.matchPercentage;
-
         /** what method to use for auto pairing (will be passed aggression level) */
         this.strategy = this.strategies[ attributes.strategy ] || this.strategies[ this.DEFAULT_STRATEGY ];
         if( _.isFunction( attributes.strategy ) ){
             this.strategy = attributes.strategy;
         }
+
+        /** distance/mismatch level allowed for autopairing */
+        this.matchPercentage = attributes.matchPercentage;
+
+        /** try to autopair using simple first, then this.strategy on the remainder */
+        this.twoPassAutopairing = attributes.twoPassAutopairing;
 
         /** remove file extensions (\.*) from created pair names? */
         this.removeExtensions = true;
@@ -148,6 +236,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         /** fn to call when the collection is created (scoped to this) */
         this.oncreate = attributes.oncreate;
 
+        /** fn to call when the cancel button is clicked (scoped to this) - if falsy, no btn is displayed */
+        this.autoscrollDist = attributes.autoscrollDist || 24;
+
         /** is the unpaired panel shown? */
         this.unpairedPanelHidden = false;
         /** is the paired panel shown? */
@@ -156,24 +247,23 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         /** DOM elements currently being dragged */
         this.$dragging = null;
 
-        this._dataSetUp();
-
         this._setUpBehaviors();
+        this._dataSetUp();
     },
 
     /** map of common filter pairs by name */
     commonFilters : {
-        none            : [ '', '' ],
-        illumina        : [ '_1', '_2' ]
+        illumina        : [ '_1', '_2' ],
+        Rs              : [ '_R1', '_R2' ]
     },
     /** which commonFilter to use by default */
     DEFAULT_FILTERS : 'illumina',
-    //DEFAULT_FILTERS : 'none',
 
     /** map of name->fn for autopairing */
     strategies : {
-        'lcs'           : 'autoPairLCSs',
-        'levenshtein'   : 'autoPairLevenshtein'
+        'simple'        : 'autopairSimple',
+        'lcs'           : 'autopairLCS',
+        'levenshtein'   : 'autopairLevenshtein'
     },
     /** default autopair strategy name */
     DEFAULT_STRATEGY : 'lcs',
@@ -186,8 +276,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         this.paired = [];
         this.unpaired = [];
 
-        //this.fwdSelectedIds = [];
-        //this.revSelectedIds = [];
         this.selectedIds = [];
 
         // sort initial list, add ids if needed, and save new working copy to unpaired
@@ -197,6 +285,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
         if( this.automaticallyPair ){
             this.autoPair();
+            this.once( 'rendered:initial', function(){
+                this.trigger( 'autopair' );
+            });
         }
     },
 
@@ -204,7 +295,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     _sortInitialList : function(){
         //this.debug( '-- _sortInitialList' );
         this._sortDatasetList( this.initialList );
-        //this._printList( this.unpaired );
     },
 
     /** sort a list of datasets */
@@ -221,37 +311,31 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 dataset.id = _.uniqueId();
             }
         });
-        //this._printList( this.unpaired );
         return this.initialList;
     },
 
     /** split initial list into two lists, those that pass forward filters & those passing reverse */
-    _splitByFilters : function( filters ){
-        var fwd = [],
-            rev = [];
-        this.unpaired.forEach( function( unpaired ){
-            if( this._filterFwdFn( unpaired ) ){
-                fwd.push( unpaired );
-            }
-            if( this._filterRevFn( unpaired ) ){
-                rev.push( unpaired );
-            }
-        }.bind( this ) );
-        return [ fwd, rev ];
-    },
+    _splitByFilters : function(){
+        var regexFilters = this.filters.map( function( stringFilter ){
+                return new RegExp( stringFilter );
+            }),
+            split = [ [], [] ];
 
-    /** filter fn to apply to forward datasets */
-    _filterFwdFn : function( dataset ){
-//TODO: this treats *all* strings as regex which may confuse people
-        var regexp = new RegExp( this.filters[0] );
-        return regexp.test( dataset.name );
-        //return dataset.name.indexOf( this.filters[0] ) >= 0;
-    },
-
-    /** filter fn to apply to reverse datasets */
-    _filterRevFn : function( dataset ){
-        var regexp = new RegExp( this.filters[1] );
-        return regexp.test( dataset.name );
+        function _filter( unpaired, filter ){
+            return filter.test( unpaired.name );
+            //return dataset.name.indexOf( filter ) >= 0;
+        }
+        this.unpaired.forEach( function _filterEach( unpaired ){
+            // 90% of the time this seems to work, but:
+            //TODO: this treats *all* strings as regex which may confuse people - possibly check for // surrounding?
+            //  would need explanation in help as well
+            regexFilters.forEach( function( filter, i ){
+                if( _filter( unpaired, filter ) ){
+                    split[i].push( unpaired );
+                }
+            });
+        });
+        return split;
     },
 
     /** add a dataset to the unpaired list in it's proper order */
@@ -278,192 +362,82 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     },
 
     // ------------------------------------------------------------------------ auto pairing
-//TODO: lots of boiler plate btwn the three auto pair fns
     /** two passes to automatically create pairs:
      *  use both simpleAutoPair, then the fn mentioned in strategy
      */
     autoPair : function( strategy ){
+        // split first using exact matching
+        var split = this._splitByFilters(),
+            paired = [];
+        if( this.twoPassAutopairing ){
+            paired = this.autopairSimple({
+                listA : split[0],
+                listB : split[1]
+            });
+            split = this._splitByFilters();
+        }
+
+        // uncomment to see printlns while running tests
+        //this.debug = function(){ console.log.apply( console, arguments ); };
+
+        // then try the remainder with something less strict
         strategy = strategy || this.strategy;
-        //this.debug( '-- autoPair', strategy );
-        this.simpleAutoPair();
-        return this[ strategy ].call( this );
+        split = this._splitByFilters();
+        paired = paired.concat( this[ strategy ].call( this, {
+                listA : split[0],
+                listB : split[1]
+        }));
+        return paired;
     },
 
-    /** attempts to pair forward with reverse when names exactly match (after removing filters) */
-    simpleAutoPair : function(){
-        //this.debug( '-- simpleAutoPair' );
-        // simplified auto pair that moves down unpaired lists *in order*,
-        //  removes filters' strings from fwd and rev,
-        //  and, if names w/o filters *exactly* match, creates a pair
-        // possibly good as a first pass
-        var i = 0, j,
-            split = this._splitByFilters(),
-            fwdList = split[0],
-            revList = split[1],
-            fwdName, revName,
-            matchFound = false;
-
-        while( i<fwdList.length ){
-            var fwd = fwdList[ i ];
-            //TODO: go through the filterFwdFn
-            fwdName = fwd.name.replace( this.filters[0], '' );
-            //this.debug( i, 'fwd:', fwdName );
-            matchFound = false;
-
-            for( j=0; j<revList.length; j++ ){
-                var rev = revList[ j ];
-                revName = rev.name.replace( this.filters[1], '' );
-                //this.debug( '\t ', j, 'rev:', revName );
-
-                if( fwd !== rev && fwdName === revName ){
-                    matchFound = true;
-                    // if it is a match, keep i at current, pop fwd, pop rev and break
-                    //this.debug( '---->', fwdName, revName );
-                    this._pair(
-                        fwdList.splice( i, 1 )[0],
-                        revList.splice( j, 1 )[0],
-                        { silent: true }
-                    );
-                    break;
-                }
+    /** autopair by exact match */
+    autopairSimple : autoPairFnBuilder({
+        scoreThreshold: function(){ return 1.0; },
+        match : function _match( params ){
+            params = params || {};
+            if( params.matchTo === params.possible ){
+                return {
+                    index: params.index,
+                    score: 1.0
+                };
             }
-            if( !matchFound ){ i += 1; }
+            return params.bestMatch;
         }
-        //this.debug( 'remaining Forward:' );
-        //this._printList( this.unpairedForward );
-        //this.debug( 'remaining Reverse:' );
-        //this._printList( this.unpairedReverse );
-        //this.debug( '' );
-    },
+    }),
 
-    /** attempt to autopair using edit distance between forward and reverse (after removing filters) */
-    autoPairLevenshtein : function(){
-        //precondition: filters are set, both lists are not empty, and all filenames.length > filters[?].length
-        //this.debug( '-- autoPairLevenshtein' );
-        var i = 0, j,
-            split = this._splitByFilters(),
-            fwdList = split[0],
-            revList = split[1],
-            fwdName, revName,
-            distance, bestIndex, bestDist;
-
-        while( i<fwdList.length ){
-            var fwd = fwdList[ i ];
-            //TODO: go through the filterFwdFn
-            fwdName = fwd.name.replace( this.filters[0], '' );
-            //this.debug( i, 'fwd:', fwdName );
-            bestDist = Number.MAX_VALUE;
-
-            for( j=0; j<revList.length; j++ ){
-                var rev = revList[ j ];
-                revName = rev.name.replace( this.filters[1], '' );
-                //this.debug( '\t ', j, 'rev:', revName );
-
-                if( fwd !== rev ){
-                    if( fwdName === revName ){
-                        //this.debug( '\t\t exactmatch:', fwdName, revName );
-                        bestIndex = j;
-                        bestDist = 0;
-                        break;
-                    }
-                    distance = levenshteinDistance( fwdName, revName );
-                    //this.debug( '\t\t distance:', distance, 'bestDist:', bestDist );
-                    if( distance < bestDist ){
-                        bestIndex = j;
-                        bestDist = distance;
-                    }
-                }
+    /** autopair by levenshtein edit distance scoring */
+    autopairLevenshtein : autoPairFnBuilder({
+        scoreThreshold: function(){ return this.matchPercentage; },
+        match : function _matches( params ){
+            params = params || {};
+            var distance = levenshteinDistance( params.matchTo, params.possible ),
+                score = 1.0 - ( distance / ( Math.max( params.matchTo.length, params.possible.length ) ) );
+            if( score > params.bestMatch.score ){
+                return {
+                    index: params.index,
+                    score: score
+                };
             }
-            //this.debug( '---->', fwd.name, bestIndex, bestDist );
-            //this.debug( '---->', fwd.name, revList[ bestIndex ].name, bestDist );
-
-            var percentage = 1.0 - ( bestDist / ( Math.max( fwdName.length, revName.length ) ) );
-            //this.debug( '----> %', percentage * 100 );
-
-            if( percentage >= this.matchPercentage ){
-                this._pair(
-                    fwdList.splice( i, 1 )[0],
-                    revList.splice( bestIndex, 1 )[0],
-                    { silent: true }
-                );
-                if( fwdList.length <= 0 || revList.length <= 0 ){
-                    return;
-                }
-            } else {
-                i += 1;
-            }
+            return params.bestMatch;
         }
-        //this.debug( 'remaining Forward:' );
-        //this._printList( this.unpairedForward );
-        //this.debug( 'remaining Reverse:' );
-        //this._printList( this.unpairedReverse );
-        //this.debug( '' );
-    },
+    }),
 
-    /** attempt to auto pair using common substrings from both front and back (after removing filters) */
-    autoPairLCSs : function(){
-        //precondition: filters are set, both lists are not empty
-        //this.debug( '-- autoPairLCSs' );
-        var i = 0, j,
-            split = this._splitByFilters(),
-            fwdList = split[0],
-            revList = split[1],
-            fwdName, revName,
-            currMatch, bestIndex, bestMatch;
-        if( !fwdList.length || !revList.length ){ return; }
-        //this.debug( fwdList, revList );
-
-        while( i<fwdList.length ){
-            var fwd = fwdList[ i ];
-            fwdName = fwd.name.replace( this.filters[0], '' );
-            //this.debug( i, 'fwd:', fwdName );
-            bestMatch = 0;
-
-            for( j=0; j<revList.length; j++ ){
-                var rev = revList[ j ];
-                revName = rev.name.replace( this.filters[1], '' );
-                //this.debug( '\t ', j, 'rev:', revName );
-
-                if( fwd !== rev ){
-                    if( fwdName === revName ){
-                        //this.debug( '\t\t exactmatch:', fwdName, revName );
-                        bestIndex = j;
-                        bestMatch = fwdName.length;
-                        break;
-                    }
-                    var match = this._naiveStartingAndEndingLCS( fwdName, revName );
-                    currMatch = match.length;
-                    //this.debug( '\t\t match:', match, 'currMatch:', currMatch, 'bestMatch:', bestMatch );
-                    if( currMatch > bestMatch ){
-                        bestIndex = j;
-                        bestMatch = currMatch;
-                    }
-                }
+    /** autopair by longest common substrings scoring */
+    autopairLCS : autoPairFnBuilder({
+        scoreThreshold: function(){ return this.matchPercentage; },
+        match : function _matches( params ){
+            params = params || {};
+            var match = this._naiveStartingAndEndingLCS( params.matchTo, params.possible ).length,
+                score = match / ( Math.max( params.matchTo.length, params.possible.length ) );
+            if( score > params.bestMatch.score ){
+                return {
+                    index: params.index,
+                    score: score
+                };
             }
-            //this.debug( '---->', i, fwd.name, bestIndex, revList[ bestIndex ].name, bestMatch );
-
-            var percentage = bestMatch / ( Math.min( fwdName.length, revName.length ) );
-            //this.debug( '----> %', percentage * 100 );
-
-            if( percentage >= this.matchPercentage ){
-                this._pair(
-                    fwdList.splice( i, 1 )[0],
-                    revList.splice( bestIndex, 1 )[0],
-                    { silent: true }
-                );
-                if( fwdList.length <= 0 || revList.length <= 0 ){
-                    return;
-                }
-            } else {
-                i += 1;
-            }
+            return params.bestMatch;
         }
-        //this.debug( 'remaining Forward:' );
-        //this._printList( this.unpairedForward );
-        //this.debug( 'remaining Reverse:' );
-        //this._printList( this.unpairedReverse );
-        //this.debug( '' );
-    },
+    }),
 
     /** return the concat'd longest common prefix and suffix from two strings */
     _naiveStartingAndEndingLCS : function( s1, s2 ){
@@ -497,7 +471,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** create a pair from fwd and rev, removing them from unpaired, and placing the new pair in paired */
     _pair : function( fwd, rev, options ){
         options = options || {};
-        //TODO: eventing, options
         //this.debug( '_pair:', fwd, rev );
         var pair = this._createPair( fwd, rev, options.name );
         this.paired.push( pair );
@@ -521,32 +494,23 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** try to find a good pair name for the given fwd and rev datasets */
     _guessNameForPair : function( fwd, rev, removeExtensions ){
         removeExtensions = ( removeExtensions !== undefined )?( removeExtensions ):( this.removeExtensions );
-        var lcs = this._naiveStartingAndEndingLCS(
-//TODO: won't work with regex
-            fwd.name.replace( this.filters[0], '' ),
-            rev.name.replace( this.filters[1], '' )
-        );
+        var fwdName = fwd.name,
+            revName = rev.name,
+            lcs = this._naiveStartingAndEndingLCS(
+                fwdName.replace( this.filters[0], '' ),
+                revName.replace( this.filters[1], '' )
+            );
         if( removeExtensions ){
             var lastDotIndex = lcs.lastIndexOf( '.' );
             if( lastDotIndex > 0 ){
-                lcs = lcs.slice( 0, lastDotIndex );
+                var extension = lcs.slice( lastDotIndex, lcs.length );
+                lcs = lcs.replace( extension, '' );
+                fwdName = fwdName.replace( extension, '' );
+                revName = revName.replace( extension, '' );
             }
         }
-        //TODO: optionally remove extension
-        return lcs || ( fwd.name + ' & ' + rev.name );
+        return lcs || ( fwdName + ' & ' + revName );
     },
-
-    ///** find datasets with fwdId and revID and pair them */
-    //_pairById : function( fwdId, revId, name ){
-    //    var both = this.unpaired.filter( function( unpaired ){
-    //            return unpaired.id === fwdId || unpaired.id === revId;
-    //        }),
-    //        fwd = both[0], rev = both[1];
-    //    if( both[0].id === revId ){
-    //        fwd = rev; rev = both[0];
-    //    }
-    //    return this._pair( fwd, rev, name );
-    //},
 
     /** unpair a pair, removing it from paired, and adding the fwd,rev datasets back into unpaired */
     _unpair : function( pair, options ){
@@ -575,7 +539,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     // ------------------------------------------------------------------------ API
     /** convert a pair into JSON compatible with the collections API */
-    _pairToJSON : function( pair ){
+    _pairToJSON : function( pair, src ){
+        src = src || 'hda';
         //TODO: consider making this the pair structure when created instead
         return {
             collection_type : 'paired',
@@ -584,13 +549,11 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             element_identifiers : [{
                 name    : 'forward',
                 id      : pair.forward.id,
-                //TODO: isn't necessarily true
-                src     : 'hda'
+                src     : src
             }, {
                 name    : 'reverse',
                 id      : pair.reverse.id,
-                //TODO: isn't necessarily true
-                src     : 'hda'
+                src     : src
             }]
         };
     },
@@ -598,23 +561,19 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** create the collection via the API
      *  @returns {jQuery.xhr Object}    the jquery ajax request
      */
-    createList : function(){
+    createList : function( name ){
         var creator = this,
-            url;
-        if( creator.historyId ){
             url = '/api/histories/' + this.historyId + '/contents/dataset_collections';
-        //} else {
-        //
-        }
 
-//TODO:?? Can't we use ListPairedCollection.create()
+        //TODO: use ListPairedCollection.create()
         var ajaxData = {
             type            : 'dataset_collection',
             collection_type : 'list:paired',
-            name            : _.escape( creator.$( '.collection-name' ).val() ),
+            name            : _.escape( name || creator.$( '.collection-name' ).val() ),
             element_identifiers : creator.paired.map( function( pair ){
                 return creator._pairToJSON( pair );
             })
+
         };
         //this.debug( JSON.stringify( ajaxData ) );
         return jQuery.ajax( url, {
@@ -629,6 +588,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         .done( function( response, message, xhr ){
             //this.info( 'ok', response, message, xhr );
             creator.trigger( 'collection:created', response, message, xhr );
+            creator.metric( 'collection:created', response );
             if( typeof creator.oncreate === 'function' ){
                 creator.oncreate.call( this, response, message, xhr );
             }
@@ -662,6 +622,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         this._renderMiddle( speed );
         this._renderFooter( speed );
         this._addPluginComponents();
+        this.trigger( 'rendered', this );
         return this;
     },
 
@@ -685,7 +646,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var $middle = this.$( '.middle' ).empty().html( PairedCollectionCreator.templates.middle() );
 
         // (re-) hide the un/paired panels based on instance vars
-        //TODO: use replaceWith
         if( this.unpairedPanelHidden ){
             this.$( '.unpaired-columns' ).hide();
         } else if( this.pairedPanelHidden ){
@@ -739,7 +699,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             return;
         }
         // add to appropo cols
-        //TODO: not the best way to render
+        //TODO: not the best way to render - consider rendering the entire unpaired-columns section in a fragment
+        //  and swapping out that
         this.$( '.unpaired-columns .forward-column .column-datasets' ).append( $fwd )
             .add( this.$( '.unpaired-columns .paired-column .column-datasets' ).append( $prd ) )
             .add( this.$( '.unpaired-columns .reverse-column .column-datasets' ).append( $rev ) );
@@ -814,12 +775,11 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         this.$( '.paired-columns .column-datasets' ).empty();
         var creator = this;
         this.paired.forEach( function( pair, i ){
-//TODO: cache these?
+            //TODO: cache these?
             var pairView = new PairView({ pair: pair });
             creator.$( '.paired-columns .column-datasets' )
                 .append( pairView.render().$el )
                 .append([
-//TODO: data-index="i"
                     '<button class="unpair-btn">',
                         '<span class="fa fa-unlink" title="', _l( 'Unpair' ), '"></span>',
                     '</button>'
@@ -866,11 +826,11 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 '<div class="help">',
                     _l( 'Choose from the following filters to change which unpaired reads are shown in the display' ),
                 ':</div>',
-                //TODO: connect with common filters
-                filterChoice( '_1', '_2' ),
-                filterChoice( '_R1', '_R2' ),
+                _.values( this.commonFilters ).map( function( filterSet ){
+                    return filterChoice( filterSet[0], filterSet[1] );
+                }).join( '' ),
             '</div>'
-        ].join(''), {}));
+        ].join(''))({}));
 
         return this.$( selector ).popover({
             container   : '.collection-creator',
@@ -899,6 +859,10 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     // ------------------------------------------------------------------------ events
     /** set up event handlers on self */
     _setUpBehaviors : function(){
+        this.once( 'rendered', function(){
+            this.trigger( 'rendered:initial', this );
+        });
+
         this.on( 'pair:new', function(){
             //TODO: ideally only re-render the columns (or even elements) involved
             this._renderUnpaired();
@@ -924,6 +888,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 this.$( '.forward-unpaired-filter input' ).val(),
                 this.$( '.reverse-unpaired-filter input' ).val()
             ];
+            this.metric( 'filter-change', this.filters );
             this._renderFilters();
             this._renderUnpaired();
         });
@@ -939,6 +904,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
                 if( !this.unpaired.length ){
                     message += ': ' + _l( 'all datasets have been successfully paired' );
                     this.hideUnpaired();
+                    this.$( '.collection-name' ).focus();
                 }
             } else {
                 message = _l( 'Could not automatically create any pairs from the given dataset names' );
@@ -960,7 +926,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         'click .forward-column .column-title'       : '_clickShowOnlyUnpaired',
         'click .reverse-column .column-title'       : '_clickShowOnlyUnpaired',
         'click .unpair-all-link'                    : '_clickUnpairAll',
-        //TODO: this seems kinda backasswards
+        //TODO: this seems kinda backasswards - re-sending jq event as a backbone event, can we listen directly?
         'change .forward-unpaired-filter input'     : function( ev ){ this.trigger( 'filter-change' ); },
         'focus .forward-unpaired-filter input'      : function( ev ){ $( ev.currentTarget ).select(); },
         'click .autopair-link'                      : '_clickAutopair',
@@ -994,6 +960,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         // footer
         'change .remove-extensions'                 : function( ev ){ this.toggleExtensions(); },
         'change .collection-name'                   : '_changeName',
+        'keydown .collection-name'                  : '_nameCheckForEnter',
         'click .cancel-create'                      : function( ev ){
             if( typeof this.oncancel === 'function' ){
                 this.oncancel.call( this );
@@ -1027,7 +994,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         this.$( '.header .alert' ).hide();
     },
 
-    //TODO: consolidate these
     /** toggle between showing only unpaired and split view */
     _clickShowOnlyUnpaired : function( ev ){
         //this.debug( 'click unpaired', ev.currentTarget );
@@ -1068,15 +1034,15 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** unpair all paired and do other super neat stuff which I'm not really sure about yet... */
     _clickUnpairAll : function( ev ){
+        this.metric( 'unpairAll' );
         this.unpairAll();
     },
 
     /** attempt to autopair */
     _clickAutopair : function( ev ){
         var paired = this.autoPair();
-        //this.debug( 'autopaired', paired );
-        //TODO: an indication of how many pairs were found - if 0, assist
-        this.trigger( 'autopair', paired );
+        this.metric( 'autopair', paired.length, this.unpaired.length );
+        this.trigger( 'autopair' );
     },
 
     /** set the filters based on the data attributes of the button click target */
@@ -1141,7 +1107,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             fwds = [],
             revs = [],
             pairs = [];
-        //TODO: could be made more concise
         creator.$( '.unpaired-columns .forward-column .dataset.selected' ).each( function(){
             fwds.push( $( this ).data( 'dataset' ) );
         });
@@ -1197,12 +1162,10 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             fwd = $( '.unpaired-columns .forward-column .dataset' ).eq( rowIndex ).data( 'dataset' ),
             rev = $( '.unpaired-columns .reverse-column .dataset' ).eq( rowIndex ).data( 'dataset' );
         //this.debug( 'row:', rowIndex, fwd, rev );
-        //TODO: animate
         this._pair( fwd, rev );
     },
 
     // ........................................................................ divider/partition
-//TODO: simplify
     /** start dragging the visible divider/partition between unpaired and paired panes */
     _startPartitionDrag : function( ev ){
         var creator = this,
@@ -1242,7 +1205,6 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         unpairedHi = Math.max( 10, unpairedHi + adj );
         pairedHi = pairedHi - adj;
 
-//TODO: seems like shouldn't need this (it should be part of the hide/show/splitView)
         var movingUpwards = adj < 0;
         // when the divider gets close to the top - lock into hiding the unpaired section
         if( movingUpwards ){
@@ -1297,68 +1259,82 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** rename a pair when the pair name is clicked */
     _clickPairName : function( ev ){
         ev.stopPropagation();
-        var $control = $( ev.currentTarget ),
-            pair = this.paired[ $control.parent().parent().index() / 2 ],
+        var $name = $( ev.currentTarget ),
+            $pair = $name.parent().parent(),
+            index = $pair.index( '.dataset.paired' ),
+            pair = this.paired[ index ],
             response = prompt( 'Enter a new name for the pair:', pair.name );
         if( response ){
             pair.name = response;
             // set a flag (which won't be passed in json creation) for manual naming so we don't overwrite these
             //  when adding/removing extensions
-            //TODO: kinda hacky
+            //hackish
             pair.customizedName = true;
-            $control.text( pair.name );
+            $name.text( pair.name );
         }
     },
 
     /** unpair this pair */
     _clickUnpair : function( ev ){
         //if( !ev.currentTarget ){ return true; }
-        //TODO: this is a hack bc each paired rev now has two elems (dataset, button)
-        var pairIndex = Math.floor( $( ev.currentTarget ).index() / 2 );
+        var pairIndex = Math.floor( $( ev.currentTarget ).index( '.unpair-btn' ) );
         //this.debug( 'pair:', pairIndex );
-        //TODO: animate
         this._unpair( this.paired[ pairIndex ] );
     },
 
     // ........................................................................ paired - drag and drop re-ordering
     //_dragenterPairedColumns : function( ev ){
-    //    console.debug( '_dragenterPairedColumns:', ev );
+    //    this.debug( '_dragenterPairedColumns:', ev );
     //},
     //_dragleavePairedColumns : function( ev ){
-    //    //console.debug( '_dragleavePairedColumns:', ev );
+    //    //this.debug( '_dragleavePairedColumns:', ev );
     //},
     /** track the mouse drag over the paired list adding a placeholder to show where the drop would occur */
     _dragoverPairedColumns : function( ev ){
-        //console.debug( '_dragoverPairedColumns:', ev );
+        //this.debug( '_dragoverPairedColumns:', ev );
         ev.preventDefault();
 
-        var $list = this.$( '.paired-columns .column-datasets' ),
-            offset = $list.offset();
-        //console.debug( ev.originalEvent.clientX, ev.originalEvent.clientY );
+        var $list = this.$( '.paired-columns .column-datasets' );
+        this._checkForAutoscroll( $list, ev.originalEvent.clientY );
+        //this.debug( ev.originalEvent.clientX, ev.originalEvent.clientY );
         var $nearest = this._getNearestPairedDatasetLi( ev.originalEvent.clientY );
-        //console.debug( ev.originalEvent.clientX - offset.left, ev.originalEvent.clientY - offset.top );
 
         $( '.paired-drop-placeholder' ).remove();
-        var $placeholder = $( '<div class="paired-drop-placeholder"></div>')
+        var $placeholder = $( '<div class="paired-drop-placeholder"></div>' );
         if( !$nearest.size() ){
             $list.append( $placeholder );
         } else {
             $nearest.before( $placeholder );
         }
     },
+
+    /** If the mouse is near enough to the list's top or bottom, scroll the list */
+    _checkForAutoscroll : function( $element, y ){
+        var AUTOSCROLL_SPEED = 2;
+        var offset = $element.offset(),
+            scrollTop = $element.scrollTop(),
+            upperDist = y - offset.top,
+            lowerDist = ( offset.top + $element.outerHeight() ) - y;
+        //this.debug( '_checkForAutoscroll:', scrollTop, upperDist, lowerDist );
+        if( upperDist >= 0 && upperDist < this.autoscrollDist ){
+            $element.scrollTop( scrollTop - AUTOSCROLL_SPEED );
+        } else if( lowerDist >= 0 && lowerDist < this.autoscrollDist ){
+            $element.scrollTop( scrollTop + AUTOSCROLL_SPEED );
+        }
+    },
+
     /** get the nearest *previous* paired dataset PairView based on the mouse's Y coordinate.
      *      If the y is at the end of the list, return an empty jQuery object.
      */
     _getNearestPairedDatasetLi : function( y ){
         var WIGGLE = 4,
             lis = this.$( '.paired-columns .column-datasets li' ).toArray();
-//TODO: better way?
         for( var i=0; i<lis.length; i++ ){
             var $li = $( lis[i] ),
                 top = $li.offset().top,
                 halfHeight = Math.floor( $li.outerHeight() / 2 ) + WIGGLE;
             if( top + halfHeight > y && top - halfHeight < y ){
-                //console.debug( y, top + halfHeight, top - halfHeight )
+                //this.debug( y, top + halfHeight, top - halfHeight )
                 return $li;
             }
         }
@@ -1385,17 +1361,17 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** resync the creator's list of paired based on the DOM order of pairs */
     _syncPairsToDom : function(){
         var newPaired = [];
-//TODO: ugh
+        //TODO: doesn't seem wise to use the dom to store these - can't we sync another way?
         this.$( '.paired-columns .dataset.paired' ).each( function(){
             newPaired.push( $( this ).data( 'pair' ) );
         });
-        //console.debug( newPaired );
+        //this.debug( newPaired );
         this.paired = newPaired;
         this._renderPaired();
     },
     /** drag communication with pair sub-views: dragstart */
     _pairDragstart : function( ev, pair ){
-        //console.debug( '_pairDragstart', ev, pair )
+        //this.debug( '_pairDragstart', ev, pair )
         // auto select the pair causing the event and move all selected
         pair.$el.addClass( 'selected' );
         var $selected = this.$( '.paired-columns .dataset.selected' );
@@ -1403,7 +1379,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     },
     /** drag communication with pair sub-views: dragend - remove the placeholder */
     _pairDragend : function( ev, pair ){
-        //console.debug( '_pairDragend', ev, pair )
+        //this.debug( '_pairDragend', ev, pair )
         $( '.paired-drop-placeholder' ).remove();
         this.$dragging = null;
     },
@@ -1426,6 +1402,13 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** handle a collection name change */
     _changeName : function( ev ){
         this._validationWarning( 'name', !!this._getName() );
+    },
+
+    /** check for enter key press when in the collection name and submit */
+    _nameCheckForEnter : function( ev ){
+        if( ev.keyCode === 13 ){
+            this._clickCreate();
+        }
     },
 
     /** get the current collection name */
@@ -1699,6 +1682,7 @@ PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
 //=============================================================================
 /** a modal version of the paired collection creator */
 var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datasets, options ){
+
     options = _.defaults( options || {}, {
         datasets    : datasets,
         oncancel    : function(){ Galaxy.modal.hide(); },
@@ -1712,7 +1696,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
         throw new Error( 'Galaxy or Galaxy.modal not found' );
     }
 
-    var creator = new PairedCollectionCreator( options ).render();
+    var creator = new PairedCollectionCreator( options );
     Galaxy.modal.show({
         title   : 'Create a collection of paired datasets',
         body    : creator.$el,
@@ -1720,6 +1704,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
         height  : '800px',
         closing_events: true
     });
+    creator.render();
     //TODO: remove modal header
     window.PCC = creator;
     return creator;

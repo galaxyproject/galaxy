@@ -169,7 +169,7 @@ var CitationListView = Backbone.View.extend({
                 '</div>',
                 '<div class="toolFormBody" style="padding:5px 10px">',
                 this.partialWarningElement(),
-                '<span class="citations-formatted"></span>',
+                '<span class="citations-formatted" style="word-wrap: break-word;"></span>',
                 '</div>',
                 '<div class="citations-bibtex toolFormBody" style="padding:5px 10px">',
                 '<textarea style="width: 100%; height: 500px;" class="citations-bibtex-text"></textarea>',

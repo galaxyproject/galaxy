@@ -1,4 +1,9 @@
-define(['libs/d3', 'viz/visualization', 'mvc/data'], function(d3, visualization_mod, data_mod) {
+define([
+    'libs/d3',
+    'viz/visualization',
+    'mvc/data',
+    'mvc/ui/icon-button'
+], function(d3, visualization_mod, data_mod, mod_icon_btn) {
 
 /**
  * Base class of any menus that takes in user interaction. Contains checking methods.
@@ -720,7 +725,7 @@ var HeaderButtons = Backbone.View.extend({
     initRightHeaderBtns : function(){
         var self = this;
 
-        rightMenu = create_icon_buttons_menu([
+        rightMenu = mod_icon_btn.create_icon_buttons_menu([
             { icon_class: 'gear', title: 'PhyloViz Settings', on_click: function(){
                 $("#SettingsMenu").show();
                 self.settingsMenu.updateUI();
@@ -748,7 +753,7 @@ var HeaderButtons = Backbone.View.extend({
 
     initNavBtns: function() {
         var self = this,
-            navMenu = create_icon_buttons_menu([
+            navMenu = mod_icon_btn.create_icon_buttons_menu([
                 { icon_class: 'zoom-in', title: 'Zoom in', on_click: function() {
                     self.phylovizView.zoomAndPan({ zoom : "+"});
                 } },

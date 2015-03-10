@@ -249,9 +249,9 @@ class AdminToolshed( AdminGalaxy ):
             if tool_shed_repository.includes_tools_for_display_in_tool_panel:
                 # Handle tool panel alterations.
                 tpm = tool_panel_manager.ToolPanelManager( trans.app )
-                tpm.remove_from_tool_panel( tool_shed_repository,
-                                            shed_tool_conf,
-                                            uninstall=remove_from_disk_checked )
+                tpm.remove_repository_contents( tool_shed_repository,
+                                                shed_tool_conf,
+                                                uninstall=remove_from_disk_checked )
             if tool_shed_repository.includes_data_managers:
                 dmh = data_manager.DataManagerHandler( trans.app )
                 dmh.remove_from_data_manager( tool_shed_repository )
@@ -331,7 +331,7 @@ class AdminToolshed( AdminGalaxy ):
         image can be defined in either a README.rst file contained in the repository or the help section of a Galaxy tool config that
         is contained in the repository.  The following image definitions are all supported.  The former $PATH_TO_IMAGES is no longer
         required, and is now ignored.
-        .. image:: https://raw.github.com/galaxy/some_image.png 
+        .. image:: https://raw.github.com/galaxy/some_image.png
         .. image:: $PATH_TO_IMAGES/some_image.png
         .. image:: /static/images/some_image.gif
         .. image:: some_image.jpg
@@ -343,12 +343,13 @@ class AdminToolshed( AdminGalaxy ):
             repository = suc.get_tool_shed_repository_by_id( trans.app, repository_id )
             if repository:
                 repo_files_dir = repository.repo_files_directory( trans.app )
+                # The following line sometimes returns None.  TODO: Figure out why.
                 path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, relative_path_to_image_file )
-                if os.path.exists( path_to_file ):
+                if path_to_file and os.path.exists( path_to_file ):
                     file_name = os.path.basename( relative_path_to_image_file )
                     try:
                         extension = file_name.split( '.' )[ -1 ]
-                    except Exception, e:
+                    except Exception:
                         extension = None
                     if extension:
                         mimetype = trans.app.datatypes_registry.get_mimetype_by_extension( extension )

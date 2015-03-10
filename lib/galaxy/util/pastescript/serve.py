@@ -559,11 +559,11 @@ class ServeCommand(Command):
         if cmd == 'restart' or cmd == 'stop':
             result = self.stop_daemon()
             if result:
-                if cmd == 'restart':
-                    print "Could not stop daemon; aborting"
-                else:
-                    print "Could not stop daemon"
-                return result
+                print "Could not stop daemon"
+                # It's ok to continue trying to restart if stop_daemon returns
+                # a 1, otherwise shortcut and return.
+                if cmd == 'restart' and result != 1:
+                    return result
             if cmd == 'stop':
                 return result
             self.options.daemon = True

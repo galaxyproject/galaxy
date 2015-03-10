@@ -25,8 +25,6 @@ from install_and_test_tool_shed_repositories.base.util import get_database_versi
 from install_and_test_tool_shed_repositories.base.util import get_repository_current_revision
 from install_and_test_tool_shed_repositories.base.util import RepositoryMetadataApplication
 from galaxy.model.orm import and_
-from galaxy.model.orm import not_
-from galaxy.model.orm import select
 from galaxy.util import listify
 from mercurial import __version__
 from optparse import OptionParser
@@ -35,10 +33,12 @@ from time import strftime
 log = logging.getLogger( 'check_repositories_for_functional_tests' )
 assert sys.version_info[ :2 ] >= ( 2, 6 )
 
+
 def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
     """
-    This method will iterate through all records in the repository_metadata table, checking each one for tool metadata,
-    then checking the tool metadata for tests.  Each tool's metadata should look something like:
+    This method will iterate through all records in the repository_metadata
+    table, checking each one for tool metadata, then checking the tool
+    metadata for tests.  Each tool's metadata should look something like:
     {
       "add_to_tool_panel": true,
       "description": "",
@@ -63,7 +63,6 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
     tool_count = 0
     has_tests = 0
     no_tests = 0
-    no_tools = 0
     valid_revisions = 0
     invalid_revisions = 0
     records_checked = 0
@@ -98,9 +97,9 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
         if repository.id not in checked_repository_ids:
             checked_repository_ids.append( repository.id )
         print '# -------------------------------------------------------------------------------------------'
-        print '# Checking revision %s of %s owned by %s.' % ( changeset_revision,  name, owner )
+        print '# Checking revision %s of %s owned by %s.' % ( changeset_revision, name, owner )
         if repository_metadata.id in skip_metadata_ids:
-            print'# Skipping revision %s of %s owned by %s because the skip_tool_test setting has been set.' % ( changeset_revision,  name, owner )
+            print'# Skipping revision %s of %s owned by %s because the skip_tool_test setting has been set.' % ( changeset_revision, name, owner )
             continue
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
@@ -108,7 +107,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
         if tool_dicts is not None:
             # Clone the repository up to the changeset revision we're checking.
             repo_dir = repository.repo_path( app )
-            repo = hg_util.get_repo_for_repository( app, repository=None, repo_path=repo_dir, create=False )
+            hg_util.get_repo_for_repository( app, repository=None, repo_path=repo_dir, create=False )
             work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-cafr"  )
             cloned_ok, error_message = hg_util.clone_repository( repo_dir, work_dir, changeset_revision )
             if cloned_ok:
@@ -127,10 +126,13 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
             else:
                 print '# Test data directory missing in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
             print '# Checking for functional tests in changeset revision %s of %s, owned by %s.' % \
-                ( changeset_revision,  name, owner )
-            # Inspect each tool_dict for defined functional tests.  If there are no tests, this tool should not be tested, since the
-            # tool functional tests only report failure if the test itself fails, not if it's missing or undefined. Filtering out those
-            # repositories at this step will reduce the number of "false negatives" the automated functional test framework produces.
+                ( changeset_revision, name, owner )
+            # Inspect each tool_dict for defined functional tests.  If there
+            # are no tests, this tool should not be tested, since the tool
+            # functional tests only report failure if the test itself fails,
+            # not if it's missing or undefined. Filtering out those
+            # repositories at this step will reduce the number of "false
+            # negatives" the automated functional test framework produces.
             for tool_dict in tool_dicts:
                 failure_reason = ''
                 problem_found = False
@@ -147,16 +149,16 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                 if defined_test_dicts is not None:
                     # We need to inspect the <test> tags because the following tags...
                     # <tests>
-                    # </tests> 
+                    # </tests>
                     # ...will produce the following metadata:
                     # "tests": []
                     # And the following tags...
                     # <tests>
                     #     <test>
                     #    </test>
-                    # </tests> 
+                    # </tests>
                     # ...will produce the following metadata:
-                    # "tests": 
+                    # "tests":
                     #    [{"inputs": [], "name": "Test-1", "outputs": [], "required_files": []}]
                     for defined_test_dict in defined_test_dicts:
                         inputs = defined_test_dict.get( 'inputs', [] )
@@ -194,7 +196,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                     if test_errors not in missing_test_components:
                         missing_test_components.append( test_errors )
                 if tool_has_defined_tests and tool_has_test_files:
-                    print '# Revision %s of %s owned by %s is a testable revision.' % ( changeset_revision,  name, owner )
+                    print '# Revision %s of %s owned by %s is a testable revision.' % ( changeset_revision, name, owner )
                     testable_revision = True
             # Remove the cloned repository path. This has to be done after the check for required test files, for obvious reasons.
             if os.path.exists( work_dir ):
@@ -226,8 +228,8 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                         # a test_environment entry.  If we use it we need to temporarily eliminate it from the list of tool_test_results_dicts
                         # since it will be re-inserted later.
                         tool_test_results_dict = tool_test_results_dicts.pop( 0 )
-                    elif len( tool_test_results_dict ) == 2 and \
-                        'test_environment' in tool_test_results_dict and 'missing_test_components' in tool_test_results_dict:
+                    elif (len( tool_test_results_dict ) == 2 and
+                          'test_environment' in tool_test_results_dict and 'missing_test_components' in tool_test_results_dict):
                         # We can re-use tool_test_results_dict if its only entries are "test_environment" and "missing_test_components".
                         # In this case, some tools are missing tests components while others are not.
                         tool_test_results_dict = tool_test_results_dicts.pop( 0 )
@@ -260,19 +262,22 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
                     #    In the install and test script, this behavior is slightly different, since we do want to always run functional
                     #    tests on the most recent downloadable changeset revision.
                     if should_set_do_not_test_flag( app, repository, changeset_revision, testable_revision ):
-                        print "# Setting do_not_test to True on revision %s of %s owned by %s because it is missing test components" % \
-                            ( changeset_revision,  name, owner )
+                        print "# Setting do_not_test to True on revision %s of %s owned by %s because it is missing test components" % (
+                            changeset_revision, name, owner
+                        )
                         print "# and it is not the latest downloadable revision."
                         repository_metadata.do_not_test = True
                     if not testable_revision:
                         # Even though some tools may be missing test components, it may be possible to test other tools.  Since the
                         # install and test framework filters out repositories marked as missing test components, we'll set it only if
                         # no tools can be tested.
-                        print '# Setting missing_test_components to True for revision %s of %s owned by %s because all tools are missing test components.' % \
-                            ( changeset_revision,  name, owner )
+                        print '# Setting missing_test_components to True for revision %s of %s owned by %s because all tools are missing test components.' % (
+                            changeset_revision, name, owner
+                        )
                         repository_metadata.missing_test_components = True
-                        print "# Setting tools_functionally_correct to False on revision %s of %s owned by %s because it is missing test components" % \
-                            ( changeset_revision,  name, owner )
+                        print "# Setting tools_functionally_correct to False on revision %s of %s owned by %s because it is missing test components" % (
+                            changeset_revision, name, owner
+                        )
                         repository_metadata.tools_functionally_correct = False
                     tool_test_results_dict[ 'missing_test_components' ] = missing_test_components
                 # Store only the configured number of test runs.
@@ -299,6 +304,7 @@ def check_and_update_repository_metadata( app, info_only=False, verbosity=1 ):
     print "# Elapsed time: ", stop - start
     print "#############################################################################"
 
+
 def check_for_missing_test_files( test_definition, test_data_path ):
     '''Process the tool's functional test definitions and check for each file specified as an input or output.'''
     missing_test_files = []
@@ -313,6 +319,7 @@ def check_for_missing_test_files( test_definition, test_data_path ):
         if not os.path.exists( required_file_full_path ):
             missing_test_files.append( required_file )
     return missing_test_files
+
 
 def main():
     '''Script that checks repositories to see if the tools contained within them have functional tests defined.'''
@@ -329,7 +336,7 @@ def main():
     except IndexError:
         print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
         exit( 127 )
-    config_parser = ConfigParser.ConfigParser( {'here':os.getcwd() } )
+    config_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     config_parser.read( ini_file )
     config_dict = {}
     for key, value in config_parser.items( "app:main" ):
@@ -348,6 +355,7 @@ def main():
     if options.verbosity:
         print "# Displaying extra information ( --verbosity = %d )" % options.verbosity
     check_and_update_repository_metadata( app, info_only=options.info_only, verbosity=options.verbosity )
+
 
 def should_set_do_not_test_flag( app, repository, changeset_revision, testable_revision ):
     """

@@ -49,12 +49,11 @@
     <%
         config_dict = {}
         try:
-            if 'configuration' in trans.webapp.api_controllers:
-                config_dict = ( trans.webapp.api_controllers[ 'configuration' ]
-                    .get_config_dict( trans.app.config, trans.user_is_admin() ) )
+            controller = trans.webapp.api_controllers.get( 'configuration', None )
+            if controller:
+                config_dict = controller.get_config_dict( trans, trans.user_is_admin() )
         except Exception, exc:
             pass
-            
         return config_dict
     %>
 </%def>
@@ -83,7 +82,7 @@ ${ h.dumps( get_config_dict() )}
                 users_api_controller = trans.webapp.api_controllers[ 'users' ]
                 tags_used = []
                 for tag in users_api_controller.get_user_tags_used( trans, user=trans.user ):
-                    tag = tag | h
+                    tag = escape( tag )
                     if tag:
                         tags_used.append( tag )
                 user_dict[ 'tags_used' ] = tags_used
@@ -106,6 +105,8 @@ ${ h.dumps( get_config_dict() )}
 
         except Exception, exc:
             pass
+            #TODO: no logging available?
+            #log.exception( exc )
 
         return user_dict
     %>

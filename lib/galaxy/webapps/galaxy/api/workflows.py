@@ -6,6 +6,8 @@ from __future__ import absolute_import
 
 import uuid
 import logging
+import copy
+import urllib
 from sqlalchemy import desc, or_, and_
 from galaxy import exceptions, util
 from galaxy.model.item_attrs import UsesAnnotations
@@ -13,21 +15,22 @@ from galaxy.managers import histories
 from galaxy.managers import workflows
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, url_for, UsesStoredWorkflowMixin
-from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.base.controller import SharableMixin
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_config
+from galaxy.workflow.modules import module_factory
 
 log = logging.getLogger(__name__)
 
 
-class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHistoryMixin, UsesAnnotations, SharableMixin):
+class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
 
     def __init__( self, app ):
-        super( BaseAPIController, self ).__init__( app )
-        self.history_manager = histories.HistoryManager()
+        super( WorkflowsAPIController, self ).__init__( app )
+        self.history_manager = histories.HistoryManager( app )
         self.workflow_manager = workflows.WorkflowsManager( app )
+        self.workflow_contents_manager = workflows.WorkflowContentsManager()
 
     @expose_api
     def index(self, trans, **kwd):
@@ -75,44 +78,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException( message )
-
-        item = stored_workflow.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id } )
-        item['url'] = url_for('workflow', id=id)
-        item['owner'] = stored_workflow.user.username
-        latest_workflow = stored_workflow.latest_workflow
-        inputs = {}
-        for step in latest_workflow.steps:
-            step_type = step.type
-            if step_type in ['data_input', 'data_collection_input']:
-                if step.tool_inputs and "name" in step.tool_inputs:
-                    label = step.tool_inputs['name']
-                elif step_type == "data_input":
-                    label = "Input Dataset"
-                elif step_type == "data_collection_input":
-                    label = "Input Dataset Collection"
-                else:
-                    raise ValueError("Invalid step_type %s" % step_type)
-                inputs[step.id] = {'label': label, 'value': ""}
-            else:
-                pass
-                # Eventually, allow regular tool parameters to be inserted and modified at runtime.
-                # p = step.get_required_parameters()
-        item['inputs'] = inputs
-        item['annotation'] = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
-        steps = {}
-        for step in latest_workflow.steps:
-            steps[step.id] = {'id': step.id,
-                              'type': step.type,
-                              'tool_id': step.tool_id,
-                              'tool_version': step.tool_version,
-                              'annotation': self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step ),
-                              'tool_inputs': step.tool_inputs,
-                              'input_steps': {}}
-            for conn in step.input_connections:
-                steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
-                                                                  'step_output': conn.output_name}
-        item['steps'] = steps
-        return item
+        return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style="instance" )
 
     @expose_api
     def create(self, trans, payload, **kwd):
@@ -185,8 +151,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         if 'from_history_id' in payload:
             from_history_id = payload.get( 'from_history_id' )
-            history = self.get_history( trans, from_history_id, check_ownership=False, check_accessible=True )
-            job_ids = map( trans.security.decode_id, payload.get( 'job_ids', [] ) )
+            from_history_id = self.decode_id( from_history_id )
+            history = self.history_manager.get_accessible( trans, from_history_id, trans.user )
+
+            job_ids = map( self.decode_id, payload.get( 'job_ids', [] ) )
             dataset_ids = payload.get( 'dataset_ids', [] )
             dataset_collection_ids = payload.get( 'dataset_collection_ids', [] )
             workflow_name = payload[ 'workflow_name' ]
@@ -257,7 +225,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         """
         stored_workflow = self.__get_stored_accessible_workflow( trans, workflow_id )
 
-        ret_dict = self._workflow_to_dict( trans, stored_workflow )
+        style = kwd.get("style", "export")
+        ret_dict = self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style=style )
         if not ret_dict:
             # This workflow has a tool that's missing from the distribution
             message = "Workflow cannot be exported due to missing tools."
@@ -276,7 +245,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         workflow_id = id
 
         try:
-            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
+            stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(self.decode_id(workflow_id))
         except Exception, e:
             trans.response.status = 400
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
@@ -306,6 +275,84 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         payload the same way.
         """
         return self.__api_import_new_workflow( trans, payload, **kwd )
+
+    @expose_api
+    def update( self, trans, id, payload, **kwds ):
+        """
+        * PUT /api/workflows/{id}
+            updates the workflow stored with ``id``
+
+        :type   id:      str
+        :param  id:      the encoded id of the workflow to update
+        :type   payload: dict
+        :param  payload: a dictionary containing any or all the
+            * workflow   the json description of the workflow as would be
+                         produced by GET workflows/<id>/download or
+                         given to `POST workflows`
+
+                         The workflow contents will be updated to target
+                         this.
+        :rtype:     dict
+        :returns:   serialized version of the workflow
+        """
+        stored_workflow = self.__get_stored_workflow( trans, id )
+        if 'workflow' in payload:
+            workflow_contents_manager = workflows.WorkflowContentsManager()
+            workflow, errors = workflow_contents_manager.update_workflow_from_dict(
+                trans,
+                stored_workflow,
+                payload['workflow'],
+            )
+        else:
+            message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
+            raise exceptions.RequestParameterInvalidException( message )
+        return self.workflow_contents_manager.workflow_to_dict( trans, stored_workflow, style="instance" )
+
+    @expose_api
+    def build_module( self, trans, payload={}):
+        """
+        POST /api/workflows/build_module
+        Builds module details including a tool model for the workflow editor.
+        """
+        tool_id         = payload.get( 'tool_id', None )
+        tool_version    = payload.get( 'tool_version', None )
+        tool_inputs     = payload.get( 'inputs', None )
+        annotation      = payload.get( 'annotation', '' )
+        
+        # load tool
+        tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
+        
+        # initialize module
+        trans.workflow_building_mode = True
+        module = module_factory.from_dict( trans, {
+            'type'          : 'tool',
+            'tool_id'       : tool.id,
+            'tool_state'    : None
+        } )
+        
+        # create tool model and default tool state (if missing)
+        tool_model = module.tool.to_json(trans, tool_inputs, is_dynamic=False)
+        module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
+        return {
+            'tool_model'        : tool_model,
+            'tool_state'        : module.get_state(),
+            'data_inputs'       : module.get_data_inputs(),
+            'data_outputs'      : module.get_data_outputs(),
+            'tool_errors'       : module.get_errors(),
+            'form_html'         : module.get_config_form(),
+            'annotation'        : annotation,
+            'post_job_actions'  : module.get_post_job_actions(tool_inputs)
+        }
+
+    #
+    # -- Helper methods --
+    #
+    def _get_tool( self, id, tool_version=None, user=None ):
+        id = urllib.unquote_plus( id )
+        tool = self.app.toolbox.get_tool( id, tool_version )
+        if not tool or not tool.allow_user_access( user ):
+            raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
+        return tool
 
     def __api_import_new_workflow( self, trans, payload, **kwd ):
         data = payload['workflow']
@@ -375,9 +422,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return item
 
     @expose_api
-    def workflow_request( self, trans, workflow_id, payload, **kwd ):
+    def invoke( self, trans, workflow_id, payload, **kwd ):
         """
-        POST /api/workflows/{encoded_workflow_id}/usage
+        POST /api/workflows/{encoded_workflow_id}/invocations
 
         Schedule the workflow specified by `workflow_id` to run.
         """
@@ -401,10 +448,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return self.encode_all_ids( trans, workflow_invocation.to_dict(), recursive=True )
 
     @expose_api
-    def workflow_usage(self, trans, workflow_id, **kwd):
+    def index_invocations(self, trans, workflow_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/usage
-        Get the list of the workflow usage
+        GET /api/workflows/{workflow_id}/invocations
+
+        Get the list of the workflow invocations
 
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
@@ -419,53 +467,53 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return out
 
     @expose_api
-    def workflow_usage_contents(self, trans, workflow_id, usage_id, **kwd):
+    def show_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/usage/{usage_id}
-        Get detailed description of workflow usage
+        GET /api/workflows/{workflow_id}/invocation/{invocation_id}
+        Get detailed description of workflow invocation
 
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
+        :param  workflow_id:        the workflow id (required)
+        :type   workflow_id:        str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the invocation id (required)
+        :type   invocation_id:      str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_workflow_invocation_id = self.__decode_id( trans, usage_id )
+        decoded_workflow_invocation_id = self.decode_id( invocation_id )
         workflow_invocation = self.workflow_manager.get_invocation( trans, decoded_workflow_invocation_id )
         if workflow_invocation:
             return self.__encode_invocation( trans, workflow_invocation )
         return None
 
     @expose_api
-    def cancel_workflow_invocation(self, trans, workflow_id, usage_id, **kwd):
+    def cancel_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        DELETE /api/workflows/{workflow_id}/usage/{usage_id}
+        DELETE /api/workflows/{workflow_id}/invocation/{invocation_id}
         Cancel the specified workflow invocation.
 
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the usage id (required)
+        :type   invocation_id:      str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_workflow_invocation_id = self.__decode_id( trans, usage_id )
+        decoded_workflow_invocation_id = self.decode_id( invocation_id )
         workflow_invocation = self.workflow_manager.cancel_invocation( trans, decoded_workflow_invocation_id )
         return self.__encode_invocation( trans, workflow_invocation )
 
     @expose_api
-    def workflow_invocation_step(self, trans, workflow_id, usage_id, step_id, **kwd):
+    def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}
+        GET /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
 
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
+        :param  workflow_id:        the workflow id (required)
+        :type   workflow_id:        str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the invocation id (required)
+        :type   invocation_id:      str
 
         :param  step_id:      encoded id of the WorkflowInvocationStep (required)
         :type   step_id:      str
@@ -475,7 +523,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_invocation_step_id = self.__decode_id( trans, step_id )
+        decoded_invocation_step_id = self.decode_id( step_id )
         invocation_step = self.workflow_manager.get_invocation_step(
             trans,
             decoded_invocation_step_id
@@ -483,9 +531,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         return self.__encode_invocation_step( trans, invocation_step )
 
     @expose_api
-    def workflow_invocation_step_update(self, trans, workflow_id, usage_id, step_id, payload, **kwd):
+    def update_invocation_step(self, trans, workflow_id, invocation_id, step_id, payload, **kwd):
         """
-        PUT /api/workflows/{workflow_id}/usage/{usage_id}/steps/{step_id}
+        PUT /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
         Update state of running workflow step invocation - still very nebulous
         but this would be for stuff like confirming paused steps can proceed
         etc....
@@ -494,15 +542,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
 
-        :param  usage_id:      the usage id (required)
-        :type   usage_id:      str
+        :param  invocation_id:      the usage id (required)
+        :type   invocation_id:      str
 
         :param  step_id:      encoded id of the WorkflowInvocationStep (required)
         :type   step_id:      str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        decoded_invocation_step_id = self.__decode_id( trans, step_id )
+        decoded_invocation_step_id = self.decode_id( step_id )
         action = payload.get( "action", None )
 
         invocation_step = self.workflow_manager.update_invocation_step(
@@ -541,7 +589,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             if stored_workflow is None:
                 raise exceptions.ObjectNotFound( "Workflow not found: %s" % workflow_id )
         else:
-            workflow_id = self.__decode_id( trans, workflow_id )
+            workflow_id = self.decode_id( workflow_id )
             query = trans.sa_session.query( trans.app.model.StoredWorkflow )
             stored_workflow = query.get( workflow_id )
         if stored_workflow is None:
@@ -554,10 +602,3 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesHis
             invocation.to_dict( view ),
             True
         )
-
-    def __decode_id( self, trans, workflow_id, model_type="workflow" ):
-        try:
-            return trans.security.decode_id( workflow_id )
-        except Exception:
-            message = "Malformed %s id ( %s ) specified, unable to decode" % ( model_type, workflow_id )
-            raise exceptions.MalformedId( message )

@@ -1039,7 +1039,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('     </ul>');
     tmpl_array.push('   </div>');
     tmpl_array.push('<% } else { %>');
-    tmpl_array.push('     <button style="display:none;" data-toggle="tooltip" data-placement="top" title="Add Datasets to Current Folder" id="toolbtn_add_files" class="btn btn-default toolbtn_add_files primary-button add-library-items" type="button"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></button>');
+    tmpl_array.push(' <a  data-placement="top" title="Add Datasets to Current Folder" style="display:none;" class="btn btn-default add-library-items" href="#folders/<%= id %>/import/history" role="button"><span class="fa fa-plus"></span> <span class="fa fa-file"></span></span></a>');
     tmpl_array.push('<% } %>');
 
     tmpl_array.push('  <button data-toggle="tooltip" data-placement="top" title="Import selected datasets into history" id="toolbtn_bulk_import" class="primary-button dataset-manipulation" style="margin-left: 0.5em; display:none;" type="button"><span class="fa fa-book"></span> to History</button>');

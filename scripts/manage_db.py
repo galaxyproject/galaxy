@@ -13,6 +13,8 @@ from galaxy import eggs
 eggs.require( "decorator" )
 eggs.require( "Tempita" )
 eggs.require( "SQLAlchemy" )
+eggs.require( "six" )  # Required by sqlalchemy-migrate
+eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
 eggs.require( "sqlalchemy_migrate" )
 
 from migrate.versioning.shell import main

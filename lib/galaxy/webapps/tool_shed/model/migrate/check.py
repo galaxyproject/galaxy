@@ -1,12 +1,15 @@
-import sys, os.path, logging
+import logging
+import os.path
+import sys
 
 from galaxy import eggs
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy" )
-pkg_resources.require( "decorator" )
-pkg_resources.require( "sqlalchemy-migrate" )
-pkg_resources.require( "Tempita" )
+eggs.require( "SQLAlchemy" )
+eggs.require( "decorator" )
+eggs.require( "six" )  # Required by sqlalchemy-migrate
+eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
+eggs.require( "sqlalchemy-migrate" )
+eggs.require( "Tempita" )
 
 
 from migrate.versioning import repository, schema
@@ -37,7 +40,7 @@ def create_or_verify_database( url, engine_options={} ):
     try:
         egg = dialect_to_egg[dialect]
         try:
-            pkg_resources.require( egg )
+            eggs.require( egg )
             log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
         except:
             # If the module is in the path elsewhere (i.e. non-egg), it'll still load.

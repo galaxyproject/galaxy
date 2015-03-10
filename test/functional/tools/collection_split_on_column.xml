@@ -1,0 +1,30 @@
+<tool id="collection_split_on_column" name="collection_split_on_column" version="0.1.0">
+  <command>
+    mkdir outputs; cd outputs; awk '{ print \$2 > \$1 ".tabular" }' $input1
+  </command>
+  <inputs>
+    <param name="input1" type="data" label="Input Table" help="Table to split on first column" format="tabular" />
+  </inputs>
+  <outputs>
+    <collection name="split_output" type="list" label="Table split on first column">
+      <discover_datasets pattern="__name_and_ext__" directory="outputs" />
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="tinywga.fam" />
+      <output_collection name="split_output" type="list">
+        <element name="101">
+          <assert_contents>
+            <has_text_matching expression="^1\n2\n3\n$" />
+          </assert_contents>
+        </element>
+        <element name="1334">
+          <assert_contents>
+            <has_text_matching expression="^1\n10\n11\n12\n13\n2\n$" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

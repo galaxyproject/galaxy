@@ -5,6 +5,7 @@ import json
 import mock
 
 from galaxy import model
+from galaxy.util import bunch
 
 from galaxy.workflow import modules
 from .workflow_support import MockTrans
@@ -201,6 +202,37 @@ def test_cannot_create_tool_modules_for_missing_tools():
     assert exception
 
 
+def test_updated_tool_version():
+    trans = MockTrans()
+    mock_tool = __mock_tool(id="cat1", version="0.9")
+    trans.app.toolbox.tools[ "cat1" ] = mock_tool
+    module = __from_step(
+        trans=trans,
+        type="tool",
+        tool_id="cat1",
+        tool_version="0.7",
+        config=None,
+    )
+    # Make sure there is a warnin with tool id, old version,
+    # and new version.
+    for val in "cat1", "0.7", "0.9":
+        assert val in module.version_changes[0]
+
+
+def test_tool_version_same():
+    trans = MockTrans()
+    mock_tool = __mock_tool(id="cat1", version="1.0")
+    trans.app.toolbox.tools[ "cat1" ] = mock_tool
+    module = __from_step(
+        trans=trans,
+        type="tool",
+        tool_id="cat1",
+        tool_version="1.0",
+        config=None,
+    )
+    assert not module.version_changes
+
+
 def __assert_has_runtime_input( module, label=None, collection_type=None ):
     inputs = module.get_runtime_inputs()
     assert len( inputs ) == 1
@@ -221,7 +253,11 @@ def __from_state( state ):
 
 
 def __from_step( **kwds ):
-    trans = MockTrans()
+    if "trans" in kwds:
+        trans = kwds["trans"]
+        del kwds["trans"]
+    else:
+        trans = MockTrans()
     step = __step(
         **kwds
     )
@@ -238,3 +274,20 @@ def __step( **kwds ):
         setattr( step, key, value )
 
     return step
+
+
+def __mock_tool(
+    id="cat1",
+    version="1.0",
+):
+    # For now ignoring inputs, params_from_strings, and
+    # check_and_update_param_values since only have unit tests for version
+    # handling - but need to write tests for all of this longer term.
+    tool = bunch.Bunch(
+        id=id,
+        version=version,
+        inputs={},
+        params_from_strings=mock.Mock(),
+        check_and_update_param_values=mock.Mock(),
+    )
+    return tool

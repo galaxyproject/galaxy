@@ -32,9 +32,9 @@ var View = Backbone.View.extend({
         // create element
         var $view = $('<div class="ui-table-form"/>');
         if (this.options.title) {
-            $view.append(Utils.wrap(this.table_title.$el));
+            $view.append(this.table_title.$el);
         }
-        $view.append(Utils.wrap(this.table.$el));
+        $view.append(this.table.$el);
         
         // add element
         this.setElement($view);

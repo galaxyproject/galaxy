@@ -73,7 +73,7 @@ class SecurityHelper( object ):
         if not isinstance( rval, dict ):
             return rval
         for k, v in rval.items():
-            if ( k == 'id' or k.endswith( '_id' ) ) and v is not None and k not in [ 'tool_id' ]:
+            if ( k == 'id' or k.endswith( '_id' ) ) and v is not None and k not in [ 'tool_id', 'external_id' ]:
                 try:
                     rval[ k ] = self.encode_id( v )
                 except Exception:

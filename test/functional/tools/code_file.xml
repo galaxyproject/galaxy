@@ -1,0 +1,15 @@
+<tool id="code_file" name="code_file" version="1.0.0">
+  <description>code_file</description>
+  <code file="code_file.py" />
+  <command>cat $input1 > $output</command>
+  <inputs>
+    <param name="input1" type="data" label="Concatenate Dataset" />
+    <param name="name1" type="text" value="FactorName" label="value one should be different than value two" />
+    <param name="name2" type="text" value="FactorName" label="value one should be different than value two" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="output" />
+  </outputs>
+  <tests>
+  </tests>
+</tool>

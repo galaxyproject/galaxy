@@ -3,12 +3,13 @@ import os
 import urllib
 
 from galaxy import datatypes, eggs, model, util, web
+from galaxy import managers
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import inflector, smart_str
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.json import loads
-from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin, UsesExtendedMetadataMixin
+from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago, to_unicode, escape
 from galaxy.tools.errors import EmailErrorReporter
 
@@ -85,16 +86,21 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
                 .filter( model.History.deleted==False ) \
                 .filter( self.model_class.visible==True )
 
-class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesItemRatings, UsesExtendedMetadataMixin ):
+class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, UsesExtendedMetadataMixin ):
 
     stored_list_grid = HistoryDatasetAssociationListGrid()
+
+    def __init__( self, app ):
+        super( DatasetInterface, self ).__init__( app )
+        self.history_manager = managers.histories.HistoryManager( app )
+        self.hda_manager = managers.hdas.HDAManager( app )
 
     def _get_job_for_dataset( self, trans, dataset_id ):
         '''
         Return the job for the given dataset. This will throw an error if the
         dataset is either nonexistent or inaccessible to the user.
         '''
-        hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+        hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( self.decode_id( dataset_id ) )
         assert hda and self._can_access_dataset( trans, hda )
         return hda.creating_job
 
@@ -111,7 +117,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         except:
             hda = None
         if not hda:
-            hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( trans.security.decode_id( id ) )
+            hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( self.decode_id( id ) )
         if not hda or not self._can_access_dataset( trans, hda ):
             return trans.show_error_message( "Either this dataset does not exist or you do not have permission to access it." )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
@@ -169,7 +175,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def get_metadata_file(self, trans, hda_id, metadata_name):
         """ Allows the downloading of metadata files associated with datasets (eg. bai index for bam files) """
-        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id ) )
+        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( self.decode_id( hda_id ) )
         if not data or not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
@@ -184,7 +190,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def _check_dataset(self, trans, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
-            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id) )
+            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( self.decode_id( hda_id) )
             if data is None:
                 raise ValueError( 'Invalid reference dataset id: %s.' % hda_id)
         except:
@@ -455,7 +461,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             # Load the hdas and ensure they all belong to the current user
             hdas = []
             for encoded_hda_id in hda_ids:
-                hda_id = trans.security.decode_id( encoded_hda_id )
+                hda_id = self.decode_id( encoded_hda_id )
                 hda = trans.sa_session.query( model.HistoryDatasetAssociation ).filter_by( id=hda_id ).first()
                 if hda:
                     # Ensure history is owned by current user
@@ -522,14 +528,18 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.require_login( "use Galaxy datasets" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns dataset's name and link. """
-        dataset = self.get_dataset( trans, id, False, True )
+        decoded_id = self.decode_id( id )
+        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( trans, dataset )
         return_dict = { "name" : dataset.name, "link" : url_for( controller='dataset', action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
         return return_dict
 
     @web.expose
     def get_embed_html_async( self, trans, id ):
         """ Returns HTML for embedding a dataset in a page. """
-        dataset = self.get_dataset( trans, id, False, True )
+        decoded_id = self.decode_id( id )
+        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( trans, dataset )
         if dataset:
             return "Embedded Dataset '%s'" % dataset.name
 
@@ -545,7 +555,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def rate_async( self, trans, id, rating ):
         """ Rate a dataset asynchronously and return updated community data. """
 
-        dataset = self.get_dataset( trans, id, check_ownership=False, check_accessible=True )
+        decoded_id = self.decode_id( id )
+        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( trans, dataset )
         if not dataset:
             return trans.show_error_message( "The specified dataset does not exist." )
 
@@ -557,13 +569,16 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug, filename=None, preview=True ):
         """ Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id. """
-        dataset = self.get_dataset( trans, slug, False, True )
+        id = slug
+        decoded_id = self.decode_id( id )
+        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( trans, dataset )
         if dataset:
             # Filename used for composite types.
             if filename:
                 return self.display( trans, dataset_id=slug, filename=filename)
 
-            truncated, dataset_data = self.get_data( dataset, preview )
+            truncated, dataset_data = self.hda_manager.text_data( dataset, preview )
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
 
             # If dataset is chunkable, get first chunk.
@@ -598,17 +613,22 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
 
-        dataset = self.get_dataset( trans, id, False, True )
+        decoded_id = self.decode_id( id )
+        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( trans, dataset )
         if dataset is None:
             raise web.httpexceptions.HTTPNotFound()
-        truncated, dataset_data = self.get_data( dataset, preview=True )
+        truncated, dataset_data = self.hda_manager.text_data( dataset, preview=True )
         # Get annotation.
         dataset.annotation = self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
         return trans.stream_template_mako( "/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated )
 
     @web.expose
     def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
-        dataset = self.get_dataset( trans, id, False, True )
+        #TODO:?? why is this an access check only?
+        decoded_id = self.decode_id( id )
+        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( trans, dataset )
         if not dataset:
             web.httpexceptions.HTTPNotFound()
         if dataset and new_annotation:
@@ -620,7 +640,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
 
     @web.expose
     def get_annotation_async( self, trans, id ):
-        dataset = self.get_dataset( trans, id, False, True )
+        decoded_id = self.decode_id( id )
+        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( trans, dataset )
         if not dataset:
             web.httpexceptions.HTTPNotFound()
         annotation = self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
@@ -769,7 +791,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             hda.mark_deleted()
             hda.clear_associated_files()
             trans.log_event( "Dataset id %s marked as deleted" % str(id) )
-            self.stop_hda_creating_job( hda )
+            self.hda_manager.stop_creating_job( hda )
             trans.sa_session.flush()
         except Exception, e:
             msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
@@ -935,7 +957,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         Show the parameters used for the job associated with an HDA
         """
         try:
-            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( self.decode_id( dataset_id ) )
         except ValueError:
             hda = None
         if not hda:
@@ -993,7 +1015,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def copy_datasets( self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
         user = trans.get_user()
         if source_history is not None:
-            history = self.get_history(trans, source_history)
+            decoded_source_history_id = self.decode_id( source_history )
+            history = self.history_manager.get_owned( trans, decoded_source_history_id, trans.user )
             current_history = trans.get_history()
         else:
             history = current_history = trans.get_history()
@@ -1009,11 +1032,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             decoded_dataset_collection_ids = []
             decoded_dataset_ids = []
         if target_history_id:
-            target_history_ids = [ trans.security.decode_id(target_history_id) ]
+            target_history_ids = [ self.decode_id(target_history_id) ]
         elif target_history_ids:
             if not isinstance( target_history_ids, list ):
                 target_history_ids = target_history_ids.split(",")
-            target_history_ids = list(set([ trans.security.decode_id(h) for h in target_history_ids if h ]))
+            target_history_ids = list(set([ self.decode_id(h) for h in target_history_ids if h ]))
         else:
             target_history_ids = []
         done_msg = error_msg = ""
@@ -1051,7 +1074,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                             if content.history_content_type == "dataset":
                                 hist.add_dataset( content.copy( copy_children=True ) )
                             else:
-                                hist.add_dataset_collection( content.copy( ) )
+                                copy_collected_datasets = True
+                                copy_kwds = {}
+                                if copy_collected_datasets:
+                                    copy_kwds["element_destination"] = hist
+                                hist.add_dataset_collection( content.copy( **copy_kwds ) )
                 if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
@@ -1094,7 +1121,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                 if user != history.user:
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_histories ) )
             for dataset_id in dataset_ids:
-                data = self.get_dataset( trans, dataset_id, False, True )
+                decoded_id = self.decode_id( dataset_id )
+                data = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+                data = self.hda_manager.error_if_uploading( trans, data )
+
                 if data is None:
                     error_msg = error_msg + "You tried to copy a dataset that does not exist or that you do not have access to.  "
                     invalid_datasets += 1

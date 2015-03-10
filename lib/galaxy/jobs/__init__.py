@@ -711,7 +711,7 @@ class JobWrapper( object ):
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
-        self.tool = queue.app.toolbox.tools_by_id.get( job.tool_id, None )
+        self.tool = queue.app.toolbox.get_tool( job.tool_id, job.tool_version, exact=True )
         self.queue = queue
         self.app = queue.app
         self.sa_session = self.app.model.context
@@ -764,6 +764,10 @@ class JobWrapper( object ):
 
     def get_parallelism(self):
         return self.tool.parallelism
+
+    @property
+    def commands_in_new_shell(self):
+        return self.app.config.commands_in_new_shell
 
     # legacy naming
     get_job_runner = get_job_runner_url
@@ -1202,6 +1206,11 @@ class JobWrapper( object ):
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
         inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
         out_data.update( [ ( da.name, da.dataset ) for da in job.output_library_datasets ] )
+
+        # TODO: eliminate overlap with tools/evaluation.py
+        out_collections = dict( [ ( obj.name, obj.dataset_collection_instance ) for obj in job.output_dataset_collection_instances ] )
+        out_collections.update( [ ( obj.name, obj.dataset_collection ) for obj in job.output_dataset_collections ] )
+
         input_ext = 'data'
         for _, data in inp_data.items():
             # For loop odd, but sort simulating behavior in galaxy.tools.actions
@@ -1218,6 +1227,12 @@ class JobWrapper( object ):
             'children': self.tool.collect_child_datasets(out_data, self.working_directory),
             'primary': self.tool.collect_primary_datasets(out_data, self.working_directory, input_ext)
         }
+        self.tool.collect_dynamic_collections(
+            out_collections,
+            job_working_directory=self.working_directory,
+            inp_data=inp_data,
+            job=job,
+        )
         param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -1768,7 +1783,11 @@ class ComputeEnvironment( object ):
 
     @abstractmethod
     def new_file_path( self ):
-        """ Location to dump new files for this job on remote server. """
+        """ Absolute path to dump new files for this job on compute server. """
+
+    @abstractmethod
+    def tool_directory( self ):
+        """ Absolute path to tool files for this job on compute server. """
 
     @abstractmethod
     def version_path( self ):
@@ -1820,6 +1839,9 @@ class SharedComputeEnvironment( SimpleComputeEnvironment ):
 
     def version_path( self ):
         return self.job_wrapper.get_version_string_path()
+
+    def tool_directory( self ):
+        return os.path.abspath(self.job_wrapper.tool.tool_dir)
 
 
 class NoopQueue( object ):

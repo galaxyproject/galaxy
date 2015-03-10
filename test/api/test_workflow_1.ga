@@ -1,6 +1,6 @@
 {
     "a_galaxy_workflow": "true", 
-    "annotation": "", 
+    "annotation": "simple workflow",
     "format-version": "0.1", 
     "name": "TestWorkflow1", 
     "steps": {

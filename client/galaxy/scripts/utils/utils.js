@@ -6,12 +6,61 @@
 // dependencies
 define(["libs/underscore"], function(_) {
 
+/** Traverse through json
+*/
+function deepeach(dict, callback) {
+    for (var i in dict) {
+        var d = dict[i];
+        if (d && typeof(d) == "object") {
+            callback(d);
+            deepeach(d, callback);
+        }
+    }
+}
+
 /**
  * Sanitize/escape a string
  * @param{String}   content - Content to be sanitized
  */
 function sanitize(content) {
     return $('<div/>').text(content).html();
+};
+
+/**
+ * Validate atomic values or list of values
+ * usually used for selectable options
+ * @param{String}   value - Value or list to be validated
+ */
+function validate (value) {
+    if (!(value instanceof Array)) {
+        value = [value];
+    }
+    if (value.length === 0) {
+        return false;
+    }
+    for (var i in value) {
+        if (['__null__', '__undefined__', 'None', null, undefined].indexOf(value[i]) > -1) {
+            return false;
+        }
+    }
+    return true;
+};
+
+/**
+ * Convert list to pretty string
+ * @param{String}   lst - List of strings to be converted in human readable list sentence
+ */
+function textify(lst) {
+    var lst = lst.toString();
+    if (lst) {
+        lst = lst.replace(/,/g, ', ');
+        var pos = lst.lastIndexOf(', ');
+        if (pos != -1) {
+            lst = lst.substr(0, pos) + ' or ' + lst.substr(pos+1);
+        }
+        return lst;
+    }
+    return '';
 };
 
 /**
@@ -65,7 +114,7 @@ function request (options) {
         } else {
             ajaxConfig.url += '&';
         }
-        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data);
+        ajaxConfig.url      = ajaxConfig.url + $.param(ajaxConfig.data, true);
         ajaxConfig.data     = null;
     } else {
         ajaxConfig.dataType = 'json';
@@ -173,16 +222,6 @@ function uuid(){
 };
 
 /**
- * Wrap an dom element into a paragraph
- * @param{Element}  $el - DOM element to be wrapped
- */
-function wrap($el) {
-    var wrapper = $('<p></p>');
-    wrapper.append($el);
-    return wrapper;
-};
-
-/**
  * Create a time stamp
  */
 function time() {
@@ -210,9 +249,11 @@ return {
     bytesToString: bytesToString,
     uuid: uuid,
     time: time,
-    wrap: wrap,
     request: request,
-    sanitize: sanitize
+    sanitize: sanitize,
+    textify: textify,
+    validate: validate,
+    deepeach: deepeach
 };
 
 });

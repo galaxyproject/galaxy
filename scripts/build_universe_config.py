@@ -6,7 +6,10 @@ from sys import argv
 
 
 def merge():
-    "Merges all .ini files in a specified directory into ./universe.ini"
+    """
+    Merges all .ini files in a specified directory into a file (defaults to
+    ./config/galaxy.ini ).
+    """
     if len(argv) < 2:
         message = "%s: Must specify directory to merge configuration files from." % argv[0]
         raise Exception(message)

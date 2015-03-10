@@ -11,9 +11,9 @@ log = logging.getLogger( __name__ )
 
 class ToolShedRepository( object ):
     dict_collection_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
+                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
     dict_element_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
+                                  'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
     installation_status = Bunch( NEW='New',
                                  CLONING='Cloning',
                                  SETTING_TOOL_VERSIONS='Setting tool versions',
@@ -99,7 +99,7 @@ class ToolShedRepository( object ):
         if not self.shed_config_filename:
             self.guess_shed_config( app, default=default )
         if self.shed_config_filename:
-            for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+            for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
                 if self.shed_config_filename == shed_tool_conf_dict[ 'config_filename' ]:
                     return shed_tool_conf_dict
         return default
@@ -118,7 +118,7 @@ class ToolShedRepository( object ):
         metadata = self.metadata or {}
         for tool in metadata.get( 'tools', [] ):
             tool_ids.append( tool.get( 'guid' ) )
-        for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+        for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
             name = shed_tool_conf_dict[ 'config_filename' ]
             for elem in shed_tool_conf_dict[ 'config_elems' ]:
                 if elem.tag == 'tool':
@@ -137,7 +137,7 @@ class ToolShedRepository( object ):
         if self.includes_datatypes:
             # We need to search by file paths here, which is less desirable.
             tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed )
-            for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+            for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
                 tool_path = shed_tool_conf_dict[ 'tool_path' ]
                 relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
                 if os.path.exists( relative_path ):
@@ -284,7 +284,7 @@ class ToolShedRepository( object ):
 
     def repo_path( self, app ):
         tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url( self.tool_shed )
-        for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
+        for shed_tool_conf_dict in app.toolbox.dynamic_confs( include_migrated_tool_conf=True ):
             tool_path = shed_tool_conf_dict[ 'tool_path' ]
             relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
             if os.path.exists( relative_path ):
@@ -356,12 +356,12 @@ class ToolShedRepository( object ):
             for rd_tup in rd_tups:
                 if len( rd_tup ) == 5:
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                    common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
+                        common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
                     if asbool( prior_installation_required ):
                         required_rd_tups_that_must_be_installed.append( ( tool_shed, name, owner, changeset_revision, 'True', 'False' ) )
                 elif len( rd_tup ) == 6:
                     tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
-                    common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
+                        common_util.parse_repository_dependency_tuple( rd_tup, contains_error=False )
                     # The repository dependency will only be required to be previously installed if it does not fall into the category of
                     # a repository that must be installed only so that its contained tool dependency can be used for compiling the tool
                     # dependency of the dependent repository.
@@ -493,12 +493,14 @@ class ToolShedRepository( object ):
 
 
 class RepositoryRepositoryDependencyAssociation( object ):
+
     def __init__( self, tool_shed_repository_id=None, repository_dependency_id=None ):
         self.tool_shed_repository_id = tool_shed_repository_id
         self.repository_dependency_id = repository_dependency_id
 
 
 class RepositoryDependency( object ):
+
     def __init__( self, tool_shed_repository_id=None ):
         self.tool_shed_repository_id = tool_shed_repository_id
 
@@ -647,6 +649,7 @@ class ToolVersion( object, Dictifiable ):
 
 
 class ToolVersionAssociation( object ):
+
     def __init__( self, id=None, tool_id=None, parent_id=None ):
         self.id = id
         self.tool_id = tool_id
@@ -654,6 +657,7 @@ class ToolVersionAssociation( object ):
 
 
 class MigrateTools( object ):
+
     def __init__( self, repository_id=None, repository_path=None, version=None ):
         self.repository_id = repository_id
         self.repository_path = repository_path

@@ -17,7 +17,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.sniff import get_test_fname, get_headers
 from galaxy.datatypes.metadata import MetadataElement
-
+from galaxy.datatypes.util.image_util import check_image_type
 
 try:
     eggs.require( "bx-python" )
@@ -814,3 +814,34 @@ class Lav( data.Text ):
         except:
             return False
 
+
+class RNADotPlotMatrix( data.Data ):
+    file_ext = "rna_eps"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = 'RNA Dot Plot format (Postscript derivative)'
+            dataset.blurb = data.nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff(self, filename):
+        """Determine if the file is in RNA dot plot format."""
+        if check_image_type( filename, ['EPS'] ):
+            seq = False
+            coor = False
+            pairs = False
+            with open( filename ) as handle:
+                for line in handle:
+                    line = line.strip()
+                    if line:
+                        if line.startswith('/sequence'):
+                            seq = True
+                        elif line.startswith('/coor'):
+                            coor = True
+                        elif line.startswith('/pairs'):
+                            pairs = True
+                    if seq and coor and pairs:
+                        return True
+        return False

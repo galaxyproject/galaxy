@@ -1,8 +1,10 @@
 define([
     "mvc/list/list-item",
+    "ui/loading-indicator",
     "mvc/base-mvc",
-    "utils/localization"
-], function( LIST_ITEM, BASE_MVC, _l ){
+    "utils/localization",
+    "ui/search-input"
+], function( LIST_ITEM, LoadingIndicator, BASE_MVC, _l ){
 /* ============================================================================
 TODO:
 
@@ -43,9 +45,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     noneFoundMsg        : _l( 'No matching items found' ),
     /** string used for search placeholder */
     searchPlaceholder   : _l( 'search' ),
-
-    /** actions available for multiselected items */
-    multiselectActions  : [],
 
     // ......................................................................... SET UP
     /** Set up the view, set up storage, bind listeners to HistoryContents events
@@ -101,11 +100,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         this.title = attributes.title || '';
         this.subtitle = attributes.subtitle || '';
 
-        // allow override of multiselectActions through attributes
-        this.multiselectActions = attributes.multiselectActions || this.multiselectActions;
-        /** the popup displayed when 'for all selected...' is clicked */
-        this.actionsPopup = null;
-
         this._setUpListeners();
     },
 
@@ -125,6 +119,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     _setUpListeners : function(){
         this.off();
 
+        //TODO: move errorHandler down into list-panel from history-panel or
+        //  pass to global error handler (Galaxy)
         this.on( 'error', function( model, xhr, options, msg, details ){
             //this.errorHandler( model, xhr, options, msg, details );
             console.error( model, xhr, options, msg, details );
@@ -286,7 +282,43 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
     _setUpBehaviors : function( $where ){
         $where = $where || this.$el;
         $where.find( '.controls [title]' ).tooltip({ placement: 'bottom' });
+        // set up the pupup for actions available when multi selecting
+        this._renderMultiselectActionMenu( $where );
         return this;
+    },
+
+    /** render a menu containing the actions available to sets of selected items */
+    _renderMultiselectActionMenu : function( $where ){
+        $where = $where || this.$el;
+        var $menu = $where.find( '.list-action-menu' ),
+            actions = this.multiselectActions();
+        if( !actions.length ){
+            return $menu.empty();
+        }
+
+        var $newMenu = $([
+            '<div class="list-action-menu btn-group">',
+                '<button class="list-action-menu-btn btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                    _l( 'For all selected' ), '...',
+                '</button>',
+                '<ul class="dropdown-menu pull-right" role="menu">', '</ul>',
+            '</div>'
+        ].join(''));
+        var $actions = actions.map( function( action ){
+            var html = [ '<li><a href="javascript:void(0);">', action.html, '</a></li>' ].join( '' );
+            return $( html ).click( action.func );
+        });
+        $newMenu.find( 'ul' ).append( $actions );
+        $menu.replaceWith( $newMenu );
+        return $newMenu;
+    },
+
+    /** return a list of plain objects used to render multiselect actions menu. Each object should have:
+     *      html: an html string used as the anchor contents
+     *      func: a function called when the anchor is clicked (passed the click event)
+     */
+    multiselectActions : function(){
+        return [];
     },
 
     // ------------------------------------------------------------------------ sub-$element shortcuts
@@ -397,7 +429,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             panel.trigger.apply( panel, args );
         });
 
-        // drag multiple - hijack ev.setData to add all selected datasets
+        // drag multiple - hijack ev.setData to add all selected items
         view.on( 'draggable:dragstart', function( ev, v ){
             //TODO: set multiple drag data here
             var json = {},
@@ -408,6 +440,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
                 json = [ v.model.toJSON() ];
             }
             ev.dataTransfer.setData( 'text', JSON.stringify( json ) );
+            //ev.dataTransfer.setDragImage( v.el, 60, 60 );
         }, this );
 
         // debugging
@@ -475,7 +508,10 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         // override to control where the view is added, how/whether it's rendered
         panel.views.push( view );
         panel.$list().append( view.render( 0 ).$el.hide() );
-        view.$el.slideDown( panel.fxSpeed );
+        panel.trigger( 'view:attached', view );
+        view.$el.slideDown( panel.fxSpeed, function(){
+            panel.trigger( 'view:attached:rendered' );
+        });
     },
 
     /** Remove a view from the panel (if found) */
@@ -485,6 +521,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             view = panel.viewFromModel( model );
         if( !view ){ return undefined; }
         panel.views = _.without( panel.views, view );
+        panel.trigger( 'view:removed', view );
 
         // potentially show the empty message if no views left
         // use anonymous queue here - since remove can happen multiple times
@@ -492,6 +529,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             function( next ){ view.$el.fadeOut( panel.fxSpeed, next ); },
             function( next ){
                 view.remove();
+                panel.trigger( 'view:removed:rendered' );
                 if( !panel.views.length ){
                     panel._renderEmptyMessage().fadeIn( panel.fxSpeed, next );
                 } else {
@@ -782,9 +820,8 @@ ListPanel.prototype.templates = (function(){
                     '<button class="deselect-all btn btn-default"',
                             'data-mode="select">', _l( 'None' ), '</button>',
                 '</div>',
-                //'<button class="list-action-popup-btn btn btn-default">',
-                //    _l( 'For all selected' ), '...',
-                //'</button>',
+                '<div class="list-action-menu btn-group">',
+                '</div>',
             '</div>',
         '</div>'
     ]);
@@ -870,10 +907,10 @@ var ModelListPanel = ListPanel.extend({
         this.log( this + '._setUpModelListeners', this.model );
         // bounce model errors up to the panel
         this.model.on( 'error', function(){
-            //TODO: namespace?
-            //var args = Array.prototype.slice.call( arguments, 0 );
-            //args[0] = 'model:' + args[0];
-            this.trigger.apply( panel, arguments );
+            var args = Array.prototype.slice.call( arguments, 0 );
+            //args.unshift( 'model:error' );
+            args.unshift( 'error' );
+            this.trigger.apply( this, args );
         }, this );
         return this;
     },
@@ -921,9 +958,8 @@ ModelListPanel.prototype.templates = (function(){
                     '<button class="deselect-all btn btn-default"',
                             'data-mode="select">', _l( 'None' ), '</button>',
                 '</div>',
-                //'<button class="list-action-popup-btn btn btn-default">',
-                //    _l( 'For all selected' ), '...',
-                //'</button>',
+                '<div class="list-action-menu btn-group">',
+                '</div>',
             '</div>',
         '</div>'
     ]);

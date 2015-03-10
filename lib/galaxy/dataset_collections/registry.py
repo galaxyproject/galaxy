@@ -1,6 +1,6 @@
 from .types import list
 from .types import paired
-
+from galaxy import model
 
 PLUGIN_CLASSES = [list.ListDatasetCollectionType, paired.PairedDatasetCollectionType]
 
@@ -12,3 +12,13 @@ class DatasetCollectionTypesRegistry(object):
 
     def get( self, plugin_type ):
         return self.__plugins[ plugin_type ]
+
+    def prototype( self, plugin_type ):
+        plugin_type_object = self.get( plugin_type )
+        if not hasattr( plugin_type_object, 'prototype_elements' ):
+            raise Exception( "Cannot pre-determine structure for collection of type %s" % plugin_type )
+
+        dataset_collection = model.DatasetCollection()
+        elements = [ e for e in plugin_type_object.prototype_elements() ]
+        dataset_collection.elements = elements
+        return dataset_collection

@@ -51,6 +51,11 @@ class DuplicatedSlugException( MessageException ):
     err_code = error_codes.USER_SLUG_DUPLICATE
 
 
+class DuplicatedIdentifierException( MessageException ):
+    status_code = 400
+    err_code = error_codes.USER_IDENTIFIER_DUPLICATE
+
+
 class ObjectAttributeInvalidException( MessageException ):
     status_code = 400
     err_code = error_codes.USER_OBJECT_ATTRIBUTE_INVALID

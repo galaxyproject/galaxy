@@ -1,11 +1,10 @@
 from unittest import TestCase
+from xml.etree.ElementTree import XML
 
 from galaxy import model
 from galaxy.util import bunch
 from galaxy.tools.parameters import basic
 from galaxy.tools.parameters import dataset_matcher
-
-from elementtree.ElementTree import XML
 
 import tools_support
 from .test_data_parameters import MockHistoryDatasetAssociation
@@ -149,8 +148,8 @@ class DatasetMatcherTestCase( TestCase, tools_support.UsesApp ):
                 option_xml = '''<options><filter type="data_meta" ref="data1" key="dbkey" /></options>'''
             param_xml = XML( '''<param name="data2" type="data" ext="txt">%s</param>''' % option_xml )
             self.param = basic.DataToolParameter(
-                tool=self.tool,
-                elem=param_xml,
+                self.tool,
+                param_xml,
             )
 
             self._test_context = dataset_matcher.DatasetMatcher(

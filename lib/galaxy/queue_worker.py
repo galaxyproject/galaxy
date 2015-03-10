@@ -20,7 +20,7 @@ from kombu import Connection
 from kombu.mixins import ConsumerMixin
 from kombu.pools import producers
 
-
+logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
@@ -30,10 +30,13 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
     handler, will have one of these used for dispatching so called 'control'
     tasks.
     """
-    def __init__(self, app, queue, task_mapping):
+    def __init__(self, app, queue, task_mapping, connection=None):
         super(GalaxyQueueWorker, self).__init__()
-        log.info("Initalizing Galaxy Queue Worker on %s" % app.config.amqp_internal_connection)
-        self.connection = Connection(app.config.amqp_internal_connection)
+        log.info("Initalizing Galaxy Queue Worker on %s", util.mask_password_from_url(app.config.amqp_internal_connection))
+        if connection:
+            self.connection = connection
+        else:
+            self.connection = Connection(app.config.amqp_internal_connection)
         self.app = app
         # Eventually we may want different workers w/ their own queues and task
         # mappings.  Right now, there's only the one.
@@ -99,6 +102,12 @@ def reload_tool(app, **kwargs):
         log.error("Reload tool invoked without tool id.")
 
 
+def reload_display_application(app, **kwargs):
+    display_application_ids = kwargs.get('display_application_ids', None)
+    log.debug("Executing display application reload task for %s" % display_application_ids)
+    app.datatypes_registry.reload_display_applications( display_application_ids)
+
+
 def reload_tool_data_tables(app, **kwargs):
     params = util.Params(kwargs)
     log.debug("Executing tool data table reload for %s" % params.get('table_names', 'all tables'))
@@ -115,5 +124,6 @@ def admin_job_lock(app, **kwargs):
              % (job_lock, "not" if job_lock else "now"))
 
 control_message_to_task = { 'reload_tool': reload_tool,
+                            'reload_display_application': reload_display_application,
                             'reload_tool_data_tables': reload_tool_data_tables,
                             'admin_job_lock': admin_job_lock}

@@ -1,13 +1,15 @@
 import re
 
+
 def get_first_line(output):
-    match = re.search("^(.*)$", output, flags = re.MULTILINE)
+    match = re.search("^(.*)$", output, flags=re.MULTILINE)
     if match is None:
         return None
     else:
         return match.group(1)
 
-def assert_has_n_columns(output, n, sep = '\t'):
+
+def assert_has_n_columns(output, n, sep='\t'):
     """ Asserts the tabular output contains n columns. The optional
     sep argument specifies the column seperator used to determine the
     number of columns."""

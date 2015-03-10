@@ -3,14 +3,17 @@
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="composite.xml" />
+  <tool file="code_file.xml" />
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
   <tool file="multi_page.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
+  <tool file="multi_output_assign_primary.xml" />
   <tool file="composite_output.xml" />
   <tool file="metadata.xml" />
+  <tool file="job_properties.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
@@ -27,11 +30,22 @@
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />
   <tool file="validation_repeat.xml" />
+  <tool file="identifier_single.xml" />
+  <tool file="identifier_multiple.xml" />
+  <tool file="tool_directory.xml" />
   <tool file="collection_paired_test.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
+  <tool file="collection_creates_pair.xml" />
+  <tool file="collection_creates_pair_from_type.xml" />
+  <tool file="collection_creates_list.xml" />
+  <tool file="collection_creates_list_2.xml" />
   <tool file="collection_optional_param.xml" />
+  <tool file="collection_split_on_column.xml" />
+
+  <tool file="multiple_versions_v01.xml" />
+  <tool file="multiple_versions_v02.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
@@ -42,5 +56,7 @@
   <tool file="for_workflows/cat_list.xml" />
   <tool file="for_workflows/cat_collection.xml" />
   <tool file="for_workflows/head.xml" />
+
+  <tool file="simple_constructs.yml" />
 
 </toolbox>

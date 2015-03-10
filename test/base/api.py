@@ -11,6 +11,7 @@ from .api_util import get_user_api_key
 from .api_asserts import (
     assert_status_code_is,
     assert_has_keys,
+    assert_not_has_keys,
     assert_error_code_is,
 )
 
@@ -82,6 +83,9 @@ class ApiTestCase( TwillTestCase ):
 
     def _assert_has_keys( self, response, *keys ):
         assert_has_keys( response, *keys )
+
+    def _assert_not_has_keys( self, response, *keys ):
+        assert_not_has_keys( response, *keys )
 
     def _assert_error_code_is( self, response, error_code ):
         assert_error_code_is( response, error_code )

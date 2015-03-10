@@ -56,7 +56,7 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
         this.debug( this.jsonStr( returned ) );
         accessibleHistory = this.api.histories.show( accessibleHistory.id );
         this.test.assert( this.hasKeys( accessibleHistory, [ 'username_and_slug' ] ),
-            'Has the proper keys' );
+            'Has username_and_slug' );
         this.test.assert( accessibleHistory.slug === 'accessible',
             'slug is not null: ' + accessibleHistory.slug );
         this.test.assert( accessibleHistory.importable,
@@ -86,7 +86,7 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
 
     });
 
-    //// ------------------------------------------------------------------------------------------- upload some files
+    // ------------------------------------------------------------------------------------------- upload some files
     spaceghost.then( function(){
         this.api.tools.thenUpload( inaccessibleHistory.id, { filepath: '../../test-data/1.bed' });
         this.api.tools.thenUpload(   accessibleHistory.id, { filepath: '../../test-data/1.bed' });
@@ -144,20 +144,20 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
         this.test.comment( 'show should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.histories.show( history.id );
-        }, 403, 'History is not accessible to the current user', 'show failed with error' );
+        }, 403, 'History is not accessible by user', 'show failed with error' );
         this.test.comment( 'copying should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.histories.create({ history_id : history.id });
-        }, 403, 'History is not accessible to the current user', 'copy failed with error' );
+        }, 403, 'History is not accessible by user', 'copy failed with error' );
 
         // read functions for history contents
         this.test.comment( 'index and show of history contents should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.hdas.index( history.id );
-        }, 403, 'History is not accessible to the current user', 'hda index failed with error' );
+        }, 403, 'History is not accessible by user', 'hda index failed with error' );
         this.api.assertRaises( function(){
             this.api.hdas.show( history.id, hdas[0].id );
-        }, 403, 'History is not accessible to the current user', 'hda show failed with error' );
+        }, 403, 'History is not accessible by user', 'hda show failed with error' );
 
         this.test.comment( 'Attempting to copy an accessible hda (default is accessible)'
                          + ' from an inaccessible history should fail for: ' + history.name );
@@ -167,7 +167,7 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
                 content : hdas[0].id
             });
             this.debug( this.jsonStr( returned ) );
-        }, 403, 'History is not accessible to the current user', 'hda copy from failed with error' );
+        }, 403, 'History is not accessible by user', 'hda copy from failed with error' );
 
     }
 
@@ -177,20 +177,20 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
         this.test.comment( 'update should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.histories.update( history.id, { deleted: true });
-        }, 403, 'History is not owned by the current user', 'update failed with error' );
+        }, 403, 'History is not owned by user', 'update failed with error' );
         this.test.comment( 'delete should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.histories.delete_( history.id );
-        }, 403, 'History is not owned by the current user', 'delete failed with error' );
+        }, 403, 'History is not owned by user', 'delete failed with error' );
 
         this.test.comment( 'hda updating should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.hdas.update( history.id, hdas[0].id, { deleted: true });
-        }, 403, 'HistoryDatasetAssociation is not owned by the current user', 'hda update failed with error' );
+        }, 403, 'HistoryDatasetAssociation is not owned by user', 'hda update failed with error' );
         this.test.comment( 'hda deletion should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.hdas.delete_( history.id, hdas[0].id );
-        }, 403, 'HistoryDatasetAssociation is not owned by the current user', 'hda delete failed with error' );
+        }, 403, 'HistoryDatasetAssociation is not owned by user', 'hda delete failed with error' );
 
         this.test.comment( 'copying hda into history should fail for history: ' + history.name );
         this.api.assertRaises( function(){
@@ -199,7 +199,7 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
                 // should error before it checks the id
                 content : 'bler'
             });
-        }, 403, 'History is not owned by the current user', 'hda copy to failed' );
+        }, 403, 'History is not owned by user', 'hda copy to failed' );
     }
 
     function testInaccessible( history, hdas ){

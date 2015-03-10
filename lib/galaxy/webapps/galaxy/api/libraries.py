@@ -6,10 +6,7 @@ from galaxy import exceptions
 from galaxy.managers import libraries, folders, roles
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.model.orm import and_, not_, or_
 from galaxy.web.base.controller import BaseAPIController
-from sqlalchemy.orm.exc import MultipleResultsFound
-from sqlalchemy.orm.exc import NoResultFound
 
 import logging
 log = logging.getLogger( __name__ )
@@ -48,7 +45,7 @@ class LibrariesController( BaseAPIController ):
 
     def __decode_id( self, trans, encoded_id, object_name=None ):
         """
-        Try to decode the id. 
+        Try to decode the id.
 
         :param  object_name:      Name of the object the id belongs to. (optional)
         :type   object_name:      str
@@ -149,7 +146,7 @@ class LibrariesController( BaseAPIController ):
                 synopsis = payload.get( 'synopsis', None )
         else:
             raise exceptions.RequestParameterMissingException( "You did not specify any payload." )
-        updated_library = self.library_manager.update( trans, library, name, description, synopsis )            
+        updated_library = self.library_manager.update( trans, library, name, description, synopsis )
         library_dict = self.library_manager.get_library_dict( trans, updated_library )
         return library_dict
 
@@ -248,20 +245,20 @@ class LibrariesController( BaseAPIController ):
             *POST /api/libraries/{encoded_library_id}/permissions
 
         :param  encoded_library_id:      the encoded id of the library to set the permissions of
-        :type   encoded_library_id:      an encoded id string      
+        :type   encoded_library_id:      an encoded id string
 
         :param  action:     (required) describes what action should be performed
                             available actions: remove_restrictions, set_permissions
-        :type   action:     string        
+        :type   action:     string
 
         :param  access_ids[]:      list of Role.id defining roles that should have access permission on the library
-        :type   access_ids[]:      string or list  
+        :type   access_ids[]:      string or list
         :param  add_ids[]:         list of Role.id defining roles that should have add item permission on the library
-        :type   add_ids[]:         string or list  
+        :type   add_ids[]:         string or list
         :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the library
-        :type   manage_ids[]:      string or list  
+        :type   manage_ids[]:      string or list
         :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library
-        :type   modify_ids[]:      string or list          
+        :type   modify_ids[]:      string or list
 
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
@@ -306,7 +303,7 @@ class LibrariesController( BaseAPIController ):
                 else:
                     invalid_access_roles_names.append( role_id )
             if len( invalid_access_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the library access permission: " + str( invalid_access_roles_names ) )                
+                log.warning( "The following roles could not be added to the library access permission: " + str( invalid_access_roles_names ) )
 
             # ADD TO LIBRARY ROLES
             valid_add_roles = []
@@ -319,8 +316,8 @@ class LibrariesController( BaseAPIController ):
                 else:
                     invalid_add_roles_names.append( role_id )
             if len( invalid_add_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the add library item permission: " + str( invalid_add_roles_names ) ) 
-            
+                log.warning( "The following roles could not be added to the add library item permission: " + str( invalid_add_roles_names ) )
+
             # MANAGE LIBRARY ROLES
             valid_manage_roles = []
             invalid_manage_roles_names = []
@@ -332,8 +329,8 @@ class LibrariesController( BaseAPIController ):
                 else:
                     invalid_manage_roles_names.append( role_id )
             if len( invalid_manage_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the manage library permission: " + str( invalid_manage_roles_names ) ) 
-            
+                log.warning( "The following roles could not be added to the manage library permission: " + str( invalid_manage_roles_names ) )
+
             # MODIFY LIBRARY ROLES
             valid_modify_roles = []
             invalid_modify_roles_names = []
@@ -345,7 +342,7 @@ class LibrariesController( BaseAPIController ):
                 else:
                     invalid_modify_roles_names.append( role_id )
             if len( invalid_modify_roles_names ) > 0:
-                log.warning( "The following roles could not be added to the modify library permission: " + str( invalid_modify_roles_names ) )                
+                log.warning( "The following roles could not be added to the modify library permission: " + str( invalid_modify_roles_names ) )
 
             permissions = { trans.app.security_agent.permitted_actions.LIBRARY_ACCESS : valid_access_roles }
             permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_ADD : valid_add_roles } )
@@ -357,7 +354,7 @@ class LibrariesController( BaseAPIController ):
             # Copy the permissions to the root folder
             trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
         else:
-            raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.' 
+            raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.'
                                 'Allowed values are: "remove_restrictions", set_permissions"' )
         roles = self.library_manager.get_current_roles( trans, library )
         return roles
@@ -369,18 +366,16 @@ class LibrariesController( BaseAPIController ):
         POST /api/libraries/{encoded_library_id}/permissions
         Updates the library permissions.
         """
-        import galaxy.util
-        params = galaxy.util.Params( payload )
+        params = util.Params( payload )
         permissions = {}
         for k, v in trans.app.model.Library.permitted_actions.items():
             role_params = params.get( k + '_in', [] )
-            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in galaxy.util.listify( role_params ) ]
+            in_roles = [ trans.sa_session.query( trans.app.model.Role ).get( trans.security.decode_id( x ) ) for x in util.listify( role_params ) ]
             permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
         trans.app.security_agent.set_all_library_permissions( trans, library, permissions )
         trans.sa_session.refresh( library )
         # Copy the permissions to the root folder
         trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
-        message = "Permissions updated for library '%s'." % library.name
         item = library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
         return item
 

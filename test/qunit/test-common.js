@@ -72,7 +72,6 @@ require( [ "jquery", "QUnit" ], function( $, QUnit ) {
 });
 
 
-
 function bridge_phantomjs( QUnit ) {
     // Needed because the grunt task will attempt to inject this bridge assuming
     // QUnit is loaded directly - not using require.js.

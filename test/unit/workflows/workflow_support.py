@@ -37,6 +37,10 @@ class TestToolbox( object ):
     def __init__( self ):
         self.tools = {}
 
-    def get_tool( self, tool_id ):
+    def get_tool( self, tool_id, tool_version=None ):
         # Real tool box returns None of missing tool also
         return self.tools.get( tool_id, None )
+
+    def get_tool_id( self, tool_id ):
+        tool = self.get_tool( tool_id )
+        return tool and tool.id

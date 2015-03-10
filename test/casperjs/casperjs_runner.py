@@ -430,6 +430,31 @@ class Test_05_API( CasperJSTestCase ):
         """
         self.run_js_script( 'api-anon-history-permission-tests.js' )
 
+    def test_05_workflow_api( self ):
+        """Test API for workflows.
+        """
+        self.run_js_script( 'api-workflow-tests.js' )
+
+    def test_06_visualization_api( self ):
+        """Test API for visualizations.
+        """
+        self.run_js_script( 'api-visualizations-tests.js' )
+
+    def test_07_tools_api( self ):
+        """Test API for tools.
+        """
+        self.run_js_script( 'api-tool-tests.js' )
+
+    def test_08_configuration_api( self ):
+        """Test API for configuration.
+        """
+        self.run_js_script( 'api-configuration-tests.js' )
+
+    def test_09_user_api( self ):
+        """Test API for users.
+        """
+        self.run_js_script( 'api-user-tests.js' )
+
 
 # ==================================================================== MAIN
 if __name__ == '__main__':

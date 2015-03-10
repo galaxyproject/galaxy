@@ -116,7 +116,8 @@
                     "libs/underscore": { exports: "_" },
                     "libs/d3": { exports: "d3" },
                     "libs/backbone/backbone": { exports: "Backbone" },
-                }
+                },
+                urlArgs: 'v=${int(app.server_starttime)}'
         });
 
         require(["libs/d3", "viz/sweepster"], function(d3, sweepster) {

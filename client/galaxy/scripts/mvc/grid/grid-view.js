@@ -3,7 +3,11 @@
 jQuery.ajaxSettings.traditional = true;
 
 // dependencies
-define(['mvc/grid/grid-model', 'mvc/grid/grid-template', 'mvc/ui'], function(GridModel, Templates) {
+define([
+    'mvc/grid/grid-model',
+    'mvc/grid/grid-template',
+    "mvc/ui/popup-menu"
+], function(GridModel, Templates, PopupMenu) {
 
 // grid view
 return Backbone.View.extend({

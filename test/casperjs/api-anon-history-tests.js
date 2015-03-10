@@ -26,9 +26,9 @@ spaceghost.test.begin( 'Test API functions for histories with an anonymous user'
 
         // ------------------------------------------------------------------------------------------- anon forbidden
         //TODO: why not return the current history?
-        this.test.comment( 'calling show with "most_recently_used" should return None for an anon user' );
+        this.test.comment( 'calling show with "most_recently_used" should return current history for an anon user' );
         var recent = this.api.histories.show( 'most_recently_used' );
-        this.test.assert( recent === null, 'most_recently_used returned None' );
+        this.test.assert( recent.id === historyShow.id, 'most_recently_used returned current' );
 
         this.test.comment( 'Calling create should fail for an anonymous user' );
         this.api.assertRaises( function(){

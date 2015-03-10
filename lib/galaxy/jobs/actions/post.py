@@ -1,5 +1,6 @@
 """
-Actions to be run at job completion.  Currently only used in workflows.
+Actions to be run at job completion (or output hda creation, as in the case of
+immediate_actions listed below.  Currently only used in workflows.
 """
 
 import datetime
@@ -420,6 +421,42 @@ class DeleteIntermediatesAction(DefaultJobAction):
         return "Delete parent datasets of this step created in this workflow that aren't flagged as outputs."
 
 
+class TagDatasetAction(DefaultJobAction):
+    name = "TagDatasetAction"
+    verbose_name = "Add tag to dataset"
+
+    @classmethod
+    def execute(cls, app, sa_session, action, job, replacement_dict):
+        if action.action_arguments:
+            tags = [t.strip() for t in action.action_arguments.get('tags', '').split(',')]
+            if tags:
+                for dataset_assoc in job.output_datasets:
+                    if action.output_name == '' or dataset_assoc.name == action.output_name:
+                        app.tag_handler.set_tags_from_list( job.user, dataset_assoc.dataset, tags)
+            sa_session.flush()
+
+    @classmethod
+    def get_config_form(cls, trans):
+        form = """
+            if (pja.action_arguments && pja.action_arguments.tags){
+                p_str += "<label for='pja__"+pja.output_name+"__TagDatasetAction__tags'>Tags:</label>\
+                          <input type='text' name='pja__"+pja.output_name+"__TagDatasetAction__tags' value=\\"" + pja.action_arguments.tags.replace(/"/g, "&quot;") + "\\"/>";
+            }
+            else{
+                p_str += "<label for='pja__"+pja.output_name+"__TagDatasetAction__tags'>Tags:</label>\
+                          <input type='text' name='pja__"+pja.output_name+"__TagDatasetAction__tags' value=''/>";
+            }
+            """
+        return get_form_template(cls.name, cls.verbose_name, form, "This action will set tags for the dataset.")
+
+    @classmethod
+    def get_short_str(cls, pja):
+        if pja.action_arguments and pja.action_arguments.get('tags', ''):
+            return "Add tag(s) '%s' to '%s'." % (pja.action_arguments['tags'], pja.output_name)
+        else:
+            return "Tag addition action used without a tag specified.  No tag will be added."
+
+
 class ActionBox(object):
 
     actions = { "RenameDatasetAction": RenameDatasetAction,
@@ -428,11 +465,13 @@ class ActionBox(object):
                 "ColumnSetAction": ColumnSetAction,
                 "EmailAction": EmailAction,
                 "DeleteIntermediatesAction": DeleteIntermediatesAction,
+                "TagDatasetAction": TagDatasetAction,
                 }
     public_actions = ['RenameDatasetAction', 'ChangeDatatypeAction',
                       'ColumnSetAction', 'EmailAction',
-                      'DeleteIntermediatesAction']
-    immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction']
+                      'DeleteIntermediatesAction', 'TagDatasetAction']
+    immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction',
+                         'TagDatasetAction']
 
     @classmethod
     def get_short_str(cls, action):

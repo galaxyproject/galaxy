@@ -95,7 +95,7 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
         this.test.comment( 'show should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.histories.show( history.id );
-        }, 403, 'History is not accessible to the current user', 'show failed with error' );
+        }, 403, 'History is not accessible by user', 'show failed with error' );
         this.test.comment( 'copying should fail for history (implicit multiple histories): ' + history.name );
         this.api.assertRaises( function(){
             this.api.histories.create({ history_id : history.id });
@@ -105,10 +105,10 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
         this.test.comment( 'index and show of history contents should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.hdas.index( history.id );
-        }, 403, 'History is not accessible to the current user', 'hda index failed with error' );
+        }, 403, 'History is not accessible by user', 'hda index failed with error' );
         this.api.assertRaises( function(){
             this.api.hdas.show( history.id, hdas[0].id );
-        }, 403, 'History is not accessible to the current user', 'hda show failed with error' );
+        }, 403, 'History is not accessible by user', 'hda show failed with error' );
 
         this.test.comment( 'Attempting to copy an accessible hda (default is accessible)'
                          + ' from an inaccessible history should fail for: ' + history.name );
@@ -118,7 +118,7 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
                 content : hdas[0].id
             });
             this.debug( this.jsonStr( returned ) );
-        }, 403, 'History is not accessible to the current user', 'hda copy from failed with error' );
+        }, 403, 'History is not accessible by user', 'hda copy from failed with error' );
 
     }
 
@@ -138,7 +138,7 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
         this.api.assertRaises( function(){
             this.api.hdas.update( history.id, hdas[0].id, { deleted: true });
         // anon hda update fails w/ this msg if trying to update non-current history hda
-        }, 403, 'You must be logged in to update this history', 'hda update failed with error' );
+        }, 403, 'API authentication required for this request', 'hda update failed with error' );
         this.test.comment( 'hda deletion should fail for history: ' + history.name );
         this.api.assertRaises( function(){
             this.api.hdas.delete_( history.id, hdas[0].id );
@@ -151,7 +151,7 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
                 // should error before it checks the id
                 content : 'bler'
             });
-        }, 403, 'Must be logged in to manage Galaxy histories', 'hda copy to failed' );
+        }, 403, 'History is not owned by user', 'hda copy to failed' );
     }
 
     function testAnonInaccessible( history, hdas ){
