@@ -52,7 +52,7 @@
                 <has_line line="The bool is very not true" />
             </assert_stderr>
         </test>
-        <test expect_exit_coded="127" expect_failure="true">
+        <test expect_exit_code="127" expect_failure="true">
             <param name="thebool" value="true" />
             <param name="failbool" value="true" />
         </test>
