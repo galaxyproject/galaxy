@@ -156,11 +156,11 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         self.dataset_manager.error_unless_dataset_purge_allowed( trans, hda )
         super( HDAManager, self ).purge( trans, hda, flush=flush )
 
-        # signal to stop the creating job?
         if hda.creating_job_associations:
             job = hda.creating_job_associations[0].job
-            job.mark_deleted( self.app.config.track_jobs_in_database )
-            self.app.job_manager.job_stop_queue.put( job.id )
+            if not job.finished:
+                # signal to stop the creating job
+                self.app.job_manager.job_stop_queue.put( job.id )
 
         # more importantly, purge dataset as well
         if hda.dataset.user_can_purge:
