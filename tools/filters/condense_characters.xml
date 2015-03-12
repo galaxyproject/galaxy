@@ -1,4 +1,4 @@
-<tool id="Condense characters1" name="Condense">
+<tool id="Condense characters1" name="Condense" version="1.0.0">
   <description>consecutive characters</description>
   <command interpreter="perl">condense_characters.pl $input $character $out_file1</command>
   <inputs>

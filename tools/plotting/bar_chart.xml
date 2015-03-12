@@ -1,4 +1,4 @@
-<tool id="barchart_gnuplot" name="Bar chart">
+<tool id="barchart_gnuplot" name="Bar chart" version="1.0.0">
   <description>for multiple columns</description>
   <command interpreter="python">
     #if $xtic.userSpecified == "Yes" #bar_chart.py $input $xtic.xticColumn $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size"

@@ -1,4 +1,4 @@
-<tool id="wiggle2simple1" name="Wiggle-to-Interval">
+<tool id="wiggle2simple1" name="Wiggle-to-Interval" version="1.0.0">
   <description>converter</description>
   <command interpreter="python">wiggle_to_simple.py $input $out_file1 </command>
   <inputs>
