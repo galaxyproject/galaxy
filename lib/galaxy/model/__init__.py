@@ -517,6 +517,9 @@ class Job( object, HasJobMetrics, Dictifiable ):
         """
         Mark this job as deleted, and mark any output datasets as discarded.
         """
+        if self.finished:
+            # Do not modify the state/outputs of jobs that are already terminal
+            return
         if track_jobs_in_database:
             self.state = Job.states.DELETED_NEW
         else:
