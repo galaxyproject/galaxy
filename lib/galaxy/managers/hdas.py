@@ -167,6 +167,7 @@ class HDAManager( datasets.DatasetAssociationManager,
             job = hda.creating_job_associations[0].job
             if not job.finished:
                 # signal to stop the creating job
+                job.mark_deleted( self.app.config.track_jobs_in_database )
                 self.app.job_manager.job_stop_queue.put( job.id )
 
         # more importantly, purge dataset as well
