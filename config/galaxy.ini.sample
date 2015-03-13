@@ -360,10 +360,12 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # misconfiguration and other events user may encounter.
 #error_email_to = None
 
-# Activation email is used as a sender ('from' field) for the account
-# activation mail.  We recommend using string in the following format:
+# Email address to use in the 'From' field when sending emails for
+# account activations, workflow step notifications and password resets.
+# We recommend using string in the following format:
 # Galaxy Project <galaxy-no-reply@example.com>
-#activation_email = None
+# If not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
+#email_from = None
 
 # URL of the support resource for the galaxy instance.  Used in activation
 # emails.

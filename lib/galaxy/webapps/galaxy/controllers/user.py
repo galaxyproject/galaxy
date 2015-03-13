@@ -835,7 +835,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                       trans.app.config.error_email_to,
                                       trans.app.config.instance_resource_url))
         to = email
-        frm = trans.app.config.activation_email
+        frm = trans.app.config.email_from
         subject = 'Galaxy Account Activation'
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
@@ -1180,13 +1180,15 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 trans.sa_session.add( prt )
                 trans.sa_session.flush()
                 host = trans.request.host.split( ':' )[ 0 ]
-                if host == 'localhost':
+                if host in [ 'localhost', '127.0.0.1', '0.0.0.0' ]:
                     host = socket.getfqdn()
                 reset_url = url_for( controller='user',
                                         action="change_password",
                                         token=prt.token, qualified=True)
                 body = PASSWORD_RESET_TEMPLATE % ( host, reset_url, reset_url )
-                frm = 'galaxy-no-reply@' + host
+                frm = trans.app.config.email_from
+                if frm is None:
+                    frm = 'galaxy-no-reply@' + host
                 subject = 'Galaxy Password Reset'
                 try:
                     util.send_mail( frm, email, subject, body, trans.app.config )
