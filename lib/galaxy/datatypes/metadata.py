@@ -676,6 +676,11 @@ class JobExternalOutputMetadataWrapper( object ):
         kwds = kwds or {}
         if tmp_dir is None:
             tmp_dir = MetadataTempFile.tmp_dir
+        else:
+            MetadataTempFile.tmp_dir = tmp_dir
+
+        if not os.path.exists(tmp_dir):
+            os.makedirs(tmp_dir)
 
         # path is calculated for Galaxy, may be different on compute - rewrite
         # for the compute server.

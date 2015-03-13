@@ -1,11 +1,14 @@
+import logging
+
 from __init__ import ToolAction
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.util.odict import odict
 from galaxy.util.json import dumps
 from galaxy.jobs.datasets import DatasetPath
 
-import logging
+
 log = logging.getLogger( __name__ )
+
 
 class SetMetadataToolAction( ToolAction ):
     """Tool action used for setting external metadata on an existing dataset"""
@@ -67,11 +70,12 @@ class SetMetadataToolAction( ToolAction ):
         # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)?
         incoming[ '__ORIGINAL_DATASET_STATE__' ] = dataset.state
         input_paths = [DatasetPath( dataset.id, real_path=dataset.file_name, mutable=False )]
+        job_working_dir = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         external_metadata_wrapper = JobExternalOutputMetadataWrapper( job )
         cmd_line = external_metadata_wrapper.setup_external_metadata( dataset,
                                                                       sa_session,
                                                                       exec_dir = None,
-                                                                      tmp_dir = app.config.new_file_path,
+                                                                      tmp_dir = job_working_dir,
                                                                       dataset_files_path = app.model.Dataset.file_path,
                                                                       output_fnames = input_paths,
                                                                       config_root = app.config.root,
