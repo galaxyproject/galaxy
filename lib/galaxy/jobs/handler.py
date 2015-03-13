@@ -680,7 +680,7 @@ class JobHandlerStopQueue( object ):
         except Empty:
             pass
         for job, error_msg in jobs_to_check:
-            if job.finished:
+            if job.state != job.states.DELETED_NEW and job.finished:
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue
             final_state = job.states.DELETED
