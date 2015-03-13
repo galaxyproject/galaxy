@@ -2765,6 +2765,8 @@ class DataSourceTool( OutputParameterJSONTool ):
 
     def parse_inputs( self, tool_source ):
         super( DataSourceTool, self ).parse_inputs( tool_source )
+        # Open all data_source tools in _top.
+        self.target = '_top'
         if 'GALAXY_URL' not in self.inputs:
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
             self.inputs_by_page[0][ 'GALAXY_URL' ] = self.inputs[ 'GALAXY_URL' ]
