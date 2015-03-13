@@ -5,6 +5,7 @@ immediate_actions listed below.  Currently only used in workflows.
 
 import datetime
 import logging
+import socket
 from galaxy.util import send_mail
 from galaxy.util.json import dumps
 
@@ -63,11 +64,13 @@ class EmailAction(DefaultJobAction):
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
-        if action.action_arguments and 'host' in action.action_arguments:
-            host = action.action_arguments['host']
-        else:
-            host = 'usegalaxy.org'
-        frm = 'galaxy-noreply@%s' % host
+        frm = app.config.email_from
+        if frm is None:
+            if action.action_arguments and 'host' in action.action_arguments:
+                host = action.action_arguments['host']
+            else:
+                host = socket.getfqdn()
+            frm = 'galaxy-no-reply@%s' % host
         to = job.user.email
         subject = "Galaxy workflow step notification '%s'" % (job.history.name)
         outdata = ', '.join(ds.dataset.display_name() for ds in job.output_datasets)

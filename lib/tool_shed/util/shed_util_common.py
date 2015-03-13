@@ -973,7 +973,7 @@ def handle_email_alerts( app, host, repository, content_alert_str='', new_repo_a
         # Send email alert to users that want them.
         if app.config.email_from is not None:
             email_from = app.config.email_from
-        elif host.split( ':' )[0] == 'localhost':
+        elif host.split( ':' )[0] in [ 'localhost', '127.0.0.1', '0.0.0.0' ]:
             email_from = 'galaxy-no-reply@' + socket.getfqdn()
         else:
             email_from = 'galaxy-no-reply@' + host.split( ':' )[0]
