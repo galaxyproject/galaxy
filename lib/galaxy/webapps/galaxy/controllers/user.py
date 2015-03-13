@@ -1162,8 +1162,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     message=message )
 
     @web.expose
-    def reset_password( self, trans, email=None, token=None, **kwd ):
-        """Reset the user's password. Send an email with the new password."""
+    def reset_password( self, trans, email=None, **kwd ):
+        """Reset the user's password. Send an email with token that allows a password change."""
         if trans.app.config.smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this Galaxy instance "
                                              "and password reset information cannot be sent. "
@@ -1172,9 +1172,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
             # Default to a non-userinfo-leaking response message
-            message = "Your reset request for %s has been received.  Please check your email account for more instructions.  If you do not receive an email shortly, please contact an administrator." % ( escape( email ) )
+            message = ( "Your reset request for %s has been received.  "
+                        "Please check your email account for more instructions.  "
+                        "If you do not receive an email shortly, please contact an administrator." % ( escape( email ) ) )
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
-            user = trans.get_user()
             if reset_user:
                 prt = trans.app.model.PasswordResetToken( reset_user )
                 trans.sa_session.add( prt )
@@ -1183,8 +1184,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 if host in [ 'localhost', '127.0.0.1', '0.0.0.0' ]:
                     host = socket.getfqdn()
                 reset_url = url_for( controller='user',
-                                        action="change_password",
-                                        token=prt.token, qualified=True)
+                                     action="change_password",
+                                     token=prt.token, qualified=True)
                 body = PASSWORD_RESET_TEMPLATE % ( host, reset_url, reset_url )
                 frm = trans.app.config.email_from
                 if frm is None:
@@ -1195,7 +1196,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     trans.sa_session.add( reset_user )
                     trans.sa_session.flush()
                     trans.log_event( "User reset password: %s" % email )
-                except Exception, e:
+                except Exception:
                     log.exception( 'Unable to reset password.' )
         return trans.fill_template( '/user/reset_password.mako',
                                     message=message,
