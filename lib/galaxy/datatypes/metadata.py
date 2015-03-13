@@ -765,13 +765,9 @@ class JobExternalOutputMetadataWrapper( object ):
                 sa_session.add( metadata_files )
                 sa_session.flush()
             metadata_files_list.append( metadata_files )
-        args = "%s %s %s %s %s %s %s" % ( dataset_files_path,
-                                          compute_tmp_dir or tmp_dir,
-                                          config_root,
-                                          config_file,
-                                          datatypes_config,
-                                          job_metadata,
-                                          " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
+        args = "%s %s %s" % ( datatypes_config,
+                              job_metadata,
+                              " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
         if include_command:
             #return command required to build
             fd, fp = tempfile.mkstemp( suffix='.py', dir = tmp_dir, prefix = "set_metadata_" )
