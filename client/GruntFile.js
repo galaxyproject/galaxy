@@ -73,8 +73,8 @@ module.exports = function(grunt) {
       "ravenjs": [ "dist/raven.js", "raven.js" ],
       "underscore": [ "underscore.js", "underscore.js" ],
       "handlebars": [ "handlebars.runtime.js", "handlebars.runtime.js" ],
-      "lunr.js": [ "lunr.js", "lunr.js" ]
-      //"backbone": [ "backbone.js", "backbone/backbone.js" ],
+      "lunr.js": [ "lunr.js", "lunr.js" ],
+      "backbone": [ "backbone.js", "backbone/backbone.js" ],
 
       // these need to be updated and tested
       //"require": [ "build/require.js", "require.js" ],
