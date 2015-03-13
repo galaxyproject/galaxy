@@ -106,7 +106,6 @@ def set_metadata():
             dataset.metadata.to_JSON_dict( filename_out )  # write out results of set_meta
             json.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) )  # setting metadata has succeeded
         except Exception, e:
-            raise
             json.dump( ( False, str( e ) ), open( filename_results_code, 'wb+' ) )  # setting metadata has failed somehow
 
     for i, ( filename, file_dict ) in enumerate( new_job_metadata_dict.iteritems(), start=1 ):
