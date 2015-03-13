@@ -652,7 +652,7 @@ class Registry( object ):
                 <param name="__SET_EXTERNAL_METADATA_COMMAND_LINE__" type="hidden" value=""/>
               </inputs>
               <configfiles>
-                <configfile name="set_metadata">from galaxy.metadata.set_metadata import set_metadata; set_metadata()</configfile>
+                <configfile name="set_metadata">from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()</configfile>
               </configfiles>
             </tool>
             """
