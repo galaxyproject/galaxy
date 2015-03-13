@@ -23,9 +23,9 @@ import sys
 # ensure supported version
 assert sys.version_info[:2] >= ( 2, 6 ) and sys.version_info[:2] <= ( 2, 7 ), 'Python version must be 2.6 or 2.7, this is: %s' % sys.version
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[ 1: ] )  # remove scripts/ from the path
-sys.path = new_path
+# insert *this* galaxy before all others on sys.path
+new_path = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+sys.path.insert( 0, new_path )
 
 from galaxy import eggs
 import pkg_resources
