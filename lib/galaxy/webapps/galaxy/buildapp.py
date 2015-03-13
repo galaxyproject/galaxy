@@ -213,8 +213,6 @@ def populate_api_routes( webapp, app ):
     # ====== TOOLS API ======
     # =======================
 
-    webapp.mapper.connect( 'api_toolbox_search', '/api/tools/search', controller="tools", action='search', conditions=dict( method=[ "GET" ] ) )
-    webapp.mapper.connect( 'api_tool_detect', '/api/tools/detect', controller="tools", action='detect', conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( '/api/tools/{id:.+?}/build', action='build', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/reload', action='reload', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools" )

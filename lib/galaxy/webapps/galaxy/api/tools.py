@@ -1,8 +1,8 @@
 import urllib
 
-from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import InternalServerError
 from galaxy import web, util
 from galaxy import managers
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
@@ -38,7 +38,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         self.history_manager = managers.histories.HistoryManager( app )
         self.hda_manager = managers.hdas.HDAManager( app )
 
-    @web.expose_api
+    @expose_api_anonymous_and_sessionless
     def index( self, trans, **kwds ):
         """
         GET /api/tools: returns a list of tools defined by parameters::
@@ -49,19 +49,38 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                             including sections and labels
                 trackster - if true, only tools that are compatible with
                             Trackster are returned
+                q         - if present search on the given query will be performed
+                tool_id   - if present the given tool_id will be searched for
+                            all installed versions
         """
 
         # Read params.
         in_panel = util.string_as_bool( kwds.get( 'in_panel', 'True' ) )
         trackster = util.string_as_bool( kwds.get( 'trackster', 'False' ) )
+        q = kwds.get( 'q', '' )
+        tool_id = kwds.get( 'tool_id', '' )
 
-        # Create return value.
+        # Find whether to search.
+        if q:
+            hits = self._search( q )
+            results = []
+            if hits:
+                for hit in hits:
+                    tool = self._get_tool( hit )
+                    if tool:
+                        results.append( tool.to_dict( trans ) )
+            return results
+
+        # Find whether to detect.
+        if tool_id:
+            detected_versions = self._detect( trans, tool_id )
+            return detected_versions
+
+        # Return everything.
         try:
             return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster)
-        except Exception, exc:
-            log.error( 'could not convert toolbox to dictionary: %s', str( exc ), exc_info=True )
-            trans.response.status = 500
-            return { 'error': str( exc ) }
+        except Exception:
+            raise InternalServerError ( "Error: Could not convert toolbox to dictionary" )
 
     @_future_expose_api_anonymous
     def show( self, trans, id, **kwd ):
@@ -133,38 +152,26 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             "guid": tool.guid,
         }
 
-    @expose_api_anonymous_and_sessionless
-    def detect( self, trans, **kwds ):
+    def _detect( self, trans, tool_id ):
         """
-        GET /api/tools/detect?any_version=true&id=toolshed.g2.bx.psu.edu/repos/blankenberg/naive_variant_caller/naive_variant_caller/0.0.1
-
         Detect whether the tool with the given id is installed.
 
-        :param full_id: exact id of the tool
-        :type full_id:  str
+        :param tool_id: exact id of the tool
+        :type tool_id:  str
 
-        :param any_version: flag indicating whether any version suffices
-        :type any_version:  bool
-
-        :return:      flag indicating presence
-        "return type: bool
+        :return:      list with available versions
+        "return type: list
         """
-        tool_id = kwds.get( 'id', None )
-        any_version = string_as_bool( kwds.get( 'any_version', False ) )
-        if tool_id:
-            tools = self.app.toolbox.get_tool( tool_id, get_all_versions=any_version )
+        tools = self.app.toolbox.get_tool( tool_id, get_all_versions=True )
+        detected_versions = []
+        if tools:
             for tool in tools:
                 if tool and tool.allow_user_access( trans.user ):
-                    return True
-            return False
-        else:
-            raise RequestParameterMissingException( 'Required parameter "id" is missing.' )
+                    detected_versions.append( tool.version )
+        return detected_versions
 
-    @expose_api_anonymous_and_sessionless
-    def search( self, trans, **kwds ):
+    def _search( self, q ):
         """
-        GET /api/tools/search?q=fastq
-
         Perform the search on the given query.
         Boosts and numer of results are configurable in galaxy.ini file.
 
@@ -174,10 +181,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         :return:      Dictionary containing the tools' ids of the best hits.
         :return type: dict
         """
-        q = kwds.get( 'q', '' )
-        if len( q ) < 3:
-            raise RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
-
         tool_name_boost = self.app.config.get( 'tool_name_boost', 9 )
         tool_section_boost = self.app.config.get( 'tool_section_boost', 3 )
         tool_description_boost = self.app.config.get( 'tool_description_boost', 2 )
@@ -191,6 +194,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                                                   tool_help_boost=tool_help_boost,
                                                   tool_search_limit=tool_search_limit )
         return results
+
     @_future_expose_api_anonymous
     def citations( self, trans, id, **kwds ):
         tool = self._get_tool( id, user=trans.user )
