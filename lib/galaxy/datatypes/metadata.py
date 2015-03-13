@@ -691,8 +691,8 @@ class JobExternalOutputMetadataWrapper( object ):
             def __get_filename_override():
                 if output_fnames:
                     for dataset_path in output_fnames:
-                        if dataset_path.false_path and dataset_path.real_path == metadata_files.dataset.file_name:
-                            return dataset_path.false_path
+                        if dataset_path.real_path == metadata_files.dataset.file_name:
+                            return dataset_path.false_path or dataset_path.real_path
                 return ""
             line = "%s,%s,%s,%s,%s,%s" % (
                 metadata_path_on_compute(metadata_files.filename_in),
