@@ -200,17 +200,17 @@ var View = Backbone.View.extend({
         if (this.options.searchable) {
             this.$select.select2('destroy');
             this.$select.select2();
-            this.$('.select2-input').off('keypress.selectall').on('keypress.selectall', function(event){
+            this.$('.select2-input').off('keydown.selectall').on('keydown.selectall', function(event){
                 if (event.ctrlKey || event.metaKey) {
                     var id = $(this).parents('div[class*="select2-container"]').attr('id').replace('s2id_', '');
                     var element = $('#' + id);
-                    if (event.which == 97){
+                    if (event.which == 65){
                         var selected = [];
                         element.find('option').each(function(i, e){
                             selected[selected.length] = $(e).attr('value');
                         });
                         element.select2('val', selected);
-                    } else if (event.which == 120){
+                    } else if (event.which == 88){
                         element.select2('val', '');
                     }
                     $('.select2-drop-mask').click();
