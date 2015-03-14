@@ -174,15 +174,6 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    ## def get_staging_command( id ):
-    ##     """
-    ##     Return a shell command that can be prepended to the job script to stage the
-    ##     dataset -- runs on worker nodes.
-    ##
-    ##     Note: not sure about the interface here. Should this return a filename, command
-    ##     tuple? Is this even a good idea, seems very useful for S3, other object stores?
-    ##     """
-
 
 class DiskObjectStore(ObjectStore):
     """
@@ -206,7 +197,7 @@ class DiskObjectStore(ObjectStore):
         self.check_old_style = config.object_store_check_old_style
         self.extra_dirs['job_work'] = config.job_working_directory
         self.extra_dirs['temp'] = config.new_file_path
-        #The new config_xml overrides universe settings.
+        # The new config_xml overrides universe settings.
         if config_xml is not None:
             for e in config_xml:
                 if e.tag == 'files_dir':
@@ -343,8 +334,8 @@ class DiskObjectStore(ObjectStore):
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         """ `create` parameter is not used in this implementation """
         preserve_symlinks = kwargs.pop( 'preserve_symlinks', False )
-        #FIXME: symlinks and the object store model may not play well together
-        #these should be handled better, e.g. registering the symlink'd file as an object
+        # FIXME: symlinks and the object store model may not play well together
+        # these should be handled better, e.g. registering the symlink'd file as an object
         if create:
             self.create(obj, **kwargs)
         if file_name and self.exists(obj, **kwargs):
@@ -354,8 +345,7 @@ class DiskObjectStore(ObjectStore):
                 else:
                     shutil.copy( file_name, self.get_filename( obj, **kwargs ) )
             except IOError, ex:
-                log.critical('Error copying %s to %s: %s' % (file_name,
-                    self._get_filename(obj, **kwargs), ex))
+                log.critical('Error copying %s to %s: %s' % (file_name, self._get_filename(obj, **kwargs), ex))
                 raise ex
 
     def get_object_url(self, obj, **kwargs):
@@ -432,8 +422,7 @@ class NestedObjectStore(ObjectStore):
             if store.exists(obj, **kwargs):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
-            raise default( 'objectstore, __call_method failed: %s on %s, kwargs: %s'
-                % ( method, str( obj ), str( kwargs ) ) )
+            raise default( 'objectstore, __call_method failed: %s on %s, kwargs: %s' % ( method, str( obj ), str( kwargs ) ) )
         else:
             return default
 
@@ -527,8 +516,7 @@ class DistributedObjectStore(NestedObjectStore):
                 try:
                     obj.object_store_id = random.choice(self.weighted_backend_ids)
                 except IndexError:
-                    raise ObjectInvalid( 'objectstore.create, could not generate obj.object_store_id: %s, kwargs: %s'
-                        % ( str( obj ), str( kwargs ) ) )
+                    raise ObjectInvalid( 'objectstore.create, could not generate obj.object_store_id: %s, kwargs: %s' % ( str( obj ), str( kwargs ) ) )
                 create_object_in_session( obj )
                 log.debug("Selected backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
             else:
@@ -540,8 +528,7 @@ class DistributedObjectStore(NestedObjectStore):
         if object_store_id is not None:
             return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
-            raise default( 'objectstore, __call_method failed: %s on %s, kwargs: %s'
-                % ( method, str( obj ), str( kwargs ) ) )
+            raise default( 'objectstore, __call_method failed: %s on %s, kwargs: %s' % ( method, str( obj ), str( kwargs ) ) )
         else:
             return default
 
