@@ -133,10 +133,6 @@ define(['utils/utils',
                 case 'radio':
                     SelectClass = Ui.Radio;
                     break;
-                default:
-                    if (input_def.multiple) {
-                        input_def.help = 'You may press Ctrl+A/Ctrl+X to select/unselect all options. ' + input_def.help;
-                    }
             }
 
             // select field

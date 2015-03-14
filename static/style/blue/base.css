@@ -1464,7 +1464,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close{left:auto;
 .ui-form-slider .ui-form-slider-element{width:calc(100% - 110px);float:left;top:8px;left:10px}
 .ui-radiobutton{width:100%}.ui-radiobutton label{height:23px;line-height:1em}
 .ui-radiobutton i{padding-right:5px}
-.ui-button-check{font-size:1.2em;width:1.2em;cursor:pointer}
+.ui-button-check{cursor:pointer;margin-bottom:5px}.ui-button-check .icon{font-size:1.2em;width:1.2em}
 .ui-color-picker .ui-color-picker-header{cursor:pointer}
 .ui-color-picker .ui-color-picker-value{float:left;border-radius:3px;border:solid 1px #000000;width:12px;height:12px;margin-right:5px}
 .ui-color-picker .ui-color-picker-label{float:left;line-height:1.2em}

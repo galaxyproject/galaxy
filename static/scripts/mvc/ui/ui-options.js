@@ -5,6 +5,9 @@ define(['utils/utils', 'mvc/ui/ui-button-check'], function(Utils, ButtonCheck) {
 var Base = Backbone.View.extend({
     // initialize
     initialize: function(options) {
+        // link this
+        var self = this;
+
         // options
         this.optionsDefault = {
             visible     : true,
@@ -33,15 +36,13 @@ var Base = Backbone.View.extend({
 
         // add select/unselect all button
         if (this.options.multiple) {
-            this.select_button = new ButtonCheck({
+            this.all_button = new ButtonCheck({
                 onclick: function() {
-                    self.$('input').prop('checked', self.select_button.value() !== 0);
+                    self.$('input').prop('checked', self.all_button.value() !== 0);
                     self._change();
                 }
             });
-            this.$menu.addClass('ui-margin-bottom');
-            this.$menu.append(this.select_button.$el);
-            this.$menu.append('Select/Unselect all');
+            this.$menu.append(this.all_button.$el);
         }
 
         // hide input field
@@ -58,7 +59,6 @@ var Base = Backbone.View.extend({
         }
 
         // add change event. fires on trigger
-        var self = this;
         this.on('change', function() {
             self._change();
         });
@@ -182,7 +182,8 @@ var Base = Backbone.View.extend({
     */
     _refresh: function() {
         // show/hide messages
-        if (this._size() == 0) {
+        var total = this._size();
+        if (total == 0) {
             this._messageShow(this.options.error_text, 'danger');
             this.$options.hide();
             this.$menu.hide();
@@ -192,18 +193,14 @@ var Base = Backbone.View.extend({
             this.$menu.show();
         }
         // refresh select/unselect button
-        if (this.select_button) {
-            var total = this._size();
+        if (this.all_button) {
             var value = this._getValue();
             if (!(value instanceof Array)) {
-                this.select_button.value(0);
+                value = 0;
             } else {
-                if (value.length !== total) {
-                    this.select_button.value(1);
-                } else {
-                    this.select_button.value(2);
-                }
+                value = value.length;
             }
+            this.all_button.value(value, total);
         }
     },
 
@@ -215,12 +212,12 @@ var Base = Backbone.View.extend({
         this.$(':checked').each(function() {
             selected.push($(this).val());
         });
-        
+
         // get selected elements
         if (!Utils.validate(selected)) {
             return null;
         }
-        
+
         // return multiple or single value
         if (this.options.multiple) {
             return selected;

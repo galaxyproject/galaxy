@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils'], function(Utils) {
+define(['utils/utils', 'mvc/ui/ui-button-check'], function(Utils, ButtonCheck) {
 
 /**
  *  This class creates/wraps a default html select field as backbone class.
@@ -20,6 +20,9 @@ var View = Backbone.View.extend({
 
     // initialize
     initialize : function(options) {
+        // link this
+        var self = this;
+
         // configure options
         this.options = Utils.merge(options, this.optionsDefault);
 
@@ -31,8 +34,23 @@ var View = Backbone.View.extend({
         this.$icon = this.$el.find('.icon');
         this.$button = this.$el.find('.button');
 
-        // configure multiple
+        // multiple select fields have an additional button and other custom properties
         if (this.options.multiple) {
+            // create select all button
+            if (this.options.searchable) {
+                this.all_button = new ButtonCheck({
+                    onclick: function() {
+                        var new_value = [];
+                        if (self.all_button.value() !== 0) {
+                            new_value = self._availableOptions();
+                        }
+                        self.value(new_value);
+                        self._change();
+                    }
+                });
+                this.$el.prepend(this.all_button.$el);
+            }
+            // customize style and content
             this.$el.addClass('ui-select-multiple');
             this.$select.prop('multiple', true);
             this.$button.remove();
@@ -59,7 +77,6 @@ var View = Backbone.View.extend({
         }
 
         // add change event. fires only on user activity
-        var self = this;
         this.$select.on('change', function() {
             self._change();
         });
@@ -85,6 +102,9 @@ var View = Backbone.View.extend({
                 }
             }
         }
+
+        // refresh
+        this._refresh();
 
         // validate and return value
         return this._getValue();
@@ -193,29 +213,10 @@ var View = Backbone.View.extend({
             this.$select.append(this._templateOption(options[key]));
         }
 
-        // refresh
-        this._refresh();
-
         // update to searchable field (in this case select2)
         if (this.options.searchable) {
             this.$select.select2('destroy');
             this.$select.select2();
-            this.$('.select2-input').off('keydown.selectall').on('keydown.selectall', function(event){
-                if (event.ctrlKey || event.metaKey) {
-                    var id = $(this).parents('div[class*="select2-container"]').attr('id').replace('s2id_', '');
-                    var element = $('#' + id);
-                    if (event.which == 65){
-                        var selected = [];
-                        element.find('option').each(function(i, e){
-                            selected[selected.length] = $(e).attr('value');
-                        });
-                        element.select2('val', selected);
-                    } else if (event.which == 88){
-                        element.select2('val', '');
-                    }
-                    $('.select2-drop-mask').click();
-                }
-            });
         }
 
         // set previous value
@@ -260,8 +261,8 @@ var View = Backbone.View.extend({
     */
     _refresh: function() {
         // count remaining entries
-        var remaining = this.$select.find('option').length;
-        if (remaining == 0) {
+        var total = this.$select.find('option').length;
+        if (total == 0) {
             // disable select field
             this.disable();
 
@@ -272,6 +273,21 @@ var View = Backbone.View.extend({
             // enable select field
             this.enable();
         }
+        // refresh select/unselect button
+        if (this.all_button) {
+            var value = this._getValue();
+            this.all_button.value($.isArray(value) && value.length || 0, total);
+        }
+    },
+
+    /** Returns all currently available options
+    */
+    _availableOptions: function() {
+        var available = [];
+        this.$select.find('option').each(function(i, e){
+            available.push($(e).attr('value'));
+        });
+        return available;
     },
 
     /** Template for select options
