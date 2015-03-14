@@ -53,11 +53,11 @@ return Backbone.View.extend({
                     }
                 }
             }
+            this.current = new_val;
             this.$icon.removeClass()
                       .addClass('icon')
                       .addClass(this.options.icons[new_val]);
             this.options.onchange && this.options.onchange(new_val);
-            this.current = new_val;
         }
         return this.current;
     },
