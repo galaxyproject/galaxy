@@ -47,6 +47,18 @@ def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds ):
     for metadata_name, metadata_value in file_dict.get( 'metadata', {} ).iteritems():
         setattr( dataset_instance.metadata, metadata_name, metadata_value )
 
+
+def relocate_dynamic_outputs():
+    # In order to handle metadata for dynamically path-ed CWL outputs we must
+    # first relocate them to predetermined, fixed locations as expected by
+    # Galaxy.
+
+    # TODO: make this conditional on being a CWL job.
+    # TODO: Separate this from this module.
+    from galaxy.tools.cwl import handle_outputs
+    handle_outputs()
+
+
 def set_metadata():
     # locate galaxy_root for loading datatypes
     galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
