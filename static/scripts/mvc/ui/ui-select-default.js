@@ -214,7 +214,7 @@ var View = Backbone.View.extend({
         this.value(current);
 
         // check if any value was set
-        if (this._getValue() === null) {
+        if (this._getValue() === null && !this.options.multiple) {
             this.value(this.first());
         }
     },
