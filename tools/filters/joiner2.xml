@@ -1,4 +1,4 @@
-<tool id="joiner2" name="Relational join 2">
+<tool id="joiner2" name="Relational join 2" version="1.0.0">
   <description>two datasets a specific column of which has the same value</description>
   <command>sort -k $col1 $input1 > $input1.tmp; sort -k $col2 $input2 > $input2.tmp; join -1 $col1 -2 $col2 $input1.tmp $input2.tmp | tr " " "\t" > $out_file1; rm -rf $input1.tmp $input2.tmp </command>
   <inputs>

@@ -24,8 +24,10 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixin,
-        taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin ):
+class HDAManager( datasets.DatasetAssociationManager,
+                  secured.OwnableManagerMixin,
+                  taggable.TaggableManagerMixin,
+                  annotatable.AnnotatableManagerMixin ):
     """
     Interface/service object for interacting with HDAs.
     """
@@ -35,8 +37,8 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
     tag_assoc = model.HistoryDatasetAssociationTagAssociation
     annotation_assoc = model.HistoryDatasetAssociationAnnotationAssociation
 
-    #TODO: move what makes sense into DatasetManager
-    #TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
+    # TODO: move what makes sense into DatasetManager
+    # TODO: which of these are common with LDDAs and can be pushed down into DatasetAssociationManager?
 
     def __init__( self, app ):
         """
@@ -59,7 +61,7 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         Use history to see if current user owns HDA.
         """
         history = hda.history
-        #TODO: some dup here with historyManager.is_owner but prevents circ import
+        # TODO: some dup here with historyManager.is_owner but prevents circ import
         if self.user_manager.is_admin( trans, user ):
             return True
         if self.user_manager.is_anonymous( user ) and history == trans.get_history():
@@ -76,10 +78,15 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         """
         if not dataset:
             kwargs[ 'create_dataset' ] = True
-        hda = super( HDAManager, self ).create( trans, flush=flush,
-            history=history, dataset=dataset, sa_session=self.app.model.context, **kwargs )
+        hda = super( HDAManager, self ).create( trans,
+                                                flush=flush,
+                                                history=history,
+                                                dataset=dataset,
+                                                sa_session=self.app.model.context, **kwargs )
 
         if history:
+            # TODO Probably Bug:  set_hid is never used, and should be passed
+            # to history.add_dataset here.
             set_hid = not ( 'hid' in kwargs )
             history.add_dataset( hda )
         #TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
@@ -93,8 +100,8 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         """
         Copy and return the given HDA.
         """
-        #TODO:?? not using the following as this fn does not set history and COPIES hid (this doesn't seem correct)
-        #return hda.copy()
+        # TODO:?? not using the following as this fn does not set history and COPIES hid (this doesn't seem correct)
+        # return hda.copy()
         copy = model.HistoryDatasetAssociation(
             name        = hda.name,
             info        = hda.info,
@@ -115,7 +122,7 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         copy.copied_from_history_dataset_association = hda
         copy.set_size()
 
-        #TODO: update from kwargs?
+        # TODO: update from kwargs?
 
         # Need to set after flushed, as MetadataFiles require dataset.id
         self.app.model.context.add( copy )
@@ -135,32 +142,33 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         """
         return ldda.to_history_dataset_association( history, add_to_history=True )
 
-    #TODO: stub
-    #def is_a_copy( self, trans, hda ):
-    #    pass
+    # TODO: stub
+    # def is_a_copy( self, trans, hda ):
+    #     pass
 
-    #TODO: stub
-    #def copied_from( self, trans, hda ):
-    #    pass
+    # TODO: stub
+    # def copied_from( self, trans, hda ):
+    #     pass
 
-    #TODO: stub
-    #def by_user( self, trans, user ):
-    #    pass
+    # TODO: stub
+    # def by_user( self, trans, user ):
+    #     pass
 
     def purge( self, trans, hda, flush=True ):
         """
         Purge this HDA and the dataset underlying it.
         """
         # error here if disallowed - before jobs are stopped
-        #TODO: poss. move to DatasetAssociationManager
+        # TODO: poss. move to DatasetAssociationManager
         self.dataset_manager.error_unless_dataset_purge_allowed( trans, hda )
         super( HDAManager, self ).purge( trans, hda, flush=flush )
 
-        # signal to stop the creating job?
         if hda.creating_job_associations:
             job = hda.creating_job_associations[0].job
-            job.mark_deleted( self.app.config.track_jobs_in_database )
-            self.app.job_manager.job_stop_queue.put( job.id )
+            if not job.finished:
+                # signal to stop the creating job
+                job.mark_deleted( self.app.config.track_jobs_in_database )
+                self.app.job_manager.job_stop_queue.put( job.id )
 
         # more importantly, purge dataset as well
         if hda.dataset.user_can_purge:
@@ -177,17 +185,17 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         return hda
 
     # .... via history
-    #def by_history_id( self, trans, history_id, filters=None, **kwargs ):
+    # def by_history_id( self, trans, history_id, filters=None, **kwargs ):
     #    history_id_filter = self.model_class.history_id == history_id
     #    filters = self._munge_filters( history_id_filter, filters )
     #    return self.list( trans, filters=filters, **kwargs )
 
-    #def by_history( self, trans, history, filters=None, **kwargs ):
+    # def by_history( self, trans, history, filters=None, **kwargs ):
     #    return history.datasets
 
     # .... associated
     def creating_job( self, trans, hda ):
-        #TODO: is this needed? Can't you use the hda.creating_job attribute? When is this None?
+        # TODO: is this needed? Can't you use the hda.creating_job attribute? When is this None?
         job = None
         for job_output_assoc in hda.creating_job_associations:
             job = job_output_assoc.job
@@ -206,8 +214,8 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
             for link_app in display_app.links.itervalues():
                 app_links.append({
                     'target': link_app.url.get( 'target_frame', '_blank' ),
-                    'href'  : link_app.get_display_url( hda, trans ),
-                    'text'  : gettext.gettext( link_app.name )
+                    'href': link_app.get_display_url( hda, trans ),
+                    'text': gettext.gettext( link_app.name )
                 })
             if app_links:
                 display_apps.append( dict( label=display_app.name, links=app_links ) )
@@ -224,7 +232,9 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
 
         for display_app in hda.datatype.get_display_types():
             target_frame, display_links = hda.datatype.get_display_links( hda,
-                display_app, self.app, trans.request.base )
+                                                                          display_app,
+                                                                          self.app,
+                                                                          trans.request.base )
 
             if len( display_links ) > 0:
                 display_label = hda.datatype.get_display_label( display_app )
@@ -233,8 +243,8 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
                 for display_name, display_link in display_links:
                     app_links.append({
                         'target': target_frame,
-                        'href'  : display_link,
-                        'text'  : gettext.gettext( display_name )
+                        'href': display_link,
+                        'text': gettext.gettext( display_name )
                     })
                 if app_links:
                     display_apps.append( dict( label=display_label, links=app_links ) )
@@ -248,10 +258,10 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         """
         # use older system if registry is off in the config
         if not self.app.visualizations_registry:
-           return hda.get_visualizations()
+            return hda.get_visualizations()
         return self.app.visualizations_registry.get_visualizations( trans, hda )
 
-    #TODO: to data provider or Text datatype directly
+    # TODO: to data provider or Text datatype directly
     def text_data( self, dataset, preview=True ):
         """
         Get data from text file, truncating if necessary.
@@ -260,7 +270,7 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         dataset_data = None
         if os.path.exists( dataset.file_name ):
             if isinstance( dataset.datatype, datatypes.data.Text ):
-                max_peek_size = 1000000 # 1 MB
+                max_peek_size = 1000000  # 1 MB
                 if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
                     dataset_data = open( dataset.file_name ).read( max_peek_size )
                     truncated = True
@@ -307,9 +317,10 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
 
 
 class HDASerializer( datasets.DatasetAssociationSerializer,
-        taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin ):
-    #TODO: inherit from datasets.DatasetAssociationSerializer
-    #TODO: move what makes sense into DatasetSerializer
+                     taggable.TaggableSerializerMixin,
+                     annotatable.AnnotatableSerializerMixin ):
+    # TODO: inherit from datasets.DatasetAssociationSerializer
+    # TODO: move what makes sense into DatasetSerializer
 
     def __init__( self, app ):
         super( HDASerializer, self ).__init__( app )
@@ -377,7 +388,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
 
         self.serializers.update({
             'model_class'   : lambda *a: 'HistoryDatasetAssociation',
-            #TODO: accessible needs to go away
+            # TODO: accessible needs to go away
             'accessible'    : lambda *a: True,
 
             'id'            : self.serialize_id,
@@ -410,7 +421,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'peek'          : lambda t, i, k: i.display_peek() if i.peek and i.peek != 'no peek' else None,
 
             # currently we send this sub-obj flattened (see serialize and add_flattened_metadata below)
-            #'metadata'      : self.serialize_metadata,
+            # 'metadata'      : self.serialize_metadata,
             #   make it available here under a different key
             'metadata_dict' : self.serialize_metadata,
 
@@ -425,8 +436,8 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'dataset_uuid'  : lambda t, i, k: str( i.dataset.uuid ) if i.dataset.uuid else None,
             'uuid'          : lambda t, i, k: self.serializers[ 'dataset_uuid' ]( t, i, k ),
 
-            #'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
-            #TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
+            # 'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
+            # TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
             #   see also: https://trello.com/c/5d6j4X5y
             #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
             'url'           : lambda t, i, k: self.url_for( 'history_content',
@@ -446,7 +457,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
         Override to add metadata as flattened keys on the serialized HDA.
         """
         # if 'metadata' isn't removed from keys here serialize will retrieve the un-serializable MetadataCollection
-        #TODO: remove these when metadata is sub-object
+        # TODO: remove these when metadata is sub-object
         KEYS_HANDLED_SEPARATELY = ( 'metadata', )
         left_to_handle = self.pluck_from_list( keys, KEYS_HANDLED_SEPARATELY )
         serialized = super( HDASerializer, self ).serialize( trans, hda, keys )
@@ -457,7 +468,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             serialized.update( metadata )
         return serialized
 
-    #TODO: this is more util/gen. use
+    # TODO: this is more util/gen. use
     def pluck_from_list( self, l, elems ):
         """
         Removes found elems from list l and returns list of found elems if found.
@@ -467,7 +478,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             try:
                 index = l.index( elem )
                 found.append( l.pop( index ) )
-            except ValueError, val_err:
+            except ValueError:
                 pass
         return found
 
@@ -477,7 +488,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
         with 'metadata_'.
         """
         metadata = self.serialize_metadata( trans, hda, 'metadata' )
-        #TODO: this is factored out for removal - metadata should be a sub-object instead:
+        # TODO: this is factored out for removal - metadata should be a sub-object instead:
         #   i.e.  'metadata' : self.serialize_metadata,
         prefixed = {}
         for key, val in metadata.items():
@@ -490,7 +501,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
         Cycle through metadata and return as dictionary.
         """
         # dbkey is a repeat actually (metadata_dbkey == genome_build)
-        #excluded = [ 'dbkey' ] if excluded is None else excluded
+        # excluded = [ 'dbkey' ] if excluded is None else excluded
         excluded = [] if excluded is None else excluded
 
         metadata = {}
@@ -498,13 +509,13 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             if name in excluded:
                 continue
             val = hda.metadata.get( name )
-            #NOTE: no files
+            # NOTE: no files
             if isinstance( val, model.MetadataFile ):
                 # only when explicitly set: fetching filepaths can be expensive
                 if not self.app.config.expose_dataset_path:
                     continue
                 val = val.file_name
-            #TODO:? possibly split this off?
+            # TODO:? possibly split this off?
             # If no value for metadata, look in datatype for metadata.
             elif val is None and hasattr( hda.datatype, name ):
                 val = getattr( hda.datatype, name )
@@ -523,13 +534,13 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
                 meta_files.append( dict( file_type=meta_type ) )
         return meta_files
 
-    #def file_info #TODO
-    #TODO: and to dataset instead (passing through object store)
+    # def file_info #TODO
+    # TODO: and to dataset instead (passing through object store)
     def serialize_file_path( self, trans, hda, key ):
         """
         Return the `file_name` of the HDA if the config exposes it, None otherwise.
         """
-        #TODO: allow admin
+        # TODO: allow admin
         if self.app.config.expose_dataset_path:
             try:
                 return hda.file_name
@@ -561,7 +572,8 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
 
 
 class HDADeserializer( datasets.DatasetAssociationDeserializer,
-        taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin ):
+                       taggable.TaggableDeserializerMixin,
+                       annotatable.AnnotatableDeserializerMixin ):
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
@@ -584,7 +596,7 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
             'genome_build'  : lambda t, i, k, v: self.deserialize_genome_build( t, i, 'dbkey', v ),
             'misc_info'     : lambda t, i, k, v: self.deserialize_basestring( t, i, 'info', v ),
 
-            #TODO: mixin: deletable
+            # TODO: mixin: deletable
             'deleted'       : self.deserialize_bool,
             # sharable
             'published'     : self.deserialize_bool,
@@ -601,15 +613,15 @@ class HDAFilters( datasets.DatasetAssociationFilters ):
         super( HDAFilters, self )._add_parsers()
 
         self.fn_filter_parsers.update({
-            #TODO: filter_string_attr_contains, filter_string_attr_eq
-            #'dbkey' : { 'op': { 'has' : self.filter_annotation_contains, } },
+            # TODO: filter_string_attr_contains, filter_string_attr_eq
+            # 'dbkey' : { 'op': { 'has' : self.filter_annotation_contains, } },
 
-            #TODO: add this in annotatable mixin
-            'annotation' : { 'op': { 'has' : self.filter_annotation_contains, } },
-            #TODO: add this in taggable mixin
-            'tag' : {
+            # TODO: add this in annotatable mixin
+            'annotation': { 'op': { 'has': self.filter_annotation_contains, } },
+            # TODO: add this in taggable mixin
+            'tag': {
                 'op': {
-                    'eq' : self.filter_has_tag,
+                    'eq': self.filter_has_tag,
                     'has': self.filter_has_partial_tag,
                 }
             }

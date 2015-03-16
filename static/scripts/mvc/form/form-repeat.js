@@ -1,5 +1,6 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc'], function(Utils, Table, Portlet, Ui) {
+define(['utils/utils', 'mvc/ui/ui-table', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc'],
+        function(Utils, Table, Portlet, Ui) {
 
 /** This class creates a ui component which enables the dynamic creation of portlets
 */
@@ -66,7 +67,7 @@ var View = Backbone.View.extend({
     add: function(options) {
         // repeat block already exists
         if (!options.id || this.list[options.id]) {
-            console.debug('tools-repeat::add - Duplicate repeat block id.');
+            console.debug('form-repeat::add - Duplicate repeat block id.');
             return;
         }
 
@@ -122,7 +123,7 @@ var View = Backbone.View.extend({
     del: function(id) {
         // could not find element
         if (!this.list[id]) {
-            console.debug('tools-repeat::del - Invalid repeat block id.');
+            console.debug('form-repeat::del - Invalid repeat block id.');
             return;
         }
 

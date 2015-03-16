@@ -56,6 +56,11 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
         this.historyId = options.historyId;
         //this._setUpListeners();
 
+        // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
+        //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
+        //  manually here - if we don't, contents will not merge but be replaced/swapped.
+        this.model.prototype.idAttribute = 'type_id';
+
         this.on( 'all', function(){
             this.debug( this + '.event:', arguments );
         });
@@ -234,27 +239,13 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     },
 
     // ........................................................................ misc
-    /** override to get a correct/smarter merge when incoming data is partial */
+    /** override to ensure type id is set */
     set : function( models, options ){
-        this.debug( 'set:', models );
-        // arrrrrrrrrrrrrrrrrg...
-        //  (e.g. stupid backbone)
-        //  w/o this partial models from the server will fill in missing data with model defaults
-        //  and overwrite existing data on the client
-        // see Backbone.Collection.set and _prepareModel
-        var collection = this;
-        models = _.map( models, function( model ){
-            var attrs = model.attributes || model,
-                typeId = HISTORY_CONTENT.typeIdStr( attrs.history_content_type, attrs.id ),
-                existing = collection.get( typeId );
-            if( !existing ){ return model; }
-
-            // merge the models _BEFORE_ calling the superclass version
-            var merged = _.clone( existing.attributes );
-            _.extend( merged, model );
-            return merged;
+        _.each( models, function( model ){
+            if( !model.type_id || !model.get( 'type_id' ) ){
+                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
+            }
         });
-        // now call superclass when the data is filled
         Backbone.Collection.prototype.set.call( this, models, options );
     },
 

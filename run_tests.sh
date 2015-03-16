@@ -26,6 +26,7 @@ cat <<EOF
 
 Extra options:
 
+ --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
  --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
@@ -192,6 +193,11 @@ do
               echo "--structured_data_report_file requires an argument" 1>&2
               exit 1
           fi
+          ;;
+      --verbose_errors)
+          GALAXY_TEST_VERBOSE_ERRORS=True
+          export GALAXY_TEST_VERBOSE_ERRORS
+          shift
           ;;
       -c|--coverage)
           # Must have coverage installed (try `which coverage`) - only valid with --unit

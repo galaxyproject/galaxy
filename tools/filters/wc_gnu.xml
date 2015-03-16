@@ -1,4 +1,4 @@
-<tool id="wc_gnu" name="Line/Word/Character count">
+<tool id="wc_gnu" name="Line/Word/Character count" version="1.0.0">
     <description>of a dataset</description>
     <command>
         #set $word_to_arg = { 'characters':'m', 'words':'w', 'lines':'l' }

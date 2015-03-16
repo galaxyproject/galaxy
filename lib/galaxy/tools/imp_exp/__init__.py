@@ -11,18 +11,23 @@ from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.json import dumps, loads
 from galaxy.web.framework.helpers import to_unicode
 
+from sqlalchemy.sql import expression
+
 log = logging.getLogger(__name__)
 
 EXPORT_HISTORY_TEXT = """
         <tool id="__EXPORT_HISTORY__" name="Export History" version="0.1" tool_type="export_history">
           <type class="ExportHistoryTool" module="galaxy.tools"/>
           <action module="galaxy.tools.actions.history_imp_exp" class="ExportHistoryToolAction"/>
-          <command>$__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__ $output_file</command>
+          <command>python $export_history $__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__ $output_file</command>
           <inputs>
             <param name="__HISTORY_TO_EXPORT__" type="hidden"/>
             <param name="compress" type="boolean"/>
             <param name="__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__" type="hidden"/>
           </inputs>
+          <configfiles>
+            <configfile name="export_history">from galaxy.tools.imp_exp.export_history import main; main()</configfile>
+          </configfiles>
           <outputs>
             <data format="gzip" name="output_file"/>
           </outputs>
@@ -286,8 +291,8 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                     # Connect jobs to output datasets.
                     for output_hid in job_attrs[ 'output_datasets' ]:
                         # print "%s job has output dataset %i" % (imported_job.id, output_hid)
-                        output_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
-                                        .filter_by( history=new_history, hid=output_hid ).first()
+                        output_hda = self.sa_session.query( model.HistoryDatasetAssociation
+                                                            ).filter_by(history=new_history, hid=output_hid ).first()
                         if output_hda:
                             imported_job.add_output_dataset( output_hda.name, output_hda )
 
@@ -331,8 +336,8 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                   .join( "dataset" )
                   .options( eagerload_all( "dataset.actions" ) )
                   .order_by( trans.model.HistoryDatasetAssociation.hid )
-                  .filter( trans.model.HistoryDatasetAssociation.deleted == False ) #noqa
-                  .filter( trans.model.Dataset.purged == False ) )
+                  .filter( trans.model.HistoryDatasetAssociation.deleted == expression.false() )
+                  .filter( trans.model.Dataset.purged == expression.false() ) )
         return query.all()
 
     # TODO: should use db_session rather than trans in this method.
@@ -386,7 +391,7 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                         "deleted": obj.deleted,
                         "visible": obj.visible,
                         "file_name": obj.file_name,
-                        "uuid":  ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
+                        "uuid": ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
                         "annotation": to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags": get_item_tag_dict( obj ),
                     }
@@ -530,11 +535,9 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
         options = ""
         if jeha.compressed:
             options = "-G"
-        return "python %s %s %s %s %s" % ( os.path.join( os.path.abspath( os.getcwd() ),
-                                           "lib/galaxy/tools/imp_exp/export_history.py" ),
-                                           options, history_attrs_filename,
-                                           datasets_attrs_filename,
-                                           jobs_attrs_filename )
+        return "%s %s %s %s" % ( options, history_attrs_filename,
+                                 datasets_attrs_filename,
+                                 jobs_attrs_filename )
 
     def cleanup_after_job( self, db_session ):
         """ Remove temporary directory and attribute files generated during setup for this job. """

@@ -388,9 +388,11 @@ var ToolSearch = Backbone.Model.extend({
         $("#search-spinner").show();
         var self = this;
         this.timer = setTimeout(function () {
-            // log the search to analytics
-            ga( 'send', 'pageview', galaxy_config.root + '?q=' + q );
-            $.get( this.urlRoot, { q: q }, function ( data ) {
+            // log the search to analytics if present
+            if ( typeof ga !== 'undefined' ) {
+                ga( 'send', 'pageview', galaxy_config.root + '?q=' + q );
+            }
+            $.get(self.attributes.search_url, { query: q }, function (data) {
                 self.set("results", data);
                 $("#search-spinner").hide();
                 $("#search-clear-btn").show();

@@ -1,4 +1,4 @@
-<tool id="MAF_To_Interval1" name="MAF to Interval" force_history_refresh="True">
+<tool id="MAF_To_Interval1" name="MAF to Interval" force_history_refresh="True" version="1.0.0">
   <description>Converts a MAF formatted file to the Interval format</description>
   <macros>
       <import>macros.xml</import>

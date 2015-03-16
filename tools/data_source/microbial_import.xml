@@ -1,4 +1,4 @@
-<tool id="microbial_import1" name="Get Microbial Data">
+<tool id="microbial_import1" name="Get Microbial Data" version="1.0.0">
   <command interpreter="python">microbial_import.py $CDS,$tRNA,$rRNA,$sequence,$GeneMark,$GeneMarkHMM,$Glimmer3 $output ${GALAXY_DATA_INDEX_DIR}/microbial_data.loc</command>
   <inputs>
       <param name="kingdom" type="select" label="Select the Desired Kingdom">

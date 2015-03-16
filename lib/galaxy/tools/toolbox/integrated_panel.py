@@ -1,6 +1,8 @@
 import os
 import shutil
 import tempfile
+import time
+import traceback
 
 from .panel import ToolPanelElements
 from .panel import panel_item_types
@@ -26,6 +28,7 @@ class ManagesIntegratedToolPanelMixin:
     def _init_integrated_tool_panel(self, config):
         self.update_integrated_tool_panel = config.update_integrated_tool_panel
         self._integrated_tool_panel_config = config.integrated_tool_panel_config
+        self._integrated_tool_panel_tracking_directory = getattr( config, "integrated_tool_panel_tracking_directory", None )
         # In-memory dictionary that defines the layout of the tool_panel.xml file on disk.
         self._integrated_tool_panel = ToolPanelElements()
         self._integrated_tool_panel_config_has_contents = os.path.exists( self._integrated_tool_panel_config ) and os.stat( self._integrated_tool_panel_config ).st_size > 0
@@ -45,7 +48,16 @@ class ManagesIntegratedToolPanelMixin:
         Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators
         use this file to manage the tool panel, we'll not use xml_to_string() since it doesn't write XML quite right.
         """
-        fd, filename = tempfile.mkstemp()
+        tracking_directory = self._integrated_tool_panel_tracking_directory
+        if not tracking_directory:
+            fd, filename = tempfile.mkstemp()
+        else:
+            if not os.path.exists(tracking_directory):
+                os.makedirs(tracking_directory)
+            name = "integrated_tool_panel_%.10f.xml" % time.time()
+            filename = os.path.join(tracking_directory, name)
+            open_file = open(filename, "w")
+            fd = open_file.fileno()
         os.write( fd, '<?xml version="1.0"?>\n' )
         os.write( fd, '<toolbox>\n' )
         os.write( fd, '    <!--\n    ')
@@ -83,5 +95,10 @@ class ManagesIntegratedToolPanelMixin:
                     os.write( fd, '    </section>\n' )
         os.write( fd, '</toolbox>\n' )
         os.close( fd )
-        shutil.move( filename, os.path.abspath( self._integrated_tool_panel_config ) )
+        destination = os.path.abspath( self._integrated_tool_panel_config )
+        if tracking_directory:
+            open(filename + ".stack", "w").write(''.join(traceback.format_stack()))
+            shutil.copy( filename, filename + ".copy" )
+            filename = filename + ".copy"
+        shutil.move( filename, destination )
         os.chmod( self._integrated_tool_panel_config, 0644 )

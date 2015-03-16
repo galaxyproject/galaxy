@@ -359,6 +359,15 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     history.purged = True
                     self.sa_session.add( history )
                     self.sa_session.flush()
+                for hda in history.datasets:
+                    # Not all datasets have jobs associated with them (e.g., datasets imported from libraries).
+                    if hda.creating_job_associations:
+                        # HDA has associated job, so try marking it deleted.
+                        job = hda.creating_job_associations[0].job
+                        if job.history_id == history.id and not job.finished:
+                            # No need to check other outputs since the job's parent history is this history
+                            job.mark_deleted( trans.app.config.track_jobs_in_database )
+                            trans.app.job_manager.job_stop_queue.put( job.id )
         trans.sa_session.flush()
         if n_deleted:
             part = "Deleted %d %s" % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) )
@@ -1125,7 +1134,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             if hda.creating_job_associations:
                 # HDA has associated job, so try marking it deleted.
                 job = hda.creating_job_associations[0].job
-                if job.history_id == history.id and job.state in [ trans.app.model.Job.states.QUEUED, trans.app.model.Job.states.RUNNING, trans.app.model.Job.states.NEW ]:
+                if job.history_id == history.id and not job.finished:
                     # No need to check other outputs since the job's parent history is this history
                     job.mark_deleted( trans.app.config.track_jobs_in_database )
                     trans.app.job_manager.job_stop_queue.put( job.id )

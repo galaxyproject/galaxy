@@ -5,6 +5,7 @@ define(['utils/utils'], function(Utils) {
 var View = Backbone.View.extend({
     // options
     optionsDefault: {
+        id      : Utils.uid(),
         min     : null,
         max     : null,
         step    : null,

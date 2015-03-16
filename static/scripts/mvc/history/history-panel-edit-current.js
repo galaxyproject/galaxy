@@ -303,6 +303,7 @@ var CurrentHistoryPanel = _super.extend(
 
     /** Override to remove any drill down panels */
     addItemView : function( model, collection, options ){
+console.debug( 'addItemView:', model, collection );
         var view = _super.prototype.addItemView.call( this, model, collection, options );
         if( !view ){ return view; }
         if( this.panelStack.length ){ return this._collapseDrilldownPanel(); }

@@ -1,13 +1,13 @@
 /**
-    This class creates a tool form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections.
+    This class creates a form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections.
 */
 define(['utils/utils',
         'mvc/ui/ui-table',
         'mvc/ui/ui-misc',
         'mvc/ui/ui-portlet',
-        'mvc/tools/tools-repeat',
-        'mvc/tools/tools-input',
-        'mvc/tools/tools-parameters'],
+        'mvc/form/form-repeat',
+        'mvc/form/form-input',
+        'mvc/form/form-parameters'],
     function(Utils, Table, Ui, Portlet, Repeat, InputElement, Parameters) {
 
     // create form view
@@ -26,7 +26,7 @@ define(['utils/utils',
             // add table class for tr tag
             // this assist in transforming the form into a json structure
             options.cls_tr = 'section-row';
-            
+
             // create table
             this.table = new Table.View(options);
             
@@ -36,7 +36,7 @@ define(['utils/utils',
             // configure portlet and form table
             this.setElement(this.table.$el);
 
-            // render tool section
+            // render section
             this.render();
         },
 
@@ -62,7 +62,7 @@ define(['utils/utils',
             var input_def = jQuery.extend(true, {}, input);
 
             // create unique id
-            input_def.id = input.id = Utils.uuid();
+            input_def.id = input.id = Utils.uid();
 
             // add to sequential list of inputs
             this.app.input_list[input_def.id] = input_def;
@@ -103,7 +103,7 @@ define(['utils/utils',
             // set onchange event for test parameter
             field.options.onchange = function(value) {
                 // identify the selected case
-                var selectedCase = self.app.tree.matchCase(input_def, value);
+                var selectedCase = self.app.data.matchCase(input_def, value);
 
                 // check value in order to hide/show options
                 for (var i in input_def.cases) {
@@ -134,7 +134,7 @@ define(['utils/utils',
                 }
 
                 // refresh form inputs
-                self.app.trigger('refresh');
+                self.app.trigger('change');
             };
 
             // add conditional sub sections
@@ -181,7 +181,7 @@ define(['utils/utils',
                     create(input_def.inputs);
                             
                     // trigger refresh
-                    self.app.trigger('refresh');
+                    self.app.trigger('change');
                 }
             });
 
@@ -204,7 +204,7 @@ define(['utils/utils',
                         repeat.del(sub_section_id);
                         
                         // trigger refresh
-                        self.app.trigger('refresh');
+                        self.app.trigger('change');
                     }
                 });
             }

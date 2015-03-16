@@ -3,9 +3,10 @@
 */
 define(['utils/utils',
         'mvc/ui/ui-misc',
-        'mvc/tools/tools-select-content',
+        'mvc/form/form-select-content',
+        'mvc/ui/ui-select-library',
         'mvc/ui/ui-color-picker'],
-    function(Utils, Ui, SelectContent, ColorPicker) {
+    function(Utils, Ui, SelectContent, SelectLibrary, ColorPicker) {
 
     // create form view
     return Backbone.Model.extend({
@@ -25,6 +26,7 @@ define(['utils/utils',
             'hidden'            : '_fieldHidden',
             'hidden_data'       : '_fieldHidden',
             'baseurl'           : '_fieldHidden',
+            'library_data'      : '_fieldLibrary'
         },
         
         // initialize
@@ -81,7 +83,7 @@ define(['utils/utils',
 
         /** Data input field
         */
-        _fieldData : function(input_def) {
+        _fieldData: function(input_def) {
             if (!this.app.options.is_dynamic) {
                 input_def.info = 'Data input \'' + input_def.name + '\' (' + Utils.textify(input_def.extensions.toString()) + ')';
                 input_def.value = null;
@@ -96,14 +98,14 @@ define(['utils/utils',
                 type        : input_def.type,
                 data        : input_def.options,
                 onchange    : function() {
-                    self.app.trigger('refresh');
+                    self.app.trigger('change');
                 }
             });
         },
 
         /** Select/Checkbox/Radio options field
         */
-        _fieldSelect : function (input_def) {
+        _fieldSelect: function (input_def) {
             // show text field in if dynamic fields are disabled e.g. in workflow editor
             if (!this.app.options.is_dynamic && input_def.is_dynamic) {
                 return this._fieldText(input_def);
@@ -112,9 +114,6 @@ define(['utils/utils',
             // customize properties
             if (input_def.type == 'data_column') {
                 input_def.error_text = 'Missing columns in referenced dataset.'
-            }
-            if (input_def.type == 'genomebuild') {
-                input_def.searchable = true;
             }
 
             // configure options fields
@@ -144,17 +143,18 @@ define(['utils/utils',
                 id          : 'field-' + input_def.id,
                 data        : options,
                 error_text  : input_def.error_text || 'No options available',
+                optional    : input_def.optional && input_def.default_value === null,
                 multiple    : input_def.multiple,
                 searchable  : input_def.searchable,
                 onchange    : function() {
-                    self.app.trigger('refresh');
+                    self.app.trigger('change');
                 }
             });
         },
 
         /** Drill down options field
         */
-        _fieldDrilldown : function (input_def) {
+        _fieldDrilldown: function (input_def) {
             // show text field in if dynamic fields are disabled e.g. in workflow editor
             if (!this.app.options.is_dynamic && input_def.is_dynamic) {
                 return this._fieldText(input_def);
@@ -167,14 +167,14 @@ define(['utils/utils',
                 data        : input_def.options,
                 display     : input_def.display,
                 onchange    : function() {
-                    self.app.trigger('refresh');
+                    self.app.trigger('change');
                 }
             });
         },
         
         /** Text input field
         */
-        _fieldText : function(input_def) {
+        _fieldText: function(input_def) {
             // field replaces e.g. a select field
             if (input_def.options) {
                 // show text area if selecting multiple entries is allowed
@@ -201,7 +201,7 @@ define(['utils/utils',
                 id          : 'field-' + input_def.id,
                 area        : input_def.area,
                 onchange    : function() {
-                    self.app.trigger('refresh');
+                    self.app.trigger('change');
                 }
             });
         },
@@ -216,14 +216,14 @@ define(['utils/utils',
                 min         : input_def.min,
                 max         : input_def.max,
                 onchange    : function() {
-                    self.app.trigger('refresh');
+                    self.app.trigger('change');
                 }
             });
         },
 
         /** Hidden field
         */
-        _fieldHidden : function(input_def) {
+        _fieldHidden: function(input_def) {
             return new Ui.Hidden({
                 id          : 'field-' + input_def.id,
                 info        : input_def.info
@@ -232,26 +232,40 @@ define(['utils/utils',
 
         /** Boolean field
         */
-        _fieldBoolean : function(input_def) {
+        _fieldBoolean: function(input_def) {
             var self = this;
             return new Ui.RadioButton.View({
                 id          : 'field-' + input_def.id,
                 data        : [ { label : 'Yes', value : 'true'  },
                                 { label : 'No',  value : 'false' }],
                 onchange    : function() {
-                    self.app.trigger('refresh');
+                    self.app.trigger('change');
                 }
             });
         },
 
         /** Color picker field
         */
-        _fieldColor : function(input_def) {
+        _fieldColor: function(input_def) {
             var self = this;
             return new ColorPicker({
                 id          : 'field-' + input_def.id,
                 onchange    : function() {
-                    self.app.trigger('refresh');
+                    self.app.trigger('change');
+                }
+            });
+        },
+
+        /** Library dataset field
+        */
+        _fieldLibrary: function(input_def) {
+            var self = this;
+            return new SelectLibrary.View({
+                id          : 'field-' + input_def.id,
+                optional    : input_def.optional,
+                multiple    : input_def.multiple,
+                onchange    : function() {
+                    self.app.trigger('change');
                 }
             });
         }

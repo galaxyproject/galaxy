@@ -34,10 +34,10 @@ from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import build_dependency_manager
-from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings
+from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
-                                           DataToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
+                                           DataToolParameter, DataCollectionToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
                                            SelectToolParameter, ToolParameter, UnvalidatedValue,
                                            IntegerToolParameter, FloatToolParameter)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, UploadDataset
@@ -52,7 +52,7 @@ from galaxy.util import rst_to_html, string_as_bool, string_to_object
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.hash_util import hmac_new
+from galaxy.util.hash_util import hmac_new, is_hashable
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
@@ -1215,7 +1215,8 @@ class Tool( object, Dictifiable ):
         if 'rerun_remap_job_id' in incoming:
             try:
                 rerun_remap_job_id = trans.app.security.decode_id( incoming[ 'rerun_remap_job_id' ] )
-            except Exception:
+            except Exception, exception:
+                log.error( str( exception ) )
                 message = 'Failure executing tool (attempting to rerun invalid job).'
                 return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
 
@@ -2291,10 +2292,12 @@ class Tool( object, Dictifiable ):
             try:
                 job_params = job.get_param_values( trans.app, ignore_errors = True )
                 job_messages = self.check_and_update_param_values( job_params, trans, update_values=False )
+                self._map_source_to_history( trans, self.inputs, job_params )
                 tool_message = self._compare_tool_version(trans, job)
                 params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
             except Exception, exception:
                 trans.response.status = 500
+                log.error( str( exception ) )
                 return { 'error': str( exception ) }
 
         # create parameter object
@@ -2554,7 +2557,8 @@ class Tool( object, Dictifiable ):
             'versions'      : tool_versions,
             'requirements'  : tool_requirements,
             'errors'        : state_errors,
-            'state_inputs'  : state_inputs
+            'state_inputs'  : state_inputs,
+            'job_remap'     : self._get_job_remap(job)
         })
 
         # check for errors
@@ -2563,6 +2567,72 @@ class Tool( object, Dictifiable ):
 
         # return enriched tool model
         return tool_model
+
+    def _get_job_remap ( self, job):
+        if job:
+            if job.state == job.states.ERROR:
+                try:
+                    if [ hda.dependent_jobs for hda in [ jtod.dataset for jtod in job.output_datasets ] if hda.dependent_jobs ]:
+                        return True
+                except Exception, exception:
+                    log.error( str( exception ) )
+                    pass
+        return False
+
+    def _map_source_to_history(self, trans, tool_inputs, params):
+        # Need to remap dataset parameters. Job parameters point to original
+        # dataset used; parameter should be the analygous dataset in the
+        # current history.
+        history = trans.get_history()
+        hda_source_dict = {} # Mapping from HDA in history to source HDAs.
+        for hda in history.datasets:
+            source_hda = hda.copied_from_history_dataset_association
+            while source_hda:
+                if source_hda.dataset.id not in hda_source_dict or source_hda.hid == hda.hid:
+                    hda_source_dict[ source_hda.dataset.id ] = hda
+                source_hda = source_hda.copied_from_history_dataset_association
+
+        # Ditto for dataset collections.
+        hdca_source_dict = {}
+        for hdca in history.dataset_collections:
+            source_hdca = hdca.copied_from_history_dataset_collection_association
+            while source_hdca:
+                if source_hdca.collection.id not in hdca_source_dict or source_hdca.hid == hdca.hid:
+                    hdca_source_dict[ source_hdca.collection.id ] = hdca
+                source_hdca = source_hdca.copied_from_history_dataset_collection_association
+
+        # Unpack unvalidated values to strings, they'll be validated when the
+        # form is submitted (this happens when re-running a job that was
+        # initially run by a workflow)
+        #This needs to be done recursively through grouping parameters
+        def rerun_callback( input, value, prefixed_name, prefixed_label ):
+            if isinstance( value, UnvalidatedValue ):
+                try:
+                    return input.to_html_value( value.value, trans.app )
+                except Exception, e:
+                    # Need to determine when (if ever) the to_html_value call could fail.
+                    log.debug( "Failed to use input.to_html_value to determine value of unvalidated parameter, defaulting to string: %s" % ( e ) )
+                    return str( value )
+            if isinstance( input, DataToolParameter ):
+                if isinstance(value,list):
+                    values = []
+                    for val in value:
+                        if isinstance(val, trans.app.model.HistoryDatasetAssociation):
+                            if val.dataset.id in hda_source_dict:
+                                values.append( hda_source_dict[ val.dataset.id ] )
+                            else:
+                                values.append( val )
+                    return values
+                if isinstance(value, trans.app.model.HistoryDatasetAssociation):
+                    if value.dataset.id in hda_source_dict:
+                        return hda_source_dict[ value.dataset.id ]
+                if isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation):
+                    if value.collection.id in hdca_source_dict:
+                        return hdca_source_dict[ value.collection.id ]
+            elif isinstance( input, DataCollectionToolParameter ):
+                if value.collection.id in hdca_source_dict:
+                    return hdca_source_dict[ value.collection.id ]
+        visit_input_values( tool_inputs, params, rerun_callback )
 
     def _compare_tool_version( self, trans, job ):
         """
@@ -2695,6 +2765,8 @@ class DataSourceTool( OutputParameterJSONTool ):
 
     def parse_inputs( self, tool_source ):
         super( DataSourceTool, self ).parse_inputs( tool_source )
+        # Open all data_source tools in _top.
+        self.target = '_top'
         if 'GALAXY_URL' not in self.inputs:
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
             self.inputs_by_page[0][ 'GALAXY_URL' ] = self.inputs[ 'GALAXY_URL' ]

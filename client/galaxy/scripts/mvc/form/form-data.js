@@ -1,49 +1,40 @@
 /*
-    This class maps the tool form dom to an api compatible javascript dictionary.
+    This class maps the form dom to an api compatible javascript dictionary.
 */
-// dependencies
 define(['utils/utils'], function(Utils) {
-
-// tool form tree
 return Backbone.Model.extend({
     // initialize
     initialize: function(app) {
         this.app = app;
     },
 
-    /** Convert dictionary representation into tool api specific flat dictionary format.
+    /** Creates a checksum.
     */
-    finalize: function(patch) {
+    checksum: function() {
+        var sum = '';
+        for (var i in this.app.field_list) {
+            var field = this.app.field_list[i];
+            sum += JSON.stringify(field.value && field.value());
+        }
+        return sum;
+    },
+
+    /** Convert dom into dictionary.
+    */
+    create: function() {
         // link this
         var self = this;
 
-        // dictionary with api specific identifiers
-        this.map_dict = {};
-
-        // check if section is available
-        if (!this.app.section) {
-            return {};
-        }
-
-        // ensure that dictionary with patching functions exists
-        patch = patch || {};
-
-        // dictionary formatted for job submission or tool form update
-        var result_dict = {};
-
-        // prepare full dictionary
+        // get raw dictionary from dom
         var dict = {};
-
-        // fill dictionary from dom
         this._iterate(this.app.section.$el, dict);
 
-        // add identifier and value to job definition
+        // add to result dictionary
+        var result_dict = {};
+        this.map_dict = {};
         function add(job_input_id, input_id, input_value) {
-            // add entry to result dictionary
-            result_dict[job_input_id] = input_value;
-
-            // backup id mapping
             self.map_dict[job_input_id] = input_id;
+            result_dict[job_input_id] = input_value;
         };
 
         // converter between raw dictionary and job dictionary
@@ -93,12 +84,9 @@ return Backbone.Model.extend({
                             break;
                         // handle conditionals
                         case 'conditional':
-                            // get and patch conditional value
+                            // get conditional value
                             var value = self.app.field_list[input.id].value();
-                            if (patch[input.test_param.type]) {
-                                value = patch[input.test_param.type](value);
-                            }
-
+                            
                             // add conditional value
                             add (job_input_id + '|' + input.test_param.name, input.id, value);
 
@@ -118,11 +106,6 @@ return Backbone.Model.extend({
                             if (field && field.value) {
                                 // validate field value
                                 var value = field.value();
-
-                                // get and patch field value
-                                if (patch[input.type]) {
-                                    value = patch[input.type](value);
-                                }
 
                                 // ignore certain values
                                 if (input.ignore === undefined || input.ignore != value) {
@@ -144,7 +127,7 @@ return Backbone.Model.extend({
 
         // start conversion
         convert('', dict);
-
+        
         // return result
         return result_dict;
     },
@@ -262,7 +245,7 @@ return Backbone.Model.extend({
         return result;
     },
 
-    /** Iterate through the tool form dom and map it to the dictionary.
+    /** Iterate through the form dom and map it to the dictionary.
     */
     _iterate: function(parent, dict) {
         // get child nodes

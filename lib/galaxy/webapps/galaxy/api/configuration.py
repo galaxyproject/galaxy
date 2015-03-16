@@ -3,7 +3,7 @@ API operations allowing clients to determine Galaxy instance's capabilities
 and configuration settings.
 """
 
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import require_admin
 from galaxy.web.base.controller import BaseAPIController
@@ -21,7 +21,7 @@ class ConfigurationController( BaseAPIController ):
         self.config_serializer = ConfigSerializer( app )
         self.admin_config_serializer = AdminConfigSerializer( app )
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def index( self, trans, **kwd ):
         """
         GET /api/configuration
@@ -33,7 +33,7 @@ class ConfigurationController( BaseAPIController ):
         serialization_params = self._parse_serialization_params( kwd, 'all' )
         return self.get_config_dict( trans, is_admin, **serialization_params )
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def version( self, trans, **kwds ):
         """
         GET /api/version

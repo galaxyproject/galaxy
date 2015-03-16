@@ -6,8 +6,8 @@ from galaxy.exceptions import InternalServerError
 from galaxy import web, util
 from galaxy import managers
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web import _future_expose_api_anonymous
-from galaxy.web import _future_expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.visualization.genomes import GenomeRegion
@@ -82,7 +82,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         except Exception:
             raise InternalServerError ( "Error: Could not convert toolbox to dictionary" )
 
-    @_future_expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}
@@ -93,7 +93,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool = self._get_tool( id, user=trans.user )
         return tool.to_dict( trans, io_details=io_details, link_details=link_details )
 
-    @_future_expose_api_anonymous
+    @expose_api_anonymous
     def build( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}/build
@@ -105,7 +105,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool = self._get_tool( id, tool_version=tool_version, user=trans.user )
         return tool.to_json(trans, kwd.get('inputs', kwd))
 
-    @_future_expose_api
+    @expose_api
     @web.require_admin
     def reload( self, trans, tool_id, **kwd ):
         """
@@ -117,7 +117,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
         return { status: message }
 
-    @_future_expose_api
+    @expose_api
     @web.require_admin
     def diagnostics( self, trans, id, **kwd ):
         """
@@ -195,7 +195,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                                                   tool_search_limit=tool_search_limit )
         return results
 
-    @_future_expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def citations( self, trans, id, **kwds ):
         tool = self._get_tool( id, user=trans.user )
         rval = []

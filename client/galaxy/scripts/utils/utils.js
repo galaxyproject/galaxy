@@ -217,8 +217,9 @@ function bytesToString (size, normal_font) {
 /**
  * Create a unique id
  */
-function uuid(){
-    return 'x' + Math.random().toString(36).substring(2, 9);
+function uid(){
+    top.__utils__uid__ = top.__utils__uid__ || 0;
+    return 'uid-' + top.__utils__uid__++;
 };
 
 /**
@@ -247,7 +248,7 @@ return {
     get : get,
     merge : merge,
     bytesToString: bytesToString,
-    uuid: uuid,
+    uid: uid,
     time: time,
     request: request,
     sanitize: sanitize,

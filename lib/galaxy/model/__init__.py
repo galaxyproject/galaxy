@@ -517,6 +517,9 @@ class Job( object, HasJobMetrics, Dictifiable ):
         """
         Mark this job as deleted, and mark any output datasets as discarded.
         """
+        if self.finished:
+            # Do not modify the state/outputs of jobs that are already terminal
+            return
         if track_jobs_in_database:
             self.state = Job.states.DELETED_NEW
         else:
@@ -3644,9 +3647,6 @@ class Request( object, Dictifiable ):
         comments = ''
         # Send email
         if trans.app.config.smtp_server is not None and self.notification and self.notification[ 'email' ]:
-            host = trans.request.host.split( ':' )[0]
-            if host in [ 'localhost', '127.0.0.1', '0.0.0.0' ]:
-                host = socket.getfqdn()
             body = """
 Galaxy Sample Tracking Notification
 ===================================
@@ -3683,7 +3683,12 @@ All samples in state:     %(sample_state)s
                     txt = txt + "%s -> %s/%s\r\n" % ( s.name, library_name, folder_name )
                 body = body + txt
             to = self.notification['email']
-            frm = 'galaxy-no-reply@' + host
+            frm = trans.app.config.email_from
+            if frm is None:
+                host = trans.request.host.split( ':' )[0]
+                if host in [ 'localhost', '127.0.0.1', '0.0.0.0' ]:
+                    host = socket.getfqdn()
+                frm = 'galaxy-no-reply@' + host
             subject = "Galaxy Sample Tracking notification: '%s' sequencing request" % self.name
             try:
                 send_mail( frm, to, subject, body, trans.app.config )
