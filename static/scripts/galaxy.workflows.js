@@ -31,7 +31,7 @@ $( function() {
             }
             // Start a new ajax-request in X ms
             $("#search-spinner").show();
-            var tool_search_url = galaxy_config.root + 'api/tools/search';
+            var tool_search_url = galaxy_config.root + 'api/tools';
             this.timer = setTimeout(function () {
                 $.get(tool_search_url, { q: q }, function (data) {
                     // input.removeClass(config.loadingClass);

@@ -68,7 +68,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                 for hit in hits:
                     tool = self._get_tool( hit )
                     if tool:
-                        results.append( tool.to_dict( trans ) )
+                        results.append( tool.id )
             return results
 
         # Find whether to detect.
