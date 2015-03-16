@@ -918,6 +918,18 @@ class ToolsTestCase( api.ApiTestCase ):
         }
         self._check_combined_mapping_and_subcollection_mapping( history_id, inputs )
 
+    @skip_without_tool( "cat3-tool" )
+    def test_cwl_cat3( self ):
+        history_id = self.dataset_populator.new_history()
+        hda1 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='1\t2\t3' ) )
+        inputs = {
+            "f1": hda1,
+        }
+        response = self._run( "cat3-tool", history_id, inputs, assert_ok=True )
+        output1 = response[ "outputs" ][ 0 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        assert output1_content == "1\t2\t3\n", output1_content
+
     def _check_combined_mapping_and_subcollection_mapping( self, history_id, inputs ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         outputs = self._run_and_get_outputs( "collection_mixed_param", history_id, inputs )

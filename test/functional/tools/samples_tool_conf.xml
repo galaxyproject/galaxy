@@ -49,6 +49,10 @@
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
 
+
+  <!-- CWL Testing -->
+  <tool file="cwl_tools/draft2/cat3-tool.cwl" />
+
   <!-- Tools interesting only for building up test workflows. -->
 
   <!-- Next three tools demonstrate concatenating multiple datasets

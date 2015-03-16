@@ -1,7 +1,9 @@
 from os import getcwd
 from os import chmod
+from os import fdopen
 from os.path import join
 from os.path import abspath
+import tempfile
 
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
@@ -114,6 +116,10 @@ def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_comm
     work_dir_outputs = runner.get_work_dir_outputs( job_wrapper, **work_dir_outputs_kwds )
     if work_dir_outputs:
         commands_builder.capture_return_code()
+        fd, fp = tempfile.mkstemp( suffix='.py', dir=job_wrapper.working_directory, prefix="relocate_dynamic_outputs_" )
+        metadata_script_file = abspath( fp )
+        fdopen( fd, 'w' ).write( 'from galaxy_ext.metadata.set_metadata import relocate_dynamic_outputs; relocate_dynamic_outputs()' )
+        commands_builder.append_command("python %s" % metadata_script_file)
         copy_commands = map(__copy_if_exists_command, work_dir_outputs)
         commands_builder.append_commands(copy_commands)
 

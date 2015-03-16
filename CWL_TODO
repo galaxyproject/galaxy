@@ -1,0 +1,8 @@
+ - Sniff the outputs so Galaxy can generate the correct dataytpes.
+ - More parameter types and constructs (e.g. tmap implementation).
+
+ - Explore Galaxy extensions to CWL - 
+    - Annotate datatypes. 
+    - Annotate parameter labels and help.
+    - Annotate tool help.
+    - Annotate requirements.
