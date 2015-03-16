@@ -283,6 +283,11 @@ class Configuration( object ):
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool( kwargs.get( "index_tool_help", True ) )
+        self.tool_name_boost = kwargs.get( "tool_name_boost", 9 )
+        self.tool_section_boost = kwargs.get( "tool_section_boost", 3 )
+        self.tool_description_boost = kwargs.get( "tool_description_boost", 2 )
+        self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
+        self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
         # Location for tool dependencies.
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )

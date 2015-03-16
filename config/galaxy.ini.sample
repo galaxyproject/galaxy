@@ -719,6 +719,21 @@ use_interactive = True
 # base URL of server providing search functionality using lucene
 #fulltext_url = http://localhost:8081
 
+# -- Toolbox Search
+
+# The following boosts are used to customize this instance's toolbox search.
+# The higher the boost the more importance the scoring algorithm gives to the
+# given field. Section refers to the tool group in the tool panel. Rest of 
+# the fields are tool's attributes.
+# tool_name_boost = 9
+# tool_section_boost = 3
+# tool_description_boost = 2
+# tool_help_boost = 0.5
+
+# Limits the number of results in toolbox search. Can be used to tweak 
+# how many results will appear.
+# tool_search_limit = 20
+
 # -- Users and Security
 
 # Galaxy encodes various internal values when these values will be output in
