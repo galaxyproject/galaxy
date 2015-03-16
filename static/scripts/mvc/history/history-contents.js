@@ -239,10 +239,9 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     },
 
     // ........................................................................ misc
-    /** override to get a correct/smarter merge when incoming data is partial */
+    /** override to ensure type id is set */
     set : function( models, options ){
         _.each( models, function( model ){
-            console.debug( 'type_id:', model.type_id )
             if( !model.type_id || !model.get( 'type_id' ) ){
                 model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
             }
