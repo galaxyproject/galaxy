@@ -4,8 +4,9 @@
 define(['utils/utils',
         'mvc/ui/ui-misc',
         'mvc/form/form-select-content',
+        'mvc/ui/ui-select-library',
         'mvc/ui/ui-color-picker'],
-    function(Utils, Ui, SelectContent, ColorPicker) {
+    function(Utils, Ui, SelectContent, SelectLibrary, ColorPicker) {
 
     // create form view
     return Backbone.Model.extend({
@@ -24,7 +25,8 @@ define(['utils/utils',
             'color'             : '_fieldColor',
             'hidden'            : '_fieldHidden',
             'hidden_data'       : '_fieldHidden',
-            'baseurl'           : '_fieldHidden'
+            'baseurl'           : '_fieldHidden',
+            'library_data'      : '_fieldLibrary'
         },
         
         // initialize
@@ -141,6 +143,7 @@ define(['utils/utils',
                 id          : 'field-' + input_def.id,
                 data        : options,
                 error_text  : input_def.error_text || 'No options available',
+                optional    : input_def.optional && input_def.default_value === null,
                 multiple    : input_def.multiple,
                 searchable  : input_def.searchable,
                 onchange    : function() {
@@ -247,6 +250,20 @@ define(['utils/utils',
             var self = this;
             return new ColorPicker({
                 id          : 'field-' + input_def.id,
+                onchange    : function() {
+                    self.app.trigger('change');
+                }
+            });
+        },
+
+        /** Library dataset field
+        */
+        _fieldLibrary: function(input_def) {
+            var self = this;
+            return new SelectLibrary.View({
+                id          : 'field-' + input_def.id,
+                optional    : input_def.optional,
+                multiple    : input_def.multiple,
                 onchange    : function() {
                     self.app.trigger('change');
                 }
