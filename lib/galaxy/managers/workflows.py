@@ -295,8 +295,11 @@ class WorkflowContentsManager(UsesAnnotations):
                 annotation_str = ""
                 if step_annotation:
                     annotation_str = step_annotation.annotation
-                invalid_tool_form_html = """<div class="toolForm tool-node-error"><div class="toolFormTitle form-row-error">Unrecognized Tool: %s</div><div class="toolFormBody"><div class="form-row">
-                                            The tool id '%s' for this tool is unrecognized.<br/><br/>To save this workflow, you will need to delete this step or enable the tool.
+                invalid_tool_form_html = """<div class="toolForm tool-node-error">
+                                            <div class="toolFormTitle form-row-error">Unrecognized Tool: %s</div>
+                                            <div class="toolFormBody"><div class="form-row">
+                                            The tool id '%s' for this tool is unrecognized.<br/><br/>
+                                            To save this workflow, you will need to delete this step or enable the tool.
                                             </div></div></div>""" % (step.tool_id, step.tool_id)
                 step_dict = {
                     'id': step.order_index,
@@ -379,7 +382,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         action_arguments=pja.action_arguments
                     )
                 step_dict['post_job_actions'] = pja_dict
-                #workflow outputs
+                # workflow outputs
                 outputs = []
                 for output in step.workflow_outputs:
                     outputs.append(output.output_name)
@@ -444,8 +447,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 'tool_errors': module.get_errors(),
                 'uuid': str(step.uuid),
                 'label': step.label or None,
-                ## 'data_inputs': module.get_data_inputs(),
-                ## 'data_outputs': module.get_data_outputs(),
+                # 'data_inputs': module.get_data_inputs(),
+                # 'data_outputs': module.get_data_outputs(),
                 'annotation': annotation_str
             }
             # Add post-job actions to step dict.
