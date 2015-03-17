@@ -569,7 +569,7 @@ class WorkflowContentsManager(UsesAnnotations):
         for step_index in step_indices:
             step_dict = supplied_steps[ step_index ]
             uuid = step_dict.get("uuid", None)
-            if uuid:
+            if uuid and uuid != "None":
                 if uuid in discovered_uuids:
                     raise exceptions.DuplicatedIdentifierException("Duplicate step UUID in request.")
                 discovered_uuids.add(uuid)
@@ -586,10 +586,9 @@ class WorkflowContentsManager(UsesAnnotations):
         type-specific functionality from the incoming dicitionary.
         """
         step = model.WorkflowStep()
-
         # TODO: Consider handling position inside module.
         step.position = step_dict['position']
-        if "uuid" in step_dict:
+        if "uuid" in step_dict and step_dict['uuid'] != "None":
             step.uuid = step_dict["uuid"]
         if "label" in step_dict:
             step.label = step_dict["label"]
