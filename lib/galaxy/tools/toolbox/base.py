@@ -898,7 +898,9 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                     if tool_key in val.elems:
                         self._tool_panel[ key ].elems[ tool_key ] = new_tool
                         break
-            self._tools_by_id[ tool_id ] = new_tool
+            # (Re-)Register the reloaded tool, this will handle
+            #  _tools_by_id and _tool_versions_by_id
+            self.register_tool( new_tool )
             message = "Reloaded the tool:<br/>"
             message += "<b>name:</b> %s<br/>" % old_tool.name
             message += "<b>id:</b> %s<br/>" % old_tool.id
