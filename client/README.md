@@ -28,8 +28,9 @@ A complete rebuild can be done with the following (from the `client` directory):
     grunt
 
 This will:
-	compress the files in client/galaxy/scripts and place them in static/scripts
-	generate source maps and place them in static/maps
+
+1. compress the files in client/galaxy/scripts and place them in static/scripts
+2. generate source maps and place them in static/maps
 
 
 Grunt watch
@@ -37,9 +38,9 @@ Grunt watch
 
 Grunt can also do an automatic, partial rebuild of any files you change *as you develop* by:
 
-    1. opening a new terminal session
-    2. `cd client`
-    3. `grunt watch`
+1. opening a new terminal session
+2. `cd client`
+3. `grunt watch`
 
 This starts a new grunt watch process that will monitor the files in `client/galaxy/scripts` for changes and copy and
 pack them when they change.
