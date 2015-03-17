@@ -161,8 +161,9 @@ class HDAManager( datasets.DatasetAssociationManager,
         # error here if disallowed - before jobs are stopped
         # TODO: poss. move to DatasetAssociationManager
         self.dataset_manager.error_unless_dataset_purge_allowed( trans, hda )
+        if trans.user:
+            trans.user.total_disk_usage -= hda.quota_amount( trans.user )
         super( HDAManager, self ).purge( trans, hda, flush=flush )
-
         if hda.creating_job_associations:
             job = hda.creating_job_associations[0].job
             if not job.finished:
