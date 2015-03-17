@@ -20,7 +20,7 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
     model_class = model.Dataset
     foreign_key_name = 'dataset'
 
-    #TODO:?? get + error_if_uploading is common pattern, should upload check be worked into access/owed?
+    # TODO:?? get + error_if_uploading is common pattern, should upload check be worked into access/owed?
 
     def __init__( self, app ):
         super( DatasetManager, self ).__init__( app )
@@ -40,26 +40,26 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
             self.app.model.context.flush()
         return dataset
 
-    #def copy( self, dataset, **kwargs ):
+    # def copy( self, dataset, **kwargs ):
     #    """
     #    Clone, update, and return the given dataset.
     #    """
     #    pass
 
-    #def to_hda( self, trans, dataset, history, **kwargs ):
+    # def to_hda( self, trans, dataset, history, **kwargs ):
     #    """
     #    Create an hda from this dataset.
     #    """
     #    pass
 
-    #def to_ldda( self, trans, dataset, library_folder, **kwargs ):
+    # def to_ldda( self, trans, dataset, library_folder, **kwargs ):
     #    """
     #    Create an ldda from this dataset.
     #    """
     #    pass
 
-    #TODO: this may be more conv. somewhere else
-#TODO: how to allow admin bypass?
+    # TODO: this may be more conv. somewhere else
+    # TODO: how to allow admin bypass?
     def error_unless_dataset_purge_allowed( self, trans, item, msg=None ):
         if not self.app.config.allow_user_dataset_purge:
             msg = msg or 'This instance does not allow user dataset purging'
@@ -102,7 +102,7 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
         roles = user.all_roles() if user else []
         return self.app.security_agent.can_access_dataset( roles, dataset )
 
-    #TODO: these need work
+    # TODO: these need work
     def _access_permission( self, trans, dataset, user=None, role=None ):
         """
         Return most recent DatasetPermissions for the dataset and user.
@@ -114,10 +114,10 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
         user_roles = [ role ] if role else user.all_roles()
         user_role_ids = [ r.id for r in user_roles ]
         query = ( self.app.model.context.query( model.DatasetPermissions )
-                    .filter( model.DatasetPermissions.action == access_action )
-                    .filter( model.DatasetPermissions.dataset == dataset )
-                    .filter( model.DatasetPermissions.role_id.in_( user_role_ids ) ) )
-        #TODO:?? most recent?
+                  .filter( model.DatasetPermissions.action == access_action )
+                  .filter( model.DatasetPermissions.dataset == dataset )
+                  .filter( model.DatasetPermissions.role_id.in_( user_role_ids ) ) )
+        # TODO:?? most recent?
         return query.first()
 
     def _create_access_permission( self, trans, dataset, role, flush=True ):
@@ -131,7 +131,7 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
             self.app.model.context.flush()
         return permission
 
-    #def give_access_permission( self, trans, dataset, user, flush=True ):
+    # def give_access_permission( self, trans, dataset, user, flush=True ):
     #    """
     #    """
     #    # for now, use the user's private role
@@ -160,29 +160,29 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
     #
     #    return dataset
 
-    #def remove_access_permission( self, trans, dataset, user ):
+    # def remove_access_permission( self, trans, dataset, user ):
     #    """
     #    """
     #    pass
 
     # .... manage/modify
-    #def has_manage_permission( self, trans, dataset, user ):
+    # def has_manage_permission( self, trans, dataset, user ):
     #    """
     #    """
     #    pass
     #
-    #def give_manage_permission( self, trans, dataset, user ):
+    # def give_manage_permission( self, trans, dataset, user ):
     #    """
     #    """
     #    pass
     #
-    #def remove_manage_permission( self, trans, dataset, user ):
+    # def remove_manage_permission( self, trans, dataset, user ):
     #    """
     #    """
     #    pass
 
-    #TODO: implement above for groups
-    #TODO: datatypes?
+    # TODO: implement above for groups
+    # TODO: datatypes?
 
     # .... data, object_store
 
@@ -198,9 +198,9 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
             'create_time', 'update_time',
             'state',
             'deleted', 'purged', 'purgable',
-            #'object_store_id',
-            #'external_filename',
-            #'extra_files_path',
+            # 'object_store_id',
+            # 'external_filename',
+            # 'extra_files_path',
             'file_size', 'total_size',
             'uuid',
         ])
@@ -211,10 +211,10 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
         deletable.PurgableSerializerMixin.add_serializers( self )
 
         self.serializers.update({
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
-            'uuid'          : lambda t, i, k: str( i.uuid ) if i.uuid else None,
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
+            'uuid': lambda t, i, k: str( i.uuid ) if i.uuid else None,
         })
 
 
@@ -248,14 +248,14 @@ class DatasetAssociationManager( base.ModelManager, secured.AccessibleManagerMix
         # defer to the dataset
         return self.dataset_manager.is_accessible( trans, dataset_assoc.dataset, user )
 
-    #def metadata( self, trans, dataset_assoc ):
+    # def metadata( self, trans, dataset_assoc ):
     #    """
     #    Return the metadata collection.
     #    """
     #    # get metadata
     #    pass
 
-    #def is_being_used( self, trans, dataset_assoc ):
+    # def is_being_used( self, trans, dataset_assoc ):
     #    """
     #    """
     #    #TODO: check history_associations, library_associations
@@ -275,6 +275,7 @@ class DatasetAssociationDeserializer( base.ModelDeserializer, deletable.Purgable
         super( DatasetAssociationDeserializer, self ).add_deserializers()
         deletable.PurgableDeserializerMixin.add_deserializers( self )
 
+
 class DatasetAssociationFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
 
     def _add_parsers( self ):
@@ -282,7 +283,7 @@ class DatasetAssociationFilters( base.ModelFilterParser, deletable.PurgableFilte
         deletable.PurgableFiltersMixin._add_parsers( self )
 
         self.orm_filter_parsers.update({
-            'name'          : { 'op': ( 'eq', 'contains', 'like' ) },
-            'state'         : { 'op': ( 'eq', 'in' ) },
+            'name': { 'op': ( 'eq', 'contains', 'like' ) },
+            'state': { 'op': ( 'eq', 'in' ) },
         })
-        #self.fn_filter_parsers.update({})
+        # self.fn_filter_parsers.update({})
