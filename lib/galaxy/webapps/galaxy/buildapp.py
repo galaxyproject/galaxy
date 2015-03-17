@@ -101,9 +101,6 @@ def app_factory( global_conf, **kwargs ):
             log.error("Static middleware is enabled in your configuration but this is a uwsgi process.  Refusing to wrap in static middleware.")
         else:
             webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
-    if asbool(kwargs.get('pack_scripts', False)):
-        log.warn( "The 'pack_scripts' option is deprecated" )
-        pack_scripts()
     # Close any pooled database connections before forking
     try:
         galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
@@ -535,21 +532,6 @@ def populate_api_routes( webapp, app ):
     #    controller="metrics", action="show", conditions=dict( method=["GET"] ) )
     webapp.mapper.connect( "create", "/api/metrics", controller="metrics",
                            action="create", conditions=dict( method=["POST"] ) )
-
-
-def pack_scripts():
-    from glob import glob
-    from subprocess import call
-    cmd = "java -jar scripts/yuicompressor.jar --type js static/scripts/%(fname)s -o static/scripts/packed/%(fname)s"
-    raw_js = [os.path.basename(g) for g in glob( "static/scripts/*.js" )]
-    for fname in raw_js:
-        if os.path.exists('static/scripts/packed/%s' % fname):
-            if os.path.getmtime('static/scripts/packed/%s' % fname) > os.path.getmtime('static/scripts/%s' % fname):
-                continue  # Skip, packed is newer than source.
-        d = dict( fname=fname )
-        log.info("%(fname)s --> packed/%(fname)s" % d)
-        call( cmd % d, shell=True )
-
 
 def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
     # Not just using map.resources because actions should be based on name not id
