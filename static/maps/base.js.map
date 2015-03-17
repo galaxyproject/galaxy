@@ -1,0 +1,1 @@
+{"version":3,"file":"base.js","sources":["../src/base.js"],"names":["define","Backbone","Base","this","initialize","apply","arguments","extend","Model"],"mappings":"AAAAA,QAAS,0BAA2B,SAAUC,GAE7C,GAAIC,GAAO,WACNC,KAAKC,YACRD,KAAKC,WAAWC,MAAMF,KAAMG,WAK9B,OAFAJ,GAAKK,OAASN,EAASO,MAAMD,QAG5BL,KAAMA,EACND,SAAUA"}
