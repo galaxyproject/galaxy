@@ -693,11 +693,18 @@ def rst_to_html( s ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
                 log.warn( str )
+
+    settings_overrides = {
+        "embed_stylesheet": False,
+        "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
+        "warning_stream": FakeStream(),
+        "doctitle_xform": False,  # without option, very different rendering depending on
+                                  # number of sections in help content.
+    }
+
     return unicodify( docutils.core.publish_string( s,
                       writer=docutils.writers.html4css1.Writer(),
-                      settings_overrides={ "embed_stylesheet": False,
-                                           "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
-                                           "warning_stream": FakeStream() } ) )
+                      settings_overrides=settings_overrides ) )
 
 
 def xml_text(root, name=None):
