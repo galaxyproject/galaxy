@@ -720,7 +720,7 @@ class ModelDeserializer( object ):
         """
         Make sure `val` is a valid dbkey and assign it.
         """
-        val = self.validate.genome_build( trans, key, val )
+        val = self.validate.genome_build( key, val )
         return self.default_deserializer( trans, item, key, val )
 
 
@@ -782,13 +782,17 @@ class ModelValidator( object ):
         return [ self.basestring( key, elem ) for elem in val ]
 
     # validators for Galaxy
-    def genome_build( self, trans, key, val ):
+    def genome_build( self, key, val ):
         """
-        Must be a valid genome_build/dbkey/reference/whatever-the-hell-were-calling-them-now.
+        Must be a valid base_string.
+
+        Note: no checking against installation's ref list is done as many
+        data sources consider this an open field.
         """
         # TODO: is this correct?
         if val is None:
             return '?'
+        return self.basestring( key, val )
         # currently, data source sites like UCSC are able to set the genome build to non-local build names
         # afterwards, attempting to validate the whole model will choke here
         # for genome_build_shortname, longname in self.app.genome_builds.get_genome_build_names( trans=trans ):

@@ -297,7 +297,7 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         }, 400, "must be a type: (<type 'basestring'>, <type 'NoneType'>)", 'type validation error' );
         spaceghost.api.assertRaises( function(){
             returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, { genome_build: false } );
-        }, 400, "invalid reference", 'type validation error' );
+        }, 400, "must be a type: <type 'basestring'>", 'type validation error (genome_build must be string)' );
         [ 'deleted', 'visible' ].forEach( function( key ){
             var updatedAttrs = {};
             updatedAttrs[ key ] = 'straaang';
