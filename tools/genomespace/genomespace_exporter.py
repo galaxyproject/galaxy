@@ -4,6 +4,7 @@ import base64
 import binascii
 import cgi
 import cookielib
+import datetime
 import hashlib
 import json
 import logging
@@ -19,6 +20,13 @@ GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
 
 CHUNK_SIZE = 2**20 #1mb
+
+# Some basic Caching, so we don't have to reload and download everything every time,
+# especially now that we are calling the parameter's get options method 5 times
+# (6 on reload) when a user loads the tool interface
+# For now, we'll use 30 seconds as the cache valid time
+CACHE_TIME = datetime.timedelta( seconds=30 )
+GENOMESPACE_DIRECTORIES_BY_USER = {}
 
 
 def chunk_write( source_stream, target_stream, source_method = "read", target_method="write" ):
@@ -150,14 +158,32 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
         username = trans.user.preferences.get( 'genomespace_username', None )
         token = trans.user.preferences.get( 'genomespace_token', None )
         if None not in ( username, token ):
-            url_opener = get_cookie_opener( username, token )
-            genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
-            dm_url = genomespace_site_dict['dmServer']
-            #get export root directory
-            #directory_dict = get_default_directory( url_opener, dm_url ).get( 'directory', None ) #This directory contains shares and other items outside of the users home
-            directory_dict = get_personal_directory( url_opener, dm_url ).get( 'directory', None ) #Limit export list to only user's home dir
-            if directory_dict is not None:
-                recurse_directory_dict( url_opener, rval, directory_dict.get( 'url' ) )
+            # NB: it is possible, but unlikely for a user to swap GenomeSpace accounts around
+            # in the middle of interacting with tools, so we'll have several layers of caching by ids/values
+            if trans.user in GENOMESPACE_DIRECTORIES_BY_USER:
+                if username in GENOMESPACE_DIRECTORIES_BY_USER[ trans.user ]:
+                    if token in GENOMESPACE_DIRECTORIES_BY_USER[ trans.user ][ username ]:
+                        cache_dict = GENOMESPACE_DIRECTORIES_BY_USER[ trans.user ][ username ][ token ]
+                        if datetime.datetime.now() - cache_dict.get( 'time_loaded' ) > CACHE_TIME:
+                            # cache too old, need to reload, we'll just kill the whole trans.user
+                            del GENOMESPACE_DIRECTORIES_BY_USER[ trans.user ]
+                        else:
+                            rval = cache_dict.get( 'rval' )
+                    else:
+                        del GENOMESPACE_DIRECTORIES_BY_USER[ trans.user ]
+                else:
+                    del GENOMESPACE_DIRECTORIES_BY_USER[ trans.user ]
+            if not rval:
+                url_opener = get_cookie_opener( username, token )
+                genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
+                dm_url = genomespace_site_dict['dmServer']
+                #get export root directory
+                #directory_dict = get_default_directory( url_opener, dm_url ).get( 'directory', None ) #This directory contains shares and other items outside of the users home
+                directory_dict = get_personal_directory( url_opener, dm_url ).get( 'directory', None ) #Limit export list to only user's home dir
+                if directory_dict is not None:
+                    recurse_directory_dict( url_opener, rval, directory_dict.get( 'url' ) )
+                # Save the cache
+                GENOMESPACE_DIRECTORIES_BY_USER[ trans.user ] = { username: { token: { 'time_loaded': datetime.datetime.now(), 'rval': rval } }  }
     if not rval:
         if not base_url:
             base_url = '..'
@@ -180,7 +206,7 @@ def send_file_to_genomespace( genomespace_site, username, token, source_filename
     #get upload url
     upload_url = "uploadurl"
     content_length = os.path.getsize( source_filename )
-    input_file = open( source_filename )
+    input_file = open( source_filename, 'rb' )
     content_md5 = hashlib.md5()
     chunk_write( input_file, content_md5, target_method="update" )
     input_file.seek( 0 ) #back to start, for uploading
