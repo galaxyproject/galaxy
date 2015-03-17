@@ -27,7 +27,13 @@ A complete rebuild can be done with the following (from the `client` directory):
 
     grunt
 
-This will copy any files in `client/galaxy/scripts` to `static/scripts` and run `static/scripts/pack_scripts.py` on all.
+This will:
+	compress the files in client/galaxy/scripts and place them in static/scripts
+	generate source maps and place them in static/maps
+
+
+Grunt watch
+===========
 
 Grunt can also do an automatic, partial rebuild of any files you change *as you develop* by:
 
@@ -40,3 +46,14 @@ pack them when they change.
 
 You can stop the `grunt watch` task by pressing `Ctrl+C`. Note: you should also be able to background that task if you
 prefer.
+
+
+Using a Locally Installed Version of Grunt
+==========================================
+
+A non-global version of grunt and the grunt-cli are installed when using 'npm install'. If you'd rather build with that
+version, you'll need to use the full, local path when calling it:
+
+    ./node_modules/.bin/grunt
+    # or
+    ./node_modules/.bin/grunt watch
