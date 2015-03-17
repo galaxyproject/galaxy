@@ -359,6 +359,15 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     history.purged = True
                     self.sa_session.add( history )
                     self.sa_session.flush()
+                for hda in history.datasets:
+                    # Not all datasets have jobs associated with them (e.g., datasets imported from libraries).
+                    if hda.creating_job_associations:
+                        # HDA has associated job, so try marking it deleted.
+                        job = hda.creating_job_associations[0].job
+                        if job.history_id == history.id and not job.finished:
+                            # No need to check other outputs since the job's parent history is this history
+                            job.mark_deleted( trans.app.config.track_jobs_in_database )
+                            trans.app.job_manager.job_stop_queue.put( job.id )
         trans.sa_session.flush()
         if n_deleted:
             part = "Deleted %d %s" % ( n_deleted, iff( n_deleted != 1, "histories", "history" ) )
@@ -1125,7 +1134,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             if hda.creating_job_associations:
                 # HDA has associated job, so try marking it deleted.
                 job = hda.creating_job_associations[0].job
-                if job.history_id == history.id and job.state in [ trans.app.model.Job.states.QUEUED, trans.app.model.Job.states.RUNNING, trans.app.model.Job.states.NEW ]:
+                if job.history_id == history.id and not job.finished:
                     # No need to check other outputs since the job's parent history is this history
                     job.mark_deleted( trans.app.config.track_jobs_in_database )
                     trans.app.job_manager.job_stop_queue.put( job.id )
@@ -1224,33 +1233,28 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             # Use current history.
             history = trans.history
             id = trans.security.encode_id( history.id )
-
         if not history:
             return trans.show_error_message( "This history does not exist or you cannot export this history." )
-
-        #
         # If history has already been exported and it has not changed since export, stream it.
-        #
         jeha = history.latest_export
         if jeha and jeha.up_to_date:
             if jeha.ready:
                 if preview:
                     url = url_for( controller='history', action="export_archive", id=id, qualified=True )
-                    return trans.show_message( "History Ready: '%(n)s'. Use this link to download \
-                                                the archive or import it to another Galaxy server: \
-                                                <a href='%(u)s'>%(u)s</a>" % ( { 'n' : history.name, 'u' : url } ) )
+                    return trans.show_message( "History Ready: '%(n)s'. Use this link to download "
+                                               "the archive or import it to another Galaxy server: "
+                                               "<a href='%(u)s'>%(u)s</a>" % ( { 'n': history.name, 'u': url } ) )
                 else:
                     return self.serve_ready_history_export( trans, jeha )
             elif jeha.preparing:
-                return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
-                        % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
-
+                return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>"
+                                           % ( { 'n': history.name, 's': url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
         self.queue_history_export( trans, history, gzip=gzip, include_hidden=include_hidden, include_deleted=include_deleted )
         url = url_for( controller='history', action="export_archive", id=id, qualified=True )
-        return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
-                                    the archive or import it to another Galaxy server: \
-                                    <a href='%(u)s'>%(u)s</a>" % ( { 'n' : history.name, 'u' : url } ) )
-        #TODO: used in this file and index.mako
+        return trans.show_message( "Exporting History '%(n)s'. You will need to <a href='%(share)s'>make this history 'accessible'</a> in order to import this to another galaxy sever. <br/>"
+                                   "Use this link to download the archive or import it to another Galaxy server: "
+                                   "<a href='%(u)s'>%(u)s</a>" % ( { 'share': url_for(controller='history', action='sharing'), 'n': history.name, 'u': url } ) )
+        # TODO: used in this file and index.mako
 
     @web.expose
     @web.json

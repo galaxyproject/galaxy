@@ -1,6 +1,7 @@
 import base64
 import httplib
 import json
+import logging
 import os
 import sgmllib
 import urllib2
@@ -40,6 +41,8 @@ from galaxy.workflow.steps import (
 )
 from galaxy.workflow.render import WorkflowCanvas, MARGIN, LINE_SPACING
 from markupsafe import escape
+
+log = logging.getLogger( __name__ )
 
 
 class StoredWorkflowListGrid( grids.Grid ):
@@ -895,8 +898,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     data = json.loads( workflow_data )
                 except Exception, e:
                     data = None
-                    message = "The data content does not appear to be a Galaxy workflow.<br/>Exception: %s" % str( e )
+                    message = "The data content does not appear to be a Galaxy workflow."
                     status = 'error'
+                    log.exception("Error importing workflow.")
                 if data:
                     # Create workflow if possible.  If a required tool is not available in the local
                     # Galaxy instance, the tool information will be available in the step_dict.

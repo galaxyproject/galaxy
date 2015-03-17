@@ -2587,11 +2587,9 @@ class Tool( object, Dictifiable ):
         hda_source_dict = {} # Mapping from HDA in history to source HDAs.
         for hda in history.datasets:
             source_hda = hda.copied_from_history_dataset_association
-            while source_hda:#should this check library datasets as well?
-                #FIXME: could be multiple copies of a hda in a single history, this does a better job of matching on cloned histories,
-                #but is still less than perfect when eg individual datasets are copied between histories
-                if source_hda not in hda_source_dict or source_hda.hid == hda.hid:
-                    hda_source_dict[ source_hda ] = hda
+            while source_hda:
+                if source_hda.dataset.id not in hda_source_dict or source_hda.hid == hda.hid:
+                    hda_source_dict[ source_hda.dataset.id ] = hda
                 source_hda = source_hda.copied_from_history_dataset_association
 
         # Ditto for dataset collections.
@@ -2599,8 +2597,8 @@ class Tool( object, Dictifiable ):
         for hdca in history.dataset_collections:
             source_hdca = hdca.copied_from_history_dataset_collection_association
             while source_hdca:
-                if source_hdca not in hdca_source_dict or source_hdca.hid == hdca.hid:
-                    hdca_source_dict[ source_hdca ] = hdca
+                if source_hdca.collection.id not in hdca_source_dict or source_hdca.hid == hdca.hid:
+                    hdca_source_dict[ source_hdca.collection.id ] = hdca
                 source_hdca = source_hdca.copied_from_history_dataset_collection_association
 
         # Unpack unvalidated values to strings, they'll be validated when the
@@ -2619,17 +2617,21 @@ class Tool( object, Dictifiable ):
                 if isinstance(value,list):
                     values = []
                     for val in value:
-                        if is_hashable( val ):
-                            if val in history.datasets:
+                        if isinstance(val, trans.app.model.HistoryDatasetAssociation):
+                            if val.dataset.id in hda_source_dict:
+                                values.append( hda_source_dict[ val.dataset.id ] )
+                            else:
                                 values.append( val )
-                            elif val in hda_source_dict:
-                                values.append( hda_source_dict[ val ])
                     return values
-                if is_hashable( value ) and value not in history.datasets and value in hda_source_dict:
-                    return hda_source_dict[ value ]
+                if isinstance(value, trans.app.model.HistoryDatasetAssociation):
+                    if value.dataset.id in hda_source_dict:
+                        return hda_source_dict[ value.dataset.id ]
+                if isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation):
+                    if value.collection.id in hdca_source_dict:
+                        return hdca_source_dict[ value.collection.id ]
             elif isinstance( input, DataCollectionToolParameter ):
-                if is_hashable( value ) and value not in history.dataset_collections and value in hdca_source_dict:
-                    return hdca_source_dict[ value ]
+                if value.collection.id in hdca_source_dict:
+                    return hdca_source_dict[ value.collection.id ]
         visit_input_values( tool_inputs, params, rerun_callback )
 
     def _compare_tool_version( self, trans, job ):
