@@ -24,6 +24,7 @@ DEFAULT_HEARTBEAT = 580
 
 DEFAULT_RECONNECT_CONSUMER_WAIT = 1
 DEFAULT_HEARTBEAT_WAIT = 1
+DEFAULT_HEARTBEAT_JOIN_TIMEOUT = 10
 
 
 class PulsarExchange(object):
@@ -83,14 +84,24 @@ class PulsarExchange(object):
                             except socket.timeout:
                                 pass
             except (IOError, socket.error), exc:
-                # In testing, errno is None
-                log.warning('Got %s, will retry: %s', exc.__class__.__name__, exc)
-                if heartbeat_thread:
-                    heartbeat_thread.join()
-                sleep(DEFAULT_RECONNECT_CONSUMER_WAIT)
+                self.__handle_io_error(exc, heartbeat_thread)
             except BaseException:
                 log.exception("Problem consuming queue, consumer quitting in problematic fashion!")
                 raise
+        log.info("Done consuming queue %s" % queue_name)
+
+    def __handle_io_error(self, exc, heartbeat_thread):
+        # In testing, errno is None
+        log.warning('Got %s, will retry: %s', exc.__class__.__name__, exc)
+        try:
+            if heartbeat_thread:
+                heartbeat_thread.join(DEFAULT_HEARTBEAT_JOIN_TIMEOUT)
+        except Exception:
+            log.exception("Failed to join heartbeat thread, this is bad?")
+        try:
+            sleep(DEFAULT_RECONNECT_CONSUMER_WAIT)
+        except Exception:
+            log.exception("Interrupted sleep while waiting to reconnect to message queue, may restart unless problems encountered.")
 
     def heartbeat(self, connection):
         log.debug('AMQP heartbeat thread alive')
