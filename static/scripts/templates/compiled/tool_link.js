@@ -1,19 +1,2 @@
-(function() {
-  var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-templates['tool_link'] = template({"compiler":[6,">= 2.0.0-beta.1"],"main":function(depth0,helpers,partials,data) {
-    var helper, alias1=helpers.helperMissing, alias2="function", alias3=this.escapeExpression;
-
-  return "<a class=\""
-    + alias3(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"id","hash":{},"data":data}) : helper)))
-    + " tool-link\" href=\""
-    + alias3(((helper = (helper = helpers.link || (depth0 != null ? depth0.link : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"link","hash":{},"data":data}) : helper)))
-    + "\" target=\""
-    + alias3(((helper = (helper = helpers.target || (depth0 != null ? depth0.target : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"target","hash":{},"data":data}) : helper)))
-    + "\" minsizehint=\""
-    + alias3(((helper = (helper = helpers.min_width || (depth0 != null ? depth0.min_width : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"min_width","hash":{},"data":data}) : helper)))
-    + "\">"
-    + alias3(((helper = (helper = helpers.name || (depth0 != null ? depth0.name : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"name","hash":{},"data":data}) : helper)))
-    + "</a> "
-    + alias3(((helper = (helper = helpers.description || (depth0 != null ? depth0.description : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"description","hash":{},"data":data}) : helper)));
-},"useData":true});
-})();
+!function(){var a=Handlebars.template,b=Handlebars.templates=Handlebars.templates||{};b.tool_link=a({compiler:[6,">= 2.0.0-beta.1"],main:function(a,b,c,d){var e,f=b.helperMissing,g="function",h=this.escapeExpression;return'<a class="'+h((e=null!=(e=b.id||(null!=a?a.id:a))?e:f,typeof e===g?e.call(a,{name:"id",hash:{},data:d}):e))+' tool-link" href="'+h((e=null!=(e=b.link||(null!=a?a.link:a))?e:f,typeof e===g?e.call(a,{name:"link",hash:{},data:d}):e))+'" target="'+h((e=null!=(e=b.target||(null!=a?a.target:a))?e:f,typeof e===g?e.call(a,{name:"target",hash:{},data:d}):e))+'" minsizehint="'+h((e=null!=(e=b.min_width||(null!=a?a.min_width:a))?e:f,typeof e===g?e.call(a,{name:"min_width",hash:{},data:d}):e))+'">'+h((e=null!=(e=b.name||(null!=a?a.name:a))?e:f,typeof e===g?e.call(a,{name:"name",hash:{},data:d}):e))+"</a> "+h((e=null!=(e=b.description||(null!=a?a.description:a))?e:f,typeof e===g?e.call(a,{name:"description",hash:{},data:d}):e))},useData:!0})}();
+//# sourceMappingURL=../../../maps/templates/compiled/tool_link.js.map
