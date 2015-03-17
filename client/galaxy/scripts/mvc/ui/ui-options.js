@@ -96,6 +96,9 @@ var Base = Backbone.View.extend({
 
         // set previous value
         this.value(current);
+
+        // data initialization has been completed
+        this.unwait();
     },
 
     /** Return/Set current value
