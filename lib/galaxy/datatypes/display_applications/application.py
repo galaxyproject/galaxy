@@ -4,7 +4,7 @@ from galaxy.util import parse_xml, string_as_bool
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
-from parameters import DisplayApplicationParameter, DEFAULT_DATASET_NAME
+from parameters import DisplayApplicationParameter, DisplayApplicationDataParameter, DEFAULT_DATASET_NAME
 from urllib import quote_plus
 from util import encode_dataset_user
 from copy import deepcopy
@@ -61,6 +61,7 @@ class DisplayApplicationLink( object ):
         other_values = self.get_inital_values( data, trans )
         other_values[ 'DATASET_HASH' ] = dataset_hash
         other_values[ 'USER_HASH' ] = user_hash
+        ready = True
         for name, param in self.parameters.iteritems():
             assert name not in other_values, "The display parameter '%s' has been defined more than once." % name
             if param.ready( other_values ):
@@ -69,9 +70,12 @@ class DisplayApplicationLink( object ):
                 else:
                     other_values[ name ] = param.get_value( other_values, dataset_hash, user_hash, trans )#subsequent params can rely on this value
             else:
-                other_values[ name ] = None
-                return False, other_values #need to stop here, next params may need this value
-        return True, other_values #we built other_values, lets provide it as well, or else we will likely regenerate it in the next step
+                ready = False
+                other_values[ name ] = param.get_value( other_values, dataset_hash, user_hash, trans )#subsequent params can rely on this value
+                if other_values[ name ] is None:
+                    # Need to stop here, next params may need this value to determine its own value
+                    return False, other_values
+        return ready, other_values
     def filter_by_dataset( self, data, trans ):
         context = self.get_inital_values( data, trans )
         for filter_elem in self.filters:
@@ -194,14 +198,28 @@ class PopulatedDisplayApplicationLink( object ):
             return self.link.parameters[ self.parameters.keys()[ -1 ] ].is_preparing( self.parameters )
         return False
     def prepare_display( self ):
+        rval = []
+        found_last = False
         if not self.ready and not self.preparing_display():
             other_values = self.parameters
             for name, param in self.link.parameters.iteritems():
-                if other_values.keys()[ -1 ] == name: #found last parameter to be populated
+                if found_last or other_values.keys()[ -1 ] == name: #found last parameter to be populated
+                    found_last = True
                     value = param.prepare( other_values, self.dataset_hash, self.user_hash, self.trans )
-                    if value is None:
-                        return #we can go no further until we have a value for this parameter
+                    rval.append( { 'name': name, 'value': value, 'param': param } )
                     other_values[ name ] = value
+                    if value is None:
+                        # We can go no further until we have a value for this parameter
+                        return rval
+        return rval
+    def get_prepare_steps( self, datasets_only=True ):
+        rval = []
+        for name, param in self.link.parameters.iteritems():
+            if datasets_only and not isinstance( param, DisplayApplicationDataParameter ):
+                continue
+            value = self.parameters.get( name, None )
+            rval.append( { 'name': name, 'value': value, 'param': param, 'ready': param.ready( self.parameters ) } )
+        return rval
     def display_url( self ):
         assert self.display_ready(), 'Display is not yet ready, cannot generate display link'
         return fill_template( self.link.url.text, context = self.parameters )
