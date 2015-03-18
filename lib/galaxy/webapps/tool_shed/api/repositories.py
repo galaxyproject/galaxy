@@ -47,7 +47,7 @@ class RepositoriesController( BaseAPIController ):
         Adds appropriate entries to the repository registry for the repository defined by the received name and owner.
 
         :param key: the user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed containing the Repository
         :param name (required): the name of the Repository
@@ -164,7 +164,7 @@ class RepositoriesController( BaseAPIController ):
             ]
         }
         """
-        # Example URL: 
+        # Example URL:
         # http://<xyz>/api/repositories/get_repository_revision_install_info?name=<n>&owner=<o>&changeset_revision=<cr>
         if name and owner and changeset_revision:
             # Get the repository information.
@@ -327,7 +327,7 @@ class RepositoriesController( BaseAPIController ):
         clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == False,
                               trans.app.model.Repository.table.c.deleted == deleted ) ]
         if owner is not None:
-            clause_list.append( and_( trans.app.model.User.table.c.username == owner, 
+            clause_list.append( and_( trans.app.model.User.table.c.username == owner,
                                       trans.app.model.Repository.table.c.user_id == trans.app.model.User.table.c.id ) )
         if name is not None:
             clause_list.append( trans.app.model.Repository.table.c.name == name )
@@ -349,7 +349,7 @@ class RepositoriesController( BaseAPIController ):
         Removes appropriate entries from the repository registry for the repository defined by the received name and owner.
 
         :param key: the user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed containing the Repository
         :param name (required): the name of the Repository
@@ -425,7 +425,7 @@ class RepositoriesController( BaseAPIController ):
         type tool_dependecy_definition first followed by repositories of type unrestricted, and only one pass is necessary.  If
         a new repository type is introduced, the process will undoubtedly need to be revisited.  To facilitate this order, an
         in-memory list of repository ids that have been processed is maintained.
-        
+
         :param key: the API key of the Tool Shed user.
 
         The following parameters can optionally be included in the payload.
@@ -515,9 +515,9 @@ class RepositoriesController( BaseAPIController ):
         PUT /api/repositories/reset_metadata_on_repository
 
         Resets all metadata on a specified repository in the Tool Shed.
-        
+
         :param key: the API key of the Tool Shed user.
-        
+
         The following parameters must be included in the payload.
         :param repository_id: the encoded id of the repository on which metadata is to be reset.
         """
@@ -578,6 +578,8 @@ class RepositoriesController( BaseAPIController ):
         repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                 action='show',
                                                 id=trans.security.encode_id( repository.id ) )
+        repository_dict[ 'categories' ] = \
+            [ trans.security.encode_id(x.category.id) for x in suc.get_repository_categories( trans.app, id ) ]
         return repository_dict
 
     @expose_api
