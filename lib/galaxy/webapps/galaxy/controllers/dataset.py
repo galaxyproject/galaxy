@@ -701,6 +701,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             return trans.show_error_message( "A display application name and link name must be provided." )
         if self._can_access_dataset( trans, data, additional_roles=user_roles ):
             msg = []
+            preparable_steps = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
             if not display_app:
@@ -766,12 +767,18 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                             msg.append( ( 'You must import this dataset into your current history before you can view it at the desired display application.', 'error' ) )
                         else:
                             refresh = True
-                            msg.append( ( 'This display application is being prepared.', 'info' ) )
+                            msg.append( ( 'Launching this display application required additional datasets to be generated, you can view the status of these jobs below. ', 'info' ) )
                             if not display_link.preparing_display():
                                 display_link.prepare_display()
+                            preparable_steps = display_link.get_prepare_steps()
                     else:
                         raise Exception( 'Attempted a view action (%s) on a non-ready display application' % app_action )
-            return trans.fill_template_mako( "dataset/display_application/display.mako", msg = msg, display_app = display_app, display_link = display_link, refresh = refresh )
+            return trans.fill_template_mako( "dataset/display_application/display.mako",
+                                             msg = msg,
+                                             display_app = display_app,
+                                             display_link = display_link,
+                                             refresh = refresh,
+                                             preparable_steps = preparable_steps )
         return trans.show_error_message( 'You do not have permission to view this dataset at an external display application.' )
 
     def _delete( self, trans, dataset_id ):
