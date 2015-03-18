@@ -175,6 +175,10 @@ def update_repository( app, trans, id, **kwds):
     sa_session = app.model.context.current
     # Add the repository record to the database.
     repository = sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
+
+    if repository is None:
+        return None, "Unknown repository ID"
+
     message = None
 
     if not ( trans.user_is_admin() or
