@@ -632,7 +632,7 @@ var ToolSearchView = Backbone.View.extend({
 
     clear: function() {
         this.model.clear_search();
-        this.$el.find(":input").val(this.model.attributes.search_hint_string);
+        this.$el.find(":input").val('');
         this.focus_and_select();
         return false;
     },
