@@ -404,7 +404,7 @@ var HistoryPanel = _super.extend(
         return this.showDeleted;
     },
 
-    /** Handle the user toggling the deleted visibility by:
+    /** Handle the user toggling the hidden visibility by:
      *      (1) storing the new value in the persistent storage
      *      (2) re-rendering the history
      * @returns {Boolean} new show_hidden setting

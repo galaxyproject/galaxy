@@ -37,7 +37,6 @@ var CollectionPanel = _super.extend(
         this.linkTarget = attributes.linkTarget || '_blank';
 
         this.hasUser = attributes.hasUser;
-
         /**  */
         this.panelStack = [];
         /**  */

@@ -364,11 +364,11 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         if( panel.views.length ){
             panel._attachItems( $whereTo );
             panel.$emptyMessage( $whereTo ).hide();
-            
+
         } else {
             panel._renderEmptyMessage( $whereTo ).show();
         }
-        
+
         return panel.views;
     },
 
@@ -543,7 +543,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 
     /** get views based on model.id */
     viewFromModelId : function( id ){
-        for( var i=0; i<this.views.length; i++ ){
+        for( var i = 0; i < this.views.length; i++ ){
             if( this.views[i].model.id === id ){
                 return this.views[i];
             }

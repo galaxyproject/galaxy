@@ -2017,6 +2017,8 @@ div.permissionContainer{padding-left:20px}
 .list-panel .controls>*:not(:empty){margin-bottom:8px}
 .list-panel .controls .name{word-wrap:break-word;font-weight:bold}
 .list-panel .controls .subtitle{color:#777;font-size:90%}.list-panel .controls .subtitle a{color:inherit}
+.list-panel .controls .editable-text{border:solid transparent 1px}
+.list-panel .controls .editable-text:hover{cursor:pointer;border:1px dotted #999999}
 .list-panel .controls .actions{display:inline-block;float:right}.list-panel .controls .actions .icon-btn:not(:last-child){margin:0px;border-radius:0px;border-right:none}
 .list-panel .controls .actions .icon-btn:first-child{margin-right:0px;border-top-left-radius:3px;border-bottom-left-radius:3px}
 .list-panel .controls .actions .icon-btn:last-child{margin-left:0px;border-radius:0px 3px 3px 0px}
@@ -2088,31 +2090,27 @@ div.permissionContainer{padding-left:20px}
 .dataset .details .dataset-peek{margin-bottom:8px;width:100%;margin:0px;border-radius:3px;background:white;color:black;font-size:10px;overflow:auto}.dataset .details .dataset-peek th{color:white;background:#5f6990}
 .dataset .details .dataset-peek table,.dataset .details .dataset-peek th,.dataset .details .dataset-peek tr,.dataset .details .dataset-peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
 .history-content.dataset .title-bar .title .hid:after,.history-content.dataset-collection .title-bar .title .hid:after{content:':'}
-.history-panel .controls{margin:10px 10px 0px 10px;padding:0px}.history-panel .controls .messages{margin-bottom:0px}.history-panel .controls .messages>*{cursor:pointer}.history-panel .controls .messages>*:last-child{margin-bottom:8px}
-.history-panel .controls .title{margin-bottom:4px}.history-panel .controls .title input{width:100%;margin:-3px 0 -3px -3px;font-weight:bold}
-.history-panel .controls .subtitle:not(:empty){margin-top:-4px;margin-bottom:6px}
-.history-panel .controls .editable-text{border:solid transparent 1px}
-.history-panel .controls .editable-text:hover{cursor:pointer;border:1px dotted #999999}
-.history-panel .controls .history-size{display:inline-block;margin-top:4px;color:black}
-.history-panel .controls .actions{margin-bottom:0px}
-.history-panel .controls .quota-message{display:none;margin:8px 0px 5px 0px}
-.history-panel .controls .tags-display,.history-panel .controls .annotation-display{display:none;margin-bottom:8px}.history-panel .controls .tags-display label,.history-panel .controls .annotation-display label{display:block;margin:0px;padding:0px;font-weight:normal;color:#555}
-.history-panel .controls .tags-display label:after,.history-panel .controls .annotation-display label:after{content:':'}
-.history-panel .controls .tags-display .select2-container{min-width:0px}.history-panel .controls .tags-display .select2-container .select2-choices{border-radius:3px}
-.history-panel .controls .tags-display input{border-radius:3px}
-.history-panel .controls .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px;white-space:pre-wrap;overflow:auto}
-.history-panel .controls .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
-.history-panel .controls .annotation-display textarea{margin:0px 0px 2px 0px;border-radius:3px;width:100%}
+.history-panel>.controls{margin:10px 10px 0px 10px;padding:0px}.history-panel>.controls .messages{margin-bottom:0px}.history-panel>.controls .messages>*{cursor:pointer}.history-panel>.controls .messages>*:last-child{margin-bottom:8px}
+.history-panel>.controls .title{margin-bottom:4px}.history-panel>.controls .title input{width:100%;margin:-3px 0 -3px -3px;font-weight:bold}
+.history-panel>.controls .subtitle:not(:empty){margin-top:-4px;margin-bottom:6px}
+.history-panel>.controls .history-size{display:inline-block;margin-top:4px;color:black}
+.history-panel>.controls .actions{margin-bottom:0px}
+.history-panel>.controls .quota-message{display:none;margin:8px 0px 5px 0px}
+.history-panel>.controls .tags-display,.history-panel>.controls .annotation-display{display:none;margin-bottom:8px}.history-panel>.controls .tags-display label,.history-panel>.controls .annotation-display label{display:block;margin:0px;padding:0px;font-weight:normal;color:#555}
+.history-panel>.controls .tags-display label:after,.history-panel>.controls .annotation-display label:after{content:':'}
+.history-panel>.controls .tags-display .select2-container{min-width:0px}.history-panel>.controls .tags-display .select2-container .select2-choices{border-radius:3px}
+.history-panel>.controls .tags-display input{border-radius:3px}
+.history-panel>.controls .annotation-display .annotation{border-radius:3px;border:1px solid rgba(153,153,153,0.5);padding:4px;white-space:pre-wrap;overflow:auto}
+.history-panel>.controls .annotation-display .annotation:empty:after{position:relative;top:-4px;font-size:10px;font-style:italic;color:grey;content:'Click here to edit annotation'}
+.history-panel>.controls .annotation-display textarea{margin:0px 0px 2px 0px;border-radius:3px;width:100%}
 .history-panel .list-item.history-content{border-width:1px 0px 0px 0px}.history-panel .list-item.history-content:last-child{border-width:1px 0px 1px 0px}
 .history-panel .empty-message{margin:0px 10px 0px 10px}
 .history-panel .dataset-collection .subtitle{margin-top:2px}
-.history-panel .dataset-collection-panel .controls{padding:0px}
-.history-panel .dataset-collection-panel .list-items{margin-top:0px}
-.annotated-history-panel .controls{margin:0px}.annotated-history-panel .controls .name{font-size:150%;margin-bottom:4px}
-.annotated-history-panel .controls .subtitle{color:black}.annotated-history-panel .controls .subtitle:not(:empty){margin:0px 0px 0px 4px}
-.annotated-history-panel .controls .messages:not(:empty){margin-top:16px}
-.annotated-history-panel .controls .annotation-display{display:block;border:1px solid lightgrey;border-width:1px 0px 0px 0px;padding:4px 0px 4px 0px;margin:4px 4px 0px 4px;white-space:pre-wrap}.annotated-history-panel .controls .annotation-display:empty{display:none}
-.annotated-history-panel .controls .search{padding:16px 0px 0px 0px;margin-bottom:0px}
+.annotated-history-panel>.controls{margin:0px}.annotated-history-panel>.controls .name{font-size:150%;margin-bottom:4px}
+.annotated-history-panel>.controls .subtitle{color:black}.annotated-history-panel>.controls .subtitle:not(:empty){margin:0px 0px 0px 4px}
+.annotated-history-panel>.controls .messages:not(:empty){margin-top:16px}
+.annotated-history-panel>.controls .annotation-display{display:block;border:1px solid lightgrey;border-width:1px 0px 0px 0px;padding:4px 0px 4px 0px;margin:4px 4px 0px 4px;white-space:pre-wrap}.annotated-history-panel>.controls .annotation-display:empty{display:none}
+.annotated-history-panel>.controls .search{padding:16px 0px 0px 0px;margin-bottom:0px}
 .annotated-history-panel table.list-items{width:100%;table-layout:fixed}.annotated-history-panel table.list-items .headers{border-bottom:2px solid grey}
 .annotated-history-panel table.list-items .headers th{padding:8px}
 .annotated-history-panel table.list-items>tbody>tr{cursor:pointer;border-bottom:1px solid grey}.annotated-history-panel table.list-items>tbody>tr>td{margin:0px;padding:0px;vertical-align:top}.annotated-history-panel table.list-items>tbody>tr>td:nth-child(1){width:50%}
@@ -2201,7 +2199,7 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .dataset-collection-panel{margin:0px;padding:0px}.dataset-collection-panel .vertically-spaced{margin-top:4px}
 .dataset-collection-panel .controls{padding:8px}.dataset-collection-panel .controls .navigation{margin-top:4px}.dataset-collection-panel .controls .navigation .back .fa-icon{margin-right:4px;font-size:120%;font-weight:bold;text-decoration:none}
 .dataset-collection-panel .controls .title{margin-top:12px}.dataset-collection-panel .controls .title .name{font-weight:bold}
-.dataset-collection-panel .list-items{margin-top:8px}.dataset-collection-panel .list-items .dataset-collection-element{border-width:1px 0px 0px 0px}.dataset-collection-panel .list-items .dataset-collection-element:last-child{border-bottom-width:1px}
+.dataset-collection-panel .list-items .dataset-collection-element{border-width:1px 0px 0px 0px}.dataset-collection-panel .list-items .dataset-collection-element:last-child{border-bottom-width:1px}
 .job.list-item{border:1px solid #bfbfbf}.job.list-item .title-bar .subtitle{color:grey;font-size:80%}
 .job.list-item>.details{padding:0px}.job.list-item>.details .params{padding:0px 8px 0px 8px}.job.list-item>.details .params .param .prompt,.job.list-item>.details .params .input .prompt{font-size:80%;color:grey}
 .job.list-item>.details .params .param .value,.job.list-item>.details .params .input .value{display:inline-block;font-weight:bold}

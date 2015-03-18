@@ -238,7 +238,7 @@
             .visualizations-dropdown {
                 display: inline-block;
             }
-            
+
             .left {
                 .icon-btn-group();
                 float: left;
@@ -347,7 +347,7 @@
 // ---------------------------------------------------------------------------- history
 .history-panel {
 
-    .controls {
+    & > .controls {
         margin: 10px 10px 0px 10px;
         padding: 0px;
 
@@ -374,14 +374,6 @@
             margin-top: -4px;
             margin-bottom: 6px;
         }
-        .editable-text {
-            border: solid transparent 1px;
-        }
-        .editable-text:hover {
-            cursor: pointer;
-            border: 1px dotted #999999;
-        }
-
         .history-size {
             display: inline-block;
             margin-top: 4px;
@@ -473,20 +465,12 @@
             margin-top: 2px;
         }
     }
-    .dataset-collection-panel {
-        .controls {
-            padding: 0px;
-        }
-        .list-items {
-            margin-top: 0px;
-        }
-    }
 }
 
 
 // ---------------------------------------------------------------------------- annotated-history-panel
 .annotated-history-panel {
-    .controls {
+    & > .controls {
         margin: 0px;
         .name {
             font-size: 150%;

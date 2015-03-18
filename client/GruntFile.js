@@ -11,7 +11,7 @@ module.exports = function(grunt) {
 
         uglify: {
             target : {
-                files: [{ 
+                files: [{
                     expand : true,
                     cwd : SRC_SYMLINK,
                     src : '**/*.js',
@@ -45,7 +45,7 @@ module.exports = function(grunt) {
                     if_return : true,
                     join_vars : true,
                     cascade : true,
-                    drop_console : true
+                    // drop_console : true
                 }
             }
         },
