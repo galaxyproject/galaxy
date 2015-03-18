@@ -29,25 +29,6 @@ var DCListItemEdit = DCListItemView.extend(
     }
 });
 
-// ............................................................................ TEMPLATES
-/** underscore templates */
-// DCListItemEdit.prototype.templates = (function(){
-
-//     // use element identifier
-//     var titleBarTemplate = BASE_MVC.wrapTemplate([
-//         '<div class="title-bar clear" tabindex="0">',
-//             '<div class="title">',
-//                 '<span class="name"><%- collection.element_identifier || collection.name %></span>',
-//             '</div>',
-//             '<div class="subtitle"></div>',
-//         '</div>'
-//     ], 'collection' );
-
-//     return _.extend( {}, DCListItemView.prototype.templates, {
-//         titleBar : titleBarTemplate
-//     });
-// }());
-
 
 //==============================================================================
 var DCEListItemView = DC_LI.DCEListItemView;
@@ -72,25 +53,6 @@ var DCEListItemEdit = DCEListItemView.extend(
         return 'DCEListItemEdit(' + modelString + ')';
     }
 });
-
-// ............................................................................ TEMPLATES
-/** underscore templates */
-// DCEListItemEdit.prototype.templates = (function(){
-
-//     // use the element identifier here - since that will persist and the user will need it
-//     var titleBarTemplate = BASE_MVC.wrapTemplate([
-//         '<div class="title-bar clear" tabindex="0">',
-//             '<div class="title">',
-//                 '<span class="name"><%- element.element_identifier %></span>',
-//             '</div>',
-//             '<div class="subtitle"></div>',
-//         '</div>'
-//     ], 'element' );
-
-//     return _.extend( {}, DCEListItemView.prototype.templates, {
-//         titleBar : titleBarTemplate
-//     });
-// }());
 
 
 //==============================================================================

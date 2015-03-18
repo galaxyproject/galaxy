@@ -201,7 +201,7 @@ var HistoryPanelEdit = _super.extend(
     },
 
     /** Set up HistoryPanelEdit js/widget behaviours
-     *  In this override, add the multi select popup menu and make the name editable
+     *  In this override, make the name editable
      */
     _setUpBehaviors : function( $where ){
         $where = $where || this.$el;
@@ -215,7 +215,7 @@ var HistoryPanelEdit = _super.extend(
         }
 
         var panel = this,
-            nameSelector = '.controls .name';
+            nameSelector = '> .controls .name';
         $where.find( nameSelector )
             .attr( 'title', _l( 'Click to rename history' ) )
             .tooltip({ placement: 'bottom' })

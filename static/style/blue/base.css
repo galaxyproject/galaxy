@@ -2035,7 +2035,7 @@ div.permissionContainer{padding-left:20px}
 .list-panel .controls .list-actions:after{clear:both}
 .list-panel .controls .list-actions .btn{padding-top:2px;padding-bottom:2px;font-size:90%}
 .list-panel .controls .list-actions .list-action-menu{float:right}
-.list-panel .list-items .list-item:not(:last-child){border-bottom-width:0px}
+.list-panel .list-items .list-item{border-width:1px 0px 1px 0px}.list-panel .list-items .list-item:not(:last-child){border-bottom-width:0px}
 .list-panel .empty-message{display:none;margin:0px}
 .list-item .details .list-panel{margin-top:8px;border-radius:3px;background:white;padding:4px}.list-item .details .list-panel .list-items{border:1px solid #bfbfbf;border-radius:3px}.list-item .details .list-panel .list-items .list-item:first-child{border-top-width:0px;border-radius:3px 3px 0px 0px}
 .list-item .details .list-panel .list-items .list-item:last-child{border-bottom-width:0px;border-radius:0px 0px 3px 3px}
