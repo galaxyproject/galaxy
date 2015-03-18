@@ -192,14 +192,22 @@ def update_repository( app, trans, id, **kwds):
             setattr(repository, key, kwds[key])
             flush_needed = True
 
-    #if 'category_ids' in kwds and kwds['category_ids']:
-        ## Create category associations
-        #for category_id in kwds['category_ids']:
-            #category = sa_session.query( app.model.Category ) \
-                                 #.get( app.security.decode_id( category_id ) )
-            #rca = app.model.RepositoryCategoryAssociation( repository, category )
-            #sa_session.add( rca )
-            #flush_needed = True
+    if 'category_ids' in kwds and isinstance(kwds['category_ids'], list):
+        # Get existing category associations
+        category_associations  = sa_session.query( app.model.RepositoryCategoryAssociation ) \
+                                .filter( app.model.RepositoryCategoryAssociation.table.c.repository_id==app.security.decode_id( id ) )
+        # Remove all of them
+        for rca in category_associations:
+            sa_session.delete(rca)
+
+        # Then (re)create category associations
+        for category_id in kwds['category_ids']:
+            category = sa_session.query( app.model.Category ) \
+                                 .get( app.security.decode_id( category_id ) )
+            rca = app.model.RepositoryCategoryAssociation( repository, category )
+            sa_session.add( rca )
+
+        flush_needed = True
 
     # However some properties are special, like 'name'
     if 'name' in kwds and kwds['name'] is not None and repository.name != kwds['name']:
@@ -234,9 +242,6 @@ def update_repository( app, trans, id, **kwds):
         message = "The repository information has been updated."
     else:
         message = None
-
-    log.debug(repository)
-    log.debug(message)
 
     return repository, message
 
