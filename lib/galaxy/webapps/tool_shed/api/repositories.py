@@ -601,7 +601,7 @@ class RepositoriesController( BaseAPIController ):
         :returns:   detailed repository information
         :rtype:     dict
 
-        :raises: RequestParameterMissingException
+        :raises: RequestParameterInvalidException, InsufficientPermissionsException, ActionInputError
         """
         params = util.Params( payload )
         # Mostly copied from create() except defaulting to Nones
