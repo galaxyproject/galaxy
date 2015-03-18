@@ -581,6 +581,71 @@ class RepositoriesController( BaseAPIController ):
         return repository_dict
 
     @expose_api
+    def update(self, trans, id, payload, **kwd ):
+        """
+        POST /api/repositories/{encoded_repository_id}
+        Updates information about a repository in the Tool Shed.
+
+        :param id: the encoded id of the Repository object
+
+        :param payload: dictionary structure containing::
+            'name':                  repo's name (optional)
+            'synopsis':              repo's synopsis (optional)
+            'description':           repo's description (optional)
+            'remote_repository_url': repo's remote repo (optional)
+            'homepage_url':          repo's homepage url (optional)
+            'category_ids[]':        list of existing encoded TS category ids
+                                     the new repo should be associated with (optional)
+        :type payload: dict
+
+        :returns:   detailed repository information
+        :rtype:     dict
+
+        :raises: RequestParameterMissingException
+        """
+        log.debug("HI")
+        params = util.Params( payload )
+        # Mostly copied from create() except defaulting to Nones
+        name = util.restore_text( params.get( 'name', None ) )
+        synopsis = util.restore_text( params.get( 'synopsis', None ) )
+        description = util.restore_text( params.get( 'description', None ) )
+        remote_repository_url = util.restore_text( params.get( 'remote_repository_url', None ) )
+        homepage_url = util.restore_text( params.get( 'homepage_url', None ) )
+
+        # We need to know if it was actually passed, and listify turns None
+        # into []
+        category_ids = params.get( 'category_ids[]', None )
+        if category_ids is not None:
+            category_ids = util.listify( category_ids )
+        repo_type = kwd.get( 'type', None )
+        if repo_type is not None and repo_type not in rt_util.types:
+            raise exceptions.RequestParameterInvalidException( 'This repository type is not valid' )
+        if name is not None:
+            invalid_message = repository_util.validate_repository_name( trans.app, name, trans.user )
+            if invalid_message:
+                raise exceptions.RequestParameterInvalidException( invalid_message )
+
+        update_kwds = dict(
+            name=name,
+            description=synopsis,
+            long_description=description,
+            remote_repository_url=remote_repository_url,
+            homepage_url=homepage_url,
+            category_ids=category_ids,
+            repo_type=repo_type,
+        )
+
+        repo, message = repository_util.update_repository( app=trans.app, trans=trans, id=id, **update_kwds )
+        if repo is None:
+            if "You are not the owner" in message:
+                raise exceptions.InsufficientPermissionsException(message)
+            else:
+                raise exceptions.ActionInputError(message)
+        else:
+            return repo.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
+
+
+    @expose_api
     def create( self, trans, payload, **kwd ):
         """
         create( self, trans, payload, **kwd )

@@ -1143,7 +1143,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         Open an image file that is contained in repository or that is referenced by a URL for display.  The image can be defined in
         either a README.rst file contained in the repository or the help section of a Galaxy tool config that is contained in the repository.
         The following image definitions are all supported.  The former $PATH_TO_IMAGES is no longer required, and is now ignored.
-        .. image:: https://raw.github.com/galaxy/some_image.png 
+        .. image:: https://raw.github.com/galaxy/some_image.png
         .. image:: $PATH_TO_IMAGES/some_image.png
         .. image:: /static/images/some_image.gif
         .. image:: some_image.jpg
@@ -2272,55 +2272,23 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         error = False
         user = trans.user
         if kwd.get( 'edit_repository_button', False ):
-            flush_needed = False
-            if not ( trans.user_is_admin() or trans.app.security_agent.user_can_administer_repository( user, repository ) ):
-                message = "You are not the owner of this repository, so you cannot administer it."
+            update_kwds = dict(
+                name=repo_name,
+                description=description,
+                long_description=long_description,
+                remote_repository_url=remote_repository_url,
+                homepage_url=homepage_url,
+                type=repository_type,
+            )
+
+            repository, message = repository_util.update_repository( app=trans.app, trans=trans, id=id, **update_kwds )
+            if repository is None:
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_repository',
                                                                   id=id,
                                                                   message=message,
                                                                   status='error' ) )
-            if repository_type != repository.type:
-                repository.type = repository_type
-                flush_needed = True
-            if remote_repository_url != repository.remote_repository_url:
-                repository.remote_repository_url = remote_repository_url
-                flush_needed = True
-            if homepage_url != repository.homepage_url:
-                repository.homepage_url = homepage_url
-                flush_needed = True
-            if description != repository.description:
-                repository.description = description
-                flush_needed = True
-            if long_description != repository.long_description:
-                repository.long_description = long_description
-                flush_needed = True
-            if repository.times_downloaded == 0 and repo_name != repository.name:
-                message = repository_util.validate_repository_name( trans.app, repo_name, user )
-                if message:
-                    error = True
-                else:
-                    # Change the entry in the hgweb.config file for the repository.
-                    old_lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
-                    new_lhs = "repos/%s/%s" % ( repository.user.username, repo_name )
-                    trans.app.hgweb_config_manager.change_entry( old_lhs, new_lhs, repo_dir )
-                    # Change the entry in the repository's hgrc file.
-                    hgrc_file = os.path.join( repo_dir, '.hg', 'hgrc' )
-                    repository_util.change_repository_name_in_hgrc_file( hgrc_file, repo_name )
-                    # Rename the repository's admin role to match the new repository name.
-                    repository_admin_role = repository.admin_role
-                    repository_admin_role.name = \
-                        repository_util.get_repository_admin_role_name( str( repo_name ),
-                                                                        str( repository.user.username ) )
-                    trans.sa_session.add( repository_admin_role )
-                    repository.name = repo_name
-                    flush_needed = True
-            elif repository.times_downloaded != 0 and repo_name != repository.name:
-                message = "Repository names cannot be changed if the repository has been cloned.  "
-            if flush_needed:
-                trans.sa_session.add( repository )
-                trans.sa_session.flush()
-                message += "The repository information has been updated."
+
         elif kwd.get( 'skip_tool_tests_button', False ):
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app, id, changeset_revision )
             skip_tool_test = repository_metadata.skip_tool_tests
@@ -3256,8 +3224,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         options_dict[ 'maxfile' ] = basic_util.MAXDIFFSIZE
         options_dict[ 'maxtotal' ] = basic_util.MAXDIFFSIZE
         diffopts = mdiff.diffopts( **options_dict )
-        for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node(), opts=diffopts ):  
-            if len( diff ) > basic_util.MAXDIFFSIZE:    
+        for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node(), opts=diffopts ):
+            if len( diff ) > basic_util.MAXDIFFSIZE:
                 diff = util.shrink_string_by_size( diff, basic_util.MAXDIFFSIZE )
             diffs.append( basic_util.to_html_string( diff ) )
         modified, added, removed, deleted, unknown, ignored, clean = repo.status( node1=ctx_parent.node(), node2=ctx.node() )

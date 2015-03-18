@@ -170,6 +170,76 @@ def create_repository( app, name, type, description, long_description, user_id, 
     message = "Repository <b>%s</b> has been created." % escape( str( repository.name ) )
     return repository, message
 
+def update_repository( app, trans, id, **kwds):
+    """Update an existing ToolShed repository"""
+    sa_session = app.model.context.current
+    # Add the repository record to the database.
+    repository = sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
+    message = None
+
+    if not ( trans.user_is_admin() or
+            trans.app.security_agent.user_can_administer_repository( trans.user, repository ) ):
+        message = "You are not the owner of this repository, so you cannot administer it."
+        return None, message
+
+    flush_needed = False
+
+    # Whitelist properties that can be changed via this method
+    for key in ('type', 'description', 'long_description', 'remote_repository_url',
+                'homepage_url'):
+        # If that key is available, not None and different than what's in the model
+        if key in kwds and kwds[key] is not None and kwds[key] != getattr(repository, key):
+            setattr(repository, key, kwds[key])
+            flush_needed = True
+
+    #if 'category_ids' in kwds and kwds['category_ids']:
+        ## Create category associations
+        #for category_id in kwds['category_ids']:
+            #category = sa_session.query( app.model.Category ) \
+                                 #.get( app.security.decode_id( category_id ) )
+            #rca = app.model.RepositoryCategoryAssociation( repository, category )
+            #sa_session.add( rca )
+            #flush_needed = True
+
+    # However some properties are special, like 'name'
+    if 'name' in kwds and kwds['name'] is not None and repository.name != kwds['name']:
+        if repository.times_downloaded != 0:
+            message = "Repository names cannot be changed if the repository has been cloned.  "
+        else:
+            message = validate_repository_name( trans.app, kwds['name'], trans.user )
+
+        if message:
+            return None, message
+
+        repo_dir = repository.repo_path( app )
+        # Change the entry in the hgweb.config file for the repository.
+        old_lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
+        new_lhs = "repos/%s/%s" % ( repository.user.username, kwds['name'] )
+        trans.app.hgweb_config_manager.change_entry( old_lhs, new_lhs, repo_dir )
+        # Change the entry in the repository's hgrc file.
+        hgrc_file = os.path.join( repo_dir, '.hg', 'hgrc' )
+        change_repository_name_in_hgrc_file( hgrc_file, kwds['name'] )
+        # Rename the repository's admin role to match the new repository name.
+        repository_admin_role = repository.admin_role
+        repository_admin_role.name = \
+            get_repository_admin_role_name( str( kwds['name'] ),
+                                                            str( repository.user.username ) )
+        trans.sa_session.add( repository_admin_role )
+        repository.name = kwds['name']
+        flush_needed = True
+
+    if flush_needed:
+        trans.sa_session.add( repository )
+        trans.sa_session.flush()
+        message = "The repository information has been updated."
+    else:
+        message = None
+
+    log.debug(repository)
+    log.debug(message)
+
+    return repository, message
+
 def create_repository_admin_role( app, repository ):
     """
     Create a new role with name-spaced name based on the repository name and its owner's public user
