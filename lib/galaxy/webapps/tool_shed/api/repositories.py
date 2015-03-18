@@ -619,7 +619,7 @@ class RepositoriesController( BaseAPIController ):
         category_ids = util.listify( params.get( 'category_ids[]', '' ) )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
 
-        repo_type = kwd.get( 'type', rt_util.UNRESTRICTED )
+        repo_type = params.get( 'type', rt_util.UNRESTRICTED )
         if repo_type not in rt_util.types:
             raise exceptions.RequestParameterInvalidException( 'This repository type is not valid' )
 
