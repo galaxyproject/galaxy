@@ -270,7 +270,8 @@ var CurrentHistoryPanel = _super.extend(
         this.annotationEditor.on( 'hiddenUntilActivated:shown hiddenUntilActivated:hidden',
             function( annotationEditor ){
                 panel.preferences.set( 'annotationEditorShown', annotationEditor.hidden );
-            });
+            }
+        );
     },
 
     /** Override to scroll to cached position (in prefs) after swapping */
@@ -303,7 +304,6 @@ var CurrentHistoryPanel = _super.extend(
 
     /** Override to remove any drill down panels */
     addItemView : function( model, collection, options ){
-console.debug( 'addItemView:', model, collection );
         var view = _super.prototype.addItemView.call( this, model, collection, options );
         if( !view ){ return view; }
         if( this.panelStack.length ){ return this._collapseDrilldownPanel(); }

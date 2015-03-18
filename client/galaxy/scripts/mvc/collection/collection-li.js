@@ -24,8 +24,9 @@ var DCListItemView = FoldoutListItemView.extend(
 
     /** override to add linkTarget */
     initialize : function( attributes ){
-        FoldoutListItemView.prototype.initialize.call( this, attributes );
         this.linkTarget = attributes.linkTarget || '_blank';
+        this.hasUser = attributes.hasUser;
+        FoldoutListItemView.prototype.initialize.call( this, attributes );
     },
 
     // ......................................................................... rendering
@@ -51,7 +52,8 @@ var DCListItemView = FoldoutListItemView.extend(
     _getFoldoutPanelOptions : function(){
         var options = FoldoutListItemView.prototype._getFoldoutPanelOptions.call( this );
         return _.extend( options, {
-            linkTarget : this.linkTarget
+            linkTarget  : this.linkTarget,
+            hasUser     : this.hasUser
         });
     },
 
