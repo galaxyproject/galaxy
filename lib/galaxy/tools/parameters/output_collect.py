@@ -266,7 +266,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 sa_session.add( assoc )
                 sa_session.flush()
             primary_data.state = outdata.state
-            #add tool/metadata provided information
+            # add tool/metadata provided information
             new_primary_datasets_attributes = new_primary_datasets.get( os.path.split( filename )[-1], {} )
             if new_primary_datasets_attributes:
                 dataset_att_by_name = dict( ext='extension' )
@@ -288,11 +288,6 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                                 dir_only=True,
                                 preserve_symlinks=True
                             )
-                    # FIXME:
-                    # since these are placed into the job working dir, let the standard
-                    # Galaxy cleanup methods handle this (for now?)
-                    # there was an extra_files_path dir, attempt to remove it
-                    #shutil.rmtree( extra_files_path_joined )
             metadata_dict = new_primary_datasets_attributes.get( 'metadata', None )
             if metadata_dict:
                 primary_data.metadata.from_JSON_dict( json_dict=metadata_dict )
