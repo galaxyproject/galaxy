@@ -260,7 +260,7 @@ define(['utils/utils',
 
             // create portlet for sub section
             var portlet = new Portlet.View({
-                title       : input_def.label,
+                title       : input_def.title,
                 cls         : 'ui-portlet-section',
                 operations  : {
                     button_visible: button_visible

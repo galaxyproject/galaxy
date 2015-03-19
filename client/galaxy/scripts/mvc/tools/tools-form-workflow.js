@@ -145,7 +145,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
 
             // create custom sub section
             var input_config = {
-                label   : 'Add Actions: \'' + output_id + '\'',
+                title   : 'Add Actions: \'' + output_id + '\'',
                 type    : 'section',
                 inputs  : [{
                     action      : 'RenameDatasetAction',
@@ -173,7 +173,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     ignore      : '',
                     help        : 'This action will set tags for the dataset.'
                 },{
-                    label   : 'Assign columns',
+                    title   : 'Assign columns',
                     type    : 'section',
                     inputs  : [{
                         action      : 'ColumnSetAction',
