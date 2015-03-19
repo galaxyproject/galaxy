@@ -35,7 +35,6 @@ var CollectionPanelEdit = _super.extend(
     /** In this override, make the collection name editable
      */
     _setUpBehaviors : function( $where ){
-console.debug( this + '._setUpBehaviors', this.model, this.model.get( 'user_id' ) );
         $where = $where || this.$el;
         _super.prototype._setUpBehaviors.call( this, $where );
         if( !this.model ){ return; }
@@ -45,9 +44,9 @@ console.debug( this + '._setUpBehaviors', this.model, this.model.get( 'user_id' 
             return;
         }
 
+        //TODO: extract
         var panel = this,
             nameSelector = '> .controls .name';
-console.debug( $where.find( nameSelector ) );
         $where.find( nameSelector )
             .attr( 'title', _l( 'Click to rename collection' ) )
             .tooltip({ placement: 'bottom' })
