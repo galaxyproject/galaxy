@@ -69,6 +69,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             // link this
             var self = this;
 
+            // update current version
+            this.options.id = options.id;
+            this.options.version = options.version;
+
             // construct url
             var build_url = galaxy_config.root + 'api/tools/' + options.id + '/build?';
             if (options.job_id) {
@@ -139,6 +143,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         _updateModel: function() {
             // model url for request
             var model_url = this.options.update_url;
+            if (!model_url) {
+                model_url = galaxy_config.root + 'api/tools/' + this.options.id + '/build';
+            }
 
             // link this
             var self = this;

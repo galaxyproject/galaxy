@@ -40,7 +40,6 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
             }
             // create options dictionary
             options = Utils.merge(options, {
-                update_url  : galaxy_config.root + 'api/tools/' + options.id + '/build',
                 buttons     : {
                     execute : execute
                 }
