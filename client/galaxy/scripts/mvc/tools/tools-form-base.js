@@ -142,10 +142,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         */
         _updateModel: function() {
             // model url for request
-            var model_url = this.options.update_url;
-            if (!model_url) {
-                model_url = galaxy_config.root + 'api/tools/' + this.options.id + '/build';
-            }
+            var model_url = this.options.update_url || galaxy_config.root + 'api/tools/' + this.options.id + '/build';
 
             // link this
             var self = this;
