@@ -224,15 +224,15 @@ class BaseWorkflowPopulator( object ):
         upload_response = self._post( "workflows/upload", data=data )
         return upload_response
 
-    def wait_for_invocation( self, workflow_id, invocation_id ):
+    def wait_for_invocation( self, workflow_id, invocation_id, timeout=10 ):
         url = "workflows/%s/usage/%s" % ( workflow_id, invocation_id )
-        return wait_on_state( lambda: self._get( url )  )
+        return wait_on_state( lambda: self._get( url ), timeout=timeout  )
 
-    def wait_for_workflow( self, workflow_id, invocation_id, history_id, assert_ok=True ):
+    def wait_for_workflow( self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_HISTORY_TIMEOUT ):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
-        self.wait_for_invocation( workflow_id, invocation_id )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=assert_ok )
+        self.wait_for_invocation( workflow_id, invocation_id, timeout=timeout )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=assert_ok, timeout=timeout )
 
 
 class WorkflowPopulator( BaseWorkflowPopulator ):
