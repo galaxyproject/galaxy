@@ -15,6 +15,7 @@ import sys
 import tempfile
 from datetime import timedelta
 from galaxy import eggs
+from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
@@ -29,10 +30,6 @@ def resolve_path( path, root ):
     if not os.path.isabs( path ):
         path = os.path.join( root, path )
     return path
-
-
-class ConfigurationError( Exception ):
-    pass
 
 
 class Configuration( object ):
@@ -421,7 +418,7 @@ class Configuration( object ):
         self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
         self.master_api_key = kwargs.get( 'master_api_key', None )
         if self.master_api_key == "changethis":  # default in sample config file
-            raise Exception("Insecure configuration, please change master_api_key to something other than default (changethis)")
+            raise ConfigurationError("Insecure configuration, please change master_api_key to something other than default (changethis)")
 
         # Experimental: This will not be enabled by default and will hide
         # nonproduction code.

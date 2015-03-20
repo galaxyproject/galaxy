@@ -4,16 +4,17 @@ Created on 15/07/2014
 @author: Andrew Robinson
 """
 
+from galaxy.exceptions import ConfigurationError
 from ..providers import AuthProvider
 
 import logging
 log = logging.getLogger(__name__)
 
 
-def _get_subs(d, k, params, default=''):
-    if k in d:
-        return str(d[k]).format(**params)
-    return str(default).format(**params)
+def _get_subs(d, k, params):
+    if k not in d:
+        raise ConfigurationError("Missing '%s' parameter in Active Directory options" % k)
+    return str(d[k]).format(**params)
 
 
 class ActiveDirectory(AuthProvider):

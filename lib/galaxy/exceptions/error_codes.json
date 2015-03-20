@@ -125,6 +125,11 @@
     "message": "Inconsistent database prevented fulfilling the request."
    },
    {
+    "name": "CONFIG_ERROR",
+    "code": 500003,
+    "message": "Error in a configuration file."
+   },
+   {
     "name": "NOT_IMPLEMENTED",
     "code": 501001,
     "message": "Method is not implemented."
