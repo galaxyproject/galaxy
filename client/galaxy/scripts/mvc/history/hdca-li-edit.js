@@ -14,6 +14,7 @@ var HDCAListItemEdit = _super.extend(
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
+    /** Override to return editable versions of the collection panels */
     _getFoldoutPanelClass : function(){
         switch( this.model.get( 'collection_type' ) ){
             case 'list':

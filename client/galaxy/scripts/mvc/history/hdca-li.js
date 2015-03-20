@@ -18,6 +18,7 @@ var HDCAListItemView = _super.extend(
 
     className   : _super.prototype.className + " history-content",
 
+    /** Override to provide the proper collections panels as the foldout */
     _getFoldoutPanelClass : function(){
         switch( this.model.get( 'collection_type' ) ){
             case 'list':

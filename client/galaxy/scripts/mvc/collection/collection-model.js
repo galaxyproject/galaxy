@@ -87,7 +87,7 @@ var DatasetCollectionElement = Backbone.Model
     .extend( BASE_MVC.LoggableMixin )
     .extend( DatasetCollectionElementMixin );
 
-    
+
 //==============================================================================
 /** @class Base/Abstract Backbone collection for Generic DCEs. */
 var DCECollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
@@ -359,7 +359,7 @@ var NestedDCDCE = DatasetCollection.extend( BASE_MVC.mixin( DatasetCollectionEle
         this.debug( '\t NestedDCDCE.constructor:', attributes, options );
         DatasetCollectionElementMixin.constructor.call( this, attributes, options );
     },
-    
+
     /** String representation. */
     toString : function(){
         var objStr = ( this.object )?( '' + this.object ):( this.get( 'element_identifier' ) );
@@ -376,7 +376,7 @@ var NestedDCDCECollection = DCECollection.extend(
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
-    
+
     /** This is a collection of nested collections */
     model: NestedDCDCE,
 

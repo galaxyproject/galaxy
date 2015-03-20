@@ -135,6 +135,12 @@
         .name {
             word-wrap: break-word;
             font-weight: bold;
+            input {
+                width: 100%;
+                // keep the text in position
+                margin: -3px 0px -3px -3px;
+                font-weight: bold;
+            }
         }
         .subtitle {
             color: #777;
@@ -184,6 +190,7 @@
     // display only a top border on all but the last
     .list-items {
         .list-item {
+            border-width: 1px 0px 1px 0px;
             &:not(:last-child) {
                 border-bottom-width: 0px;
             }

@@ -2015,7 +2015,7 @@ div.permissionContainer{padding-left:20px}
 .list-item .details .prompt:after{content:':';margin-right:4px}
 .list-panel .vertical-spacing{margin-bottom:8px}
 .list-panel .controls>*:not(:empty){margin-bottom:8px}
-.list-panel .controls .name{word-wrap:break-word;font-weight:bold}
+.list-panel .controls .name{word-wrap:break-word;font-weight:bold}.list-panel .controls .name input{width:100%;margin:-3px 0 -3px -3px;font-weight:bold}
 .list-panel .controls .subtitle{color:#777;font-size:90%}.list-panel .controls .subtitle a{color:inherit}
 .list-panel .controls .editable-text{border:solid transparent 1px}
 .list-panel .controls .editable-text:hover{cursor:pointer;border:1px dotted #999999}
@@ -2035,7 +2035,7 @@ div.permissionContainer{padding-left:20px}
 .list-panel .controls .list-actions:after{clear:both}
 .list-panel .controls .list-actions .btn{padding-top:2px;padding-bottom:2px;font-size:90%}
 .list-panel .controls .list-actions .list-action-menu{float:right}
-.list-panel .list-items .list-item:not(:last-child){border-bottom-width:0px}
+.list-panel .list-items .list-item{border-width:1px 0px 1px 0px}.list-panel .list-items .list-item:not(:last-child){border-bottom-width:0px}
 .list-panel .empty-message{display:none;margin:0px}
 .list-item .details .list-panel{margin-top:8px;border-radius:3px;background:white;padding:4px}.list-item .details .list-panel .list-items{border:1px solid #bfbfbf;border-radius:3px}.list-item .details .list-panel .list-items .list-item:first-child{border-top-width:0px;border-radius:3px 3px 0px 0px}
 .list-item .details .list-panel .list-items .list-item:last-child{border-bottom-width:0px;border-radius:0px 0px 3px 3px}
