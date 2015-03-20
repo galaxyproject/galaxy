@@ -31,7 +31,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
 
         if( attrs.history_content_type === "dataset" ) {
             return new HDA_MODEL.HistoryDatasetAssociation( attrs, options );
-        
+
         } else if( attrs.history_content_type === "dataset_collection" ) {
             switch( attrs.collection_type ){
                 case 'list':
@@ -242,81 +242,38 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     /** override to ensure type id is set */
     set : function( models, options ){
         _.each( models, function( model ){
-            if( !model.type_id || !model.get( 'type_id' ) ){
+            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
                 model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
             }
         });
         Backbone.Collection.prototype.set.call( this, models, options );
     },
 
-    /** Convert this ad-hoc collection of hdas to a formal collection tracked
-        by the server.
-    **/
-    promoteToHistoryDatasetCollection : function _promote( history, collection_type, options ){
-//TODO: seems like this would be better in mvc/collections
-        options = options || {};
-        options.url = this.url();
-        options.type = "POST";
-        var full_collection_type = collection_type;
-        var element_identifiers = [],
-            name = null;
-
-        // This mechanism is rough - no error handling, allows invalid selections, no way
-        // for user to pick/override element identifiers. This is only really meant
-        if( collection_type === "list" ) {
-            this.chain().each( function( hda ) {
-                // TODO: Handle duplicate names.
-                var name = hda.attributes.name;
-                var id = hda.get('id');
-                var content_type = hda.attributes.history_content_type;
-                if( content_type === "dataset" ) {
-                    if( full_collection_type !== "list" ) {
-                        this.log( "Invalid collection type" );
-                    }
-                    element_identifiers.push( { name: name, src: "hda", id: id } );
-                } else {
-                    if( full_collection_type === "list" ) {
-                        full_collection_type = "list:" + hda.attributes.collection_type;
-                    } else {
-                        if( full_collection_type !== "list:" + hda.attributes.collection_type ) {
-                            this.log( "Invalid collection type" );
-                        }
-                    }
-                    element_identifiers.push( { name: name, src: "hdca", id: id } );
-                }
+    /** */
+    createHDCA : function( elementIdentifiers, collectionType, name, options ){
+        //precondition: elementIdentifiers is an array of plain js objects
+        //  in the proper form to create the collectionType
+        var contents = this,
+            typeToModel = {
+                list    : HDCA_MODEL.HistoryListDatasetCollection,
+                paired  : HDCA_MODEL.HistoryPairDatasetCollection
+            },
+            hdca = new (typeToModel[ collectionType ])({
+                history_id          : this.historyId,
+                name                : name,
+                // should probably be able to just send in a bunch of json here and restruct per class
+                element_identifiers : elementIdentifiers
             });
-            name = "New Dataset List";
-        } else if( collection_type === "paired" ) {
-            var ids = this.ids();
-            if( ids.length !== 2 ){
-                // TODO: Do something...
-            }
-            element_identifiers.push( { name: "forward", src: "hda", id: ids[ 0 ] } );
-            element_identifiers.push( { name: "reverse", src: "hda", id: ids[ 1 ] } );
-            name = "New Dataset Pair";
-        }
-        options.data = {
-            type: "dataset_collection",
-            name: name,
-            collection_type: full_collection_type,
-            element_identifiers: JSON.stringify( element_identifiers )
-        };
-
-        var xhr = jQuery.ajax( options );
-        xhr.done( function( message, status, responseObj ){
-            history.refresh( );
-        });
-        xhr.fail( function( xhr, status, message ){
-            if( xhr.responseJSON && xhr.responseJSON.error ){
-                error = xhr.responseJSON.error;
-            } else {
-                error = xhr.responseJSON;
-            }
-            xhr.responseText = error;
-            // Do something?
-        });
-        return xhr;
+        // do I even need to use new above, can I just pass the attrs here
+        return hdca.save()
+            .done( function( response ){
+                contents.add( hdca );
+            })
+            .fail( function( xhr, status, message ){
+                contents.trigger( 'error', xhr, status, message );
+            });
     },
+
 
     /** In this override, copy the historyId to the clone */
     clone : function(){

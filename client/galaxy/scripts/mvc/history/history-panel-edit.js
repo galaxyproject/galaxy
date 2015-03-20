@@ -27,6 +27,63 @@ define([
 TODO:
 
 ============================================================================= */
+function createListCollection( history, collection ){
+    //TODO: filter out non-datasets, non-ready
+    //TODO: fail if no valid elements remain
+    //return jQuery.Deferred().reject( _l( 'No valid datasets to add' ) );
+    var name = 'New Dataset List',
+        elementIdentifiers = collection.toJSON().map( function( element ){
+            // TODO: Handle duplicate names.
+            return {
+                id      : element.id,
+                name    : element.name,
+                src     : ( element.history_content_type === 'dataset'? 'hda' : 'hdca' )
+            }
+        });
+    return collection.createHDCA( elementIdentifiers, 'list', name );
+}
+
+function createPairCollection( history, collection ){
+    //TODO: filter out non-datasets, non-ready
+    //TODO: fail if no valid elements remain
+    //return jQuery.Deferred().reject( _l( 'No valid datasets to add' ) );
+    var elementsJSON = collection.toJSON(),
+        name = 'New Dataset Pair',
+        elementIdentifiers = [
+            { name: "forward", src: "hda", id: elementsJSON[0].id },
+            { name: "reverse", src: "hda", id: elementsJSON[1].id }
+        ];
+    return collection.createHDCA( elementIdentifiers, 'paired', name );
+}
+
+function createListOfPairsCollection( history, collection ){
+    var datasets = collection.toJSON().filter( function( content ){
+            return content.history_content_type === 'dataset'
+                && content.state === STATES.OK;
+        });
+
+    if( datasets.length ){
+        require([ 'mvc/collection/paired-collection-creator' ], function( creator ){
+            window.creator = creator.pairedCollectionCreatorModal( datasets, {
+                historyId : history.id
+            });
+        });
+
+    } else {
+        Galaxy.modal.show({
+            title   : _l( 'No valid datasets were selected' ),
+            body    : _l([
+                          'Use the checkboxes at the left of the dataset names to select them.',
+                          'Selected datasets should be error-free and should have completed running.'
+                      ].join(' ')),
+            buttons : { 'Ok': function(){ Galaxy.modal.hide(); } },
+            closing_events: true
+        });
+    }
+}
+
+
+// =============================================================================
 var _super = HPANEL.HistoryPanel;
 // base class for current-history-panel and used as-is in history/view.mako
 /** @class Editable View/Controller for the history model.
@@ -272,48 +329,23 @@ var HistoryPanelEdit = _super.extend(
                 }
             });
         }
-        actions.push( {
-            html: _l( 'Build Dataset List' ), func: function() {
-                panel.getSelectedModels().promoteToHistoryDatasetCollection( panel.model, "list" );
-            }
-        });
-        actions.push( {
+        return actions.concat([
+            {   html: _l( 'Build Dataset List' ), func: function() {
+                    createListCollection( panel.model, panel.getSelectedModels() )
+                        .done( function(){ panel.model.refresh() });
+                }
+            },
             // TODO: Only show quick pair if two things selected.
-            html: _l( 'Build Dataset Pair' ), func: function() {
-                panel.getSelectedModels().promoteToHistoryDatasetCollection( panel.model, "paired" );
-            }
-        });
-        actions.push( {
-            // TODO: Only show quick pair if two things selected.
-            html: _l( 'Build List of Dataset Pairs' ),
-            func: _.bind( panel._showPairedCollectionModal, panel )
-        });
-        return actions;
-    },
-
-    _showPairedCollectionModal : function(){
-        var panel = this,
-            datasets = panel.getSelectedModels().toJSON().filter( function( content ){
-                return content.history_content_type === 'dataset'
-                    && content.state === STATES.OK;
-            });
-        if( datasets.length ){
-            require([ 'mvc/collection/paired-collection-creator' ], function( creator ){
-                window.creator = creator.pairedCollectionCreatorModal( datasets, {
-                    historyId : panel.model.id
-                });
-            });
-        } else {
-            Galaxy.modal.show({
-                title   : _l( 'No valid datasets were selected' ),
-                body    : _l([
-                              'Use the checkboxes at the left of the dataset names to select them.',
-                              'Selected datasets should be error-free and should have completed running.'
-                          ].join(' ')),
-                buttons : { 'Ok': function(){ Galaxy.modal.hide(); } },
-                closing_events: true
-            });
-        }
+            {   html: _l( 'Build Dataset Pair' ), func: function() {
+                    createPairCollection( panel.model, panel.getSelectedModels() )
+                        .done( function(){ panel.model.refresh() });
+                }
+            },
+            {   html: _l( 'Build List of Dataset Pairs' ), func: function() {
+                    createListOfPairsCollection( panel.model, panel.getSelectedModels() );
+                }
+            },
+        ]);
     },
 
     // ------------------------------------------------------------------------ sub-views

@@ -306,7 +306,10 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         ].join(''));
         var $actions = actions.map( function( action ){
             var html = [ '<li><a href="javascript:void(0);">', action.html, '</a></li>' ].join( '' );
-            return $( html ).click( action.func );
+            return $( html ).click( function( ev ){
+                ev.preventDefault();
+                return action.func( ev );
+            });
         });
         $newMenu.find( 'ul' ).append( $actions );
         $menu.replaceWith( $newMenu );
@@ -516,7 +519,6 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 
     /** Remove a view from the panel (if found) */
     removeItemView : function( model, collection, options ){
-        console.log( this + '.removeItemView:', model );
         this.log( this + '.removeItemView:', model );
         var panel = this,
             view = panel.viewFromModel( model );
@@ -563,10 +565,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             //return view.model.matches( properties );
 //TODO: replace with _.matches (underscore 1.6.0)
             var json = view.model.toJSON();
-            //console.debug( '\t', json, properties );
             for( var key in properties ){
                 if( properties.hasOwnProperty( key ) ){
-                    //console.debug( '\t\t', json[ key ], view.model.properties[ key ] );
                     if( json[ key ] !== view.model.get( key ) ){
                         return false;
                     }
