@@ -1,0 +1,2 @@
+define(["mvc/collection/collection-model","utils/localization"],function(){function a(a){var b="New Dataset List",c=a.toJSON().map(function(a){return{id:a.id,name:a.name,src:"dataset"===a.history_content_type?"hda":"hdca"}});return a.createHDCA(c,"list",b)}return{createListCollection:a}});
+//# sourceMappingURL=../../../maps/mvc/collection/list-collection-creator.js.map
