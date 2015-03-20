@@ -53,6 +53,17 @@ var HDCAListItemView = _super.extend(
 /** underscore templates */
 HDCAListItemView.prototype.templates = (function(){
 
+    var warnings = _.extend( {}, _super.prototype.templates.warnings, {
+        hidden : BASE_MVC.wrapTemplate([
+            // add a warning when hidden
+            '<% if( !collection.visible ){ %>',
+                '<div class="hidden-msg warningmessagesmall">',
+                    _l( 'This collection has been hidden' ),
+                '</div>',
+            '<% } %>'
+        ], 'collection' )
+    });
+
 // could steal this from hda-base (or use mixed content)
     var titleBarTemplate = BASE_MVC.wrapTemplate([
         // adding the hid display to the title
@@ -68,6 +79,7 @@ HDCAListItemView.prototype.templates = (function(){
     ], 'collection' );
 
     return _.extend( {}, _super.prototype.templates, {
+        warnings : warnings,
         titleBar : titleBarTemplate
     });
 }());
