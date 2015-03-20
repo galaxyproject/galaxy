@@ -18,6 +18,17 @@ var HDCAListItemView = _super.extend(
 
     className   : _super.prototype.className + " history-content",
 
+    /** event listeners */
+    _setUpListeners : function(){
+        _super.prototype._setUpListeners.call( this );
+        // re-rendering on deletion
+        this.model.on( 'change', function( model, options ){
+            if( _.isEqual( _.keys( model.changed ), [ 'visible' ] ) ){
+                this.render();
+            }
+        }, this );
+    },
+
     /** Override to provide the proper collections panels as the foldout */
     _getFoldoutPanelClass : function(){
         switch( this.model.get( 'collection_type' ) ){

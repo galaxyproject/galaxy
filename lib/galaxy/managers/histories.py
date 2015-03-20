@@ -283,23 +283,24 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         deletable.PurgableSerializerMixin.add_serializers( self )
 
         self.serializers.update({
-            'model_class': lambda *a: 'History',
-            'id': self.serialize_id,
-            'create_time': self.serialize_date,
-            'update_time': self.serialize_date,
-            'size': lambda t, i, k: int( i.get_disk_size() ),
-            'nice_size': lambda t, i, k: i.get_disk_size( nice_size=True ),
-            'state': lambda t, i, k: self.history_manager.get_history_state( t, i ),
+            'model_class'   : lambda *a: 'History',
+            'id'            : self.serialize_id,
+            'create_time'   : self.serialize_date,
+            'update_time'   : self.serialize_date,
+            'size'          : lambda t, i, k: int( i.get_disk_size() ),
+            'nice_size'     : lambda t, i, k: i.get_disk_size( nice_size=True ),
+            'state'         : lambda t, i, k: self.history_manager.get_history_state( t, i ),
 
-            'url': lambda t, i, k: self.url_for( 'history', id=t.security.encode_id( i.id ) ),
-            'contents_url': lambda t, i, k: self.url_for( 'history_contents', history_id=t.security.encode_id( i.id ) ),
+            'url'           : lambda t, i, k: self.url_for( 'history', id=t.security.encode_id( i.id ) ),
+            'contents_url'  : lambda t, i, k: self.url_for( 'history_contents',
+                history_id=t.security.encode_id( i.id ) ),
 
-            'empty': lambda t, i, k: len( i.datasets ) <= 0,
-            'count': lambda trans, item, key: len( item.datasets ),
-            'hdas': lambda t, i, k: [ t.security.encode_id( hda.id ) for hda in i.datasets ],
-            'state_details': lambda t, i, k: self.history_manager.get_state_counts( t, i ),
-            'state_ids': lambda t, i, k: self.history_manager.get_state_ids( t, i ),
-            'contents': self.serialize_contents
+            'empty'         : lambda t, i, k: ( len( i.datasets ) + len( i.dataset_collections ) ) <= 0,
+            'count'         : lambda trans, item, key: len( item.datasets ),
+            'hdas'          : lambda t, i, k: [ t.security.encode_id( hda.id ) for hda in i.datasets ],
+            'state_details' : lambda t, i, k: self.history_manager.get_state_counts( t, i ),
+            'state_ids'     : lambda t, i, k: self.history_manager.get_state_ids( t, i ),
+            'contents'      : self.serialize_contents
         })
 
     def serialize_contents( self, trans, history, *args ):

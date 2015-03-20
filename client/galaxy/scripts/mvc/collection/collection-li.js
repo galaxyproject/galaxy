@@ -29,6 +29,17 @@ var DCListItemView = FoldoutListItemView.extend(
         FoldoutListItemView.prototype.initialize.call( this, attributes );
     },
 
+    /** event listeners */
+    _setUpListeners : function(){
+        FoldoutListItemView.prototype._setUpListeners.call( this );
+        // re-rendering on deletion
+        this.model.on( 'change', function( model, options ){
+            if( _.isEqual( _.keys( model.changed ), [ 'deleted' ] ) ){
+                this.render();
+            }
+        }, this );
+    },
+
     // ......................................................................... rendering
     //TODO:?? possibly move to listItem
     /** render a subtitle to show the user what sort of collection this is */
