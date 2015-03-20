@@ -7,6 +7,7 @@ define([
     "mvc/history/hdca-li-edit",
     "mvc/tags",
     "mvc/annotations",
+    "mvc/collection/list-collection-creator",
     "ui/fa-icon-button",
     "mvc/ui/popup-menu",
     "utils/localization"
@@ -19,6 +20,7 @@ define([
     HDCA_LI_EDIT,
     TAGS,
     ANNOTATIONS,
+    LIST_COLLECTION_CREATOR,
     faIconButton,
     PopupMenu,
     _l
@@ -27,22 +29,6 @@ define([
 TODO:
 
 ============================================================================= */
-function createListCollection( history, collection ){
-    //TODO: filter out non-datasets, non-ready
-    //TODO: fail if no valid elements remain
-    //return jQuery.Deferred().reject( _l( 'No valid datasets to add' ) );
-    var name = 'New Dataset List',
-        elementIdentifiers = collection.toJSON().map( function( element ){
-            // TODO: Handle duplicate names.
-            return {
-                id      : element.id,
-                name    : element.name,
-                src     : ( element.history_content_type === 'dataset'? 'hda' : 'hdca' )
-            }
-        });
-    return collection.createHDCA( elementIdentifiers, 'list', name );
-}
-
 function createPairCollection( history, collection ){
     //TODO: filter out non-datasets, non-ready
     //TODO: fail if no valid elements remain
@@ -331,7 +317,7 @@ var HistoryPanelEdit = _super.extend(
         }
         return actions.concat([
             {   html: _l( 'Build Dataset List' ), func: function() {
-                    createListCollection( panel.model, panel.getSelectedModels() )
+                    LIST_COLLECTION_CREATOR.createListCollection( panel.getSelectedModels() )
                         .done( function(){ panel.model.refresh() });
                 }
             },
