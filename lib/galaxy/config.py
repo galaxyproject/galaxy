@@ -26,7 +26,7 @@ log = logging.getLogger( __name__ )
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
-    if not( os.path.isabs( path ) ):
+    if not os.path.isabs( path ):
         path = os.path.join( root, path )
     return path
 
@@ -204,7 +204,7 @@ class Configuration( object ):
                 with open( self.blacklist_file ) as blacklist:
                     self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
             except IOError:
-                    print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
+                print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
@@ -636,7 +636,7 @@ class Configuration( object ):
               database in the future.
         """
         admin_users = [ x.strip() for x in self.get( "admin_users", "" ).split( "," ) ]
-        return ( user is not None and user.email in admin_users )
+        return user is not None and user.email in admin_users
 
     def resolve_path( self, path ):
         """ Resolve a path relative to Galaxy's root.

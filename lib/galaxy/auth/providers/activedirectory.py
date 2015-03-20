@@ -10,10 +10,10 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def _get_subs(d, k, vars, default=''):
+def _get_subs(d, k, params, default=''):
     if k in d:
-        return str(d[k]).format(**vars)
-    return str(default).format(**vars)
+        return str(d[k]).format(**params)
+    return str(default).format(**params)
 
 
 class ActiveDirectory(AuthProvider):
@@ -44,19 +44,19 @@ class ActiveDirectory(AuthProvider):
             return (failure_mode, '')
 
         # do AD search (if required)
-        vars = {'username': username, 'password': password}
+        params = {'username': username, 'password': password}
         if 'search-fields' in options:
             try:
                 # setup connection
                 ldap.set_option(ldap.OPT_REFERRALS, 0)
-                l = ldap.initialize(_get_subs(options, 'server', vars))
+                l = ldap.initialize(_get_subs(options, 'server', params))
                 l.protocol_version = 3
-                l.simple_bind_s(_get_subs(options, 'search-user', vars), _get_subs(options, 'search-password', vars))
+                l.simple_bind_s(_get_subs(options, 'search-user', params), _get_subs(options, 'search-password', params))
                 scope = ldap.SCOPE_SUBTREE
 
                 # setup search
-                attributes = map(lambda s: s.strip().format(**vars), options['search-fields'].split(','))
-                result = l.search(_get_subs(options, 'search-base', vars), scope, _get_subs(options, 'search-filter', vars), attributes)
+                attributes = [_.strip().format(**params) for _ in options['search-fields'].split(',')]
+                result = l.search(_get_subs(options, 'search-base', params), scope, _get_subs(options, 'search-filter', params), attributes)
 
                 # parse results
                 _, suser = l.result(result, 60)
@@ -65,9 +65,9 @@ class ActiveDirectory(AuthProvider):
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
                         if attr in attrs:
-                            vars[attr] = str(attrs[attr][0])
+                            params[attr] = str(attrs[attr][0])
                         else:
-                            vars[attr] = ""
+                            params[attr] = ""
             except Exception:
                 log.exception('ACTIVEDIRECTORY Search Exception for User: %s' % username)
                 return (failure_mode, '')
@@ -77,15 +77,15 @@ class ActiveDirectory(AuthProvider):
         try:
             # setup connection
             ldap.set_option(ldap.OPT_REFERRALS, 0)
-            l = ldap.initialize(_get_subs(options, 'server', vars))
+            l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
-            l.simple_bind_s(_get_subs(options, 'bind-user', vars), _get_subs(options, 'bind-password', vars))
+            l.simple_bind_s(_get_subs(options, 'bind-user', params), _get_subs(options, 'bind-password', params))
         except Exception:
             log.exception('ACTIVEDIRECTORY Authenticate Exception for User %s' % username)
             return (failure_mode, '')
 
         log.debug("User: %s, ACTIVEDIRECTORY: True" % (username))
-        return (True, _get_subs(options, 'auto-register-username', vars))
+        return (True, _get_subs(options, 'auto-register-username', params))
 
     def authenticate_user(self, user, password, options):
         """
