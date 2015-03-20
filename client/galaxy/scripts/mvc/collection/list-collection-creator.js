@@ -1,27 +1,52 @@
 define([
-    "mvc/collection/collection-model",
+    "mvc/dataset/states",
+    "mvc/ui/error-modal",
     "utils/localization"
-], function( DC_MODEL, _l ){
+], function( STATES, errorModal, _l ){
 /*==============================================================================
+
 ==============================================================================*/
-function createListCollection( collection ){
-    //TODO: filter out non-datasets, non-ready
-    //TODO: fail if no valid elements remain
-    //return jQuery.Deferred().reject( _l( 'No valid datasets to add' ) );
+function validElements( collection ){
+    var elements = collection.toJSON().filter( function( content ){
+        return content.history_content_type === 'dataset'
+            && content.state === STATES.OK;
+    });
+    return elements;
+}
+
+var noValidElementsMessage = 'No valid datasets were selected';
+
+function noValidElementsErrorModal(){
+    errorModal(
+        'Use the checkboxes at the left of the dataset names to select them. ' +
+        'Selected datasets should be error-free and should have completed running.',
+        noValidElementsMessage
+    );
+}
+
+function createListHDCA( collection ){
     var name = 'New Dataset List',
-        elementIdentifiers = collection.toJSON().map( function( element ){
+        elementIdentifiers = validElements( collection ).map( function( element ){
             // TODO: Handle duplicate names.
             return {
                 id      : element.id,
                 name    : element.name,
+                //TODO: this allows for list:list even if the filter above does not - reconcile
                 src     : ( element.history_content_type === 'dataset'? 'hda' : 'hdca' )
             }
         });
+    if( !elementIdentifiers.length ){
+        noValidElementsErrorModal();
+        return jQuery.Deferred().reject( noValidElementsMessage );
+    }
     return collection.createHDCA( elementIdentifiers, 'list', name );
 }
 
 //==============================================================================
     return {
-        createListCollection : createListCollection
+        validElements               : validElements,
+        noValidElementsMessage      : noValidElementsMessage,
+        noValidElementsErrorModal   : noValidElementsErrorModal,
+        createListHDCA              : createListHDCA
     };
 });
