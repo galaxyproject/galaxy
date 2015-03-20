@@ -174,8 +174,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
         )
 
     def wait_for_invocation( self, workflow_id, invocation_id ):
-        url = "workflows/%s/usage/%s" % ( workflow_id, invocation_id )
-        return wait_on_state( lambda: self._get( url )  )
+        self.workflow_populator.wait_for_invocation( workflow_id, invocation_id )
 
     def _history_jobs( self, history_id ):
         return self._get("jobs", { "history_id": history_id, "order_by": "create_time" } ).json()
@@ -183,8 +182,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
     def _wait_for_workflow( self, workflow_id, invocation_id, history_id, assert_ok=True ):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
-        self.wait_for_invocation( workflow_id, invocation_id )
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
 
 
 # Workflow API TODO:
