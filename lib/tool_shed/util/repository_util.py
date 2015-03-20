@@ -185,7 +185,7 @@ def update_repository( app, trans, id, **kwds ):
         return None, message
 
     # Whitelist properties that can be changed via this method
-    for key in ( 'description', 'long_description', 'remote_repository_url', 'homepage_url' ):
+    for key in ( 'type', 'description', 'long_description', 'remote_repository_url', 'homepage_url' ):
         # If that key is available, not None and different than what's in the model
         if key in kwds and kwds[ key ] is not None and kwds[ key ] != getattr( repository, key ):
             setattr( repository, key, kwds[ key ] )
