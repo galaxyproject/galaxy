@@ -605,9 +605,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
-            history_dictionary[ 'error' ] = ( 'An error occurred getting the history data from the server. '
-                                            + 'Please contact a Galaxy administrator if the problem persists.' )
+            log.exception( 'Error bootstrapping history for user %s: %s', user_id, exc )
+            if isinstance( exc, exceptions.ItemAccessibilityException ):
+                error_msg = 'You do not have permission to view this history.'
+            else:
+                error_msg = ( 'An error occurred getting the history data from the server. '
+                              + 'Please contact a Galaxy administrator if the problem persists.' )
+            return trans.show_error_message( error_msg, use_panels=use_panels )
 
         return trans.fill_template_mako( "history/view.mako",
             history=history_dictionary, hdas=hda_dictionaries, user_is_owner=user_is_owner,
