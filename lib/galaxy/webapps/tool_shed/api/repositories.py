@@ -10,10 +10,13 @@ from cgi import FieldStorage
 
 from galaxy import util
 from galaxy import web
-from galaxy import exceptions
+from galaxy.exceptions import RequestParameterMissingException
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import ObjectNotFound
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
@@ -560,25 +563,32 @@ class RepositoriesController( BaseAPIController ):
             results[ 'stop_time' ] = stop_time
         return json.dumps( results, sort_keys=True, indent=4 )
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):
         """
         GET /api/repositories/{encoded_repository_id}
         Returns information about a repository in the Tool Shed.
 
+        Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
+        
         :param id: the encoded id of the Repository object
+        :type  id: encoded str
+
+        :returns:   detailed repository information
+        :rtype:     dict
+
+        :raises:  ObjectNotFound
         """
-        # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         if repository is None:
-            log.debug( "Unable to locate repository record for id %s." % ( str( id ) ) )
-            return {}
+            raise ObjectNotFound( 'Unable to locate repository for the given id.' )
         repository_dict = repository.to_dict( view='element',
                                               value_mapper=self.__get_value_mapper( trans ) )
+        # TODO Both of these following properties would be better suited in the to_dict method
         repository_dict[ 'url' ] = web.url_for( controller='repositories',
                                                 action='show',
                                                 id=trans.security.encode_id( repository.id ) )
-        repository_dict[ 'categories' ] = \
+        repository_dict[ 'category_ids' ] = \
             [ trans.security.encode_id(x.category.id) for x in suc.get_repository_categories( trans.app, id ) ]
         return repository_dict
 
@@ -605,15 +615,15 @@ class RepositoriesController( BaseAPIController ):
         :returns:   detailed repository information
         :rtype:     dict
 
-        :raises: RequestParameterMissingException
+        :raises: RequestParameterMissingException, RequestParameterInvalidException
         """
         params = util.Params( payload )
         name = util.restore_text( params.get( 'name', None ) )
         if not name:
-            raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
+            raise RequestParameterMissingException( "Missing required parameter 'name'." )
         synopsis = util.restore_text( params.get( 'synopsis', None ) )
         if not synopsis:
-            raise exceptions.RequestParameterMissingException( "Missing required parameter 'synopsis'." )
+            raise RequestParameterMissingException( "Missing required parameter 'synopsis'." )
 
         description = util.restore_text( params.get( 'description', '' ) )
         remote_repository_url = util.restore_text( params.get( 'remote_repository_url', '' ) )
@@ -623,11 +633,11 @@ class RepositoriesController( BaseAPIController ):
 
         repo_type = params.get( 'type', rt_util.UNRESTRICTED )
         if repo_type not in rt_util.types:
-            raise exceptions.RequestParameterInvalidException( 'This repository type is not valid' )
+            raise RequestParameterInvalidException( 'This repository type is not valid' )
 
         invalid_message = repository_util.validate_repository_name( trans.app, name, trans.user )
         if invalid_message:
-            raise exceptions.RequestParameterInvalidException( invalid_message )
+            raise RequestParameterInvalidException( invalid_message )
 
         repo, message = repository_util.create_repository( app=trans.app,
                                                   name=name,
