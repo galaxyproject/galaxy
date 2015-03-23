@@ -129,6 +129,60 @@ class Repeat( Group ):
         repeat_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return repeat_dict
 
+class Section( Group ):
+
+    dict_collection_visible_keys = ( 'name', 'type', 'title', 'help')
+
+    type = "section"
+    def __init__( self ):
+        Group.__init__( self )
+        self.title = None
+        self.inputs = None
+        self.help = None
+    @property
+    def title_plural( self ):
+        return inflector.pluralize( self.title )
+    def label( self ):
+        return "Section (%s)" % self.title
+    def value_to_basic( self, value, app ):
+        rval = {}
+        for input in self.inputs.itervalues():
+            rval[ input.name ] = input.value_to_basic( value[input.name], app )
+        return rval
+    def value_from_basic( self, value, app, ignore_errors=False ):
+        rval = []
+        try:
+            for i, d in enumerate( value ):
+                rval_dict = {}
+                for input in self.inputs.itervalues():
+                    if ignore_errors and input.name not in d:
+                        pass
+                    else:
+                        rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
+                rval.append( rval_dict )
+        except Exception, e:
+            if not ignore_errors:
+                raise e
+        return rval
+    def visit_inputs( self, prefix, value, callback ):
+        for i, d in enumerate( value ):
+            for input in self.inputs.itervalues():
+                new_prefix = prefix + "%s_%d|" % ( self.name, i )
+                if isinstance( input, ToolParameter ):
+                    callback( new_prefix, input, d[input.name], parent = d )
+                else:
+                    input.visit_inputs( new_prefix, d[input.name], callback )
+    def get_initial_value( self, trans, context, history=None ):
+        rval = {}
+        for input in self.inputs.itervalues():
+            rval[ input.name ] = input.get_initial_value( trans, context, history=history )
+        return rval
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        section_dict = super( Section, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+        def input_to_dict( input ):
+            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+        section_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
+        return section_dict
 
 class UploadDataset( Group ):
     type = "upload_dataset"

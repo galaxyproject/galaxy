@@ -40,7 +40,7 @@ from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, DataCollectionToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
                                            SelectToolParameter, ToolParameter, UnvalidatedValue,
                                            IntegerToolParameter, FloatToolParameter)
-from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, UploadDataset
+from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
@@ -972,6 +972,14 @@ class Tool( object, Dictifiable ):
                         case.inputs = odict()
                         group.cases.append( case )
                 rval[group.name] = group
+            elif input_type == "section":
+                group = Section()
+                group.name = input_source.get( "name" )
+                group.title = input_source.get( "title" )
+                group.help = input_source.get( "help", None )
+                page_source = input_source.parse_nested_inputs_source()
+                group.inputs = self.parse_input_elem( page_source, enctypes, context )
+                rval[group.name] = group
             elif input_type == "upload_dataset":
                 elem = input_source.elem()
                 group = UploadDataset()
@@ -1505,6 +1513,20 @@ class Tool( object, Dictifiable ):
                     group_state['__current_case__'] = current_case
                     # Store the value of the test element
                     group_state[ input.test_param.name ] = value
+            elif isinstance( input, Section ):
+                group_state = state[input.name]
+                group_prefix = "%s|" % ( key )
+                self.fill_in_new_state( trans, input.inputs, group_state, context, history=history )
+                group_errors = self.populate_state( trans,
+                                                    input.inputs,
+                                                    group_state,
+                                                    incoming,
+                                                    history,
+                                                    source,
+                                                    prefix=group_prefix,
+                                                    context=context )
+                if group_errors:
+                    errors[ input.name ] = group_errors
             elif isinstance( input, UploadDataset ):
                 group_state = state[input.name]
                 group_errors = []
@@ -1714,6 +1736,22 @@ class Tool( object, Dictifiable ):
                 group_state['__current_case__'] = current_case
                 # Store the value of the test element
                 group_state[ input.test_param.name ] = value
+            elif isinstance( input, Section ):
+                group_state = state[input.name]
+                group_old_errors = old_errors.get( input.name, {} )
+                group_prefix = "%s|" % ( key )
+                group_errors = self.update_state( trans,
+                                                  input.inputs,
+                                                  group_state,
+                                                  incoming,
+                                                  prefix=group_prefix,
+                                                  context=context,
+                                                  source=source,
+                                                  update_only=update_only,
+                                                  old_errors=group_old_errors,
+                                                  item_callback=item_callback )
+                if group_errors:
+                    errors[ input.name ] = group_errors
             elif isinstance( input, UploadDataset ):
                 group_state = state[input.name]
                 group_errors = []
@@ -2416,6 +2454,10 @@ class Tool( object, Dictifiable ):
                             errors[test_param_key] = 'The selected case is unavailable/invalid.'
                             pass
                     group_state[input.test_param.name] = value
+                elif input.type == 'section':
+                    group_state = state[input.name]
+                    group_prefix = "%s|" % ( key )
+                    populate_state(trans, input.inputs, group_state, errors, incoming, prefix=group_prefix, context=context)
                 else:
                     default_value = incoming.get(key, state.get(input.name, None))
                     value, error = check_state(trans, input, default_value, context)
@@ -2448,6 +2490,8 @@ class Tool( object, Dictifiable ):
                         if '__current_case__' in group_state:
                             i = group_state['__current_case__']
                             iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, group_state, other_values)
+                elif input.type == 'section':
+                    iterate( tool_dict['inputs'], input.inputs, group_state, other_values )
                 else:
                     # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
                     try:
