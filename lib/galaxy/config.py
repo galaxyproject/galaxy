@@ -15,6 +15,7 @@ import sys
 import tempfile
 from datetime import timedelta
 from galaxy import eggs
+from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
@@ -26,13 +27,9 @@ log = logging.getLogger( __name__ )
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
-    if not( os.path.isabs( path ) ):
+    if not os.path.isabs( path ):
         path = os.path.join( root, path )
     return path
-
-
-class ConfigurationError( Exception ):
-    pass
 
 
 class Configuration( object ):
@@ -204,7 +201,7 @@ class Configuration( object ):
                 with open( self.blacklist_file ) as blacklist:
                     self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
             except IOError:
-                    print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
+                print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
@@ -421,7 +418,7 @@ class Configuration( object ):
         self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
         self.master_api_key = kwargs.get( 'master_api_key', None )
         if self.master_api_key == "changethis":  # default in sample config file
-            raise Exception("Insecure configuration, please change master_api_key to something other than default (changethis)")
+            raise ConfigurationError("Insecure configuration, please change master_api_key to something other than default (changethis)")
 
         # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
@@ -636,7 +633,7 @@ class Configuration( object ):
               database in the future.
         """
         admin_users = [ x.strip() for x in self.get( "admin_users", "" ).split( "," ) ]
-        return ( user is not None and user.email in admin_users )
+        return user is not None and user.email in admin_users
 
     def resolve_path( self, path ):
         """ Resolve a path relative to Galaxy's root.
