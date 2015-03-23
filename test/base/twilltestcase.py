@@ -2450,14 +2450,24 @@ class TwillTestCase( unittest.TestCase ):
             errmsg += self.get_job_stderr( dataset.get( 'id' ), format=True )
             raise AssertionError( errmsg )
 
+    def _check_command(self, command, description):
+        # TODO: also collect ``which samtools`` and ``samtools --version``
+        p = subprocess.Popen( args=command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+        (stdout, stderr) = p.communicate()
+        if p.returncode:
+            template = description
+            template += " failed: (cmd=[%s], stdout=[%s], stderr=[%s])"
+            message = template % (command, stdout, stderr)
+            raise AssertionError(message)
+
     def _bam_to_sam( self, local_name, temp_name ):
         temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
         fd, temp_temp = tempfile.mkstemp( suffix='.sam', prefix='history_bam_converted_to_sam_' )
         os.close( fd )
-        p = subprocess.Popen( args='samtools view -h -o "%s" "%s"' % ( temp_local.name, local_name  ), shell=True )
-        assert not p.wait(), 'Converting local (test-data) bam to sam failed'
-        p = subprocess.Popen( args='samtools view -h -o "%s" "%s"' % ( temp_temp, temp_name  ), shell=True )
-        assert not p.wait(), 'Converting history bam to sam failed'
+        command = 'samtools view -h -o "%s" "%s"' % ( temp_local.name, local_name  )
+        self._check_command( command, 'Converting local (test-data) bam to sam' )
+        command = 'samtools view -h -o "%s" "%s"' % ( temp_temp, temp_name  )
+        self._check_command( command, 'Converting history bam to sam ' )
         os.remove( temp_name )
         return temp_local, temp_temp
 
