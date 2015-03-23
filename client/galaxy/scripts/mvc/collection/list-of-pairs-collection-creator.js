@@ -1,9 +1,10 @@
 define([
     "utils/levenshtein",
     "utils/natural-sort",
+    "mvc/collection/list-collection-creator",
     "mvc/base-mvc",
     "utils/localization"
-], function( levenshteinDistance, naturalSort, baseMVC, _l ){
+], function( levenshteinDistance, naturalSort, LIST_COLLECTION_CREATOR, baseMVC, _l ){
 /* ============================================================================
 TODO:
 
@@ -246,6 +247,9 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
         /** DOM elements currently being dragged */
         this.$dragging = null;
+
+        /** Used for blocking UI events during ajax/operations (don't post twice) */
+        this.blocking = false;
 
         this._setUpBehaviors();
         this._dataSetUp();
@@ -576,11 +580,15 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
         };
         //this.debug( JSON.stringify( ajaxData ) );
+        creator.blocking = true;
         return jQuery.ajax( url, {
             type        : 'POST',
             contentType : 'application/json',
             dataType    : 'json',
             data        : JSON.stringify( ajaxData )
+        })
+        .always( function(){
+            creator.blocking = false;
         })
         .fail( function( xhr, status, message ){
             creator._ajaxErrHandler( xhr, status, message );
@@ -855,7 +863,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
             what.addClass( VALIDATION_CLASS );
         }
     },
-    
+
     // ------------------------------------------------------------------------ events
     /** set up event handlers on self */
     _setUpBehaviors : function(){
@@ -1406,7 +1414,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
 
     /** check for enter key press when in the collection name and submit */
     _nameCheckForEnter : function( ev ){
-        if( ev.keyCode === 13 ){
+        if( ev.keyCode === 13 && !this.blocking ){
             this._clickCreate();
         }
     },
@@ -1421,7 +1429,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var name = this._getName();
         if( !name ){
             this._validationWarning( 'name' );
-        } else {
+        } else if( !this.blocking ){
             this.createList();
         }
     },
@@ -1683,12 +1691,18 @@ PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
 /** a modal version of the paired collection creator */
 var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datasets, options ){
 
+    var deferred = jQuery.Deferred(),
+        creator;
+
     options = _.defaults( options || {}, {
         datasets    : datasets,
-        oncancel    : function(){ Galaxy.modal.hide(); },
-        oncreate    : function(){
+        oncancel    : function(){
             Galaxy.modal.hide();
-            Galaxy.currHistoryPanel.refreshContents();
+            deferred.reject( 'cancelled' );
+        },
+        oncreate    : function( creator, response ){
+            Galaxy.modal.hide();
+            deferred.resolve( response );
         }
     });
 
@@ -1696,7 +1710,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
         throw new Error( 'Galaxy or Galaxy.modal not found' );
     }
 
-    var creator = new PairedCollectionCreator( options );
+    creator = new PairedCollectionCreator( options );
     Galaxy.modal.show({
         title   : 'Create a collection of paired datasets',
         body    : creator.$el,
@@ -1705,15 +1719,31 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
         closing_events: true
     });
     creator.render();
+    window.creator = creator;
+
     //TODO: remove modal header
-    window.PCC = creator;
-    return creator;
+    return deferred;
 };
+
+
+//=============================================================================
+function createListOfPairsCollection( collection ){
+    var elements = LIST_COLLECTION_CREATOR.validElements( collection );
+    if( !elements.length ){
+        LIST_COLLECTION_CREATOR.noValidElementsErrorModal();
+        return jQuery.Deferred().reject( LIST_COLLECTION_CREATOR.noValidElementsMessage );
+    }
+
+    return pairedCollectionCreatorModal( elements, {
+        historyId : collection.historyId
+    });
+}
 
 
 //=============================================================================
     return {
         PairedCollectionCreator : PairedCollectionCreator,
-        pairedCollectionCreatorModal : pairedCollectionCreatorModal
+        pairedCollectionCreatorModal : pairedCollectionCreatorModal,
+        createListOfPairsCollection : createListOfPairsCollection
     };
 });

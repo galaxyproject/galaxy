@@ -7,6 +7,9 @@ define([
     "mvc/history/hdca-li-edit",
     "mvc/tags",
     "mvc/annotations",
+    "mvc/collection/list-collection-creator",
+    "mvc/collection/pair-collection-creator",
+    "mvc/collection/list-of-pairs-collection-creator",
     "ui/fa-icon-button",
     "mvc/ui/popup-menu",
     "utils/localization"
@@ -19,6 +22,9 @@ define([
     HDCA_LI_EDIT,
     TAGS,
     ANNOTATIONS,
+    LIST_COLLECTION_CREATOR,
+    PAIR_COLLECTION_CREATOR,
+    LIST_OF_PAIRS_COLLECTION_CREATOR,
     faIconButton,
     PopupMenu,
     _l
@@ -27,63 +33,6 @@ define([
 TODO:
 
 ============================================================================= */
-function createListCollection( history, collection ){
-    //TODO: filter out non-datasets, non-ready
-    //TODO: fail if no valid elements remain
-    //return jQuery.Deferred().reject( _l( 'No valid datasets to add' ) );
-    var name = 'New Dataset List',
-        elementIdentifiers = collection.toJSON().map( function( element ){
-            // TODO: Handle duplicate names.
-            return {
-                id      : element.id,
-                name    : element.name,
-                src     : ( element.history_content_type === 'dataset'? 'hda' : 'hdca' )
-            }
-        });
-    return collection.createHDCA( elementIdentifiers, 'list', name );
-}
-
-function createPairCollection( history, collection ){
-    //TODO: filter out non-datasets, non-ready
-    //TODO: fail if no valid elements remain
-    //return jQuery.Deferred().reject( _l( 'No valid datasets to add' ) );
-    var elementsJSON = collection.toJSON(),
-        name = 'New Dataset Pair',
-        elementIdentifiers = [
-            { name: "forward", src: "hda", id: elementsJSON[0].id },
-            { name: "reverse", src: "hda", id: elementsJSON[1].id }
-        ];
-    return collection.createHDCA( elementIdentifiers, 'paired', name );
-}
-
-function createListOfPairsCollection( history, collection ){
-    var datasets = collection.toJSON().filter( function( content ){
-            return content.history_content_type === 'dataset'
-                && content.state === STATES.OK;
-        });
-
-    if( datasets.length ){
-        require([ 'mvc/collection/paired-collection-creator' ], function( creator ){
-            window.creator = creator.pairedCollectionCreatorModal( datasets, {
-                historyId : history.id
-            });
-        });
-
-    } else {
-        Galaxy.modal.show({
-            title   : _l( 'No valid datasets were selected' ),
-            body    : _l([
-                          'Use the checkboxes at the left of the dataset names to select them.',
-                          'Selected datasets should be error-free and should have completed running.'
-                      ].join(' ')),
-            buttons : { 'Ok': function(){ Galaxy.modal.hide(); } },
-            closing_events: true
-        });
-    }
-}
-
-
-// =============================================================================
 var _super = HPANEL.HistoryPanel;
 // base class for current-history-panel and used as-is in history/view.mako
 /** @class Editable View/Controller for the history model.
@@ -329,23 +278,31 @@ var HistoryPanelEdit = _super.extend(
                 }
             });
         }
-        return actions.concat([
+        actions = actions.concat( panel._collectionActions() );
+        return actions;
+    },
+
+    /**   */
+    _collectionActions : function(){
+        var panel = this;
+        return [
             {   html: _l( 'Build Dataset List' ), func: function() {
-                    createListCollection( panel.model, panel.getSelectedModels() )
+                    LIST_COLLECTION_CREATOR.createListHDCA( panel.getSelectedModels() )
                         .done( function(){ panel.model.refresh() });
                 }
             },
             // TODO: Only show quick pair if two things selected.
             {   html: _l( 'Build Dataset Pair' ), func: function() {
-                    createPairCollection( panel.model, panel.getSelectedModels() )
+                    PAIR_COLLECTION_CREATOR.createPairHDCA( panel.getSelectedModels() )
                         .done( function(){ panel.model.refresh() });
                 }
             },
             {   html: _l( 'Build List of Dataset Pairs' ), func: function() {
-                    createListOfPairsCollection( panel.model, panel.getSelectedModels() );
+                    LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection( panel.getSelectedModels() )
+                        .done( function(){ panel.model.refresh() });
                 }
             },
-        ]);
+        ];
     },
 
     // ------------------------------------------------------------------------ sub-views

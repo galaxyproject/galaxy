@@ -220,12 +220,12 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
                 source  : contentType,
                 type    : type
             })
-            .done( function( json ){
-                collection.add([ json ]);
+            .done( function( response ){
+                collection.add([ response ]);
             })
             .fail( function( error, status, message ){
                 collection.trigger( 'error', collection, xhr, {},
-                                    'Error copying contents', { type: type, id: id, source: contentType });
+                    'Error copying contents', { type: type, id: id, source: contentType });
             });
         return xhr;
     },

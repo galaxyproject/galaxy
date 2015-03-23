@@ -18,6 +18,17 @@ var HDCAListItemView = _super.extend(
 
     className   : _super.prototype.className + " history-content",
 
+    /** event listeners */
+    _setUpListeners : function(){
+        _super.prototype._setUpListeners.call( this );
+        // re-rendering on deletion
+        this.model.on( 'change', function( model, options ){
+            if( _.isEqual( _.keys( model.changed ), [ 'visible' ] ) ){
+                this.render();
+            }
+        }, this );
+    },
+
     /** Override to provide the proper collections panels as the foldout */
     _getFoldoutPanelClass : function(){
         switch( this.model.get( 'collection_type' ) ){
@@ -53,6 +64,17 @@ var HDCAListItemView = _super.extend(
 /** underscore templates */
 HDCAListItemView.prototype.templates = (function(){
 
+    var warnings = _.extend( {}, _super.prototype.templates.warnings, {
+        hidden : BASE_MVC.wrapTemplate([
+            // add a warning when hidden
+            '<% if( !collection.visible ){ %>',
+                '<div class="hidden-msg warningmessagesmall">',
+                    _l( 'This collection has been hidden' ),
+                '</div>',
+            '<% } %>'
+        ], 'collection' )
+    });
+
 // could steal this from hda-base (or use mixed content)
     var titleBarTemplate = BASE_MVC.wrapTemplate([
         // adding the hid display to the title
@@ -68,6 +90,7 @@ HDCAListItemView.prototype.templates = (function(){
     ], 'collection' );
 
     return _.extend( {}, _super.prototype.templates, {
+        warnings : warnings,
         titleBar : titleBarTemplate
     });
 }());
