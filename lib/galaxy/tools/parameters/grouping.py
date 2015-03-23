@@ -166,17 +166,16 @@ class Section( Group ):
                 raise e
         return rval
     def visit_inputs( self, prefix, value, callback ):
-        for i, d in enumerate( value ):
-            for input in self.inputs.itervalues():
-                new_prefix = prefix + "%s_%d|" % ( self.name, i )
-                if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name], parent = d )
-                else:
-                    input.visit_inputs( new_prefix, d[input.name], callback )
+        for input in self.inputs.itervalues():
+            if isinstance( input, ToolParameter ):
+                callback( prefix, input, value[input.name], parent = value )
+            else:
+                input.visit_inputs( prefix, value[input.name], callback )
     def get_initial_value( self, trans, context, history=None ):
         rval = {}
-        for input in self.inputs.itervalues():
-            rval[ input.name ] = input.get_initial_value( trans, context, history=history )
+        child_context = ExpressionContext( rval, context )
+        for child_input in self.inputs.itervalues():
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
         return rval
     def to_dict( self, trans, view='collection', value_mapper=None ):
         section_dict = super( Section, self ).to_dict( trans, view=view, value_mapper=value_mapper )
