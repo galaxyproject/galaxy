@@ -286,7 +286,7 @@ define(['utils/utils',
             });
 
             // show sub section if requested
-            if (input_def.expand) {
+            if (input_def.expanded) {
                 portlet.$header.trigger('click');
             }
 

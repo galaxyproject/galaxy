@@ -977,6 +977,7 @@ class Tool( object, Dictifiable ):
                 group.name = input_source.get( "name" )
                 group.title = input_source.get( "title" )
                 group.help = input_source.get( "help", None )
+                group.expanded = input_source.get_bool( "expanded", False )
                 page_source = input_source.parse_nested_inputs_source()
                 group.inputs = self.parse_input_elem( page_source, enctypes, context )
                 rval[group.name] = group

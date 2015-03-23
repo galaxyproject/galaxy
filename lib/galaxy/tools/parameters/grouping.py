@@ -131,7 +131,7 @@ class Repeat( Group ):
 
 class Section( Group ):
 
-    dict_collection_visible_keys = ( 'name', 'type', 'title', 'help')
+    dict_collection_visible_keys = ( 'name', 'type', 'title', 'help', 'expanded')
 
     type = "section"
     def __init__( self ):
@@ -139,6 +139,7 @@ class Section( Group ):
         self.title = None
         self.inputs = None
         self.help = None
+        self.expanded = False
     @property
     def title_plural( self ):
         return inflector.pluralize( self.title )
