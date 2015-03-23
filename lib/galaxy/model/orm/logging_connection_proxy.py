@@ -1,5 +1,6 @@
 import time
 import inspect
+import threading
 import os
 
 from galaxy.model.orm import ConnectionProxy
@@ -28,12 +29,29 @@ class LoggingProxy(ConnectionProxy):
     """
     Logs SQL statements using standard logging module
     """
+
+    def begin(self, conn, begin):
+        thread_ident = threading.current_thread().ident
+        begin(conn)
+        log.debug("begin transaction: thread: %r" % thread_ident)
+
+    def commit(self, conn, commit):
+        thread_ident = threading.current_thread().ident
+        commit(conn)
+        log.debug("commit transaction: thread: %r" % thread_ident)
+
+    def rollback(self, conn, rollback):
+        thread_ident = threading.current_thread().ident
+        rollback(conn)
+        log.debug("rollback transaction: thread: %r" % thread_ident)
+
     def cursor_execute(self, execute, cursor, statement, parameters, context, executemany):
+        thread_ident = threading.current_thread().ident
         start = time.clock()
         rval = execute(cursor, statement, parameters, context)
         duration = time.clock() - start
-        log.debug( "statement: %r parameters: %r executemany: %r duration: %r stack: %r",
-                   statement, parameters, executemany, duration, " > ".join( pretty_stack() ) )
+        log.debug( "statement: %r parameters: %r executemany: %r duration: %r stack: %r thread: %r",
+                   statement, parameters, executemany, duration, " > ".join( pretty_stack() ), thread_ident )
         return rval
 
 
