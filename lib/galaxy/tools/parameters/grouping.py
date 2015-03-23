@@ -151,16 +151,11 @@ class Section( Group ):
             rval[ input.name ] = input.value_to_basic( value[input.name], app )
         return rval
     def value_from_basic( self, value, app, ignore_errors=False ):
-        rval = []
+        rval = {}
         try:
-            for i, d in enumerate( value ):
-                rval_dict = {}
-                for input in self.inputs.itervalues():
-                    if ignore_errors and input.name not in d:
-                        pass
-                    else:
-                        rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
-                rval.append( rval_dict )
+            for input in self.inputs.itervalues():
+                if not ignore_errors or input.name in value:
+                    rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
         except Exception, e:
             if not ignore_errors:
                 raise e
