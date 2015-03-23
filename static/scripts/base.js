@@ -1,2 +1,2 @@
-define(["libs/backbone/backbone"],function(a){var b=function(){this.initialize&&this.initialize.apply(this,arguments)};return b.extend=a.Model.extend,{Base:b,Backbone:a}});
+define([],function(){var a=function(){this.initialize&&this.initialize.apply(this,arguments)};return a.extend=Backbone.Model.extend,{Base:a,Backbone:Backbone}});
 //# sourceMappingURL=../maps/base.js.map
