@@ -2,7 +2,7 @@ from unittest import TestCase
 from galaxy.util.bunch import Bunch
 from galaxy.jobs.output_checker import check_output
 from galaxy.jobs.error_level import StdioErrorLevel
-from galaxy.tools import ToolStdioRegex
+from galaxy.tools.parser.interface import ToolStdioRegex
 
 
 class OutputCheckerTestCase( TestCase ):

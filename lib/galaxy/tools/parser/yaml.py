@@ -2,6 +2,7 @@ from .interface import ToolSource
 from .interface import PagesSource
 from .interface import PageSource
 from .interface import InputSource
+from .interface import ToolStdioExitCode
 
 from galaxy.tools.deps import requirements
 from galaxy.tools.parameters import output_collect
@@ -59,11 +60,11 @@ class YamlToolSource(ToolSource):
         from galaxy.jobs.error_level import StdioErrorLevel
 
         # New format - starting out just using exit code.
-        exit_code_lower = galaxy.tools.ToolStdioExitCode()
+        exit_code_lower = ToolStdioExitCode()
         exit_code_lower.range_start = float("-inf")
         exit_code_lower.range_end = -1
         exit_code_lower.error_level = StdioErrorLevel.FATAL
-        exit_code_high = galaxy.tools.ToolStdioExitCode()
+        exit_code_high = ToolStdioExitCode()
         exit_code_high.range_start = 1
         exit_code_high.range_end = float("inf")
         exit_code_lower.error_level = StdioErrorLevel.FATAL

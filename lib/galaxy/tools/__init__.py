@@ -2989,35 +2989,6 @@ class BadValue( object ):
         self.value = value
 
 
-class ToolStdioRegex( object ):
-    """
-    This is a container for the <stdio> element's regex subelement.
-    The regex subelement has a "match" attribute, a "sources"
-    attribute that contains "output" and/or "error", and a "level"
-    attribute that contains "warning" or "fatal".
-    """
-    def __init__( self ):
-        self.match = ""
-        self.stdout_match = False
-        self.stderr_match = False
-        # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
-        self.desc = ""
-
-
-class ToolStdioExitCode( object ):
-    """
-    This is a container for the <stdio> element's <exit_code> subelement.
-    The exit_code element has a range of exit codes and the error level.
-    """
-    def __init__( self ):
-        self.range_start = float( "-inf" )
-        self.range_end = float( "inf" )
-        # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
-        self.desc = ""
-
-
 class TestCollectionDef( object ):
 
     def __init__( self, elem, parse_param_elem ):

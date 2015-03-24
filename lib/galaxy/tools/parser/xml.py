@@ -10,6 +10,8 @@ from .interface import (
     PagesSource,
     PageSource,
     InputSource,
+    ToolStdioExitCode,
+    ToolStdioRegex,
 )
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
@@ -524,7 +526,7 @@ class StdioParser(object):
             # attribute. If there is neither a range nor a value, then print
             # a warning and skip to the next.
             for exit_code_elem in ( stdio_elem.findall( "exit_code" ) ):
-                exit_code = galaxy.tools.ToolStdioExitCode()
+                exit_code = ToolStdioExitCode()
                 # Each exit code has an optional description that can be
                 # part of the "desc" or "description" attributes:
                 exit_code.desc = exit_code_elem.get( "desc" )
@@ -604,7 +606,7 @@ class StdioParser(object):
             # will have "match" and "source" (or "src") attributes.
             for regex_elem in ( stdio_elem.findall( "regex" ) ):
                 # TODO: Fill in ToolStdioRegex
-                regex = galaxy.tools.ToolStdioRegex()
+                regex = ToolStdioRegex()
                 # Each regex has an optional description that can be
                 # part of the "desc" or "description" attributes:
                 regex.desc = regex_elem.get( "desc" )
