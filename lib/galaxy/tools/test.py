@@ -50,9 +50,9 @@ class ToolTestBuilder( object ):
         self.required_files = []
         self.inputs = []
         self.outputs = []
-        self.num_outputs = None  # By default do not making assertions on
-                                 # number of outputs - but to test filtering
-                                 # allow explicitly state number of outputs.
+        # By default do not making assertions on number of outputs - but to
+        # test filtering allow explicitly state number of outputs.
+        self.num_outputs = None
         self.error = False
         self.exception = None
 
@@ -246,7 +246,7 @@ def test_data_iter( required_files ):
         )
         edit_attributes = extra.get( 'edit_attributes', [] )
 
-        #currently only renaming is supported
+        # currently only renaming is supported
         for edit_att in edit_attributes:
             if edit_att.get( 'type', None ) == 'name':
                 new_name = edit_att.get( 'value', None )
