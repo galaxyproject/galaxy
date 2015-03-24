@@ -280,3 +280,41 @@ class ToolStdioExitCode( object ):
         # TODO: Define a common class or constant for error level:
         self.error_level = "fatal"
         self.desc = ""
+
+
+class TestCollectionDef( object ):
+    # TODO: do not require XML directly here.
+
+    def __init__( self, elem, parse_param_elem ):
+        self.elements = []
+        attrib = dict( elem.attrib )
+        self.collection_type = attrib[ "type" ]
+        self.name = attrib.get( "name", "Unnamed Collection" )
+        for element in elem.findall( "element" ):
+            element_attrib = dict( element.attrib )
+            element_identifier = element_attrib[ "name" ]
+            nested_collection_elem = element.find( "collection" )
+            if nested_collection_elem is not None:
+                self.elements.append( ( element_identifier, TestCollectionDef( nested_collection_elem, parse_param_elem ) ) )
+            else:
+                self.elements.append( ( element_identifier, parse_param_elem( element ) ) )
+
+    def collect_inputs( self ):
+        inputs = []
+        for element in self.elements:
+            value = element[ 1 ]
+            if isinstance( value, TestCollectionDef ):
+                inputs.extend( value.collect_inputs() )
+            else:
+                inputs.append( value )
+        return inputs
+
+
+class TestCollectionOutputDef( object ):
+    # TODO: do not require XML directly here.
+
+    def __init__( self, name, attrib, element_tests ):
+        self.name = name
+        self.collection_type = attrib.get( "type", None )
+        self.attrib = attrib
+        self.element_tests = element_tests

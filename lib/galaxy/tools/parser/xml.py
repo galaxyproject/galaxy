@@ -12,6 +12,8 @@ from .interface import (
     InputSource,
     ToolStdioExitCode,
     ToolStdioRegex,
+    TestCollectionDef,
+    TestCollectionOutputDef,
 )
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
@@ -321,7 +323,7 @@ def __parse_output_collection_elem( output_collection_elem ):
         if identifier is None:
             raise Exception( "Test primary dataset does not have a 'identifier'" )
         element_tests[ identifier ] = __parse_test_attributes( element, element_attrib )
-    return galaxy.tools.TestCollectionOutputDef( name, attrib, element_tests )
+    return TestCollectionOutputDef( name, attrib, element_tests )
 
 
 def __parse_test_attributes( output_elem, attrib ):
@@ -486,7 +488,7 @@ def __parse_param_elem( param_elem, i=0 ):
             elif child.tag == 'edit_attributes':
                 attrib['edit_attributes'].append( child )
             elif child.tag == 'collection':
-                attrib[ 'collection' ] = galaxy.tools.TestCollectionDef( child, __parse_param_elem )
+                attrib[ 'collection' ] = TestCollectionDef( child, __parse_param_elem )
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
