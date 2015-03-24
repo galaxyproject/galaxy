@@ -166,7 +166,12 @@ class ToolTestBuilder( object ):
                         # an infinite loop - hence the "case_value is not None"
                         # check.
                         expanded_inputs[ case_context.for_state() ] = expanded_case_value
-
+            elif isinstance( value, galaxy.tools.parameters.grouping.Section ):
+                context = ParamContext( name=value.name, parent_context=parent_context )
+                for r_name, r_value in value.inputs.iteritems():
+                    expanded_input = self.__process_raw_inputs( { context.for_state(): r_value }, raw_inputs, parent_context=context )
+                    if expanded_input:
+                        expanded_inputs.update( expanded_input )
             elif isinstance( value, galaxy.tools.parameters.grouping.Repeat ):
                 repeat_index = 0
                 while True:
@@ -363,6 +368,13 @@ def expand_input_elems( root_elem, prefix="" ):
         expand_input_elems( cond_elem, new_prefix )
         __pull_up_params( root_elem, cond_elem )
         root_elem.remove( cond_elem )
+
+    section_elems = root_elem.findall( 'section' )
+    for section_elem in section_elems:
+        new_prefix = __prefix_join( prefix, section_elem.get( "name" ) )
+        expand_input_elems( section_elem, new_prefix )
+        __pull_up_params( root_elem, section_elem )
+        root_elem.remove( section_elem )
 
 
 def __append_prefix_to_params( elem, prefix ):
