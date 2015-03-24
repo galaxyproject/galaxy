@@ -87,7 +87,7 @@ var LibraryView = Backbone.View.extend({
 
     var self = this;
     if (this.options.fetched_permissions === undefined){
-      $.get( "/api/libraries/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      $.get( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
         self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
       }).fail(function(){
           mod_toastr.error('An error occurred while attempting to fetch library permissions.');
@@ -134,7 +134,7 @@ var LibraryView = Backbone.View.extend({
       placeholder: 'Click to select a role',
       container: self.$el.find('#' + id),
       ajax: {
-          url: "/api/libraries/" + self.id + "/permissions?scope=available&is_library_access=" + is_library_access,
+          url: ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/" + self.id + "/permissions?scope=available&is_library_access=" + is_library_access,
           dataType: 'json',
           quietMillis: 100,
           data: function (term, page) { // page is the one-based page number tracked by Select2
@@ -193,7 +193,7 @@ var LibraryView = Backbone.View.extend({
 
   makeDatasetPrivate: function(){
     var self = this;
-    $.post("/api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
+    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?action=make_private").done(function(fetched_permissions) {
       self.model.set({is_unrestricted:false});
       self.showPermissions({fetched_permissions:fetched_permissions})
       mod_toastr.success('The dataset is now private to you.');
@@ -204,7 +204,7 @@ var LibraryView = Backbone.View.extend({
 
   removeDatasetRestrictions: function(){
     var self = this;
-    $.post("/api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions")
+    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/datasets/" + self.id + "/permissions?action=remove_restrictions")
     .done(function(fetched_permissions) {
       self.model.set({is_unrestricted:true});
       self.showPermissions({fetched_permissions:fetched_permissions})
@@ -230,7 +230,7 @@ var LibraryView = Backbone.View.extend({
     var manage_ids = this._extractIds(this.manageSelectObject.$el.select2('data'));
     var modify_ids = this._extractIds(this.modifySelectObject.$el.select2('data'));
 
-    $.post("/api/libraries/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
+    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/libraries/" + self.id + "/permissions?action=set_permissions", { 'access_ids[]': access_ids, 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})
