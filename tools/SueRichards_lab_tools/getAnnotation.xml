@@ -3,7 +3,7 @@
     <!-- Adapted from Dan Blankenberg -->
   <command interpreter="python">getAnnotation.py
     -p '
-    java -jar \${SEATTLESEQ_JAR_PATH}/getAnnotationSeattleSeq138QC.jar  <!-- SEATTLESEQ_JAR_PATH defined in Galaxy's run.sh  -->
+    java -jar \${SEATTLESEQ_GETANNOTATION_JAR_PATH}/getAnnotationSeattleSeq138QC.jar  <!-- SEATTLESEQ_GETANNOTATION_JAR_PATH defined in Galaxy's run.sh  -->
     '
     -i $infile
     -o $outfile    
