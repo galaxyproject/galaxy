@@ -145,6 +145,7 @@ define(['utils/utils',
                 error_text  : input_def.error_text || 'No options available',
                 optional    : input_def.optional && input_def.default_value === null,
                 multiple    : input_def.multiple,
+                optional    : input_def.optional,
                 searchable  : input_def.searchable,
                 onchange    : function() {
                     self.app.trigger('change');
