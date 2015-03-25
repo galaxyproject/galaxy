@@ -235,6 +235,7 @@
 	    <tool file="gatk/haplotype_caller.xml"/>
 	    <tool file="gatk/unified_genotyper.xml"/>
 	    <tool file="gatk/depth_of_coverage.xml"/>
+	    <tool file="gatk/variant_filtration.xml"/>
     <label id="Picard" text="Picard version 1.110"/>
 	    <tool file="picard/rgPicardMarkDups.xml" />
 	    <tool file="picard/picard_SamToFastq.xml" />

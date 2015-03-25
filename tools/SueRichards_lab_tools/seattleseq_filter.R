@@ -65,15 +65,15 @@ expected.col.names <- c("chrom",
                                  "clinVar",
                                  "phenotypeHGMD",
                                  "referenceHGMD", # Column 37
-                                 "X.",  #   R assigns these as header names.  
-                                 "X..1",
-                                 "X..2",
-                                 "X..3",
-                                 "X..4",
-                                 "X..5",
-                                 "X..6",
-                                 "X..7",
-                                 "X..8");
+                                 "X.",  #   R assigns "X." as generic header names.  Additional HGMD references (if any) stored in this column
+                                 "X..1",    #   Additional HGMD references (if any) stored in this column
+                                 "X..2",    #   Additional HGMD references (if any) stored in this column
+                                 "X..3",    #   Additional HGMD references (if any) stored in this column
+                                 "X..4",    #   Additional HGMD references (if any) stored in this column
+                                 "X..5",    #   Additional HGMD references (if any) stored in this column
+                                 "X..6",    #   Additional HGMD references (if any) stored in this column
+                                 "X..7",    #   Additional HGMD references (if any) stored in this column
+                                 "X..8");   #   Additional HGMD references (if any) stored in this column
 
 #####################################################################################
 #    Support functions
@@ -384,12 +384,53 @@ filter.data <- function(raw.data)   {
     return(raw.data);
 }   #   filter.data()
 
+
+create.hyperlinked.workbook <- function(input.data.frame, output.file) {
+
+    #   Define hyperlink base
+    pubmed.base <- "http://www.ncbi.nlm.nih.gov/pubmed?term=";
+    
+    #   create new workbook with a worksheet
+    wb <- createWorkbook(type="xls");
+    createSheet(wb, sheetName="filtered_variants");
+    sheet <- getSheets(wb);
+    sheet <- sheet[[1]];    #   There is only one sheet in the workbook to get
+
+    
+    #   add the existing filtered data.frame to the worksheet
+    addDataFrame(input.data.frame, sheet, row.names=FALSE);
+    #   identify the cells that need hyperlinked, and hyperlink them
+    for(i in 37:max.columns)    {
+        #   identify the rows for that column that need hyperlinked
+        rows.to.hyperlink <- which(input.data.frame[,i] != "");
+        if(length(rows.to.hyperlink) == 0)
+            next;
+
+        #   hyperlink them
+        for(j in 1:length(rows.to.hyperlink))   {
+            #   grab the text string that's part of the hyperlink
+            pubmed.id <- as.character(input.data.frame[rows.to.hyperlink[j],i]);
+            #   grab the appropriate cell
+            rows <- getRows(sheet, (rows.to.hyperlink[j] + 1));    #   we add one to skip the header line
+            cell <- getCells(rows, colIndex=i);
+            #   add the hyperlink
+            addHyperlink(cell[[1]], paste(pubmed.base, pubmed.id, sep="")); #   there is only one cell, since we're loop processing
+        }   #   for j
+    }   #   for i
+    #   save changes to the workbook
+    saveWorkbook(wb, file=output.file);
+
+}   #   create.hyperlinked.workbook()
+
+
+
 ###################################################################################################
 #   "main" program below
 ###################################################################################################
 if(run.script)  {
     cat("Running filtering script\n");
     cat("Capturing parameter values and input and output file paths from Galaxy");
+
     input.files.with.paths <- commandArgs(trailingOnly=TRUE)[1];
     output.files.with.paths <- commandArgs(trailingOnly=TRUE)[2];
     filter.cutoff.percent <- as.numeric(commandArgs(trailingOnly=TRUE)[3]);
@@ -451,10 +492,11 @@ if(run.script)  {
             cat("Number of final variants: ", length(filtered.data[,1]), "\n");
             #   This is a workaround for getting Galaxy to recognize the output
             temp.file <- paste(output.files.with.paths, ".xls", sep="");
-            write.xlsx2(filtered.data, 
-                       file=temp.file,
-                       sheetName="filtered_variants",
-                       row.names=FALSE);
+            create.hyperlinked.workbook(filtered.data, temp.file);
+#            write.xlsx2(filtered.data, 
+#                       file=temp.file,
+#                       sheetName="filtered_variants",
+#                       row.names=FALSE);
             move.command <- paste("mv ", temp.file, " ", output.files.with.paths, sep="");
             system(move.command);
         }   #   else
@@ -466,4 +508,33 @@ if(run.script)  {
     if(testing)
         check.for.errors(final.data, expected.results.with.paths[i]);
 }   #   fi
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
