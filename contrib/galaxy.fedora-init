@@ -11,8 +11,8 @@
 #--- config
 
 SERVICE_NAME="galaxy"
-RUN_AS="gururajk"
-RUN_IN="/mnt/lustre1/Galaxy/development/galaxy-dist"
+RUN_AS="karthikg"
+RUN_IN="/mnt/app_hdd/scratch/karthikg/Galaxy/test_git_hg/github/galaxy"
 
 #--- main actions
 

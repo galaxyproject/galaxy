@@ -113,3 +113,19 @@ doc/build
 *.rej
 *~
 
+#Logs
+*.log
+*.log-*
+*.swp
+*.pid
+whoosh_indexes
+collectl_logs
+safe_universe_wsgi.ini
+
+#DRMAA
+drmaa/drmaa/*.o
+drmaa/drmaa/*.a
+database/disk_object
+
+#Miscellaneous
+api_test
