@@ -962,12 +962,11 @@ class JobWrapper( object ):
             job.set_state( job.states.PAUSED )
             self.sa_session.add( job )
 
-    def mark_as_resubmitted( self ):
+    def mark_as_resubmitted( self, info=None ):
         job = self.get_job()
         self.sa_session.refresh( job )
-        for dataset in [ dataset_assoc.dataset for dataset_assoc in job.output_datasets + job.output_library_datasets ]:
-            dataset._state = model.Dataset.states.RESUBMITTED
-            self.sa_session.add( dataset )
+        if info is not None:
+            job.info = info
         job.set_state( model.Job.states.RESUBMITTED )
         self.sa_session.add( job )
         self.sa_session.flush()
