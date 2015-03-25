@@ -20,6 +20,7 @@ def open_file_from_option( filename, mode = 'rb' ):
 
 def __main__():
     #Parse Command Line
+    #   TODO:  the short option IDs should be cleaned up
     parser = optparse.OptionParser()
     parser.add_option( '-p', '--pass_through', dest='pass_through_options', action='store', type="string", help='These options are passed through directly to the getAnnotation jarfile, without any modification.' )
     parser.add_option( '-v', '--input_vcf', dest='input_vcf', action='store', type="string", default=None, help='VCF generated from GATK PrintReads')
@@ -30,16 +31,18 @@ def __main__():
     parser.add_option( '-g', '--input_actionableCarrierGenes', dest='input_actionableCarrierGenes', action='store', type="string", default=None, help='Text file containing list of actionable carrier genes')
     parser.add_option( '-i', '--input_incidentalGenes', dest='input_incidentalGenes', action='store', type="string", default=None, help='Text file containing list of incidental genes')
     parser.add_option( '-r', '--input_pharmGenes', dest='input_pharmGenes', action='store', type="string", default=None, help='Text file containing list of pharmacological genes')
+    parser.add_option( '-b', '--input_SIFTBins', dest='input_SIFTBins', action='store', type="string", default=None, help='Text file containing SIFT bins')
 
     parser.add_option( '', '--stdout', dest='stdout', action='store', type="string", default=None, help='If specified, the output of stdout will be written to this file.' )
     parser.add_option( '', '--stderr', dest='stderr', action='store', type="string", default=None, help='If specified, the output of stderr will be written to this file.' )
 
     (options, args) = parser.parse_args()
  
-    # Galaxy does not recognize the jar file producing a .xls file extension, since galaxy's default is a .dat. 
-    # So we write the jarfile's .xls file to a temporary file, and at the end of this script, move the
-    # file from the temporary directory to the path and filename (with .dat extension) that Galaxy expects
-    # The move is performed at the end of this __main__ function; see below for further detail. 
+    #   This is a workaround.  The output destination file ane path passed through to this script from Galaxy has a .dat extension.
+    #       The output of this jarfile has a .xls file extension.  Galaxy will not recognize the jarfile output with such an 
+    #       extension.  So we write the jarfile's .xls file to a temporary directory, then at the end of this script, move the
+    #       file from the temporary directory to the path and filename (with .dat extension) that Galaxy expects
+    #   The move is performed at the end of this __main__ function; see below for further detail
     tmp_dir = tempfile.mkdtemp( prefix='tmp-writeGenotype-' )
     tmp_output = tempfile.NamedTemporaryFile( dir=tmp_dir )
     tmp_output_name = tmp_output.name
@@ -57,10 +60,33 @@ def __main__():
         options.input_database_info,  \
         options.input_actionableCarrierGenes,   \
         options.input_incidentalGenes,  \
-        options.input_pharmGenes ], 'Missing parameter(s)'
+        options.input_pharmGenes,
+        options.input_SIFTBins], 'Missing parameter(s)'
+    print "Pass-through options:"
+    print options.pass_through_options
+    print "Input vcf:"
+    print options.input_vcf
+    print "Input getAnnotation:"
+    print options.input_getAnnotation
+    print "Input coverage:"
+    print options.input_coverage
+    print "Output:"
+    print options.output
+    print "Temporary output:"
+    print tmp_output_name
+    print "Input databaseInfo:"
+    print options.input_database_info
+    print "Input actionableCarrierGenes:"
+    print options.input_actionableCarrierGenes
+    print "Input incidentalGenes:"
+    print options.input_incidentalGenes
+    print "Input pharmGenes:"
+    print options.input_pharmGenes
+    print "Input SIFTBins:"
+    print options.input_SIFTBins
 
     #   Note that tmp_output_name is our temporary file:  see above and below for details
-    cmd = '%s %s %s %s %s %s %s %s %s' % ( options.pass_through_options, \
+    cmd = '%s %s %s %s %s %s %s %s %s %s' % ( options.pass_through_options, \
         options.input_vcf, \
         options.input_getAnnotation, \
         options.input_coverage, \
@@ -68,7 +94,10 @@ def __main__():
         options.input_database_info, \
         options.input_actionableCarrierGenes, \
         options.input_incidentalGenes, \
-        options.input_pharmGenes )
+        options.input_pharmGenes,
+        options.input_SIFTBins)
+    print "Command:"
+    print cmd
     
     #set up stdout and stderr output options
     stdout = open_file_from_option( options.stdout, mode = 'wb' )
@@ -97,9 +126,9 @@ def __main__():
             break
     stderr.close()
 
-    # Move the temporary output to the location Galaxy expects
-    # This is part of a workaround forced by Galaxy's difficulty handling .xls files
-    # See above for additional details
+    #   Move the temporary output to the location Galaxy expects
+    #       This is part of a workaround forced by Galaxy's difficulty handling .xls files
+    #       See above for additional details
     tmp_output.close()
     tmp_output_name_final = '%s.xls' % tmp_output_name
     shutil.move( tmp_output_name_final, options.output)

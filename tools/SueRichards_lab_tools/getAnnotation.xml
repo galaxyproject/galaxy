@@ -1,5 +1,5 @@
 <tool id="getAnnotation" name="SeattleSeq getAnnotation" version="1.0" >
-  <description>Creates an annotated text file for the provided inputs </description>
+  <description></description>
     <!-- Adapted from Dan Blankenberg -->
   <command interpreter="python">getAnnotation.py
     -p '
@@ -15,7 +15,7 @@
   </inputs>
 
   <outputs>
-    <data format="txt" name="outfile" label="SeattleSeq annotation" />
+    <data format="txt" name="outfile" label="SeattleSeq annotated variants" />
   </outputs>
 
   <tests>

@@ -25,7 +25,7 @@ testing <- FALSE;   #   default is FALSE
 options(warn=-1);
 max.columns <- 46; #    Maximum number of columns expected in the SeattleSeq output
 input.ethnicity <- "Caucasian";
-filter.cutoff.percent <- 5;
+filter.cutoff.percent <- 5; #   default percentage; actual percentage is captured below
 
 #   We expect the input data file has these column names, in this order
 expected.col.names <- c("chrom",
@@ -204,10 +204,10 @@ pre.process.data <- function(raw.data)  {
     raw.data$refBase <- as.character(raw.data$refBase);
     raw.data$altBase <- as.character(raw.data$altBase);
     raw.data$filterFlagGATK <- as.character(raw.data$filterFlagGATK);
-    raw.data$QUAL <- as.numeric(raw.data$QUAL);
+    raw.data$QUAL <- as.numeric(as.character(raw.data$QUAL));
     raw.data[,8] <- as.character(raw.data[,8]);   #   Type
     raw.data[,9] <- as.character(raw.data[,9]);   #   Depth
-    raw.data[,10] <- as.integer(raw.data[,10]);   #   Qual
+    raw.data[,10] <- as.integer(as.character(raw.data[,10]));   #   Qual
     raw.data$functionGVS <- as.character(raw.data$functionGVS);
     raw.data$ESPEurAlleleCounts <- as.character(raw.data$ESPEurAlleleCounts);
     raw.data$ESPEurMinorPercent <- as.numeric(as.character(raw.data$ESPEurMinorPercent));
@@ -389,13 +389,16 @@ filter.data <- function(raw.data)   {
 ###################################################################################################
 if(run.script)  {
     cat("Running filtering script\n");
-    cat("Capturing input and output file paths from Galaxy");
+    cat("Capturing parameter values and input and output file paths from Galaxy");
     input.files.with.paths <- commandArgs(trailingOnly=TRUE)[1];
-    if(debug)
-        cat("Input path: ", input.files.with.paths, "\n", file=debug.file);
     output.files.with.paths <- commandArgs(trailingOnly=TRUE)[2];
-    if(debug)
+    filter.cutoff.percent <- as.numeric(commandArgs(trailingOnly=TRUE)[3]);
+    
+    if(debug)   {
+        cat("Input path: ", input.files.with.paths, "\n", file=debug.file);
         cat("Output path: ", output.files.with.paths, "\n", file=debug.file, append=TRUE);
+        cat("Filter cutoff percent (default is 5.0): ", filter.cutoff.percent, "\n", file=debug.file, append=TRUE);
+    }
 	#	read in data for processing
     tryCatch({
         cat("Loading input data\n");
