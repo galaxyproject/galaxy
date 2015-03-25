@@ -1,0 +1,12 @@
+Program Args: -T UnifiedGenotyper
+GenomeAnalysisEngine - Strictness is SILENT
+TraversalEngine - [INITIALIZATION COMPLETE; TRAVERSAL STARTING]
+TraversalEngine -        Location processed.sites  runtime per.1M.sites completed total.runtime remaining
+UnifiedGenotyper - Visited bases                                5387
+UnifiedGenotyper - Callable bases                               5344
+UnifiedGenotyper - Confidently called bases                     5344
+UnifiedGenotyper - % callable bases of all loci                 99.202
+UnifiedGenotyper - % confidently called bases of all loci       99.202
+UnifiedGenotyper - % confidently called bases of callable loci  100.000
+UnifiedGenotyper - Actual calls made                            1
+TraversalEngine - Total runtime

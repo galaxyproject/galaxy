@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+
+<tool name="cBioPortal Get Database Info" id="cbioportal_get_database_info">
+
+	<description>
+		Query cBioPortal database for lists of defined cancer types and available studies
+	</description>
+	
+	<command interpreter="python">cbioportal_get_database_info.py --input "${table}" --log_file "${out_log}"</command>
+
+	<inputs>
+        	<param type="select" name="table" label="Table to Query">
+            		<option value="cancer_studies">Available Studies</option>
+            		<option value="type_of_cancer">Types of Cancers</option>
+        	</param>
+	</inputs>
+
+	<outputs>
+		<data format="txt" name="out_log" label="${table.value_label}" />
+	</outputs>
+
+	<help>
+		This tool queries the cBioPortal database and returns a tab-delimited list of either the defined types of cancers or the available studies currently residing in the database.
+
+		See the `cBioPortal Get Database Info wiki`_  for more information. 
+	
+		.. _cBioPortal Get Database Info wiki: http://137.53.221.77/projects/genomics/wiki/CbioPortalGetDatabaseInfo
+	</help>
+</tool>

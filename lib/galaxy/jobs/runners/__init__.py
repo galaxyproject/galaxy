@@ -134,7 +134,7 @@ class BaseJobRunner( object ):
         """
         raise NotImplementedError()
 
-    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True):
+    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True, append_to_command=None):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do
         """
         job_id = job_wrapper.get_id_tag()
@@ -155,7 +155,7 @@ class BaseJobRunner( object ):
 
         # Prepare the job
         try:
-            job_wrapper.prepare()
+            job_wrapper.prepare(append_to_command=append_to_command)
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,

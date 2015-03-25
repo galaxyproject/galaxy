@@ -1,0 +1,162 @@
+<tool name="SAM/BAM Alignment Summary Metrics" id="PicardASMetrics" version="1.56.0">
+  <command interpreter="python">
+    picard_wrapper.py -i "${input_file}" -d "${html_file.files_path}" -t "${html_file}"
+    --assumesorted "${sorted}" -b "${bisulphite}" --adaptors "${adaptors}" --maxinsert "${maxinsert}" -n "${out_prefix}" --datatype "${input_file.ext}"
+    -j \$JAVA_JAR_PATH/CollectAlignmentSummaryMetrics.jar  --tmpdir "${__new_file_path__}" 
+#if $genomeSource.refGenomeSource == "history":
+    --ref-file "${genomeSource.ownFile}"
+#else
+    --ref "${genomeSource.index.fields.path}"
+#end if
+  </command>
+  <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
+  <inputs>
+    <param format="sam,bam" name="input_file" type="data" label="SAM/BAM dataset to generate statistics for"
+      help="If empty, upload or import a SAM/BAM dataset."/>
+    <param name="out_prefix" value="Picard Alignment Summary Metrics" type="text"
+      label="Title for the output file" help="Use this remind you what the job was for." size="80" />
+
+      <conditional name="genomeSource">
+    
+      <param name="refGenomeSource" type="select" label="Select Reference Genome">
+        <option value="default" selected="true">Use the assigned data genome/build</option>
+        <option value="indexed">Select a different built-in genome</option>
+        <option value="history">Use a genome (fasta format) from my history</option>
+      </param>
+      <when value="default">
+        <param name="index" type="select" label="Check the assigned reference genome" help="Galaxy thinks that the reads in you dataset were aligned against this reference. If this is not correct, use the 'Select a build-in reference genome' option of the 'Select Reference Genome' dropdown to select approprtiate Reference.">
+          <options from_data_table="all_fasta">
+          <filter type="data_meta" ref="input_file" key="dbkey" column="1" multiple="True" separator="," />
+          <validator type="no_options" message="No reference build available for selected input" /> 
+          </options>
+        </param>
+      </when>
+      <when value="indexed">
+        <param name="index" type="select" label="Select a built-in reference genome" help="This list contains genomes cached at this Galaxy instance. If your genome of interest is not present here request it by using 'Help' link at the top of Galaxy interface or use the 'Use a genome (fasta format) from my history' option of the 'Select Reference Genome' dropdown.">
+          <options from_data_table="all_fasta">
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference genome from history" help="This option works best for relatively small genomes. If you are working with large human-sized genomes, send request to Galaxy team for adding your reference to this Galaxy instance by using 'Help' link at the top of Galaxy interface."/>
+      </when>
+    </conditional>
+    <param name="sorted" type="boolean" label="Assume the input file is already sorted" checked="true" truevalue="true" falsevalue="false"/>
+    <param name="bisulphite" type="boolean" label="Input file contains Bisulphite sequenced reads" checked="false" falsevalue="false" truevalue="true" />
+    <param name="adaptors" value="" type="text" area="true" label="Adapter sequences" help="One per line if multiple" size="5x120" />
+    <param name="maxinsert" value="100000" type="integer" label="Larger paired end reads and inter-chromosomal pairs considered chimeric " size="20" />
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file"  label="${out_prefix}.html" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="out_prefix" value="AsMetrics" />
+      <param name="bisulphite" value="false" />
+      <param name="sorted" value="true" />
+      <param name="adaptors" value="" />
+      <param name="maxinsert" value="100000" />
+      <param name="refGenomeSource" value="history" />
+      <param name="ownFile" value="picard_input_hg18.trimmed.fasta" />
+      <param name="input_file" value="picard_input_tiny.sam" dbkey="hg18" />
+      <output name="html_file" file="picard_output_alignment_summary_metrics.html" ftype="html" lines_diff="55"/>
+    </test>
+    <test>
+      <param name="out_prefix" value="AsMetricsIndexed" />
+      <param name="bisulphite" value="false" />
+      <param name="sorted" value="true" />
+      <param name="adaptors" value="" />
+      <param name="maxinsert" value="100000" />
+      <param name="refGenomeSource" value="indexed" />
+      <param name="index" value="hg19" />
+      <param name="input_file" value="picard_input_sorted_pair.sam" dbkey="hg19" />
+      <output name="html_file" file="picard_output_AsMetrics_indexed_hg18_sorted_pair.html" ftype="html" lines_diff="50"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**Summary**
+
+This Galaxy tool uses Picard to report high-level measures of alignment based on a provided sam or bam file.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for CollectAlignmentSummaryMetrics, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+-----
+
+.. class:: infomark
+
+**Syntax**
+
+- **Input** - SAM/BAM format aligned short read data in your current history
+- **Title** - the title to use for all output files from this job - use it for high level metadata
+- **Reference Genome** - Galaxy (and Picard) needs to know which genomic reference was used to generate alignemnts within the input SAM/BAM dataset. Here you have three choices:
+
+  - *Assigned data genome/build* - a genome specified for this dataset. If you your SAM/BAM dataset has an assigned reference genome it will be displayed below this dropdown. If it does not -> use one of the following two options.
+  - *Select a different built-in genome* - this option will list all reference genomes presently cached at this instance of Galaxy.
+  - *Select a reference genome from history* - alternatively you can upload your own version of reference genome into your history and use it with this option. This is however not advisable with large human-sized genomes. If your genome is large contact Galaxy team using "Help" link at the top of the interface and provide exact details on where we can download sequences you would like to use as the refenece. We will then install them as a part of locally cached genomic references.
+  
+- **Assume Sorted** - saves sorting time - but only if true!
+- **Bisulphite data** - see Picard documentation http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
+- **Maximum acceptable insertion length** - see Picard documentation at http://picard.sourceforge.net/command-line-overview.shtml#CollectAlignmentSummaryMetrics
+
+-----
+
+.. class:: infomark
+
+**Inputs, outputs, and parameters**
+
+The Picard documentation (reformatted for Galaxy) says:
+
+.. csv-table:: 
+   :header-rows: 1
+
+    Option,Description
+    "INPUT=File","SAM or BAM file Required."
+    "OUTPUT=File","File to write insert size metrics to Required."
+    "REFERENCE_SEQUENCE=File","Reference sequence file Required."
+    "ASSUME_SORTED=Boolean","If true (default), unsorted SAM/BAM files will be considerd coordinate sorted "
+    "MAX_INSERT_SIZE=Integer","Paired end reads above this insert size will be considered chimeric along with inter-chromosomal pairs. Default value: 100000."
+    "ADAPTER_SEQUENCE=String","This option may be specified 0 or more times. "
+    "IS_BISULFITE_SEQUENCED=Boolean","Whether the SAM or BAM file consists of bisulfite sequenced reads. Default value: false. "
+    "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created."
+
+The output produced by the tool has the following columns::
+
+  1. CATEGORY: One of either UNPAIRED (for a fragment run), FIRST_OF_PAIR when metrics are for only the first read in a paired run, SECOND_OF_PAIR when the metrics are for only the second read in a paired run or PAIR when the metrics are aggregeted for both first and second reads in a pair.
+  2. TOTAL_READS: The total number of reads including all PF and non-PF reads. When CATEGORY equals PAIR this value will be 2x the number of clusters.
+  3. PF_READS: The number of PF reads where PF is defined as passing Illumina's filter.
+  4. PCT_PF_READS: The percentage of reads that are PF (PF_READS / TOTAL_READS)
+  5. PF_NOISE_READS: The number of PF reads that are marked as noise reads. A noise read is one which is composed entirey of A bases and/or N bases. These reads are marked as they are usually artifactual and are of no use in downstream analysis.
+  6. PF_READS_ALIGNED: The number of PF reads that were aligned to the reference sequence. This includes reads that aligned with low quality (i.e. their alignments are ambiguous).
+  7. PCT_PF_READS_ALIGNED: The percentage of PF reads that aligned to the reference sequence. PF_READS_ALIGNED / PF_READS
+  8. PF_HQ_ALIGNED_READS: The number of PF reads that were aligned to the reference sequence with a mapping quality of Q20 or higher signifying that the aligner estimates a 1/100 (or smaller) chance that the alignment is wrong.
+  9. PF_HQ_ALIGNED_BASES: The number of bases aligned to the reference sequence in reads that were mapped at high quality. Will usually approximate PF_HQ_ALIGNED_READS * READ_LENGTH but may differ when either mixed read lengths are present or many reads are aligned with gaps.
+ 10. PF_HQ_ALIGNED_Q20_BASES: The subest of PF_HQ_ALIGNED_BASES where the base call quality was Q20 or higher.
+ 11. PF_HQ_MEDIAN_MISMATCHES: The median number of mismatches versus the reference sequence in reads that were aligned to the reference at high quality (i.e. PF_HQ_ALIGNED READS).
+ 12. PF_HQ_ERROR_RATE: The percentage of bases that mismatch the reference in PF HQ aligned reads.
+ 13. MEAN_READ_LENGTH: The mean read length of the set of reads examined. When looking at the data for a single lane with equal length reads this number is just the read length. When looking at data for merged lanes with differing read lengths this is the mean read length of all reads.
+ 14. READS_ALIGNED_IN_PAIRS: The number of aligned reads who's mate pair was also aligned to the reference.
+ 15. PCT_READS_ALIGNED_IN_PAIRS: The percentage of reads who's mate pair was also aligned to the reference. READS_ALIGNED_IN_PAIRS / PF_READS_ALIGNED
+ 16. BAD_CYCLES: The number of instrument cycles in which 80% or more of base calls were no-calls.
+ 17. STRAND_BALANCE: The number of PF reads aligned to the positive strand of the genome divided by the number of PF reads aligned to the genome.
+ 18. PCT_CHIMERAS: The percentage of reads that map outside of a maximum insert size (usually 100kb) or that have the two ends mapping to different chromosomes.
+ 19. PCT_ADAPTER: The percentage of PF reads that are unaligned and match to a known adapter sequence right from the start of the read.
+
+.. class:: warningmark
+
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
+
+
+  </help>
+</tool>
+

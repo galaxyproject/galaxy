@@ -1,0 +1,76 @@
+<tool name="Picard - SamFormatConverter" id="rgPicardSamFormatConverter" version="1.110.0">
+  <command interpreter="python">
+   picard_wrapper.py -i "${input_file}" 
+   --tmpdir "${__new_file_path__}" -o "${out_file}"
+   --compression "${compressionLvl}"  
+   -j "\${PICARD_PATH}/SamFormatConverter.jar" -d "${html_file.files_path}" 
+   -t "${html_file}" -e "${input_file.ext}"
+  </command>
+  <requirements><requirement type="package" version="1.110.0">picard</requirement></requirements>
+  <description>Convert a BAM file to a SAM file, or BAM to SAM.</description>
+  <inputs>
+    <param format="bam,sam" name="input_file" type="data" label="SAM/BAM dataset to convert" help="If empty, upload or import a SAM/BAM dataset."/>
+    <param name="compressionLvl" value="5" type="integer" label="Compression level" size="5" help="Compression level."/>
+  </inputs>
+  <outputs>
+    <data format="bam" name="out_file" label="${tool.name} on ${on_string}: BAM"/>
+    <data format="html" name="html_file" label="${tool.name} on ${on_string}.html"/>
+  </outputs>
+  <tests>
+    <test>
+    </test>
+  </tests>
+  
+  <help>
+
+**Purpose**
+
+Convert a BAM file to a SAM file, or BAM to SAM.
+Input and output formats are determined by file extension.
+Version: 1.110(1752)
+
+**Picard documentation**
+
+This is a Galaxy wrapper for SamFormatConverter, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+-----
+
+.. class:: infomark
+
+**Inputs, outputs, and parameters**
+
+Picard documentation says (reformatted for Galaxy):
+
+Options:
+
+--help
+-h                            Displays options specific to this tool.
+
+--stdhelp
+-H                            Displays options specific to this tool AND options common to all Picard command line
+                              tools.
+
+--version                     Displays program version.
+
+INPUT=File
+I=File                        The BAM or SAM file to parse.  Required.
+
+OUTPUT=File
+O=File                        The BAM or SAM output file.   Required.
+
+  </help>
+</tool>
+
+
+
+
+
+
+
+
+
+
+
+

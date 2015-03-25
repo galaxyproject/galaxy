@@ -1,0 +1,5 @@
+GenomeAnalysisEngine - Strictness is SILENT 
+TraversalEngine - [INITIALIZATION COMPLETE; TRAVERSAL STARTING] 
+TraversalEngine -        Location processed.sites  runtime per.1M.sites completed total.runtime remaining 
+VariantAnnotator - Processed 1 loci.
+TraversalEngine - 0 reads were filtered out during traversal out of 10 total (0.00%) 

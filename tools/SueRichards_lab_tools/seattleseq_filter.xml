@@ -1,0 +1,20 @@
+<tool id="seattleseq_filter" name="SeattleSeq Filter">
+    <description>Filter SeattleSeq variants</description>
+    <command interpreter="Rscript">
+        seattleseq_filter.R $input $output
+    </command>
+
+    <inputs>
+        <param format="xls" name="input" type="data" label="Excel input file"/>  
+    </inputs>
+
+    <outputs>
+        <data format="xls" name="output" type="data" label="Excel output file"/>  
+    </outputs>
+
+    <tests>
+    </tests>
+
+    <help>
+    </help>
+</tool>

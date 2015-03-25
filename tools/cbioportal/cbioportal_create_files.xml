@@ -1,0 +1,168 @@
+<tool id="cbioportal_create_files" name="cBioPortal Create Metadata Files">
+	<description>Generate metadata files used for importing data into cBioPortal (step 1)</description>
+	<command interpreter="python">
+	cbioportal_create_files.py 
+	--dir "${directory}"
+	--log_level "${log_level}"
+	--log_file "${out_log}"
+	--type_of_cancer "${type_of_cancer}"
+	--cancer_study_identifier "${cancer_study_identifier}"
+	--study_name "${study_name}"
+	--study_description "${study_description}"
+	--study_citation "${study_citation}"
+	--study_pmid "${study_pmid}"
+	--study_short_name "${study_short_name}"
+	#for $i, $s in enumerate( $files )
+		--data_file "${s.data_file}"
+		--genetic_alteration_type "${s.genetic_alteration_type.genetic_alteration}"
+		--datatype "${s.genetic_alteration_type.datatype}"
+		--profile_name "${s.profile_name}"
+		--profile_description "${s.profile_description}"
+	#end for
+	</command>
+	<inputs>
+		<param name="directory" type="text" label="Path to directory containing cancer study data" size="50" help="Filesystem path to directory containing data files">
+			<sanitizer> 
+				<valid initial="default">
+					<add value="&#64;"/>
+				</valid>
+			</sanitizer>
+			<validator type="empty_field" message="Field cannot be empty."/>
+		</param>
+		<param name="type_of_cancer" type="text" label="Type of cancer abbreviation" help="A list of existing types of cancers can be accessed using the cBioPortal Get Database Info tool (under 'type_of_cancer_id' column), ex: brca">
+			<validator type="empty_field" message="Field cannot be empty."/>
+		</param>
+		<param name="cancer_study_identifier" type="text" label="Study Identifier" size="20" help="String used to uniquely identify study within database, should consist of a principal investigator group identifier (ex. 'gray') concatenated with a study name (ex. 'novartis') final result example: 'graynovartis'. The list of taken study identifiers can be obtained using the cBioPortal Get Database Info tool.">
+			<validator type="empty_field" message="Field cannot be empty."/>
+		</param>
+		<param name="study_name" type="text" label="Study Name" size="30" help="Name of cancer study, ex: Breast Cancer (Jones Lab 2013)">
+			<validator type="empty_field" message="Field cannot be empty."/>
+		</param>
+		<param name="study_description" type="text" label="Cancer Study Description" area="True" size="2x60" help="Description of Study">
+			<validator type="empty_field" message="Field cannot be empty."/>
+			<sanitizer> 
+				<valid initial="default">
+					<add value="&lt;"/>	
+					<add value="&gt;"/>
+					<add value="&quot;"/>
+				</valid>
+			</sanitizer>
+		</param>
+		<param name="study_citation" type="text" optional="true" label="Relevant Citation(s)" size="30" help="(optional) A relevant citation, ex: TCGA, Nature 2012">
+			<sanitizer> 
+				<valid initial="default">
+					<add value="&lt;"/>	
+					<add value="&gt;"/>
+					<add value="&quot;"/>
+				</valid>
+			</sanitizer>
+		</param>
+		<param name="study_pmid" type="text" optional="true" label="PMID" size="30" help="(optional) A relevant pubmed ID"/>
+		<param name="study_short_name" type="text" label="Short Name for Study" size="25" help="Short name used for display on various web pages of cBioPortal, ex: BRCA (Jones)">
+			<validator type="empty_field" message="Field cannot be empty."/>
+		</param>
+		<repeat name="files" title="Data files">
+			<param name="data_file" type="data" format="tabular" label="Data file" help="Tab-delimited text file containing data">
+				<filter type="remove_value" ref="data_file"/>
+			</param>
+			<conditional name="genetic_alteration_type">
+				<param name="genetic_alteration" type="select" label="Genetic alteration type" help="The genetic alteration type for the data file">
+					<option value="COPY_NUMBER_ALTERATION">Copy Number Alteration</option>
+					<option value="SEGMENT">Segment</option>
+					<option value="MRNA_EXPRESSION">mRNA Expression</option>
+					<option value="MUTATION_EXTENDED">Mutation</option>
+					<option value="FUSION">Fusion</option>
+					<option value="METHYLATION">Methylation</option>
+					<option value="RPPA">RPPA</option>
+					<option value="CLINICAL">Clinical</option>
+					<filter type="param_value" ref="${genetic_alteration}" />
+				</param>
+				<when value="COPY_NUMBER_ALTERATION">
+					<param name="datatype" type="select" label="Datatype" help="Type of data: DISCRETE==GISTIC, LOG-VALUE==log2">
+						<option value="DISCRETE">Discrete</option>
+						<option value="LOG-VALUE">Log-value</option>
+					</param>
+				</when>
+				<when value="SEGMENT">
+					<param name="datatype" type="select" label="Datatype" help="Type of data">
+						<option value="SEGMENT">Segment</option>
+					</param>
+				</when>
+				<when value="MRNA_EXPRESSION">
+					<param name="datatype" type="select" label="Datatype" help="Type of data: Z-SCORE - Z-score normalized">
+						<option value="Z-SCORE_rnaseq">Z-score (rna-seq)</option>
+						<option value="CONTINUOUS_rnaseq">Continuous (rna-seq)</option>
+						<option value="Z-SCORE_microarray">Z-score (microarray)</option>
+						<option value="CONTINUOUS_microarray">Continuous (microarray)</option>
+					</param>
+				</when>
+				<when value="MUTATION_EXTENDED">
+					<param name="datatype" type="select" label="Datatype" help="Type of data: MAF==Mutation Annotation Format File">
+						<option value="MAF">MAF</option>
+					</param>
+				</when>
+				<when value="FUSION">
+					<param name="datatype" type="select" label="Datatype" help="Type of data">
+						<option value="FUSION">Fusion</option>
+					</param>
+				</when>
+				<when value="METHYLATION">
+					<param name="datatype" type="select" label="Datatype" help="Type of data">
+						<option value="CONTINUOUS_hm27">Continuous (hm27)</option>
+						<option value="CONTINUOUS_hm450">Continuous (hm450)</option>
+					</param>
+				</when>
+				<when value="RPPA">
+					<param name="datatype" type="select" label="Datatype" help="Type of data">
+						<option value="CONTINUOUS">Continuous</option>
+						<option value="Z-SCORE">Z-score</option>
+					</param>
+				</when>
+				<when value="CLINICAL">
+					<param name="datatype" type="select" label="Datatype" help="Type of data: CLINICAL ATTRIBUTES">
+						<option value="FREE-FORM">Free-form</option>
+					</param>
+				</when>
+			</conditional>
+			
+			<param name="profile_name" type="text" label="Profile name" size="30" help="A profile name for the dataset">
+					<validator type="empty_field" message="Field cannot be empty."/>
+				</param>
+			<param name="profile_description" type="text" label="Profile description" area="True" size="2x60" help="Description of dataset">
+					<validator type="empty_field" message="Field cannot be empty."/>
+				</param>
+		</repeat>
+		<param name="log_level" type="select" label="Log level" help="Select verbosity of logging">
+			<option value="CRITICAL">CRITICAL</option>
+			<option value="ERROR">ERROR</option>
+			<option value="WARNING">WARNING</option>
+			<option value="INFO" selected="true">INFO</option>
+			<option value="DEBUG">DEBUG</option>
+			<option value="NOTSET">NOT SET</option>
+		</param>
+	</inputs>
+	<outputs>
+		<data format="txt" name="out_log" label="${tool.name} (log)"/>
+	</outputs>
+
+	<stdio>
+		<exit_code range="-1" level="fatal" description="CSV reader error" />
+		<exit_code range="-2" level="fatal" description="Directory does not exist" />
+		<exit_code range="-3" level="fatal" description="Number of command line arguments does not match number of data files" />
+		<exit_code range="-4" level="fatal" description="Invalid genetic_alteration_type" />
+		<exit_code range="-5" level="fatal" description="Invaild data format" />
+		<exit_code range="-6" level="fatal" description="Invalid datatype" />
+		<exit_code range="-7" level="fatal" description="Invalid combination of genetic_alteration_type and datatype" />
+		<exit_code range="-8" level="fatal" description="Invalid data filename prefix (missing 'data_' prefix)" />
+		<regex match="ERROR" source="both" level="fatal" />
+		<regex match="CRITICAL" source="both" level="fatal" />
+	</stdio>
+	<help>
+		See the `cBioPortal Create Metadata Files wiki`_ for details about this tool.
+		
+		See the `cBioPortal wiki`_  for information on data types and formatting.
+	
+		.. _cBioPortal Create Metadata Files wiki: http://137.53.221.77/projects/genomics/wiki/CbioPortalCreateMetadataFiles
+		.. _cBioPortal wiki: http://137.53.221.77/projects/genomics/wiki/GalaxyCbioportal
+	</help>
+</tool>

@@ -1,0 +1,23 @@
+@HD	VN:0.1.2	SO:unsorted	GO:none
+@SQ	SN:phiX174	LN:5386
+@PG	ID:bfast	VN:0.6.4d
+random_phiX_region_0	0	phiX174	553	255	50M	*	0	0	TTGAGGCTTGCGTTTATGGTACGCTGGACTTTGTGGGATACCCTCGCTTT	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_1	0	phiX174	3693	255	50M	*	0	0	GTTAGTGCTGAGGTTGACTTAGTTCATCAGCAAACGCAGAATCAGCGGTA	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_2	0	phiX174	375	255	50M	*	0	0	AATAGGTAAGAAATCATGAGTCAAGTTACTGAACAATCCGTACGTTTCCA	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_3	0	phiX174	3168	255	50M	*	0	0	GGTAAAGGACTTCTTGAAGGTACGTTGCAGGCTGGCACTTCTGCCGTTTC	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_4	0	phiX174	5254	255	50M	*	0	0	ACGCAAAAAGAGAGATGAGATTGAGGCTGGGAAAAGTTACTGTAGCCGAC	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_5	0	phiX174	5066	255	50M	*	0	0	AGCTAAAGAATGGAACAACTCACTAAAAACCAAGCTGTCGCTACTTCCCA	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_6	0	phiX174	1226	255	50M	*	0	0	CACGTTTATGGTGAACAGTGGATTAAGTTCATGAAGGATGGTGTTAATGC	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_7	0	phiX174	1096	255	50M	*	0	0	AACTACTCCGGTTATCGCTGGCGACTCCTTCGAGATGGACGCCGTTGGCG	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_8	0	phiX174	535	255	50M	*	0	0	CTCGTGCTCGTCGCTGCGTTGAGGCTTGCGTTTATGGTACGCTGGACTTT	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_9	0	phiX174	3669	255	50M	*	0	0	CAAATCAAAGAAATGACTCGCAAGGTTAGTGCTGAGGTTGACTTAGTTCA	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_10	0	phiX174	4887	255	50M	*	0	0	TACAGTATGCCCATCGCAGTTCGCTACACGCAGGACGCTTTTTCACGTTC	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_11	0	phiX174	1849	255	50M	*	0	0	TATGTTTACTCTTGCGCTTGTTCGTTTTCCGCCTACTGCGACTAAAGAGA	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_12	0	phiX174	4145	255	50M	*	0	0	AGAGATTCTGTCTTTTCGTATGCAGGGCGTTGAGTTCGATAATGGTGATA	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_13	0	phiX174	1853	255	50M	*	0	0	TTTACTCTTGCGCTTGTTCGTTTTCCGCCTACTGCGACTAAAGAGATTCA	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_14	0	phiX174	2800	255	50M	*	0	0	CCGGGCAATAACGTTTATGTTGGTTTCATGGTTTGGTCTAACTTTACCGC	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2300	NM:i:1	NH:i:1	IH:i:1	HI:i:1	MD:Z:11T38	XA:i:0
+random_phiX_region_15	0	phiX174	1910	255	50M	*	0	0	AACGCTAAAGGTGCTTTGACTTATACCGATATTGCTGGCGACCCTGTTTT	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_16	0	phiX174	3366	255	50M	*	0	0	GCCGGATTTGAGAATCAAAAAGAGCTTACTAAAATGCAACTGGACAATCA	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_17	0	phiX174	2165	255	50M	*	0	0	CATGATTATGACCAGTGTTTCCAGTCCGTTCAGTTGTTGCAGTGGAATAG	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_18	0	phiX174	2051	255	50M	*	0	0	TGGTATCGTTATGCGCCTTCGTATGTTTCTCCTGCTTATCACCTTCTTGA	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0
+random_phiX_region_19	0	phiX174	5099	255	50M	*	0	0	GCTGTCGCTACTTCCCAAGAAGCTGTTCAGAATCAGAATGAGCCGCAACT	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	PG:Z:bfast	AS:i:2500	NM:i:0	NH:i:1	IH:i:1	HI:i:1	MD:Z:50	XA:i:0

@@ -585,6 +585,10 @@ class TwoBit (Binary):
 
 Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
 
+class Xls(Binary):
+    '''Class describing an Excel (xls) file'''
+    file_ext='xls'
+Binary.register_unsniffable_binary_ext("xls")
 
 @dataproviders.decorators.has_dataproviders
 class SQlite ( Binary ):

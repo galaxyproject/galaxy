@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins workers="4">
+	<!--"workers" is the number of threads for the runner's work queue.-->
+	<!--The default from <plugins> is used if not defined for a </plugin>.-->
+	<plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
+	<plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner">
+	    <!-- Override the $DRMAA_LIBRARY_PATH environment variable -->
+	    <!--<param id="drmaa_library_path">/opt/condor/lib/libdrmaa.so</param>-->
+	    <param id="drmaa_library_path">drmaa/drmaa/libdrmaa.so</param>
+	    <!-- Different DRMs handle successfully completed jobs differently,
+	    these options can be changed to handle such differences and
+	    are explained in detail on the Galaxy wiki. Defaults are shown -->
+	    <!--<param id="invalidjobexception_state">ok</param>-->
+	    <!--<param id="invalidjobexception_retries">0</param>-->
+	    <!--<param id="internalexception_state">ok</param>-->
+	    <!--<param id="internalexception_retries">0</param>-->
+	</plugin>
+    </plugins>
+    <handlers default="main">
+	<handler id="main"  tags="handlers"/>
+	<!-- Additional job handlers - the id should match the name of a
+	[server:id] in universe_wsgi.ini.
+	-->
+    </handlers>
+    <destinations default="condor_16C_16G">
+	<!-- Destinations define details about remote resources and how jobs
+	should be executed on those remote resources.
+	-->
+	<destination id="local" runner="local" metrics="off"/>
+	<destination id="condor_16C_16G" runner="drmaa">
+	  <param id="nativeSpecification">getenv=True\nrequest_cpus=16\nrequest_memory=16 GB\nInitialdir = /tmp/</param>
+	</destination>
+	<destination id="condor_galaxy" runner="drmaa" metrics="off">
+	  <param id="nativeSpecification">getenv=True\nrequest_cpus=2\nrequest_memory=8 GB\nInitialdir = /tmp/\nrequirements=(machine=="exanode-0-23.local")</param>
+	</destination>
+	<destination id="condor_2C_2G" runner="drmaa">
+	  <param id="nativeSpecification">getenv=True\nrequest_cpus=2\nrequest_memory=2 GB\nInitialdir = /tmp/</param>
+	</destination>
+    </destinations>
+    <tools>
+	<!-- Tools can be configured to use specific destinations or handlers,
+	identified by either the "id" or "tags" attribute.  If assigned to
+	a tag, a handler or destination that matches that tag will be
+	chosen at random.
+	-->
+	<tool id="cbioportal_create_files" destination="condor_galaxy"/>
+	<tool id="cbioportal_importer_tool" destination="condor_galaxy"/>
+	<tool id="cbioportal_get_database_info" destination="condor_galaxy"/>
+	<tool id="product_map" destination="condor_2C_2G"/>
+	<tool id="sum_reduce" destination="condor_2C_2G"/>
+	<tool id="getAnnotation" destination="condor_2C_2G"/>
+    </tools>
+    <limits>
+	<!-- Certain limits can be defined. -->
+	<limit type="registered_user_concurrent_jobs">100</limit>
+	<limit type="unregistered_user_concurrent_jobs">2</limit>
+	<limit type="job_walltime">24:00:00</limit>
+	<!--<limit type="concurrent_jobs" id="local">1</limit>-->
+	<!--<limit type="concurrent_jobs" tag="mycluster">2</limit>-->
+	<!--<limit type="concurrent_jobs" tag="longjobs">1</limit>-->
+    </limits>
+</job_conf>

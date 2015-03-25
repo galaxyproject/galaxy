@@ -1,0 +1,28 @@
+<tool id="getAnnotation" name="SeattleSeq getAnnotation" version="1.0" >
+  <description>Creates an annotated text file for the provided inputs </description>
+    <!-- Adapted from Dan Blankenberg -->
+  <command interpreter="python">getAnnotation.py
+    -p '
+    java -jar \${SEATTLESEQ_JAR_PATH}/getAnnotationSeattleSeq138QC.jar  <!-- SEATTLESEQ_JAR_PATH defined in Galaxy's run.sh  -->
+    '
+    -i $infile
+    -o $outfile    
+    -d $database_info
+  </command>
+  <inputs>
+    <param name="infile" type="data" format="vcf" label="VCF file generated from GATK PrintReads" />
+    <param name="database_info" type="data" format="txt" label="Login information for annotationCache database"/>
+  </inputs>
+
+  <outputs>
+    <data format="txt" name="outfile" label="SeattleSeq annotation" />
+  </outputs>
+
+  <tests>
+
+  </tests>
+  <help>
+    Runs SeattleSeq getAnnotation program
+
+  </help>
+</tool>

@@ -1,0 +1,5 @@
+HelpFormatter - Program Args: -T VariantEval
+GenomeAnalysisEngine - Strictness is SILENT
+TraversalEngine -        Location processed.sites  runtime per.1M.sites completed total.runtime remaining
+VariantEvalWalker - Finalizing variant report
+TraversalEngine - Total runtime

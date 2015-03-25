@@ -1,5 +1,21 @@
 #!/bin/sh
 
+export GALAXY_RUN_ALL=1
+#Creating env variables for location of exe/jar files, to be used by xml/py files.
+GENOMICS_DIR=/opt/installed
+export BWA_DIR=$GENOMICS_DIR
+export BWA_EXE_PATH=$BWA_DIR/bwa
+export SAMTOOLS_DIR=$GENOMICS_DIR
+export SAMTOOLS_EXE_PATH=$SAMTOOLS_DIR/samtools
+#export MD_JAR_PATH=$GENOMICS_DIR/picard/MarkDuplicates-1.115.jar
+export PICARD_PATH=/opt/installed/picard/picard-tools-1.110/
+#export GATK_JAR_PATH=$GENOMICS_DIR/GATK/GenomeAnalysisTK-3.1.jar
+export GATK_JAR_PATH=$GENOMICS_DIR/GATK/GenomeAnalysisTK-3.2.jar
+export SEATTLESEQ_JAR_PATH=/opt/installed/SeattleSeq_tools
+export PATH=$GENOMICS_DIR:$BWA_DIR:$SAMTOOLS_DIR:$PICARD_PATH:$PATH
+export NSLOTS=16
+export PYTHON_EGG_CACHE=.eggs_cache
+
 cd `dirname $0`
 
 # If there is a .venv/ directory, assume it contains a virtualenv that we

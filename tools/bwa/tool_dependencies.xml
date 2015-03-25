@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="bwa" version="0.7.7">
+        <repository changeset_revision="def70e393020" name="package_bwa_0_7_7" owner="iuc" toolshed="http://toolshed.g2.bx.psu.edu" />
+    </package>
+</tool_dependency>
