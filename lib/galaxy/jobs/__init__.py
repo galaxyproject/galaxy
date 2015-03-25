@@ -1575,8 +1575,8 @@ class JobWrapper( object ):
         job = self.get_job()
         if self.app.config.external_chown_script and job.user is not None:
             try:
-                #self._change_ownership( self.user_system_pwent[0], str( self.user_system_pwent[3] ) )
-                self._change_ownership( self.user_system_pwent[0], 'galaxy' )	#Use galaxy group
+                self._change_ownership( self.user_system_pwent[0], str( self.user_system_pwent[3] ) )
+                #self._change_ownership( self.user_system_pwent[0], 'galaxy' )	#Use galaxy group
             except:
                 log.exception( '(%s) Failed to change ownership of %s, making world-writable instead' % ( job.id, self.working_directory ) )
                 os.chmod( self.working_directory, 0777 )
@@ -1584,8 +1584,8 @@ class JobWrapper( object ):
     def reclaim_ownership( self ):
         job = self.get_job()
         if self.app.config.external_chown_script and job.user is not None:
-            #self._change_ownership( self.galaxy_system_pwent[0], str( self.galaxy_system_pwent[3] ) )
-            self._change_ownership( self.user_system_pwent[0], 'galaxy' ) #Use galaxy group, but keep user as owner
+            self._change_ownership( self.galaxy_system_pwent[0], str( self.galaxy_system_pwent[3] ) )
+            #self._change_ownership( self.user_system_pwent[0], 'galaxy' ) #Use galaxy group, but keep user as owner
 
     @property
     def user_system_pwent( self ):
