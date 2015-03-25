@@ -19,6 +19,7 @@ from galaxy import model
 from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 from galaxy.util import in_directory
 from galaxy.util import ParamsWithSpecs
+from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.jobs.runners.util.job_script import job_script
 from galaxy.jobs.runners.util.env import env_to_statement
@@ -102,11 +103,13 @@ class BaseJobRunner( object ):
     def put(self, job_wrapper):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
+        put_timer = ExecutionTimer()
         # Change to queued state before handing to worker thread so the runner won't pick it up again
         job_wrapper.change_state( model.Job.states.QUEUED )
         # Persist the destination so that the job will be included in counts if using concurrency limits
         job_wrapper.set_job_destination( job_wrapper.job_destination, None )
         self.mark_as_queued(job_wrapper)
+        log.debug("Job [%s] queued %s" % (job_wrapper.job_id, put_timer))
 
     def mark_as_queued(self, job_wrapper):
         self.work_queue.put( ( self.queue_job, job_wrapper ) )
