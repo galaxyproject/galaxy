@@ -61,6 +61,6 @@ def failure(app, job_runner, job_state):
                 job.params = {}
             job_state.runner_state_handled = True
             info = "This job was resubmitted to the queue because %s on its " \
-                   "compute resource." % MESSAGES[job_state.runner_state])
+                   "compute resource." % MESSAGES[job_state.runner_state]
             job_runner.mark_as_resubmitted(job_state, info=info)
             return
