@@ -294,7 +294,7 @@ var FolderToolbarView = Backbone.View.extend({
                 dataset_ids.push( this.parentElement.parentElement.id );
             }
         } );
-    var url = '/api/libraries/datasets/download/' + format;
+    var url = ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets/download/' + format;
     var data = { 'ld_ids' : dataset_ids };
     this.processDownload( url, data, 'get' );
   },
@@ -386,7 +386,7 @@ var FolderToolbarView = Backbone.View.extend({
   fetchExtAndGenomes: function(){
     var that = this;
     mod_utils.get({
-        url      :  galaxy_config.root + "api/datatypes?extension_only=False",
+        url      :  ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/datatypes?extension_only=False",
         success  :  function( datatypes ) {
                         for (key in datatypes) {
                             that.list_extensions.push({
@@ -403,7 +403,7 @@ var FolderToolbarView = Backbone.View.extend({
                     }
       });
     mod_utils.get({
-        url:    galaxy_config.root + "api/genomes",
+        url:    ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/genomes",
         success: function( genomes ) {
                     for ( key in genomes ) {
                         that.list_genomes.push({
@@ -689,7 +689,7 @@ var FolderToolbarView = Backbone.View.extend({
       for ( var i = history_dataset_ids.length - 1; i >= 0; i-- ) {
         history_dataset_id = history_dataset_ids[i];
         var folder_item = new mod_library_model.Item();
-        folder_item.url = '/api/folders/' + this.options.id + '/contents';
+        folder_item.url = ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/folders/' + this.options.id + '/contents';
         folder_item.set( { 'from_hda_id':history_dataset_id } );
         hdas_to_add.push( folder_item );
       }
@@ -749,7 +749,7 @@ var FolderToolbarView = Backbone.View.extend({
       }
       return true;
     }
-    var promise = $.when( $.post( '/api/libraries/datasets?encoded_folder_id=' + that.id + 
+    var promise = $.when( $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets?encoded_folder_id=' + that.id + 
                                                        '&source=' + options.source +
                                                        '&path=' + popped_item +
                                                        '&file_type=' + options.file_type +
@@ -788,7 +788,7 @@ var FolderToolbarView = Backbone.View.extend({
       }
       return true;
     }
-    var promise = $.when( $.post( '/api/libraries/datasets?encoded_folder_id=' + that.id +
+    var promise = $.when( $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets?encoded_folder_id=' + that.id +
                                                           '&source=' + options.source +
                                                           '&path=' + popped_item +
                                                           '&preserve_dirs=' + options.preserve_dirs +
