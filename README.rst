@@ -1,8 +1,7 @@
-.. figure:: https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=galaxyLogoTrimmed.png
+.. figure:: https://wiki.galaxyproject.org/Images/GalaxyLogo?action=AttachFile&do=get&target=galaxy_project_logo.jpg
    :alt: Galaxy Logo
 
-The latest information about Galaxy is always available via the Galaxy
-website: `http://galaxyproject.org/ <http://galaxyproject.org/>`__
+The latest information about Galaxy is available via `http://galaxyproject.org/ <http://galaxyproject.org/>`__
 
 Galaxy Quickstart
 =================
