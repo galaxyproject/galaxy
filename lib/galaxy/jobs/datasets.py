@@ -91,6 +91,17 @@ class OutputsToWorkingDirectoryPathRewriter( object ):
         else:
             return None
 
+class RemoteDatasetPathToUUIDRewriter( object ):
+    """ Replaces path to datasets with UUIDs. The actual paths need to be
+    filled in on the remote system.
+    """
+
+    def __init__( self ):
+        return;
+
+    def rewrite_dataset_path( self, dataset, dataset_type ):
+        false_path = '[' + str(dataset.dataset.uuid) + ']';
+        return false_path;
 
 class TaskPathRewriter( object ):
     """ Rewrites all paths to place them in the specified working

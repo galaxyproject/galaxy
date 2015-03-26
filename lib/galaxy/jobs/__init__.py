@@ -32,6 +32,7 @@ from .output_checker import check_output
 from .datasets import TaskPathRewriter
 from .datasets import OutputsToWorkingDirectoryPathRewriter
 from .datasets import NullDatasetPathRewriter
+from .datasets import RemoteDatasetPathToUUIDRewriter 
 from .datasets import DatasetPath
 
 log = logging.getLogger( __name__ )
@@ -769,10 +770,13 @@ class JobWrapper( object ):
 
     #Karthik: Define a new PathRewriter to ensure that command line is generated correctly
     def _job_dataset_path_rewriter( self, working_directory ):
-        if self.app.config.outputs_to_working_directory:
-            dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter( working_directory )
+        if ( self.app.config.use_uuids_for_dataset_reference() ):
+            dataset_path_rewriter = RemoteDatasetPathToUUIDRewriter();
         else:
-            dataset_path_rewriter = NullDatasetPathRewriter( )
+            if self.app.config.outputs_to_working_directory:
+                dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter( working_directory )
+            else:
+                dataset_path_rewriter = NullDatasetPathRewriter( )
         return dataset_path_rewriter
 
     def can_split( self ):
@@ -909,6 +913,24 @@ class JobWrapper( object ):
         self.create_working_directory()
         log.debug( '(%s) Previous working directory moved to %s',
                    self.job_id, arc_dir )
+    def get_tool_id( self ):
+        job = self.get_job()
+        return job.tool_id;
+
+    def get_workflow_invocation_info( self ):
+        job = self.get_job()
+        workflow_invocation_step = self.sa_session.query( model.WorkflowInvocationStep ).filter_by( job_id = job.id ).first();
+        #Could be None as this job could be a standalone job and not part of a workflow
+        if not workflow_invocation_step:
+            self.sa_session.flush()
+            return None;
+        else:
+            workflow_invocation = self.sa_session.query( model.WorkflowInvocation ).filter_by( id = workflow_invocation_step.workflow_invocation_id ).first();
+            assert workflow_invocation;
+            workflow = self.sa_session.query( model.Workflow ).filter_by(id = workflow_invocation.workflow_id).first();
+            assert workflow;
+            self.sa_session.flush()
+            return (workflow.name, workflow.id, workflow_invocation.id);
 
     def default_compute_environment( self, job=None ):
         if not job:
@@ -1481,6 +1503,15 @@ class JobWrapper( object ):
             return ''
         return '[ -f "%s" ] && . %s' % ( self.app.config.environment_setup_file, self.app.config.environment_setup_file )
 
+    def get_final_path_string_for_dataset(self, datasetpath):
+        if ( self.app.config.use_uuids_for_dataset_reference() ):
+            return datasetpath.false_path;
+        else:
+            if ( datasetpath.false_path ):
+                return datasetpath.false_path;
+            else:
+                return datasetpath.real_path;
+
     def get_input_dataset_fnames( self, ds ):
         filenames = []
         filenames = [ ds.file_name ]
@@ -1558,6 +1589,20 @@ class JobWrapper( object ):
             elif os.path.basename( dp.real_path ) == file:
                 return dp.dataset_id
         return None
+
+    def get_output_string_uuids( self ):
+        results = []
+        job = self.get_job()
+        for joda in job.output_datasets + job.output_library_datasets:
+            results.append(str(joda.dataset.dataset.uuid));
+        return results;
+
+    def get_input_string_uuids( self ):
+        results = []
+        job = self.get_job()
+        for jida in job.input_datasets + job.input_library_datasets:
+            results.append(str(jida.dataset.dataset.uuid));
+        return results;
 
     def get_tool_provided_job_metadata( self ):
         if self.tool_provided_job_metadata is not None:

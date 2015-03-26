@@ -12,7 +12,7 @@
       #else
         --index=${source.index.fields.path}
       #end if
-      --output1=$output1;/home/karthikg/galaxy_info/development/galaxy-dist/api_test/json_creator.py "${output1.name}" ${output1.dataset.extension} ${output1.dataset.dataset.id}  $output1 \$?
+      --output1=$output1
   </command>
   <inputs>
     <conditional name="source">

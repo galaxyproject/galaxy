@@ -45,6 +45,8 @@ def resolve_path( path, root ):
 
 class Configuration( object ):
     deprecated_options = ( 'database_file', )
+    REMOTE_DATASETS_REFERENCE_BY_IDENTICAL_FILESYSTEM = 'identical_filesystem';
+    REMOTE_DATASETS_REFERENCE_BY_UUID = 'uuid';
 
     def __init__( self, **kwargs ):
         self.config_dict = kwargs
@@ -308,6 +310,16 @@ class Configuration( object ):
         self.object_store = kwargs.get( 'object_store', 'disk' )
         self.object_store_check_old_style = string_as_bool( kwargs.get( 'object_store_check_old_style', False ) )
         self.object_store_cache_path = resolve_path( kwargs.get( "object_store_cache_path", "database/object_store_cache" ), self.root )
+        #remote datasets
+        self.use_remote_datasets = string_as_bool( kwargs.get( 'use_remote_datasets', False ) );
+        self.remote_datasets_referral_method = kwargs.get( 'remote_datasets_referral_method', self.REMOTE_DATASETS_REFERENCE_BY_IDENTICAL_FILESYSTEM );
+        valid_remote_ds_referral = set( [self.REMOTE_DATASETS_REFERENCE_BY_UUID, self.REMOTE_DATASETS_REFERENCE_BY_IDENTICAL_FILESYSTEM] );
+        if(self.remote_datasets_referral_method not in valid_remote_ds_referral):
+            log.error('Unknown value for \'remote_datasets_referral_method\' : ' + str(self.remote_datasets_referral_method));
+            self.remote_datasets_referral_method = self.REMOTE_DATASETS_REFERENCE_BY_IDENTICAL_FILESYSTEM;
+        if(self.use_remote_datasets and self.outputs_to_working_directory):
+            log.warning('Configurations \'use_remote_datasets=True\' and \'outputs_to_working_directory\'=True are incompatible as of now; setting \'outputs_to_working_directory\' to False');
+            self.outputs_to_working_directory = False;
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
             self.os_access_key = kwargs.get( 'aws_access_key', None )
@@ -655,7 +667,9 @@ class Configuration( object ):
             # uWSGI galaxy installations don't use paster and only speak uWSGI not http
             port = None
         return port
-
+    
+    def use_uuids_for_dataset_reference ( self ):
+        return (self.use_remote_datasets and (self.remote_datasets_referral_method == self.REMOTE_DATASETS_REFERENCE_BY_UUID));
 
 def get_database_engine_options( kwargs, model_prefix='' ):
     """

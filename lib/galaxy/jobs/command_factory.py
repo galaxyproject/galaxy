@@ -2,6 +2,7 @@ from os import getcwd
 from os import chmod
 from os.path import join
 from os.path import abspath
+import galaxy.jobs
 
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
@@ -17,6 +18,7 @@ def build_command(
     container=None,
     include_metadata=False,
     include_work_dir_outputs=True,
+    create_output_dataset_json=False,
     remote_command_params={}
 ):
     """
@@ -67,6 +69,9 @@ def build_command(
 
     if include_metadata and job_wrapper.requires_setting_metadata:
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
+
+    if create_output_dataset_json:
+        __handle_output_dataset_json(commands_builder, job_wrapper, remote_command_params);
 
     return commands_builder.build()
 
@@ -147,6 +152,28 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         commands_builder.capture_return_code()
         commands_builder.append_command(metadata_command)
 
+def __handle_output_dataset_json(commands_builder, job_wrapper, remote_command_params):
+    metadata_kwds = remote_command_params.get('metadata_kwds', {})
+    exec_dir = metadata_kwds.get( 'exec_dir', abspath( getcwd() ) )
+    
+    job_output_ds_assoc_idx = 0;
+    dataset_descriptor_list = [];
+    job_output_ds_assoc_list = job_wrapper.get_job().output_datasets + job_wrapper.get_job().output_library_datasets;
+    delim=':';
+    replace_delim='_';
+    for job_output_ds_assoc in job_output_ds_assoc_list:
+        name = (( '\"' + job_output_ds_assoc.dataset.name + '\"' ) if job_output_ds_assoc.dataset.name else 'output').replace(delim, replace_delim);
+        ext = job_output_ds_assoc.dataset.extension.replace(delim, replace_delim);
+        dataset_id = str(job_output_ds_assoc.dataset.dataset.id);
+        dataset_final_path_string = '\"' + \
+                job_wrapper.get_final_path_string_for_dataset(job_wrapper.get_output_fnames()[job_output_ds_assoc_idx]).replace(delim, replace_delim) \
+                + '\"';
+        dataset_descriptor_list.append(delim.join([name, ext, dataset_id, dataset_final_path_string]));
+        job_output_ds_assoc_idx += 1;
+    command = 'cd '+ exec_dir + ';' + join('scripts', 'remote_site_json_creator.py') + '  ' +  \
+    '\"' + join(job_wrapper.working_directory, galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE) + '\"' +  \
+    ' ' + ' '.join(dataset_descriptor_list);
+    commands_builder.append_command(command);
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output

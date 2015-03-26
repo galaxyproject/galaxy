@@ -168,6 +168,22 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         if native_spec:
             log.debug( "(%s) native specification is: %s", galaxy_id_tag, native_spec )
 
+        if(jt.nativeSpecification == None):
+            jt.nativeSpecification = '';
+        #For CCC
+        if(self.app.config.use_uuids_for_dataset_reference()):
+            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'input_CCC_DID_list=' + ','.join(job_wrapper.get_input_string_uuids());
+            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'output_CCC_DID_list=' + ','.join(job_wrapper.get_output_string_uuids());
+            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'tool_id=' + job_wrapper.get_tool_id();
+            workflow_tuple = job_wrapper.get_workflow_invocation_info();
+            if(workflow_tuple):
+                (workflow_name, workflow_id, workflow_invocation_id) = workflow_tuple;
+                jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_name=' + workflow_name;
+                jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_id=' + str(workflow_id);
+                jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_invocation_id=' + str(workflow_invocation_id);
+        jt.nativeSpecification = jt.nativeSpecification + '\n';
+        log.debug('NATIVE : '+jt.nativeSpecification);
+
         # runJob will raise if there's a submit problem
         if self.external_runJob_script is None:
             # TODO: create a queue for retrying submission indefinitely

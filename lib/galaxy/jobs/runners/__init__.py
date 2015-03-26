@@ -196,6 +196,7 @@ class BaseJobRunner( object ):
             job_wrapper,
             include_metadata=include_metadata,
             include_work_dir_outputs=include_work_dir_outputs,
+	    create_output_dataset_json=self.app.config.use_remote_datasets,
             container=container
         )
 
