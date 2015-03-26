@@ -145,7 +145,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         if success:
             trans.response.set_content_type( 'application/x-gzip' )
             download_file = open( tool_tarball )
-            os.unlink( tool_tarball )
             tarball_path, filename = os.path.split( tool_tarball )
             trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( id )
             return download_file
