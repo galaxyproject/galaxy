@@ -177,7 +177,7 @@ ${render_galaxy_repository_actions( repository )}
                 %if can_deactivate_repository and can_uninstall_repository:
                     <% deactivate_uninstall_button_text = "Deactivate or Uninstall" %>
                     ${remove_from_disk_check_box.get_html()}
-                    <label for="repository" style="display: inline;font-weight:normal;">Check to uninstall or leave blank to deactivate</label>
+                    <label for="remove_from_disk" style="display: inline;font-weight:normal;">Check to uninstall or leave blank to deactivate</label>
                     <br/><br/>
                 %elif can_deactivate_repository:
                     <% deactivate_uninstall_button_text = "Deactivate" %>

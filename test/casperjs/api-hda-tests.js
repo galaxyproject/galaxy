@@ -223,6 +223,15 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         this.test.assert( hdaShow.misc_info === unicodeInfo,
             "Update accepted unicode misc_info: " + hdaShow.misc_info );
 
+        this.test.comment( 'update should set misc_info to the empty string if sent null/None' );
+        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
+            misc_info : null
+        });
+        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+        this.test.assert( hdaShow.misc_info === '',
+            "Update used null as the empty string: " + hdaShow.misc_info );
+
         // ........................................................................................... annotation
         // currently fails because no annotation is returned in details
         this.test.comment( 'update should allow changing the annotation' );

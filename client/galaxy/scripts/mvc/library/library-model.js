@@ -4,7 +4,7 @@ define([], function() {
 // LIBRARY RELATED MODELS
 
     var Library = Backbone.Model.extend({
-      urlRoot: '/api/libraries/',
+      urlRoot: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/',
 
       /** based on show_deleted would this lib show in the list of lib's?
        *  @param {Boolean} show_deleted are we including deleted libraries?
@@ -19,7 +19,7 @@ define([], function() {
     });
 
     var Libraries = Backbone.Collection.extend({
-      url: '/api/libraries',
+      url: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries',
 
       model: Library,
 
@@ -84,15 +84,15 @@ define([], function() {
 // FOLDER RELATED MODELS
 
     var Item = Backbone.Model.extend({
-      urlRoot : '/api/libraries/datasets/'
+      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets/'
     });
 
     var Ldda = Backbone.Model.extend({
-      urlRoot : '/api/libraries/datasets/'
+      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets/'
     });
 
     var FolderAsModel = Backbone.Model.extend({
-      urlRoot: '/api/folders'
+      urlRoot: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/folders'
     });
 
     var Folder = Backbone.Collection.extend({
@@ -152,7 +152,7 @@ define([], function() {
     var FolderContainer = Backbone.Model.extend({
         defaults : {
             folder : new Folder(),
-            urlRoot : "/api/folders/",
+            urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/folders/',
             id : "unknown"
         },
     parse : function(obj) {
@@ -169,11 +169,11 @@ define([], function() {
 // TODO UNITE
 
     var HistoryItem = Backbone.Model.extend({
-      urlRoot : '/api/histories/'
+      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories/'
     });
 
     var HistoryContents = Backbone.Collection.extend({
-      urlRoot : '/api/histories/',
+      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories/',
       initialize: function(options){
         this.id = options.id;
       },
@@ -184,11 +184,11 @@ define([], function() {
     });
 
     var GalaxyHistory = Backbone.Model.extend({
-      urlRoot : '/api/histories/'
+      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories/'
     });
 
     var GalaxyHistories = Backbone.Collection.extend({
-      url : '/api/histories',
+      url : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories',
       model : GalaxyHistory
     });
 
@@ -199,7 +199,7 @@ define([], function() {
      */
     
     var Jstree = Backbone.Model.extend({
-      urlRoot: '/api/remote_files'
+      urlRoot: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/remote_files'
     });
 
 return {

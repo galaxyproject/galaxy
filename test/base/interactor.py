@@ -1,7 +1,7 @@
 import os
 import re
 from StringIO import StringIO
-from galaxy.tools import TestCollectionDef
+from galaxy.tools.parser.interface import TestCollectionDef
 from galaxy import eggs
 eggs.require( "requests" )
 from galaxy import util

@@ -1,6 +1,7 @@
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
         $(function(){
+
             $("#tree").ajaxComplete(function(event, XMLHttpRequest, ajaxOptions) {
                 _log("debug", "ajaxComplete: %o", this); // dom element listening
             });
@@ -156,8 +157,25 @@
             });
             restore_folder_state();
         };
+
+        var init_clipboard = function() {
+                %if hasattr( repository, 'clone_url' ):
+                    $('#clone_clipboard').on('click', function( event ) {
+                        event.preventDefault();
+                        window.prompt("Copy to clipboard: Ctrl+C, Enter", "hg clone ${ repository.clone_url }");
+                    });           
+                %endif
+                %if hasattr( repository, 'share_url' ):
+                    $('#share_clipboard').on('click', function( event ) {
+                        event.preventDefault();
+                        window.prompt("Copy to clipboard: Ctrl+C, Enter", "${ repository.share_url }");
+                    });
+                %endif
+        };
+
         $(function() {
             init_dependencies();
+            init_clipboard();
         });
     </script>
 </%def>
@@ -210,16 +228,13 @@
         from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
         sharable_link = generate_sharable_link_for_repository_in_tool_shed( repository, changeset_revision=changeset_revision )
     %>
-    <a href="${sharable_link}">${sharable_link}</a>
+    <a href="${ sharable_link }" target="_blank">${ sharable_link }</a>
 </%def>
 
-<%def name="render_clone_str( repository )">
-    <%
+<%def name="render_clone_str( repository )"><%
         from tool_shed.util.common_util import generate_clone_url_for_repository_in_tool_shed
         clone_str = generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
-    %>
-    hg clone <a href="${clone_str}">${clone_str}</a>
-</%def>
+    %>hg clone ${ clone_str }</%def>
 
 <%def name="render_folder( folder, folder_pad, parent=None, row_counter=None, is_root_folder=False, render_repository_actions_for='tool_shed' )">
     <%

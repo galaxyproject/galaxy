@@ -19,6 +19,7 @@ import smtplib
 import stat
 import string
 import sys
+import time
 import tempfile
 import threading
 import urlparse
@@ -1249,6 +1250,17 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
+
+
+class ExecutionTimer(object):
+
+    def __init__(self):
+        self.begin = time.time()
+
+    def __str__(self):
+        elapsed = (time.time() - self.begin) * 1000.0
+        return "(%0.3f ms)" % elapsed
+
 
 if __name__ == '__main__':
     import doctest

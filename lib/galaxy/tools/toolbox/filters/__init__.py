@@ -90,7 +90,7 @@ class FilterFactory( object ):
         raise Exception("Failed to find filter %s.%s" % (module_name, function_name))
 
 
-## Stock Filter Functions
+# Stock Filter Functions
 def _not_hidden( context, tool ):
     return not tool.hidden
 

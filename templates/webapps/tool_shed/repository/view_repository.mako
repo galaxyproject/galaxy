@@ -19,11 +19,11 @@
 
     if changeset_revision_is_repository_tip:
         tip_str = 'repository tip'
-        sharable_link_label = 'Sharable link to this repository:'
+        sharable_link_label = 'Link to this repository:'
         sharable_link_changeset_revision = None
     else:
         tip_str = ''
-        sharable_link_label = 'Sharable link to this repository revision:'
+        sharable_link_label = 'Link to this repository revision:'
         sharable_link_changeset_revision = changeset_revision
     
     if heads:
@@ -99,65 +99,82 @@
     <p/>
 %endif
 <div class="toolForm">
-    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
+    <div class="toolFormTitle">Repository <b>${repository.name | h}</b></div>
     <div class="toolFormBody">
         <div class="form-row">
-            <label>${sharable_link_label}</label>
-            ${render_sharable_str( repository, changeset_revision=sharable_link_changeset_revision )}
-        </div>
-        %if can_download or can_push:
-            <div class="form-row">
-                <label>Clone this repository:</label>
-                ${render_clone_str( repository )}
-            </div>
-        %endif
-        <div class="form-row">
-            <label>Name:</label>
+            <b>Name:</b>\
             %if can_browse_contents:
-                <a href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${repository.name}</a>
+                <a title="Browse the contents of this repository" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${repository.name}</a>
             %else:
                 ${repository.name | h}
             %endif
         </div>
         <div class="form-row">
-            <label>Type:</label>
+            <b>Owner:</b>
+            <a title="See all repositories owned by ${ repository.user.username | h }" href="${h.url_for( controller='repository', action='browse_repositories_by_user', user_id=trans.app.security.encode_id( repository.user.id ) )}">${ repository.user.username | h }</a>
+        </div>
+        <div class="form-row">
+            <b>Synopsis:</b>
+            ${repository.description | h}
+        </div>
+        %if repository.long_description:
+            <div class="form-row">
+                <p>${repository.long_description|h}</p>
+                ## ${render_long_description( to_html_string( repository.long_description ) )}
+            </div>
+        %endif
+        %if repository.homepage_url:
+        <div class="form-row">
+            <b>Content homepage:</b>
+            <a href="${repository.homepage_url | h}" target="_blank">${repository.homepage_url | h}</a>
+        </div>
+        %endif
+        %if repository.remote_repository_url:
+        <div class="form-row">
+            <b>Development repository:</b>
+            <a href="${repository.remote_repository_url | h}" target="_blank">${repository.remote_repository_url | h}</a>
+        </div>
+        %endif
+        <div class="form-row">
+            <b>${sharable_link_label}</b>
+            <a href="${ repository.share_url }" target="_blank">${ repository.share_url }</a>
+            <button title="to clipboard" class="btn btn-default btn-xs" id="share_clipboard"><span class="fa fa-clipboard"></span></button>
+        </div>
+        %if can_download or can_push:
+            <div class="form-row">
+                <b>Clone this repository:</b>
+                <code>hg clone ${ repository.clone_url }</code>
+                <button title="to clipboard" class="btn btn-default btn-xs" id="clone_clipboard"><span class="fa fa-clipboard"></span></button>
+            </div>
+        %endif
+        <div class="form-row">
+            <b>Type:</b>
             ${repository.type | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
-            <label>Synopsis:</label>
-            ${repository.description | h}
-        </div>
-        %if repository.long_description:
-            ${render_long_description( to_html_string( repository.long_description ) )}
-        %endif
-        <div class="form-row">
-            <label>Revision:</label>
+            <b>Revision:</b>
             %if can_view_change_log:
-                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
+                <a title="See the revision history" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
             %else:
                 ${revision_label}
             %endif
         </div>
         <div class="form-row">
-            <label>Owner:</label>
-            ${repository.user.username | h}
-        </div>
-        <div class="form-row">
-            <label>This revision can be installed:</label>
+            <b>This revision can be installed:</b>
             ${revision_installable}
         </div>
         <div class="form-row">
-            <label>Times cloned / installed:</label>
+            <b>Times cloned / installed:</b>
             ${repository.times_downloaded}
         </div>
         %if trans.user_is_admin():
             <div class="form-row">
-                <label>Location:</label>
+                <b>Location:</b>
                 ${repository.repo_path( trans.app ) | h}
             </div>
             <div class="form-row">
-                <label>Deleted:</label>
+                <b>Deleted:</b>
                 ${repository.deleted}
             </div>
         %endif
