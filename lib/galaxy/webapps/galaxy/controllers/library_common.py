@@ -838,12 +838,14 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
         else:
+            #Karthik: No direct file access here
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
             self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             self._check_add( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
             library = folder.parent_library
         if folder and last_used_build in [ 'None', None, '?' ]:
             last_used_build = folder.genome_build
+        #Karthik:cntrller == api for my testing
         if kwd.get( 'runtool_btn', False ) or kwd.get( 'ajax_upload', False ) or cntrller == 'api':
             error = False
             if upload_option == 'upload_paths' and not trans.app.config.allow_library_path_paste:
@@ -872,7 +874,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                            message=message,
                                                            status='error' ) )
             else:
-                # See if we have any inherited templates.
+                # See if we have any inherited templates (replacing existing dataset)
                 if not info_association:
                     info_association, inherited = folder.get_info_association( inherited=True )
                 if info_association and info_association.inheritable:
@@ -983,6 +985,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                            show_deleted=show_deleted,
                                                            message=message,
                                                            status=status ) )
+        #Karthik:Upload from desktop code below, ignore for now
         # Note: if the upload form was submitted due to refresh_on_change for a form field, we cannot re-populate
         # the field for the selected file ( files_0|file_data ) if the user selected one.  This is because the value
         # attribute of the html input file type field is typically ignored by browsers as a security precaution.
@@ -1105,6 +1108,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             elif upload_option == 'upload_directory':
                 uploaded_datasets, response_code, message = self.get_server_dir_uploaded_datasets( trans, cntrller, kwd, full_dir, import_dir_desc, library_bunch, response_code, message )
             elif upload_option == 'upload_paths':
+                #Karthik: accesses file
                 uploaded_datasets, response_code, message = self.get_path_paste_uploaded_datasets( trans, cntrller, kwd, library_bunch, response_code, message )
             upload_common.cleanup_unused_precreated_datasets( precreated_datasets )
             if upload_option == 'upload_file' and not uploaded_datasets:
@@ -1123,8 +1127,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                                        show_deleted=show_deleted,
                                                        message=message,
                                                        status='error' ) )
+        #Karthik: Does not touch the file as long as link_file parameter is used
         json_file_path = upload_common.create_paramfile( trans, uploaded_datasets )
         data_list = [ ud.data for ud in uploaded_datasets ]
+        #Karthik: Hopefully, does not access the file directly
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
         # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
         job.add_parameter( 'link_data_only', dumps( kwd.get( 'link_data_only', 'copy_files' ) ) )
@@ -1216,42 +1222,53 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             return None, response_code, message
         return files, None, None
 
+    def is_remote_dataset( self, params ):
+        return params.get('remote_dataset', False);
+
     def get_path_paste_uploaded_datasets( self, trans, cntrller, params, library_bunch, response_code, message ):
         preserve_dirs = util.string_as_bool( params.get( 'preserve_dirs', False ) )
         uploaded_datasets = []
+        #Karthik: Checks for path existence
         (files_and_folders, _response_code, _message) = self._get_path_files_and_folders(params, preserve_dirs)
         if _response_code:
             return (uploaded_datasets, _response_code, _message)
+        #Karthik: Creates entry in Galaxy DB for the dataset
         for (path, name, folder) in files_and_folders:
             uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, path, 'path_paste', library_bunch, folder ) )
         return uploaded_datasets, 200, None
 
     def _get_path_files_and_folders( self, params, preserve_dirs ):
+        #Karthik: Checks for path existence
         problem_response = self._check_path_paste_params( params )
         if problem_response:
             return problem_response
         files_and_folders = []
         for (line, path) in self._paths_list( params ):
-            line_files_and_folders = self._get_single_path_files_and_folders( line, path, preserve_dirs )
+            #Karthik: Checks for path existence
+            line_files_and_folders = self._get_single_path_files_and_folders( line, path, preserve_dirs, self.is_remote_dataset(params))
             files_and_folders.extend( line_files_and_folders )
         return files_and_folders, None, None
 
-    def _get_single_path_files_and_folders(self, line, path, preserve_dirs):
+    def _get_single_path_files_and_folders(self, line, path, preserve_dirs, is_remote_dataset=False):
         files_and_folders = []
-        if os.path.isfile( path ):
+        #Karthik: file check
+        if is_remote_dataset or os.path.isfile( path ):
             name = os.path.basename( path )
             files_and_folders.append((path, name, None))
-        for basedir, dirs, files in os.walk( line ):
-            for file in files:
-                file_path = os.path.abspath( os.path.join( basedir, file ) )
-                if preserve_dirs:
-                    in_folder = os.path.dirname( file_path.replace( path, '', 1 ).lstrip( '/' ) )
-                else:
-                    in_folder = None
-                files_and_folders.append((file_path, file, in_folder))
+        #Karthik: directory walk
+        if not is_remote_dataset:
+            for basedir, dirs, files in os.walk( line ):
+                for file in files:
+                    file_path = os.path.abspath( os.path.join( basedir, file ) )
+                    if preserve_dirs:
+                        in_folder = os.path.dirname( file_path.replace( path, '', 1 ).lstrip( '/' ) )
+                    else:
+                        in_folder = None
+                    files_and_folders.append((file_path, file, in_folder))
         return files_and_folders
 
     def _paths_list(self, params):
+        #Karthik: Make sure all paths are with respect to a valid directory, probably not necessary
         return [ (l.strip(), os.path.abspath(l.strip())) for l in params.get( 'filesystem_paths', '' ).splitlines() if l.strip() ]
 
     def _check_path_paste_params(self, params):
@@ -1261,7 +1278,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             return None, response_code, message
         bad_paths = []
         for (_, path) in self._paths_list( params ):
-            if not os.path.exists( path ):
+            if (not self.is_remote_dataset(params)) and (not os.path.exists( path )):
                 bad_paths.append( path )
         if bad_paths:
             message = 'Invalid paths: "%s".' % '", "'.join( bad_paths )

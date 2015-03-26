@@ -87,6 +87,8 @@ def add_file( dataset, registry, json_file, output_path ):
             return
         dataset.path = temp_name
     # See if we have an empty file
+    #Karthik: file path check here
+    #Karthik: somehow pass data_type,ext instead of checking here
     if not os.path.exists( dataset.path ):
         file_err( 'Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file )
         return
@@ -377,18 +379,21 @@ def output_adjacent_tmpdir( output_path ):
 
 
 def __main__():
-
+    #Argv 1: galaxy root dir
+    #Argv 2: datatypes.conf copy
+    #Argv 3: JSON file
+    #Argv 4: string: <dataset_id>:<files_path>(job_working_directory/000/8/dataset_12_files):None
     if len( sys.argv ) < 4:
         print >>sys.stderr, 'usage: upload.py <root> <datatypes_conf> <json paramfile> <output spec> ...'
         sys.exit( 1 )
 
-    output_paths = parse_outputs( sys.argv[4:] )
+    output_paths = parse_outputs( sys.argv[4:] )	#dictionary - dataset id to tuple (files_path, path)
     json_file = open( 'galaxy.json', 'w' )
 
     registry = Registry()
     registry.load_datatypes( root_dir=sys.argv[1], config=sys.argv[2] )
 
-    for line in open( sys.argv[3], 'r' ):
+    for line in open( sys.argv[3], 'r' ):	#Karthik: load input JSON into dict
         dataset = loads( line )
         dataset = util.bunch.Bunch( **safe_dict( dataset ) )
         try:
@@ -405,10 +410,10 @@ def __main__():
     # clean up paramfile
     # TODO: this will not work when running as the actual user unless the
     # parent directory is writable by the user.
-    try:
-        os.remove( sys.argv[3] )
-    except:
-        pass
+    #try:
+        #os.remove( sys.argv[3] )
+    #except:
+        #pass
 
 if __name__ == '__main__':
     __main__()

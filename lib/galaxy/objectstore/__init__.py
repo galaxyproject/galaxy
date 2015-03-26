@@ -287,6 +287,7 @@ class DiskObjectStore(ObjectStore):
     def create(self, obj, **kwargs):
         if not self.exists(obj, **kwargs):
             path = self._construct_path(obj, **kwargs)
+            log.debug("Disk file path "+path+" obj "+str(obj));
             dir_only = kwargs.get('dir_only', False)
             # Create directory if it does not exist
             dir = path if dir_only else os.path.dirname(path)

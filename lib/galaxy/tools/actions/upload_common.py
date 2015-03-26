@@ -348,11 +348,12 @@ def create_paramfile( trans, uploaded_datasets ):
         _chown( json_file_path )
     return json_file_path
 
-
+import traceback
 def create_job( trans, params, tool, json_file_path, data_list, folder=None, history=None ):
     """
     Create the upload job.
     """
+    #log.debug(traceback.format_stack());
     job = trans.app.model.Job()
     galaxy_session = trans.get_galaxy_session()
     if type( galaxy_session ) == trans.model.GalaxySession:
