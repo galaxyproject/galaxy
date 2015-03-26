@@ -418,6 +418,13 @@ def __expand_input_elems( root_elem, prefix="" ):
         __pull_up_params( root_elem, cond_elem )
         root_elem.remove( cond_elem )
 
+    section_elems = root_elem.findall( 'section' )
+    for section_elem in section_elems:
+        new_prefix = __prefix_join( prefix, section_elem.get( "name" ) )
+        __expand_input_elems( section_elem, new_prefix )
+        __pull_up_params( root_elem, section_elem )
+        root_elem.remove( section_elem )
+
 
 def __append_prefix_to_params( elem, prefix ):
     for param_elem in elem.findall( 'param' ):
