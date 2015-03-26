@@ -157,16 +157,25 @@
             });
             restore_folder_state();
         };
+
+        var init_clipboard = function() {
+                %if hasattr( repository, 'clone_url' ):
+                    $('#clone_clipboard').on('click', function( event ) {
+                        event.preventDefault();
+                        window.prompt("Copy to clipboard: Ctrl+C, Enter", "hg clone ${ repository.clone_url }");
+                    });           
+                %endif
+                %if hasattr( repository, 'share_url' ):
+                    $('#share_clipboard').on('click', function( event ) {
+                        event.preventDefault();
+                        window.prompt("Copy to clipboard: Ctrl+C, Enter", "${ repository.share_url }");
+                    });
+                %endif
+        };
+
         $(function() {
             init_dependencies();
-            $('#clone_clipboard').on('click', function( event ) {
-                event.preventDefault();
-                window.prompt("Copy to clipboard: Ctrl+C, Enter", "hg clone ${ repository.clone_url }");
-            });           
-            $('#share_clipboard').on('click', function( event ) {
-                event.preventDefault();
-                window.prompt("Copy to clipboard: Ctrl+C, Enter", "${ repository.share_url }");
-            });
+            init_clipboard();
         });
     </script>
 </%def>

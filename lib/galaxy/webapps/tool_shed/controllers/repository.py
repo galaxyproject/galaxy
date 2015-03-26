@@ -448,7 +448,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                                                       changeset_revision=selected_changeset_revision ) )
         if user_id:
             user = suc.get_user( trans.app, user_id )
-            trailing_string = 'Owned by %s' % str( user.username )
+            trailing_string = ''
             default = 'Repositories Owned by %s' % str( user.username )
         else:
             trailing_string = ''

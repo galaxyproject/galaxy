@@ -58,6 +58,7 @@
   <tool file="for_workflows/cat_list.xml" />
   <tool file="for_workflows/cat_collection.xml" />
   <tool file="for_workflows/head.xml" />
+  <tool file="for_workflows/cat_interleave.xml" />
 
   <tool file="simple_constructs.yml" />
 

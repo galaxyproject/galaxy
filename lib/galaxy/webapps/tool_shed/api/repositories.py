@@ -14,6 +14,7 @@ from galaxy.exceptions import RequestParameterMissingException
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.exceptions import ActionInputError
 from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import MalformedId
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.web import _future_expose_api as expose_api
@@ -577,8 +578,13 @@ class RepositoriesController( BaseAPIController ):
         :returns:   detailed repository information
         :rtype:     dict
 
-        :raises:  ObjectNotFound
+        :raises:  ObjectNotFound, MalformedId
         """
+        try:
+            trans.security.decode_id( id )
+        except Exception:
+            raise MalformedId( 'The given id is invalid.' )
+
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         if repository is None:
             raise ObjectNotFound( 'Unable to locate repository for the given id.' )

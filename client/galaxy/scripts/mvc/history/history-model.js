@@ -361,7 +361,7 @@ History.getHistoryData = function getHistoryData( historyId, options ){
 var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends HistoryCollection.prototype */{
     model   : History,
-    
+
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 

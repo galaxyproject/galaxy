@@ -986,12 +986,11 @@ class JobWrapper( object ):
             job.set_state( job.states.PAUSED )
             self.sa_session.add( job )
 
-    def mark_as_resubmitted( self ):
+    def mark_as_resubmitted( self, info=None ):
         job = self.get_job()
         self.sa_session.refresh( job )
-        for dataset in [ dataset_assoc.dataset for dataset_assoc in job.output_datasets + job.output_library_datasets ]:
-            dataset._state = model.Dataset.states.RESUBMITTED
-            self.sa_session.add( dataset )
+        if info is not None:
+            job.info = info
         job.set_state( model.Job.states.RESUBMITTED )
         self.sa_session.add( job )
         self.sa_session.flush()
@@ -1045,6 +1044,7 @@ class JobWrapper( object ):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
+        finish_timer = util.ExecutionTimer()
         stdout = unicodify( stdout )
         stderr = unicodify( stderr )
 
@@ -1302,7 +1302,7 @@ class JobWrapper( object ):
             # If job was composed of tasks, don't attempt to recollect statisitcs
             self._collect_metrics( job )
         self.sa_session.flush()
-        log.debug( 'job %d ended' % self.job_id )
+        log.debug( 'job %d ended (finish() executed in %s)' % (self.job_id, finish_timer) )
         delete_files = self.app.config.cleanup_job == 'always' or ( job.state == job.states.OK and self.app.config.cleanup_job == 'onsuccess' )
         self.cleanup( delete_files=delete_files )
 

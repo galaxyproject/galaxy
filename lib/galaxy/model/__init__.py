@@ -1335,9 +1335,8 @@ class Dataset( object ):
                     DISCARDED = 'discarded',
                     PAUSED = 'paused',
                     SETTING_METADATA = 'setting_metadata',
-                    FAILED_METADATA = 'failed_metadata',
-                    RESUBMITTED = 'resubmitted' )
-    # failed_metadata and resubmitted are only valid as DatasetInstance states currently
+                    FAILED_METADATA = 'failed_metadata')
+    # failed_metadata is only valid as DatasetInstance state currently
 
     non_ready_states = (
         states.UPLOAD,
