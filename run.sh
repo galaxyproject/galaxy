@@ -15,6 +15,7 @@ export PICARD_PATH=$GENOMICS_DIR/ohsu/dnapipeline/picard-tools-1.110
 export GATK_JAR_PATH=/opt/gsa-unstable/target/GenomeAnalysisTK.jar
 export SEATTLESEQ_GETANNOTATION_JAR_PATH=/opt/Genomics/annotation/getAnnotation/project/
 export SEATTLESEQ_WRITEGENOTYPE_JAR_PATH=/opt/Genomics/annotation/writeGenotype/project/
+export MUTECT_JAR_PATH=$GENOMICS_DIR/ohsu/dnapipeline/mutect-1.1.7.jar
 export PATH=$GENOMICS_DIR:$BWA_DIR:$SAMTOOLS_DIR:$PICARD_PATH:$PYTHON_2_7_PATH/bin:$PATH
 export NSLOTS=16
 export PYTHON_EGG_CACHE=.eggs_cache
