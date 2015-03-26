@@ -1,0 +1,56 @@
+#                                               -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.59)
+AC_INIT(Condor DRMAA library, 0.1, peter.troeger@hpi.uni-potsdam.de)
+AC_CONFIG_HEADER(config.h)
+
+# Checks for programs.
+AC_PROG_CC()
+AC_ARG_VAR(AR, [checks for availability of the library archive tool])
+AC_PATH_PROG(AR,ar,,$PATH:/usr/ccs/bin:/usr/local/ccs/bin)
+
+# Export the following variables to the Makefile
+AC_SUBST(SO)
+AC_SUBST(LDSHARED)
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([limits.h stdlib.h string.h unistd.h pthread.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_HEADER_STDBOOL
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_STRUCT_TM
+
+# Checks for library functions.
+AC_FUNC_MALLOC
+AC_FUNC_REALLOC
+AC_TYPE_SIGNAL
+AC_FUNC_STRFTIME
+AC_CHECK_FUNCS([localtime_r mkdir putenv strcasecmp strdup strerror strstr strlcat strlcpy strptime])
+
+# specify standalone compilation, Condor build system might need a switch here
+AC_DEFINE([CONDOR_DRMAA_STANDALONE], [], [standalone build, outside of Condor build system])
+
+# allow to add debug options
+AC_DEFINE([DEBUG], [], [debug build, additional debug output on stderr])
+
+# determine linker options for creation of shared library
+case `uname -s`/`uname -r` in
+	hp*|HP*)  	SO=.sl
+			LDSHARED="ld -b"
+	;;
+	Darwin*)  	SO=.dylib
+			LDSHARED='$(CC) $(LDFLAGS) -single_module -dynamiclib'
+			CFLAGS="-no-cpp-precomp $CFLAGS"
+        		AC_MSG_RESULT(Apple GCC - added -no-cpp-precomp)
+	;;
+	*)        	SO=.so
+			LDSHARED='$(CC) -shared $(LDFLAGS)'
+	;;
+esac
+
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT

@@ -1,0 +1,9 @@
+Program Name: org.broadinstitute.sting.analyzecovariates.AnalyzeCovariates
+Reading in input csv file...
+...Done!
+Writing out intermediate tables for R...
+Writing out data tables for read group: A Fake phiX Sample	with 340 observations	and aggregate residual error = -9.136
+...Done!
+Calling analysis R scripts and writing out figures...
+Analyzing read group: A Fake phiX Sample
+...Done!

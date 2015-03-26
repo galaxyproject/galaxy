@@ -1,0 +1,46 @@
+<style type="text/css">
+        tr.d0 td {background-color: oldlace; color: black;}
+        tr.d1 td {background-color: aliceblue; color: black;}
+        </style><?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Galaxy rgPicardValidate.py tool output - see http://g2.trac.bx.psu.edu/" />
+<title></title>
+<link rel="stylesheet" href="/static/style/base.css" type="text/css" />
+</head>
+<body>
+<div class="document">
+<b><a href="http://rgenetics.org">Galaxy Rgenetics</a> tool output rgPicardValidate.py run at 19/04/2011 11:19:17</b><br/><b>Running this Galaxy tool produced the following output files (click the filename to view/download a copy).</b><hr/><table>
+<tr><td><a href="rgPicardValidate.out">rgPicardValidate.out</a></td></tr>
+</table><p/>
+<b>Picard on line resources</b><ul>
+<li><a href="http://picard.sourceforge.net/index.shtml">Click here for Picard Documentation</a></li>
+<li><a href="http://picard.sourceforge.net/picard-metric-definitions.shtml">Click here for Picard Metrics definitions</a></li></ul><hr/>
+<b>Picard output</b><hr/>
+<table cellpadding="3" >
+<tr class="d0"><td>['WARNING: Record 1, Read name both_reads_align_clip_marked, NM tag (nucleotide differences) is missing\n']</td></tr>
+<tr class="d1"><td>['WARNING: Record 2, Read name both_reads_present_only_first_aligns, NM tag (nucleotide differences) is missing\n']</td></tr>
+<tr class="d0"><td>['WARNING: Record 3, Read name read_2_too_many_gaps, NM tag (nucleotide differences) is missing\n']</td></tr>
+<tr class="d1"><td>['ERROR: Record 4, Read name both_reads_align_clip_adapter, The record is out of [queryname] order, prior read name [read_2_too_many_gaps], prior coodinates [1:1]\n']</td></tr>
+<tr class="d0"><td>['WARNING: Record 4, Read name both_reads_align_clip_adapter, NM tag (nucleotide differences) is missing\n']</td></tr>
+<tr class="d1"><td>['WARNING: Record 5, Read name both_reads_align_clip_adapter, NM tag (nucleotide differences) is missing\n']</td></tr>
+<tr class="d0"><td>['WARNING: Record 6, Read name both_reads_align_clip_marked, NM tag (nucleotide differences) is missing\n']</td></tr>
+<tr class="d1"><td>['WARNING: Record 7, Read name read_2_too_many_gaps, NM tag (nucleotide differences) is missing\n']</td></tr>
+<tr class="d0"><td>['ERROR: Record 8, Read name both_reads_present_only_first_aligns, The record is out of [queryname] order, prior read name [read_2_too_many_gaps], prior coodinates [1:302]\n']</td></tr>
+</table>
+<b>Picard log</b><hr/>
+<pre>## executing samtools sort /udd/rerla/rgalaxy/database/job_working_directory/98/dataset_100_files/tmpELItj4rgSortBamTemp.bam /udd/rerla/rgalaxy/database/job_working_directory/98/dataset_100_files/rgcleansam.sorted returned status 0. Nothing appeared on stderr/stdout
+
+rectory/98/dataset_100_files/rgPicardValidate.out IGNORE=INVALID_TAG_NM  MAX_OUTPUT=100 TMP_DIR=/tmp returned status 1 and log (stdout/stderr) records: 
+[Tue Apr 19 11:19:17 EDT 2011] net.sf.picard.sam.ValidateSamFile INPUT=/udd/rerla/rgalaxy/database/job_working_directory/98/dataset_100_files/rgcleansam.sorted.bam OUTPUT=/udd/rerla/rgalaxy/database/job_working_directory/98/dataset_100_files/rgPicardValidate.out IGNORE=[INVALID_TAG_NM] MAX_OUTPUT=100 REFERENCE_SEQUENCE=/share/shared/data/hg18/hg18.fasta TMP_DIR=/tmp    MODE=VERBOSE IGNORE_WARNINGS=false VALIDATE_INDEX=true IS_BISULFITE_SEQUENCED=false MAX_OPEN_TEMP_FILES=8000 VERBOSITY=INFO QUIET=false VALIDATION_STRINGENCY=STRICT COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+[Tue Apr 19 11:19:17 EDT 2011] net.sf.picard.sam.ValidateSamFile done.
+Runtime.totalMemory()=9109504
+
+
+</pre><hr/>The freely available <a href="http://picard.sourceforge.net/command-line-overview.shtml">Picard software</a> 
+generated all outputs reported here, using this command line:<br/>
+<pre>java -Xmx8g  -jar /udd/rerla/rgalaxy/tool-data/shared/jars/ValidateSamFile.jar I=/udd/rerla/rgalaxy/database/job_working_directory/98/dataset_100_files/rgcleansam.sorted.bam R=/share/shared/data/hg18/hg18.fasta O=/udd/rerla/rgalaxy/database/job_working_directory/98/dataset_100_files/rgPicardValidate.out IGNORE=INVALID_TAG_NM  MAX_OUTPUT=100 TMP_DIR=/tmp</pre>
+</div></body></html>
+

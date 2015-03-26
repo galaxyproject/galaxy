@@ -6,14 +6,14 @@ import pwd
 import sys
 #import drmaa
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] ) # remove scripts/ from the path
-sys.path = new_path
+#new_path = [ os.path.join( os.getcwd(), "lib" ) ]
+#new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+#sys.path = new_path
 
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require("drmaa")
-import drmaa
+#from galaxy import eggs
+#import pkg_resources
+#pkg_resources.require("drmaa")
+#import drmaa
 
 def validate_paramters():
     if len(sys.argv)<4:
@@ -30,6 +30,11 @@ def main():
     path, galaxy_user_name, gid  = validate_paramters()
     os.system('chown -Rh %s %s' %(galaxy_user_name, path))
     os.system('chgrp -Rh %s %s' %(gid, path))
+    os.system('chmod og-rwX -R %s' %(path))
+    os.system('setfacl -R -m g:galaxy:rX %s' %(path))	#should be group so that nginx user can also see this dataset
+    os.system('setfacl -R -m u:galaxyuser:rwX %s' %(path))	#for metadata - write permission
+    #os.system('chmod o-rwX -R %s' %(path))
+    #os.system('chmod g+rwX -R %s' %(path))
 
 if __name__ == "__main__":
     main()

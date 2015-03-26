@@ -829,7 +829,7 @@ class JobWrapper( object ):
     def get_version_string_path( self ):
         return os.path.abspath(os.path.join(self.app.config.new_file_path, "GALAXY_VERSION_STRING_%s" % self.job_id))
 
-    def prepare( self, compute_environment=None ):
+    def prepare( self, compute_environment=None, append_to_command=None ):
         """
         Prepare the job to run by creating the working directory and the
         config files.
@@ -1283,9 +1283,17 @@ class JobWrapper( object ):
         if job.user:
             job.user.total_disk_usage += bytes
 
+	if(self.app.config.external_chown_script != None):
+	    for dataset_path in self.get_output_fnames():
+		try:
+		    self.set_ownership_of_output(self.user_system_pwent[0], str(self.user_system_pwent[3]), dataset_path.real_path);
+		except:
+		    log.exception( '(%s) Failed to change ownership of %s, failing' % ( job.id, dataset_path.real_path ) )
+		    return self.fail( job.info, stdout=stdout, stderr=stderr, exit_code=tool_exit_code )
+
         # fix permissions
-        for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
-            util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+        #for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
+            #util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -1543,6 +1551,16 @@ class JobWrapper( object ):
         param_dict = job.get_param_values( self.app )
         return self.tool.id == 'upload1' and param_dict.get( 'link_data_only', None ) == 'link_to_files'
 
+    def set_ownership_of_output( self, username, groupname, path ):
+        job = self.get_job()
+        # FIXME: hardcoded path
+        cmd = [ '/usr/bin/sudo', '-E', self.app.config.external_chown_script, path, username, groupname ]
+        log.debug( '(%s) Changing ownership of output dataset file with: %s' % ( job.id, ' '.join( cmd ) ) )
+        p = subprocess.Popen( cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+        # TODO: log stdout/stderr
+        stdout, stderr = p.communicate()
+        assert p.returncode == 0
+
     def _change_ownership( self, username, gid ):
         job = self.get_job()
         # FIXME: hardcoded path
@@ -1558,6 +1576,7 @@ class JobWrapper( object ):
         if self.app.config.external_chown_script and job.user is not None:
             try:
                 self._change_ownership( self.user_system_pwent[0], str( self.user_system_pwent[3] ) )
+                #self._change_ownership( self.user_system_pwent[0], 'galaxy' )	#Use galaxy group
             except:
                 log.exception( '(%s) Failed to change ownership of %s, making world-writable instead' % ( job.id, self.working_directory ) )
                 os.chmod( self.working_directory, 0777 )
@@ -1566,6 +1585,7 @@ class JobWrapper( object ):
         job = self.get_job()
         if self.app.config.external_chown_script and job.user is not None:
             self._change_ownership( self.galaxy_system_pwent[0], str( self.galaxy_system_pwent[3] ) )
+            #self._change_ownership( self.user_system_pwent[0], 'galaxy' ) #Use galaxy group, but keep user as owner
 
     @property
     def user_system_pwent( self ):
@@ -1644,7 +1664,7 @@ class TaskWrapper(JobWrapper):
         param_dict = self.tool.params_from_strings( param_dict, self.app )
         return param_dict
 
-    def prepare( self, compute_environment=None ):
+    def prepare( self, compute_environment=None, append_to_command=None ):
         """
         Prepare the job to run by creating the working directory and the
         config files.
@@ -1662,6 +1682,8 @@ class TaskWrapper(JobWrapper):
         self.sa_session.flush()
 
         self.command_line, self.extra_filenames = tool_evaluator.build()
+	if(append_to_command != None):
+	    self.command_line = self.command_line + append_to_command;
 
         # FIXME: for now, tools get Galaxy's lib dir in their path
         if self.command_line and self.command_line.startswith( 'python' ):

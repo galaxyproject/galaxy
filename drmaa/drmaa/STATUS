@@ -1,0 +1,50 @@
+This document describes the current status of the Condor DRMAA implementation.
+
+The work so far was developed according to the following two specifications:
+ Distributed Resource Management Application API Specification 1.0 January 2004
+ DRMAA C Bindings v1.0
+
+Both are available at www.drmaa.org.
+
+The DRMAA syntax for using input / error / error files on other hosts in not supported 
+in this implementation. You can only use the mandatory DRMAA job template attributes. 
+Note that DRMAA_NATIVE_SPECIFICATION can be used to set all attributes supported in 
+Condor submit discription files (see Condor manual's man page for condor_submit).
+
+TODO List
+================================================================================
+- add description for DEBUG build flag
+
+drmaa_init()
+ - contact condor to verify it is operating (e.g. condor_status)
+ - handle case where _exit() was not called
+ - verify lib has proper permissions to its directories
+
+is_valid_job_template()
+ - more rigorously validate job template's validity
+
+is_valid_attr_value()
+ - include cases to validate all supported attributes
+
+drmaa_get_attribute()
+ - add warning if output buffer is not large enough to contain value string
+
+drmaa_get_vector_attribute()
+ - add warning if output buffer is not large enough to contain value string
+ - verify that DRMAA_NATIVE_SPECIFICATION does not conflict with any
+   previously set attributes in the job template
+ - add support for all optional attributes
+
+submit_job()
+ - handle jobid too short case	
+
+drmaa_wait()
+ - reap additional rusage data
+
+test_suite.c (DRMAA test suite)
+ - add test case for negative incr in drmaa_run_bulk_jobs
+ - add test case for incr > 1 in drmaa_run_bulk_jobs
+ - check that reaped / unknown jobs in drmaa_synchronize(SESSION_ALL) are ignored
+ - check for error with incorrect contatc string in drmaa_init
+ - check for correct handling of multiple drmaa_exit calls from different threads
+ - check handling of illegal job template handles in all routines

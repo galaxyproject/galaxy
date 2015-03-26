@@ -1,0 +1,80 @@
+This README file describes the DRMAA Condor UNIX C library.
+
+Most parts of this code were written by Nicholas Geib, a former member of the
+Condor development team.  Peter Troeger from the DRMAA working group is now
+responsible for the finalization and ongoing improvement of the code. 
+
+In case of problems, please use the feedback mechanisms on the according
+Sourceforge project page:
+
+http://sf.net/projects/condor-ext
+
+This library was developed from the Distributed Resource Management Application
+API Specification 1.0 of January 2004 and the DRMAA C Bindings v1.0. Both were
+available at time of writing at www.drmaa.org. 
+
+The library expects a POSIX-compliant Unix system, with support for the pthread
+library. It contains support only for the Condor system, and has been tested
+with the latest releases from the Condor 6.7 and 6.8 series.
+
+The library supports all mandatory parts of the DRMAA 1.0 API. See the STATUS
+file for details about what has not yet been fully implemented.
+
+REQUIREMENTS:
+
+The library requires the following in order to operate.  The program linked to
+the library is referred to as the "user process".
+
+1) A local schedd must be running. If you have installed this machine as Condor
+submission host, this should be the case.
+2) The user process must have sufficient spool space.  This space should be in
+/tmp or specified by the environment variables TEMP, TMP, or SPOOL.
+3) The user process and local schedd must have read, write, and traverse rights
+to the spool space.
+4) On platforms where libpthread, the POSIX threading library, is supported the
+user process must be linked with libpthread when it uses the static DRMAA
+library.
+
+BUILD & INSTALLATION:
+
+This package can be build independently from Condor with the usual autoconf
+stuff. Currently, there is no install target, so you have to copy one of the
+resulting libraries to the right place:
+
+./configure
+make
+cp libdrmaa.so /usr/lib/ 
+cp drmaa.h /usr/include/
+
+The build process was tested on Linux (x86 and IA64) and MacOS X, but might
+also work on other Unix platforms.
+
+CAUTION:
+
+1. The libcondordrmaa.a static library is build for backward-compatibility to
+the first version of DRMAA in Condor. Please note that the DRMAA specification
+expects a shared library, so your application should rely on libdrmaa.so
+instead.
+
+2. The DRMAA library submits jobs in the Vanilla universe. If you want to work
+with jobs in the standard universe, please provide an according specification
+("universe=standard") in the 'native specification' attribute of the job
+template or use job category options in /etc/drmaa file, e.g.:
+
+[categories]
+standard_category = Universe = standard
+some_other_category = Requirements = (OpSys == "WINNT51")
+
+3. DRMAA_WD (working directory) is implemented using Initialdir so it is not
+possible to set a working (execution) directory when filesystems are not shared
+in Condor.
+
+4. DRMAA_TRANSFER_FILES attribute does not support hostname syntax in
+DRMAA_INPUT_PATH, DRMAA_OUTPUT_PATH and DRMAA_ERROR_PATH paths.
+
+5. If DRMAA_TRANSFER_FILES is used and is not empty, the executable is
+transferred from submit to execution host implicitely by Condor. There is also
+no way of turning of the transfer of output/error files between submit and
+execution hosts.
+
+This is non-standard behaviour and should not relied on in portable programs.

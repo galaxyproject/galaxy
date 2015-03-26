@@ -1,0 +1,186 @@
+<tool id="bwa_0_7_5" name="Map with BWA (Version 0.7.5)" version="0.7.5">
+  <requirements>
+    <requirement type="package" version="0.7.5">bwa</requirement>
+  </requirements>
+  <description>This new version BWA (0.7.5) use 'mem' algorithm for mapping, dosen't need 'aln', 'samse', 'sampe' and picard AddOrReplace anymore.</description>
+  <parallelism method="basic"></parallelism>
+  <command interpreter="python">
+    bwa_0_7_5.py 
+      --threads="1"
+      --fileSource="${genomeSource.refGenomeSource}"
+      #if $genomeSource.refGenomeSource == "history":
+        ##build index on the fly
+        --ref="${genomeSource.ownFile}"
+        --dbkey="${dbkey}"
+      #else:
+        ##use precomputed indexes
+        --ref="${genomeSource.indices.fields.path}"
+      #end if
+
+      ## input file(s)
+      --fastq="${paired.fastq}"
+      #if $paired.sPaired == "paired":
+        --rfastq="${paired.rfastq}"
+      #end if
+
+      ## output file
+      --output="${output}"
+
+      ## run parameters
+      --genAlignType="${paired.sPaired}"
+      --params="${params.source_select}"
+      #if $params.source_select != "pre_set":
+        --minEditDistSeed="${params.minEditDistSeed}"
+        --bandWidth="${params.bandWidth}"
+        --offDiagonal="${params.offDiagonal}"
+        --internalSeeds="${params.internalSeeds}"
+        --seedsOccurrence="${params.seedsOccurrence}"
+        --mateRescue="${params.mateRescue}"
+        --skipPairing="${params.skipPairing}"
+        --seqMatch="${params.seqMatch}"
+        --mismatch="${params.mismatch}"
+        --gapOpen="${params.gapOpen}"
+        --gapExtension="${params.gapExtension}"
+        --clipping="${params.clipping}"
+        --unpairedReadpair="${params.unpairedReadpair}"
+        --interPairEnd="${params.interPairEnd}"
+        --minScore="${params.minScore}"
+        --mark="${params.mark}"
+
+        #if $params.readGroup.specReadGroup == "yes"
+          --rgid="${params.readGroup.rgid}"
+          --rgsm="${params.readGroup.rgsm}"
+          --rgpl="${params.readGroup.rgpl}"
+          --rglb="${params.readGroup.rglb}"
+          --rgpu="${params.readGroup.rgpu}"
+          --rgcn="${params.readGroup.rgcn}"
+          --rgds="${params.readGroup.rgds}"
+          --rgdt="${params.readGroup.rgdt}"
+          --rgfo="${params.readGroup.rgfo}"
+          --rgks="${params.readGroup.rgks}"
+          --rgpg="${params.readGroup.rgpg}"
+          --rgpi="${params.readGroup.rgpi}"
+        #end if
+      #end if
+  </command>
+
+  <inputs>
+    <conditional name="genomeSource">
+      <param name="refGenomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?">
+        <option value="indexed">Use a built-in index</option>
+        <option value="history">Use one from the history</option>
+      </param>
+      <when value="indexed">
+        <param name="indices" type="select" label="Select a reference genome">
+          <options from_data_table="bwa_indexes">
+            <filter type="sort_by" column="2" />
+            <validator type="no_options" message="No indexes are available" />
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference from history" />
+      </when>
+    </conditional>
+    <conditional name="paired">
+      <param name="sPaired" type="select" label="Is this library mate-paired?">
+        <option value="single">Single-end</option>
+        <option value="paired">Paired-end</option>
+      </param>
+      <when value="single">
+        <param name="fastq" type="data" format="fastqsanger,fastqillumina" label="FASTQ file" help="FASTQ with either Sanger-scaled quality values (fastqsanger) or Illumina-scaled quality values (fastqillumina)" />
+      </when>
+      <when value="paired">
+        <param name="fastq" type="data" format="fastqsanger,fastqillumina" label="Forward FASTQ file" help="FASTQ with either Sanger-scaled quality values (fastqsanger) or Illumina-scaled quality values (fastqillumina)" />
+        <param name="rfastq" type="data" format="fastqsanger,fastqillumina" label="Reverse FASTQ file" help="FASTQ with either Sanger-scaled quality values (fastqsanger) or Illumina-scaled quality values (fastqillumina)" />
+      </when>
+    </conditional>
+    <conditional name="params">
+      <param name="source_select" type="select" label="BWA settings to use" help="For most mapping needs use Commonly Used settings. If you want full control use Full Parameter List">
+        <option value="pre_set">Commonly Used</option>
+        <option value="full">Full Parameter List</option>
+      </param>
+      <when value="pre_set" />
+      <when value="full">
+        <param name="minEditDistSeed" type="integer" value="19" label="Minimum seed length" />
+        <param name="bandWidth" type="integer" value="100" label="Band width for banded alignment" />
+        <param name="offDiagonal" type="integer" value="100" label="off-diagonal X-dropoff" />
+        <param name="internalSeeds" type="float" value="1.5" label="look for internal seeds inside a seed longer than {-k} * FLOAT [1.5]" />
+        <param name="seedsOccurrence" type="integer" value="10000" label="skip seeds with more than INT occurrences" />
+        <param name="mateRescue" type="boolean" truevalue="True" falsevalue="False" checked="False" label="skip seeds with more than INT occurrences" />
+        <param name="skipPairing" type="boolean" truevalue="True" falsevalue="False" checked="False" label="skpe pairing, mate rescue performed unless -S also in use" />
+        <param name="seqMatch" type="integer" value="1" label="score of a sequence match" />
+        <param name="mismatch" type="integer" value="4" label="penalty for a mismatch" />
+        <param name="gapOpen" type="integer" value="6" label="gap open penalty" />
+        <param name="gapExtension" type="text" value="None" label="gap extension penalty; a gap of size k cost {-O} + {-E}*k [1]" />
+        <param name="clipping" type="integer" value="5" label="penalty for clipping" />
+        <param name="unpairedReadpair" type="integer" value="17" label="penalty for an unpaired read pair" />
+        <param name="interPairEnd" type="boolean" truevalue="True" falsevalue="False" checked="False" label="first query file consists of interleaved paired-end sequences" />
+        <param name="minScore" type="integer" value="30" label="minimum score to output" />
+        <param name="mark" type="boolean" truevalue="True" falsevalue="False" checked="False" label="mark shorter split hits as secondary (for Picard/GATK compatibility)" />
+
+        <conditional name="readGroup">
+          <param name="specReadGroup" type="select" label="Specify the read group for this file? (samse/sampe -r)">
+            <option value="yes">Yes</option>
+            <option value="no" selected="True">No</option>
+          </param>
+          <when value="yes">
+            <param name="rgid" type="text" size="25" label="[Essential]Read group identiﬁer (ID). Each @RG line must have a unique ID. The value of ID is used in the RG 
+tags of alignment records. Must be unique among all read groups in header section." help="Required if RG specified. Read group 
+IDs may be modiﬁed when merging SAM ﬁles in order to handle collisions." />
+            <param name="rgpl" type="text" size="25" label="[Essential]Platform/technology used to produce the reads (PL)" help="Required if RG specified. Valid values : CAPILLARY, LS454, ILLUMINA, 
+SOLID, HELICOS, IONTORRENT and PACBIO" />
+            <param name="rglb" type="text" size="25" label="[Essential]Library name (LB)" help="Required if RG specified" />
+            <param name="rgsm" type="text" size="25" label="[Essential]Sample (SM)" help="Required if RG specified. Use pool name where a pool is being sequenced" />
+            <param name="rgpu" type="text" size="25" label="Platform unit (PU)" help="Optional. Unique identiﬁer (e.g. ﬂowcell-barcode.lane for Illumina or slide for SOLiD)" />
+            <param name="rgcn" type="text" size="25" label="Sequencing center that produced the read (CN)" help="Optional" />
+            <param name="rgds" type="text" size="25" label="Description (DS)" help="Optional" />
+            <param name="rgdt" type="text" size="25" label="Date that run was produced (DT)" help="Optional. ISO8601 format date or date/time, like YYYY-MM-DD" />
+            <param name="rgfo" type="text" size="25" label="Flow order (FO). The array of nucleotide bases that correspond to the nucleotides used for each 
+ﬂow of each read." help="Optional. Multi-base ﬂows are encoded in IUPAC format, and non-nucleotide ﬂows by 
+various other characters. Format : /\*|[ACMGRSVTWYHKDBN]+/" />
+            <param name="rgks" type="text" size="25" label="The array of nucleotide bases that correspond to the key sequence of each read (KS)" help="Optional" />
+            <param name="rgpg" type="text" size="25" label="Programs used for processing the read group (PG)" help="Optional" />
+            <param name="rgpi" type="text" size="25" label="Predicted median insert size (PI)" help="Optional" />
+          </when>
+          <when value="no" />
+        </conditional>
+      </when>
+    </conditional>
+  </inputs>
+
+  <outputs>
+    <data format="sam" name="output" label="${tool.name} on ${on_string}: mapped reads">
+      <actions>
+        <conditional name="genomeSource.refGenomeSource">
+          <when value="indexed">
+            <action type="metadata" name="dbkey">
+              <option type="from_data_table" name="bwa_indexes" column="1">
+                <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+                <filter type="param_value" ref="genomeSource.indices" column="0"/>
+              </option>
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="genomeSource.ownFile" param_attribute="dbkey" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
+    </data>
+  </outputs>
+
+  <tests>
+    <test>
+    </test>
+    <test>
+    </test>
+    <test>
+    </test>
+  </tests> 
+  
+
+</tool>
+
+

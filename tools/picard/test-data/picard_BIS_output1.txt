@@ -1,0 +1,39 @@
+<style type="text/css">
+        tr.d0 td {background-color: oldlace; color: black;}
+        tr.d1 td {background-color: aliceblue; color: black;}
+        </style><?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Galaxy picard_wrapper tool output - see http://getgalaxy.org/" />
+<title></title>
+<link rel="stylesheet" href="/static/style/base.css" type="text/css" />
+</head>
+<body>
+<div class="document">
+Galaxy tool BamIndexStats run at 12/05/2011 14:18:06</b><br/><b>The following output files were created (click the filename to view/download a copy):</b><hr/><table>
+<tr><td><a href="BamIndexStats.log">BamIndexStats.log</a></td></tr>
+<tr><td><a href="BamIndexStats.metrics.txt">BamIndexStats.metrics.txt</a></td></tr>
+</table><p/>
+<b>Picard on line resources</b><ul>
+<li><a href="http://picard.sourceforge.net/index.shtml">Click here for Picard Documentation</a></li>
+<li><a href="http://picard.sourceforge.net/picard-metric-definitions.shtml">Click here for Picard Metrics definitions</a></li></ul><hr/>
+<b>Picard output</b><hr/>
+<table cellpadding="3" >
+<tr class="d0"><td colspan="2">chr1 length=	101	Aligned= 0	Unaligned= 0</td></tr>
+<tr class="d1"><td colspan="2">chr7 length=	404	Aligned= 7	Unaligned= 0</td></tr>
+<tr class="d0"><td colspan="2">chr8 length=	202	Aligned= 0	Unaligned= 0</td></tr>
+<tr class="d1"><td colspan="2">NoCoordinateCount= 1</td></tr>
+</table>
+<b>Picard Tool Run Log</b><hr/>
+<pre>Thu, 12 May 2011 14:18:06 INFO
+ ## executing java -Xmx2g -jar /udd/rerla/galaxy-central/tool-data/shared/jars/BamIndexStats.jar VALIDATION_STRINGENCY=LENIENT INPUT=/udd/rerla/galaxy-central/database/job_working_directory/955/dataset_1015_files/tmp45bd_D.bam returned status 0 and stderr: 
+[Thu May 12 14:18:06 EDT 2011] net.sf.picard.sam.BamIndexStats INPUT=/udd/rerla/galaxy-central/database/job_working_directory/955/dataset_1015_files/tmp45bd_D.bam VALIDATION_STRINGENCY=LENIENT    TMP_DIR=/tmp/rerla VERBOSITY=INFO QUIET=false COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+[Thu May 12 14:18:06 EDT 2011] net.sf.picard.sam.BamIndexStats done.
+Runtime.totalMemory()=9109504
+
+
+</pre><hr/>The freely available <a href="http://picard.sourceforge.net/command-line-overview.shtml">Picard software</a> 
+generated all outputs reported here running as a <a href="http://getgalaxy.org">Galaxy</a> tool</div></body></html>
+

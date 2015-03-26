@@ -1,0 +1,6 @@
+TraversalEngine - [INITIALIZATION COMPLETE; TRAVERSAL STARTING] 
+TraversalEngine -        Location processed.sites  runtime per.1M.sites completed total.runtime remaining 
+DepthOfCoverageWalker - Printing summary info 
+DepthOfCoverageWalker - Printing locus summary 
+TraversalEngine - Total runtime
+TraversalEngine - 0 reads were filtered out during traversal out of 10 total (0.00%)

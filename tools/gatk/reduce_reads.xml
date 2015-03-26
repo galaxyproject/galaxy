@@ -1,0 +1,226 @@
+<tool id="gatk2_reduce_reads" name="Reduce Reads" version="0.0.7">
+  <description>in BAM files</description>
+  <expand macro="requirements" />
+  <macros>
+    <import>gatk2_macros.xml</import>
+  </macros>
+  <command interpreter="python">
+    gatk2_wrapper.py
+    --stdout "${output_log}"
+    -d "-I" "${reference_source.input_bam}" "${reference_source.input_bam.ext}" "gatk_input"
+    #if str( $reference_source.input_bam.metadata.bam_index ) != "None":
+        -d "" "${reference_source.input_bam.metadata.bam_index}" "bam_index" "gatk_input" ##hardcode galaxy ext type as bam_index
+    #end if
+    -p '
+    @JAR_PATH@
+    -T "ReduceReads"
+    -o "${output_bam}"
+
+    \$GATK2_SITE_OPTIONS
+
+    ## according to http://www.broadinstitute.org/gatk/guide/article?id=1975
+    --num_cpu_threads_per_data_thread 1
+
+    #if $reference_source.reference_source_selector != "history":
+        -R "${reference_source.ref_file.fields.path}"
+    #end if
+    #if str($input_recal) != 'None':
+        --BQSR "${input_recal}"
+    #end if
+    --disable_bam_indexing
+   '
+    #include source=$standard_gatk_options#
+    
+    ##start analysis specific options
+    #if $analysis_param_type.analysis_param_type_selector == "advanced":
+        -p '
+        #if $analysis_param_type.context_size.__str__.strip() != '':
+            --context_size $analysis_param_type.context_size
+        #end if
+        #if $analysis_param_type.downsample_coverage.__str__.strip() != '':
+            --downsample_coverage $analysis_param_type.downsample_coverage
+        #end if
+        #if $analysis_param_type.minimum_del_proportion_to_trigger_variant.__str__.strip() != '':
+            --minimum_del_proportion_to_trigger_variant $analysis_param_type.minimum_del_proportion_to_trigger_variant
+        #end if
+        #if $analysis_param_type.minimum_mapping_quality.__str__.strip() != '':
+            --minimum_mapping_quality $analysis_param_type.minimum_mapping_quality
+        #end if
+        #if $analysis_param_type.minimum_tail_qualities.__str__.strip() != '':
+            --minimum_tail_qualities $analysis_param_type.minimum_tail_qualities
+        #end if
+        #if $analysis_param_type.minimum_base_quality_to_consider.__str__.strip() != '':
+            --minimum_base_quality_to_consider $analysis_param_type.minimum_base_quality_to_consider
+        #end if
+        #if $analysis_param_type.minimum_alt_proportion_to_trigger_variant.__str__.strip() != '':
+            --minimum_alt_proportion_to_trigger_variant $analysis_param_type.minimum_alt_proportion_to_trigger_variant
+        #end if
+        $analysis_param_type.allow_polyploid_reduction
+        $analysis_param_type.dont_compress_read_names
+        $analysis_param_type.dont_hardclip_low_qual_tails
+        $analysis_param_type.dont_simplify_reads
+        $analysis_param_type.dont_use_softclipped_bases
+        $analysis_param_type.hard_clip_to_interval
+        $analysis_param_type.dont_hardclip_adaptor_sequences
+        '
+    #end if
+  </command>
+  <inputs>
+    <param name="input_recal" type="data" format="csv" optional="true" label="Covariates table recalibration file" help="The input covariates table file which enables on-the-fly base quality score recalibration. Enables on-the-fly recalibrate of base qualities. The covariates tables are produced by the BaseQualityScoreRecalibrator tool. Please be aware that one should only run recalibration with the covariates file created on the same input bam(s) (-BQSR,--BQSR &amp;lt;recal_file&amp;gt;)" />
+    <conditional name="reference_source">
+      <expand macro="reference_source_selector_param" />
+      <when value="cached">
+        <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;">
+          <validator type="unspecified_build" />
+          <validator type="dataset_metadata_in_data_table" table_name="gatk2_picard_indexes" metadata_name="dbkey" metadata_column="dbkey" message="Sequences are not currently available for the specified build." /> <!-- fixme!!! this needs to be a select -->
+        </param>
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" >
+          <options from_data_table="gatk2_picard_indexes">
+            <filter type="data_meta" key="dbkey" ref="input_bam" column="dbkey"/>
+          </options>
+          <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
+        </param>
+      </when>
+      <when value="history">
+        <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
+          <options>
+            <filter type="data_meta" key="dbkey" ref="input_bam" />
+          </options>
+        </param>
+      </when>
+    </conditional>
+    
+    <expand macro="gatk_param_type_conditional" />
+    
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <param name="allow_polyploid_reduction" type="boolean" checked="False" truevalue="-polyploid" falsevalue="" label="Allow polyploid-based reduction" help="--allow_polyploid_reduction / -polyploid Allow the experimental polyploid-based reduction capabilities"/>
+        <param name="context_size" type="integer" value="10" optional="true" label="context_size" help="The number of bases to keep around mismatches (potential variation)">
+        </param>
+        <param name="dont_compress_read_names" type="boolean" checked="False" truevalue="-nocmp_names" falsevalue="" label="Do not compress read names." help="--dont_compress_read_names / -nocmp_names  By default, ReduceReads will compress read names to numbers and guarantee uniqueness and reads with similar name will still have similar compressed names. Note: If you scatter/gather there is no guarantee that read name uniqueness will be maintained -- in this case we recommend not compressing."/>
+        <param name="dont_hardclip_low_qual_tails" type="boolean" checked="False" truevalue="-noclip_tail" falsevalue="" label="Do not hard clip the low quality tails of the reads" help="--dont_hardclip_low_qual_tails / -noclip_tail This option overrides the argument of minimum tail quality"/>
+
+        <param name="dont_simplify_reads" type="boolean" checked="False" truevalue="-nosimplify" falsevalue="" label="Do not simplify read" help="--dont_simplify_reads / -nosimplify Do not simplify read (strip away all extra information of the read -- anything other than bases, quals and read group)."/>
+        <param name="dont_use_softclipped_bases" type="boolean" checked="False" truevalue="-no_soft" falsevalue="" label="Do not use high quality soft-clipped bases" help="--dont_use_softclipped_bases / -no_soft  Do not use high quality soft-clipped bases. By default, ReduceReads will hard clip away any low quality soft clipped base left by the aligner and use the high quality soft clipped bases in it's traversal algorithm to identify variant regions. The minimum quality for soft clipped bases is the same as the minimum base quality to consider (minqual)"/>
+        <param name="downsample_coverage" type="integer" value="250" optional="true" label="Downsample the coverage of a variable region" help="Downsamples the coverage of a variable region approximately (guarantees the minimum to be equal to this). A value of 0 turns downsampling off.">
+        </param>
+        <param name="hard_clip_to_interval" type="boolean" checked="False" truevalue="-clip_int" falsevalue="" label="Hard clip all incoming reads" help="--hard_clip_to_interval / -clip_int  Optionally hard clip all incoming reads to the desired intervals. The hard clips will happen exactly at the interval border."/>
+        <param name="minimum_del_proportion_to_trigger_variant" type="float" value="0.05" optional="true" label="Minimum proportion of indels in a site to trigger a variant region" help="--minimum_del_proportion_to_trigger_variant / -mindel   Minimum proportion of indels in a site to trigger a variant region. Anything below this will be considered consensus.  ">
+        </param>
+        <param name="minimum_mapping_quality" type="integer" value="20" optional="true" label="Minimum mapping quality for consensus read" help="--minimum_mapping_quality / -minmap  The minimum mapping quality to be considered for the consensus synthetic read. Reads that have mapping quality below this threshold will not be counted towards consensus, but are still counted towards variable regions.">
+        </param>
+        <param name="minimum_tail_qualities" type="integer" value="2" optional="true" label="Minimum tail quality" help="--minimum_tail_qualities / -mintail  Reads have notoriously low quality bases on the tails (left and right). Consecutive bases with quality lower than this threshold will be hard clipped off before entering the reduce reads algorithm.">
+            <validator type="in_range" message="value between 0 and 127" min="0" max="127"/>
+        </param>
+        <param name="minimum_base_quality_to_consider" type="integer" value="20" optional="true" label="Minimum mapping quality for consensus read" help="--minimum_mapping_quality / -minmap  The minimum mapping quality to be considered for the consensus synthetic read. Reads that have mapping quality below this threshold will not be counted towards consensus, but are still counted towards variable regions.">
+            <validator type="in_range" message="value between 0 and 127" min="0" max="127"/>
+        </param>
+        <param name="minimum_alt_proportion_to_trigger_variant" type="float" value="0.05" optional="true" label="Minimum proportion of mismatches in a site to trigger a variant region" help="--minimum_alt_proportion_to_trigger_variant / -minvar  Minimum proportion of mismatches in a site to trigger a variant region. Anything below this will be considered consensus.">
+            <validator type="in_range" message="value between 0.00 and 1.00" min="0.0" max="1.0"/>
+        </param>
+        <param name="dont_hardclip_adaptor_sequences" type="boolean" checked="False" truevalue="-noclip_ad" falsevalue="" label="Do not hard clip adaptor sequences" help="--dont_hardclip_adaptor_sequences / -noclip_ad  Do not hard clip adaptor sequences. Note: You don't have to turn this on for reads that are not mate paired. The program will behave correctly in those cases."/>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="bam" name="output_bam" label="${tool.name} on ${on_string} (BAM)" />
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <test>
+          <param name="input_recal" value="gatk/gatk_count_covariates/gatk_count_covariates_out_1.csv" ftype="csv" /> 
+          <param name="reference_source_selector" value="history" />
+          <param name="ref_file" value="phiX.fasta" ftype="fasta" />
+          <param name="input_bam" value="gatk/gatk_indel_realigner/gatk_indel_realigner_out_1.bam" ftype="bam" />
+          <param name="gatk_param_type_selector" value="basic" />
+          <param name="analysis_param_type_selector" value="basic" />
+          <output name="output_bam" file="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.bam" ftype="bam" lines_diff="4" />
+          <output name="output_log" file="gatk/gatk_table_recalibration/gatk_table_recalibration_out_1.log.contains" compare="contains" />
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+ReduceReads
+Reduces the BAM file using read based compression that keeps only essential information for variant calling
+
+This walker will generated reduced versions of the BAM files that still follow the BAM spec and contain all the information necessary for the GSA variant calling pipeline. Some options allow you to tune in how much compression you want to achieve. The default values have been shown to reduce a typical whole exome BAM file 100x. The higher the coverage, the bigger the savings in file size and performance of the downstream tools.
+
+For more information on using read based compression in the GATK, see this `tool specific page &lt;http://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_sting_gatk_walkers_compression_reducereads_ReduceReads.html&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gatk/guide/topic?name=best-practices&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gatk/guide/topic?name=faqs&gt;`_.
+
+------
+
+**Inputs**
+
+GenomeAnalysisTK: PrintReads accepts an aligned BAM and a recalibration CSV input files.
+
+
+**Outputs**
+
+The output is in BAM format.
+
+
+Go `here &lt;http://www.broadinstitute.org/gatk/guide/topic?name=intro&gt;`_ for details on GATK file formats.
+
+-------
+
+**Settings**::
+
+
+ --allow_polyploid_reduction / -polyploid ( boolean with default value false )
+ Allow the experimental polyploid-based reduction capabilities of this tool
+
+ --context_size / -cs ( int with default value 10 )
+ The number of bases to keep around mismatches (potential variation)
+
+ --dont_compress_read_names / -nocmp_names ( boolean with default value false )
+ Do not compress read names. By default, ReduceReads will compress read names to numbers and guarantee uniqueness and reads with similar name will still have similar compressed names. Note: If you scatter/gather there is no guarantee that read name uniqueness will be maintained -- in this case we recommend not compressing.
+
+ --dont_hardclip_low_qual_tails / -noclip_tail ( boolean with default value false )
+ Do not hard clip the low quality tails of the reads. This option overrides the argument of minimum tail quality.
+
+ --dont_simplify_reads / -nosimplify ( boolean with default value false )
+ Do not simplify read (strip away all extra information of the read -- anything other than bases, quals and read group).
+
+ --dont_use_softclipped_bases / -no_soft ( boolean with default value false )
+ Do not use high quality soft-clipped bases. By default, ReduceReads will hard clip away any low quality soft clipped base left by the aligner and use the high quality soft clipped bases in it's traversal algorithm to identify variant regions. The minimum quality for soft clipped bases is the same as the minimum base quality to consider (minqual)
+
+ --downsample_coverage / -ds ( int with default value 250 )
+ Downsamples the coverage of a variable region approximately (guarantees the minimum to be equal to this). A value of 0 turns downsampling off.
+
+ --hard_clip_to_interval / -clip_int ( boolean with default value false )
+ Optionally hard clip all incoming reads to the desired intervals. The hard clips will happen exactly at the interval border.
+
+ -mindel / --minimum_del_proportion_to_trigger_variant ( double with default value 0.05 )
+ Minimum proportion of indels in a site to trigger a variant region. Anything below this will be considered consensus.
+
+ --minimum_mapping_quality / -minmap ( int with default value 20 )
+ The minimum mapping quality to be considered for the consensus synthetic read. Reads that have mapping quality below this threshold will not be counted towards consensus, but are still counted towards variable regions.
+
+ --minimum_tail_qualities / -mintail ( byte with default value 2 )
+ Reads have notoriously low quality bases on the tails (left and right). Consecutive bases with quality lower than this threshold will be hard clipped off before entering the reduce reads algorithm.
+
+ -minqual / --minimum_base_quality_to_consider ( byte with default value 20 )
+ The minimum base quality to be considered for the consensus synthetic read. Reads that have base quality below this threshold will not be counted towards consensus, but are still counted towards variable regions.
+
+ -minvar / --minimum_alt_proportion_to_trigger_variant ( double with default value 0.05 )
+ Minimum proportion of mismatches in a site to trigger a variant region. Anything below this will be considered consensus.
+
+ -noclip_ad / --dont_hardclip_adaptor_sequences ( boolean with default value false )
+ Do not hard clip adaptor sequences. Note: You don't have to turn this on for reads that are not mate paired. The program will behave correctly in those cases.
+
+@CITATION_SECTION@
+  </help>
+</tool>
