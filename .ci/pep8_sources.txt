@@ -15,6 +15,7 @@ lib/galaxy/tags
 lib/galaxy/tools/deps/{commands,containers,dependencies,dockerfiles,docker_util,__init__,requirements}.py
 lib/galaxy/tools/filters
 lib/galaxy/tools/parser
+lib/galaxy/tools/toolbox
 lib/galaxy/tools/{errors,loader_directory,test}.py
 lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules}.py
 lib/galaxy/web/{proxy,security}
