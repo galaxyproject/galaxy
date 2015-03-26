@@ -176,7 +176,9 @@ def __new_library_upload( trans, cntrller, uploaded_dataset, library_bunch, stat
                                                              library_dataset=ld,
                                                              user=trans.user,
                                                              create_dataset=True,
-                                                             sa_session=trans.sa_session )
+                                                             sa_session=trans.sa_session,
+							     file_size=uploaded_dataset.get('file_size', None),
+							     uuid=uploaded_dataset.get('uuid', None) )
     trans.sa_session.add( ldda )
     if state:
         ldda.state = state
@@ -324,6 +326,9 @@ def create_paramfile( trans, uploaded_datasets ):
                 uuid_str = uploaded_dataset.uuid
             except:
                 uuid_str = None
+	    remote_dataset_type = uploaded_dataset.get('remote_dataset_type', None);
+	    remote_dataset = uploaded_dataset.get('remote_dataset', None);
+	    line_count = uploaded_dataset.get('line_count', None);
             json = dict( file_type=uploaded_dataset.file_type,
                          ext=uploaded_dataset.ext,
                          name=uploaded_dataset.name,
@@ -333,6 +338,9 @@ def create_paramfile( trans, uploaded_datasets ):
                          is_binary=is_binary,
                          link_data_only=link_data_only,
                          uuid=uuid_str,
+			 remote_dataset_type=remote_dataset_type,
+			 remote_dataset=remote_dataset,
+			 line_count=line_count,
                          to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
                          space_to_tab=uploaded_dataset.space_to_tab,
                          in_place=trans.app.config.external_chown_script is None,

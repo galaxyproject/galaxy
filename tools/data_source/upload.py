@@ -64,9 +64,17 @@ def parse_outputs( args ):
         id, files_path, path = arg.split( ':', 2 )
         rval[int( id )] = ( path, files_path )
     return rval
+
+def is_remote_dataset( params ):
+    if(params != None):
+        return params.get('remote_dataset', False);
+    else:
+        return False;
+
 def add_file( dataset, registry, json_file, output_path ):
-    data_type = None
-    line_count = None
+    data_type = dataset.get( 'remote_dataset_type', None );
+    line_count = dataset.get( 'line_count', None );
+    is_remote_dataset_flag = is_remote_dataset( dataset );
     converted_path = None
     stdout = None
     link_data_only = dataset.get( 'link_data_only', 'copy_files' )
@@ -89,38 +97,39 @@ def add_file( dataset, registry, json_file, output_path ):
     # See if we have an empty file
     #Karthik: file path check here
     #Karthik: somehow pass data_type,ext instead of checking here
-    if not os.path.exists( dataset.path ):
+    if is_remote_dataset_flag == False and not os.path.exists( dataset.path ):
         file_err( 'Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file )
         return
-    if not os.path.getsize( dataset.path ) > 0:
+    if is_remote_dataset_flag == False and not os.path.getsize( dataset.path ) > 0:
         file_err( 'The uploaded file is empty', dataset, json_file )
         return
-    if not dataset.type == 'url':
+    if is_remote_dataset_flag == False and not dataset.type == 'url':
         # Already set is_multi_byte above if type == 'url'
         try:
             dataset.is_multi_byte = util.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
         except UnicodeDecodeError, e:
             dataset.is_multi_byte = False
-    # Is dataset an image?
-    image = check_image( dataset.path )
-    if image:
-        if not PIL:
-            image = None
-        # get_image_ext() returns None if nor a supported Image type
-        ext = get_image_ext( dataset.path, image )
-        data_type = ext
-    # Is dataset content multi-byte?
-    elif dataset.is_multi_byte:
-        data_type = 'multi-byte char'
-        ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
-    # Is dataset content supported sniffable binary?
-    else:
-        # FIXME: This ignores the declared sniff order in datatype_conf.xml
-        # resulting in improper behavior
-        type_info = Binary.is_sniffable_binary( dataset.path )
-        if type_info:
-            data_type = type_info[0]
-            ext = type_info[1]
+    if not is_remote_dataset_flag:
+        # Is dataset an image?
+        image = check_image( dataset.path )
+        if image:
+            if not PIL:
+                image = None
+            # get_image_ext() returns None if nor a supported Image type
+            ext = get_image_ext( dataset.path, image )
+            data_type = ext
+        # Is dataset content multi-byte?
+        elif dataset.is_multi_byte:
+            data_type = 'multi-byte char'
+            ext = sniff.guess_ext( dataset.path, is_multi_byte=True )
+        # Is dataset content supported sniffable binary?
+        else:
+            # FIXME: This ignores the declared sniff order in datatype_conf.xml
+            # resulting in improper behavior
+            type_info = Binary.is_sniffable_binary( dataset.path )
+            if type_info:
+                data_type = type_info[0]
+                ext = type_info[1]
     if not data_type:
         root_datatype = registry.get_datatype_by_extension( dataset.file_type )
         if getattr( root_datatype, 'compressed', False ):
@@ -328,6 +337,8 @@ def add_file( dataset, registry, json_file, output_path ):
                  line_count = line_count )
     if dataset.get('uuid', None) is not None:
         info['uuid'] = dataset.get('uuid')
+    if is_remote_dataset_flag == True:
+        info['remote_dataset'] = True;
     json_file.write( dumps( info ) + "\n" )
 
     if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):
@@ -387,13 +398,13 @@ def __main__():
         print >>sys.stderr, 'usage: upload.py <root> <datatypes_conf> <json paramfile> <output spec> ...'
         sys.exit( 1 )
 
-    output_paths = parse_outputs( sys.argv[4:] )	#dictionary - dataset id to tuple (files_path, path)
+    output_paths = parse_outputs( sys.argv[4:] )        #dictionary - dataset id to tuple (files_path, path)
     json_file = open( 'galaxy.json', 'w' )
 
     registry = Registry()
     registry.load_datatypes( root_dir=sys.argv[1], config=sys.argv[2] )
 
-    for line in open( sys.argv[3], 'r' ):	#Karthik: load input JSON into dict
+    for line in open( sys.argv[3], 'r' ):       #Karthik: load input JSON into dict
         dataset = loads( line )
         dataset = util.bunch.Bunch( **safe_dict( dataset ) )
         try:

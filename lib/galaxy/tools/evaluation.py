@@ -44,11 +44,12 @@ class ToolEvaluator( object ):
         for evaluating command and config cheetah templates.
         """
         self.compute_environment = compute_environment
-        self.unstructured_path_rewriter = compute_environment.unstructured_path_rewriter()
+        self.unstructured_path_rewriter = compute_environment.unstructured_path_rewriter()  #by default, returns input
 
         job = self.job
         incoming = dict( [ ( p.name, p.value ) for p in job.parameters ] )
-        incoming = self.tool.params_from_strings( incoming, self.app )
+        # incoming contains dict of input params (as defined in XML file), value = parameter value for strings, int etc or DA for dataset
+        incoming = self.tool.params_from_strings( incoming, self.app ) 
         # Do any validation that could not be done at job creation
         self.tool.handle_unvalidated_param_values( incoming, self.app )
         # Restore input / output data lists
@@ -77,6 +78,7 @@ class ToolEvaluator( object ):
             if special:
                 out_data[ "output_file" ] = FakeDatasetAssociation( dataset=special.dataset )
 
+        # Add user information to the job
         # These can be passed on the command line if wanted as $__user_*__
         incoming.update( model.User.user_template_environment( job.history and job.history.user ) )
 
@@ -113,11 +115,17 @@ class ToolEvaluator( object ):
         # All parameters go into the param_dict
         param_dict.update( incoming )
 
+        #For datasets with false paths, return dict(real_path_string : path_obj)
         input_dataset_paths = dataset_path_rewrites( input_paths )
+	#param_dict - changes mapping from name->DA to name->DatasetFilenameWrapper
         self.__populate_wrappers(param_dict, input_dataset_paths)
+        #Update for child datasets 
         self.__populate_input_dataset_wrappers(param_dict, input_datasets, input_dataset_paths)
+	#Update for output datasets, however, outputs in general have false_paths so DatasetFilenameWrapper has false_path
         self.__populate_output_dataset_wrappers(param_dict, output_datasets, output_paths, job_working_directory)
+	#Update for select tool param
         self.__populate_output_collection_wrappers(param_dict, output_collections, output_paths, job_working_directory)
+	#Various params that can be useful
         self.__populate_unstructured_path_rewrites(param_dict)
         # Call param dict sanitizer, before non-job params are added, as we don't want to sanitize filenames.
         self.__sanitize_param_dict( param_dict )

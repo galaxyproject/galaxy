@@ -1054,6 +1054,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         errors = tool.update_state( trans, tool.inputs_by_page[0], state.inputs, kwd )
         tool_params = state.inputs
         dataset_upload_inputs = []
+        is_remote_dataset = self.is_remote_dataset(kwd);
         for input_name, input in tool.inputs.iteritems():
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append( input )
@@ -1108,6 +1109,22 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             elif upload_option == 'upload_directory':
                 uploaded_datasets, response_code, message = self.get_server_dir_uploaded_datasets( trans, cntrller, kwd, full_dir, import_dir_desc, library_bunch, response_code, message )
             elif upload_option == 'upload_paths':
+                uuid_list = kwd.get('uuid_list',None);
+                if(uuid_list != None):
+                    uuid_list = kwd.get('uuid_list',None).split('\n');
+                    kwd['uuid_list'] = uuid_list;
+                remote_dataset_type_list = kwd.get('remote_dataset_type_list',None);
+                if(remote_dataset_type_list != None):
+                    remote_dataset_type_list = kwd.get('remote_dataset_type_list',None).split('\n');
+                    kwd['remote_dataset_type_list'] = remote_dataset_type_list;
+                file_size_list = kwd.get('file_size_list',None);
+                if(file_size_list != None):
+                    file_size_list = kwd.get('file_size_list',None).split('\n');
+                    kwd['file_size_list'] = file_size_list;
+                line_count_list = kwd.get('line_count_list',None);
+                if(line_count_list != None):
+                    line_count_list = kwd.get('line_count_list',None).split('\n');
+                    kwd['line_count_list'] = line_count_list;
                 #Karthik: accesses file
                 uploaded_datasets, response_code, message = self.get_path_paste_uploaded_datasets( trans, cntrller, kwd, library_bunch, response_code, message )
             upload_common.cleanup_unused_precreated_datasets( precreated_datasets )
@@ -1143,6 +1160,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         link_data_only = params.get( 'link_data_only', 'copy_files' )
         uuid_str =  params.get( 'uuid', None )
         file_type = params.get( 'file_type', None )
+        remote_dataset_type = params.get( 'remote_dataset_type', None )
+        if(self.is_remote_dataset(params)):
+            file_type = remote_dataset_type;
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
         new_name = name
@@ -1162,9 +1182,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         uploaded_dataset.space_to_tab = params.get( 'space_to_tab', None )
         if in_folder:
             uploaded_dataset.in_folder = in_folder
+        uploaded_dataset.uuid = uuid_str
+        uploaded_dataset.remote_dataset = params.get( 'remote_dataset', None )  #flag
+        uploaded_dataset.remote_dataset_type = remote_dataset_type;
+        uploaded_dataset.file_size = params.get('file_size', None );
+        uploaded_dataset.line_count = params.get('line_count', None );
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
         uploaded_dataset.link_data_only = link_data_only
-        uploaded_dataset.uuid = uuid_str
         if link_data_only == 'link_to_files':
             uploaded_dataset.data.file_name = os.path.abspath( path )
             # Since we are not copying the file into Galaxy's managed
@@ -1233,8 +1257,22 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         if _response_code:
             return (uploaded_datasets, _response_code, _message)
         #Karthik: Creates entry in Galaxy DB for the dataset
+        idx = 0;
         for (path, name, folder) in files_and_folders:
+            if(params.get('uuid_list', None) != None):
+                params['uuid'] = params['uuid_list'][idx];
+            if(params.get('remote_dataset_type_list', None) != None):
+                params['remote_dataset_type'] = params['remote_dataset_type_list'][idx];
+            if(params.get('file_size_list', None) != None):
+                params['file_size'] = params['file_size_list'][idx];
+            elif(self.is_remote_dataset(params)):
+                params['file_size'] = '100';	#arbitrary non-0 value for remote datasets
+            if(params.get('line_count_list', None) != None):
+                params['line_count'] = params['line_count_list'][idx];
+            elif(self.is_remote_dataset(params)):
+                params['line_count'] = '100';	#arbitrary non-0 value for remote datasets
             uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, path, 'path_paste', library_bunch, folder ) )
+            idx += 1;
         return uploaded_datasets, 200, None
 
     def _get_path_files_and_folders( self, params, preserve_dirs ):

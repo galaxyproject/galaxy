@@ -82,7 +82,7 @@ def __main__():
     datatypes_registry.load_datatypes( root_dir=config_root, config=datatypes_config )
     galaxy.model.set_datatypes_registry( datatypes_registry )
 
-    job_metadata = sys.argv.pop( 1 )
+    job_metadata = sys.argv.pop( 1 )	#galaxy.json
     existing_job_metadata_dict = {}
     new_job_metadata_dict = {}
     if job_metadata != "None" and os.path.exists( job_metadata ):

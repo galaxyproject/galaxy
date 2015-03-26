@@ -767,6 +767,7 @@ class JobWrapper( object ):
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
+    #Karthik: Define a new PathRewriter to ensure that command line is generated correctly
     def _job_dataset_path_rewriter( self, working_directory ):
         if self.app.config.outputs_to_working_directory:
             dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter( working_directory )
@@ -852,7 +853,7 @@ class JobWrapper( object ):
         tool_evaluator = self._get_tool_evaluator( job )
         compute_environment = compute_environment or self.default_compute_environment( job )
         tool_evaluator.set_compute_environment( compute_environment, get_special=get_special )
-
+        
         self.sa_session.flush()
 
         self.command_line, self.extra_filenames = tool_evaluator.build()
@@ -1075,6 +1076,9 @@ class JobWrapper( object ):
         self.sa_session.add(job)
         self.sa_session.flush()
 
+    def is_remote_dataset(self, context):
+        return (context.get('remote_dataset', None) == True);
+
     def finish( self, stdout, stderr, tool_exit_code=None, remote_working_directory=None ):
         """
         Called to indicate that the associated command has been run. Updates
@@ -1084,6 +1088,10 @@ class JobWrapper( object ):
         finish_timer = util.ExecutionTimer()
         stdout = unicodify( stdout )
         stderr = unicodify( stderr )
+
+        #Karthik: HACK HACK HACK
+        subprocess.call('rsync -a --exclude=*.dat -e \"ssh\" c14:/mnt/app_hdd/scratch/karthikg/Galaxy/database/job_working_directory/ /mnt/app_hdd/scratch/karthikg/Galaxy/database/job_working_directory/', shell=True);
+        time.sleep(5);  #NFS stabilize
 
         # default post job setup
         self.sa_session.expunge_all()
@@ -1122,8 +1130,19 @@ class JobWrapper( object ):
                 self.version_string = open(version_filename).read()
                 os.unlink(version_filename)
 
-        if self.app.config.outputs_to_working_directory and not self.__link_file_check():
-            for dataset_path in self.get_output_fnames():
+        job_context = ExpressionContext( dict( stdout=job.stdout, stderr=job.stderr ) )
+        dataset_assoc_loop_idx = 0;
+        #Karthik: one dataset_assoc with each output dataset
+        #dataset_assoc = JobTo<History|Library>OutputDatasetAssoc
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            #Karthik: Gets context from galaxy.json file if the dict has type=dataset and dataset_id=id
+            #Karthik: parameters the json file should definitely contain: file_size, ext, remote_dataset, type:dataset, dataset_id:<id>
+            context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
+            is_remote_dataset_flag = self.is_remote_dataset(context);
+            log.debug('Output dataset id : '+str(dataset_assoc.dataset.dataset.id) + ' Context = '+str(context));
+            #Karthik: Moves results to files directory
+            if not is_remote_dataset_flag and self.app.config.outputs_to_working_directory and not self.__link_file_check():
+                dataset_path = self.get_output_fnames()[dataset_assoc_loop_idx];
                 try:
                     shutil.move( dataset_path.false_path, dataset_path.real_path )
                     log.debug( "finish(): Moved %s to %s" % ( dataset_path.false_path, dataset_path.real_path ) )
@@ -1138,25 +1157,25 @@ class JobWrapper( object ):
                         # Prior to fail we need to set job.state
                         job.set_state( final_job_state )
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
-
-        job_context = ExpressionContext( dict( stdout=job.stdout, stderr=job.stderr ) )
-        for dataset_assoc in job.output_datasets + job.output_library_datasets:
-            context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
             # lets not allow this to occur
             # need to update all associated output hdas, i.e. history was shared with job running
-            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
+            #Karthik: Each dataset is associated with possibly many histories, libraries. history_associations is a list of DatasetInstance objects
+            #each representing an association of this dataset wrt a particular history
+            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:  # need to update all associated output hdas, i.e. history was shared with job running
                 trynum = 0
-                while trynum < self.app.config.retry_job_output_collection:
-                    try:
-                        # Attempt to short circuit NFS attribute caching
-                        os.stat( dataset.dataset.file_name )
-                        os.chown( dataset.dataset.file_name, os.getuid(), -1 )
-                        trynum = self.app.config.retry_job_output_collection
-                    except ( OSError, ObjectNotFound ), e:
-                        trynum += 1
-                        log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
-                        time.sleep( 2 )
+                #Karthik: Direct file access
+                if not is_remote_dataset_flag:
+                    while trynum < self.app.config.retry_job_output_collection:
+                        try:
+                            # Attempt to short circuit NFS attribute caching
+                            os.stat( dataset.dataset.file_name )
+                            os.chown( dataset.dataset.file_name, os.getuid(), -1 )
+                            trynum = self.app.config.retry_job_output_collection
+                        except ( OSError, ObjectNotFound ), e:
+                            trynum += 1
+                            log.warning( 'Error accessing %s, will retry: %s', dataset.dataset.file_name, e )
+                            time.sleep( 2 )
                 if getattr( dataset, "hidden_beneath_collection_instance", None ):
                     dataset.visible = False
                 dataset.blurb = 'done'
@@ -1169,75 +1188,82 @@ class JobWrapper( object ):
                     # Ensure white space between entries
                     dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
                 dataset.tool_version = self.version_string
+                #Karthik: get size of remote datasets from JSON file
+                if is_remote_dataset_flag:
+                    dataset.dataset.file_size = context.get('file_size', dataset.dataset.file_size);
                 dataset.set_size()
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
+                #Karthik: possible direct file access
                 # Update (non-library) job output datasets through the object store
-                if dataset not in job.output_library_datasets:
+                if (not is_remote_dataset_flag) and (dataset not in job.output_library_datasets):
                     self.app.object_store.update_from_file(dataset.dataset, create=True)
                 self._collect_extra_files(dataset.dataset, self.working_directory)
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
-                elif dataset.has_data():
-                    # If the tool was expected to set the extension, attempt to retrieve it
-                    if dataset.ext == 'auto':
-                        dataset.extension = context.get( 'ext', 'data' )
-                        dataset.init_meta( copy_from=dataset )
-                    # if a dataset was copied, it won't appear in our dictionary:
-                    # either use the metadata from originating output dataset, or call set_meta on the copies
-                    # it would be quicker to just copy the metadata from the originating output dataset,
-                    # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
-                         and self.app.config.retry_metadata_internally ):
-                        # If Galaxy was expected to sniff type and didn't - do so.
-                        if dataset.ext == "_sniff_":
-                            extension = sniff.handle_uploaded_dataset_file( dataset.dataset.file_name, self.app.datatypes_registry )
-                            dataset.extension = extension
-
-                        # call datatype.set_meta directly for the initial set_meta call during dataset creation
-                        dataset.datatype.set_meta( dataset, overwrite=False )
-                    elif ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
-                           and job.states.ERROR != final_job_state ):
-                        dataset._state = model.Dataset.states.FAILED_METADATA
-                    else:
-                        # load metadata from file
-                        # we need to no longer allow metadata to be edited while the job is still running,
-                        # since if it is edited, the metadata changed on the running output will no longer match
-                        # the metadata that was stored to disk for use via the external process,
-                        # and the changes made by the user will be lost, without warning or notice
-                        output_filename = self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out
-
-                        def path_rewriter( path ):
-                            if not remote_working_directory or not path:
-                                return path
-                            normalized_remote_working_directory = os.path.normpath( remote_working_directory )
-                            normalized_path = os.path.normpath( path )
-                            if normalized_path.startswith( normalized_remote_working_directory ):
-                                return normalized_path.replace( normalized_remote_working_directory, self.working_directory, 1 )
-                            return path
-
-                        dataset.metadata.from_JSON_dict( output_filename, path_rewriter=path_rewriter )
-                    try:
-                        assert context.get( 'line_count', None ) is not None
-                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
-                            dataset.set_peek( line_count=context['line_count'], is_multi_byte=True )
-                        else:
-                            dataset.set_peek( line_count=context['line_count'] )
-                    except:
-                        if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
-                            dataset.set_peek( is_multi_byte=True )
-                        else:
-                            dataset.set_peek()
-                    try:
-                        # set the name if provided by the tool
-                        dataset.name = context['name']
-                    except:
-                        pass
                 else:
-                    dataset.blurb = "empty"
-                    if dataset.ext == 'auto':
-                        dataset.extension = 'txt'
+                    #Karthik: ensure file size is updated to reflect this information
+                    if is_remote_dataset_flag:
+                        dataset.dataset.file_size = context.get('file_size', dataset.dataset.file_size);
+                        dataset.extension = context.get('ext', dataset.ext);
+                    if dataset.has_data():
+                        # If the tool was expected to set the extension, attempt to retrieve it
+                        if dataset.ext == 'auto':
+                            dataset.extension = context.get( 'ext', 'data' )
+                            dataset.init_meta( copy_from=dataset )
+                        # if a dataset was copied, it won't appear in our dictionary:
+                        # either use the metadata from originating output dataset, or call set_meta on the copies
+                        # it would be quicker to just copy the metadata from the originating output dataset,
+                        # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
+                        if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
+                             and self.app.config.retry_metadata_internally ):
+                            # call datatype.set_meta directly for the initial set_meta call during dataset creation
+                            dataset.datatype.set_meta( dataset, overwrite=False )
+                        elif ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
+                               and job.states.ERROR != final_job_state ):
+                            dataset._state = model.Dataset.states.FAILED_METADATA
+                        else:
+                            # load metadata from file
+                            # we need to no longer allow metadata to be edited while the job is still running,
+                            # since if it is edited, the metadata changed on the running output will no longer match
+                            # the metadata that was stored to disk for use via the external process,
+                            # and the changes made by the user will be lost, without warning or notice
+                            output_filename = self.external_output_metadata.get_output_filenames_by_dataset( dataset, self.sa_session ).filename_out
+
+                            def path_rewriter( path ):
+                                if not remote_working_directory or not path:
+                                    return path
+                                normalized_remote_working_directory = os.path.normpath( remote_working_directory )
+                                normalized_path = os.path.normpath( path )
+                                if normalized_path.startswith( normalized_remote_working_directory ):
+                                    return normalized_path.replace( normalized_remote_working_directory, self.working_directory, 1 )
+                                return path
+
+                            #Copies meta-data to Galaxy _metadata directory and deletes file in job working directory
+                            dataset.metadata.from_JSON_dict( output_filename, path_rewriter=path_rewriter )
+                        #Karthik: for remote datasets, don't bother with peek
+                        if(not is_remote_dataset_flag):
+                            try:
+                                assert context.get( 'line_count', None ) is not None
+                                if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
+                                    dataset.set_peek( line_count=context['line_count'], is_multi_byte=True )
+                                else:
+                                    dataset.set_peek( line_count=context['line_count'] )
+                            except:
+                                if ( not dataset.datatype.composite_type and dataset.dataset.is_multi_byte() ) or self.tool.is_multi_byte:
+                                    dataset.set_peek( is_multi_byte=True )
+                                else:
+                                    dataset.set_peek()
+                        try:
+                            # set the name if provided by the tool
+                            dataset.name = context['name']
+                        except:
+                            pass
+                    else:
+                        dataset.blurb = "empty"
+                        if dataset.ext == 'auto':
+                            dataset.extension = 'txt'
                 self.sa_session.add( dataset )
             if job.states.ERROR == final_job_state:
                 log.debug( "setting dataset state to ERROR" )
@@ -1248,6 +1274,8 @@ class JobWrapper( object ):
                     self.pause( dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state." )
             else:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
+
+            dataset_assoc_loop_idx += 1;
             # If any of the rest of the finish method below raises an
             # exception, the fail method will run and set the datasets to
             # ERROR.  The user will never see that the datasets are in error if
@@ -1333,6 +1361,17 @@ class JobWrapper( object ):
         # waits on invocation and the other updates invocation and waits on
         # user).
         self.sa_session.flush()
+        #Karthik: don't bother with chown if remote dataset
+        if(self.app.config.external_chown_script != None):
+            for dataset_path in self.get_output_fnames():
+                context = self.get_dataset_finish_context( {}, dataset_path.dataset_id )
+                is_remote_dataset_flag = self.is_remote_dataset(context);
+                if(not is_remote_dataset_flag):
+                    try:
+                        self.set_ownership_of_output(self.user_system_pwent[0], str(self.user_system_pwent[3]), dataset_path.real_path);
+                    except:
+                        log.exception( '(%s) Failed to change ownership of %s, failing' % ( job.id, dataset_path.real_path ) )
+                        return self.fail( job.info, stdout=stdout, stderr=stderr, exit_code=tool_exit_code )
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
