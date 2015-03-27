@@ -2465,6 +2465,7 @@ class Tool( object, Dictifiable ):
                             tool_dict['default_value'] = input.get_initial_value(trans, other_values)
                         except Exception:
                             # get initial value failed due to improper late validation
+                            tool_dict['default_value'] = None
                             pass
 
                         # update input value from tool state
