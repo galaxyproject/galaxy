@@ -2433,7 +2433,7 @@ class Tool( object, Dictifiable ):
                     continue
 
                 # state for subsection/group
-                group_state = state_inputs[input.name]
+                group_state = state_inputs.get(input.name, {})
 
                 # iterate and update values
                 if input.type == 'repeat':
@@ -2444,7 +2444,9 @@ class Tool( object, Dictifiable ):
                 elif input.type == 'conditional':
                     if 'test_param' in tool_dict:
                         test_param = tool_dict['test_param']
-                        test_param['value'] = jsonify(group_state[test_param['name']])
+                        test_param['value'] = jsonify(group_state.get(test_param['name'], None))
+                        for i in range (len ( tool_dict['cases'] ) ):
+                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, {}, other_values)
                         if '__current_case__' in group_state:
                             i = group_state['__current_case__']
                             iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, group_state, other_values)
@@ -2462,8 +2464,7 @@ class Tool( object, Dictifiable ):
                         tool_dict['default_value'] = input.get_initial_value(trans, other_values)
 
                         # update input value from tool state
-                        if input_name in state_inputs:
-                            tool_dict['value'] = state_inputs[input_name]
+                        tool_dict['value'] = state_inputs.get(input_name, None)
 
                         # sanitize values
                         sanitize(tool_dict, 'value')
