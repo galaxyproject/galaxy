@@ -9,6 +9,7 @@ import string
 import subprocess
 import sys
 import time
+import pwd
 
 from galaxy import eggs
 from galaxy import model
@@ -27,7 +28,6 @@ drmaa = None
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
                                  'jobName', 'email', 'project' ]
 
-
 class DRMAAJobRunner( AsynchronousJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
@@ -38,17 +38,21 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         """Start the job runner"""
 
         global drmaa
+        
 
         runner_param_specs = dict(
             drmaa_library_path = dict( map = str, default = os.environ.get( 'DRMAA_LIBRARY_PATH', None ) ),
             invalidjobexception_state = dict( map = str, valid = lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default = model.Job.states.OK ),
             invalidjobexception_retries = dict( map = int, valid = lambda x: int >= 0, default = 0 ),
             internalexception_state = dict( map = str, valid = lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default = model.Job.states.OK ),
-            internalexception_retries = dict( map = int, valid = lambda x: int >= 0, default = 0 ) )
+            internalexception_retries = dict( map = int, valid = lambda x: int >= 0, default = 0 ),
+            nativeSpecification = dict( map = str, valid = lambda x: True, default = '')  #nativeSpecification no check from Galaxy, hence, valid, empty default
+            )
 
         if 'runner_param_specs' not in kwargs:
             kwargs[ 'runner_param_specs' ] = dict()
         kwargs[ 'runner_param_specs' ].update( runner_param_specs )
+        log.debug('DRMAA kwargs: %s', kwargs)
 
         super( DRMAAJobRunner, self ).__init__( app, nworkers, **kwargs )
 
@@ -84,6 +88,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # external_runJob_script can be None, in which case it's not used.
         self.external_runJob_script = app.config.drmaa_external_runjob_script
         self.external_killJob_script = app.config.drmaa_external_killjob_script
+	self.external_chown_script = app.config.external_chown_script;
         self.userid = None
 
         self._init_monitor_thread()
@@ -111,8 +116,13 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
     def queue_job( self, job_wrapper ):
         """Create job script and submit it to the DRM"""
+        
+	#Was useful when DRMAA implementation in Condor seems to be buggy
+	#Fixed DRMAA implementation directly - useless now
+	append_to_command = None;
+
         # prepare the job
-        if not self.prepare_job( job_wrapper, include_metadata=True ):
+        if not self.prepare_job( job_wrapper, include_metadata=True, append_to_command=append_to_command ):
             return
 
         # get configured job destination
@@ -134,6 +144,8 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         jt = self.ds.createJobTemplate()
         jt.remoteCommand = ajs.job_file
         jt.jobName = ajs.job_name
+
+	#Karthik: Use this only for non-buggy DRMAA implementation 
         jt.outputPath = ":%s" % ajs.output_file
         jt.errorPath = ":%s" % ajs.error_file
 
@@ -141,6 +153,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         native_spec = job_destination.params.get('nativeSpecification', None)
         if native_spec is not None:
             jt.nativeSpecification = native_spec
+	    jt.nativeSpecification = jt.nativeSpecification.replace('\\n','\n');
 
         # fill in the DRM's job run template
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file)
@@ -164,6 +177,23 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         log.debug( "(%s) submitting file %s", galaxy_id_tag, ajs.job_file )
         if native_spec:
             log.debug( "(%s) native specification is: %s", galaxy_id_tag, native_spec )
+
+        #Chown directory
+        if (self.external_chown_script != None):
+            job_wrapper.change_ownership_for_run()
+
+        #Set username to use during job submission 
+        log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )
+        if(jt.nativeSpecification == None):
+            jt.nativeSpecification = '';
+        #Directory from which to start job - required when transferring scripts etc to remote sites
+        jt.workingDirectory = job_wrapper.working_directory
+        #Username as which to run the job
+        if (self.external_chown_script != None):
+            jt.nativeSpecification = jt.nativeSpecification + '\nsubmit_as_user=' + job_wrapper.user_system_pwent[0];
+        jt.nativeSpecification = jt.nativeSpecification + '\n';
+        log.debug('NATIVE : '+jt.nativeSpecification);
+
 
         # runJob will raise if there's a submit problem
         if self.external_runJob_script is None:
@@ -295,6 +325,12 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             ext_id = job.get_job_runner_external_id()
             assert ext_id not in ( None, 'None' ), 'External job id is None'
             if self.external_killJob_script is None:
+		#Karthik: pass username through ext_id - custom DRMAA library parses username correctly
+		username = pwd.getpwnam( job.user.email.split('@')[0] )[0];
+	        assert username not in ( None, 'None' ), 'Username is None';
+		if(self.external_chown_script != None):
+		    ext_id = username + ':' + ext_id;
+		log.debug('Job id passed to DRMAA control TERMINATE '+ext_id);
                 self.ds.control( ext_id, drmaa.JobControlAction.TERMINATE )
             else:
                 # FIXME: hardcoded path
@@ -364,6 +400,11 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         The external script will be run with sudo, and will setuid() to the specified user.
         Effectively, will QSUB as a different user (then the one used by Galaxy).
         """
+
+        ##KG: bug - need to change ownership for json file sent to drmaa_external_runner first
+        #ownership_script = job_wrapper.
+        #log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )
+
         script_parts = self.external_runJob_script.split()
         script = script_parts[0]
         command = [ '/usr/bin/sudo', '-E', script]

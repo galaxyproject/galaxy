@@ -1,0 +1,77 @@
+<tool id="bic_seq" name="BIC-Seq Tool" version="0.0.1">
+  <description>Copy number calling with whole genome sequence</description>
+  <!-- Specify Commandline for interpreter -->
+  <command interpreter="python">
+    Bic-Seq.py
+      --NBam=$source.NBam
+      --TBam=$source.TBam
+      --NTemp=$source.NTemp
+      --TTemp=$source.TTemp
+      --config_file=$config_file
+      --png_file=$png_file
+      --bicseg_file=$bicseg_file
+      --wig_file=$wig_file
+  </command>
+  <!-- Specify Inputs -->
+  <inputs>
+    <conditional name="source">
+      <param name="index_source" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <param name="Nbam" type="data" format="bam" metadata_name="dbkey" label="Normal BAM file">
+          <validator type="unspecified_build" />
+        </param>
+        <param name="TBam" type="data" format="bam" metadata_name="dbkey" label="Tumor BAM file">
+          <validator type="unspecified_build" />
+        </param>
+        <param name="NTemp" type="data" format="txt" metadata_name="dbkey" label="Normal Temp file generated from Samtools">
+          <validator type="unspecified_build" />
+        </param>
+        <param name="TTemp" type="data" format="txt" metadata_name="dbkey" label="Tumor temp file generated from Samtools">
+          <validator type="unspecified_build" />
+        </param>
+      </when>
+      <when value="history">
+        <param name="NBam" type="data" format="bam" label="Normal BAM file" />
+        <param name="TBam" type="data" format="bam" label="Tumor BAM file" />
+        <param name="NTemp" type="data" format="txt" label="Normal Temp file generated from Samtools" />
+        <param name="TTemp" type="data" format="txt" label="Tumor temp file generated from Samtools" />
+      </when>
+    </conditional>
+  </inputs>
+  <!-- Specify Outputs -->
+  <outputs>
+    <data format="out" name="config_file" label="Config File created for Bic-Seq tool">
+      <actions>
+        <conditional name="source.index_source">
+          <when value="cached">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="source.NBam" param_attribute="dbkey" />
+              <option type="from_param" name="source.TBam" param_attribute="dbkey" />
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="source.NBam" param_attribute="dbkey" />
+              <option type="from_param" name="source.TBam" param_attribute="dbkey" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
+    </data>
+    <data format="out" name="png_file" label="PNG Result File">
+    </data>
+    <data format="out" name="bicseg_file" label="BICSEG Result File">
+    </data>
+    <data format="out" name="wig_file" label="WIG Result File">
+    </data>
+  </outputs>
+  <!-- HELP MENU -->
+  <help>
+**What it does**
+This tool calls two perl scripts: One for creating the config file, 
+and the other is the actual BIC-Seq tool
+  </help>
+</tool>

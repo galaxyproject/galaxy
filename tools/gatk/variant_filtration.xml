@@ -1,0 +1,180 @@
+<tool id="gatk2_variant_filtration" name="Variant Filtration" version="0.0.7">
+  <description>on VCF files</description>
+  <expand macro="requirements" />
+  <macros>
+    <import>gatk2_macros.xml</import>
+  </macros>
+  <command interpreter="python">
+    #from binascii import hexlify
+
+    gatk2_wrapper.py
+    --stdout "${output_log}"
+    -d "--variant:variant,%(file_type)s" "${reference_source.input_variant}" "${reference_source.input_variant.ext}" "input_variant"
+    -p '
+    @JAR_PATH@
+    -T "VariantFiltration"
+    \$GATK2_SITE_OPTIONS
+
+    -o "${output_vcf}"
+
+    #if $reference_source.reference_source_selector != "history":
+        -R "${reference_source.ref_file.fields.path}"
+    #end if
+    '
+    #for $variant_filter in $variant_filters:
+        #set $variant_filter = "--%sExpression '%s' --%sName '%s'" % ( str( $variant_filter.is_genotype_filter ), str( $variant_filter.filter_expression ), str( $variant_filter.is_genotype_filter ), str( $variant_filter.filter_name )  )
+        -o '${ hexlify( $variant_filter ) }'
+    #end for
+    
+    #if str( $mask_rod_bind_type.mask_rod_bind_type_selector ) == 'set_mask':
+        -d "--mask:${mask_rod_bind_type.mask_rod_name},%(file_type)s" "${mask_rod_bind_type.input_mask_rod}" "${mask_rod_bind_type.input_mask_rod.ext}" "input_mask_${mask_rod_bind_type.mask_rod_name}"
+        -p '
+        --maskExtension "${mask_rod_bind_type.mask_extension}"
+        --maskName "${mask_rod_bind_type.mask_rod_name}"
+        '
+    #end if
+    
+    #include source=$standard_gatk_options#
+    
+    ##start analysis specific options
+    #if $cluster_snp_type.cluster_snp_type_selector == "cluster_snp":
+        -p '
+        --clusterSize "${cluster_snp_type.cluster_size}"
+        --clusterWindowSize "${cluster_snp_type.cluster_window_size}"
+        '
+    #end if
+    -p '${missing_values_in_expressions_should_evaluate_as_failing}'
+  </command>
+  <inputs>
+    <conditional name="reference_source">
+      <expand macro="reference_source_selector_param" />
+      <when value="cached">
+        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" help="-V,--variant &amp;lt;variant&amp;gt;" />
+        <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">
+          <options from_data_table="gatk2_picard_indexes">
+            <filter type="data_meta" key="dbkey" ref="input_variant" column="dbkey"/>
+          </options>
+          <validator type="no_options" message="A built-in reference genome is not available for the build associated with the selected input file"/>
+        </param>
+      </when>
+      <when value="history"> <!-- FIX ME!!!! -->
+        <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" help="-V,--variant &amp;lt;variant&amp;gt;" />
+        <param name="ref_file" type="data" format="fasta" label="Using reference file" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;" />
+      </when>
+    </conditional>
+    
+    
+    <repeat name="variant_filters" title="Variant Filters">
+        <param name="filter_expression" value="AB &lt; 0.2 || MQ0 &gt; 50" type="text" label="Filter expression" help="JEXL formatted expressions (-filter,--filterExpression &amp;lt;filterExpression&amp;gt;)">
+            <sanitizer>
+              <valid initial="string.printable">
+               <remove value="&apos;"/>
+             </valid>
+              <mapping initial="none"/>
+            </sanitizer>
+        </param>
+        <param name="filter_name" value="custom_filter" type="text" label="Filter name" help="-filterName,--filterName &amp;lt;filterName&amp;gt;"/>
+        <param name="is_genotype_filter" type="boolean" truevalue="genotypeFilter" falsevalue="filter" label="Use filter at the individual sample level" help="Use -G_filter,--genotypeFilterExpression &amp;lt;genotypeFilterExpression&amp;gt; and -G_filterName,--genotypeFilterName &amp;lt;genotypeFilterName&amp;gt; for filter type" />
+    </repeat>
+    
+
+    
+    <conditional name="mask_rod_bind_type">
+      <param name="mask_rod_bind_type_selector" type="select" label="Provide a Mask reference-ordered data file">
+        <option value="set_mask" selected="True">Set mask</option>
+        <option value="exclude_mask">Don't set mask</option>
+      </param>
+      <when value="exclude_mask">
+        <!-- Do nothing here -->
+      </when>
+      <when value="set_mask">
+        <param name="input_mask_rod" type="data" format="bed,gatk_dbsnp,vcf" label="Mask ROD file" help="--mask &amp;lt;mask&amp;gt;" />
+        <param name="mask_rod_name" type="text" value="Mask" label="Mask Name" help="-maskName,--maskName &amp;lt;maskName&amp;gt;"/>
+        <param name="mask_extension" type="integer" value="0" label="Mask Extension" help="-maskExtend,--maskExtension &amp;lt;maskExtension&amp;gt;"/>
+      </when>
+    </conditional>    
+    
+    
+    <expand macro="gatk_param_type_conditional" />
+    
+    <conditional name="cluster_snp_type">
+      <param name="cluster_snp_type_selector" type="select" label="Cluster SNPs">
+        <option value="cluster_snp">Cluster SNPs</option>
+        <option value="do_not_cluster_snp" selected="True">Do not cluster SNPs</option>
+      </param>
+      <when value="do_not_cluster_snp">
+        <!-- Do nothing here -->
+      </when>
+      <when value="cluster_snp">
+        <param name="cluster_size" type="integer" value="3" label="The number of SNPs which make up a cluster" help="-cluster,--clusterSize &amp;lt;clusterSize&amp;gt;"/>
+        <param name="cluster_window_size" type="integer" value="0" label="The window size (in bases) in which to evaluate clustered SNPs" help="-window,--clusterWindowSize &amp;lt;clusterWindowSize&amp;gt;"/>
+      </when>
+    </conditional>
+    
+    <param name="missing_values_in_expressions_should_evaluate_as_failing" type="boolean" truevalue="--missingValuesInExpressionsShouldEvaluateAsFailing" falsevalue="" label="Should missing values be considered failing the expression" help="--missingValuesInExpressionsShouldEvaluateAsFailing" />
+    
+  </inputs>
+  <outputs>
+    <data format="vcf" name="output_vcf" label="${tool.name} on ${on_string} (Variant File)" />
+    <data format="txt" name="output_log" label="${tool.name} on ${on_string} (log)" />
+  </outputs>
+  <tests>
+      <test>
+          <param name="reference_source_selector" value="history" />
+          <param name="ref_file" value="phiX.fasta" ftype="fasta" />
+          <param name="input_variant" value="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" ftype="vcf" />
+          <param name="filter_expression" value="MQ &lt; 37.74 || MQ0 &gt; 50" />
+          <param name="filter_name" value="Galaxy_filter" />
+          <param name="is_genotype_filter" />
+          <param name="mask_rod_bind_type_selector" value="set_mask" />
+          <param name="input_mask_rod" value="gatk/fake_phiX_variant_locations.bed" ftype="bed" />
+          <param name="mask_rod_name" value="." />
+          <param name="mask_extension" value="0" />
+          <param name="gatk_param_type_selector" value="basic" />
+          <param name="cluster_snp_type_selector" value="do_not_cluster_snp" />
+          <param name="missing_values_in_expressions_should_evaluate_as_failing" />
+          <output name="output_vcf" file="gatk/gatk_variant_annotator/gatk_variant_annotator_out_1.vcf" lines_diff="4" /> 
+          <output name="output_log" file="gatk/gatk_variant_filtration/gatk_variant_filtration_out_1.log.contains" compare="contains" />
+      </test>
+  </tests>
+  <help>
+**What it does**
+
+Filters variant calls using a number of user-selectable, parameterizable criteria.
+
+For more information on using the VariantFiltration module, see this `tool specific page &lt;http://www.broadinstitute.org/gatk/gatkdocs/org_broadinstitute_sting_gatk_walkers_filters_VariantFiltration.html&gt;`_.
+
+To learn about best practices for variant detection using GATK, see this `overview &lt;http://www.broadinstitute.org/gatk/guide/topic?name=best-practices&gt;`_.
+
+If you encounter errors, please view the `GATK FAQ &lt;http://www.broadinstitute.org/gatk/guide/topic?name=faqs&gt;`_.
+
+------
+
+**Inputs**
+
+GenomeAnalysisTK: VariantFiltration accepts a VCF input file.
+
+
+**Outputs**
+
+The output is in VCF format.
+
+Go `here &lt;http://www.broadinstitute.org/gatk/guide/topic?name=intro&gt;`_ for details on GATK file formats.
+
+-------
+
+**Settings**::
+
+
+ filterExpression                                     One or more expression used with INFO fields to filter (see wiki docs for more info)
+ filterName                                           Names to use for the list of filters (must be a 1-to-1 mapping); this name is put in the FILTER field for variants that get filtered
+ genotypeFilterExpression                             One or more expression used with FORMAT (sample/genotype-level) fields to filter (see wiki docs for more info)
+ genotypeFilterName                                   Names to use for the list of sample/genotype filters (must be a 1-to-1 mapping); this name is put in the FILTER field for variants that get filtered
+ clusterSize                                          The number of SNPs which make up a cluster (see also --clusterWindowSize); [default:3]
+ clusterWindowSize                                    The window size (in bases) in which to evaluate clustered SNPs (to disable the clustered SNP filter, set this value to less than 1); [default:0]
+ maskName                                             The text to put in the FILTER field if a 'mask' rod is provided and overlaps with a variant call; [default:'Mask']
+ missingValuesInExpressionsShouldEvaluateAsFailing    When evaluating the JEXL expressions, should missing values be considered failing the expression (by default they are considered passing)?
+
+@CITATION_SECTION@
+  </help>
+</tool>

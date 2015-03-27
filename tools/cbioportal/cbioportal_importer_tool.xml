@@ -1,0 +1,99 @@
+<tool id="cbioportal_importer_tool" name="cBioPortal Importer Tool">
+	<description>Tool for importing data into cBioPortal (step 2)</description>
+	<command interpreter="python">
+		cbioportal_importer_tool.py --tool "${tool.tool_select}" --log_level "${log_level}" --log_file "${out_log}"
+		#if $tool.tool_select=="validate"
+			--validate_directory "${tool.directory}" 
+		#else if $tool.tool_select=="import"
+			--import_directory "${tool.directory}" 
+			--import_overwrite "${tool.overwrite}"
+		#else if $tool.tool_select=="annotate"
+			--annotate_maf "${tool.maf}" --annotate_output_file "${tool.annotate_output_file}"
+		#else if $tool.tool_select=="normalize"
+		--normalize_cna_file "${tool.cna_file}" --normalize_expression_file "${tool.expression_file}" --normalize_output_file "${tool.normalize_output_file}" --normalize_suffix "${tool.normal_sample_suffix}"
+		#else if $tool.tool_select=="remove_cancer_study"
+			--remove_cancer_study "${tool.cancer_study}"
+		#end if
+	</command>
+	<inputs>
+		<conditional name="tool">
+			<param name="tool_select" type="select" label="Select tool to use">
+				<option value="validate">Validate cancer study</option>
+				<option value="import">Import cancer study</option>
+				<option value="annotate">Annotate MAF file</option>
+				<option value="normalize">Normalize expression data</option>
+				<option value="remove_cancer_study">Remove cancer study</option>
+			</param>
+			<when value="validate">
+				<param name="directory" type="text" label="Path to the study directory" size="50" help="Filesystem path to the study directory containing data and metadata files.">
+					<validator type="empty_field" message="Field cannot be empty."/>
+					<sanitizer> 
+						<valid initial="default">
+							<add value="&#64;"/>
+						</valid>
+					</sanitizer>
+				</param>
+			</when>
+			<when value="import">
+				<param name="directory" type="text" label="Path to the study directory" size="50" help="Filesystem path to the study directory containing data and metadata files." >
+					<validator type="empty_field" message="Field cannot be empty."/>
+					<sanitizer> 
+						<valid initial="default">
+							<add value="&#64;"/>
+						</valid>
+					</sanitizer>
+				</param>
+				<param name="overwrite" type="select" label="Overwrite study data in database?" help="Selecting NO means if a study already exists in the database with the same study identifier the import will fail. Selecting YES will force an overwrite of any study with the same study identifier.">
+					<option value="NO">NO</option>
+					<option value="YES">YES</option>
+				</param>
+			</when>
+			<when value="annotate">
+				<param name="maf" type="data" label="MAF file to annotate" help="Mutation Annotation Format (MAF) file will be annotated using cBioPortal's annotation database"/>
+				<param name="annotate_output_file" type="text" label="(optional) output filename" optional="true" size="25" help="If no output name is supplied, the output filename will be the original filename with '_annotated' added before the file extension; ex. data_mutation.maf -> data_mutation_annotated.maf"/>
+			</when>
+			<when value="normalize">
+				<param name="cna_file" type="data" label="Copy-number data file (should be GISTIC data)"/>
+				<param name="expression_file" type="data" label="Expression data file"/>
+				<param name="normalize_output_file" type="text" label="Output filename" size="25">
+					<validator type="empty_field" message="Field cannot be empty."/>
+				</param>
+				<param name="normal_sample_suffix" type="text" label="A suffix to identify normal sample ids (default='-11'); suffix used by normal sample TCGA barcodes" value="-11"/>
+			</when>
+			<when value="remove_cancer_study">
+				<param name="cancer_study" type="text" label="Cancer study identifier of cancer study to delete" size="40" help="Choose wisely">
+					<validator type="empty_field" message="Field cannot be empty."/>
+				</param>
+			</when>
+		</conditional>
+		<param name="log_level" type="select" label="Log level" help="Select verbosity of logging">
+			<option value="CRITICAL">CRITICAL</option>
+			<option value="ERROR">ERROR</option>
+			<option value="WARNING">WARNING</option>
+			<option value="INFO" selected="true">INFO</option>
+			<option value="DEBUG">DEBUG</option>
+			<option value="NOTSET">NOT SET</option>
+		</param>
+	</inputs>
+	<outputs>
+			<data format="txt" name="out_log" label="${tool.name} (log)"/>
+	</outputs>
+	<stdio>
+		<regex match="Unknown cancer type and a cancer type file cannot be found" source="both" level="fatal" description="Unknown cancer type and a cancer type file cannot be found"/>
+		<regex match="Invalid cancer study found in directory" source="both" level="fatal" description="Invalid cancer study found in directory" />
+		<regex match="Error: Clinical file is missing Id column header" source="both" level="fatal"/>
+		<regex match="CRITICAL" source="both" level="fatal"/>
+		<regex match="Parameter 'directory' is not a directory" source="both" level="fatal" description="Directory parameter is not a directory"/>
+		<regex match="Case list directory is not found:" source="both" level="fatal" description="Cannot find case_lists directory. A case_lists directory must be located within the study directory" />
+		<regex match="Case list directory is empty:" source="both" level="fatal" description="case_lists directory does not contain any case list files!" />
+		<regex match="Please do not use a path that contains a" source="both" level="fatal" description="Please do not use a path that contains a '@' symbol"/>
+		<regex match="Cancer study exists, skip is set, skipping" source="both" level="fatal" description="Study already exists in the database, skipping import. Rereun the tool using the 'OVERWRITE' flag to overwrite the data"/>
+	</stdio>
+	<help>
+		See the `cBioPortal Importer Tool wiki`_  for detailed information about this tool
+		
+		**NOTE**: please see log file created by this tool for important information
+
+		.. _cBioPortal Importer Tool wiki: http://137.53.221.77/projects/genomics/wiki/CbioPortalImporterTool
+	</help>
+</tool>	

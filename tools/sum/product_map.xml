@@ -1,0 +1,14 @@
+<tool id="product_map" name="product_map">
+  <description>Element-wise multiplication of 2 vectors</description>
+  <command interpreter="python">product_map.py $vector_A $vector_B $products</command>
+  <inputs>
+    <param name="vector_A" type="data" label="vector A"/>
+    <param name="vector_B" type="data" label="vector B"/>
+  </inputs>
+  <outputs>
+    <data format="input" format_source="vector_A" name="products" label="products"/>
+  </outputs>
+  <help>
+    Element-wise multiplication of 2 vectors
+  </help>
+</tool>

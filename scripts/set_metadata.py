@@ -65,6 +65,12 @@ def __main__():
     config_file_name = sys.argv.pop( 1 )
     if not os.path.isabs( config_file_name ):
         config_file_name = os.path.join( config_root, config_file_name )
+   
+    #Try to access safe_universe_wsgi.ini if no permission to access universe_wsgi.ini
+    if(os.access(config_file_name, os.R_OK) == False):
+	config_file_dir = os.path.dirname(config_file_name);
+	config_file_basename = os.path.basename(config_file_name);
+	config_file_name = os.path.join(config_file_dir, 'safe_'+config_file_basename);
 
     # Set up reference to object store
     # First, read in the main config file for Galaxy; this is required because

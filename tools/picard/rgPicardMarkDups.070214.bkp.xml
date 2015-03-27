@@ -1,0 +1,130 @@
+<tool name="Mark Duplicate reads" id="rgPicardMarkDups" version="1.56.0">
+  <command interpreter="python">
+   picard_wrapper.py -i "${input_file}" -n "${out_prefix}" --tmpdir "${__new_file_path__}" -o "${out_file}"
+   --remdups "${remDups}" --assumesorted "${assumeSorted}" --readregex "${readRegex}" --optdupdist "${optDupeDist}"
+   -j "\$JAVA_JAR_PATH/MarkDuplicates.jar" -d "${html_file.files_path}" -t "${html_file}" -e "${input_file.ext}"
+  </command>
+  <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
+  <inputs>
+    <param format="bam,sam" name="input_file" type="data" label="SAM/BAM dataset to mark duplicates in"
+      help="If empty, upload or import a SAM/BAM dataset."/>
+    <param name="out_prefix" value="Dupes Marked" type="text"
+      label="Title for the output file" help="Use this remind you what the job was for" size="80" />
+    <param name="remDups" value="false" type="boolean"  label="Remove duplicates from output file"
+      truevalue="true" falsevalue="false" checked="yes" 
+      help="If true do not write duplicates to the output file instead of writing them with appropriate flags set." />
+    <param name="assumeSorted" value="true" type="boolean"  label="Assume reads are already ordered"
+      truevalue="true" falsevalue="false" checked="yes" 
+      help="If true assume input data are already sorted (most Galaxy SAM/BAM should be)." />
+     <param name="readRegex" value="[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*" type="text" size="80"
+      label="Regular expression that can be used to parse read names in the incoming SAM file" 
+      help="Names are parsed to extract: tile/region, x coordinate and y coordinate, to estimate optical duplication rate" >
+      <sanitizer>
+        <valid initial="string.printable">
+         <remove value="&apos;"/>
+        </valid>
+        <mapping initial="none">
+          <add source="&apos;" target="__sq__"/>
+        </mapping>
+      </sanitizer>
+     </param>
+     <param name="optDupeDist" value="100" type="integer"
+      label="The maximum offset between two duplicate clusters in order to consider them optical duplicates." size="5" 
+      help="e.g. 5-10 pixels. Later Illumina software versions multiply pixel values by 10, in which case 50-100." >
+      <validator type="in_range" message="Minimum optical dupe distance must be positive" min="0" />    
+     </param>
+
+  </inputs>
+  <outputs>
+    <data format="bam" name="out_file" label="MarkDups_${out_prefix}.bam"/>
+    <data format="html" name="html_file" label="MarkDups_${out_prefix}.html"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="picard_input_tiny_coord.bam" ftype="bam" />
+      <param name="out_prefix" value="Dupes Marked" />
+      <param name="remDups" value="false" />
+      <param name="assumeSorted" value="true" />
+      <param name="readRegex" value="[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*" />
+      <param name="optDupeDist" value="100" />      
+      <output name="out_file" file="picard_output_markdups_sortedpairsam.bam" ftype="bam" compare="diff" />
+      <output name="html_file" file="picard_output_markdups_sortedpairsam.html" ftype="html" lines_diff="75" />
+    </test>
+    <test>
+      <param name="input_file" value="picard_input_tiny_coord.sam" ftype="sam" />
+      <param name="out_prefix" value="Dupes Marked" />
+      <param name="remDups" value="true" />
+      <param name="assumeSorted" value="true" />
+      <param name="readRegex" value="[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*" />
+      <param name="optDupeDist" value="100" />
+      <output name="out_file" file="picard_output_markdups_remdupes.bam" ftype="bam" compare="diff" />
+      <output name="html_file" file="picard_output_markdups_sortedpairsam.html" ftype="html" lines_diff="75" />
+    </test>
+  </tests>
+  
+  <help>
+
+.. class:: infomark
+
+**Purpose**
+
+Marks all duplicate reads in a provided SAM or BAM file and either removes them or flags them.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for MarkDuplicates, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+-----
+
+.. class:: infomark
+
+**Inputs, outputs, and parameters**
+
+Picard documentation says (reformatted for Galaxy):
+
+.. csv-table:: Mark Duplicates docs
+   :header-rows: 1
+
+    Option,Description
+    "INPUT=File","The input SAM or BAM file to analyze. Must be coordinate sorted. Required."
+    "OUTPUT=File","The output file to right marked records to Required."
+    "METRICS_FILE=File","File to write duplication metrics to Required."
+    "REMOVE_DUPLICATES=Boolean","If true do not write duplicates to the output file instead of writing them with appropriate flags set. Default value: false."
+    "ASSUME_SORTED=Boolean","If true, assume that the input file is coordinate sorted, even if the header says otherwise. Default value: false."
+    "MAX_SEQUENCES_FOR_DISK_READ_ENDS_MAP=Integer","This option is obsolete. ReadEnds will always be spilled to disk. Default value: 50000."
+    "MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=Integer","Maximum number of file handles to keep open when spilling read ends to disk."
+    "READ_NAME_REGEX=String","Regular expression that can be used to parse read names in the incoming SAM file. Read names are parsed to extract three variables: tile/region, x coordinate and y coordinate. "
+    "OPTICAL_DUPLICATE_PIXEL_DISTANCE=Integer","The maximum offset between two duplicte clusters in order to consider them optical duplicates. This should usually be set to some fairly small number (e.g. 5-10 pixels) unless using later versions of the Illumina pipeline that multiply pixel values by 10, in which case 50-100 is more normal. Default value: 100"
+
+.. class:: warningmark
+
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
+.. class:: infomark
+
+**Note on the Regular Expression**
+
+(from the Picard docs)
+This tool requires a valid regular expression to parse out the read names in the incoming SAM or BAM file. These values are used to estimate the rate of optical duplication in order to give a more accurate estimated library size. The regular expression should contain three capture groups for the three variables, in order. Default value: [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).
+
+Examines aligned records in the supplied SAM or BAM file to locate duplicate molecules. All records are then written to the output file with the duplicate records flagged unless the remove duplicates option is selected. In some cases you may want to do this, but please only do this if you really understand what you are doing.
+
+  </help>
+</tool>
+
+
+
+
+
+
+
+
+
+
+
+

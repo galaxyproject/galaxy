@@ -1,0 +1,16 @@
+GenomeAnalysisEngine - Strictness is SILENT
+TableRecalibrationWalker - Reading in the data from input csv file...
+TableRecalibrationWalker - ...done!
+TableRecalibrationWalker - The covariates being used here:
+TableRecalibrationWalker - 	ReadGroupCovariate
+TableRecalibrationWalker - 	QualityScoreCovariate
+TableRecalibrationWalker - 	CycleCovariate
+TableRecalibrationWalker - 	DinucCovariate
+TableRecalibrationWalker - 	HomopolymerCovariate
+TableRecalibrationWalker - 	MinimumNQSCovariate
+TableRecalibrationWalker - 	PositionCovariate
+TableRecalibrationWalker - Generating tables of empirical qualities for use in sequential calculation...
+TableRecalibrationWalker - ...done!
+TraversalEngine - [INITIALIZATION COMPLETE; TRAVERSAL STARTING]
+TraversalEngine - Total runtime
+TraversalEngine - 0 reads were filtered out during traversal out of 10 total (0.00%)

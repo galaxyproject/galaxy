@@ -11,8 +11,8 @@
 #--- config
 
 SERVICE_NAME="galaxy"
-RUN_AS="galaxy"
-RUN_IN="/path/to/galaxy-dist"
+RUN_AS="karthikg"
+RUN_IN="/mnt/app_hdd/scratch/karthikg/Galaxy/test_git_hg/github/galaxy"
 
 #--- main actions
 

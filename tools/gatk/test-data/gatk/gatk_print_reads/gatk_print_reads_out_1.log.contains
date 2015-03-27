@@ -1,0 +1,5 @@
+SAMDataSource$SAMReaders - Initializing SAMRecords in serial
+TraversalEngine - [INITIALIZATION COMPLETE; TRAVERSAL STARTING]
+TraversalEngine -        Location processed.reads  runtime per.1M.reads completed total.runtime remaining 
+Walker - [REDUCE RESULT] Traversal result is: org.broadinstitute.sting.gatk.io.stubs.SAMFileWriterStub
+TraversalEngine - 0 reads were filtered out during traversal out of 10 total (0.00%)

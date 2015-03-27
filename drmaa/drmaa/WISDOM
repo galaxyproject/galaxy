@@ -1,0 +1,46 @@
+This document contains some wisdom regarding the DRMAA library development.
+
+SPECIFICATIONS:
+The work so far was developed by the following two specifications:
+ Distributed Resource Management Application API Specification 1.0 January 2004
+ DRMAA C Bindings v1.0
+
+Both are available at www.drmaa.org.
+
+FILES:
+  The library is organized into 4 files: libDrmaa.c and its corresponding
+header file and auxDrmaa.c and its header.  
+  libDrmaa.h - contains the DRMAA API as specified in C Bindings v1.0	
+  libDrmaa.c - main implementation of libDrmaa.h
+  auxDrmaa.h - contains global constants, #defines, etc. for library
+  auxDrmaa.c - contains auxiliary methods of libDrmaa.c
+
+DESIGN IN A NUTSHELL:
+Aside from the complexity required by the individual API functions, there are
+only a few extras in the library. The library maintains one lock that guards
+its initialization status and one linked lists of job information. The list
+is also guarded by a lock.
+
+DESIGN DECISIONS:
+- Multiple "return"s.  This code has many cases, many of which require immediate
+exit, ie. no further processing of function's parameters.  Disadvantage: not
+the most straightforward to read.
+- Use of log files.  Jobs are run by popen()ing condor_submit with a certain
+submit file.  _wait(), _synchronize() and other functions rely heavily on
+Condor's log files.  (Alternatives include asking Condor via condor_q, etc.)
+
+TODO:
+  See STATUS document.
+
+RUNNING TESTS (UWSC internal):
+ - copy files for test401, test402
+
+STATUS CODE of drmaa_wait():
+  |-- (-1) -- 0 ---- 1 ---------------------- 101 -------------------- 200 ---|
+     abort  unknown signal                   signal & core            normal
+  case 1: normal exit: add 200 to exit value, 200 <= stat <= 456
+  case 2: exit via signal: 1 <= stat <= 99; contains no exit() result info 
+  case 3: exit via signal with core dump: add 100 to signal value, 101 <= stat <= 199; 
+          contains no exit() result info 
+  case 4: unknown: set status code to 0; contains no exit() result info 
+  case 5: aborted: set status code to -1; contains no exit() result info 

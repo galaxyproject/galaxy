@@ -1,0 +1,115 @@
+<tool name="Replace SAM/BAM Header" id="picard_ReplaceSamHeader" version="1.56.0">
+  <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
+  <command interpreter="python">
+    picard_wrapper.py
+      --input "${inputFile}"
+      -o "${outFile}"
+      --header-file "${headerFile}"
+      --output-format "${outputFormat}"
+      -j "\$JAVA_JAR_PATH/ReplaceSamHeader.jar"
+      --tmpdir "${__new_file_path__}" 
+  </command>
+  <inputs>
+    <param format="bam,sam" name="inputFile" type="data" label="SAM/BAM dataset to replace header in (TARGET)"
+      help="If empty, upload or import a SAM/BAM dataset." />
+    <param format="bam,sam" name="headerFile" type="data" label="SAM/BAM to reader header from (SOURCE)"
+      help="If empty, upload or import a SAM/BAM dataset." />
+    <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output BAM instead of SAM" help="Uncheck for SAM output" />
+  </inputs>
+  <outputs>
+    <data name="outFile" format="bam" label="${tool.name} on ${on_string}: ${outputFormat} with replaced header">
+      <change_format>
+        <when input="outputFormat" value="sam" format="sam" />
+      </change_format>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <!-- Command:
+      java -jar ReplaceSamHeader.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_input_tiny_coord.bam HEADER=test-data/picard_RSH_input1.bam O=picard_RSH_output1.sam
+      picard_RSH_input1.bam can be made from picard_RSH_input1.sam
+      -->
+      <param name="inputFile" value="picard_input_tiny_coord.bam" ftype="bam" />
+      <param name="headerFile" value="picard_RSH_input1.bam" ftype="bam" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_RSH_output1.sam" ftype="sam" />
+    </test>
+    <test>
+      <!-- Command:
+      java -jar ReplaceSamHeader.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_input_tiny_coord.sam HEADER=test-data/picard_RSH_input1.bam O=picard_RSH_output2.sam
+      picard_RSH_input1.bam can be made from picard_RSH_input1.sam
+      -->
+      <param name="inputFile" value="picard_input_tiny_coord.sam" ftype="sam" />
+      <param name="headerFile" value="picard_RSH_input1.bam" ftype="bam" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_RSH_output2.sam" ftype="sam" />
+    </test>
+    <test>
+      <!-- Command:
+      java -jar ReplaceSamHeader.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_input_tiny_coord.sam HEADER=test-data/picard_RSH_input1.sam O=picard_RSH_output2.bam
+      -->
+      <param name="inputFile" value="picard_input_tiny_coord.sam" ftype="sam" />
+      <param name="headerFile" value="picard_RSH_input1.sam" ftype="sam" />
+      <param name="outputFormat" value="True" />
+      <output name="outFile" file="picard_RSH_output2.bam" ftype="bam" />
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**Purpose**
+
+Replace Sam Header with the header from another sam file. The tool does not do any
+significant validation, so it's up to the user to make sure that the elements in
+the header are relevant and that the new header has all the required things.
+
+Replace the SAMFileHeader in a SAM file with the given header. Validation is
+minimal. It is up to the user to ensure that all the elements referred to in the
+SAMRecords are present in the new header. Sort order of the two input files must
+be the same.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for ReplaceSamHeader, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+------
+
+.. class:: infomark
+
+**Inputs and outputs**
+
+Either a sam file or a bam file is required as the file whose header will be replaced.
+The header file is also required and can also be either sam or bam (it does not have
+to be the same type as the other file). In both cases, if a bam file is used, it must
+be coordinate-sorted. Galaxy currently coordinate-sorts all bam files.
+
+The tool will output either bam (the default) or sam. Bam is recommended since it is smaller.
+
+.. class:: warningmark
+
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
+
+
+
+  </help>
+</tool>
+
+
+
+
+
+
+
+
+
+
+
+
