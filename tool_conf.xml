@@ -244,6 +244,8 @@
     <label id="BICSeq" text="BICSeq" />
 	    <tool file="Suzi_pipeline/Bic-Seq_samtools.xml" />
 	    <tool file="Suzi_pipeline/Bic-Seq.xml" /> 
+    <label id="mutect" text="MuTect version 1.1.7" />
+	    <tool file="mutect/muTect.xml" />
   </section>  
   <section id="cbioportal_tools" name="cBioPortal Tools">
     <tool file="cbioportal/cbioportal_create_files.xml" />
