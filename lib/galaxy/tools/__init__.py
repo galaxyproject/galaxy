@@ -2446,10 +2446,10 @@ class Tool( object, Dictifiable ):
                         test_param = tool_dict['test_param']
                         test_param['value'] = jsonify(group_state.get(test_param['name'], None))
                         for i in range (len ( tool_dict['cases'] ) ):
-                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, {}, other_values)
-                        if '__current_case__' in group_state:
-                            i = group_state['__current_case__']
-                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, group_state, other_values)
+                            current_state = {}
+                            if i == group_state.get('__current_case__', None):
+                                current_state = group_state
+                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, current_state, other_values)
                 else:
                     # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
                     try:
@@ -2461,7 +2461,11 @@ class Tool( object, Dictifiable ):
                     input_name = tool_dict.get('name')
                     if input_name:
                         # backup default value
-                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                        try:
+                            tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                        except Exception:
+                            # get initial value failed due to improper late validation
+                            pass
 
                         # update input value from tool state
                         tool_dict['value'] = state_inputs.get(input_name, None)
