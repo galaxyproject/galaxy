@@ -26,6 +26,11 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
 
 ## How to Contribute
 
+* All changes to the [core galaxy project](https://github.com/galaxyproject/galaxy)
+  should be made through pull requests to this repository except when
+  serious security vulnerabilities must simulatenously be made to multiple
+  previously released versions of Galaxy.
+
 * If you are new to Git - please check out the very useful tutorials on the [GitHub training hub](https://training.github.com/kit/)
 
 * Make sure you have a free [GitHub account](https://github.com/)
