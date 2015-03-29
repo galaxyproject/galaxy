@@ -64,3 +64,43 @@ class TaggableDeserializerMixin( object ):
         #TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
         return item.tags
 
+class TaggableFilterMixin( object ):
+
+    def _tag_str_gen( self, item ):
+        """
+        Return a list of strings built from the item's tags.
+        """
+        #TODO: which user is this? all?
+        for tag in item.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            yield tag_str
+
+    def filter_has_partial_tag( self, item, val ):
+        """
+        Return True if any tag partially contains `val`.
+        """
+        for tag_str in self._tag_str_gen( item ):
+            if val in tag_str:
+                return True
+        return False
+
+    def filter_has_tag( self, item, val ):
+        """
+        Return True if any tag exactly equals `val`.
+        """
+        for tag_str in self._tag_str_gen( item ):
+            if val == tag_str:
+                return True
+        return False
+
+    def _add_parsers( self ):
+        self.fn_filter_parsers.update({
+            'tag': {
+                'op': {
+                    'eq'    : self.filter_has_tag,
+                    'has'   : self.filter_has_partial_tag,
+                }
+            }
+        })

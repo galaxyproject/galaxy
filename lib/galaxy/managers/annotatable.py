@@ -13,20 +13,20 @@ class AnnotatableManagerMixin( object ):
     # TODO: most of this seems to be covered by item_attrs.UsesAnnotations
     # TODO: use these below (serializer/deserializer)
     def user_annotation( self, trans, item, user ):
-        return item.get_item_annotation_str( self.app.model.context, user, item )
+        return item.get_item_annotation_str( self.session(), user, item )
 
     def owner_annotation( self, trans, item ):
         return self.user_annotation( trans, item, item.user )
 
     def delete_annotation( self, trans, item, user ):
-        return item.delete_item_annotation( self.app.model.context, user, item )
+        return item.delete_item_annotation( self.session(), user, item )
 
     def annotate( self, trans, item, user, annotation ):
         if annotation is None:
             self.delete_annotation( self, trans, item, user )
             return None
 
-        annotation_obj = item.add_item_annotation( self.app.model.context, user, item, annotation )
+        annotation_obj = item.add_item_annotation( self.session(), user, item, annotation )
         return annotation_obj.annotation
 
     #def by_user( self, trans, user, **kwargs ):
@@ -71,3 +71,32 @@ class AnnotatableDeserializerMixin( object ):
 
         annotated_item = item.add_item_annotation( sa_session, user, item, val )
         return annotated_item.annotation
+
+
+# TODO: I'm not entirely convinced this (or tags) are a good idea for filters since they involve a/the user
+class AnnotatableFilterMixin( object ):
+
+    def _owner_annotation( self, item ):
+        """
+        Get the annotation by the item's owner.
+        """
+        if not item.user:
+            return None
+        for annotation in item.annotations:
+            if annotation.user == item.user:
+                return annotation.annotation
+        return None
+
+    def filter_annotation_contains( self, item, val ):
+        """
+        Test whether `val` is in the owner's annotation.
+        """
+        owner_annotation = self._owner_annotation( item )
+        if owner_annotation is None:
+            return False
+        return val in owner_annotation
+
+    def _add_parsers( self ):
+        self.fn_filter_parsers.update({
+            'annotation'    : { 'op': { 'has': self.filter_annotation_contains, } },
+        })

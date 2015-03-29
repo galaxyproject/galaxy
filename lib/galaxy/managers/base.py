@@ -486,6 +486,14 @@ class ModelDeserializingError( exceptions.ObjectAttributeInvalidException ):
     pass
 
 
+class SkipAttribute( Exception ):
+    """
+    Raise this inside a serializer to prevent the returned dictionary from having
+    a the associated key or value for this attribute.
+    """
+    pass
+
+
 class ModelSerializer( object ):
     """
     Turns models into JSONable dicts.
@@ -563,11 +571,30 @@ class ModelSerializer( object ):
         for key in keys:
             # check both serializers and serializable keys
             if key in self.serializers:
-                returned[ key ] = self.serializers[ key ]( trans, item, key )
+                try:
+                    returned[ key ] = self.serializers[ key ]( trans, item, key )
+                except SkipAttribute, skip:
+                    # dont add this key if the deserializer threw this
+                    pass
             elif key in self.serializable_keyset:
                 returned[ key ] = self.default_serializer( trans, item, key )
             # ignore bad/unreg keys
         return returned
+
+    def skip( self, msg='skipped' ):
+        """
+        To be called from inside a serializer to skip it.
+
+        Handy for config checks, information hiding, etc.
+        """
+        raise SkipAttribute( msg )
+
+    def _remap_from( self, original_key ):
+        if original_key in self.serializers:
+            return self.serializers[ original_key ]
+        if original_key in self.serializable_keyset:
+            return lambda t, i, k: self.default_serializer( t, i, original_key )
+        raise KeyError( 'serializer not found for remap: ' + original_key )
 
     def default_serializer( self, trans, item, key ):
         """
@@ -589,6 +616,7 @@ class ModelSerializer( object ):
         Serialize an id attribute of `item`.
         """
         id = getattr( item, key )
+        # Note: it may not be best to encode the id at this layer
         return self.app.security.encode_id( id ) if id is not None else None
 
     # serializing to a view where a view is a predefied list of keys to serialize
@@ -854,6 +882,7 @@ class ModelFilterParser( object ):
         """
         Set up, extend, or alter `orm_filter_parsers` and `fn_filter_parsers`.
         """
+        # note: these are the default filters for all models
         self.orm_filter_parsers.update({
             # (prob.) applicable to all models
             'id'            : { 'op': ( 'in' ), 'val': self.parse_id_list },
@@ -971,57 +1000,6 @@ class ModelFilterParser( object ):
 
     # --- more parsers! yay!
 #TODO: These should go somewhere central - we've got ~6 parser modules/sections now
-    #TODO: to annotatable
-    def _owner_annotation( self, item ):
-        """
-        Get the annotation by the item's owner.
-        """
-        if not item.user:
-            return None
-        for annotation in item.annotations:
-            if annotation.user == item.user:
-                return annotation.annotation
-        return None
-
-    def filter_annotation_contains( self, item, val ):
-        """
-        Test whether `val` is in the owner's annotation.
-        """
-        owner_annotation = self._owner_annotation( item )
-        if owner_annotation is None:
-            return False
-        return val in owner_annotation
-
-    #TODO: to taggable
-    def _tag_str_gen( self, item ):
-        """
-        Return a list of strings built from the item's tags.
-        """
-        #TODO: which user is this? all?
-        for tag in item.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            yield tag_str
-
-    def filter_has_partial_tag( self, item, val ):
-        """
-        Return True if any tag partially contains `val`.
-        """
-        for tag_str in self._tag_str_gen( item ):
-            if val in tag_str:
-                return True
-        return False
-
-    def filter_has_tag( self, item, val ):
-        """
-        Return True if any tag exactly equals `val`.
-        """
-        for tag_str in self._tag_str_gen( item ):
-            if val == tag_str:
-                return True
-        return False
-
     def parse_bool( self, bool_string ):
         """
         Parse a boolean from a string.

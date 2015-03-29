@@ -50,9 +50,9 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
             # Activation is off, every new user is active by default.
             user.active = True
 
-        self.app.model.context.add( user )
+        self.session().add( user )
         try:
-            self.app.model.context.flush()
+            self.session().flush()
             #TODO:?? flush needed for permissions below? If not, make optional
         except sqlalchemy.exc.IntegrityError, db_err:
             raise exceptions.Conflict( db_err.message )
@@ -142,7 +142,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         Raise an error if `user` is anonymous.
         """
         if user is None:
-            #TODO: code is correct (403), but should be named AuthenticationRequired (401 and 403 are flipped)
+            #TODO: code is correct (401) but should be named AuthenticationRequired (401 and 403 are flipped)
             raise exceptions.AuthenticationFailed( msg, **kwargs )
         return user
 
@@ -164,7 +164,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         """
         Return this most recent APIKey for this user or None if none have been created.
         """
-        query = ( self.app.model.context.query( model.APIKeys )
+        query = ( self.session().query( model.APIKeys )
                     .filter_by( user=user )
                     .order_by( sqlalchemy.desc( model.APIKeys.create_time ) ) )
         all = query.all()
@@ -187,15 +187,20 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
             return existing
         return self.create_api_key( self, trans, user )
 
-    # ---- roles
-    def private_role( self, trans, user ):
-        """
-        Return the security agent's private role for `user`.
-        """
-        #TODO: not sure we need to go through sec agent... it's just the first role of type private
+    # ---- preferences
+
+
+    # ---- roles and permissions
+    def private_role( self, user ):
         return self.app.security_agent.get_private_user_role( user )
 
-    def quota( self, trans, user ):
+    def sharing_roles( self, user ):
+        return self.app.security_agent.get_sharing_roles( user )
+
+    def default_permissions( self, user ):
+        return self.app.security_agent.user_get_default_permissions( user )
+
+    def quota( self, user ):
         #TODO: use quota manager
         return self.app.quota_agent.get_percent( user=user )
 
@@ -214,7 +219,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         # create a union of subqueries for each for this user - getting only the tname and user_value
         all_tags_query = None
         for tag_model in tag_models:
-            subq = ( self.app.model.context.query( tag_model.user_tname, tag_model.user_value )
+            subq = ( self.session().query( tag_model.user_tname, tag_model.user_value )
                         .filter( tag_model.user == trans.user ) )
             all_tags_query = subq if all_tags_query is None else all_tags_query.union( subq )
 

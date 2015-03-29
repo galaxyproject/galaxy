@@ -162,7 +162,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         Create a share for the given user.
         """
         user_share_assoc = self.user_share_model()
-        self.app.model.context.add( user_share_assoc )
+        self.session().add( user_share_assoc )
         self.associate( trans, user_share_assoc, item )
         user_share_assoc.user = user
 
@@ -171,7 +171,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
             self.create_unique_slug( trans, item )
 
         if flush:
-            self.app.model.context.flush()
+            self.session().flush()
         return user_share_assoc
 
     def unshare_with( self, trans, item, user, flush=True ):
@@ -182,9 +182,9 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
             return map( lambda user: self.unshare_with( trans, item, user, flush=False ), user )
         # Look for and delete sharing relation for user.
         user_share_assoc = self.get_share_assocs( trans, item, user=user )[0]
-        self.app.model.context.delete( user_share_assoc )
+        self.session().delete( user_share_assoc )
         if flush:
-            self.app.model.context.flush()
+            self.session().flush()
         return user_share_assoc
 
     #def _query_shared_with( self, trans, user, filters=None, **kwargs ):
@@ -216,7 +216,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
         item.slug = new_slug
         if flush:
-            self.app.model.context.flush()
+            self.session().flush()
         return item
 
     def is_valid_slug( self, slug ):
@@ -227,12 +227,12 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         return VALID_SLUG_RE.match( slug )
 
     def _existing_set_of_slugs( self, trans, user ):
-        query = ( self.app.model.context.query( self.model_class.slug )
+        query = ( self.session().query( self.model_class.slug )
                     .filter_by( user=user ) )
         return set( query.all() )
 
     def _slug_exists( self, trans, user, slug ):
-        query = ( self.app.model.context.query( self.model_class.slug )
+        query = ( self.session().query( self.model_class.slug )
                     .filter_by( user=user, slug=slug ) )
         return query.count() != 0
 
@@ -269,7 +269,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         # add integer to end.
         new_slug = slug_base
         count = 1
-        while ( self.app.model.context.query( item.__class__ )
+        while ( self.session().query( item.__class__ )
                     .filter_by( user=item.user, slug=new_slug, importable=True )
                     .count() != 0 ):
             # Slug taken; choose a new slug based on count. This approach can
@@ -284,9 +284,9 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         Set a new, unique slug on the item.
         """
         item.slug = self.get_unique_slug( trans, item )
-        self.app.model.context.add( item )
+        self.session().add( item )
         if flush:
-            self.app.model.context.flush()
+            self.session().flush()
         return item
 
     #def by_slug( self, trans, user, **kwargs ):
@@ -391,10 +391,15 @@ class SharableModelDeserializer( base.ModelDeserializer,
     #def deserialize_user_shares():
 
 
-class SharableModelFilters( base.ModelFilterParser ):
+class SharableModelFilters( base.ModelFilterParser,
+                      taggable.TaggableFilterMixin,
+                      annotatable.AnnotatableFilterMixin ):
 
     def _add_parsers( self ):
         super( SharableModelFilters, self )._add_parsers()
+        taggable.TaggableFilterMixin._add_parsers( self )
+        annotatable.AnnotatableFilterMixin._add_parsers( self )
+
         self.orm_filter_parsers.update({
             'importable'    : { 'op': ( 'eq' ), 'val': self.parse_bool },
             'published'     : { 'op': ( 'eq' ), 'val': self.parse_bool },

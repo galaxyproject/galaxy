@@ -86,6 +86,26 @@ class BaseTestCase( unittest.TestCase ):
         else:
             self.assertTrue( True, 'keys found in object' )
 
+    def assertEncodedId( self, item ):
+        if not isinstance( item, basestring ):
+            self.fail( 'Non-string: ' + type( item ) )
+        # TODO: len mod 8 and hex re
+        self.assertTrue( True, 'is id: ' + item )
+
+    def assertDate( self, item ):
+        if not isinstance( item, basestring ):
+            self.fail( 'Non-string: ' + type( item ) )
+        # TODO: no great way to parse this fully (w/o python-dateutil)
+        # TODO: re?
+        self.assertTrue( True, 'is date: ' + item )
+
+    def assertUUID( self, item ):
+        if not isinstance( item, basestring ):
+            self.fail( 'Non-string: ' + type( item ) )
+        # TODO: re for d4d76d69-80d4-4ed7-80c7-211ebcc1a358
+        self.assertTrue( True, 'is uuid: ' + item )
+
+
 
 # =============================================================================
 if __name__ == '__main__':

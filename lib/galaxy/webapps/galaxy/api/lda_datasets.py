@@ -33,7 +33,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
     def __init__( self, app ):
         super( LibraryDatasetsController, self ).__init__( app )
         self.folder_manager = folders.FolderManager()
-        self.role_manager = roles.RoleManager()
+        self.role_manager = roles.RoleManager( app )
 
     @expose_api_anonymous
     def show( self, trans, id, **kwd ):
@@ -402,7 +402,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         load( self, trans, **kwd ):
         * POST /api/libraries/datasets
-        Load dataset from the given source into the library. 
+        Load dataset from the given source into the library.
         Source can be:
             user directory - root folder specified in galaxy.ini as "$user_library_import_dir"
                 example path: path/to/galaxy/$user_library_import_dir/user@example.com/{user can browse everything here}
@@ -410,7 +410,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             (admin)import directory - root folder specified in galaxy ini as "$library_import_dir"
                 example path: path/to/galaxy/$library_import_dir/{admin can browse everything here}
             (admin)any absolute or relative path - option allowed with "allow_library_path_paste" in galaxy.ini
-         
+
         :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
         :param  source:                 source the datasets should be loaded form
@@ -427,7 +427,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :type   dbkey:                  str
 
         :returns:   dict containing information about the created upload job
-        :rtype:     dictionary        
+        :rtype:     dictionary
         """
 
         kwd[ 'space_to_tab' ] = 'False'

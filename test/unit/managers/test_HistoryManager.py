@@ -5,6 +5,7 @@ import sys
 import os
 import pprint
 import unittest
+import json
 
 __GALAXY_ROOT__ = os.getcwd() + '/../../../'
 sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
@@ -398,10 +399,15 @@ class HistorySerializerTestCase( BaseTestCase ):
     def test_history_serializers( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
-        
-        serialized = self.history_serializer.serialize( self.trans, history1, [ 'size', 'nice_size' ])
+        all_keys = self.history_serializer.serializable_keyset
+        serialized = self.history_serializer.serialize( self.trans, history1, all_keys )
+
+        self.log( 'everything serialized should be of the proper type' )
         self.assertIsInstance( serialized[ 'size' ], int )
         self.assertIsInstance( serialized[ 'nice_size' ], basestring )
+
+        self.log( 'serialized should jsonify well' )
+        self.assertIsInstance( json.dumps( serialized ), basestring )
 
     def test_contents( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
@@ -464,7 +470,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.assertEqual( len( filters ), 3 )
 
         self.log( 'values should be parsed' )
-        self.assertEqual( filters[1].right.value, True )
+        self.assertIsInstance( filters[1].right, sqlalchemy.sql.elements.True_ )
 
     def test_parse_filters_invalid_filters( self ):
         self.log( 'should error on non-column attr')
