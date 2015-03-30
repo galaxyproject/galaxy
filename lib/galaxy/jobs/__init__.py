@@ -1251,6 +1251,16 @@ class JobWrapper( object ):
         if job.user:
             job.user.total_disk_usage += bytes
 
+        # Emperically, we need to update job.user and
+        # job.workflow_invocation_step.workflow_invocation in separate
+        # transactions. Best guess as to why is that the workflow_invocation
+        # may or may not exist when the job is first loaded by the handler -
+        # and depending on whether it is or not sqlalchemy orders the updates
+        # differently and deadlocks can occur (one thread updates user and
+        # waits on invocation and the other updates invocation and waits on
+        # user).
+        self.sa_session.flush()
+
         # fix permissions
         for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
