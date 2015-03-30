@@ -69,7 +69,7 @@ class ContainerManagerMixin( object ):
     def _filter_to_contained( self, container, content_class ):
         raise galaxy.exceptions.NotImplemented( 'Abstract class' )
 
-    def _get_content_manager( self, content_class ):
+    def _content_manager( self, content_class ):
         raise galaxy.exceptions.NotImplemented( 'Abstract class' )
 
 
@@ -82,11 +82,11 @@ class HistoryAsContainerManagerMixin( ContainerManagerMixin ):
     def _filter_to_contained( self, container, content_class ):
         return content_class.history == container
 
-    def _get_content_manager( self, content_class ):
+    def _content_manager( self, content ):
         # type snifffing is inevitable
-        if   content_class == model.HistoryDatasetAssociation:
+        if   isinstance( content, model.HistoryDatasetAssociation ):
             return self.hda_manager
-        elif content_class == model.HistoryDatasetCollectionAssociation:
+        elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
             return self.hdca_manager
         raise TypeError( 'Unknown contents class: ' + str( content_class ) )
 
@@ -105,11 +105,11 @@ class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
             return subcontainer_class.parent == container
         return contained_class.folder == container
 
-    def _get_content_manager( self, content_class ):
+    def _content_manager( self, content ):
         # type snifffing is inevitable
-        if   content_class == model.LibraryDatasetAssociation:
+        if   isinstance( content, model.LibraryDatasetAssociation ):
             return self.lda_manager
-        elif content_class == model.LibraryFolder:
+        elif isinstance( content, model.LibraryFolder ):
             return self.folder_manager
         raise TypeError( 'Unknown contents class: ' + str( content_class ) )
 
@@ -124,11 +124,11 @@ class DatasetCollectionAsContainerManagerMixin( ContainerManagerMixin ):
     def _filter_to_contained( self, container, content_class ):
         return content_class.collection == container
 
-    def _get_content_manager( self, content_class ):
+    def _content_manager( self, content ):
         # type snifffing is inevitable
-        if   content_class == model.DatasetCollectionElement:
+        if   isinstance( content, model.DatasetCollectionElement ):
             return self.collection_manager
-        elif content_class == model.DatasetCollection:
+        elif isinstance( content, model.DatasetCollection ):
             return self.collection_manager
         raise TypeError( 'Unknown contents class: ' + str( content_class ) )
 
