@@ -260,7 +260,7 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
 
             'total_disk_usage',
             'nice_total_disk_usage',
-            'quota_percent'
+            'quota_percent',
 
             #'deleted',
             #'purged',
@@ -284,12 +284,23 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'is_admin'      : lambda t, i, k: self.user_manager.is_admin( t, i ),
 
             'total_disk_usage' : lambda t, i, k: float( i.total_disk_usage ),
-            'quota_percent' : lambda t, i, k: self.user_manager.quota( t, i ),
+            'quota_percent' : lambda t, i, k: self.user_manager.quota( i ),
 
             'tags_used'     : lambda t, i, k: self.user_manager.tags_used( t, i ),
             #TODO: 'has_requests' is more apt
             'requests'      : lambda t, i, k: self.user_manager.has_requests( t, i )
         })
+
+
+class CurrentUserSerializer( UserSerializer ):
+
+    def serialize( self, trans, user, keys ):
+        """
+        Override to return at least some usage info if user is anonymous.
+        """
+        if self.user_manager.is_anonymous( user ):
+            return self.serialize_current_anonymous_user( trans, user, keys )
+        return super( UserSerializer, self ).serialize( trans, user, keys )
 
     def serialize_current_anonymous_user( self, trans, user, keys ):
         # use the current history if any to get usage stats for trans' anonymous user
@@ -304,7 +315,7 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
         # a very small subset of keys available
         values = {
             'id'                    : None,
-            'total_disk_usage'      : int( usage ),
+            'total_disk_usage'      : float( usage ),
             'nice_total_disk_usage' : util.nice_size( usage ),
             'quota_percent'         : percent,
         }
@@ -314,25 +325,16 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
                 serialized[ key ] = values[ key ]
         return serialized
 
-    def serialize( self, trans, user, keys ):
-        """
-        Override to return at least some usage info if user is anonymous.
-        """
-        if self.user_manager.is_anonymous( user ):
-            return self.serialize_current_anonymous_user( trans, user, keys )
-        return super( UserSerializer, self ).serialize( trans, user, keys )
 
-
-class AdminUserFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
+class AdminUserFilterParser( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
     model_class = model.User
 
     def _add_parsers( self ):
-        super( AdminUserFilters, self )._add_parsers()
+        super( AdminUserFilterParser, self )._add_parsers()
         deletable.PurgableFiltersMixin._add_parsers( self )
 
         #PRECONDITION: user making the query has been verified as an admin
         self.orm_filter_parsers.update({
-            'name'          : { 'op': ( 'eq', 'contains', 'like' ) },
             'email'         : { 'op': ( 'eq', 'contains', 'like' ) },
             'username'      : { 'op': ( 'eq', 'contains', 'like' ) },
             'active'        : { 'op': ( 'eq' ) },

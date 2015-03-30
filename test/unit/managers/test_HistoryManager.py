@@ -316,7 +316,6 @@ testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
 HistorySerializer.url_for = staticmethod( testable_url_for )
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 
-
 class HistorySerializerTestCase( BaseTestCase ):
 
     def set_up_managers( self ):

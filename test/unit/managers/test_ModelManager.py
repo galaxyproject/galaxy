@@ -88,22 +88,28 @@ class BaseTestCase( unittest.TestCase ):
 
     def assertEncodedId( self, item ):
         if not isinstance( item, basestring ):
-            self.fail( 'Non-string: ' + type( item ) )
+            self.fail( 'Non-string: ' + str( type( item ) ) )
         # TODO: len mod 8 and hex re
         self.assertTrue( True, 'is id: ' + item )
 
     def assertDate( self, item ):
         if not isinstance( item, basestring ):
-            self.fail( 'Non-string: ' + type( item ) )
+            self.fail( 'Non-string: ' + str( type( item ) ) )
         # TODO: no great way to parse this fully (w/o python-dateutil)
         # TODO: re?
         self.assertTrue( True, 'is date: ' + item )
 
     def assertUUID( self, item ):
         if not isinstance( item, basestring ):
-            self.fail( 'Non-string: ' + type( item ) )
+            self.fail( 'Non-string: ' + str( type( item ) ) )
         # TODO: re for d4d76d69-80d4-4ed7-80c7-211ebcc1a358
         self.assertTrue( True, 'is uuid: ' + item )
+
+    def assertORMFilter( self, item, msg=None ):
+        if not isinstance( item, sqlalchemy.sql.elements.BinaryExpression ):
+            self.fail( 'Not an orm filter: ' + str( type( item ) ) )
+        # TODO: re for d4d76d69-80d4-4ed7-80c7-211ebcc1a358
+        self.assertTrue( True, msg or ( 'is an orm filter: ' + item ) )
 
 
 
