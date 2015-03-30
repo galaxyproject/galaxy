@@ -700,8 +700,8 @@ class ModelDeserializer( object ):
             setattr( item, key, val )
         return val
 
-    def deserialize_basestring( self, trans, item, key, val ):
-        val = self.validate.basestring( key, val )
+    def deserialize_basestring( self, trans, item, key, val, convert_none_to_empty=False ):
+        val = '' if ( convert_none_to_empty and val is None ) else self.validate.basestring( key, val )
         return self.default_deserializer( trans, item, key, val )
 
     def deserialize_bool( self, trans, item, key, val ):
