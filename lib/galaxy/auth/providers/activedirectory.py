@@ -52,13 +52,13 @@ class ActiveDirectory(AuthProvider):
                 ldap.set_option(ldap.OPT_REFERRALS, 0)
                 l = ldap.initialize(_get_subs(options, 'server', params))
                 l.protocol_version = 3
-                
-		if 'search-user' in options:
-		    l.simple_bind_s(_get_subs(options, 'search-user', params), _get_subs(options, 'search-password', params))
+
+                if 'search-user' in options:
+                    l.simple_bind_s(_get_subs(options, 'search-user', params), _get_subs(options, 'search-password', params))
                 else:
                     l.simple_bind_s()
 
-		scope = ldap.SCOPE_SUBTREE
+                scope = ldap.SCOPE_SUBTREE
 
                 # setup search
                 attributes = [_.strip().format(**params) for _ in options['search-fields'].split(',')]
@@ -75,7 +75,7 @@ class ActiveDirectory(AuthProvider):
                             params[attr] = str(attrs[attr][0])
                         else:
                             params[attr] = ""
-		params['dn'] = dn
+                params['dn'] = dn
             except Exception:
                 log.exception('ACTIVEDIRECTORY Search Exception for User: %s' % username)
                 return (failure_mode, '')
