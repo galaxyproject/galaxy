@@ -1125,7 +1125,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         link_data_only = params.get( 'link_data_only', 'copy_files' )
         uuid_str =  params.get( 'uuid', None )
-        file_type = params.get( 'file_type' )
+        file_type = params.get( 'file_type', None )
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
         new_name = name
@@ -1141,8 +1141,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         uploaded_dataset.type = type
         uploaded_dataset.ext = None
         uploaded_dataset.file_type = file_type
-        uploaded_dataset.dbkey = params.get( 'dbkey' )
-        uploaded_dataset.space_to_tab = params.get( 'space_to_tab' )
+        uploaded_dataset.dbkey = params.get( 'dbkey', None )
+        uploaded_dataset.space_to_tab = params.get( 'space_to_tab', None )
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
