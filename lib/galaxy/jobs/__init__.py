@@ -1282,7 +1282,7 @@ class JobWrapper( object ):
         if job.user:
             job.user.total_disk_usage += bytes
 
-        # Emperically, we need to update job.user and
+        # Empirically, we need to update job.user and
         # job.workflow_invocation_step.workflow_invocation in separate
         # transactions. Best guess as to why is that the workflow_invocation
         # may or may not exist when the job is first loaded by the handler -
