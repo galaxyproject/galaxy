@@ -101,6 +101,9 @@
     <tool file="maf/maf_reverse_complement.xml" />
     <tool file="maf/maf_filter.xml" />
   </section>
+  <section id="cellprofiler" name="CellProfiler">
+    <tool file="cellprofiler/cellprofiler.xml" />
+  </section>
   <section id="scores" name="Get Genomic Scores">
     <tool file="filters/wiggle_to_simple.xml" />
     <tool file="stats/aggregate_binned_scores_in_intervals.xml" />
