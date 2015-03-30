@@ -302,6 +302,7 @@ class BaseJobRunner( object ):
             galaxy_lib=job_wrapper.galaxy_lib_dir,
             env_setup_commands=env_setup_commands,
             working_directory=os.path.abspath( job_wrapper.working_directory ),
+            use_remote_datasets=self.app.config.use_remote_datasets,
             command=command_line,
         )
         ## Additional logging to enable if debugging from_work_dir handling, metadata

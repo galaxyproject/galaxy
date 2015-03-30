@@ -1112,8 +1112,8 @@ class JobWrapper( object ):
         stderr = unicodify( stderr )
 
         #Karthik: HACK HACK HACK
-        subprocess.call('rsync -a --exclude=*.dat -e \"ssh\" c14:/mnt/app_hdd/scratch/karthikg/Galaxy/database/job_working_directory/ /mnt/app_hdd/scratch/karthikg/Galaxy/database/job_working_directory/', shell=True);
-        time.sleep(5);  #NFS stabilize
+        #subprocess.call('rsync -a --exclude=*.dat -e \"ssh\" c14:/mnt/app_hdd/scratch/karthikg/Galaxy/database/job_working_directory/ /mnt/app_hdd/scratch/karthikg/Galaxy/database/job_working_directory/', shell=True);
+        #time.sleep(5);  #NFS stabilize
 
         # default post job setup
         self.sa_session.expunge_all()
@@ -1649,7 +1649,9 @@ class JobWrapper( object ):
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None,
                                  dataset_files_path=None, config_root=None,
                                  config_file=None, datatypes_config=None,
-                                 set_extension=True, **kwds ):
+                                 set_extension=True,
+                                 input_metadata_files_list=None, output_metadata_files_list=None,
+                                 **kwds ):
         # extension could still be 'auto' if this is the upload tool.
         job = self.get_job()
         if set_extension:
@@ -1668,7 +1670,19 @@ class JobWrapper( object ):
         if config_file is None:
             config_file = self.app.config.config_file
         if datatypes_config is None:
+            #type(self.app.datatypes_registry) = galaxy.datatypes.registry.Registry
             datatypes_config = self.app.datatypes_registry.integrated_datatypes_configs
+        #Copy file to working directory if remote execution is needed
+        if self.app.config.use_remote_datasets:
+            copied_file_path = os.path.join(self.working_directory, os.path.basename(datatypes_config));
+            shutil.copyfile(datatypes_config, copied_file_path);
+            datatypes_config = copied_file_path;
+        job_metadata_file = os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE );
+        if(input_metadata_files_list):
+            input_metadata_files_list.append(datatypes_config);
+            input_metadata_files_list.append(job_metadata_file);
+        if(output_metadata_files_list):
+            output_metadata_files_list.append(job_metadata_file);
         return self.external_output_metadata.setup_external_metadata( [ output_dataset_assoc.dataset for
                                                                         output_dataset_assoc in
                                                                         job.output_datasets + job.output_library_datasets ],
@@ -1679,7 +1693,9 @@ class JobWrapper( object ):
                                                                       config_root=config_root,
                                                                       config_file=config_file,
                                                                       datatypes_config=datatypes_config,
-                                                                      job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                      job_metadata=job_metadata_file,
+                                                                      input_metadata_files_list=input_metadata_files_list,
+                                                                      output_metadata_files_list=output_metadata_files_list,
                                                                       **kwds )
 
     @property

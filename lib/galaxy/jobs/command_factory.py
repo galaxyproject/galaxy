@@ -2,6 +2,7 @@ from os import getcwd
 from os import chmod
 from os.path import join
 from os.path import abspath
+import os
 import galaxy.jobs
 
 CAPTURE_RETURN_CODE = "return_code=$?"
@@ -67,8 +68,11 @@ def build_command(
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
+    input_metadata_files_list = [];
+    output_metadata_files_list = [];
     if include_metadata and job_wrapper.requires_setting_metadata:
-        __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
+        __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params,
+                input_metadata_files_list=input_metadata_files_list, output_metadata_files_list=output_metadata_files_list)
 
     if create_output_dataset_json:
         __handle_output_dataset_json(commands_builder, job_wrapper, remote_command_params);
@@ -123,7 +127,8 @@ def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_comm
         commands_builder.append_commands(copy_commands)
 
 
-def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params):
+def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params, input_metadata_files_list=None,
+        output_metadata_files_list=None):
     # Append metadata setting commands, we don't want to overwrite metadata
     # that was copied over in init_meta(), as per established behavior
     metadata_kwds = remote_command_params.get('metadata_kwds', {})
@@ -145,6 +150,8 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         config_file=config_file,
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
+        input_metadata_files_list=input_metadata_files_list,
+        output_metadata_files_list=output_metadata_files_list,
         kwds={ 'overwrite': False }
     ) or ''
     metadata_command = metadata_command.strip()
@@ -161,19 +168,25 @@ def __handle_output_dataset_json(commands_builder, job_wrapper, remote_command_p
     job_output_ds_assoc_list = job_wrapper.get_job().output_datasets + job_wrapper.get_job().output_library_datasets;
     delim=':';
     replace_delim='_';
+    output_dirs_to_create = set();      #database/files/.. directories must be created by the script remotely
     for job_output_ds_assoc in job_output_ds_assoc_list:
         name = (( '\"' + job_output_ds_assoc.dataset.name + '\"' ) if job_output_ds_assoc.dataset.name else 'output').replace(delim, replace_delim);
         ext = job_output_ds_assoc.dataset.extension.replace(delim, replace_delim);
         dataset_id = str(job_output_ds_assoc.dataset.dataset.id);
-        dataset_final_path_string = '\"' + \
-                job_wrapper.get_final_path_string_for_dataset(job_wrapper.get_output_fnames()[job_output_ds_assoc_idx]).replace(delim, replace_delim) \
-                + '\"';
+        dataset_final_path_string = job_wrapper.get_final_path_string_for_dataset(job_wrapper.get_output_fnames()[job_output_ds_assoc_idx]);
+        dataset_output_dir = os.path.dirname(dataset_final_path_string);
+        if(dataset_output_dir not in output_dirs_to_create):
+            output_dirs_to_create.add(dataset_output_dir);
+        #wrap in quotes and replace delimiter
+        dataset_final_path_string = '\"' + dataset_final_path_string.replace(delim, replace_delim)  + '\"';
         dataset_descriptor_list.append(delim.join([name, ext, dataset_id, dataset_final_path_string]));
         job_output_ds_assoc_idx += 1;
     command = 'cd '+ exec_dir + ';' + join('scripts', 'remote_site_json_creator.py') + '  ' +  \
     '\"' + join(job_wrapper.working_directory, galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE) + '\"' +  \
     ' ' + ' '.join(dataset_descriptor_list);
     commands_builder.append_command(command);
+    for output_dir in output_dirs_to_create:
+        commands_builder.prepend_command('mkdir -p \"%s\"'%output_dir);
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output

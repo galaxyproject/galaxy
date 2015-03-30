@@ -1,5 +1,6 @@
 from string import Template
 from pkg_resources import resource_string
+import os
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
     resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
@@ -20,6 +21,8 @@ OPTIONAL_TEMPLATE_PARAMS = {
     'slots_statement': SLOTS_STATEMENT_CLUSTER_DEFAULT,
     'instrument_pre_commands': '',
     'instrument_post_commands': '',
+    'copy_from_staging_dir_to_working_directory': '',
+    'copy_to_staging_dir_from_working_directory': ''
 }
 
 
@@ -55,6 +58,12 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
         working_directory = kwds["working_directory"]
         kwds["instrument_pre_commands"] = job_instrumenter.pre_execute_commands(working_directory) or ''
         kwds["instrument_post_commands"] = job_instrumenter.post_execute_commands(working_directory) or ''
+
+    use_remote_datasets = kwds.get('use_remote_datasets', None);
+    if(use_remote_datasets):
+        del kwds['use_remote_datasets'];
+        kwds['copy_from_staging_dir_to_working_directory'] = 'echo ${staging_dir};mkdir -p '+working_directory+';rsync -a ${staging_dir}'+os.sep+' '+working_directory+os.sep;
+        kwds['copy_to_staging_dir_from_working_directory'] = 'rsync -a --exclude=metadata_temp* --exclude=.job.ad --exclude=.machine.ad ' + working_directory+os.sep + ' ${staging_dir}'+os.sep;
 
     template_params = OPTIONAL_TEMPLATE_PARAMS.copy()
     template_params.update(**kwds)

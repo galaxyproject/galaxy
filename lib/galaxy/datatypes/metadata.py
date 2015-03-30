@@ -720,7 +720,9 @@ class JobExternalOutputMetadataWrapper( object ):
                                  output_fnames=None, config_root=None,
                                  config_file=None, datatypes_config=None,
                                  job_metadata=None, compute_tmp_dir=None,
-                                 include_command=True, kwds=None ):
+                                 include_command=True, kwds=None,
+                                 input_metadata_files_list=None, output_metadata_files_list=None):
+        #Karthik: generally: tmp dir == working_dir, exec_dir = galaxy directory, datatypes_config - tmp file with datatypes
         kwds = kwds or {}
         if tmp_dir is None:
             tmp_dir = MetadataTempFile.tmp_dir
@@ -818,6 +820,13 @@ class JobExternalOutputMetadataWrapper( object ):
                 # add to session and flush
                 sa_session.add( metadata_files )
                 sa_session.flush()
+                if(input_metadata_files_list):
+                    input_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_in));
+                    input_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_kwds));
+                    input_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_override_metadata));
+                if(output_metadata_files_list):
+                    output_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_out));
+                    output_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_results_code));
             metadata_files_list.append( metadata_files )
         args = "%s %s %s" % ( datatypes_config,
                               job_metadata,

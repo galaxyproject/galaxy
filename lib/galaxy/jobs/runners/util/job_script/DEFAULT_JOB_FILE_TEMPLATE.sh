@@ -1,4 +1,6 @@
 #!/bin/sh
+staging_dir=`pwd`
+$copy_from_staging_dir_to_working_directory
 $headers
 $slots_statement
 export GALAXY_SLOTS
@@ -17,3 +19,4 @@ cd $working_directory
 $command
 echo $? > $exit_code_path
 $instrument_post_commands
+$copy_to_staging_dir_from_working_directory

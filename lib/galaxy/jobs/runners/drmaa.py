@@ -61,7 +61,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # We foolishly named this file the same as the name exported by the drmaa
         # library... 'import drmaa' imports itself.
         drmaa = __import__( "drmaa" )
-
+        
         # Subclasses may need access to state constants
         self.drmaa_job_states = drmaa.JobState
 
@@ -79,7 +79,12 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             drmaa.JobState.FAILED: 'job finished, but failed',
         }
 
-        self.ds = drmaa.Session()
+        if(self.app.config.use_uuids_for_dataset_reference()):
+            import CCCsession;
+            #self.ds = CCCsession.Session();
+            self.ds = drmaa.Session()
+        else:
+            self.ds = drmaa.Session()
         self.ds.initialize()
 
         # external_runJob_script can be None, in which case it's not used.
@@ -170,10 +175,19 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
         if(jt.nativeSpecification == None):
             jt.nativeSpecification = '';
+        
+        #Should transfer whole working directory when job is run on remote datasets
+        if(self.app.config.use_remote_datasets):
+            jt.nativeSpecification += '\n' + 'transfer_input_files = '+job_wrapper.working_directory + os.sep;
+            jt.nativeSpecification += '\n' + 'should_transfer_files = IF_NEEDED';
+
         #For CCC
         if(self.app.config.use_uuids_for_dataset_reference()):
-            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'input_CCC_DID_list=' + ','.join(job_wrapper.get_input_string_uuids());
-            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'output_CCC_DID_list=' + ','.join(job_wrapper.get_output_string_uuids());
+            #FIXME: PaaS code assumes all UUIDs are bounded by [], fix in PaaS
+            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'input_CCC_DID_list=' + ','.join(map(lambda x:'[' + x + ']', 
+                job_wrapper.get_input_string_uuids()));
+            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'output_CCC_DID_list=' + ','.join(map(lambda x:'[' + x + ']',
+                    job_wrapper.get_output_string_uuids()));
             jt.nativeSpecification = jt.nativeSpecification + '\n' + 'tool_id=' + job_wrapper.get_tool_id();
             workflow_tuple = job_wrapper.get_workflow_invocation_info();
             if(workflow_tuple):
@@ -181,8 +195,12 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_name=' + workflow_name;
                 jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_id=' + str(workflow_id);
                 jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_invocation_id=' + str(workflow_invocation_id);
+            jt.nativeSpecification = jt.nativeSpecification.replace('\n', '|');        #PaaS does not like newline separators
+            jt.outputPath = "%s" % ajs.output_file      #PaaS implementation of DRMAA does not like : at the beginning
+            jt.errorPath = "%s" % ajs.error_file
+
         jt.nativeSpecification = jt.nativeSpecification + '\n';
-        log.debug('NATIVE : '+jt.nativeSpecification);
+        log.debug('nativeSpecification :\n'+jt.nativeSpecification);
 
         # runJob will raise if there's a submit problem
         if self.external_runJob_script is None:
