@@ -1,11 +1,10 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 """
 import sys
 import os
 import pprint
 import unittest
-import json
 
 __GALAXY_ROOT__ = os.getcwd() + '/../../../'
 sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
@@ -206,11 +205,10 @@ class DatasetSerializerTestCase( BaseTestCase ):
         self.assertKeys( summary_view, self.dataset_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
-        need_no_serializers = ( basestring, bool, type( None ) )
         for key in self.dataset_serializer.serializable_keyset:
             instantiated_attribute = getattr( dataset, key, None )
             if not ( ( key in self.dataset_serializer.serializers )
-                  or ( isinstance( instantiated_attribute, need_no_serializers ) ) ):
+                  or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
                 self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
         else:
             self.assertTrue( True, 'all serializable keys have a serializer' )
@@ -236,7 +234,7 @@ class DatasetSerializerTestCase( BaseTestCase ):
     def test_serializers( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
         dataset = self.dataset_mgr.create( self.trans )
-        all_keys = self.dataset_serializer.serializable_keyset
+        all_keys = list( self.hda_serializer.serializable_keyset )
         serialized = self.dataset_serializer.serialize( self.trans, dataset, all_keys )
 
         self.log( 'everything serialized should be of the proper type' )
@@ -255,7 +253,7 @@ class DatasetSerializerTestCase( BaseTestCase ):
         # self.assertIsInstance( serialized[ 'total_size' ], int )
 
         self.log( 'serialized should jsonify well' )
-        self.assertIsInstance( json.dumps( serialized ), basestring )
+        self.assertIsJsonifyable( serialized )
 
 
 # =============================================================================
@@ -272,13 +270,13 @@ class DatasetDeserializerTestCase( BaseTestCase ):
         self.log( 'should raise when deserializing deleted from non-bool' )
         self.assertFalse( dataset.deleted )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'deleted': None }, flush=True )
+            self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'deleted': None } )
         self.assertFalse( dataset.deleted )
         self.log( 'should be able to deserialize deleted from True' )
-        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': True }, flush=True )
+        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': True } )
         self.assertTrue( dataset.deleted )
         self.log( 'should be able to reverse by deserializing deleted from False' )
-        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': False }, flush=True )
+        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': False } )
         self.assertFalse( dataset.deleted )
 
     def test_deserialize_purge( self ):
@@ -286,14 +284,14 @@ class DatasetDeserializerTestCase( BaseTestCase ):
 
         self.log( 'should raise when deserializing purged from non-bool' )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'purged': None }, flush=True )
+            self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'purged': None } )
         self.assertFalse( dataset.purged )
         self.log( 'should be able to deserialize purged from True' )
-        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': True }, flush=True )
+        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': True } )
         self.assertTrue( dataset.purged )
         # TODO: should this raise an error?
         self.log( 'should NOT be able to deserialize purged from False (will remain True)' )
-        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': False }, flush=True )
+        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': False } )
         self.assertTrue( dataset.purged )
 
     # def test_deserialize_permissions( self ):
@@ -301,44 +299,12 @@ class DatasetDeserializerTestCase( BaseTestCase ):
 
 
 # =============================================================================
-class DatasetAssociationManagerTestCase( BaseTestCase ):
-
-    def set_up_managers( self ):
-        super( DatasetAssociationManagerTestCase, self ).set_up_managers()
-        self.dataset_assoc_mgr = HDAManager( self.app )
-        self.hda_mgr = HDAManager( self.app )
-        self.history_mgr = HistoryManager( self.app )
-
-    def test_purge_allowed( self ):
-        self.trans.app.config.allow_user_dataset_purge = True
-        item1 = self.dataset_assoc_mgr.create( self.trans )
-
-        self.log( "should purge a dataset assoc if config does allow" )
-        self.assertFalse( item1.purged )
-        self.assertEqual( self.dataset_assoc_mgr.purge( self.trans, item1 ), item1 )
-        self.assertTrue( item1.purged )
-
-        # not necc. true for dataset assocs
-        # self.log( "should delete a dataset assoc when purging" )
-        # self.assertTrue( item1.deleted )
-
-    def test_purge_not_allowed( self ):
-        self.trans.app.config.allow_user_dataset_purge = False
-        item1 = self.dataset_assoc_mgr.create( self.trans )
-
-        self.log( "should raise an error when purging a dataset assoc if config does not allow" )
-        self.assertFalse( item1.purged )
-        self.assertRaises( exceptions.ConfigDoesNotAllowException, self.dataset_assoc_mgr.purge, self.trans, item1 )
-        self.assertFalse( item1.purged )
-
-    #def test_metadata( self ):
-    #    owner = self.user_mgr.create( self.trans, **user2_data )
-    #    history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-    #    dataset1 = self.dataset_mgr.create( self.trans )
-    #
-    #    self.log( "should be able to create a new HDA with a specified history and dataset" )
-    #    hda1 = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1, hid=1 )
-
+# NOTE: that we test the DatasetAssociation* classes in either test_HDAManager or test_LDAManager
+# (as part of those subclasses):
+#   DatasetAssociationManager,
+#   DatasetAssociationSerializer,
+#   DatasetAssociationDeserializer,
+#   DatasetAssociationFilterParser
 
 # =============================================================================
 if __name__ == '__main__':

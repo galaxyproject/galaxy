@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 """
 from __future__ import print_function
@@ -7,6 +6,7 @@ import sys
 import os
 import pprint
 import unittest
+import json
 
 __GALAXY_ROOT__ = os.getcwd() + '/../../../'
 sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
@@ -76,6 +76,8 @@ class BaseTestCase( unittest.TestCase ):
         print( *args, **kwargs )
 
     # ---- additional test types
+    TYPES_NEEDING_NO_SERIALIZERS = ( basestring, bool, type( None ), int, float )
+
     def assertKeys( self, obj, key_list ):
         self.assertEqual( sorted( obj.keys() ), sorted( key_list ) )
 
@@ -86,11 +88,23 @@ class BaseTestCase( unittest.TestCase ):
         else:
             self.assertTrue( True, 'keys found in object' )
 
+    def assertNullableBasestring( self, item ):
+        if not isinstance( item, ( basestring, type( None ) ) ):
+            self.fail( 'Non-nullable basestring: ' + str( type( item ) ) )
+        # TODO: len mod 8 and hex re
+        self.assertTrue( True, 'is nullable basestring: ' + str( item ) )
+
     def assertEncodedId( self, item ):
         if not isinstance( item, basestring ):
             self.fail( 'Non-string: ' + str( type( item ) ) )
         # TODO: len mod 8 and hex re
         self.assertTrue( True, 'is id: ' + item )
+
+    def assertNullableEncodedId( self, item ):
+        if item is None:
+            self.assertTrue( True, 'nullable id is None' )
+        else:
+            self.assertEncodedId( item )
 
     def assertDate( self, item ):
         if not isinstance( item, basestring ):
@@ -111,6 +125,9 @@ class BaseTestCase( unittest.TestCase ):
         # TODO: re for d4d76d69-80d4-4ed7-80c7-211ebcc1a358
         self.assertTrue( True, msg or ( 'is an orm filter: ' + item ) )
 
+    def assertIsJsonifyable( self, item ):
+        # TODO: use galaxy's override
+        self.assertIsInstance( json.dumps( item ), basestring )
 
 
 # =============================================================================

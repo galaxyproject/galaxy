@@ -1,11 +1,10 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 """
 import sys
 import os
 import pprint
 import unittest
-import json
 
 __GALAXY_ROOT__ = os.getcwd() + '/../../../'
 sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
@@ -341,11 +340,10 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.assertKeys( summary_view, self.history_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
-        need_no_serializers = ( basestring, bool, type( None ) )
         for key in self.history_serializer.serializable_keyset:
             instantiated_attribute = getattr( history1, key, None )
             if not ( ( key in self.history_serializer.serializers )
-                  or ( isinstance( instantiated_attribute, need_no_serializers ) ) ):
+                  or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
                 self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
         else:
             self.assertTrue( True, 'all serializable keys have a serializer' )
@@ -398,7 +396,7 @@ class HistorySerializerTestCase( BaseTestCase ):
     def test_history_serializers( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
-        all_keys = self.history_serializer.serializable_keyset
+        all_keys = list( self.hda_serializer.serializable_keyset )
         serialized = self.history_serializer.serialize( self.trans, history1, all_keys )
 
         self.log( 'everything serialized should be of the proper type' )
@@ -437,6 +435,10 @@ class HistorySerializerTestCase( BaseTestCase ):
 
         serialized = self.history_serializer.serialize( self.trans, history1, [ 'contents' ] )
         self.assertHasKeys( serialized[ 'contents' ][0], [ 'id', 'name', 'peek', 'create_time' ])
+
+        self.log( 'serialized should jsonify well' )
+        self.assertIsJsonifyable( serialized )
+
 
 # =============================================================================
 class HistoryDeserializerTestCase( BaseTestCase ):

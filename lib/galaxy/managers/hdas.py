@@ -164,40 +164,40 @@ class HDAManager( datasets.DatasetAssociationManager,
 
     def data_conversion_status( self, trans, hda ):
         """
-        Returns a message if dataset is not ready to be used in visualization.
+        Returns a message if an hda is not ready to be used in visualization.
         """
+        HDA_model = model.HistoryDatasetAssociation
         # this is a weird syntax and return val
         if not hda:
-            return hda.conversion_messages.NO_DATA
+            return HDA_model.conversion_messages.NO_DATA
         if hda.state == model.Job.states.ERROR:
-            return hda.conversion_messages.ERROR
+            return HDA_model.conversion_messages.ERROR
         if hda.state != model.Job.states.OK:
-            return hda.conversion_messages.PENDING
+            return HDA_model.conversion_messages.PENDING
         return None
 
     # .... associated job
 
     # .... data
     # TODO: to data provider or Text datatype directly
-    def text_data( self, dataset, preview=True ):
+    def text_data( self, hda, preview=True ):
         """
         Get data from text file, truncating if necessary.
         """
+        # 1 MB
+        MAX_PEEK_SIZE = 1000000
+
         truncated = False
-        dataset_data = None
-        if os.path.exists( dataset.file_name ):
-            if isinstance( dataset.datatype, datatypes.data.Text ):
-                max_peek_size = 1000000  # 1 MB
-                if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
-                    dataset_data = open( dataset.file_name ).read( max_peek_size )
-                    truncated = True
-                else:
-                    dataset_data = open( dataset.file_name ).read( max_peek_size )
-                    truncated = False
-            else:
-                # For now, cannot get data from non-text datasets.
-                dataset_data = None
-        return truncated, dataset_data
+        hda_data = None
+        # For now, cannot get data from non-text datasets.
+        if not isinstance( hda.datatype, datatypes.data.Text ):
+            return truncated, hda_data
+        if not os.path.exists( hda.file_name ):
+            return truncated, hda_data
+
+        truncated = preview and os.stat( hda.file_name ).st_size > MAX_PEEK_SIZE
+        hda_data = open( hda.file_name ).read( max_peek_size )
+        return truncated, hda_data
 
 
 class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer,
@@ -372,7 +372,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
         Return web controller urls useful for this HDA.
         """
         url_for = self.url_for
-        encoded_id = self.security.encode_id( hda.id )
+        encoded_id = self.app.security.encode_id( hda.id )
         urls = {
             'purge'         : url_for( controller='dataset', action='purge_async', dataset_id=encoded_id ),
             'display'       : url_for( controller='dataset', action='display', dataset_id=encoded_id, preview=True ),
@@ -416,12 +416,12 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
         self.deserializable_keyset.update( self.deserializers.keys() )
 
 
-class HDAFilters( datasets.DatasetAssociationFilters,
-                  taggable.TaggableFilterMixin,
-                  annotatable.AnnotatableFilterMixin ):
+class HDAFilterParser( datasets.DatasetAssociationFilterParser,
+                       taggable.TaggableFilterMixin,
+                       annotatable.AnnotatableFilterMixin ):
     model_class = model.HistoryDatasetAssociation
 
     def _add_parsers( self ):
-        super( HDAFilters, self )._add_parsers()
+        super( HDAFilterParser, self )._add_parsers()
         taggable.TaggableFilterMixin._add_parsers( self )
         annotatable.AnnotatableFilterMixin._add_parsers( self )

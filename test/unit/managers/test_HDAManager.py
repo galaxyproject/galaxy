@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sys
 import os
 import pprint
@@ -18,7 +19,7 @@ import mock
 from test_ModelManager import BaseTestCase
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.datasets import DatasetManager
-from galaxy.managers.hdas import HDAManager
+from galaxy.managers import hdas
 
 
 # =============================================================================
@@ -26,15 +27,24 @@ default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
 user3_data = dict( email='user3@user3.user3', username='user3', password=default_password )
 
-
-# =============================================================================
-class HDAManagerTestCase( BaseTestCase ):
+class HDATestCase( BaseTestCase ):
 
     def set_up_managers( self ):
-        super( HDAManagerTestCase, self ).set_up_managers()
+        super( HDATestCase, self ).set_up_managers()
+        self.hda_mgr = hdas.HDAManager( self.app )
         self.history_mgr = HistoryManager( self.app )
         self.dataset_mgr = DatasetManager( self.app )
-        self.hda_mgr = HDAManager( self.app )
+
+    def _create_vanilla_hda( self, user_data=None ):
+        user_data = user_data or user2_data
+        owner = self.user_mgr.create( self.trans, **user_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
+        dataset1 = self.dataset_mgr.create( self.trans )
+        return self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+
+
+# =============================================================================
+class HDAManagerTestCase( HDATestCase ):
 
     def test_base( self ):
         hda_model = model.HistoryDatasetAssociation
@@ -210,6 +220,356 @@ class HDAManagerTestCase( BaseTestCase ):
         non_owner = self.user_mgr.create( self.trans, **user3_data )
         self.assertRaises( exceptions.ItemOwnershipException,
             self.hda_mgr.error_unless_owner, self.trans, item1, non_owner )
+
+    def test_error_if_uploading( self ):
+        owner = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
+        dataset1 = self.dataset_mgr.create( self.trans )
+        hda = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+
+        hda.state = model.Dataset.states.OK
+        self.log( "should not raise an error when calling error_if_uploading and in a non-uploading state" )
+        self.assertEqual( self.hda_mgr.error_if_uploading( self.trans, hda ), hda )
+
+        hda.state = model.Dataset.states.UPLOAD
+        self.log( "should raise an error when calling error_if_uploading and in the uploading state" )
+        self.assertRaises( exceptions.Conflict,
+            self.hda_mgr.error_if_uploading, self.trans, hda )
+
+    def test_data_conversion_status( self ):
+        owner = self.user_mgr.create( self.trans, **user2_data )
+        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
+        dataset1 = self.dataset_mgr.create( self.trans )
+        hda = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+
+        self.log( "data conversion status should reflect state" )
+        self.assertEqual( self.hda_mgr.data_conversion_status( self.trans, None ),
+            hda.conversion_messages.NO_DATA )
+        hda.state = model.Dataset.states.ERROR
+        self.assertEqual( self.hda_mgr.data_conversion_status( self.trans, hda ),
+            hda.conversion_messages.ERROR )
+        hda.state = model.Dataset.states.QUEUED
+        self.assertEqual( self.hda_mgr.data_conversion_status( self.trans, hda ),
+            hda.conversion_messages.PENDING )
+        hda.state = model.Dataset.states.OK
+        self.assertEqual( self.hda_mgr.data_conversion_status( self.trans, hda ), None )
+
+    # def test_text_data( self ):
+
+
+# =============================================================================
+# web.url_for doesn't work well in the framework
+testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
+hdas.HDASerializer.url_for = staticmethod( testable_url_for )
+
+class HDASerializerTestCase( HDATestCase ):
+
+    def set_up_managers( self ):
+        super( HDASerializerTestCase, self ).set_up_managers()
+        self.hda_serializer = hdas.HDASerializer( self.app )
+
+    def test_views( self ):
+        hda = self._create_vanilla_hda()
+
+        self.log( 'should have a summary view' )
+        summary_view = self.hda_serializer.serialize_to_view( self.trans, hda, view='summary' )
+        self.assertKeys( summary_view, self.hda_serializer.views[ 'summary' ] )
+
+        self.log( 'should have the summary view as default view' )
+        default_view = self.hda_serializer.serialize_to_view( self.trans, hda, default_view='summary' )
+        self.assertKeys( summary_view, self.hda_serializer.views[ 'summary' ] )
+
+        # self.log( 'should have a detailed view' )
+        # detailed_view = self.hda_serializer.serialize_to_view( self.trans, hda, view='detailed' )
+        # self.assertKeys( detailed_view, self.hda_serializer.views[ 'detailed' ] )
+
+        # self.log( 'should have a extended view' )
+        # extended_view = self.hda_serializer.serialize_to_view( self.trans, hda, view='extended' )
+        # self.assertKeys( extended_view, self.hda_serializer.views[ 'extended' ] )
+
+        self.log( 'should have a inaccessible view' )
+        inaccessible_view = self.hda_serializer.serialize_to_view( self.trans, hda, view='inaccessible' )
+        self.assertKeys( inaccessible_view, self.hda_serializer.views[ 'inaccessible' ] )
+
+        # skip metadata for this test
+        def is_metadata( key ):
+            return ( key == 'metadata'
+                  or key.startswith( 'metadata_' ) )
+
+        self.log( 'should have a serializer for all serializable keys' )
+        for key in self.hda_serializer.serializable_keyset:
+            instantiated_attribute = getattr( hda, key, None )
+            if not ( ( key in self.hda_serializer.serializers )
+                  or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) )
+                  or ( is_metadata( key ) ) ):
+                self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
+        else:
+            self.assertTrue( True, 'all serializable keys have a serializer' )
+
+    def test_views_and_keys( self ):
+        hda = self._create_vanilla_hda()
+
+        self.log( 'should be able to use keys with views' )
+        serialized = self.hda_serializer.serialize_to_view( self.trans, hda,
+            view='summary', keys=[ 'uuid' ] )
+        self.assertKeys( serialized,
+            self.hda_serializer.views[ 'summary' ] + [ 'uuid' ] )
+
+        self.log( 'should be able to use keys on their own' )
+        serialized = self.hda_serializer.serialize_to_view( self.trans, hda,
+            keys=[ 'file_path', 'visualizations' ] )
+        self.assertKeys( serialized, [ 'file_path', 'visualizations' ] )
+
+    def test_serializers( self ):
+        hda = self._create_vanilla_hda()
+        all_keys = list( self.hda_serializer.serializable_keyset )
+        serialized = self.hda_serializer.serialize( self.trans, hda, all_keys )
+
+        self.log( 'everything serialized should be of the proper type' )
+        # base
+        self.assertEncodedId( serialized[ 'id' ] )
+        self.assertDate( serialized[ 'create_time' ] )
+        self.assertDate( serialized[ 'update_time' ] )
+
+        # dataset association
+        self.assertIsInstance( serialized[ 'dataset' ], dict )
+        self.assertEncodedId( serialized[ 'dataset_id' ] )
+        self.assertUUID( serialized[ 'uuid' ] )
+        self.assertIsInstance( serialized[ 'file_name' ], basestring )
+        self.assertIsInstance( serialized[ 'extra_files_path' ], basestring )
+        self.assertIsInstance( serialized[ 'permissions' ], dict )
+        self.assertIsInstance( serialized[ 'size' ], int )
+        self.assertIsInstance( serialized[ 'file_size' ], int )
+        self.assertIsInstance( serialized[ 'nice_size' ], basestring )
+        # TODO: these should be tested w/copy
+        self.assertNullableEncodedId( serialized[ 'copied_from_history_dataset_association_id'] )
+        self.assertNullableEncodedId( serialized[ 'copied_from_library_dataset_dataset_association_id'] )
+        self.assertNullableBasestring( serialized[ 'info' ] )
+        self.assertNullableBasestring( serialized[ 'blurb' ] )
+        self.assertNullableBasestring( serialized[ 'peek' ] )
+        self.assertIsInstance( serialized[ 'meta_files' ], list )
+        self.assertNullableEncodedId( serialized[ 'parent_id'] )
+        self.assertEqual( serialized[ 'designation' ], None )
+        self.assertIsInstance( serialized[ 'genome_build' ], basestring )
+        self.assertIsInstance( serialized[ 'data_type' ], basestring )
+
+        # hda
+        self.assertEncodedId( serialized[ 'history_id' ] )
+        self.assertEqual( serialized[ 'type_id' ], 'dataset-' + serialized[ 'id' ] )
+
+        self.assertIsInstance( serialized[ 'resubmitted' ], bool )
+        self.assertIsInstance( serialized[ 'display_apps' ], list )
+        self.assertIsInstance( serialized[ 'display_types' ], list )
+        self.assertIsInstance( serialized[ 'visualizations' ], list )
+
+        # remapped
+        self.assertNullableBasestring( serialized[ 'misc_info' ] )
+        self.assertNullableBasestring( serialized[ 'misc_blurb' ] )
+        self.assertNullableBasestring( serialized[ 'file_ext' ] )
+        self.assertNullableBasestring( serialized[ 'file_path' ] )
+
+        # identities
+        self.assertEqual( serialized[ 'model_class' ], 'HistoryDatasetAssociation' )
+        self.assertEqual( serialized[ 'history_content_type' ], 'dataset' )
+        self.assertEqual( serialized[ 'hda_ldda' ], 'hda' )
+        self.assertEqual( serialized[ 'accessible' ], True )
+        self.assertEqual( serialized[ 'api_type' ], 'file' )
+        self.assertEqual( serialized[ 'type' ], 'file' )
+
+        self.assertIsInstance( serialized[ 'url' ], basestring )
+        self.assertIsInstance( serialized[ 'urls' ], dict )
+        self.assertIsInstance( serialized[ 'download_url' ], basestring )
+
+        self.log( 'serialized should jsonify well' )
+        self.assertIsJsonifyable( serialized )
+
+
+# =============================================================================
+class HDADeserializerTestCase( HDATestCase ):
+
+    def set_up_managers( self ):
+        super( HDADeserializerTestCase, self ).set_up_managers()
+        self.hda_deserializer = hdas.HDADeserializer( self.app )
+
+    def test_deserialize_delete( self ):
+        hda = self._create_vanilla_hda()
+
+        self.log( 'should raise when deserializing deleted from non-bool' )
+        self.assertFalse( hda.deleted )
+        self.assertRaises( exceptions.RequestParameterInvalidException,
+            self.hda_deserializer.deserialize, self.trans, hda, data={ 'deleted': None } )
+        self.assertFalse( hda.deleted )
+        self.log( 'should be able to deserialize deleted from True' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'deleted': True } )
+        self.assertTrue( hda.deleted )
+        self.log( 'should be able to reverse by deserializing deleted from False' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'deleted': False } )
+        self.assertFalse( hda.deleted )
+
+    def test_deserialize_purge( self ):
+        hda = self._create_vanilla_hda()
+
+        self.log( 'should raise when deserializing purged from non-bool' )
+        self.assertRaises( exceptions.RequestParameterInvalidException,
+            self.hda_deserializer.deserialize, self.trans, hda, data={ 'purged': None } )
+        self.assertFalse( hda.purged )
+        self.log( 'should be able to deserialize purged from True' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'purged': True } )
+        self.assertTrue( hda.purged )
+        # TODO: should this raise an error?
+        self.log( 'should NOT be able to deserialize purged from False (will remain True)' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'purged': False } )
+        self.assertTrue( hda.purged )
+
+    def test_deserialize_visible( self ):
+        hda = self._create_vanilla_hda()
+
+        self.log( 'should raise when deserializing from non-bool' )
+        self.assertTrue( hda.visible )
+        self.assertRaises( exceptions.RequestParameterInvalidException,
+            self.hda_deserializer.deserialize, self.trans, hda, data={ 'visible': 'None' } )
+        self.assertTrue( hda.visible )
+        self.log( 'should be able to deserialize from False' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'visible': False } )
+        self.assertFalse( hda.visible )
+        self.log( 'should be able to reverse by deserializing from True' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'visible': True } )
+        self.assertTrue( hda.visible )
+
+    def test_deserialize_genome_build( self ):
+        hda = self._create_vanilla_hda()
+
+        self.assertIsInstance( hda.dbkey, basestring )
+        self.log( 'should deserialize to "?" from None' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'genome_build': None } )
+        self.assertEqual( hda.dbkey, '?' )
+        self.log( 'should raise when deserializing from non-string' )
+        self.assertRaises( exceptions.RequestParameterInvalidException,
+            self.hda_deserializer.deserialize, self.trans, hda, data={ 'genome_build': 12 } )
+        self.log( 'should be able to deserialize from unicode' )
+        date_palm = u'نخيل التمر'
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'genome_build': date_palm } )
+        self.assertEqual( hda.dbkey, date_palm )
+        self.log( 'should be deserializable from empty string' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'genome_build': '' } )
+        self.assertEqual( hda.dbkey, '' )
+
+
+# # =============================================================================
+# # web.url_for doesn't work well in the framework
+# testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
+# DatasetSerializer.url_for = staticmethod( testable_url_for )
+
+# class DatasetAssociationSerializerTestCase( BaseTestCase ):
+
+#     def set_up_managers( self ):
+#         super( DatasetAssociationSerializerTestCase, self ).set_up_managers()
+#         self.dataset_assoc_mgr = DatasetAssociationManager( self.app )
+#         self.dataset_assoc_serializer = DatasetAssocationSerializer( self.app )
+
+#     def test_views( self ):
+#         dataset_assoc = self.dataset_mgr.create( self.trans )
+
+#         self.log( 'should have a summary view' )
+#         summary_view = self.dataset_serializer.serialize_to_view( self.trans, dataset, view='summary' )
+#         self.assertKeys( summary_view, self.dataset_serializer.views[ 'summary' ] )
+
+#         self.log( 'should have the summary view as default view' )
+#         default_view = self.dataset_serializer.serialize_to_view( self.trans, dataset, default_view='summary' )
+#         self.assertKeys( summary_view, self.dataset_serializer.views[ 'summary' ] )
+
+#         self.log( 'should have a serializer for all serializable keys' )
+#         for key in self.dataset_serializer.serializable_keyset:
+#             instantiated_attribute = getattr( dataset, key, None )
+#             if not ( ( key in self.dataset_serializer.serializers )
+#                   or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
+#                 self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
+#         else:
+#             self.assertTrue( True, 'all serializable keys have a serializer' )
+
+#     def test_views_and_keys( self ):
+#         dataset = self.dataset_mgr.create( self.trans )
+
+#         self.log( 'should be able to use keys with views' )
+#         serialized = self.dataset_serializer.serialize_to_view( self.trans, dataset,
+#             view='summary', keys=[ 'permissions' ] )
+#         self.assertKeys( serialized,
+#             self.dataset_serializer.views[ 'summary' ] + [ 'permissions' ] )
+
+#         self.log( 'should be able to use keys on their own' )
+#         serialized = self.dataset_serializer.serialize_to_view( self.trans, dataset,
+#             keys=[ 'purgable', 'file_size' ] )
+#         self.assertKeys( serialized, [ 'purgable', 'file_size' ] )
+
+#     def test_serialize_permissions( self ):
+#         dataset = self.dataset_mgr.create( self.trans )
+#         self.log( 'serialized permissions should be well formed' )
+
+#     def test_serializers( self ):
+#         user2 = self.user_mgr.create( self.trans, **user2_data )
+#         dataset = self.dataset_mgr.create( self.trans )
+#         all_keys = list( self.hda_serializer.serializable_keyset )
+#         serialized = self.dataset_serializer.serialize( self.trans, dataset, all_keys )
+
+#         self.log( 'everything serialized should be of the proper type' )
+#         self.assertEncodedId( serialized[ 'id' ] )
+#         self.assertDate( serialized[ 'create_time' ] )
+#         self.assertDate( serialized[ 'update_time' ] )
+
+#         self.assertUUID( serialized[ 'uuid' ] )
+#         self.assertIsInstance( serialized[ 'state' ], basestring )
+#         self.assertIsInstance( serialized[ 'deleted' ], bool )
+#         self.assertIsInstance( serialized[ 'purged' ], bool )
+#         self.assertIsInstance( serialized[ 'purgable' ], bool )
+
+#         # # TODO: no great way to do these with mocked dataset
+#         # self.assertIsInstance( serialized[ 'file_size' ], int )
+#         # self.assertIsInstance( serialized[ 'total_size' ], int )
+
+#         self.log( 'serialized should jsonify well' )
+#         self.assertIsJsonifyable( serialized )
+
+
+# # =============================================================================
+# class DatasetAssocationDeserializerTestCase( BaseTestCase ):
+
+#     def set_up_managers( self ):
+#         super( DatasetAssocationDeserializerTestCase, self ).set_up_managers()
+#         self.dataset_mgr = DatasetAssocationManager( self.app )
+#         self.dataset_deserializer = DatasetAssocationDeserializer( self.app )
+
+#     def test_deserialize_delete( self ):
+#         dataset = self.dataset_mgr.create( self.trans )
+
+#         self.log( 'should raise when deserializing deleted from non-bool' )
+#         self.assertFalse( dataset.deleted )
+#         self.assertRaises( exceptions.RequestParameterInvalidException,
+#             self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'deleted': None } )
+#         self.assertFalse( dataset.deleted )
+#         self.log( 'should be able to deserialize deleted from True' )
+#         self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': True } )
+#         self.assertTrue( dataset.deleted )
+#         self.log( 'should be able to reverse by deserializing deleted from False' )
+#         self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': False } )
+#         self.assertFalse( dataset.deleted )
+
+#     def test_deserialize_purge( self ):
+#         dataset = self.dataset_mgr.create( self.trans )
+
+#         self.log( 'should raise when deserializing purged from non-bool' )
+#         self.assertRaises( exceptions.RequestParameterInvalidException,
+#             self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'purged': None } )
+#         self.assertFalse( dataset.purged )
+#         self.log( 'should be able to deserialize purged from True' )
+#         self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': True } )
+#         self.assertTrue( dataset.purged )
+#         # TODO: should this raise an error?
+#         self.log( 'should NOT be able to deserialize purged from False (will remain True)' )
+#         self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': False } )
+#         self.assertTrue( dataset.purged )
+
+#     # def test_deserialize_permissions( self ):
+#     #     pass
 
 
 # =============================================================================

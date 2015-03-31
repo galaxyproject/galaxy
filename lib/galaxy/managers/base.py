@@ -542,8 +542,9 @@ class ModelSerializer( object ):
         Register a map of attribute keys -> serializing functions that will serialize
         the attribute.
         """
-        # to be overridden in subclasses
-        pass
+        self.serializers.update({
+            'id' : self.serialize_id,
+        })
 
     def add_view( self, view_name, key_list, include_keys_from=None ):
         """

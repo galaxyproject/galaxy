@@ -160,7 +160,6 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
         deletable.PurgableSerializerMixin.add_serializers( self )
 
         self.serializers.update({
-            'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
 
@@ -275,34 +274,35 @@ class DatasetAssociationManager( base.ModelManager,
         """
         raise galaxy.exceptions.NotImplemented( 'Abstract Method' )
 
-    # def creating_job( self, trans, dataset_assoc ):
-    #     # TODO: this would be even better if outputs and inputs were the underlying datasets
-    #     # TODO: is this needed? Can't you use the dataset_assoc.creating_job attribute? When is this None?
-    #     job = None
-    #     for job_output_assoc in dataset_assoc.creating_job_associations:
-    #         job = job_output_assoc.job
-    #         break
-    #     return job
+    def creating_job( self, trans, dataset_assoc ):
+        # TODO: is this needed? Can't you use the dataset_assoc.creating_job attribute? When is this None?
+        # TODO: this would be even better if outputs and inputs were the underlying datasets
+        job = None
+        for job_output_assoc in dataset_assoc.creating_job_associations:
+            job = job_output_assoc.job
+            break
+        return job
 
-    # def stop_creating_job( self, dataset_assoc ):
-    #     """
-    #     Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
-    #     """
-    #     RUNNING_STATES = (
-    #         self.app.model.Job.states.QUEUED,
-    #         self.app.model.Job.states.RUNNING,
-    #         self.app.model.Job.states.NEW
-    #     )
-    #     if dataset_assoc.parent_id is None and len( dataset_assoc.creating_job_associations ) > 0:
-    #         # Mark associated job for deletion
-    #         job = dataset_assoc.creating_job_associations[0].job
-    #         if job.state in RUNNING_STATES:
-    #             # Are *all* of the job's other output datasets deleted?
-    #             if job.check_if_output_datasets_deleted():
-    #                 job.mark_deleted( self.app.config.track_jobs_in_database )
-    #                 self.app.job_manager.job_stop_queue.put( job.id )
-    #                 return True
-    #     return False
+    def stop_creating_job( self, dataset_assoc ):
+        """
+        Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
+        """
+        # TODO: use in purge above
+        RUNNING_STATES = (
+            self.app.model.Job.states.QUEUED,
+            self.app.model.Job.states.RUNNING,
+            self.app.model.Job.states.NEW
+        )
+        if dataset_assoc.parent_id is None and len( dataset_assoc.creating_job_associations ) > 0:
+            # Mark associated job for deletion
+            job = dataset_assoc.creating_job_associations[0].job
+            if job.state in RUNNING_STATES:
+                # Are *all* of the job's other output datasets deleted?
+                if job.check_if_output_datasets_deleted():
+                    job.mark_deleted( self.app.config.track_jobs_in_database )
+                    self.app.job_manager.job_stop_queue.put( job.id )
+                    return True
+        return False
 
 
 class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
@@ -317,7 +317,6 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
         deletable.PurgableSerializerMixin.add_serializers( self )
 
         self.serializers.update({
-            'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
 
@@ -498,7 +497,7 @@ class DatasetAssociationDeserializer( base.ModelDeserializer, deletable.Purgable
         return unwrapped_val
 
 
-class DatasetAssociationFilters( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
+class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
 
     def _datatype_from_string( class_str ):
         """
@@ -506,7 +505,7 @@ class DatasetAssociationFilters( base.ModelFilterParser, deletable.PurgableFilte
         return self.app.datatypes_registry.get_datatype_class_by_name( class_str )
 
     def _add_parsers( self ):
-        super( DatasetAssociationFilters, self )._add_parsers()
+        super( DatasetAssociationFilterParser, self )._add_parsers()
         deletable.PurgableFiltersMixin._add_parsers( self )
 
         self.orm_filter_parsers.update({

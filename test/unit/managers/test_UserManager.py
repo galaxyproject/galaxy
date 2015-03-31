@@ -1,11 +1,10 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 """
 import sys
 import os
 import pprint
 import unittest
-import json
 
 __GALAXY_ROOT__ = os.getcwd() + '/../../../'
 sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
@@ -151,11 +150,10 @@ class UserSerializerTestCase( BaseTestCase ):
         self.assertKeys( summary_view, self.user_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
-        need_no_serializers = ( basestring, bool, type( None ) )
         for key in self.user_serializer.serializable_keyset:
             instantiated_attribute = getattr( user, key, None )
             if not ( ( key in self.user_serializer.serializers )
-                  or ( isinstance( instantiated_attribute, need_no_serializers ) ) ):
+                  or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
                 self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
         else:
             self.assertTrue( True, 'all serializable keys have a serializer' )
@@ -176,7 +174,7 @@ class UserSerializerTestCase( BaseTestCase ):
 
     def test_serializers( self ):
         user = self.user_mgr.create( self.trans, **user2_data )
-        all_keys = self.user_serializer.serializable_keyset
+        all_keys = list( self.hda_serializer.serializable_keyset )
         serialized = self.user_serializer.serialize( self.trans, user, all_keys )
         # pprint.pprint( serialized )
 
@@ -196,7 +194,7 @@ class UserSerializerTestCase( BaseTestCase ):
         self.assertIsInstance( serialized[ 'requests' ], list )
 
         self.log( 'serialized should jsonify well' )
-        self.assertIsInstance( json.dumps( serialized ), basestring )
+        self.assertIsJsonifyable( serialized )
 
 
 class CurrentUserSerializerTestCase( BaseTestCase ):

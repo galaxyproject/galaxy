@@ -103,6 +103,7 @@ class PurgableDeserializerMixin( DeletableDeserializerMixin ):
         new_purged = self.validate.bool( key, val )
         if new_purged == item.purged:
             return item.purged
+        # do we want to error if something attempts to 'unpurge'?
         if new_purged:
             self.manager.purge( trans, item, flush=False )
         return item.purged
