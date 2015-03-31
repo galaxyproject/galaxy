@@ -499,43 +499,42 @@ class DatasetAssociationDeserializer( base.ModelDeserializer, deletable.Purgable
 
 class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.PurgableFiltersMixin ):
 
-    def _datatype_from_string( class_str ):
-        """
-        """
-        return self.app.datatypes_registry.get_datatype_class_by_name( class_str )
-
     def _add_parsers( self ):
         super( DatasetAssociationFilterParser, self )._add_parsers()
         deletable.PurgableFiltersMixin._add_parsers( self )
 
         self.orm_filter_parsers.update({
             'name'      : { 'op': ( 'eq', 'contains', 'like' ) },
-            'state'     : { 'op': ( 'eq', 'in' ) },
+            'state'     : { 'column' : '_state', 'op': ( 'eq', 'in' ) },
             'visible'   : { 'op': ( 'eq' ), 'val': self.parse_bool },
-            'genome_build' : { 'op': ( 'eq', 'contains', 'like' ) },
         })
         self.fn_filter_parsers.update({
+            'genome_build' : self.string_standard_ops( 'dbkey' ),
             'data_type' : {
                 'op': {
                     'eq' : self.eq_datatype,
-                    'is' : self.is_datatype
+                    'isinstance' : self.isinstance_datatype
                 }
             }
         })
 
     def eq_datatype( self, dataset_assoc, class_str ):
         """
+        Is the `dataset_assoc` datatype equal to the registered datatype `class_str`?
         """
-        comparison_class = self._datatype_from_string( class_str )
+        comparison_class = self.app.datatypes_registry.get_datatype_class_by_name( class_str )
         return ( comparison_class
              and dataset_assoc.datatype.__class__ == comparison_class )
 
-    def is_datatype( self, dataset_assoc, class_strs ):
+    def isinstance_datatype( self, dataset_assoc, class_strs ):
         """
+        Is the `dataset_assoc` datatype derived from any of the registered
+        datatypes in the comma separated string `class_strs`?
         """
+        parse_datatype_fn = self.app.datatypes_registry.get_datatype_class_by_name
         comparison_classes = []
         for class_str in class_strs.split( ',' ):
-            datatype_class = self._datatype_from_string( class_str )
+            datatype_class = parse_datatype_fn( class_str )
             if datatype_class:
                 comparison_classes.append( datatype_class )
         return ( comparison_classes

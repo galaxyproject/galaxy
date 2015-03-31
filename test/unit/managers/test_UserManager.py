@@ -174,7 +174,7 @@ class UserSerializerTestCase( BaseTestCase ):
 
     def test_serializers( self ):
         user = self.user_mgr.create( self.trans, **user2_data )
-        all_keys = list( self.hda_serializer.serializable_keyset )
+        all_keys = list( self.user_serializer.serializable_keyset )
         serialized = self.user_serializer.serialize( self.trans, user, all_keys )
         # pprint.pprint( serialized )
 
@@ -222,7 +222,7 @@ class CurrentUserSerializerTestCase( BaseTestCase ):
         self.assertIsInstance( serialized[ 'quota_percent' ], ( type( None ), float ) )
 
         self.log( 'serialized should jsonify well' )
-        self.assertIsInstance( json.dumps( serialized ), basestring )
+        self.assertIsJsonifyable( serialized )
 
 
 # =============================================================================

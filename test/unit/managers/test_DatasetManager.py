@@ -234,7 +234,7 @@ class DatasetSerializerTestCase( BaseTestCase ):
     def test_serializers( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
         dataset = self.dataset_mgr.create( self.trans )
-        all_keys = list( self.hda_serializer.serializable_keyset )
+        all_keys = list( self.dataset_serializer.serializable_keyset )
         serialized = self.dataset_serializer.serialize( self.trans, dataset, all_keys )
 
         self.log( 'everything serialized should be of the proper type' )

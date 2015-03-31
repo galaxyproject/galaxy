@@ -122,8 +122,12 @@ class BaseTestCase( unittest.TestCase ):
     def assertORMFilter( self, item, msg=None ):
         if not isinstance( item, sqlalchemy.sql.elements.BinaryExpression ):
             self.fail( 'Not an orm filter: ' + str( type( item ) ) )
-        # TODO: re for d4d76d69-80d4-4ed7-80c7-211ebcc1a358
-        self.assertTrue( True, msg or ( 'is an orm filter: ' + item ) )
+        self.assertTrue( True, msg or ( 'is an orm filter: ' + str( item ) ) )
+
+    def assertFnFilter( self, item, msg=None ):
+        if not item or not callable( item ):
+            self.fail( 'Not a fn filter: ' + str( type( item ) ) )
+        self.assertTrue( True, msg or ( 'is a fn filter: ' + str( item ) ) )
 
     def assertIsJsonifyable( self, item ):
         # TODO: use galaxy's override

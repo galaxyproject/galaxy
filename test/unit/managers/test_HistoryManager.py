@@ -396,7 +396,7 @@ class HistorySerializerTestCase( BaseTestCase ):
     def test_history_serializers( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
-        all_keys = list( self.hda_serializer.serializable_keyset )
+        all_keys = list( self.history_serializer.serializable_keyset )
         serialized = self.history_serializer.serialize( self.trans, history1, all_keys )
 
         self.log( 'everything serialized should be of the proper type' )
@@ -404,7 +404,7 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.assertIsInstance( serialized[ 'nice_size' ], basestring )
 
         self.log( 'serialized should jsonify well' )
-        self.assertIsInstance( json.dumps( serialized ), basestring )
+        self.assertIsJsonifyable( serialized )
 
     def test_contents( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )

@@ -454,122 +454,87 @@ class HDADeserializerTestCase( HDATestCase ):
         self.hda_deserializer.deserialize( self.trans, hda, data={ 'genome_build': '' } )
         self.assertEqual( hda.dbkey, '' )
 
+    def test_deserialize_name( self ):
+        hda = self._create_vanilla_hda()
 
-# # =============================================================================
-# # web.url_for doesn't work well in the framework
-# testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
-# DatasetSerializer.url_for = staticmethod( testable_url_for )
+        self.log( 'should raise when deserializing from non-string' )
+        self.assertRaises( exceptions.RequestParameterInvalidException,
+            self.hda_deserializer.deserialize, self.trans, hda, data={ 'name': True } )
+        self.log( 'should raise when deserializing from None' )
+        self.assertRaises( exceptions.RequestParameterInvalidException,
+            self.hda_deserializer.deserialize, self.trans, hda, data={ 'name': None } )
+        # self.log( 'should deserialize to empty string from None' )
+        # self.hda_deserializer.deserialize( self.trans, hda, data={ 'name': None } )
+        # self.assertEqual( hda.name, '' )
+        self.log( 'should be able to deserialize from unicode' )
+        olive = u'ελιά'
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'name': olive } )
+        self.assertEqual( hda.name, olive )
+        self.log( 'should be deserializable from empty string' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'name': '' } )
+        self.assertEqual( hda.name, '' )
 
-# class DatasetAssociationSerializerTestCase( BaseTestCase ):
+    def test_deserialize_info( self ):
+        hda = self._create_vanilla_hda()
 
-#     def set_up_managers( self ):
-#         super( DatasetAssociationSerializerTestCase, self ).set_up_managers()
-#         self.dataset_assoc_mgr = DatasetAssociationManager( self.app )
-#         self.dataset_assoc_serializer = DatasetAssocationSerializer( self.app )
-
-#     def test_views( self ):
-#         dataset_assoc = self.dataset_mgr.create( self.trans )
-
-#         self.log( 'should have a summary view' )
-#         summary_view = self.dataset_serializer.serialize_to_view( self.trans, dataset, view='summary' )
-#         self.assertKeys( summary_view, self.dataset_serializer.views[ 'summary' ] )
-
-#         self.log( 'should have the summary view as default view' )
-#         default_view = self.dataset_serializer.serialize_to_view( self.trans, dataset, default_view='summary' )
-#         self.assertKeys( summary_view, self.dataset_serializer.views[ 'summary' ] )
-
-#         self.log( 'should have a serializer for all serializable keys' )
-#         for key in self.dataset_serializer.serializable_keyset:
-#             instantiated_attribute = getattr( dataset, key, None )
-#             if not ( ( key in self.dataset_serializer.serializers )
-#                   or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
-#                 self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
-#         else:
-#             self.assertTrue( True, 'all serializable keys have a serializer' )
-
-#     def test_views_and_keys( self ):
-#         dataset = self.dataset_mgr.create( self.trans )
-
-#         self.log( 'should be able to use keys with views' )
-#         serialized = self.dataset_serializer.serialize_to_view( self.trans, dataset,
-#             view='summary', keys=[ 'permissions' ] )
-#         self.assertKeys( serialized,
-#             self.dataset_serializer.views[ 'summary' ] + [ 'permissions' ] )
-
-#         self.log( 'should be able to use keys on their own' )
-#         serialized = self.dataset_serializer.serialize_to_view( self.trans, dataset,
-#             keys=[ 'purgable', 'file_size' ] )
-#         self.assertKeys( serialized, [ 'purgable', 'file_size' ] )
-
-#     def test_serialize_permissions( self ):
-#         dataset = self.dataset_mgr.create( self.trans )
-#         self.log( 'serialized permissions should be well formed' )
-
-#     def test_serializers( self ):
-#         user2 = self.user_mgr.create( self.trans, **user2_data )
-#         dataset = self.dataset_mgr.create( self.trans )
-#         all_keys = list( self.hda_serializer.serializable_keyset )
-#         serialized = self.dataset_serializer.serialize( self.trans, dataset, all_keys )
-
-#         self.log( 'everything serialized should be of the proper type' )
-#         self.assertEncodedId( serialized[ 'id' ] )
-#         self.assertDate( serialized[ 'create_time' ] )
-#         self.assertDate( serialized[ 'update_time' ] )
-
-#         self.assertUUID( serialized[ 'uuid' ] )
-#         self.assertIsInstance( serialized[ 'state' ], basestring )
-#         self.assertIsInstance( serialized[ 'deleted' ], bool )
-#         self.assertIsInstance( serialized[ 'purged' ], bool )
-#         self.assertIsInstance( serialized[ 'purgable' ], bool )
-
-#         # # TODO: no great way to do these with mocked dataset
-#         # self.assertIsInstance( serialized[ 'file_size' ], int )
-#         # self.assertIsInstance( serialized[ 'total_size' ], int )
-
-#         self.log( 'serialized should jsonify well' )
-#         self.assertIsJsonifyable( serialized )
+        self.log( 'should raise when deserializing from non-string' )
+        self.assertRaises( exceptions.RequestParameterInvalidException,
+            self.hda_deserializer.deserialize, self.trans, hda, data={ 'info': True } )
+        self.log( 'should raise when deserializing from None' )
+        self.assertRaises( exceptions.RequestParameterInvalidException,
+            self.hda_deserializer.deserialize, self.trans, hda, data={ 'info': None } )
+        self.log( 'should be able to deserialize from unicode' )
+        rice = u'飯'
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'info': rice } )
+        self.assertEqual( hda.info, rice )
+        self.log( 'should be deserializable from empty string' )
+        self.hda_deserializer.deserialize( self.trans, hda, data={ 'info': '' } )
+        self.assertEqual( hda.info, '' )
 
 
-# # =============================================================================
-# class DatasetAssocationDeserializerTestCase( BaseTestCase ):
+# =============================================================================
+class HDAFilterParserTestCase( HDATestCase ):
 
-#     def set_up_managers( self ):
-#         super( DatasetAssocationDeserializerTestCase, self ).set_up_managers()
-#         self.dataset_mgr = DatasetAssocationManager( self.app )
-#         self.dataset_deserializer = DatasetAssocationDeserializer( self.app )
+    def set_up_managers( self ):
+        super( HDAFilterParserTestCase, self ).set_up_managers()
+        self.filter_parser = hdas.HDAFilterParser( self.app )
 
-#     def test_deserialize_delete( self ):
-#         dataset = self.dataset_mgr.create( self.trans )
+    def test_parsable( self ):
+        self.log( 'the following filters should be parsable' )
+        # base
+        self.assertORMFilter( self.filter_parser.parse_filter( 'id', 'in', [ 1, 2 ] ) )
+        encoded_id_string = ','.join([ self.app.security.encode_id( id_ ) for id_ in [ 1, 2 ] ] )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'encoded_id', 'in', encoded_id_string ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'create_time', 'le', '2015-03-15' ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'create_time', 'ge', '2015-03-15' ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'update_time', 'le', '2015-03-15' ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'update_time', 'ge', '2015-03-15' ) )
+        # purgable
+        self.assertORMFilter( self.filter_parser.parse_filter( 'deleted', 'eq', True ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'purged', 'eq', True ) )
+        # dataset asociation
+        self.assertORMFilter( self.filter_parser.parse_filter( 'name', 'eq', 'wot' ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'name', 'contains', 'wot' ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'name', 'like', 'wot' ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'state', 'eq', 'ok' ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'state', 'in', [ 'queued', 'running' ] ) )
+        self.assertORMFilter( self.filter_parser.parse_filter( 'visible', 'eq', True ) )
+        self.assertFnFilter( self.filter_parser.parse_filter( 'genome_build', 'eq', 'wot' ) )
+        self.assertFnFilter( self.filter_parser.parse_filter( 'genome_build', 'contains', 'wot' ) )
+        self.assertFnFilter( self.filter_parser.parse_filter( 'data_type', 'eq', 'wot' ) )
+        self.assertFnFilter( self.filter_parser.parse_filter( 'data_type', 'isinstance', 'wot' ) )
+        # taggable
+        self.assertFnFilter( self.filter_parser.parse_filter( 'tag', 'eq', 'wot' ) )
+        self.assertFnFilter( self.filter_parser.parse_filter( 'tag', 'has', 'wot' ) )
+        # annotatable
+        self.assertFnFilter( self.filter_parser.parse_filter( 'annotation', 'has', 'wot' ) )
 
-#         self.log( 'should raise when deserializing deleted from non-bool' )
-#         self.assertFalse( dataset.deleted )
-#         self.assertRaises( exceptions.RequestParameterInvalidException,
-#             self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'deleted': None } )
-#         self.assertFalse( dataset.deleted )
-#         self.log( 'should be able to deserialize deleted from True' )
-#         self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': True } )
-#         self.assertTrue( dataset.deleted )
-#         self.log( 'should be able to reverse by deserializing deleted from False' )
-#         self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': False } )
-#         self.assertFalse( dataset.deleted )
 
-#     def test_deserialize_purge( self ):
-#         dataset = self.dataset_mgr.create( self.trans )
+    def test_genome_build_filters( self ):
+        pass
 
-#         self.log( 'should raise when deserializing purged from non-bool' )
-#         self.assertRaises( exceptions.RequestParameterInvalidException,
-#             self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'purged': None } )
-#         self.assertFalse( dataset.purged )
-#         self.log( 'should be able to deserialize purged from True' )
-#         self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': True } )
-#         self.assertTrue( dataset.purged )
-#         # TODO: should this raise an error?
-#         self.log( 'should NOT be able to deserialize purged from False (will remain True)' )
-#         self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': False } )
-#         self.assertTrue( dataset.purged )
-
-#     # def test_deserialize_permissions( self ):
-#     #     pass
+    def test_data_type_filters( self ):
+        pass
 
 
 # =============================================================================

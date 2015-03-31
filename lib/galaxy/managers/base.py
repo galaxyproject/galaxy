@@ -886,7 +886,8 @@ class ModelFilterParser( object ):
         # note: these are the default filters for all models
         self.orm_filter_parsers.update({
             # (prob.) applicable to all models
-            'id'            : { 'op': ( 'in' ), 'val': self.parse_id_list },
+            'id'            : { 'op': ( 'in' ) },
+            'encoded_id'    : { 'column' : 'id', 'op': ( 'in' ), 'val': self.parse_id_list },
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
             'create_time'   : { 'op': ( 'le', 'ge' ) },
             'update_time'   : { 'op': ( 'le', 'ge' ) },
@@ -925,7 +926,7 @@ class ModelFilterParser( object ):
         # by convention, assume most val parsers raise ValueError
         except ValueError, val_err:
             raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
-                column=attr, operation=op, value=val )
+                column=attr, operation=op, value=val, ValueError=str( val_err ) )
 
         # if neither of the above work, raise an error with how-to info
         #TODO: send back all valid filter keys in exception for added user help
@@ -934,6 +935,7 @@ class ModelFilterParser( object ):
     # ---- fn filters
     def _parse_fn_filter( self, attr, op, val ):
         """
+        Attempt to parse a non-ORM filter function.
         """
         # fn_filter_list is a dict: fn_filter_list[ attr ] = { 'opname1' : opfn1, 'opname2' : opfn2, etc. }
 
@@ -957,18 +959,33 @@ class ModelFilterParser( object ):
     # ---- ORM filters
     def _parse_orm_filter( self, attr, op, val ):
         """
+        Attempt to parse a ORM-based filter.
+
+        Using SQLAlchemy, this would yield a sql.elements.BinaryExpression.
         """
         # orm_filter_list is a dict: orm_filter_list[ attr ] = <list of allowed ops>
-        # attr must be a whitelisted column
-        column = self.model_class.table.columns.get( attr )
         column_map = self.orm_filter_parsers.get( attr, None )
-        if column is None or not column_map:
+        if not column_map:
+            # no column mapping (not whitelisted)
             return None
+        # attr must be a whitelisted column by attr name or by key passed in column_map
+        # note: column_map[ 'column' ] takes precedence
+        column = self.model_class.table.columns.get( attr )
+        if 'column' in column_map:
+            remap_to = column_map[ 'column' ]
+            column = self.model_class.table.columns.get( remap_to )
+        if column is None:
+            # no orm column
+            return None
+
         # op must be whitelisted: contained in the list orm_filter_list[ attr ][ 'op' ]
         allowed_ops = column_map.get( 'op' )
         if op not in allowed_ops:
             return None
         op = self._convert_op_string_to_fn( column, op )
+        if not op:
+            return None
+
         # parse the val from string using the 'val' parser if present (otherwise, leave as string)
         val_parser = column_map.get( 'val', None )
         if val_parser:
@@ -993,11 +1010,20 @@ class ModelFilterParser( object ):
             fn_name = 'in_'
 
         # get the column fn using the op_string and error if not a callable attr
-        #TODO: special case 'not in' - or disallow?
+        # TODO: special case 'not in' - or disallow?
         op_fn = getattr( column, fn_name, None )
         if not op_fn or not callable( op_fn ):
             return None
         return op_fn
+
+    # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
+    def string_standard_ops( self, key ):
+        return {
+            'op' : {
+                'eq'        : lambda i, v: v == getattr( i, key ),
+                'contains'  : lambda i, v: v in getattr( i, key ),
+            }
+        }
 
     # --- more parsers! yay!
 #TODO: These should go somewhere central - we've got ~6 parser modules/sections now
