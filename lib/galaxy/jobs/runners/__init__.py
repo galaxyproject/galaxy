@@ -341,8 +341,8 @@ class BaseJobRunner( object ):
         except:
             log.exception('Caught exception in runner state handler:')
 
-    def mark_as_resubmitted( self, job_state ):
-        job_state.job_wrapper.mark_as_resubmitted()
+    def mark_as_resubmitted( self, job_state, info=None ):
+        job_state.job_wrapper.mark_as_resubmitted( info=info )
         if not self.app.config.track_jobs_in_database:
             job_state.job_wrapper.change_state( model.Job.states.QUEUED )
             self.app.job_manager.job_handler.dispatcher.put( job_state.job_wrapper )
