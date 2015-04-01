@@ -32,7 +32,7 @@
     "jquery-ui": "git://github.com/jquery/jquery-ui.git#~1.11.2",
     "threedubmedia.jquery.event": "*",
     "handlebars": "~2.0.0",
-    "jquery-migrate": "~1.2.1",
+    "jquery-migrate": "~1.2.1"
   },
   "resolutions": {
     "jquery": "~1.11.1"
