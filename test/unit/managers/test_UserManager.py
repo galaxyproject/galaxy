@@ -39,96 +39,96 @@ class UserManagerTestCase( BaseTestCase ):
 
     def test_base( self ):
         self.log( "should be able to create a user" )
-        user2 = self.user_mgr.create( self.trans, **user2_data )
+        user2 = self.user_manager.create( **user2_data )
         self.assertIsInstance( user2, model.User )
         self.assertIsNotNone( user2.id )
         self.assertEqual( user2.email, user2_data[ 'email' ] )
         self.assertEqual( user2.password, default_password )
 
-        user3 = self.user_mgr.create( self.trans, **user3_data )
+        user3 = self.user_manager.create( **user3_data )
 
         self.log( "should be able to query" )
         users = self.trans.sa_session.query( model.User ).all()
-        self.assertEqual( self.user_mgr.list( self.trans ), users )
+        self.assertEqual( self.user_manager.list(), users )
 
-        self.assertEqual( self.user_mgr.by_id( self.trans, user2.id ), user2 )
-        self.assertEqual( self.user_mgr.by_ids( self.trans, [ user3.id, user2.id ] ), [ user3, user2 ] )
+        self.assertEqual( self.user_manager.by_id( user2.id ), user2 )
+        self.assertEqual( self.user_manager.by_ids( [ user3.id, user2.id ] ), [ user3, user2 ] )
 
         self.log( "should be able to limit and offset" )
-        self.assertEqual( self.user_mgr.list( self.trans, limit=1 ), users[0:1] )
-        self.assertEqual( self.user_mgr.list( self.trans, offset=1 ), users[1:] )
-        self.assertEqual( self.user_mgr.list( self.trans, limit=1, offset=1 ), users[1:2] )
+        self.assertEqual( self.user_manager.list( limit=1 ), users[0:1] )
+        self.assertEqual( self.user_manager.list( offset=1 ), users[1:] )
+        self.assertEqual( self.user_manager.list( limit=1, offset=1 ), users[1:2] )
 
-        self.assertEqual( self.user_mgr.list( self.trans, limit=0 ), [] )
-        self.assertEqual( self.user_mgr.list( self.trans, offset=3 ), [] )
+        self.assertEqual( self.user_manager.list( limit=0 ), [] )
+        self.assertEqual( self.user_manager.list( offset=3 ), [] )
 
         self.log( "should be able to order" )
-        self.assertEqual( self.user_mgr.list( self.trans, order_by=( sqlalchemy.desc( model.User.create_time ) ) ),
+        self.assertEqual( self.user_manager.list( order_by=( sqlalchemy.desc( model.User.create_time ) ) ),
             [ user3, user2, self.admin_user ] )
 
     def test_invalid_create( self ):
-        user2 = self.user_mgr.create( self.trans, **user2_data )
+        user2 = self.user_manager.create( **user2_data )
 
         self.log( "emails must be unique" )
-        self.assertRaises( exceptions.Conflict, self.user_mgr.create,
-            self.trans, **dict( email='user2@user2.user2', username='user2a', password=default_password ) )
+        self.assertRaises( exceptions.Conflict, self.user_manager.create,
+            **dict( email='user2@user2.user2', username='user2a', password=default_password ) )
         self.log( "usernames must be unique" )
-        self.assertRaises( exceptions.Conflict, self.user_mgr.create,
-            self.trans, **dict( email='user2a@user2.user2', username='user2', password=default_password ) )
+        self.assertRaises( exceptions.Conflict, self.user_manager.create,
+            **dict( email='user2a@user2.user2', username='user2', password=default_password ) )
 
     def test_email_queries( self ):
-        user2 = self.user_mgr.create( self.trans, **user2_data )
-        user3 = self.user_mgr.create( self.trans, **user3_data )
+        user2 = self.user_manager.create( **user2_data )
+        user3 = self.user_manager.create( **user3_data )
 
         self.log( "should be able to query by email" )
-        self.assertEqual( self.user_mgr.by_email( self.trans, user2_data[ 'email' ] ), user2 )
+        self.assertEqual( self.user_manager.by_email( user2_data[ 'email' ] ), user2 )
 
         #note: sorted by email alpha
         users = self.trans.sa_session.query( model.User ).all()
-        self.assertEqual( self.user_mgr.by_email_like( self.trans, '%@%' ), [ self.admin_user, user2, user3 ] )
+        self.assertEqual( self.user_manager.by_email_like( '%@%' ), [ self.admin_user, user2, user3 ] )
 
     def test_admin( self ):
-        user2 = self.user_mgr.create( self.trans, **user2_data )
-        user3 = self.user_mgr.create( self.trans, **user3_data )
+        user2 = self.user_manager.create( **user2_data )
+        user3 = self.user_manager.create( **user3_data )
 
         self.log( "should be able to test whether admin" )
-        self.assertTrue( self.user_mgr.is_admin( self.trans, self.admin_user ) )
-        self.assertFalse( self.user_mgr.is_admin( self.trans, user2 ) )
-        self.assertEqual( self.user_mgr.admins( self.trans ), [ self.admin_user ] )
-        self.assertRaises( exceptions.AdminRequiredException, self.user_mgr.error_unless_admin, self.trans, user2 )
-        self.assertEqual( self.user_mgr.error_unless_admin( self.trans, self.admin_user ), self.admin_user )
+        self.assertTrue( self.user_manager.is_admin( self.admin_user ) )
+        self.assertFalse( self.user_manager.is_admin( user2 ) )
+        self.assertEqual( self.user_manager.admins(), [ self.admin_user ] )
+        self.assertRaises( exceptions.AdminRequiredException, self.user_manager.error_unless_admin, user2 )
+        self.assertEqual( self.user_manager.error_unless_admin( self.admin_user ), self.admin_user )
 
     def test_anonymous( self ):
         anon = None
-        user2 = self.user_mgr.create( self.trans, **user2_data )
+        user2 = self.user_manager.create( **user2_data )
 
         self.log( "should be able to tell if a user is anonymous" )
-        self.assertRaises( exceptions.AuthenticationFailed, self.user_mgr.error_if_anonymous, self.trans, anon )
-        self.assertEqual( self.user_mgr.error_if_anonymous( self.trans, user2 ), user2 )
+        self.assertRaises( exceptions.AuthenticationFailed, self.user_manager.error_if_anonymous, anon )
+        self.assertEqual( self.user_manager.error_if_anonymous( user2 ), user2 )
 
     def test_current( self ):
-        user2 = self.user_mgr.create( self.trans, **user2_data )
-        user3 = self.user_mgr.create( self.trans, **user3_data )
+        user2 = self.user_manager.create( **user2_data )
+        user3 = self.user_manager.create( **user3_data )
 
         self.log( "should be able to tell if a user is the current (trans) user" )
-        self.assertEqual( self.user_mgr.current_user( self.trans ), self.admin_user )
-        self.assertNotEqual( self.user_mgr.current_user( self.trans ), user2 )
+        self.assertEqual( self.user_manager.current_user( self.trans ), self.admin_user )
+        self.assertNotEqual( self.user_manager.current_user( self.trans ), user2 )
 
     def test_api_keys( self ):
-        user2 = self.user_mgr.create( self.trans, **user2_data )
-        user3 = self.user_mgr.create( self.trans, **user3_data )
+        user2 = self.user_manager.create( **user2_data )
+        user3 = self.user_manager.create( **user3_data )
 
         self.log( "should return None if no APIKey has been created" )
-        self.assertEqual( self.user_mgr.valid_api_key( self.trans, user2 ), None )
+        self.assertEqual( self.user_manager.valid_api_key( user2 ), None )
 
         self.log( "should be able to generate and retrieve valid api key" )
-        user2_api_key = self.user_mgr.create_api_key( self.trans, user2 )
+        user2_api_key = self.user_manager.create_api_key( user2 )
         self.assertIsInstance( user2_api_key, basestring )
-        self.assertEqual( self.user_mgr.valid_api_key( self.trans, user2 ).key, user2_api_key )
+        self.assertEqual( self.user_manager.valid_api_key( user2 ).key, user2_api_key )
 
         self.log( "should return the most recent (i.e. most valid) api key" )
-        user2_api_key_2 = self.user_mgr.create_api_key( self.trans, user2 )
-        self.assertEqual( self.user_mgr.valid_api_key( self.trans, user2 ).key, user2_api_key_2 )
+        user2_api_key_2 = self.user_manager.create_api_key( user2 )
+        self.assertEqual( self.user_manager.valid_api_key( user2 ).key, user2_api_key_2 )
 
 
 # =============================================================================
@@ -139,7 +139,7 @@ class UserSerializerTestCase( BaseTestCase ):
         self.user_serializer = users.UserSerializer( self.app )
 
     def test_views( self ):
-        user = self.user_mgr.create( self.trans, **user2_data )
+        user = self.user_manager.create( **user2_data )
 
         self.log( 'should have a summary view' )
         summary_view = self.user_serializer.serialize_to_view( self.trans, user, view='summary' )
@@ -159,7 +159,7 @@ class UserSerializerTestCase( BaseTestCase ):
             self.assertTrue( True, 'all serializable keys have a serializer' )
 
     def test_views_and_keys( self ):
-        user = self.user_mgr.create( self.trans, **user2_data )
+        user = self.user_manager.create( **user2_data )
 
         self.log( 'should be able to use keys with views' )
         serialized = self.user_serializer.serialize_to_view( self.trans, user,
@@ -173,7 +173,7 @@ class UserSerializerTestCase( BaseTestCase ):
         self.assertKeys( serialized, [ 'tags_used', 'is_admin' ] )
 
     def test_serializers( self ):
-        user = self.user_mgr.create( self.trans, **user2_data )
+        user = self.user_manager.create( **user2_data )
         all_keys = list( self.user_serializer.serializable_keyset )
         serialized = self.user_serializer.serialize( self.trans, user, all_keys )
         # pprint.pprint( serialized )

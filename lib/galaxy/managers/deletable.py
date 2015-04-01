@@ -19,13 +19,13 @@ class DeletableManagerMixin( object ):
     removed by an admin/script.
     """
 
-    def delete( self, trans, item, flush=True, **kwargs ):
+    def delete( self, item, flush=True, **kwargs ):
         """
         Mark as deleted and return.
         """
         return self._session_setattr( item, 'deleted', True, flush=flush )
 
-    def undelete( self, trans, item, flush=True, **kwargs ):
+    def undelete( self, item, flush=True, **kwargs ):
         """
         Mark as not deleted and return.
         """
@@ -53,9 +53,9 @@ class DeletableDeserializerMixin( object ):
             return item.deleted
         # TODO:?? flush=False?
         if new_deleted:
-            self.manager.delete( trans, item, flush=False )
+            self.manager.delete( item, flush=False )
         else:
-            self.manager.undelete( trans, item, flush=False )
+            self.manager.undelete( item, flush=False )
         return item.deleted
 
 
@@ -74,7 +74,7 @@ class PurgableManagerMixin( DeletableManagerMixin ):
     file).
     """
 
-    def purge( self, trans, item, flush=True, **kwargs ):
+    def purge( self, item, flush=True, **kwargs ):
         """
         Mark as purged and return.
 
@@ -105,7 +105,7 @@ class PurgableDeserializerMixin( DeletableDeserializerMixin ):
             return item.purged
         # do we want to error if something attempts to 'unpurge'?
         if new_purged:
-            self.manager.purge( trans, item, flush=False )
+            self.manager.purge( item, flush=False )
         return item.purged
 
 

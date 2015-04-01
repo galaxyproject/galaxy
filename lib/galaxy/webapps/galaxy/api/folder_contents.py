@@ -130,7 +130,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         # Check whether user can modify the current folder
         can_modify_folder = is_admin or trans.app.security_agent.can_modify_library_item( current_user_roles, folder )
-        
+
         parent_library_id = None
         if folder.parent_library is not None:
             parent_library_id = trans.security.encode_id( folder.parent_library.id )
@@ -268,8 +268,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         rval = {}
         try:
             decoded_hda_id = self.decode_id( from_hda_id )
-            hda = self.hda_manager.get_owned( trans, decoded_hda_id, trans.user )
-            hda = self.hda_manager.error_if_uploading( trans, hda )
+            hda = self.hda_manager.get_owned( decoded_hda_id, trans.user, current_history=trans.history )
+            hda = self.hda_manager.error_if_uploading( hda )
             folder = self.get_library_folder( trans, encoded_folder_id_16, check_accessible=True )
 
             library = folder.parent_library

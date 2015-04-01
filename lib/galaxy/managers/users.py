@@ -31,7 +31,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
     #TODO: incorporate security/validate_user_input.py
     #TODO: incorporate UsesFormDefinitionsMixin?
 
-    def create( self, trans, **kwargs ):
+    def create( self, webapp_name=None, **kwargs ):
         """
         Create a new user.
         """
@@ -39,7 +39,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         email = kwargs[ 'email' ]
         username = kwargs[ 'username' ]
         password = kwargs[ 'password' ]
-        self._error_on_duplicate_email( trans, email )
+        self._error_on_duplicate_email( email )
 
         user = model.User( email=email, password=password )
         user.username = username
@@ -60,72 +60,71 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         # can throw an sqlalx.IntegrityError if username not unique
 
         self.app.security_agent.create_private_user_role( user )
-        #TODO: trans
-        if trans.webapp.name == 'galaxy':
+        if webapp_name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
             permissions = self.app.config.new_user_dataset_access_role_default_private
             self.app.security_agent.user_set_default_permissions( user, default_access_private=permissions )
         return user
 
-    def _error_on_duplicate_email( self, trans, email ):
+    def _error_on_duplicate_email( self, email ):
         """
         Check for a duplicate email and raise if found.
 
         :raises exceptions.Conflict: if any are found
         """
         #TODO: remove this check when unique=True is added to the email column
-        if self.by_email( trans, email ) is not None:
+        if self.by_email( email ) is not None:
             raise exceptions.Conflict( 'Email must be unique', email=email )
 
     # ---- filters
-    def by_email( self, trans, email, filters=None, **kwargs ):
+    def by_email( self, email, filters=None, **kwargs ):
         """
         Find a user by their email.
         """
         filters = self._munge_filters( self.model_class.email == email, filters )
         try:
 #TODO: use one_or_none
-            return super( UserManager, self ).one( trans, filters=filters, **kwargs )
+            return super( UserManager, self ).one( filters=filters, **kwargs )
         except exceptions.ObjectNotFound, not_found:
             return None
 
-    def by_email_like( self, trans, email_with_wildcards, filters=None, order_by=None, **kwargs ):
+    def by_email_like( self, email_with_wildcards, filters=None, order_by=None, **kwargs ):
         """
         Find a user searching with SQL wildcards.
         """
         filters = self._munge_filters( self.model_class.email.like( email_with_wildcards ), filters )
         order_by = order_by or ( model.User.email, )
-        return super( UserManager, self ).list( trans, filters=filters, order_by=order_by, **kwargs )
+        return super( UserManager, self ).list( filters=filters, order_by=order_by, **kwargs )
 
     # ---- admin
-    def is_admin( self, trans, user ):
+    def is_admin( self, user ):
         """
         Return True if this user is an admin.
         """
-        admin_emails = self._admin_emails( trans )
+        admin_emails = self._admin_emails()
         return user and admin_emails and user.email in admin_emails
 
-    def _admin_emails( self, trans ):
+    def _admin_emails( self ):
         """
         Return a list of admin email addresses from the config file.
         """
         return [ email.strip() for email in self.app.config.get( "admin_users", "" ).split( "," ) ]
 
-    def admins( self, trans, filters=None, **kwargs ):
+    def admins( self, filters=None, **kwargs ):
         """
         Return a list of admin Users.
         """
-        filters = self._munge_filters( self.model_class.email.in_( self._admin_emails( trans ) ), filters )
-        return super( UserManager, self ).list( trans, filters=filters, **kwargs )
+        filters = self._munge_filters( self.model_class.email.in_( self._admin_emails() ), filters )
+        return super( UserManager, self ).list( filters=filters, **kwargs )
 
-    def error_unless_admin( self, trans, user, msg="Administrators only", **kwargs ):
+    def error_unless_admin( self, user, msg="Administrators only", **kwargs ):
         """
         Raise an error if `user` is not an admin.
 
         :raises exceptions.AdminRequiredException: if `user` is not an admin.
         """
         # useful in admin only methods
-        if not self.is_admin( trans, user ):
+        if not self.is_admin( user ):
             raise exceptions.AdminRequiredException( msg, **kwargs )
         return user
 
@@ -137,7 +136,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         # define here for single point of change and make more readable
         return user is None
 
-    def error_if_anonymous( self, trans, user, msg="Log-in required", **kwargs ):
+    def error_if_anonymous( self, user, msg="Log-in required", **kwargs ):
         """
         Raise an error if `user` is anonymous.
         """
@@ -149,10 +148,11 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
     # ---- current
     def current_user( self, trans ):
         # define here for single point of change and make more readable
+        # TODO: trans
         return trans.user
 
     # ---- api keys
-    def create_api_key( self, trans, user ):
+    def create_api_key( self, user ):
         """
         Create and return an API key for `user`.
         """
@@ -160,7 +160,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         return api_keys.ApiKeyManager( self.app ).create_api_key( user )
 
     #TODO: possibly move to ApiKeyManager
-    def valid_api_key( self, trans, user ):
+    def valid_api_key( self, user ):
         """
         Return this most recent APIKey for this user or None if none have been created.
         """
@@ -177,15 +177,15 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         #return query.first()
 
     #TODO: possibly move to ApiKeyManager
-    def get_or_create_valid_api_key( self, trans, user ):
+    def get_or_create_valid_api_key( self, user ):
         """
         Return this most recent APIKey for this user or create one if none have been
         created.
         """
-        existing = self.valid_api_key( trans, user )
+        existing = self.valid_api_key( user )
         if existing:
             return existing
-        return self.create_api_key( self, trans, user )
+        return self.create_api_key( self, user )
 
     # ---- preferences
 
@@ -204,7 +204,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         #TODO: use quota manager
         return self.app.quota_agent.get_percent( user=user )
 
-    def tags_used( self, trans, user, tag_models=None ):
+    def tags_used( self, user, tag_models=None ):
         """
         Return a list of distinct 'user_tname:user_value' strings that the
         given user has used.
@@ -220,7 +220,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         all_tags_query = None
         for tag_model in tag_models:
             subq = ( self.session().query( tag_model.user_tname, tag_model.user_value )
-                        .filter( tag_model.user == trans.user ) )
+                        .filter( tag_model.user == user ) )
             all_tags_query = subq if all_tags_query is None else all_tags_query.union( subq )
 
         # if nothing init'd the query, bail
@@ -232,7 +232,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         tags = [( ( name + ':' + val ) if val else name ) for name, val in tags ]
         return sorted( tags )
 
-    def has_requests( self, trans, user ):
+    def has_requests( self, user, trans ):
         """
         """
         if self.is_anonymous( user ):
@@ -281,14 +281,14 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
-            'is_admin'      : lambda t, i, k: self.user_manager.is_admin( t, i ),
+            'is_admin'      : lambda t, i, k: self.user_manager.is_admin( i ),
 
             'total_disk_usage' : lambda t, i, k: float( i.total_disk_usage ),
             'quota_percent' : lambda t, i, k: self.user_manager.quota( i ),
 
-            'tags_used'     : lambda t, i, k: self.user_manager.tags_used( t, i ),
+            'tags_used'     : lambda t, i, k: self.user_manager.tags_used( i ),
             #TODO: 'has_requests' is more apt
-            'requests'      : lambda t, i, k: self.user_manager.has_requests( t, i )
+            'requests'      : lambda t, i, k: self.user_manager.has_requests( i, t )
         })
 
 

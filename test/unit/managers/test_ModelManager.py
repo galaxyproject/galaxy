@@ -61,11 +61,10 @@ class BaseTestCase( unittest.TestCase ):
         self.app = self.trans.app
 
     def set_up_managers( self ):
-        self.user_mgr = UserManager( self.app )
+        self.user_manager = UserManager( self.app )
 
     def set_up_trans( self ):
-        self.admin_user = self.user_mgr.create( self.trans,
-            email=admin_email, username='admin', password=default_password )
+        self.admin_user = self.user_manager.create( email=admin_email, username='admin', password=default_password )
         self.trans.set_user( self.admin_user )
         self.trans.set_history( None )
 

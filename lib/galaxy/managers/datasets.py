@@ -32,7 +32,7 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
         # need for admin test
         self.user_manager = users.UserManager( app )
 
-    def create( self, trans, manage_roles=None, access_roles=None, flush=True, **kwargs ):
+    def create( self, manage_roles=None, access_roles=None, flush=True, **kwargs ):
         """
         Create and return a new Dataset object.
         """
@@ -50,14 +50,14 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
     def copy( self, dataset, **kwargs ):
         raise galaxy.exceptions.NotImplemented( 'Datasets cannot be copied' )
 
-    def purge( self, trans, dataset, flush=True ):
+    def purge( self, dataset, flush=True ):
         """
         Remove the object_store/file for this dataset from storage and mark
         as purged.
 
         :raises exceptions.ConfigDoesNotAllowException: if the instance doesn't allow
         """
-        self.error_unless_dataset_purge_allowed( trans, dataset )
+        self.error_unless_dataset_purge_allowed( dataset )
 
         # the following also marks dataset as purged and deleted
         dataset.full_delete()
@@ -68,20 +68,19 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
 
     # TODO: this may be more conv. somewhere else
     # TODO: how to allow admin bypass?
-    def error_unless_dataset_purge_allowed( self, trans, item, msg=None ):
+    def error_unless_dataset_purge_allowed( self, msg=None ):
         if not self.app.config.allow_user_dataset_purge:
             msg = msg or 'This instance does not allow user dataset purging'
             raise exceptions.ConfigDoesNotAllowException( msg )
-        return item
 
     # .... accessibility
     # datasets can implement the accessible interface, but accessibility is checked in an entirely different way
     #   than those resources that have a user attribute (histories, pages, etc.)
-    def is_accessible( self, trans, dataset, user ):
+    def is_accessible( self, dataset, user, **kwargs ):
         """
         Is this dataset readable/viewable to user?
         """
-        if self.user_manager.is_admin( trans, user ):
+        if self.user_manager.is_admin( user ):
             return True
         if self.has_access_permission( dataset, user ):
             return True
@@ -98,6 +97,8 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
     # TODO: datatypes?
     # .... data, object_store
 
+
+# TODO: SecurityAgentDatasetRBACPermissions( object ):
 
 class DatasetRBACPermissions( object ):
 
@@ -126,7 +127,7 @@ class DatasetRBACPermissions( object ):
         return ( [ manage ], [] )
 
     def set_private_to_one_user( self, dataset, user, flush=True ):
-        manage = self.manage.grant( user, flush=False )
+        manage = self.manage.grant( dataset, user, flush=False )
         access = self.access.set_private( dataset, user, flush=flush )
         return ( [ manage ], access )
 
@@ -240,21 +241,21 @@ class DatasetAssociationManager( base.ModelManager,
         super( DatasetAssociationManager, self ).__init__( app )
         self.dataset_manager = DatasetManager( app )
 
-    def is_accessible( self, trans, dataset_assoc, user ):
+    def is_accessible( self, dataset_assoc, user, **kwargs ):
         """
         Is this DA accessible to `user`?
         """
         # defer to the dataset
-        return self.dataset_manager.is_accessible( trans, dataset_assoc.dataset, user )
+        return self.dataset_manager.is_accessible( dataset_assoc.dataset, user )
 
-    def purge( self, trans, dataset_assoc, flush=True ):
+    def purge( self, dataset_assoc, flush=True ):
         """
         Purge this DatasetInstance and the dataset underlying it.
         """
         # error here if disallowed - before jobs are stopped
         # TODO: this check may belong in the controller
-        self.dataset_manager.error_unless_dataset_purge_allowed( trans, dataset_assoc )
-        super( DatasetAssociationManager, self ).purge( trans, dataset_assoc, flush=flush )
+        self.dataset_manager.error_unless_dataset_purge_allowed()
+        super( DatasetAssociationManager, self ).purge( dataset_assoc, flush=flush )
 
         # stop any jobs outputing the dataset_assoc
         if dataset_assoc.creating_job_associations:
@@ -266,15 +267,15 @@ class DatasetAssociationManager( base.ModelManager,
 
         # more importantly, purge underlying dataset as well
         if dataset_assoc.dataset.user_can_purge:
-            self.dataset_manager.purge( trans, dataset_assoc.dataset )
+            self.dataset_manager.purge( dataset_assoc.dataset )
         return dataset_assoc
 
-    def by_user( self, trans, user ):
+    def by_user( self, user ):
         """
         """
         raise galaxy.exceptions.NotImplemented( 'Abstract Method' )
 
-    def creating_job( self, trans, dataset_assoc ):
+    def creating_job( self, dataset_assoc ):
         # TODO: is this needed? Can't you use the dataset_assoc.creating_job attribute? When is this None?
         # TODO: this would be even better if outputs and inputs were the underlying datasets
         job = None
@@ -423,17 +424,17 @@ class DatasetAssociationSerializer( _UnflattenedMetadataDatasetAssociationSerial
         # if 'metadata' isn't removed from keys here serialize will retrieve the un-serializable MetadataCollection
         # TODO: remove these when metadata is sub-object
         KEYS_HANDLED_SEPARATELY = ( 'metadata', )
-        left_to_handle = self.pluck_from_list( keys, KEYS_HANDLED_SEPARATELY )
+        left_to_handle = self._pluck_from_list( keys, KEYS_HANDLED_SEPARATELY )
         serialized = super( DatasetAssociationSerializer, self ).serialize( trans, dataset_assoc, keys )
 
         # add metadata directly to the dict instead of as a sub-object
         if 'metadata' in left_to_handle:
-            metadata = self.prefixed_metadata( trans, dataset_assoc )
+            metadata = self._prefixed_metadata( trans, dataset_assoc )
             serialized.update( metadata )
         return serialized
 
     # TODO: this is more util/gen. use
-    def pluck_from_list( self, l, elems ):
+    def _pluck_from_list( self, l, elems ):
         """
         Removes found elems from list l and returns list of found elems if found.
         """
@@ -446,7 +447,7 @@ class DatasetAssociationSerializer( _UnflattenedMetadataDatasetAssociationSerial
                 pass
         return found
 
-    def prefixed_metadata( self, trans, dataset_assoc ):
+    def _prefixed_metadata( self, trans, dataset_assoc ):
         """
         Adds (a prefixed version of) the DatasetInstance metadata to the dict,
         prefixing each key with 'metadata_'.
@@ -469,8 +470,8 @@ class DatasetAssociationDeserializer( base.ModelDeserializer, deletable.Purgable
         deletable.PurgableDeserializerMixin.add_deserializers( self )
 
         self.deserializers.update({
-            'name'          : self.deserialize_basestring,
-            'info'          : self.deserialize_basestring,
+            'name' : self.deserialize_basestring,
+            'info' : self.deserialize_basestring,
         })
         self.deserializable_keyset.update( self.deserializers.keys() )
 

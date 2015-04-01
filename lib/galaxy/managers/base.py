@@ -179,7 +179,7 @@ class ModelManager( object ):
         return item
 
     # .... query foundation wrapper
-    def query( self, trans, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    def query( self, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
 
@@ -258,11 +258,11 @@ class ModelManager( object ):
         return query
 
     # .... query resolution
-    def one( self, trans, **kwargs ):
+    def one( self, **kwargs ):
         """
         Sends kwargs to build the query and returns one and only one model.
         """
-        query = self.query( trans, **kwargs )
+        query = self.query( **kwargs )
         return self._one_with_recast_errors( query )
 
     def _one_with_recast_errors( self, query ):
@@ -292,33 +292,33 @@ class ModelManager( object ):
             return None
 
     #NOTE: at this layer, all ids are expected to be decoded and in int form
-    def by_id( self, trans, id, **kwargs ):
+    def by_id( self, id, **kwargs ):
         """
         Gets a model by primary id.
         """
         id_filter = self.model_class.id == id
-        return self.one( trans, filters=id_filter, **kwargs )
+        return self.one( filters=id_filter, **kwargs )
 
     # .... multirow queries
-    def _orm_list( self, trans, query=None, **kwargs ):
+    def _orm_list( self, query=None, **kwargs ):
         """
         Sends kwargs to build the query return all models found.
         """
-        query = query or self.query( trans, **kwargs )
+        query = query or self.query( **kwargs )
         return query.all()
 
-    #def list( self, trans, query=None, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
-    def list( self, trans, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    #def list( self, query=None, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    def list( self, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
         Returns all objects matching the given filters
         """
         orm_filters, fn_filters = self._split_filters( filters )
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            return self._orm_list( trans, filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs )
+            return self._orm_list( filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs )
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
-        query = self.query( trans, filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs )
+        query = self.query( filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs )
         items = query.all()
 
         # apply limit, offset after SQL filtering
@@ -381,12 +381,12 @@ class ModelManager( object ):
             yield item
             yielded += 1
 
-    def by_ids( self, trans, ids, filters=None, **kwargs ):
+    def by_ids( self, ids, filters=None, **kwargs ):
         """
         Returns an in-order list of models with the matching ids in `ids`.
         """
         ids_filter = self.model_class.id.in_( ids )
-        found = self.list( trans, filters=self._munge_filters( ids_filter, filters ), **kwargs )
+        found = self.list( filters=self._munge_filters( ids_filter, filters ), **kwargs )
         # TODO: this does not order by the original 'ids' array
 
         # ...could use get (supposedly since found are in the session, the db won't be hit twice)
@@ -420,7 +420,7 @@ class ModelManager( object ):
                 in_order.append( item_dict[ id ] )
         return in_order
 
-    def create( self, trans, flush=True, *args, **kwargs ):
+    def create( self, flush=True, *args, **kwargs ):
         """
         Generically create a new model.
         """
@@ -431,13 +431,13 @@ class ModelManager( object ):
             self.session().flush()
         return item
 
-    def copy( self, trans, item, **kwargs ):
+    def copy( self, item, **kwargs ):
         """
         Clone or copy an item.
         """
         raise exceptions.NotImplemented( 'Abstract method' )
 
-    def update( self, trans, item, new_values, flush=True, **kwargs ):
+    def update( self, item, new_values, flush=True, **kwargs ):
         """
         Given a dictionary of new values, update `item` and return it.
 
@@ -452,7 +452,7 @@ class ModelManager( object ):
         return item
 
     # TODO: yagni?
-    def associate( self, trans, associate_with, item, foreign_key_name=None ):
+    def associate( self, associate_with, item, foreign_key_name=None ):
         """
         Generically associate `item` with `associate_with` based on `foreign_key_name`.
         """
@@ -460,7 +460,7 @@ class ModelManager( object ):
         setattr( associate_with, foreign_key_name, item )
         return item
 
-    def query_associated( self, trans, associated_model_class, item, foreign_key_name=None ):
+    def query_associated( self, associated_model_class, item, foreign_key_name=None ):
         """
         Generically query other items that have been associated with this `item`.
         """
@@ -469,7 +469,7 @@ class ModelManager( object ):
         return self.session().query( associated_model_class ).filter( foreign_key == item )
 
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
-    # def destroy( self, trans, item, **kwargs ):
+    # def destroy( self, item, **kwargs ):
     #    return item
 
 

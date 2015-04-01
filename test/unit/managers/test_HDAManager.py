@@ -31,16 +31,16 @@ class HDATestCase( BaseTestCase ):
 
     def set_up_managers( self ):
         super( HDATestCase, self ).set_up_managers()
-        self.hda_mgr = hdas.HDAManager( self.app )
-        self.history_mgr = HistoryManager( self.app )
-        self.dataset_mgr = DatasetManager( self.app )
+        self.hda_manager = hdas.HDAManager( self.app )
+        self.history_manager = HistoryManager( self.app )
+        self.dataset_manager = DatasetManager( self.app )
 
     def _create_vanilla_hda( self, user_data=None ):
         user_data = user_data or user2_data
-        owner = self.user_mgr.create( self.trans, **user_data )
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        return self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+        owner = self.user_manager.create( **user_data )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        return self.hda_manager.create( history=history1, dataset=dataset1 )
 
 
 # =============================================================================
@@ -48,40 +48,40 @@ class HDAManagerTestCase( HDATestCase ):
 
     def test_base( self ):
         hda_model = model.HistoryDatasetAssociation
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        hda1 = self.hda_mgr.create( self.trans, history=history1, hid=1 )
-        hda2 = self.hda_mgr.create( self.trans, history=history1, hid=2 )
-        hda3 = self.hda_mgr.create( self.trans, history=history1, hid=3 )
+        owner = self.user_manager.create( **user2_data )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        hda1 = self.hda_manager.create( history=history1, hid=1 )
+        hda2 = self.hda_manager.create( history=history1, hid=2 )
+        hda3 = self.hda_manager.create( history=history1, hid=3 )
 
         self.log( "should be able to query" )
         hdas = self.trans.sa_session.query( hda_model ).all()
-        self.assertEqual( self.hda_mgr.list( self.trans ), hdas )
-        self.assertEqual( self.hda_mgr.one( self.trans, filters=( hda_model.id == hda1.id ) ), hda1 )
-        self.assertEqual( self.hda_mgr.by_id( self.trans, hda1.id ), hda1 )
-        self.assertEqual( self.hda_mgr.by_ids( self.trans, [ hda2.id, hda1.id ] ), [ hda2, hda1 ] )
+        self.assertEqual( self.hda_manager.list(), hdas )
+        self.assertEqual( self.hda_manager.one( filters=( hda_model.id == hda1.id ) ), hda1 )
+        self.assertEqual( self.hda_manager.by_id( hda1.id ), hda1 )
+        self.assertEqual( self.hda_manager.by_ids( [ hda2.id, hda1.id ] ), [ hda2, hda1 ] )
 
         self.log( "should be able to limit and offset" )
-        self.assertEqual( self.hda_mgr.list( self.trans, limit=1 ), hdas[0:1] )
-        self.assertEqual( self.hda_mgr.list( self.trans, offset=1 ), hdas[1:] )
-        self.assertEqual( self.hda_mgr.list( self.trans, limit=1, offset=1 ), hdas[1:2] )
+        self.assertEqual( self.hda_manager.list( limit=1 ), hdas[0:1] )
+        self.assertEqual( self.hda_manager.list( offset=1 ), hdas[1:] )
+        self.assertEqual( self.hda_manager.list( limit=1, offset=1 ), hdas[1:2] )
 
-        self.assertEqual( self.hda_mgr.list( self.trans, limit=0 ), [] )
-        self.assertEqual( self.hda_mgr.list( self.trans, offset=3 ), [] )
+        self.assertEqual( self.hda_manager.list( limit=0 ), [] )
+        self.assertEqual( self.hda_manager.list( offset=3 ), [] )
 
         self.log( "should be able to order" )
-        self.assertEqual( self.hda_mgr.list( self.trans, order_by=sqlalchemy.desc( hda_model.create_time ) ),
+        self.assertEqual( self.hda_manager.list( order_by=sqlalchemy.desc( hda_model.create_time ) ),
             [ hda3, hda2, hda1 ] )
 
     def test_create( self ):
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        non_owner = self.user_mgr.create( self.trans, **user3_data )
+        owner = self.user_manager.create( **user2_data )
+        non_owner = self.user_manager.create( **user3_data )
 
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
 
         self.log( "should be able to create a new HDA with a specified history and dataset" )
-        hda1 = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+        hda1 = self.hda_manager.create( history=history1, dataset=dataset1 )
         self.assertIsInstance( hda1, model.HistoryDatasetAssociation )
         self.assertEqual( hda1, self.trans.sa_session.query( model.HistoryDatasetAssociation ).get( hda1.id ) )
         self.assertEqual( hda1.history, history1 )
@@ -89,27 +89,27 @@ class HDAManagerTestCase( HDATestCase ):
         self.assertEqual( hda1.hid, 1 )
 
         self.log( "should be able to create a new HDA with only a specified history and no dataset" )
-        hda2 = self.hda_mgr.create( self.trans, history=history1 )
+        hda2 = self.hda_manager.create( history=history1 )
         self.assertIsInstance( hda2, model.HistoryDatasetAssociation )
         self.assertIsInstance( hda2.dataset, model.Dataset )
         self.assertEqual( hda2.history, history1 )
         self.assertEqual( hda2.hid, 2 )
 
         self.log( "should be able to create a new HDA with no history and no dataset" )
-        hda3 = self.hda_mgr.create( self.trans, hid=None )
+        hda3 = self.hda_manager.create( hid=None )
         self.assertIsInstance( hda3, model.HistoryDatasetAssociation )
         self.assertIsInstance( hda3.dataset, model.Dataset, msg="dataset will be auto created" )
         self.assertIsNone( hda3.history, msg="history will be None" )
         self.assertEqual( hda3.hid, None, msg="should allow setting hid to None (or any other value)" )
 
     def test_copy_from_hda( self ):
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        hda1 = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+        owner = self.user_manager.create( **user2_data )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        hda1 = self.hda_manager.create( history=history1, dataset=dataset1 )
 
         self.log( "should be able to copy an HDA" )
-        hda2 = self.hda_mgr.copy( self.trans, hda1, history=history1 )
+        hda2 = self.hda_manager.copy( hda1, history=history1 )
         self.assertIsInstance( hda2, model.HistoryDatasetAssociation )
         self.assertEqual( hda2, self.trans.sa_session.query( model.HistoryDatasetAssociation ).get( hda2.id ) )
         self.assertEqual( hda2.name, hda1.name )
@@ -118,141 +118,193 @@ class HDAManagerTestCase( HDATestCase ):
         self.assertNotEqual( hda2, hda1 )
 
     #def test_copy_from_ldda( self ):
-    #    owner = self.user_mgr.create( self.trans, **user2_data )
-    #    history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
+    #    owner = self.user_manager.create( **user2_data )
+    #    history1 = self.history_manager.create( name='history1', user=owner )
     #
     #    self.log( "should be able to copy an HDA" )
-    #    hda2 = self.hda_mgr.copy_ldda( self.trans, history1, hda1 )
+    #    hda2 = self.hda_manager.copy_ldda( history1, hda1 )
 
     def test_delete( self ):
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        item1 = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+        owner = self.user_manager.create( **user2_data )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create( history=history1, dataset=dataset1 )
 
         self.log( "should be able to delete and undelete an hda" )
         self.assertFalse( item1.deleted )
-        self.assertEqual( self.hda_mgr.delete( self.trans, item1 ), item1 )
+        self.assertEqual( self.hda_manager.delete( item1 ), item1 )
         self.assertTrue( item1.deleted )
-        self.assertEqual( self.hda_mgr.undelete( self.trans, item1 ), item1 )
+        self.assertEqual( self.hda_manager.undelete( item1 ), item1 )
         self.assertFalse( item1.deleted )
 
     def test_purge_allowed( self ):
         self.trans.app.config.allow_user_dataset_purge = True
 
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        item1 = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+        owner = self.user_manager.create( **user2_data )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create( history=history1, dataset=dataset1 )
 
         self.log( "should purge an hda if config does allow" )
         self.assertFalse( item1.purged )
-        self.assertEqual( self.hda_mgr.purge( self.trans, item1 ), item1 )
+        self.assertEqual( self.hda_manager.purge( item1 ), item1 )
         self.assertTrue( item1.purged )
 
     def test_purge_not_allowed( self ):
         self.trans.app.config.allow_user_dataset_purge = False
 
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        item1 = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+        owner = self.user_manager.create( **user2_data )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create( history=history1, dataset=dataset1 )
 
         self.log( "should raise an error when purging an hda if config does not allow" )
         self.assertFalse( item1.purged )
-        self.assertRaises( exceptions.ConfigDoesNotAllowException, self.hda_mgr.purge, self.trans, item1 )
+        self.assertRaises( exceptions.ConfigDoesNotAllowException, self.hda_manager.purge, item1 )
         self.assertFalse( item1.purged )
 
     def test_ownable( self ):
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        non_owner = self.user_mgr.create( self.trans, **user3_data )
+        owner = self.user_manager.create( **user2_data )
+        non_owner = self.user_manager.create( **user3_data )
 
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        item1 = self.hda_mgr.create( self.trans, history1, dataset1 )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create( history1, dataset1 )
 
         self.log( "should be able to poll whether a given user owns an item" )
-        self.assertTrue(  self.hda_mgr.is_owner( self.trans, item1, owner ) )
-        self.assertFalse( self.hda_mgr.is_owner( self.trans, item1, non_owner ) )
+        self.assertTrue(  self.hda_manager.is_owner( item1, owner ) )
+        self.assertFalse( self.hda_manager.is_owner( item1, non_owner ) )
 
         self.log( "should raise an error when checking ownership with non-owner" )
         self.assertRaises( exceptions.ItemOwnershipException,
-            self.hda_mgr.error_unless_owner, self.trans, item1, non_owner )
+            self.hda_manager.error_unless_owner, item1, non_owner )
 
         self.log( "should raise an error when checking ownership with anonymous" )
         self.assertRaises( exceptions.ItemOwnershipException,
-            self.hda_mgr.error_unless_owner, self.trans, item1, None )
+            self.hda_manager.error_unless_owner, item1, None )
 
         self.log( "should not raise an error when checking ownership with owner" )
-        self.assertEqual( self.hda_mgr.error_unless_owner( self.trans, item1, owner ), item1 )
+        self.assertEqual( self.hda_manager.error_unless_owner( item1, owner ), item1 )
 
         self.log( "should not raise an error when checking ownership with admin" )
-        self.assertEqual( self.hda_mgr.error_unless_owner( self.trans, item1, self.admin_user ), item1 )
+        self.assertEqual( self.hda_manager.error_unless_owner( item1, self.admin_user ), item1 )
 
     def test_accessible( self ):
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        non_owner = self.user_mgr.create( self.trans, **user3_data )
+        owner = self.user_manager.create( **user2_data )
+        non_owner = self.user_manager.create( **user3_data )
 
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        item1 = self.hda_mgr.create( self.trans, history1, dataset1 )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create( history1, dataset1 )
 
         self.log( "(by default, dataset permissions are lax) should be accessible to all" )
-        for user in self.user_mgr.list( self.trans ):
-            self.assertTrue( self.hda_mgr.is_accessible( self.trans, item1, user ) )
+        for user in self.user_manager.list():
+            self.assertTrue( self.hda_manager.is_accessible( item1, user ) )
 
-        #TODO: set perms on underlying dataset and then test accessible
+        self.log( "after setting a dataset to private (one user) permissions, access should be allowed for that user" )
+        # for this test, set restrictive access permissions
+        self.dataset_manager.permissions.set_private_to_one_user( dataset1, owner )
+        accessible = self.hda_manager.get_accessible( item1.id, owner, current_history=self.trans.history )
+        self.assertEqual( accessible, item1 )
 
-    def test_anon( self ):
+        self.log( "after setting a dataset to private (one user) permissions, "
+                + "access should be not allowed for other users" )
+        self.assertRaises( exceptions.ItemAccessibilityException,
+            self.hda_manager.get_accessible, item1.id, non_owner, current_history=self.trans.history )
+
+        self.log( "a copy of a restricted dataset in another users history should be inaccessible even to "
+                + "the histories owner" )
+        history2 = self.history_manager.create( name='history2', user=non_owner )
+        self.trans.set_history( history2 )
+        item2 = self.hda_manager.copy( item1, history=history2 )
+        self.assertIsInstance( item2, model.HistoryDatasetAssociation )
+        self.assertRaises( exceptions.ItemAccessibilityException,
+            self.hda_manager.get_accessible, item2.id, non_owner, current_history=self.trans.history )
+
+        self.log( "a restricted dataset cannot be accessed by anonymous users" )
+        anon_user = None
+        self.trans.set_user( anon_user )
+        history3 = self.history_manager.create( name='anon_history', user=anon_user )
+        self.trans.set_history( history2 )
+        self.assertRaises( exceptions.ItemAccessibilityException,
+            self.hda_manager.get_accessible, item1.id, anon_user, current_history=self.trans.history )
+
+    def test_anon_ownership( self ):
         anon_user = None
         self.trans.set_user( anon_user )
 
-        history1 = self.history_mgr.create( self.trans, name='anon_history', user=anon_user )
+        history1 = self.history_manager.create( name='anon_history', user=anon_user )
         self.trans.set_history( history1 )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        item1 = self.hda_mgr.create( self.trans, history1, dataset1 )
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create( history1, dataset1 )
 
-        self.log( "should not raise an error when checking ownership/access on anonymous' own dataset" )
-        self.assertTrue( self.hda_mgr.is_accessible( self.trans, item1, anon_user ) )
-        self.assertEqual( self.hda_mgr.error_unless_owner( self.trans, item1, anon_user ), item1 )
+        self.log( "should not raise an error when checking ownership on anonymous' own dataset" )
+        # need to pass the current history for comparison
+        self.assertTrue( self.hda_manager.is_owner( item1, anon_user, current_history=self.trans.history ) )
+        item = self.hda_manager.error_unless_owner( item1, anon_user, current_history=self.trans.history )
+        self.assertEqual( item, item1 )
+        item = self.hda_manager.get_owned( item1.id, anon_user, current_history=self.trans.history )
+        self.assertEqual( item, item1 )
 
         self.log( "should raise an error when checking ownership on anonymous' dataset with other user" )
-        non_owner = self.user_mgr.create( self.trans, **user3_data )
+        non_owner = self.user_manager.create( **user3_data )
+        self.assertFalse( self.hda_manager.is_owner( item1, non_owner ) )
         self.assertRaises( exceptions.ItemOwnershipException,
-            self.hda_mgr.error_unless_owner, self.trans, item1, non_owner )
+            self.hda_manager.error_unless_owner, item1, non_owner )
+        self.assertRaises( exceptions.ItemOwnershipException,
+            self.hda_manager.get_owned, item1.id, non_owner )
+
+    def test_anon_accessibility( self ):
+        anon_user = None
+        self.trans.set_user( anon_user )
+
+        history1 = self.history_manager.create( name='anon_history', user=anon_user )
+        self.trans.set_history( history1 )
+        dataset1 = self.dataset_manager.create()
+        item1 = self.hda_manager.create( history1, dataset1 )
+
+        # datasets are public by default
+        self.assertTrue( self.hda_manager.is_accessible( item1, anon_user ) )
+        # for this test, set restrictive access permissions
+        dataset_owner = self.user_manager.create( **user3_data )
+        self.dataset_manager.permissions.set_private_to_one_user( dataset1, dataset_owner )
+
+        self.log( "anonymous users should not be able to access datasets within their own histories if "
+                + "permissions do not allow" )
+        self.assertFalse( self.hda_manager.is_accessible( item1, anon_user ) )
+        self.assertRaises( exceptions.ItemAccessibilityException,
+            self.hda_manager.error_unless_accessible, item1, anon_user )
+
+        self.log( "those users with access permissions should still be allowed access to datasets "
+                + "within anon users' histories" )
+        self.assertTrue( self.hda_manager.is_accessible( item1, dataset_owner ) )
 
     def test_error_if_uploading( self ):
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        hda = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+        hda = self._create_vanilla_hda()
 
         hda.state = model.Dataset.states.OK
         self.log( "should not raise an error when calling error_if_uploading and in a non-uploading state" )
-        self.assertEqual( self.hda_mgr.error_if_uploading( self.trans, hda ), hda )
+        self.assertEqual( self.hda_manager.error_if_uploading( hda ), hda )
 
         hda.state = model.Dataset.states.UPLOAD
         self.log( "should raise an error when calling error_if_uploading and in the uploading state" )
         self.assertRaises( exceptions.Conflict,
-            self.hda_mgr.error_if_uploading, self.trans, hda )
+            self.hda_manager.error_if_uploading, hda )
 
     def test_data_conversion_status( self ):
-        owner = self.user_mgr.create( self.trans, **user2_data )
-        history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-        dataset1 = self.dataset_mgr.create( self.trans )
-        hda = self.hda_mgr.create( self.trans, history=history1, dataset=dataset1 )
+        hda = self._create_vanilla_hda()
 
         self.log( "data conversion status should reflect state" )
-        self.assertEqual( self.hda_mgr.data_conversion_status( self.trans, None ),
+        self.assertEqual( self.hda_manager.data_conversion_status( None ),
             hda.conversion_messages.NO_DATA )
         hda.state = model.Dataset.states.ERROR
-        self.assertEqual( self.hda_mgr.data_conversion_status( self.trans, hda ),
+        self.assertEqual( self.hda_manager.data_conversion_status( hda ),
             hda.conversion_messages.ERROR )
         hda.state = model.Dataset.states.QUEUED
-        self.assertEqual( self.hda_mgr.data_conversion_status( self.trans, hda ),
+        self.assertEqual( self.hda_manager.data_conversion_status( hda ),
             hda.conversion_messages.PENDING )
         hda.state = model.Dataset.states.OK
-        self.assertEqual( self.hda_mgr.data_conversion_status( self.trans, hda ), None )
+        self.assertEqual( self.hda_manager.data_conversion_status( hda ), None )
 
     # def test_text_data( self ):
 

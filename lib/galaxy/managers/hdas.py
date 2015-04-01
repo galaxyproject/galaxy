@@ -47,28 +47,35 @@ class HDAManager( datasets.DatasetAssociationManager,
         self.user_manager = users.UserManager( app )
 
     # .... security and permissions
-    def is_accessible( self, trans, hda, user ):
+    def is_accessible( self, hda, user, **kwargs ):
         """
         Override to allow owners (those that own the associated history).
         """
-        if self.is_owner( trans, hda, user ):
-            return True
-        return super( HDAManager, self ).is_accessible( trans, hda, user )
+        # this, apparently, is not True:
+        #   if I have a copy of a dataset and anyone who manages permissions on it revokes my access
+        #   I can not access that dataset even if it's in my history
+        # if self.is_owner( hda, user, **kwargs ):
+        #     return True
+        return super( HDAManager, self ).is_accessible( hda, user )
 
-    def is_owner( self, trans, hda, user ):
+    def is_owner( self, hda, user, current_history=None, **kwargs ):
         """
         Use history to see if current user owns HDA.
         """
         history = hda.history
+        if self.user_manager.is_admin( user ):
+            return True
+        # allow anonymous user to access current history
         # TODO: some dup here with historyManager.is_owner but prevents circ import
-        if self.user_manager.is_admin( trans, user ):
-            return True
-        if self.user_manager.is_anonymous( user ) and history == trans.get_history():
-            return True
+        # TODO: awkward kwarg (which is my new band name); this may not belong here - move to controller?
+        if self.user_manager.is_anonymous( user ):
+            if current_history and history == current_history:
+                return True
+            return False
         return history.user == user
 
     # .... create and copy
-    def create( self, trans, history=None, dataset=None, flush=True, **kwargs ):
+    def create( self, history=None, dataset=None, flush=True, **kwargs ):
         """
         Create a new hda optionally passing in it's history and dataset.
 
@@ -77,25 +84,22 @@ class HDAManager( datasets.DatasetAssociationManager,
         """
         if not dataset:
             kwargs[ 'create_dataset' ] = True
-        hda = super( HDAManager, self ).create( trans,
-                                                flush=flush,
-                                                history=history,
-                                                dataset=dataset,
-                                                sa_session=self.app.model.context, **kwargs )
+        hda = model.HistoryDatasetAssociation( history=history, dataset=dataset,
+            sa_session=self.app.model.context, **kwargs )
 
         if history:
-            # TODO Probably Bug:  set_hid is never used, and should be passed
-            # to history.add_dataset here.
+# TODO Probably Bug:  set_hid is never used, and should be passed
+# to history.add_dataset here.
             set_hid = not ( 'hid' in kwargs )
             history.add_dataset( hda )
-        #TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
+#TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
 
         self.session().add( hda )
         if flush:
             self.session().flush()
         return hda
 
-    def copy( self, trans, hda, history=None, **kwargs ):
+    def copy( self, hda, history=None, **kwargs ):
         """
         Copy and return the given HDA.
         """
@@ -135,25 +139,25 @@ class HDAManager( datasets.DatasetAssociationManager,
         self.session().flush()
         return copy
 
-    def copy_ldda( self, trans, history, ldda, **kwargs ):
+    def copy_ldda( self, history, ldda, **kwargs ):
         """
         Copy this HDA as a LDDA and return.
         """
         return ldda.to_history_dataset_association( history, add_to_history=True )
 
     # .... deletion and purging
-    def purge( self, trans, hda, flush=True ):
+    def purge( self, hda, current_user=None, flush=True ):
         """
         Purge this HDA and the dataset underlying it.
         """
-        super( HDAManager, self ).purge( trans, hda, flush=flush )
-        # decreate the user's space used
-        if trans.user:
-            trans.user.total_disk_usage -= hda.quota_amount( trans.user )
+        super( HDAManager, self ).purge( hda, flush=flush )
+        # decrease the user's space used
+        if current_user:
+            current_user.total_disk_usage -= hda.quota_amount( current_user )
         return hda
 
     # .... states
-    def error_if_uploading( self, trans, hda ):
+    def error_if_uploading( self, hda ):
         """
         Raise error if HDA is still uploading.
         """
@@ -162,18 +166,17 @@ class HDAManager( datasets.DatasetAssociationManager,
             raise exceptions.Conflict( "Please wait until this dataset finishes uploading" )
         return hda
 
-    def data_conversion_status( self, trans, hda ):
+    def data_conversion_status( self, hda ):
         """
         Returns a message if an hda is not ready to be used in visualization.
         """
-        HDA_model = model.HistoryDatasetAssociation
         # this is a weird syntax and return val
         if not hda:
-            return HDA_model.conversion_messages.NO_DATA
+            return self.model_class.conversion_messages.NO_DATA
         if hda.state == model.Job.states.ERROR:
-            return HDA_model.conversion_messages.ERROR
+            return self.model_class.conversion_messages.ERROR
         if hda.state != model.Job.states.OK:
-            return HDA_model.conversion_messages.PENDING
+            return self.model_class.conversion_messages.PENDING
         return None
 
     # .... associated job

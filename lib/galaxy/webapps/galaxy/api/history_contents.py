@@ -68,7 +68,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         """
         rval = []
 
-        history = self.history_manager.get_accessible( trans, self.decode_id( history_id ), trans.user )
+        history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
 
         # Allow passing in type or types - for continuity rest of methods
         # take in type - but this one can be passed multiple types and
@@ -132,7 +132,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :rtype:     dict
         :returns:   dictionary containing detailed HDA information
         """
-        history = self.history_manager.get_accessible( trans, self.decode_id( history_id ), trans.user )
+        history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
 
         contents_type = kwd.get('type', 'dataset')
         if contents_type == 'dataset':
@@ -143,7 +143,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             return self.__handle_unknown_contents_type( trans, contents_type )
 
     def __show_dataset( self, trans, id, **kwd ):
-        hda = self.hda_manager.get_accessible( trans, self.decode_id( id ), trans.user )
+        hda = self.hda_manager.get_accessible( self.decode_id( id ), trans.user )
         return self.hda_serializer.serialize_to_view( trans, hda,
             **self._parse_serialization_params( kwd, 'detailed' ) )
 
@@ -214,7 +214,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         # TODO: Flush out create new collection documentation above, need some
         # examples. See also bioblend and API tests for specific examples.
 
-        history = self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user )
+        history = self.history_manager.get_owned( self.decode_id( history_id ), trans.user,
+            current_history=trans.history )
 
         type = payload.get( 'type', 'dataset' )
         if type == 'dataset':
@@ -247,9 +248,9 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         # copy an existing, accessible hda
         elif source == 'hda':
             unencoded_hda_id = self.decode_id( content )
-            original = self.hda_manager.get_accessible( trans, unencoded_hda_id, trans.user )
+            original = self.hda_manager.get_accessible( unencoded_hda_id, trans.user )
             # check for access on history that contains the original hda as well
-            self.history_manager.error_unless_accessible( trans, original.history, trans.user )
+            self.history_manager.error_unless_accessible( original.history, trans.user, current_history=trans.history )
             data_copy = original.copy( copy_children=True )
             hda = history.add_dataset( data_copy )
 
@@ -319,10 +320,10 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
         if trans.user == None:
-            hda = self.hda_manager.by_id( trans, self.decode_id( id ) )
+            hda = self.hda_manager.by_id( self.decode_id( id ) )
             if hda.history != trans.history:
                 raise exceptions.AuthenticationRequired( 'API authentication required for this request' )
-            hda = self.hda_manager.error_if_uploading( trans, hda )
+            hda = self.hda_manager.error_if_uploading( hda )
 
             anon_allowed_payload = {}
             if 'deleted' in payload:
@@ -333,12 +334,12 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         # logged in user: use full payload, check state if deleting, and make sure the history is theirs
         else:
-            hda = self.hda_manager.get_owned( trans, self.decode_id( id ), trans.user )
+            hda = self.hda_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
 
             # only check_state if not deleting, otherwise cannot delete uploading files
             check_state = not payload.get( 'deleted', False )
             if check_state:
-                hda = self.hda_manager.error_if_uploading( trans, hda )
+                hda = self.hda_manager.error_if_uploading( hda )
 
         # make the actual changes
         #TODO: is this if still needed?
@@ -399,13 +400,13 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             # payload takes priority
             purge = util.string_as_bool( kwd['payload'].get( 'purge', purge ) )
 
-        hda = self.hda_manager.get_owned( trans, self.decode_id( id ), trans.user )
-        self.hda_manager.error_if_uploading( trans, hda )
+        hda = self.hda_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
+        self.hda_manager.error_if_uploading( hda )
 
         if purge:
-            self.hda_manager.purge( trans, hda )
+            self.hda_manager.purge( hda )
         else:
-            self.hda_manager.delete( trans, hda )
+            self.hda_manager.delete( hda )
         return self.hda_serializer.serialize_to_view( trans, hda,
             **self._parse_serialization_params( kwd, 'detailed' ) )
 
