@@ -33,7 +33,6 @@
     "threedubmedia.jquery.event": "*",
     "handlebars": "~2.0.0",
     "jquery-migrate": "~1.2.1",
-    "lunr.js": "git://github.com/olivernn/lunr.js.git#~0.5.7"
   },
   "resolutions": {
     "jquery": "~1.11.1"
