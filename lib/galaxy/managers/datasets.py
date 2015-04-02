@@ -111,6 +111,7 @@ class DatasetRBACPermissions( object ):
     def available_roles( self, trans, dataset, controller='root' ):
         return self.app.security_agent.get_legitimate_roles( trans, dataset, controller )
 
+    # TODO: not enough by a long shot
     def get( self, dataset, flush=True ):
         manage = self.manage.by_dataset( dataset )
         access = self.access.by_dataset( dataset )
@@ -121,6 +122,7 @@ class DatasetRBACPermissions( object ):
         access = self.access.set( dataset, access_roles or [], flush=flush )
         return ( manage, access )
 
+    # ---- conv. settings
     def set_public_with_single_manager( self, dataset, user, flush=True ):
         manage = self.manage.grant( dataset, user, flush=flush )
         access = self.access.clear( dataset, flush=False )
@@ -164,16 +166,16 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
 
-            'uuid'          : lambda t, i, k: str( i.uuid ) if i.uuid else None,
+            'uuid'          : lambda i, k, **c: str( i.uuid ) if i.uuid else None,
             'file_name'     : self.serialize_file_name,
             'extra_files_path' : self.serialize_extra_files_path,
             'permissions'   : self.serialize_permissions,
 
-            'total_size'    : lambda t, i, k: int( i.get_total_size() ),
-            'file_size'     : lambda t, i, k: int( i.get_size() )
+            'total_size'    : lambda i, k, **c: int( i.get_total_size() ),
+            'file_size'     : lambda i, k, **c: int( i.get_size() )
         })
 
-    def serialize_file_name( self, trans, dataset, key ):
+    def serialize_file_name( self, dataset, key, **context ):
         """
         If the config allows or the user is admin, return the file name
         of the file that contains this dataset's data.
@@ -184,7 +186,7 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
             self.skip()
         return dataset.file_name
 
-    def serialize_extra_files_path( self, trans, dataset, key ):
+    def serialize_extra_files_path( self, dataset, key, **context ):
         """
         If the config allows or the user is admin, return the file path.
         """
@@ -194,7 +196,7 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
             self.skip()
         return dataset.extra_files_path
 
-    def serialize_permissions( self, trans, dataset, key ):
+    def serialize_permissions( self, dataset, key, **context ):
         """
         """
         permissions = {}
@@ -214,7 +216,7 @@ class DatasetDeserializer( base.ModelDeserializer, deletable.PurgableDeserialize
             'permissions' : self.deserialize_permissions,
         })
 
-    def deserialize_permissions( self, trans, dataset, key, value ):
+    def deserialize_permissions( self, dataset, key, value, **context ):
         """
         """
         permissions = {}
@@ -322,7 +324,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             'update_time'   : self.serialize_date,
 
             # underlying dataset
-            'dataset'       : lambda t, i, k: self.dataset_serializer.serialize_to_view( t, i.dataset, view='summary' ),
+            'dataset'       : lambda i, k, **c: self.dataset_serializer.serialize_to_view( i.dataset, view='summary', **c ),
             'dataset_id'    : self._proxy_to_dataset( key='id' ),
             #TODO: why is this named uuid!? The da doesn't have a uuid - it's the underlying dataset's uuid!
             'uuid'          : self._proxy_to_dataset( key='uuid' ),
@@ -331,31 +333,31 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             'extra_files_path' : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_extra_files_path ),
             'permissions'   : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_permissions),
             # TODO: do the sizes proxy accurately/in the same way?
-            'size'          : lambda t, i, k: int( i.get_size() ),
-            'file_size'     : lambda t, i, k: self.serializers[ 'size' ]( t, i, k ),
-            'nice_size'     : lambda t, i, k: i.get_size( nice_size=True ),
+            'size'          : lambda i, k, **c: int( i.get_size() ),
+            'file_size'     : lambda i, k, **c: self.serializers[ 'size' ]( i, k, **c ),
+            'nice_size'     : lambda i, k, **c: i.get_size( nice_size=True ),
 
             # common to lddas and hdas - from mapping.py
             'copied_from_history_dataset_association_id'        : self.serialize_id,
             'copied_from_library_dataset_dataset_association_id': self.serialize_id,
-            'info'          : lambda t, i, k: i.info.strip() if isinstance( i.info, basestring ) else i.info,
-            'blurb'         : lambda t, i, k: i.blurb,
-            'peek'          : lambda t, i, k: i.display_peek() if i.peek and i.peek != 'no peek' else None,
+            'info'          : lambda i, k, **c: i.info.strip() if isinstance( i.info, basestring ) else i.info,
+            'blurb'         : lambda i, k, **c: i.blurb,
+            'peek'          : lambda i, k, **c: i.display_peek() if i.peek and i.peek != 'no peek' else None,
 
             'meta_files'    : self.serialize_meta_files,
             'metadata'      : self.serialize_metadata,
 
             'parent_id'     : self.serialize_id,
-            'designation'   : lambda t, i, k: i.designation,
+            'designation'   : lambda i, k, **c: i.designation,
 
             # 'extended_metadata'     : self.serialize_extended_metadata,
             # 'extended_metadata_id'  : self.serialize_id,
 
             # remapped
-            'genome_build'  : lambda t, i, k: i.dbkey,
+            'genome_build'  : lambda i, k, **c: i.dbkey,
 
             # derived (not mapped) attributes
-            'data_type'     : lambda t, i, k: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
+            'data_type'     : lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
 
             # TODO: conversions
             # TODO: metadata/extra files
@@ -368,10 +370,10 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
         if key:
             serializer = self.dataset_serializer.serializers.get( key )
         if serializer:
-            return lambda t, i, k: serializer( t, i.dataset, key or k )
+            return lambda i, k, **c: serializer( i.dataset, key or k, **c )
         raise TypeError( 'kwarg serializer or key needed')
 
-    def serialize_meta_files( self, trans, dataset_assoc, key ):
+    def serialize_meta_files( self, dataset_assoc, key, **context ):
         """
         Cycle through meta files and return them as a list of dictionaries.
         """
@@ -381,7 +383,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
                 meta_files.append( dict( file_type=meta_type ) )
         return meta_files
 
-    def serialize_metadata( self, trans, dataset_assoc, key, excluded=None ):
+    def serialize_metadata( self, dataset_assoc, key, excluded=None, **context ):
         """
         Cycle through metadata and return as dictionary.
         """
@@ -417,7 +419,7 @@ class DatasetAssociationSerializer( _UnflattenedMetadataDatasetAssociationSerial
         # remove the single nesting key here
         del self.serializers[ 'metadata' ]
 
-    def serialize( self, trans, dataset_assoc, keys ):
+    def serialize( self, dataset_assoc, keys, **context ):
         """
         Override to add metadata as flattened keys on the serialized DatasetInstance.
         """
@@ -425,11 +427,11 @@ class DatasetAssociationSerializer( _UnflattenedMetadataDatasetAssociationSerial
         # TODO: remove these when metadata is sub-object
         KEYS_HANDLED_SEPARATELY = ( 'metadata', )
         left_to_handle = self._pluck_from_list( keys, KEYS_HANDLED_SEPARATELY )
-        serialized = super( DatasetAssociationSerializer, self ).serialize( trans, dataset_assoc, keys )
+        serialized = super( DatasetAssociationSerializer, self ).serialize( dataset_assoc, keys, **context )
 
         # add metadata directly to the dict instead of as a sub-object
         if 'metadata' in left_to_handle:
-            metadata = self._prefixed_metadata( trans, dataset_assoc )
+            metadata = self._prefixed_metadata( dataset_assoc )
             serialized.update( metadata )
         return serialized
 
@@ -447,13 +449,13 @@ class DatasetAssociationSerializer( _UnflattenedMetadataDatasetAssociationSerial
                 pass
         return found
 
-    def _prefixed_metadata( self, trans, dataset_assoc ):
+    def _prefixed_metadata( self, dataset_assoc ):
         """
         Adds (a prefixed version of) the DatasetInstance metadata to the dict,
         prefixing each key with 'metadata_'.
         """
         # build the original, nested dictionary
-        metadata = self.serialize_metadata( trans, dataset_assoc, 'metadata' )
+        metadata = self.serialize_metadata( dataset_assoc, 'metadata' )
 
         # prefix each key within and return
         prefixed = {}
@@ -475,16 +477,17 @@ class DatasetAssociationDeserializer( base.ModelDeserializer, deletable.Purgable
         })
         self.deserializable_keyset.update( self.deserializers.keys() )
 
-    def deserialize_metadata( self, trans, dataset_assoc, metadata_key, metadata_dict ):
+# TODO: untested
+    def deserialize_metadata( self, dataset_assoc, metadata_key, metadata_dict, **context ):
         """
         """
         self.validate.type( metadata_key, metadata_dict, dict )
         returned = {}
         for key, val in metadata_dict.items():
-            returned[ key ] = self.deserialize_metadatum( trans, dataset_assoc, key, val )
+            returned[ key ] = self.deserialize_metadatum( dataset_assoc, key, val, **context )
         return returned
 
-    def deserialize_metadatum( self, trans, dataset_assoc, key, val ):
+    def deserialize_metadatum( self, dataset_assoc, key, val, **context ):
         """
         """
         if key not in dataset_assoc.datatype.metadata_spec:

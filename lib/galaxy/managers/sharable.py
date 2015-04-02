@@ -321,13 +321,13 @@ class SharableModelSerializer( base.ModelSerializer,
             'importable', 'published', 'slug'
         ])
 
-    def serialize_username_and_slug( self, trans, item, key ):
+    def serialize_username_and_slug( self, item, key, **context ):
         if not ( item.user and item.slug and self.SINGLE_CHAR_ABBR ):
             return None
 #TODO: self.url_for
         return ( '/' ).join(( 'u', item.user.username, self.SINGLE_CHAR_ABBR, item.slug ) )
 
-    #def published_url( self, trans, item, key ):
+    #def published_url( self, item, key, **context ):
     #    """
     #    """
     #    url = url_for(controller='history', action="display_by_username_and_slug",
@@ -354,7 +354,7 @@ class SharableModelDeserializer( base.ModelDeserializer,
             'importable'    : self.deserialize_importable,
         })
 
-    def deserialize_published( self, trans, item, key, val ):
+    def deserialize_published( self, item, key, val, **context ):
         """
         """
         val = self.validate.bool( key, val )
@@ -367,7 +367,7 @@ class SharableModelDeserializer( base.ModelDeserializer,
             self.manager.unpublish( item, flush=False )
         return item.published
 
-    def deserialize_importable( self, trans, item, key, val ):
+    def deserialize_importable( self, item, key, val, **context ):
         """
         """
         val = self.validate.bool( key, val )
@@ -380,7 +380,7 @@ class SharableModelDeserializer( base.ModelDeserializer,
             self.manager.make_non_importable( item, flush=False )
         return item.published
 
-    #def deserialize_slug( self, trans, item, val ):
+    #def deserialize_slug( self, item, val, **context ):
     #    """
     #    """
     #    #TODO: call manager.set_slug

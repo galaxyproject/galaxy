@@ -66,7 +66,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             else:
                 # Default: return dataset as dict.
                 if hda_ldda == 'hda':
-                    return self.hda_serializer.serialize_to_view( trans, dataset, view=kwd.get( 'view', 'detailed' ) )
+                    return self.hda_serializer.serialize_to_view( dataset,
+                        view=kwd.get( 'view', 'detailed' ), user=trans.user, trans=trans )
                 else:
                     rval = dataset.to_dict()
 

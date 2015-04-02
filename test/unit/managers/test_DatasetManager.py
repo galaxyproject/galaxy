@@ -197,11 +197,11 @@ class DatasetSerializerTestCase( BaseTestCase ):
         dataset = self.dataset_manager.create()
 
         self.log( 'should have a summary view' )
-        summary_view = self.dataset_serializer.serialize_to_view( self.trans, dataset, view='summary' )
+        summary_view = self.dataset_serializer.serialize_to_view( dataset, view='summary' )
         self.assertKeys( summary_view, self.dataset_serializer.views[ 'summary' ] )
 
         self.log( 'should have the summary view as default view' )
-        default_view = self.dataset_serializer.serialize_to_view( self.trans, dataset, default_view='summary' )
+        default_view = self.dataset_serializer.serialize_to_view( dataset, default_view='summary' )
         self.assertKeys( summary_view, self.dataset_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
@@ -217,13 +217,13 @@ class DatasetSerializerTestCase( BaseTestCase ):
         dataset = self.dataset_manager.create()
 
         self.log( 'should be able to use keys with views' )
-        serialized = self.dataset_serializer.serialize_to_view( self.trans, dataset,
+        serialized = self.dataset_serializer.serialize_to_view( dataset,
             view='summary', keys=[ 'permissions' ] )
         self.assertKeys( serialized,
             self.dataset_serializer.views[ 'summary' ] + [ 'permissions' ] )
 
         self.log( 'should be able to use keys on their own' )
-        serialized = self.dataset_serializer.serialize_to_view( self.trans, dataset,
+        serialized = self.dataset_serializer.serialize_to_view( dataset,
             keys=[ 'purgable', 'file_size' ] )
         self.assertKeys( serialized, [ 'purgable', 'file_size' ] )
 
@@ -235,7 +235,7 @@ class DatasetSerializerTestCase( BaseTestCase ):
         user2 = self.user_manager.create( **user2_data )
         dataset = self.dataset_manager.create()
         all_keys = list( self.dataset_serializer.serializable_keyset )
-        serialized = self.dataset_serializer.serialize( self.trans, dataset, all_keys )
+        serialized = self.dataset_serializer.serialize( dataset, all_keys )
 
         self.log( 'everything serialized should be of the proper type' )
         self.assertEncodedId( serialized[ 'id' ] )
@@ -270,13 +270,13 @@ class DatasetDeserializerTestCase( BaseTestCase ):
         self.log( 'should raise when deserializing deleted from non-bool' )
         self.assertFalse( dataset.deleted )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'deleted': None } )
+            self.dataset_deserializer.deserialize, dataset, data={ 'deleted': None } )
         self.assertFalse( dataset.deleted )
         self.log( 'should be able to deserialize deleted from True' )
-        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': True } )
+        self.dataset_deserializer.deserialize( dataset, data={ 'deleted': True } )
         self.assertTrue( dataset.deleted )
         self.log( 'should be able to reverse by deserializing deleted from False' )
-        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'deleted': False } )
+        self.dataset_deserializer.deserialize( dataset, data={ 'deleted': False } )
         self.assertFalse( dataset.deleted )
 
     def test_deserialize_purge( self ):
@@ -284,14 +284,14 @@ class DatasetDeserializerTestCase( BaseTestCase ):
 
         self.log( 'should raise when deserializing purged from non-bool' )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.dataset_deserializer.deserialize, self.trans, dataset, data={ 'purged': None } )
+            self.dataset_deserializer.deserialize, dataset, data={ 'purged': None } )
         self.assertFalse( dataset.purged )
         self.log( 'should be able to deserialize purged from True' )
-        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': True } )
+        self.dataset_deserializer.deserialize( dataset, data={ 'purged': True } )
         self.assertTrue( dataset.purged )
         # TODO: should this raise an error?
         self.log( 'should NOT be able to deserialize purged from False (will remain True)' )
-        self.dataset_deserializer.deserialize( self.trans, dataset, data={ 'purged': False } )
+        self.dataset_deserializer.deserialize( dataset, data={ 'purged': False } )
         self.assertTrue( dataset.purged )
 
     # def test_deserialize_permissions( self ):

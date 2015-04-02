@@ -102,7 +102,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
             if isinstance( content, trans.app.model.HistoryDatasetAssociation ):
                 view = 'detailed' if detailed else 'summary'
-                hda_dict = self.hda_serializer.serialize_to_view( trans, content, view=view )
+                hda_dict = self.hda_serializer.serialize_to_view( content, view=view, user=trans.user, trans=trans )
                 rval.append( hda_dict )
 
             elif isinstance( content, trans.app.model.HistoryDatasetCollectionAssociation ):
@@ -144,8 +144,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
     def __show_dataset( self, trans, id, **kwd ):
         hda = self.hda_manager.get_accessible( self.decode_id( id ), trans.user )
-        return self.hda_serializer.serialize_to_view( trans, hda,
-            **self._parse_serialization_params( kwd, 'detailed' ) )
+        return self.hda_serializer.serialize_to_view( hda,
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __show_dataset_collection( self, trans, id, history_id, **kwd ):
         try:
@@ -257,8 +257,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         trans.sa_session.flush()
         if not hda:
             return None
-        return self.hda_serializer.serialize_to_view( trans, hda,
-            **self._parse_serialization_params( kwd, 'detailed' ) )
+        return self.hda_serializer.serialize_to_view( hda,
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __create_dataset_collection( self, trans, history, payload, **kwd ):
         source = kwd.get("source", "new_collection")
@@ -344,12 +344,12 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         # make the actual changes
         #TODO: is this if still needed?
         if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
-            self.hda_deserializer.deserialize( trans, hda, payload )
+            self.hda_deserializer.deserialize( hda, payload, user=trans.user, trans=trans )
             #TODO: this should be an effect of deleting the hda
             if payload.get( 'deleted', False ):
                 self.hda_manager.stop_creating_job( hda )
-            return self.hda_serializer.serialize_to_view( trans, hda,
-                **self._parse_serialization_params( kwd, 'detailed' ) )
+            return self.hda_serializer.serialize_to_view( hda,
+                user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
         return {}
 
@@ -407,8 +407,8 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             self.hda_manager.purge( hda )
         else:
             self.hda_manager.delete( hda )
-        return self.hda_serializer.serialize_to_view( trans, hda,
-            **self._parse_serialization_params( kwd, 'detailed' ) )
+        return self.hda_serializer.serialize_to_view( hda,
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __handle_unknown_contents_type( self, trans, contents_type ):
         raise exceptions.UnknownContentsType('Unknown contents type: %s' % type)

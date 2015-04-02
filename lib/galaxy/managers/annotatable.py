@@ -29,7 +29,7 @@ class AnnotatableManagerMixin( object ):
         annotation_obj = item.add_item_annotation( self.session(), user, item, annotation )
         return annotation_obj.annotation
 
-    #def by_user( self, trans, user, **kwargs ):
+    #def by_user( self, user, **kwargs ):
     #    pass
 
 
@@ -38,13 +38,11 @@ class AnnotatableSerializerMixin( object ):
     def add_serializers( self ):
         self.serializers[ 'annotation' ] = self.serialize_annotation
 
-    def serialize_annotation( self, trans, item, key ):
+    def serialize_annotation( self, item, key, user=None, **context ):
         """
         Get and serialize an `item`'s annotation.
         """
         # user = item.user
-        #TODO: trans
-        user = trans.user
         sa_session = self.app.model.context
         returned = item.get_item_annotation_str( sa_session, user, item )
         return returned
@@ -55,22 +53,25 @@ class AnnotatableDeserializerMixin( object ):
     def add_deserializers( self ):
         self.deserializers[ 'annotation' ] = self.deserialize_annotation
 
-    def deserialize_annotation( self, trans, item, key, val ):
+    def deserialize_annotation( self, item, key, val, user=None, **context ):
         """
         Make sure `val` is a valid annotation and assign it, deleting any existing
         if `val` is None.
         """
+        print '-' * 20
+        print item
+        print key
+        print val
+        print user
         val = self.validate.nullable_basestring( key, val )
+        # sa_session = self.app.model.context
+        # if val is None:
+        #     item.delete_item_annotation( sa_session, user, item )
+        #     return None
 
-        sa_session = self.app.model.context
-        #TODO: trans
-        user = trans.user
-        if val is None:
-            item.delete_item_annotation( sa_session, user, item )
-            return None
-
-        annotated_item = item.add_item_annotation( sa_session, user, item, val )
-        return annotated_item.annotation
+        # annotated_item = item.add_item_annotation( sa_session, user, item, val )
+        # return annotated_item.annotation
+        return self.manager.annotate( item, user, val )
 
 
 # TODO: I'm not entirely convinced this (or tags) are a good idea for filters since they involve a/the user

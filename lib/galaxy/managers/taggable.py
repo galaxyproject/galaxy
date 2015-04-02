@@ -15,7 +15,7 @@ class TaggableManagerMixin( object ):
 
     #TODO: most of this can be done by delegating to the TagManager?
 
-    #def by_user( self, trans, user, **kwargs ):
+    #def by_user( self, user, **kwargs ):
     #    pass
 
 
@@ -24,7 +24,7 @@ class TaggableSerializerMixin( object ):
     def add_serializers( self ):
         self.serializers[ 'tags' ] = self.serialize_tags
 
-    def serialize_tags( self, trans, item, key ):
+    def serialize_tags( self, item, key, **context ):
         """
         Return tags as a list of strings.
         """
@@ -45,7 +45,7 @@ class TaggableDeserializerMixin( object ):
     def add_deserializers( self ):
         self.deserializers[ 'tags' ] = self.deserialize_tags
 
-    def deserialize_tags( self, trans, item, key, val ):
+    def deserialize_tags( self, item, key, val, user=None, **context ):
         """
         Make sure `val` is a valid list of tag strings and assign them.
 
@@ -53,8 +53,6 @@ class TaggableDeserializerMixin( object ):
         """
         new_tags_list = self.validate.basestring_list( key, val )
         #TODO: have to assume trans.user here...
-        #TODO: trans
-        user = trans.user
         #TODO: duped from tags manager - de-dupe when moved to taggable mixin
         tag_handler = self.app.tag_handler
         tag_handler.delete_item_tags( user, item )

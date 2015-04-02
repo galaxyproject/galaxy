@@ -324,23 +324,23 @@ class HDASerializerTestCase( HDATestCase ):
         hda = self._create_vanilla_hda()
 
         self.log( 'should have a summary view' )
-        summary_view = self.hda_serializer.serialize_to_view( self.trans, hda, view='summary' )
+        summary_view = self.hda_serializer.serialize_to_view( hda, view='summary' )
         self.assertKeys( summary_view, self.hda_serializer.views[ 'summary' ] )
 
         self.log( 'should have the summary view as default view' )
-        default_view = self.hda_serializer.serialize_to_view( self.trans, hda, default_view='summary' )
+        default_view = self.hda_serializer.serialize_to_view( hda, default_view='summary' )
         self.assertKeys( summary_view, self.hda_serializer.views[ 'summary' ] )
 
         # self.log( 'should have a detailed view' )
-        # detailed_view = self.hda_serializer.serialize_to_view( self.trans, hda, view='detailed' )
+        # detailed_view = self.hda_serializer.serialize_to_view( hda, view='detailed' )
         # self.assertKeys( detailed_view, self.hda_serializer.views[ 'detailed' ] )
 
         # self.log( 'should have a extended view' )
-        # extended_view = self.hda_serializer.serialize_to_view( self.trans, hda, view='extended' )
+        # extended_view = self.hda_serializer.serialize_to_view( hda, view='extended' )
         # self.assertKeys( extended_view, self.hda_serializer.views[ 'extended' ] )
 
         self.log( 'should have a inaccessible view' )
-        inaccessible_view = self.hda_serializer.serialize_to_view( self.trans, hda, view='inaccessible' )
+        inaccessible_view = self.hda_serializer.serialize_to_view( hda, view='inaccessible' )
         self.assertKeys( inaccessible_view, self.hda_serializer.views[ 'inaccessible' ] )
 
         # skip metadata for this test
@@ -362,20 +362,20 @@ class HDASerializerTestCase( HDATestCase ):
         hda = self._create_vanilla_hda()
 
         self.log( 'should be able to use keys with views' )
-        serialized = self.hda_serializer.serialize_to_view( self.trans, hda,
+        serialized = self.hda_serializer.serialize_to_view( hda,
             view='summary', keys=[ 'uuid' ] )
         self.assertKeys( serialized,
             self.hda_serializer.views[ 'summary' ] + [ 'uuid' ] )
 
         self.log( 'should be able to use keys on their own' )
-        serialized = self.hda_serializer.serialize_to_view( self.trans, hda,
+        serialized = self.hda_serializer.serialize_to_view( hda,
             keys=[ 'file_path', 'visualizations' ] )
         self.assertKeys( serialized, [ 'file_path', 'visualizations' ] )
 
     def test_serializers( self ):
         hda = self._create_vanilla_hda()
         all_keys = list( self.hda_serializer.serializable_keyset )
-        serialized = self.hda_serializer.serialize( self.trans, hda, all_keys )
+        serialized = self.hda_serializer.serialize( hda, all_keys )
 
         self.log( 'everything serialized should be of the proper type' )
         # base
@@ -449,13 +449,13 @@ class HDADeserializerTestCase( HDATestCase ):
         self.log( 'should raise when deserializing deleted from non-bool' )
         self.assertFalse( hda.deleted )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.hda_deserializer.deserialize, self.trans, hda, data={ 'deleted': None } )
+            self.hda_deserializer.deserialize, hda, { 'deleted': None } )
         self.assertFalse( hda.deleted )
         self.log( 'should be able to deserialize deleted from True' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'deleted': True } )
+        self.hda_deserializer.deserialize( hda, { 'deleted': True } )
         self.assertTrue( hda.deleted )
         self.log( 'should be able to reverse by deserializing deleted from False' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'deleted': False } )
+        self.hda_deserializer.deserialize( hda, { 'deleted': False } )
         self.assertFalse( hda.deleted )
 
     def test_deserialize_purge( self ):
@@ -463,14 +463,14 @@ class HDADeserializerTestCase( HDATestCase ):
 
         self.log( 'should raise when deserializing purged from non-bool' )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.hda_deserializer.deserialize, self.trans, hda, data={ 'purged': None } )
+            self.hda_deserializer.deserialize, hda, { 'purged': None } )
         self.assertFalse( hda.purged )
         self.log( 'should be able to deserialize purged from True' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'purged': True } )
+        self.hda_deserializer.deserialize( hda, { 'purged': True } )
         self.assertTrue( hda.purged )
         # TODO: should this raise an error?
         self.log( 'should NOT be able to deserialize purged from False (will remain True)' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'purged': False } )
+        self.hda_deserializer.deserialize( hda, { 'purged': False } )
         self.assertTrue( hda.purged )
 
     def test_deserialize_visible( self ):
@@ -479,13 +479,13 @@ class HDADeserializerTestCase( HDATestCase ):
         self.log( 'should raise when deserializing from non-bool' )
         self.assertTrue( hda.visible )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.hda_deserializer.deserialize, self.trans, hda, data={ 'visible': 'None' } )
+            self.hda_deserializer.deserialize, hda, { 'visible': 'None' } )
         self.assertTrue( hda.visible )
         self.log( 'should be able to deserialize from False' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'visible': False } )
+        self.hda_deserializer.deserialize( hda, { 'visible': False } )
         self.assertFalse( hda.visible )
         self.log( 'should be able to reverse by deserializing from True' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'visible': True } )
+        self.hda_deserializer.deserialize( hda, { 'visible': True } )
         self.assertTrue( hda.visible )
 
     def test_deserialize_genome_build( self ):
@@ -493,17 +493,17 @@ class HDADeserializerTestCase( HDATestCase ):
 
         self.assertIsInstance( hda.dbkey, basestring )
         self.log( 'should deserialize to "?" from None' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'genome_build': None } )
+        self.hda_deserializer.deserialize( hda, { 'genome_build': None } )
         self.assertEqual( hda.dbkey, '?' )
         self.log( 'should raise when deserializing from non-string' )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.hda_deserializer.deserialize, self.trans, hda, data={ 'genome_build': 12 } )
+            self.hda_deserializer.deserialize, hda, { 'genome_build': 12 } )
         self.log( 'should be able to deserialize from unicode' )
         date_palm = u'نخيل التمر'
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'genome_build': date_palm } )
+        self.hda_deserializer.deserialize( hda, { 'genome_build': date_palm } )
         self.assertEqual( hda.dbkey, date_palm )
         self.log( 'should be deserializable from empty string' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'genome_build': '' } )
+        self.hda_deserializer.deserialize( hda, { 'genome_build': '' } )
         self.assertEqual( hda.dbkey, '' )
 
     def test_deserialize_name( self ):
@@ -511,19 +511,19 @@ class HDADeserializerTestCase( HDATestCase ):
 
         self.log( 'should raise when deserializing from non-string' )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.hda_deserializer.deserialize, self.trans, hda, data={ 'name': True } )
+            self.hda_deserializer.deserialize, hda, { 'name': True } )
         self.log( 'should raise when deserializing from None' )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.hda_deserializer.deserialize, self.trans, hda, data={ 'name': None } )
+            self.hda_deserializer.deserialize, hda, { 'name': None } )
         # self.log( 'should deserialize to empty string from None' )
-        # self.hda_deserializer.deserialize( self.trans, hda, data={ 'name': None } )
+        # self.hda_deserializer.deserialize( hda, { 'name': None } )
         # self.assertEqual( hda.name, '' )
         self.log( 'should be able to deserialize from unicode' )
         olive = u'ελιά'
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'name': olive } )
+        self.hda_deserializer.deserialize( hda, { 'name': olive } )
         self.assertEqual( hda.name, olive )
         self.log( 'should be deserializable from empty string' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'name': '' } )
+        self.hda_deserializer.deserialize( hda, { 'name': '' } )
         self.assertEqual( hda.name, '' )
 
     def test_deserialize_info( self ):
@@ -531,16 +531,16 @@ class HDADeserializerTestCase( HDATestCase ):
 
         self.log( 'should raise when deserializing from non-string' )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.hda_deserializer.deserialize, self.trans, hda, data={ 'info': True } )
+            self.hda_deserializer.deserialize, hda, { 'info': True } )
         self.log( 'should raise when deserializing from None' )
         self.assertRaises( exceptions.RequestParameterInvalidException,
-            self.hda_deserializer.deserialize, self.trans, hda, data={ 'info': None } )
+            self.hda_deserializer.deserialize, hda, { 'info': None } )
         self.log( 'should be able to deserialize from unicode' )
         rice = u'飯'
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'info': rice } )
+        self.hda_deserializer.deserialize( hda, { 'info': rice } )
         self.assertEqual( hda.info, rice )
         self.log( 'should be deserializable from empty string' )
-        self.hda_deserializer.deserialize( self.trans, hda, data={ 'info': '' } )
+        self.hda_deserializer.deserialize( hda, { 'info': '' } )
         self.assertEqual( hda.info, '' )
 
 

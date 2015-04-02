@@ -129,12 +129,14 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         history_dictionary = {}
         contents_dictionaries = []
         try:
-            history_dictionary = history_serializer.serialize_to_view( trans, history, view='detailed' )
+            history_dictionary = history_serializer.serialize_to_view( history, view='detailed',
+                user=trans.user, trans=trans )
 
             for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
                 contents_dict = {}
                 if isinstance( content, model.HistoryDatasetAssociation ):
-                    contents_dict = hda_serializer.serialize_to_view( trans, content, view='detailed' )
+                    contents_dict = hda_serializer.serialize_to_view( content, view='detailed',
+                        user=trans.user, trans=trans )
                 elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
                     try:
                         service = self.app.dataset_collections_service
@@ -212,28 +214,28 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         deletable.PurgableSerializerMixin.add_serializers( self )
 
         self.serializers.update({
-            'model_class'   : lambda *a: 'History',
+            'model_class'   : lambda *a, **c: 'History',
             'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
-            'size'          : lambda t, i, k: int( i.get_disk_size() ),
-            'nice_size'     : lambda t, i, k: i.get_disk_size( nice_size=True ),
+            'size'          : lambda i, k, **c: int( i.get_disk_size() ),
+            'nice_size'     : lambda i, k, **c: i.get_disk_size( nice_size=True ),
             'state'         : self.serialize_history_state,
 
-            'url'           : lambda t, i, k: self.url_for( 'history', id=t.security.encode_id( i.id ) ),
-            'contents_url'  : lambda t, i, k: self.url_for( 'history_contents',
-                history_id=t.security.encode_id( i.id ) ),
+            'url'           : lambda i, k, **c: self.url_for( 'history', id=self.app.security.encode_id( i.id ) ),
+            'contents_url'  : lambda i, k, **c: self.url_for( 'history_contents',
+                history_id=self.app.security.encode_id( i.id ) ),
 
-            'empty'         : lambda t, i, k: ( len( i.datasets ) + len( i.dataset_collections ) ) <= 0,
-            'count'         : lambda trans, item, key: len( item.datasets ),
-            'hdas'          : lambda t, i, k: [ t.security.encode_id( hda.id ) for hda in i.datasets ],
+            'empty'         : lambda i, k, **c: ( len( i.datasets ) + len( i.dataset_collections ) ) <= 0,
+            'count'         : lambda i, k, **c: len( i.datasets ),
+            'hdas'          : lambda i, k, **c: [ self.app.security.encode_id( hda.id ) for hda in i.datasets ],
             'state_details' : self.serialize_state_counts,
             'state_ids'     : self.serialize_state_ids,
             'contents'      : self.serialize_contents
         })
 
     # remove this
-    def serialize_state_ids( self, trans, history, key ):
+    def serialize_state_ids( self, history, key, **context ):
         """
         Return a dictionary keyed to possible dataset states and valued with lists
         containing the ids of each HDA in that state.
@@ -250,7 +252,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         return state_ids
 
     # remove this
-    def serialize_state_counts( self, trans, history, key, exclude_deleted=True, exclude_hidden=False ):
+    def serialize_state_counts( self, history, key, exclude_deleted=True, exclude_hidden=False, **context ):
         """
         Return a dictionary keyed to possible dataset states and valued with the number
         of datasets in this history that have those states.
@@ -270,7 +272,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         return state_counts
 
     # TODO: remove this (is state used/useful?)
-    def serialize_history_state( self, trans, history, key ):
+    def serialize_history_state( self, history, key, **context ):
         """
         Returns the history state based on the states of the HDAs it contains.
         """
@@ -279,7 +281,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         state = states.ERROR
         # TODO: history_state and state_counts are classically calc'd at the same time
         #   so this is rel. ineff. - if we keep this...
-        hda_state_counts = self.serialize_state_counts( trans, history, 'counts', exclude_deleted=False )
+        hda_state_counts = self.serialize_state_counts( history, 'counts', exclude_deleted=False, **context )
         num_hdas = sum( hda_state_counts.values() )
         if num_hdas == 0:
             state = states.NEW
@@ -300,17 +302,18 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
         return state
 
-    def serialize_contents( self, trans, history, *args ):
+    def serialize_contents( self, history, *args, **context ):
         contents_dictionaries = []
         for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
             contents_dict = {}
             if isinstance( content, model.HistoryDatasetAssociation ):
-                contents_dict = self.hda_serializer.serialize_to_view( trans, content, view='detailed' )
-            elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-                contents_dict = self._serialize_collection( trans, content )
+                contents_dict = self.hda_serializer.serialize_to_view( content, view='detailed', **context )
+            # elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
+            #     contents_dict = self._serialize_collection( trans, content )
             contents_dictionaries.append( contents_dict )
         return contents_dictionaries
 
+    # TODO: remove trans
     def _serialize_collection( self, trans, collection ):
         service = self.app.dataset_collections_service
         dataset_collection_instance = service.get_dataset_collection_instance(

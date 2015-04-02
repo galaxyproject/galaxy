@@ -281,36 +281,38 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
-            'is_admin'      : lambda t, i, k: self.user_manager.is_admin( i ),
+            'is_admin'      : lambda i, k, **c: self.user_manager.is_admin( i ),
 
-            'total_disk_usage' : lambda t, i, k: float( i.total_disk_usage ),
-            'quota_percent' : lambda t, i, k: self.user_manager.quota( i ),
+            'total_disk_usage' : lambda i, k, **c: float( i.total_disk_usage ),
+            'quota_percent' : lambda i, k, **c: self.user_manager.quota( i ),
 
-            'tags_used'     : lambda t, i, k: self.user_manager.tags_used( i ),
+            'tags_used'     : lambda i, k, **c: self.user_manager.tags_used( i ),
             #TODO: 'has_requests' is more apt
-            'requests'      : lambda t, i, k: self.user_manager.has_requests( i, t )
+            'requests'      : lambda i, k, trans=None, **c: self.user_manager.has_requests( i, trans )
         })
 
 
 class CurrentUserSerializer( UserSerializer ):
 
-    def serialize( self, trans, user, keys ):
+    def serialize( self, user, keys, **kwargs ):
         """
         Override to return at least some usage info if user is anonymous.
         """
+# hmmm.
+        kwargs[ 'current_user' ] = user
         if self.user_manager.is_anonymous( user ):
-            return self.serialize_current_anonymous_user( trans, user, keys )
-        return super( UserSerializer, self ).serialize( trans, user, keys )
+            return self.serialize_current_anonymous_user( user, keys, **kwargs )
+        return super( UserSerializer, self ).serialize( user, keys, **kwargs )
 
-    def serialize_current_anonymous_user( self, trans, user, keys ):
+    def serialize_current_anonymous_user( self, user, keys, trans=None, **kwargs ):
         # use the current history if any to get usage stats for trans' anonymous user
         #TODO: might be better as sep. Serializer class
         history = trans.history
         if not history:
             raise exceptions.AuthenticationRequired( 'No history for anonymous user usage stats' );
 
-        usage = trans.app.quota_agent.get_usage( trans, history=trans.history )
-        percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
+        usage = self.app.quota_agent.get_usage( trans, history=trans.history )
+        percent = self.app.quota_agent.get_percent( trans=trans, usage=usage )
 
         # a very small subset of keys available
         values = {

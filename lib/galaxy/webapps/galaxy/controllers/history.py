@@ -642,7 +642,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         history_dictionaries = []
         for history in self.history_manager.by_user( trans.user, filters=deleted_filter ):
-            history_dictionary = self.history_serializer.serialize_to_view( trans, history, view='detailed' )
+            history_dictionary = self.history_serializer.serialize_to_view( history,
+                view='detailed', user=trans.user, trans=trans )
             history_dictionaries.append( history_dictionary )
 
         return trans.fill_template_mako( "history/view_multiple.mako",
@@ -1501,7 +1502,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     def history_data( self, trans, history ):
         """
         """
-        return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
+        return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
 
     #TODO: combine these next two - poss. with a redirect flag
     #@web.require_login( "switch to a history" )
@@ -1512,7 +1513,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         try:
             history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
             trans.set_history( history )
-            return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
+            return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
         except exceptions.MessageException, msg_exc:
             trans.response.status = msg_exc.err_code.code
             return { 'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code }
@@ -1522,13 +1523,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """
         """
         history = trans.get_history( create=True )
-        return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
+        return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
 
     @web.json
     def create_new_current( self, trans, name=None ):
         """
         """
         new_history = trans.new_history( name )
-        return self.history_serializer.serialize_to_view( trans, new_history, view='detailed' )
+        return self.history_serializer.serialize_to_view( new_history, view='detailed', user=trans.user, trans=trans )
 
     #TODO: /history/current to do all of the above: if ajax, return json; if post, read id and set to current

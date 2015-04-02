@@ -18,7 +18,6 @@ class DeletableManagerMixin( object ):
     that they are no longer needed, should not be displayed, or may be actually
     removed by an admin/script.
     """
-
     def delete( self, item, flush=True, **kwargs ):
         """
         Mark as deleted and return.
@@ -44,7 +43,7 @@ class DeletableDeserializerMixin( object ):
     def add_deserializers( self ):
         self.deserializers[ 'deleted' ] = self.deserialize_deleted
 
-    def deserialize_deleted( self, trans, item, key, val ):
+    def deserialize_deleted( self, item, key, val, **context ):
         """
         Delete or undelete `item` based on `val` then return `item.deleted`.
         """
@@ -73,7 +72,6 @@ class PurgableManagerMixin( DeletableManagerMixin ):
     purging is often removal of some additional, non-db resource (e.g. a dataset's
     file).
     """
-
     def purge( self, item, flush=True, **kwargs ):
         """
         Mark as purged and return.
@@ -96,7 +94,7 @@ class PurgableDeserializerMixin( DeletableDeserializerMixin ):
         DeletableDeserializerMixin.add_deserializers( self )
         self.deserializers[ 'purged' ] = self.deserialize_purged
 
-    def deserialize_purged( self, trans, item, key, val ):
+    def deserialize_purged( self, item, key, val, **context ):
         """
         If `val` is True, purge `item` and return `item.purged`.
         """

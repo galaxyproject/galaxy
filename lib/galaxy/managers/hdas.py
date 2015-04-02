@@ -274,9 +274,9 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
         annotatable.AnnotatableSerializerMixin.add_serializers( self )
 
         self.serializers.update({
-            'model_class'   : lambda *a: 'HistoryDatasetAssociation',
-            'history_content_type': lambda *a: 'dataset',
-            'hda_ldda'      : lambda *a: 'hda',
+            'model_class'   : lambda *a, **c: 'HistoryDatasetAssociation',
+            'history_content_type': lambda *a, **c: 'dataset',
+            'hda_ldda'      : lambda *a, **c: 'hda',
             'type_id'       : self.serialize_type_id,
 
             'history_id'    : self.serialize_id,
@@ -287,7 +287,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
             'file_ext'      : self._remap_from( 'extension' ),
             'file_path'     : self._remap_from( 'file_name' ),
 
-            'resubmitted'   : lambda t, i, k: i._state == t.app.model.Dataset.states.RESUBMITTED,
+            'resubmitted'   : lambda i, k, **c: i._state == model.Dataset.states.RESUBMITTED,
 
             'display_apps'  : self.serialize_display_apps,
             'display_types' : self.serialize_old_display_applications,
@@ -297,24 +297,25 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
             # TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
             #   see also: https://trello.com/c/5d6j4X5y
             #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
-            'url'           : lambda t, i, k: self.url_for( 'history_content',
-                history_id=t.security.encode_id( i.history_id ), id=t.security.encode_id( i.id ) ),
+            'url'           : lambda i, k, **c: self.url_for( 'history_content',
+                history_id=self.app.security.encode_id( i.history_id ),
+                id=self.app.security.encode_id( i.id ) ),
             'urls'          : self.serialize_urls,
 
             # TODO: backwards compat: need to go away
-            'download_url'  : lambda t, i, k: self.url_for( 'history_contents_display',
-                history_id=t.security.encode_id( i.history.id ),
-                history_content_id=t.security.encode_id( i.id ) ),
+            'download_url'  : lambda i, k, **c: self.url_for( 'history_contents_display',
+                history_id=self.app.security.encode_id( i.history.id ),
+                history_content_id=self.app.security.encode_id( i.id ) ),
             'parent_id'     : self.serialize_id,
-            'accessible'    : lambda *a: True,
-            'api_type'      : lambda *a: 'file',
-            'type'          : lambda *a: 'file'
+            'accessible'    : lambda *a, **c: True,
+            'api_type'      : lambda *a, **c: 'file',
+            'type'          : lambda *a, **c: 'file'
         })
 
-    def serialize_type_id( self, trans, hda, key ):
-        return 'dataset-' + self.serializers[ 'id' ]( trans, hda, 'id' )
+    def serialize_type_id( self, hda, key, **context ):
+        return 'dataset-' + self.serializers[ 'id' ]( hda, 'id' )
 
-    def serialize_display_apps( self, trans, hda, key ):
+    def serialize_display_apps( self, hda, key, trans=None, **context ):
         """
         Return dictionary containing new-style display app urls.
         """
@@ -333,7 +334,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
 
         return display_apps
 
-    def serialize_old_display_applications( self, trans, hda, key ):
+    def serialize_old_display_applications( self, hda, key, trans=None, **context ):
         """
         Return dictionary containing old-style display app urls.
         """
@@ -360,7 +361,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
 
         return display_apps
 
-    def serialize_visualization_links( self, trans, hda, key ):
+    def serialize_visualization_links( self, hda, key, trans=None, **context ):
         """
         Return a list of dictionaries with links to visualization pages
         for those visualizations that apply to this hda.
@@ -370,7 +371,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
             return hda.get_visualizations()
         return self.app.visualizations_registry.get_visualizations( trans, hda )
 
-    def serialize_urls( self, trans, hda, key ):
+    def serialize_urls( self, hda, key, **context ):
         """
         Return web controller urls useful for this HDA.
         """
@@ -413,8 +414,8 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
         self.deserializers.update({
             'visible'       : self.deserialize_bool,
             # remapped
-            'genome_build'  : lambda t, i, k, v: self.deserialize_genome_build( t, i, 'dbkey', v ),
-            'misc_info'     : lambda t, i, k, v: self.deserialize_basestring( t, i, 'info', v ),
+            'genome_build'  : lambda i, k, v, **c: self.deserialize_genome_build( i, 'dbkey', v ),
+            'misc_info'     : lambda i, k, v, **c: self.deserialize_basestring( i, 'info', v ),
         })
         self.deserializable_keyset.update( self.deserializers.keys() )
 

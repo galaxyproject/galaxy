@@ -142,11 +142,11 @@ class UserSerializerTestCase( BaseTestCase ):
         user = self.user_manager.create( **user2_data )
 
         self.log( 'should have a summary view' )
-        summary_view = self.user_serializer.serialize_to_view( self.trans, user, view='summary' )
+        summary_view = self.user_serializer.serialize_to_view( user, view='summary' )
         self.assertKeys( summary_view, self.user_serializer.views[ 'summary' ] )
 
         self.log( 'should have the summary view as default view' )
-        default_view = self.user_serializer.serialize_to_view( self.trans, user, default_view='summary' )
+        default_view = self.user_serializer.serialize_to_view( user, default_view='summary' )
         self.assertKeys( summary_view, self.user_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
@@ -162,20 +162,20 @@ class UserSerializerTestCase( BaseTestCase ):
         user = self.user_manager.create( **user2_data )
 
         self.log( 'should be able to use keys with views' )
-        serialized = self.user_serializer.serialize_to_view( self.trans, user,
+        serialized = self.user_serializer.serialize_to_view( user,
             view='summary', keys=[ 'create_time' ] )
         self.assertKeys( serialized,
             self.user_serializer.views[ 'summary' ] + [ 'create_time' ] )
 
         self.log( 'should be able to use keys on their own' )
-        serialized = self.user_serializer.serialize_to_view( self.trans, user,
+        serialized = self.user_serializer.serialize_to_view( user,
             keys=[ 'tags_used', 'is_admin' ] )
         self.assertKeys( serialized, [ 'tags_used', 'is_admin' ] )
 
     def test_serializers( self ):
         user = self.user_manager.create( **user2_data )
         all_keys = list( self.user_serializer.serializable_keyset )
-        serialized = self.user_serializer.serialize( self.trans, user, all_keys )
+        serialized = self.user_serializer.serialize( user, all_keys, trans=self.trans )
         # pprint.pprint( serialized )
 
         self.log( 'everything serialized should be of the proper type' )
@@ -207,10 +207,10 @@ class CurrentUserSerializerTestCase( BaseTestCase ):
     def test_anonymous( self ):
         anonym = None
         # need a history here for total_disk_usage
-        self.trans.set_history( self.history_manager.create( self.trans ) )
+        self.trans.set_history( self.history_manager.create() )
 
         self.log( 'should be able to serialize anonymous user' )
-        serialized = self.user_serializer.serialize_to_view( self.trans, anonym, view='detailed' )
+        serialized = self.user_serializer.serialize_to_view( anonym, view='detailed', trans=self.trans )
         self.assertKeys( serialized,
             [ 'id', 'total_disk_usage', 'nice_total_disk_usage', 'quota_percent' ] )
 

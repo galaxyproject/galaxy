@@ -500,7 +500,7 @@ class ModelSerializer( object ):
 
     Maintains a map of requestable keys and the Callable() serializer functions
     that should be called for those keys.
-    E.g. { 'x' : lambda trans, item, key: item.x, ... }
+    E.g. { 'x' : lambda item, key: item.x, ... }
 
     Note: if a key to serialize is not listed in the Serializer.serializable_keyset
     or serializers, it will not be returned.
@@ -509,7 +509,7 @@ class ModelSerializer( object ):
         my_serializer = MySerializer( app )
         ...
         keys_to_serialize = [ 'id', 'name', 'attr1', 'attr2', ... ]
-        item_dict = MySerializer.serialize( trans, my_item, keys_to_serialize )
+        item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
     #: 'service' to use for getting urls - use class var to allow overriding when testing
     url_for = staticmethod( routes.url_for )
@@ -559,7 +559,7 @@ class ModelSerializer( object ):
         self.serializable_keyset.update( key_list )
         return key_list
 
-    def serialize( self, trans, item, keys ):
+    def serialize( self, item, keys, **context ):
         """
         Serialize the model `item` to a dictionary.
 
@@ -567,18 +567,18 @@ class ModelSerializer( object ):
         built from each key in `keys` that also exists in `serializers` and
         values of calling the keyed/named serializers on item.
         """
-        # main interface fn for converting a model to a dict
+        # TODO: constrain context to current_user/whos_asking when that's all we need (trans)
         returned = {}
         for key in keys:
             # check both serializers and serializable keys
             if key in self.serializers:
                 try:
-                    returned[ key ] = self.serializers[ key ]( trans, item, key )
+                    returned[ key ] = self.serializers[ key ]( item, key, **context )
                 except SkipAttribute, skip:
                     # dont add this key if the deserializer threw this
                     pass
             elif key in self.serializable_keyset:
-                returned[ key ] = self.default_serializer( trans, item, key )
+                returned[ key ] = self.default_serializer( item, key, **context )
             # ignore bad/unreg keys
         return returned
 
@@ -594,10 +594,10 @@ class ModelSerializer( object ):
         if original_key in self.serializers:
             return self.serializers[ original_key ]
         if original_key in self.serializable_keyset:
-            return lambda t, i, k: self.default_serializer( t, i, original_key )
+            return lambda i, k, **c: self.default_serializer( i, original_key, **c )
         raise KeyError( 'serializer not found for remap: ' + original_key )
 
-    def default_serializer( self, trans, item, key ):
+    def default_serializer( self, item, key, **context ):
         """
         Serialize the `item`'s attribute named `key`.
         """
@@ -605,14 +605,14 @@ class ModelSerializer( object ):
         return getattr( item, key )
 
     # serializers for common galaxy objects
-    def serialize_date( self, trans, item, key ):
+    def serialize_date( self, item, key, **context ):
         """
         Serialize a date attribute of `item`.
         """
         date = getattr( item, key )
         return date.isoformat() if date is not None else None
 
-    def serialize_id( self, trans, item, key ):
+    def serialize_id( self, item, key, **context ):
         """
         Serialize an id attribute of `item`.
         """
@@ -621,7 +621,7 @@ class ModelSerializer( object ):
         return self.app.security.encode_id( id ) if id is not None else None
 
     # serializing to a view where a view is a predefied list of keys to serialize
-    def serialize_to_view( self, trans, item, view=None, keys=None, default_view=None ):
+    def serialize_to_view( self, item, view=None, keys=None, default_view=None, **context ):
         """
         Use a predefined list of keys (the string `view`) and any additional keys
         listed in `keys`.
@@ -647,7 +647,7 @@ class ModelSerializer( object ):
             elif default_view:
                 all_keys = self._view_to_keys( default_view )
 
-        return self.serialize( trans, item, all_keys )
+        return self.serialize( item, all_keys, **context )
 
     def _view_to_keys( self, view=None ):
         """
@@ -697,16 +697,17 @@ class ModelDeserializer( object ):
         # to be overridden in subclasses
         pass
 
-    def deserialize( self, trans, item, data, flush=True ):
+    def deserialize( self, item, data, flush=True, **context ):
         """
         Convert an incoming serialized dict into values that can be
         directly assigned to an item's attributes and assign them
         """
+        # TODO: constrain context to current_user/whos_asking when that's all we need (trans)
         sa_session = self.app.model.context
         new_dict = {}
         for key, val in data.items():
             if key in self.deserializers:
-                new_dict[ key ] = self.deserializers[ key ]( trans, item, key, val )
+                new_dict[ key ] = self.deserializers[ key ]( item, key, val, **context )
             # !important: don't error on unreg. keys -- many clients will add weird ass keys onto the model
 
         # TODO:?? add and flush here or in manager?
@@ -717,7 +718,7 @@ class ModelDeserializer( object ):
         return new_dict
 
     # ... common deserializers for primitives
-    def default_deserializer( self, trans, item, key, val ):
+    def default_deserializer( self, item, key, val, **context ):
         """
         If the incoming `val` is different than the `item` value change it
         and, in either case, return the value.
@@ -729,28 +730,28 @@ class ModelDeserializer( object ):
             setattr( item, key, val )
         return val
 
-    def deserialize_basestring( self, trans, item, key, val ):
+    def deserialize_basestring( self, item, key, val, **context ):
         val = self.validate.basestring( key, val )
-        return self.default_deserializer( trans, item, key, val )
+        return self.default_deserializer( item, key, val, **context )
 
-    def deserialize_bool( self, trans, item, key, val ):
+    def deserialize_bool( self, item, key, val, **context ):
         val = self.validate.bool( key, val )
-        return self.default_deserializer( trans, item, key, val )
+        return self.default_deserializer( item, key, val, **context )
 
-    def deserialize_int( self, trans, item, key, val, min=None, max=None ):
+    def deserialize_int( self, item, key, val, min=None, max=None, **context ):
         val = self.validate.int_range( key, val, min, max )
-        return self.default_deserializer( trans, item, key, val )
+        return self.default_deserializer( item, key, val, **context )
 
-    #def deserialize_date( self, trans, item, key, val ):
+    #def deserialize_date( self, item, key, val ):
     #   #TODO: parse isoformat date into date object
 
     # ... common deserializers for Galaxy
-    def deserialize_genome_build( self, trans, item, key, val ):
+    def deserialize_genome_build( self, item, key, val, **context ):
         """
         Make sure `val` is a valid dbkey and assign it.
         """
         val = self.validate.genome_build( key, val )
-        return self.default_deserializer( trans, item, key, val )
+        return self.default_deserializer( item, key, val, **context )
 
 
 class ModelValidator( object ):
@@ -830,7 +831,7 @@ class ModelValidator( object ):
         # IOW: fallback to string validation
         return self.basestring( key, val )
 
-    # def slug( self, trans, item, key, val ):
+    # def slug( self, item, key, val ):
     #    """validate slug"""
     #    pass
 
