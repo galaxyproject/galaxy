@@ -86,7 +86,8 @@ class InteractiveEnviornmentRequest(object):
             conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
         else:
             conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
-            conf_file['galaxy_paster_port'] = self.attr.galaxy_config.guess_galaxy_port()
+            web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
+            conf_file['galaxy_paster_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
 
         if self.attr.PASSWORD_AUTH:
             # Generate a random password + salt
