@@ -1507,8 +1507,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
 
     def _get_options_from_code( self, trans=None, value=None, other_values=None ):
         assert self.dynamic_options, Exception( "dynamic_options was not specifed" )
-        call_other_values = { '__trans__': trans, '__value__': value }
+        call_other_values = ExpressionContext({ '__trans__': trans, '__value__': value })
         if other_values:
+            call_other_values.parent = other_values.parent
             call_other_values.update( other_values.dict )
         try:
             return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
