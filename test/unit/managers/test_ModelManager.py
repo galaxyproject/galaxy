@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 """
 from __future__ import print_function
@@ -7,6 +6,7 @@ import sys
 import os
 import pprint
 import unittest
+import json
 
 __GALAXY_ROOT__ = os.getcwd() + '/../../../'
 sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
@@ -61,11 +61,10 @@ class BaseTestCase( unittest.TestCase ):
         self.app = self.trans.app
 
     def set_up_managers( self ):
-        self.user_mgr = UserManager( self.app )
+        self.user_manager = UserManager( self.app )
 
     def set_up_trans( self ):
-        self.admin_user = self.user_mgr.create( self.trans,
-            email=admin_email, username='admin', password=default_password )
+        self.admin_user = self.user_manager.create( email=admin_email, username='admin', password=default_password )
         self.trans.set_user( self.admin_user )
         self.trans.set_history( None )
 
@@ -76,6 +75,8 @@ class BaseTestCase( unittest.TestCase ):
         print( *args, **kwargs )
 
     # ---- additional test types
+    TYPES_NEEDING_NO_SERIALIZERS = ( basestring, bool, type( None ), int, float )
+
     def assertKeys( self, obj, key_list ):
         self.assertEqual( sorted( obj.keys() ), sorted( key_list ) )
 
@@ -85,6 +86,51 @@ class BaseTestCase( unittest.TestCase ):
                 self.fail( 'Missing key: ' + key )
         else:
             self.assertTrue( True, 'keys found in object' )
+
+    def assertNullableBasestring( self, item ):
+        if not isinstance( item, ( basestring, type( None ) ) ):
+            self.fail( 'Non-nullable basestring: ' + str( type( item ) ) )
+        # TODO: len mod 8 and hex re
+        self.assertTrue( True, 'is nullable basestring: ' + str( item ) )
+
+    def assertEncodedId( self, item ):
+        if not isinstance( item, basestring ):
+            self.fail( 'Non-string: ' + str( type( item ) ) )
+        # TODO: len mod 8 and hex re
+        self.assertTrue( True, 'is id: ' + item )
+
+    def assertNullableEncodedId( self, item ):
+        if item is None:
+            self.assertTrue( True, 'nullable id is None' )
+        else:
+            self.assertEncodedId( item )
+
+    def assertDate( self, item ):
+        if not isinstance( item, basestring ):
+            self.fail( 'Non-string: ' + str( type( item ) ) )
+        # TODO: no great way to parse this fully (w/o python-dateutil)
+        # TODO: re?
+        self.assertTrue( True, 'is date: ' + item )
+
+    def assertUUID( self, item ):
+        if not isinstance( item, basestring ):
+            self.fail( 'Non-string: ' + str( type( item ) ) )
+        # TODO: re for d4d76d69-80d4-4ed7-80c7-211ebcc1a358
+        self.assertTrue( True, 'is uuid: ' + item )
+
+    def assertORMFilter( self, item, msg=None ):
+        if not isinstance( item, sqlalchemy.sql.elements.BinaryExpression ):
+            self.fail( 'Not an orm filter: ' + str( type( item ) ) )
+        self.assertTrue( True, msg or ( 'is an orm filter: ' + str( item ) ) )
+
+    def assertFnFilter( self, item, msg=None ):
+        if not item or not callable( item ):
+            self.fail( 'Not a fn filter: ' + str( type( item ) ) )
+        self.assertTrue( True, msg or ( 'is a fn filter: ' + str( item ) ) )
+
+    def assertIsJsonifyable( self, item ):
+        # TODO: use galaxy's override
+        self.assertIsInstance( json.dumps( item ), basestring )
 
 
 # =============================================================================

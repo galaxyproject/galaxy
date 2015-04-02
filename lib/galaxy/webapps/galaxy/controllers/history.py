@@ -254,7 +254,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 return self.rename( trans, **kwargs )
             if operation == "view":
                 decoded_id = self.decode_id( kwargs.get( 'id', None ) )
-                history = self.history_manager.get_owned( trans, decoded_id, trans.user )
+                history = self.history_manager.get_owned( decoded_id, trans.user, current_history=trans.history )
                 return trans.response.send_redirect( url_for( controller='history',
                                                               action='view',
                                                               id=kwargs['id'],
@@ -268,7 +268,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             # Load the histories and ensure they all belong to the current user
             histories = []
             for history_id in history_ids:
-                history = self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user )
+                history = self.history_manager.get_owned( self.decode_id( history_id ), trans.user, current_history=trans.history )
                 if history:
                     # Ensure history is owned by current user
                     if history.user_id != None and trans.user:
@@ -313,7 +313,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     if history_ids:
                         histories = []
                         for history_id in history_ids:
-                            history = self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user )
+                            history = self.history_manager.get_owned( self.decode_id( history_id ), trans.user, current_history=trans.history )
                             if history.importable:
                                 history.importable = False
                             histories.append( history )
@@ -439,7 +439,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             operation = kwargs['operation'].lower()
             if operation == "view":
                 # Display history.
-                history = self.history_manager.get_accessible( trans, self.decode_id( ids[0] ), trans.user )
+                history = self.history_manager.get_accessible( self.decode_id( ids[0] ), trans.user, current_history=trans.history )
                 return self.display_by_username_and_slug( trans, history.user.username, history.slug )
             elif operation == "copy":
                 if not ids:
@@ -455,7 +455,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 for id in ids:
                     # No need to check security, association below won't yield a
                     # hit if this user isn't having the history shared with her.
-                    history = self.history_manager.by_id( trans, self.decode_id( id ) )
+                    history = self.history_manager.by_id( self.decode_id( id ) )
                     # Current user is the user with which the histories were shared
                     association = ( trans.sa_session.query( trans.app.model.HistoryUserShareAssociation )
                                         .filter_by( user=trans.user, history=history ).one() )
@@ -555,7 +555,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         unencoded_history_id = trans.history.id
         if id:
             unencoded_history_id = self.decode_id( id )
-        history_to_view = self.history_manager.get_accessible( trans, unencoded_history_id, trans.user )
+        history_to_view = self.history_manager.get_accessible( unencoded_history_id, trans.user, current_history=trans.history )
 
         history_data = self.history_manager._get_history_data( trans, history_to_view )
         history_dictionary = history_data[ 'history' ]
@@ -595,7 +595,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         hda_dictionaries   = []
         user_is_owner = False
         try:
-            history_to_view = self.history_manager.get_accessible( trans, self.decode_id( id ), trans.user )
+            history_to_view = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
             user_is_owner = history_to_view.user == trans.user
 
             # include all datasets: hidden, deleted, and purged
@@ -641,8 +641,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         current_history_id = trans.security.encode_id( current_history.id ) if current_history else None
 
         history_dictionaries = []
-        for history in self.history_manager.by_user( trans, trans.user, filters=deleted_filter ):
-            history_dictionary = self.history_serializer.serialize_to_view( trans, history, view='detailed' )
+        for history in self.history_manager.by_user( trans.user, filters=deleted_filter ):
+            history_dictionary = self.history_serializer.serialize_to_view( history,
+                view='detailed', user=trans.user, trans=trans )
             history_dictionaries.append( history_dictionary )
 
         return trans.fill_template_mako( "history/view_multiple.mako",
@@ -661,7 +662,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if history is None:
            raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access history.
-        self.history_manager.error_unless_accessible( trans, history, trans.user )
+        self.history_manager.error_unless_accessible( history, trans.user, current_history=trans.history )
 
         # Get rating data.
         user_item_rating = 0
@@ -701,7 +702,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if id:
             ids = galaxy.util.listify( id )
             if ids:
-                histories = [ self.history_manager.get_accessible( trans, self.decode_id( history_id ), trans.user )
+                histories = [ self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
                               for history_id in ids ]
         elif not histories:
             histories = [ trans.history ]
@@ -771,7 +772,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             send_to_err = err_msg
             histories = []
             for history_id in id:
-                histories.append( self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user ) )
+                history_id = self.decode_id( history_id )
+                history = self.history_manager.get_owned( history_id, trans.user, current_history=trans.history )
+                histories.append( history )
             return trans.fill_template( "/history/share.mako",
                                         histories=histories,
                                         email=email,
@@ -894,7 +897,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         ids = galaxy.util.listify( ids )
         histories = []
         for history_id in ids:
-            histories.append( self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user ) )
+            history_id = self.decode_id( history_id )
+            history = self.history_manager.get_owned( history_id, trans.user, current_history=trans.history )
+            histories.append(  )
         return histories
 
     def _get_users( self, trans, user, emails_or_ids ):
@@ -908,14 +913,14 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             send_to_user = None
             if '@' in string:
                 email_address = string
-                send_to_user = self.user_manager.by_email( trans, email_address,
+                send_to_user = self.user_manager.by_email( email_address,
                     filters=[ trans.app.model.User.table.c.deleted == False ] )
 
             else:
                 user_id = string
                 try:
                     decoded_user_id = self.decode_id( string )
-                    send_to_user = self.user_manager.by_id( trans, decoded_user_id )
+                    send_to_user = self.user_manager.by_id( decoded_user_id )
                     if send_to_user.deleted:
                         send_to_user = None
                 #TODO: in an ideal world, we would let this bubble up to web.expose which would handle it
@@ -1144,7 +1149,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                     trans.app.job_manager.job_stop_queue.put( job.id )
 
         # Regardless of whether it was previously deleted, get the most recent history or create a new one.
-        most_recent_history = self.history_manager.most_recent( trans, user=trans.user )
+        most_recent_history = self.history_manager.most_recent( user=trans.user )
         if most_recent_history:
             trans.set_history( most_recent_history )
             return trans.show_ok_message( "History deleted, your most recent history is now active",
@@ -1188,7 +1193,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.json
     def rate_async( self, trans, id, rating ):
         """ Rate a history asynchronously and return updated community data. """
-        history = self.history_manager.get_accessible( trans, self.decode_id( id ), trans.user )
+        history = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
         if not history:
             return trans.show_error_message( "The specified history does not exist." )
         # Rate history.
@@ -1232,7 +1237,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Get history to export.
         #
         if id:
-            history = self.history_manager.get_accessible( trans, self.decode_id( id ), trans.user )
+            history = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
         else:
             # Use current history.
             history = trans.history
@@ -1265,7 +1270,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.require_login( "get history name and link" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns history's name and link. """
-        history = self.history_manager.get_accessible( trans, self.decode_id( id ), trans.user )
+        history = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
         if self.create_item_slug( trans.sa_session, history ):
             trans.sa_session.flush()
         return_dict = {
@@ -1279,7 +1284,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.require_login( "set history's accessible flag" )
     def set_accessible_async( self, trans, id=None, accessible=False ):
         """ Set history's importable attribute and slug. """
-        history = self.history_manager.get_owned( trans, self.decode_id( id ), trans.user )
+        history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
         importable = accessible in ['True', 'true', 't', 'T'];
         if history and history.importable != importable:
@@ -1327,11 +1332,11 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # Do import.
         if not id:
             return trans.show_error_message( "You must specify a history you want to import.<br>You can %s." % referer_message, use_panels=True )
-        import_history = self.history_manager.by_id( trans, self.decode_id( id ) )
+        import_history = self.history_manager.by_id( self.decode_id( id ) )
         if not import_history:
             return trans.show_error_message( "The specified history does not exist.<br>You can %s." % referer_message, use_panels=True )
         # History is importable if user is admin or it's accessible. TODO: probably want to have app setting to enable admin access to histories.
-        if not self.history_manager.is_accessible( trans, import_history, trans.user ):
+        if not self.history_manager.is_accessible( import_history, trans.user, current_history=trans.history ):
             return trans.show_error_message( "You cannot access this history.<br>You can %s." % referer_message, use_panels=True )
         if user:
             #dan: I can import my own history.
@@ -1397,7 +1402,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         histories = []
 
         for history_id in id:
-            history = self.history_manager.get_owned( trans, self.decode_id( history_id ), trans.user )
+            history = self.history_manager.get_owned( self.decode_id( history_id ), trans.user, current_history=trans.history )
             if history and history.user_id == user.id:
                 histories.append( history )
         if not name or len( histories ) != len( name ):
@@ -1454,7 +1459,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             ids = galaxy.util.listify( id )
             histories = []
             for history_id in ids:
-                history = self.history_manager.get_accessible( trans, self.decode_id( history_id ), trans.user )
+                history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
                 histories.append( history )
         user = trans.get_user()
         for history in histories:
@@ -1491,13 +1496,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.response.send_redirect( url_for( "/" ) )
 
     def get_item( self, trans, id ):
-        return self.history_manager.get_owned( trans, self.decode_id( id ), trans.user )
+        return self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
         #TODO: override of base ui controller?
 
     def history_data( self, trans, history ):
         """
         """
-        return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
+        return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
 
     #TODO: combine these next two - poss. with a redirect flag
     #@web.require_login( "switch to a history" )
@@ -1506,9 +1511,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """
         """
         try:
-            history = self.history_manager.get_owned( trans, self.decode_id( id ), trans.user )
+            history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
             trans.set_history( history )
-            return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
+            return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
         except exceptions.MessageException, msg_exc:
             trans.response.status = msg_exc.err_code.code
             return { 'err_msg': msg_exc.err_msg, 'err_code': msg_exc.err_code.code }
@@ -1518,13 +1523,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """
         """
         history = trans.get_history( create=True )
-        return self.history_serializer.serialize_to_view( trans, history, view='detailed' )
+        return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
 
     @web.json
     def create_new_current( self, trans, name=None ):
         """
         """
         new_history = trans.new_history( name )
-        return self.history_serializer.serialize_to_view( trans, new_history, view='detailed' )
+        return self.history_serializer.serialize_to_view( new_history, view='detailed', user=trans.user, trans=trans )
 
     #TODO: /history/current to do all of the above: if ajax, return json; if post, read id and set to current
