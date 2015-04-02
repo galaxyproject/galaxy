@@ -985,7 +985,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         else:
             # Loading new visualization.
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-            job = self.hda_manager.creating_job( dataset )
+            job = self.hda_manager.creating_job( trans, dataset )
             viz_config = {
                 'dataset_id': dataset_id,
                 'tool_id': job.tool_id,
@@ -1017,7 +1017,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         if dataset_id:
             decoded_id = self.decode_id( dataset_id )
             hda = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
-            hda = self.hda_manager.error_if_uploading( hda )
+            hda = self.hda_manager.error_if_uploading( trans, hda )
         else:
             return trans.show_message( "Phyloviz couldn't find a dataset_id" )
 

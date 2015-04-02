@@ -331,7 +331,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # job's previous parameters and incoming parameters. Incoming parameters
         # have priority.
         #
-        original_job = self.hda_manager.creating_job( original_dataset )
+        original_job = self.hda_manager.creating_job( trans, original_dataset )
         tool = trans.app.toolbox.get_tool( original_job.tool_id )
         if not tool or not tool.allow_user_access( trans.user ):
             return trans.app.model.Dataset.conversion_messages.NO_TOOL
