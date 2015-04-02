@@ -19,6 +19,7 @@ lib/galaxy/tools/toolbox
 lib/galaxy/tools/{errors,loader_directory,test}.py
 lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules}.py
 lib/galaxy/web/{proxy,security}
+lib/galaxy/web/base/{__init__,interactive_environments}.py
 lib/galaxy/web/formatting.py
 lib/galaxy/webapps/__init__.py
 lib/galaxy/webapps/galaxy/__init__.py
