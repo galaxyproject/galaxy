@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #Dan Blankenberg
 
 import base64
@@ -10,16 +11,36 @@ import json
 import logging
 import optparse
 import os
+import tempfile
 import urllib
 import urllib2
 from urlparse import urljoin
 
 log = logging.getLogger( "tools.genomespace.genomespace_exporter" )#( __name__ )
 
+try:
+    from galaxy import eggs
+    eggs.require('boto')
+except ImportError:
+    pass
+
+try:
+    import boto
+    from boto.s3.connection import S3Connection
+except ImportError:
+    boto = None
+
 GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
 
 CHUNK_SIZE = 2**20 #1mb
+
+# TODO: TARGET_SPLIT_SIZE and TARGET_SIMPLE_PUT_UPLOAD_SIZE are arbitrarily defined
+# we should programmatically determine these, based upon the current environment 
+TARGET_SPLIT_SIZE = 250 * 1024 * 1024 # 250 mb
+MIN_MULTIPART_UPLOAD_SIZE = 5 * 1024 * 1024 # 5mb
+MAX_SIMPLE_PUT_UPLOAD_SIZE = 5 * 1024 * 1024 * 1024 # 5gb
+TARGET_SIMPLE_PUT_UPLOAD_SIZE = MAX_SIMPLE_PUT_UPLOAD_SIZE / 2
 
 # Some basic Caching, so we don't have to reload and download everything every time,
 # especially now that we are calling the parameter's get options method 5 times
@@ -203,28 +224,69 @@ def send_file_to_genomespace( genomespace_site, username, token, source_filename
         directory_dict = get_personal_directory( url_opener, dm_url )['directory'] #this is the base for the auto-generated galaxy export directories
     #what directory to stuff this in
     target_directory_dict = create_directory( url_opener, directory_dict, target_directory, dm_url )
-    #get upload url
-    upload_url = "uploadurl"
     content_length = os.path.getsize( source_filename )
     input_file = open( source_filename, 'rb' )
-    content_md5 = hashlib.md5()
-    chunk_write( input_file, content_md5, target_method="update" )
-    input_file.seek( 0 ) #back to start, for uploading
-
-    upload_params = { 'Content-Length': content_length, 'Content-MD5': base64.standard_b64encode( content_md5.digest() ), 'Content-Type': content_type }
-    upload_url = "%s/%s/%s%s/%s?%s" % ( dm_url, GENOMESPACE_API_VERSION_STRING, upload_url, target_directory_dict['path'], urllib.quote( target_filename, safe='' ), urllib.urlencode( upload_params ) )
-    new_file_request = urllib2.Request( upload_url )#, headers = { 'Content-Type': 'application/json', 'Accept': 'application/text' } ) #apparently http://www.genomespace.org/team/specs/updated-dm-rest-api:"Every HTTP request to the Data Manager should include the Accept header with a preference for the media types application/json and application/text." is not correct 
-    new_file_request.get_method = lambda: 'GET'
-    #get url to upload to
-    target_upload_url = url_opener.open( new_file_request ).read()
-    #upload file to determined url
-    upload_headers = dict( upload_params )
-    #upload_headers[ 'x-amz-meta-md5-hash' ] = content_md5.hexdigest()
-    upload_headers[ 'Accept' ] = 'application/json'
-    upload_file_request = urllib2.Request( target_upload_url, headers = upload_headers, data = input_file )
-    upload_file_request.get_method = lambda: 'PUT'
-    upload_result = urllib2.urlopen( upload_file_request ).read()
+    if content_length > TARGET_SIMPLE_PUT_UPLOAD_SIZE:
+        # Determine sizes of each part.
+        split_count = content_length / TARGET_SPLIT_SIZE
+        last_size = content_length - ( split_count * TARGET_SPLIT_SIZE )
+        sizes = [ TARGET_SPLIT_SIZE ] * split_count
+        if last_size:
+            if last_size < MIN_MULTIPART_UPLOAD_SIZE:
+                if sizes:
+                    sizes[-1] = sizes[-1] + last_size
+                else:
+                    sizes = [ last_size ]
+            else:
+                sizes.append( last_size )
+        print "Performing multi-part upload in %i parts." % ( len( sizes ) )
+        #get upload url
+        upload_url = "uploadinfo"
+        upload_url = "%s/%s/%s%s/%s" % ( dm_url, GENOMESPACE_API_VERSION_STRING, upload_url, target_directory_dict['path'], urllib.quote( target_filename, safe='' ) )
+        upload_request = urllib2.Request( upload_url, headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' } )
+        upload_request.get_method = lambda: 'GET'
+        upload_info = json.loads( url_opener.open( upload_request ).read() )
+        conn = S3Connection( aws_access_key_id=upload_info['amazonCredentials']['accessKey'],
+                                                aws_secret_access_key=upload_info['amazonCredentials']['secretKey'],
+                                                security_token=upload_info['amazonCredentials']['sessionToken'] )
+        # Cannot use conn.get_bucket due to permissions, manually create bucket object
+        bucket = boto.s3.bucket.Bucket( connection=conn, name=upload_info['s3BucketName'] )
+        mp = bucket.initiate_multipart_upload( upload_info['s3ObjectKey'] )
+        for i,part_size in enumerate( sizes, start=1 ):
+            fh = tempfile.TemporaryFile( 'wb+' )
+            while part_size:
+                if CHUNK_SIZE > part_size:
+                    read_size = part_size
+                else:
+                    read_size = CHUNK_SIZE
+                chunk = input_file.read( read_size )
+                fh.write( chunk )
+                part_size = part_size - read_size
+            fh.flush()
+            fh.seek(0)
+            mp.upload_part_from_file( fh, i )
+            fh.close()
+        upload_result = mp.complete_upload()
+    else:
+        print 'Performing simple put upload.'
+        upload_url = "uploadurl"
+        content_md5 = hashlib.md5()
+        chunk_write( input_file, content_md5, target_method="update" )
+        input_file.seek( 0 ) #back to start, for uploading
     
+        upload_params = { 'Content-Length': content_length, 'Content-MD5': base64.standard_b64encode( content_md5.digest() ), 'Content-Type': content_type }
+        upload_url = "%s/%s/%s%s/%s?%s" % ( dm_url, GENOMESPACE_API_VERSION_STRING, upload_url, target_directory_dict['path'], urllib.quote( target_filename, safe='' ), urllib.urlencode( upload_params ) )
+        new_file_request = urllib2.Request( upload_url )#, headers = { 'Content-Type': 'application/json', 'Accept': 'application/text' } ) #apparently http://www.genomespace.org/team/specs/updated-dm-rest-api:"Every HTTP request to the Data Manager should include the Accept header with a preference for the media types application/json and application/text." is not correct 
+        new_file_request.get_method = lambda: 'GET'
+        #get url to upload to
+        target_upload_url = url_opener.open( new_file_request ).read()
+        #upload file to determined url
+        upload_headers = dict( upload_params )
+        #upload_headers[ 'x-amz-meta-md5-hash' ] = content_md5.hexdigest()
+        upload_headers[ 'Accept' ] = 'application/json'
+        upload_file_request = urllib2.Request( target_upload_url, headers = upload_headers, data = input_file )
+        upload_file_request.get_method = lambda: 'PUT'
+        upload_result = urllib2.urlopen( upload_file_request ).read()
     result_url = "%s/%s" % ( target_directory_dict['url'], urllib.quote( target_filename, safe='' ) )
     #determine available gs launch apps
     web_tools = get_genome_space_launch_apps( genomespace_site_dict['atmServer'], url_opener, result_url, file_type )
