@@ -317,6 +317,7 @@ class SharableModelSerializer( base.ModelSerializer,
             'user_id'           : self.serialize_id,
             'username_and_slug' : self.serialize_username_and_slug
         })
+        # these use the default serializer but must still be white-listed
         self.serializable_keyset.update([
             'importable', 'published', 'slug'
         ])
@@ -324,13 +325,13 @@ class SharableModelSerializer( base.ModelSerializer,
     def serialize_username_and_slug( self, item, key, **context ):
         if not ( item.user and item.slug and self.SINGLE_CHAR_ABBR ):
             return None
-#TODO: self.url_for
         return ( '/' ).join(( 'u', item.user.username, self.SINGLE_CHAR_ABBR, item.slug ) )
 
-    #def published_url( self, item, key, **context ):
+    # def serialize_username_and_slug( self, item, key, **context ):
     #    """
     #    """
-    #    url = url_for(controller='history', action="display_by_username_and_slug",
+    #     #TODO: replace the above with this
+    #    url = self.url_for(controller='history', action="display_by_username_and_slug",
     #        username=item.user.username, slug=item.slug )
     #    return url
 

@@ -168,9 +168,6 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
                     .filter_by( user=user )
                     .order_by( sqlalchemy.desc( model.APIKeys.create_time ) ) )
         all = query.all()
-        for a in all:
-            print a.user.username, a.key, a.create_time
-        print all
         if len( all ):
             return all[0]
         return None

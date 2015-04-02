@@ -58,19 +58,7 @@ class AnnotatableDeserializerMixin( object ):
         Make sure `val` is a valid annotation and assign it, deleting any existing
         if `val` is None.
         """
-        print '-' * 20
-        print item
-        print key
-        print val
-        print user
         val = self.validate.nullable_basestring( key, val )
-        # sa_session = self.app.model.context
-        # if val is None:
-        #     item.delete_item_annotation( sa_session, user, item )
-        #     return None
-
-        # annotated_item = item.add_item_annotation( sa_session, user, item, val )
-        # return annotated_item.annotation
         return self.manager.annotate( item, user, val )
 
 

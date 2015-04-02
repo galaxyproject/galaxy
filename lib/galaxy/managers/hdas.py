@@ -88,11 +88,8 @@ class HDAManager( datasets.DatasetAssociationManager,
             sa_session=self.app.model.context, **kwargs )
 
         if history:
-# TODO Probably Bug:  set_hid is never used, and should be passed
-# to history.add_dataset here.
-            set_hid = not ( 'hid' in kwargs )
-            history.add_dataset( hda )
-#TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
+            history.add_dataset( hda, set_hid=( 'hid' not in kwargs ) )
+        #TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
 
         self.session().add( hda )
         if flush:
@@ -178,8 +175,6 @@ class HDAManager( datasets.DatasetAssociationManager,
         if hda.state != model.Job.states.OK:
             return self.model_class.conversion_messages.PENDING
         return None
-
-    # .... associated job
 
     # .... data
     # TODO: to data provider or Text datatype directly

@@ -277,6 +277,7 @@ class DatasetAssociationManager( base.ModelManager,
         """
         raise galaxy.exceptions.NotImplemented( 'Abstract Method' )
 
+    # .... associated job
     def creating_job( self, dataset_assoc ):
         # TODO: is this needed? Can't you use the dataset_assoc.creating_job attribute? When is this None?
         # TODO: this would be even better if outputs and inputs were the underlying datasets
