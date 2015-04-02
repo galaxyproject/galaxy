@@ -172,6 +172,23 @@ class HDAManager( datasets.DatasetAssociationManager,
             .filter( model.JobStateHistory.state == job_states.RESUBMITTED ) )
         return self.app.model.context.query( query.exists() ).scalar()
 
+    def _job_state_history_query( self, hda ):
+        """
+        Return a query of the job's state history for the job that created this hda.
+        """
+        session = self.app.model.context
+        JobToOutputDatasetAssociation = model.JobToOutputDatasetAssociation
+        JobStateHistory = model.JobStateHistory
+
+        # TODO: this does not play well with copied hdas
+        # NOTE: don't eagerload (JODA will load the hda were using!)
+        hda_id = hda.id
+        query = ( session.query( JobToOutputDatasetAssociation, JobStateHistory )
+            .filter( JobToOutputDatasetAssociation.dataset_id == hda_id )
+            .filter( JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id )
+            .enable_eagerloads( False ) )
+        return query
+
     def data_conversion_status( self, hda ):
         """
         Returns a message if an hda is not ready to be used in visualization.
@@ -420,7 +437,8 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
             'visible'       : self.deserialize_bool,
             # remapped
             'genome_build'  : lambda i, k, v, **c: self.deserialize_genome_build( i, 'dbkey', v ),
-            'misc_info'     : lambda i, k, v, **c: self.deserialize_basestring( i, 'info', v ),
+            'misc_info'     : lambda i, k, v, **c: self.deserialize_basestring( i, 'info', v,
+                convert_none_to_empty=True ),
         })
         self.deserializable_keyset.update( self.deserializers.keys() )
 
