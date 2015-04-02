@@ -11,6 +11,9 @@ eggs.require("PyYAML")
 import yaml
 from galaxy.managers import api_keys
 
+import logging
+log = logging.getLogger(__name__)
+
 
 class InteractiveEnviornmentRequest(object):
 
@@ -18,6 +21,7 @@ class InteractiveEnviornmentRequest(object):
         plugin_config = plugin.config
 
         self.trans = trans
+        self.log = log
 
         self.attr = Bunch()
         self.attr.viz_id = plugin_config["name"].lower()
