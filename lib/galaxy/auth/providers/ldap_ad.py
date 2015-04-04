@@ -8,7 +8,6 @@ import logging
 
 from galaxy.exceptions import ConfigurationError
 from ..providers import AuthProvider
-from galaxy.util import string_as_bool
 from galaxy.auth import _get_bool
 
 log = logging.getLogger(__name__)
@@ -21,6 +20,7 @@ def _get_subs(d, k, params):
 
 
 class LDAPAD(AuthProvider):
+
     """
     Attempts to authenticate users against an LDAP server.
 
@@ -44,7 +44,8 @@ class LDAPAD(AuthProvider):
         try:
             import ldap
         except:
-            log.debug("Login: %s, LDAP: False (could not load ldap module)" % (login))
+            log.debug(
+                "Login: %s, LDAP: False (could not load ldap module)" % (login))
             return (failure_mode, '')
 
         # do LDAP search (if required)
@@ -65,7 +66,8 @@ class LDAPAD(AuthProvider):
                 scope = ldap.SCOPE_SUBTREE
 
                 # setup search
-                attributes = [_.strip().format(**params) for _ in options['search-fields'].split(',')]
+                attributes = [_.strip().format(**params)
+                              for _ in options['search-fields'].split(',')]
                 result = l.search(_get_subs(options, 'search-base', params), scope,
                                   _get_subs(options, 'search-filter', params), attributes)
 
@@ -92,7 +94,8 @@ class LDAPAD(AuthProvider):
             ldap.set_option(ldap.OPT_REFERRALS, 0)
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
-            l.simple_bind_s(_get_subs(options, 'bind-user', params), _get_subs(options, 'bind-password', params))
+            l.simple_bind_s(_get_subs(
+                options, 'bind-user', params), _get_subs(options, 'bind-password', params))
         except Exception:
             log.exception('LDAP Authentication Exception for login %s' % login)
             return (failure_mode, '', '')
@@ -107,9 +110,9 @@ class LDAPAD(AuthProvider):
         See abstract method documentation.
         """
 
-	if _get_bool(options, 'login-use-username', False):
+        if _get_bool(options, 'login-use-username', False):
             return self.authenticate(user.username, password, options)[0]
-	else:
-	    return self.authenticate(user.email, password, options)[0]
+        else:
+            return self.authenticate(user.email, password, options)[0]
 
 __all__ = ['LDAPAD']

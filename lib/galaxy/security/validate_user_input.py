@@ -45,8 +45,10 @@ def validate_publicname( trans, publicname, user=None ):
         if len( publicname ) < 3:
             return "Public name must be at least 3 characters in length"
     else:
+        # DCT - TODO - Simplify logic if 3 chars is okay for publicname for
+        # galaxy as well as toolshed
         if len( publicname ) < 3:
-            return "Public name must be at least 4 characters in length"
+            return "Public name must be at least 3 characters in length"
     if len( publicname ) > 255:
         return "Public name cannot be more than 255 characters in length"
     if not( VALID_PUBLICNAME_RE.match( publicname ) ):

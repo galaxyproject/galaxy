@@ -23,7 +23,7 @@ class AuthProvider(object):
         NOTE: Used within auto-registration to check it is ok to register this
         user.
 
-        :param  login: the users email address
+        :param  login: the user's email address or username
         :type   login: str
         :param  password: the plain text password they typed
         :type   password: str
@@ -44,7 +44,7 @@ class AuthProvider(object):
         NOTE: used on normal login to check authentication and update user
         details if required.
 
-        :param  username: the users email address
+        :param  username: the user's email address or username
         :type   username: str
         :param  password: the plain text password they typed
         :type   password: str

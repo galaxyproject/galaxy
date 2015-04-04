@@ -27,16 +27,17 @@ log = logging.getLogger(__name__)
 #             <server>ldap://STUDENTS.ltu.edu.au</server>
 #             [<search-filter>(&amp;(objectClass=user)(mail={login}))</search-filter>
 #             <search-base>dc=STUDENTS,dc=ltu,dc=edu,dc=au</search-base>
+#             <!-- If search-user not specified will bind anonymously to LDAP for search -->
 #             <search-user>jsmith</search-user>
 #             <search-password>mysecret</search-password>
 #             <search-fields>sAMAccountName,mail</search-fields>]
 #             <bind-user>{sAMAccountName}@STUDENTS.ltu.edu.au</bind-user>
 #             <bind-password>{password}</bind-password>
 #             <auto-register-username>{sAMAccountName}</auto-register-username>
-#	      <auto-register-email>{mail}</auto-register-email>
-#	   <!-- To allow login with username instead of email
-#	      <login-use-username>True</login-use-username>
-#	   -->
+#             <auto-register-email>{mail}</auto-register-email>
+#      <!-- To allow login with username instead of email
+#            <login-use-username>True</login-use-username>
+#      -->
 #         </options>
 #     </authenticator>
 #     ...
@@ -48,7 +49,7 @@ class AuthManager(object):
     def __init__(self, app):
         self.__app = app
         import galaxy.auth.providers
-        self.__plugins_dict = plugin_config.plugins_dict( galaxy.auth.providers, 'plugin_type' )
+        self.__plugins_dict = plugin_config.plugins_dict(galaxy.auth.providers, 'plugin_type' )
         auth_config_file = app.config.auth_config_file
         self.__init_authenticators(auth_config_file)
 
@@ -116,7 +117,7 @@ class AuthManager(object):
                 log.debug( "Unable to find module: %s" % options )
             else:
                 auth_result, auto_email, auto_username = provider.authenticate(login, password, options)
-                auto_email    = str(auto_email).lower()
+                auto_email = str(auto_email).lower()
                 auto_username = str(auto_username).lower()
                 if auth_result is True:
                     # make username unique
