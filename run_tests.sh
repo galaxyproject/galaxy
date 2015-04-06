@@ -13,6 +13,7 @@ cat <<EOF
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api'                     for running all the test scripts in the ./test/api directory
+'${0##*/} -api test/api/<file>.py:<class>.<test_name>'    for running one specific API test
 '${0##*/} -toolshed'                for running all the test scripts in the ./test/tool_shed/functional directory
 '${0##*/} -toolshed testscriptname' for running one test script named testscriptname in the .test/tool_shed/functional directory
 '${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
