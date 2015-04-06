@@ -3,29 +3,39 @@
 ./scripts/common_startup.sh
 
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
-rm -f run_functional_tests.log 
+rm -f run_functional_tests.log
 
 show_help() {
 cat <<EOF
-'${0##*/}'                          for testing all the tools in functional directory
-'${0##*/} aaa'                      for testing one test case of 'aaa' ('aaa' is the file name with path)
+'${0##*/} (test_path)'              for testing all the tools in functional directory
 '${0##*/} -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
-'${0##*/} -api'                     for running all the test scripts in the ./test/api directory
-'${0##*/} -api test/api/<file>.py:<class>.<test_name>'    for running one specific API test
-'${0##*/} -toolshed'                for running all the test scripts in the ./test/tool_shed/functional directory
-'${0##*/} -toolshed testscriptname' for running one test script named testscriptname in the .test/tool_shed/functional directory
+'${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
+'${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/tool_shed/functional directory
 '${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
-'${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"   
+'${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
-'${0##*/} -unit'                    for running all unit tests (doctests in lib and tests in test/unit)
-'${0##*/} -unit testscriptath'      running particular tests scripts
+'${0##*/} -unit (test_path)'        for running all unit tests (doctests in lib and tests in test/unit)
 '${0##*/} -qunit'                   for running qunit JavaScript tests
 '${0##*/} -qunit testname'          for running single JavaScript test with given name
 
+
+Nose tests will allow specific tests to be selected per the documentation at
+https://nose.readthedocs.org/en/latest/usage.html#selecting-tests.  These are
+indicated with the optional parameter (test_path).  A few examples are:
+
+Run all TestUserInfo functional tests:
+    ./run_tests.sh test/functional/test_user_info.py:TestUserInfo.test_005_create_user_info_forms
+
+Run a specific API test requiring the framework test tools:
+    ./run_tests.sh -api -with_framework_test_tools test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
+
+
 Extra options:
+
+
 
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
