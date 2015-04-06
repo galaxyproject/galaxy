@@ -2,10 +2,10 @@
 Provides factory methods to assemble the Galaxy web application
 """
 
-import sys
+import atexit
 import os
 import os.path
-import atexit
+import sys
 
 from paste import httpexceptions
 import pkg_resources

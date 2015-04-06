@@ -49,7 +49,8 @@
         hdaJSON      = ${h.dumps( hda_dicts )};
 
     require.config({
-        baseUrl : "${h.url_for( '/static/scripts' )}"
+        baseUrl : "${h.url_for( '/static/scripts' )}",
+        urlArgs: 'v=${int(app.server_starttime)}'
     })([ 'mvc/history/history-panel-annotated' ], function( panelMod ){
         // history module is already in the dpn chain from the panel. We can re-scope it here.
         var historyModel = require( 'mvc/history/history-model' ),

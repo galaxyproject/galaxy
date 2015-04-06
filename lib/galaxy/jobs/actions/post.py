@@ -156,7 +156,7 @@ class RenameDatasetAction(DefaultJobAction):
             #      "replace" option so you can replace a portion of the name,
             #      support multiple #{name} in one rename action...
 
-            if new_name.find("#{") > -1:
+            while new_name.find("#{") > -1:
                 to_be_replaced = ""
                 #  This assumes a single instance of #{variable} will exist
                 start_pos = new_name.find("#{") + 2

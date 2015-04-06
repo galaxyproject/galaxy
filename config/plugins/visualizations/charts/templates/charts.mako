@@ -12,6 +12,7 @@
 
         ## install shared libraries
         ${h.js( 'libs/jquery/jquery',
+                'libs/jquery/select2',
                 'libs/bootstrap',
                 'libs/require',
                 'libs/underscore',

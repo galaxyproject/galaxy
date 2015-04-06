@@ -145,7 +145,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     metadata_command = metadata_command.strip()
     if metadata_command:
         commands_builder.capture_return_code()
-        commands_builder.append_command("cd %s; %s" % (exec_dir, metadata_command))
+        commands_builder.append_command(metadata_command)
 
 
 def __copy_if_exists_command(work_dir_output):

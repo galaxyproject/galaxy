@@ -70,7 +70,7 @@ def create_archive( history_attrs_file, datasets_attrs_file, jobs_attrs_file, ou
     except Exception, e:
         return 'Error creating history archive: %s' % str( e ), sys.stderr
 
-if __name__ == "__main__":
+def main():
     # Parse command line.
     parser = optparse.OptionParser()
     parser.add_option( '-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.' )
@@ -81,3 +81,6 @@ if __name__ == "__main__":
     # Create archive.
     status = create_archive( history_attrs, dataset_attrs, job_attrs, out_file, gzip )
     print status
+
+if __name__ == "__main__":
+    main()

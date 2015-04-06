@@ -376,7 +376,7 @@ var ToolSearch = Backbone.Model.extend({
         }
 
         // Do search via AJAX.
-        var q = query + '*';
+        var q = query;
         // Stop previous ajax-request
         if (this.timer) {
             clearTimeout(this.timer);

@@ -839,8 +839,7 @@ class JobWrapper( object ):
 
         self.command_line, self.extra_filenames = tool_evaluator.build()
         # FIXME: for now, tools get Galaxy's lib dir in their path
-        if self.command_line and self.command_line.startswith( 'python' ):
-            self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
+        self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job

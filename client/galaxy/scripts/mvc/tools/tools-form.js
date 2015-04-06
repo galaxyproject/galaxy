@@ -22,6 +22,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                     }
                 })
             }
+            options.initial_errors = options.job_id;
             ToolFormBase.prototype.initialize.call(this, options);
         },
 
@@ -107,17 +108,6 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
                 tool_id         : this.options.id,
                 tool_version    : this.options.version,
                 inputs          : current_state
-            }
-
-            // patch data tool parameters
-            // TODO: This needs to be removed and handled in the api
-            for (var i in current_state.inputs) {
-                var dict = current_state.inputs[i];
-                try {
-                    if (dict && dict.values[0].src === 'hda') {
-                        current_state.inputs[i] = self.content.get({id: dict.values[0].id, src: 'hda'}).id_uncoded;
-                    }
-                } catch (err) {}
             }
 
             // activates/disables spinner for dynamic fields to indicate that they are currently being updated

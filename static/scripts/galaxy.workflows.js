@@ -24,7 +24,7 @@ $( function() {
             $(this).addClass("search_active");
             // input.addClass(config.loadingClass);
             // Add '*' to facilitate partial matching.
-            var q = this.value + '*';
+            var q = this.value;
             // Stop previous ajax-request
             if (this.timer) {
                 clearTimeout(this.timer);

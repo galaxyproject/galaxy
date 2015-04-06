@@ -168,6 +168,7 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase ):
         return RunJobsSummary(
             history_id=history_id,
             workflow_id=workflow_id,
+            invocation_id=invocation_id,
             inputs=inputs,
             jobs=jobs,
         )
@@ -570,11 +571,13 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             '0': self._ds_entry(hda1),
             '1': self._ds_entry(hda2),
         }
-        self.__invoke_workflow( history_id, workflow_id, inputs )
-        # TODO: wait on workflow invocations
-        time.sleep(10)
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        self.assertEquals("10.0\n30.0\n20.0\n40.0\n", self.dataset_populator.get_history_dataset_content( history_id, hid=0 ) )
+        invocation_id = self.__invoke_workflow( history_id, workflow_id, inputs )
+        self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
+        details = self.dataset_populator.get_history_dataset_details( history_id, hid=0 )
+        last_item_hid = details["hid"]
+        assert last_item_hid == 7, "Expected 7 history items, got %s" % last_item_hid
+        content = self.dataset_populator.get_history_dataset_content( history_id, hid=0 )
+        self.assertEquals("10.0\n30.0\n20.0\n40.0\n", content )
 
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
@@ -731,7 +734,7 @@ test_data:
         time.sleep( 2 )
         history_id = run_summary.history_id
         workflow_id = run_summary.workflow_id
-        invocation_id = run_summary.workflow_id
+        invocation_id = run_summary.invocation_id
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         invocation = self._invocation_details( workflow_id, invocation_id )
         assert invocation[ 'state' ] != 'scheduled'
@@ -740,11 +743,14 @@ test_data:
         assert len(  self._history_jobs( history_id ) ) == 2
 
         self.__review_paused_steps( workflow_id, invocation_id, order_index=2, action=True )
-        self.wait_for_invocation( workflow_id, invocation_id )
-        time.sleep(1)
-        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
-        time.sleep(1)
+        self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
         assert len(  self._history_jobs( history_id ) ) == 4
+
+    def wait_for_invocation_and_jobs( self, history_id, workflow_id, invocation_id, assert_ok=True ):
+        self.wait_for_invocation( workflow_id, invocation_id )
+        time.sleep(.5)
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        time.sleep(.5)
 
     def test_cannot_run_inaccessible_workflow( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_run_cannot_access" )
@@ -1169,4 +1175,4 @@ test_data:
                 'input_steps',
             )
 
-RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'inputs', 'jobs'])
+RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs'])

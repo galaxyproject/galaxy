@@ -1340,6 +1340,10 @@ class ColumnListParameter( SelectToolParameter ):
         datasets = util.listify( referent )
         for dataset in datasets:
             if dataset:
+                # Check if metadata is available
+                if not hasattr(dataset, 'metadata'):
+                    return True
+
                 # Check if the dataset does not have the expected metadata for columns
                 if not dataset.metadata.columns:
                     # Only allow late validation if the dataset is not yet ready
@@ -1982,16 +1986,27 @@ class DataToolParameter( BaseDataToolParameter ):
             return None
         if not value and not self.optional:
             raise ValueError( "History does not include a dataset of the required format / build" )
-        if value in [None, "None"]:
+        if value in [None, "None", '']:
             return None
         if isinstance( value, str ) and value.find( "," ) > 0:
             value = [ int( value_part ) for value_part in value.split( "," ) ]
         if isinstance( value, list ):
             rval = []
+            found_hdca = False
             for single_value in value:
-                if isinstance( single_value, dict ):
-                    assert single_value['src'] == 'hda'
-                    rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id( single_value[ 'id' ] ) ) )
+                if found_hdca:
+                    raise ValueError("Only one collection may be supplied to parameter.")
+                if isinstance( single_value, dict ) and 'src' in single_value and 'id' in single_value:
+                    if single_value['src'] == 'hda':
+                        rval.append(trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.app.security.decode_id(single_value['id']) ))
+                    elif single_value['src'] == 'hdca':
+                        found_hdca = True
+                        decoded_id = trans.app.security.decode_id( single_value[ 'id' ] )
+                        rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+                    else:
+                        raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
+                elif isinstance( single_value, trans.app.model.HistoryDatasetAssociation ):
+                    rval.append( single_value )
                 else:
                     rval.append( trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( single_value ) )
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
@@ -2008,6 +2023,8 @@ class DataToolParameter( BaseDataToolParameter ):
             encoded_id = str( value )[ len( "__collection_reduce__|" ): ]
             decoded_id = trans.app.security.decode_id( encoded_id )
             rval = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( decoded_id )
+        elif isinstance( value, trans.app.model.HistoryDatasetCollectionAssociation ):
+            rval = value
         else:
             rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
         if isinstance( rval, list ):
@@ -2017,7 +2034,7 @@ class DataToolParameter( BaseDataToolParameter ):
         for v in values:
             if v:
                 if v.deleted:
-                    raise ValueError( "The previously selected dataset has been previously deleted" )
+                    raise ValueError( "The previously selected dataset has been deleted." )
                 if hasattr( v, "dataset" ) and v.dataset.state in [ galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
                     raise ValueError( "The previously selected dataset has entered an unusable state" )
         if not self.multiple:
@@ -2369,24 +2386,6 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
         return True  # TODO
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
-        d = super( DataCollectionToolParameter, self ).to_dict( trans )
-        if other_values is None:
-            # No need to produce lists of datasets for history.
-            return d
-
-        dataset_matcher = DatasetMatcher( trans, self, None, other_values )
-        history = trans.history
-
-        for hdca in self.match_collections( trans, history, dataset_matcher ):
-            pass
-
-        for hdca in self.match_multirun_collections( trans, history, dataset_matcher ):
-            subcollection_type = self._history_query( trans ).collection_type_description.collection_type
-            pass
-
-        return d
-
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         # create dictionary and fill default parameters
         d = super( DataCollectionToolParameter, self ).to_dict( trans )
         d['extensions'] = self.extensions
@@ -2419,7 +2418,8 @@ class DataCollectionToolParameter( BaseDataToolParameter ):
                     'id_uncoded'    : hdca.id,
                     'hid'           : hdca.hid,
                     'name'          : hdca.name,
-                    'src'           : 'hdca'
+                    'src'           : 'hdca',
+                    'map_over_type' : subcollection_type
                 })
 
         # sort both lists
@@ -2438,6 +2438,7 @@ class HiddenDataToolParameter( HiddenToolParameter, DataToolParameter ):
         DataToolParameter.__init__( self, tool, elem )
         self.value = "None"
         self.type = "hidden_data"
+        self.hidden = True
 
     def get_initial_value( self, trans, context, history=None ):
         return None

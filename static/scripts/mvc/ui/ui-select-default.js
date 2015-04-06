@@ -78,9 +78,11 @@ var View = Backbone.View.extend({
             if (new_value === null) {
                 new_value = '__null__';
             }
-            this.$select.val(new_value);
-            if (this.$select.select2) {
-                this.$select.select2('val', new_value);
+            if (this.exists(new_value) || this.options.multiple) {
+                this.$select.val(new_value);
+                if (this.$select.select2) {
+                    this.$select.select2('val', new_value);
+                }
             }
         }
 

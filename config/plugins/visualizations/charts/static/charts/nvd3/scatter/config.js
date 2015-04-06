@@ -6,11 +6,11 @@ return $.extend(true, {}, nvd3_config, {
     zoomable    : true,
     columns     : {
         x : {
-            title   : 'Values for x-axis',
+            title       : 'Values for x-axis',
             is_numeric  : true
         },
         y : {
-            title   : 'Values for y-axis',
+            title       : 'Values for y-axis',
             is_numeric  : true
         }
     }

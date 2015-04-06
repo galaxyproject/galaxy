@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import sys
 import os
 
+import time
 from galaxy import config, jobs
 import galaxy.model
 import galaxy.security
@@ -87,7 +88,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         # Load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
-        self.datatypes_registry.load_display_applications()
+        self.datatypes_registry.load_display_applications( self )
         # Load datatype converters defined in local datatypes_conf.xml
         self.datatypes_registry.load_datatype_converters( self.toolbox )
         # Load external metadata tool
@@ -147,6 +148,7 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager( self )
 
         self.model.engine.dispose()
+        self.server_starttime = int(time.time())  # used for cachebusting
 
     def setup_control_queue(self):
         self.control_worker = GalaxyQueueWorker(self, galaxy.queues.control_queue_from_config(self.config),
