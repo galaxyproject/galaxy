@@ -19,7 +19,7 @@ def _get_subs(d, k, params):
     return str(d[k]).format(**params)
 
 
-class LDAPAD(AuthProvider):
+class LDAP(AuthProvider):
 
     """
     Attempts to authenticate users against an LDAP server.
@@ -28,7 +28,7 @@ class LDAPAD(AuthProvider):
     those fields first.  After that it will bind to LDAP with the username
     (formatted as specified).
     """
-    plugin_type = 'ldap_ad'
+    plugin_type = 'ldap'
 
     def authenticate(self, login, password, options):
         """
@@ -115,4 +115,10 @@ class LDAPAD(AuthProvider):
         else:
             return self.authenticate(user.email, password, options)[0]
 
-__all__ = ['LDAPAD']
+
+class ActiveDirectory(LDAP):
+     """ Effectively just an alias for LDAP auth, but may contain active directory specific
+     logic in the future. """
+     plugin_type = 'activedirectory'
+
+__all__ = ['LDAP', 'ActiveDirectory']
