@@ -513,7 +513,7 @@ if wf_parms:
     <div class="metadataFormTitle">Workflow Parameters</div>
     <div class="metadataFormBody">
     %for parm in wf_parms:
-        <div class='form-row'><label style='width:100px;'>${parm}<input style="border:2px solid ${wf_parms[parm]};border-left-width:8px;" type="text" class='wf_parm_input ptag_${parm}' name="wf_parm|${parm}" value=""/></label></div>
+        <div class='form-row'><label>${parm}<br/><input size=40 style="border:2px solid ${wf_parms[parm]};border-left-width:8px;" type="text" class='wf_parm_input ptag_${parm}' name="wf_parm|${parm}" value=""/></label></div>
     %endfor
     </div>
 </div>

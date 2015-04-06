@@ -523,7 +523,7 @@ class ToolMigrationManager( object ):
                                                                       installed_repository_dict=repository_dict )
             if display_path:
                 # Load proprietary datatype display applications
-                self.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
+                self.app.datatypes_registry.load_display_applications( self.app, installed_repository_dict=repository_dict )
             basic_util.remove_dir( work_dir )
 
     def install_repository( self, repository_elem, tool_shed_repository, install_dependencies, is_repository_dependency=False ):

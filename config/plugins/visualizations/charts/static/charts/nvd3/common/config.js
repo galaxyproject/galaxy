@@ -4,7 +4,15 @@ return $.extend(true, {}, config_default, {
     category    : '',
     library     : 'NVD3',
     tag         : 'svg',
-    keywords    : 'small'
+    keywords    : 'small',
+    columns     : {
+        tooltip : {
+            title       : 'Data point labels',
+            is_text     : true,
+            is_numeric  : true,
+            is_auto     : true
+        }
+    }
 });
 
 });

@@ -1,5 +1,7 @@
-import sys
 import config
+import sys
+import time
+
 import galaxy.model
 from galaxy.web import security
 
@@ -23,9 +25,11 @@ class UniverseApplication( object ):
                                                 db_url,
                                                 self.config.database_engine_options,
                                                 create_tables=True )
-        self.targets_mysql = 'mysql' in self.config.database_connection
+        self.targets_mysql = self.config.database_connection and 'mysql' in self.config.database_connection
         # Security helper
         self.security = security.SecurityHelper( id_secret=self.config.id_secret )
+        # used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.
+        self.server_starttime = int(time.time())
 
     def shutdown( self ):
         pass

@@ -88,7 +88,7 @@ var View = Backbone.View.extend({
         }
 
         // add collection selector
-        if (this.mode == 'single' || this.mode == 'collection') {
+        if (this.mode == 'single' || this.mode == 'multiple' || this.mode == 'collection') {
             radio_buttons.push({
                 icon    : 'fa-folder-o',
                 value   : 'collection',
@@ -123,20 +123,22 @@ var View = Backbone.View.extend({
 
         // number of radio buttons
         var n_buttons = _.size(this.list);
-        
+
         // add button to dom
         var button_width = 0;
         if (n_buttons > 1) {
             this.$el.append(this.button_type.$el);
             button_width = Math.max(0, _.size(this.list) * 35) + 'px';
         }
-        
+
         // append field elements
         for (var i in this.list) {
             this.$el.append(this.list[i].field.$el.css({
                 'margin-left': button_width
             }));
         }
+
+        // append batch message
         this.$el.append(this.$batch.css({
             'margin-left': button_width
         }));
@@ -176,30 +178,27 @@ var View = Backbone.View.extend({
 
     /** Update content selector */
     update: function(options) {
-        // identify dataset options
-        var dataset_options = [];
-        for (var i in options.hda) {
-            var hda = options.hda[i];
-            dataset_options.push({
-                label: hda.hid + ': ' + hda.name,
-                value: hda.id
-            });
+        // update a particular select field
+        function _update(field, options) {
+            if (field) {
+                // identify available options
+                var select_options = [];
+                for (var i in options) {
+                    var item = options[i];
+                    select_options.push({
+                        label: item.hid + ': ' + item.name,
+                        value: item.id
+                    });
+                }
+                // update field
+                field.update(select_options);
+            }
         }
 
-        // identify collection options
-        var collection_options = [];
-        for (var i in options.hdca) {
-            var hdca = options.hdca[i];
-            collection_options.push({
-                label: hdca.hid + ': ' + hdca.name,
-                value: hdca.id
-            });
-        }
-
-        // update selection fields
-        this.select_single && this.select_single.update(dataset_options);
-        this.select_multiple && this.select_multiple.update(dataset_options);
-        this.select_collection && this.select_collection.update(collection_options);
+        // update available options
+        _update(this.select_single, options.hda);
+        _update(this.select_multiple, options.hda);
+        _update(this.select_collection, options.hdca);
 
         // add to content list
         this.app.content.add(options);
@@ -218,7 +217,7 @@ var View = Backbone.View.extend({
                     }
                     
                     // identify suitable select field
-                    if (new_value && new_value.values.length > 0 && new_value.values[0].src == 'hcda') {
+                    if (new_value && new_value.values.length > 0 && new_value.values[0].src == 'hdca') {
                         this.current = 'collection';
                         this.select_collection.value(list[0]);
                     } else {
@@ -234,12 +233,14 @@ var View = Backbone.View.extend({
                     console.debug('tools-select-content::value() - Skipped.');
                 }
             } else {
-                this.select_single && this.select_single.value(null);
-                this.select_multiple && this.select_multiple.value(null);
-                this.select_collection && this.select_collection.value(null);
+                for (var i in this.list) {
+                    this.list[i].field.value(null);
+                }
             }
-            this.refresh();
         }
+
+        // refresh view
+        this.refresh();
 
         // validate value
         var id_list = this._select().value();
@@ -259,17 +260,27 @@ var View = Backbone.View.extend({
 
         // prepare result dict
         var result = {
-            batch   : this.mode == 'single' && this.current != 'single',
+            batch   : this._batch(),
             values  : []
         }
 
         // append to dataset ids
         for (var i in id_list) {
-            result.values.push({
+            var details = this.app.content.get({
                 id  : id_list[i],
                 src : this.list[this.current].type
             });
+            if (details) {
+                result.values.push(details);
+            } else {
+                return null;
+            }
         }
+
+        // sort by history ids
+        result.values.sort(function(a, b){
+            return a.hid - b.hid;
+        });
 
         // return
         return result;
@@ -286,7 +297,7 @@ var View = Backbone.View.extend({
                 $el.hide();
             }
         }
-        if (this.mode == 'single' && this.current != 'single') {
+        if (this._batch()) {
             this.$batch.show();
         } else {
             this.$batch.hide();
@@ -296,6 +307,25 @@ var View = Backbone.View.extend({
     /** Assists in selecting the current field */
     _select: function() {
         return this.list[this.current].field;
+    },
+
+    /** Assists in identifying the batch mode */
+    _batch: function() {
+        if (this.current == 'collection') {
+            var hdca = this.app.content.get({
+                id  : this._select().value(),
+                src : 'hdca'
+            });
+            if (hdca && hdca.map_over_type) {
+                return true;
+            }
+        }
+        if (this.current != 'single') {
+            if (this.mode == 'single') {
+                return true;
+            }
+        }
+        return false;
     }
 });
 

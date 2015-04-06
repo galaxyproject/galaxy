@@ -9,7 +9,8 @@
                 baseUrl: "${h.url_for('/static/scripts')}",
                 shim: {
                     "libs/underscore": { exports: "_" }
-                }
+                },
+                urlArgs: 'v=${int(app.server_starttime)}'
         });
 
         require(["mvc/tools"], function(tools_mod) {

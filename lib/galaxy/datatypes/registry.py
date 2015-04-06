@@ -546,7 +546,7 @@ class Registry( object ):
                 else:
                     self.log.exception( "Error loading converter (%s): %s" % ( converter_path, str( e ) ) )
 
-    def load_display_applications( self, installed_repository_dict=None, deactivate=False ):
+    def load_display_applications( self, app, installed_repository_dict=None, deactivate=False ):
         """
         If deactivate is False, add display applications from self.display_app_containers or
         self.proprietary_display_app_containers to appropriate datatypes.  If deactivate is
@@ -570,7 +570,7 @@ class Registry( object ):
                     config_path = os.path.join( self.display_applications_path, display_file )
                 try:
                     inherit = galaxy.util.string_as_bool( display_app.get( 'inherit', 'False' ) )
-                    display_app = DisplayApplication.from_file( config_path, self )
+                    display_app = DisplayApplication.from_file( config_path, app )
                     if display_app:
                         if display_app.id in self.display_applications:
                             if deactivate:
@@ -653,12 +653,15 @@ class Registry( object ):
                   <requirement type="package">samtools</requirement>
               </requirements>
               <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
-              <command>$__SET_EXTERNAL_METADATA_COMMAND_LINE__</command>
+              <command>python $set_metadata $__SET_EXTERNAL_METADATA_COMMAND_LINE__</command>
               <inputs>
                 <param format="data" name="input1" type="data" label="File to set metadata on."/>
                 <param name="__ORIGINAL_DATASET_STATE__" type="hidden" value=""/>
                 <param name="__SET_EXTERNAL_METADATA_COMMAND_LINE__" type="hidden" value=""/>
               </inputs>
+              <configfiles>
+                <configfile name="set_metadata">from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()</configfile>
+              </configfiles>
             </tool>
             """
         tmp_name = tempfile.NamedTemporaryFile()

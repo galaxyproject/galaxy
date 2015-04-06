@@ -108,7 +108,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     var new_state = self.tree.finalize();
                     if (!_.isEqual(new_state, current_state)) {
                         current_state = new_state;
-                        self._updateModel($.extend({}, current_state));
+                        self._updateModel($.extend(true, {}, current_state));
                     }
                 });
             });
@@ -133,12 +133,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         highlight: function (input_id, message, silent) {
             // get input field
             var input_element = this.element_list[input_id];
-            
+
             // check input element
             if (input_element) {
                 // mark error
                 input_element.error(message || 'Please verify this parameter.');
-            
+
                 // scroll to first input element
                 if (!silent) {
                     $('html, body').animate({
@@ -153,7 +153,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         _errors: function(options) {
             // hide previous error statements
             this.trigger('reset');
-        
+
             // highlight all errors
             if (options && options.errors) {
                 var error_messages = this.tree.matchResponse(options.errors);
@@ -193,7 +193,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                                 // here we update the tool version (some tools encode the version also in the id)
                                 self.options.id = self.options.id.replace(self.options.version, this.version);
                                 self.options.version = this.version;
-                                
+
                                 // rebuild the model and form
                                 self.deferred.reset();
                                 self.deferred.execute(function(){self._buildModel()});
@@ -223,14 +223,14 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         window.open(options.biostar_url + '/p/new/post/');
                     }
                 });
-                
+
                 // create search button
                 menu_button.addMenu({
                     icon    : 'fa-search',
                     title   : 'Search',
                     tooltip : 'Search help for this tool (Biostar)',
                     onclick : function() {
-                        window.open(options.biostar_url + '/t/' + options.id + '/');
+                        window.open(options.biostar_url + '/local/search/page/?q=' + options.name);
                     }
                 });
             };
@@ -293,6 +293,20 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         window.open(self.options.sharable_url);
                     }
                 });
+            }
+
+            // add remap button
+            if (this.options.job_id && this.options.job_remap) {
+                options.inputs['rerun_remap_job_id'] = {
+                    label       : 'Resume dependencies from this job',
+                    name        : 'rerun_remap_job_id',
+                    type        : 'select',
+                    display     : 'radio',
+                    ignore      : '__ignore__',
+                    value       : '__ignore__',
+                    options     : [['Yes', this.options.job_id], ['No', '__ignore__']],
+                    help        : 'The previous run of this tool failed and other tools were waiting for it to finish successfully.  Use this option to resume those tools using the new output(s) of this tool run.'
+                }
             }
 
             // create tool form section

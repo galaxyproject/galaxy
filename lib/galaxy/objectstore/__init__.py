@@ -392,39 +392,39 @@ class NestedObjectStore(ObjectStore):
         super(NestedObjectStore, self).shutdown()
 
     def exists(self, obj, **kwargs):
-        return self.__call_method('exists', obj, False, False, **kwargs)
+        return self._call_method('exists', obj, False, False, **kwargs)
 
     def file_ready(self, obj, **kwargs):
-        return self.__call_method('file_ready', obj, False, False, **kwargs)
+        return self._call_method('file_ready', obj, False, False, **kwargs)
 
     def create(self, obj, **kwargs):
         random.choice(self.backends.values()).create(obj, **kwargs)
 
     def empty(self, obj, **kwargs):
-        return self.__call_method('empty', obj, True, False, **kwargs)
+        return self._call_method('empty', obj, True, False, **kwargs)
 
     def size(self, obj, **kwargs):
-        return self.__call_method('size', obj, 0, False, **kwargs)
+        return self._call_method('size', obj, 0, False, **kwargs)
 
     def delete(self, obj, **kwargs):
-        return self.__call_method('delete', obj, False, False, **kwargs)
+        return self._call_method('delete', obj, False, False, **kwargs)
 
     def get_data(self, obj, **kwargs):
-        return self.__call_method('get_data', obj, ObjectNotFound, True, **kwargs)
+        return self._call_method('get_data', obj, ObjectNotFound, True, **kwargs)
 
     def get_filename(self, obj, **kwargs):
-        return self.__call_method('get_filename', obj, ObjectNotFound, True, **kwargs)
+        return self._call_method('get_filename', obj, ObjectNotFound, True, **kwargs)
 
     def update_from_file(self, obj, **kwargs):
         if kwargs.get('create', False):
             self.create(obj, **kwargs)
             kwargs['create'] = False
-        return self.__call_method('update_from_file', obj, ObjectNotFound, True, **kwargs)
+        return self._call_method('update_from_file', obj, ObjectNotFound, True, **kwargs)
 
     def get_object_url(self, obj, **kwargs):
-        return self.__call_method('get_object_url', obj, None, False, **kwargs)
+        return self._call_method('get_object_url', obj, None, False, **kwargs)
 
-    def __call_method(self, method, obj, default, default_is_exception, **kwargs):
+    def _call_method(self, method, obj, default, default_is_exception, **kwargs):
         """
         Check all children object stores for the first one with the dataset
         """
@@ -432,7 +432,7 @@ class NestedObjectStore(ObjectStore):
             if store.exists(obj, **kwargs):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
-            raise default( 'objectstore, __call_method failed: %s on %s, kwargs: %s'
+            raise default( 'objectstore, _call_method failed: %s on %s, kwargs: %s'
                 % ( method, str( obj ), str( kwargs ) ) )
         else:
             return default
@@ -535,12 +535,12 @@ class DistributedObjectStore(NestedObjectStore):
                 log.debug("Using preferred backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
             self.backends[obj.object_store_id].create(obj, **kwargs)
 
-    def __call_method(self, method, obj, default, default_is_exception, **kwargs):
+    def _call_method(self, method, obj, default, default_is_exception, **kwargs):
         object_store_id = self.__get_store_id_for(obj, **kwargs)
         if object_store_id is not None:
             return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
-            raise default( 'objectstore, __call_method failed: %s on %s, kwargs: %s'
+            raise default( 'objectstore, _call_method failed: %s on %s, kwargs: %s'
                 % ( method, str( obj ), str( kwargs ) ) )
         else:
             return default
