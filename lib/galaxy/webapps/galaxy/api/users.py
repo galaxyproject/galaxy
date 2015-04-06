@@ -105,7 +105,7 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         POST /api/users
         Creates a new Galaxy user.
         """
-        if not trans.app.config.allow_user_creation:
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             raise exceptions.ConfigDoesNotAllowException( 'User creation is not allowed in this Galaxy instance' )
         if trans.app.config.use_remote_user and trans.user_is_admin():
             user = trans.get_or_create_remote_user( remote_user_email=payload['remote_user_email'] )

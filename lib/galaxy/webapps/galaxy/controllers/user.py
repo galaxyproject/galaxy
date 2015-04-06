@@ -32,10 +32,10 @@ from galaxy.web.framework.helpers import escape, grids, time_ago
 log = logging.getLogger( __name__ )
 
 REQUIRE_LOGIN_TEMPLATE = """
-<p>
-    This %s has been configured such that only users who are logged in may use it.%s
+<p><img src="/static/images/TrinityPTI.jpg"></p>
+<h1> Welcome to the Trinity %s.</h1><p> This instance has been configured such that only users who are logged in may use it. If you need help, <a target="_blank"  href="http://ncgas.org/questions.php">send us a question</a> or <a href="http://ncgas.org/galaxy_trinity_faq.php" target="_blank" >read the FAQs.</a> %s         
 </p>
-<p/>
+<p><strong> If you would like to register for an account, please click <a href="https://redcap.uits.iu.edu/surveys/?s=Edbef4bGGb">here.</a></strong></p>          
 """
 
 PASSWORD_RESET_TEMPLATE = """

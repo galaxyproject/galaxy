@@ -15,6 +15,9 @@ log.addHandler( logging.NullHandler() )
 
 import pkg_resources
 
+import pprint
+pprint.pprint(sys.path)
+
 class ScrambleFailure( Exception ):
     def __init__( self, eggs, msg=None ):
         if type( eggs ) in ( list, tuple ):

@@ -143,6 +143,8 @@ from galaxy import eggs
 
 # get setuptools
 try:
+    sys.path = ['/N/home/t/r/trinity/Mason/tripup/lib/python2.7/site-packages'] + sys.path
+    print "System path at break point is ",sys.path
     from setuptools import *
     import pkg_resources
 except ImportError:
