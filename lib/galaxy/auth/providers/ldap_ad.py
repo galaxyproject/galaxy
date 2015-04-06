@@ -117,8 +117,8 @@ class LDAP(AuthProvider):
 
 
 class ActiveDirectory(LDAP):
-     """ Effectively just an alias for LDAP auth, but may contain active directory specific
-     logic in the future. """
-     plugin_type = 'activedirectory'
+    """ Effectively just an alias for LDAP auth, but may contain active directory specific
+    logic in the future. """
+    plugin_type = 'activedirectory'
 
 __all__ = ['LDAP', 'ActiveDirectory']
