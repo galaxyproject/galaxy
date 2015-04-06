@@ -2148,39 +2148,6 @@ class Tool( object, Dictifiable ):
         """
         pass
 
-    def collect_associated_files( self, output, job_working_directory ):
-        """
-        Find extra files in the job working directory and move them into
-        the appropriate dataset's files directory
-        """
-        for name, hda in output.items():
-            temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
-            extra_dir = None
-            try:
-                # This skips creation of directories - object store
-                # automatically creates them.  However, empty directories will
-                # not be created in the object store at all, which might be a
-                # problem.
-                for root, dirs, files in os.walk( temp_file_path ):
-                    extra_dir = root.replace(job_working_directory, '', 1).lstrip(os.path.sep)
-                    for f in files:
-                        self.app.object_store.update_from_file(hda.dataset,
-                            extra_dir=extra_dir,
-                            alt_name=f,
-                            file_name=os.path.join(root, f),
-                            create=True,
-                            preserve_symlinks=True
-                        )
-                # Clean up after being handled by object store.
-                # FIXME: If the object (e.g., S3) becomes async, this will
-                # cause issues so add it to the object store functionality?
-                if extra_dir is not None:
-                    # there was an extra_files_path dir, attempt to remove it
-                    shutil.rmtree(temp_file_path)
-            except Exception, e:
-                log.debug( "Error in collect_associated_files: %s" % ( e ) )
-                continue
-
     def collect_child_datasets( self, output, job_working_directory ):
         """
         Look for child dataset files, create HDA and attach to parent.
@@ -2476,7 +2443,7 @@ class Tool( object, Dictifiable ):
                     continue
 
                 # state for subsection/group
-                group_state = state_inputs[input.name]
+                group_state = state_inputs.get(input.name, {})
 
                 # iterate and update values
                 if input.type == 'repeat':
@@ -2487,10 +2454,12 @@ class Tool( object, Dictifiable ):
                 elif input.type == 'conditional':
                     if 'test_param' in tool_dict:
                         test_param = tool_dict['test_param']
-                        test_param['value'] = jsonify(group_state[test_param['name']])
-                        if '__current_case__' in group_state:
-                            i = group_state['__current_case__']
-                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, group_state, other_values)
+                        test_param['value'] = jsonify(group_state.get(test_param['name'], None))
+                        for i in range (len ( tool_dict['cases'] ) ):
+                            current_state = {}
+                            if i == group_state.get('__current_case__', None):
+                                current_state = group_state
+                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, current_state, other_values)
                 elif input.type == 'section':
                     iterate( tool_dict['inputs'], input.inputs, group_state, other_values )
                 else:
@@ -2504,11 +2473,15 @@ class Tool( object, Dictifiable ):
                     input_name = tool_dict.get('name')
                     if input_name:
                         # backup default value
-                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                        try:
+                            tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                        except Exception:
+                            # get initial value failed due to improper late validation
+                            tool_dict['default_value'] = None
+                            pass
 
                         # update input value from tool state
-                        if input_name in state_inputs:
-                            tool_dict['value'] = state_inputs[input_name]
+                        tool_dict['value'] = state_inputs.get(input_name, None)
 
                         # sanitize values
                         sanitize(tool_dict, 'value')

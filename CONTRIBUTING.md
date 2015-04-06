@@ -1,8 +1,9 @@
 # Contributing
 
-This document briefly describes how to contribute to the
-galaxy-central core project - also checkout our 2013 Galaxy Community
-Conference presentation] on the topic
+This document briefly describes how to contribute to the [core
+galaxy project](https://github.com/galaxyproject/galaxy) -
+also checkout our 2013 Galaxy Community
+Conference presentation on the topic
 ([video](http://vimeo.com/channels/581875/73486255),
 [presentation](https://wiki.galaxyproject.org/Documents/Presentations/GCC2013?action=AttachFile&do=view&target=BakerContribute.pdf)). For
 information on contributing more broadly to the Galaxy ecosystem and a
@@ -25,6 +26,11 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
 
 ## How to Contribute
 
+* All changes to the [core galaxy project](https://github.com/galaxyproject/galaxy)
+  should be made through pull requests to this repository except when
+  serious security vulnerabilities must simulatenously be made to multiple
+  previously released versions of Galaxy.
+
 * If you are new to Git - please check out the very useful tutorials on the [GitHub training hub](https://training.github.com/kit/)
 
 * Make sure you have a free [GitHub account](https://github.com/)
@@ -42,7 +48,7 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
     checkout dev`).
 
   * Most bug fixes to previously release components (things in galaxy-dist)
-    should be made against the `master` branch (`git checkout master`).
+    should be made against the recent `release_XX.XX` branch (`git checkout release_XX.XX`).
 
   * Serious security problems should not be fixed via pull request -
     please responsibly disclose these by e-mailing them (with or
@@ -66,11 +72,12 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   tests as part of the pull request review process and may request the
   output of these tests.
 
-* Commit and push your changes to your Bitbucket fork.
+* Commit and push your changes to your
+  [fork](https://help.github.com/articles/pushing-to-a-remote/).
 
 * Open a [pull
-  request](https://confluence.atlassian.com/display/BITBUCKET/Fork+a+Repo,+Compare+Code,+and+Create+a+Pull+Request)
-  with these changes. You pull request message should include:
+  request](https://help.github.com/articles/creating-a-pull-request/)
+  with these changes. You pull request message ideally should include:
 
    * A description of why the change should be made.
 

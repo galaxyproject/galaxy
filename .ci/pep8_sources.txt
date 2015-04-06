@@ -19,10 +19,11 @@ lib/galaxy/tools/toolbox
 lib/galaxy/tools/{errors,loader_directory,test}.py
 lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules}.py
 lib/galaxy/web/{proxy,security}
+lib/galaxy/web/base/{__init__,interactive_environments}.py
 lib/galaxy/web/formatting.py
 lib/galaxy/webapps/__init__.py
 lib/galaxy/webapps/galaxy/__init__.py
-lib/galaxy/webapps/galaxy/api/{__init__,dataset_collections,datatypes,job_files,provenance,users}.py
+lib/galaxy/webapps/galaxy/api/{__init__,authenticate,dataset_collections,datatypes,folder_contents,folders,lda_datasets,job_files,libraries,library_contents,provenance,remote_files,search,users}.py
 lib/galaxy/webapps/galaxy/controllers/{__init__,admin,cloudlaunch,workflow}.py
 lib/galaxy/webapps/reports/app.py
 lib/galaxy/webapps/reports/controllers/{__init__,jobs,query,workflows}.py

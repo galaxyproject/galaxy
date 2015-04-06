@@ -426,7 +426,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'hda_ldda'      : lambda *a: 'hda',
 
             # remapped
-            'info'          : lambda t, i, k: i.info.strip() if isinstance( i.info, basestring ) else i.info,
+            'info'          : lambda t, i, k: i.info.strip() if isinstance( i.info, basestring ) else '',
             'misc_info'     : lambda t, i, k: self.serializers[ 'info' ]( t, i, k ),
             'misc_blurb'    : lambda t, i, k: i.blurb,
             'genome_build'  : lambda t, i, k: i.dbkey,
@@ -622,7 +622,8 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
 
             # remapped
             'genome_build'  : lambda t, i, k, v: self.deserialize_genome_build( t, i, 'dbkey', v ),
-            'misc_info'     : lambda t, i, k, v: self.deserialize_basestring( t, i, 'info', v ),
+            'misc_info'     : lambda t, i, k, v: (
+                self.deserialize_basestring( t, i, 'info', v, convert_none_to_empty=True ) ),
 
             # TODO: mixin: deletable
             'deleted'       : self.deserialize_bool,

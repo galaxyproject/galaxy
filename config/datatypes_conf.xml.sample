@@ -93,6 +93,7 @@
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="gff_to_fli_converter.xml" target_datatype="fli"/>
       <display file="ensembl/ensembl_gff.xml" inherit="True"/>
+      <display file="igv/gff.xml" inherit="True"/>
       <!-- <display file="gbrowse/gbrowse_gff.xml" inherit="True" /> -->
     </datatype>
     <datatype extension="gff3" type="galaxy.datatypes.interval:Gff3" display_in_upload="true" description="The GFF3 format addresses the most common extensions to GFF, while preserving backward compatibility with previous formats." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#GFF3"/>
