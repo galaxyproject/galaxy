@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.model.orm import and_
+from galaxy.model.orm import and_, or_
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
                                                  validate_password,
@@ -467,7 +467,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         status = kwd.get( 'status', 'done' )
         header = ''
         user = trans.user
-        email = kwd.get( 'email', '' )
+        login = kwd.get( 'login', '' )
         if user:
             # Already logged in.
             redirect_url = redirect
@@ -496,7 +496,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 else:
                     header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy tool shed", "" )
         return trans.fill_template( '/user/login.mako',
-                                    email=email,
+                                    login=login,
                                     header=header,
                                     use_panels=use_panels,
                                     redirect_url=redirect_url,
@@ -510,21 +510,23 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     def __validate_login( self, trans, **kwd ):
         """Validates numerous cases that might happen during the login time."""
-        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'error' )
-        email = kwd.get( 'email', '' )
+        login = kwd.get( 'login', '' )
         password = kwd.get( 'password', '' )
-        username = kwd.get( 'username', '' )
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         success = False
-        user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
+        user = trans.sa_session.query( trans.app.model.User ).filter(or_(
+            trans.app.model.User.table.c.email == login,
+            trans.app.model.User.table.c.username == login
+        )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if not user:
-            autoreg = trans.app.auth_manager.check_auto_registration(trans, email, password)
+            autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
             if autoreg[0]:
-                kwd['username'] = autoreg[1]
+                kwd['email'] = autoreg[1]
+                kwd['username'] = autoreg[2]
                 params = util.Params( kwd )
-                message = validate_email( trans, email )  #self.__validate( trans, params, email, password, password, username )
+                message = validate_email( trans, kwd['email'] )  #self.__validate( trans, params, email, password, password, username )
                 if not message:
                     message, status, user, success = self.__register( trans, 'user', False, **kwd )
                     if success:
@@ -552,11 +554,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if ( trans.app.config.activation_grace_period != 0 ):  # grace period is ON
                 if self.is_outside_grace_period( trans, user.create_time ):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                    message, status = self.resend_verification_email( trans, email, username )
+                    message, status = self.resend_verification_email( trans, user.email, user.username )
                 else:  # User is within the grace period, let him log in.
                     message, success, status = self.proceed_login( trans, user, redirect )
             else:  # Grace period is off. Login is disabled and user will have the activation email resent.
-                message, status = self.resend_verification_email( trans, email, username )
+                message, status = self.resend_verification_email( trans, user.email, user.username )
         else:  # activation is OFF
             message, success, status = self.proceed_login( trans, user, redirect )
         return ( message, status, user, success )

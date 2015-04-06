@@ -856,7 +856,7 @@ use_interactive = True
 #openid_consumer_cache_path = database/openid_consumer_cache
 
 # XML config file that allows the use of different authentication providers
-# (e.g. Active Directory) instead or in addition to local authentication
+# (e.g. LDAP) instead or in addition to local authentication
 # (.sample is used if default does not exist).
 #auth_config_file = config/auth_conf.xml
 
