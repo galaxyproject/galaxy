@@ -84,7 +84,12 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         if(self.app.config.use_CCC_DRMAA):
             import CCCsession;
             self.ds = CCCsession.Session();
-            #self.ds = drmaa.Session()
+            self.CCC_environment_variables = [];
+            try:
+                with open(self.app.config.CCC_env_vars_list_file, 'r') as fptr:
+                    self.CCC_environment_variables = fptr.read().splitlines();
+            except:
+                log.error('Could not open file listing the environment variables to pass to the CCC WFM : '+self.app.config.CCC_env_vars_list_file);
         else:
             self.ds = drmaa.Session()
         self.ds.initialize()
@@ -202,8 +207,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_id=' + str(workflow_id);
                 jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_invocation_id=' + str(workflow_invocation_id);
             #Environment variables to pass to CCC
-            CCC_environment_variables = [ 'PATH', 'SAMTOOLS_EXE_PATH', ]; 
-            jt.nativeSpecification += '\nenvironment_vars=' + ','.join(CCC_environment_variables);
+            jt.nativeSpecification += '\nenvironment_vars=' + ','.join(self.CCC_environment_variables);
             jt.nativeSpecification = jt.nativeSpecification.replace('\n', '|');        #CCC DRMAA does not like newline separators
             jt.outputPath = "%s" % ajs.output_file      #CCC DRMAA does not like : at the beginning, non-compliant with standard
             jt.errorPath = "%s" % ajs.error_file

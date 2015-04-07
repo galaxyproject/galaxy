@@ -1111,10 +1111,6 @@ class JobWrapper( object ):
         stdout = unicodify( stdout )
         stderr = unicodify( stderr )
 
-        #Karthik: HACK HACK HACK
-        #subprocess.call('rsync -a --exclude=*.dat -e \"ssh\" c14:/mnt/app_hdd/scratch/karthikg/Galaxy/database/job_working_directory/ /mnt/app_hdd/scratch/karthikg/Galaxy/database/job_working_directory/', shell=True);
-        #time.sleep(5);  #NFS stabilize
-
         # default post job setup
         self.sa_session.expunge_all()
         job = self.get_job()
