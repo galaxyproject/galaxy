@@ -27,7 +27,7 @@ https://nose.readthedocs.org/en/latest/usage.html#selecting-tests.  These are
 indicated with the optional parameter (test_path).  A few examples are:
 
 Run all TestUserInfo functional tests:
-    ./run_tests.sh test/functional/test_user_info.py:TestUserInfo.test_005_create_user_info_forms
+    ./run_tests.sh test/functional/test_user_info.py:TestUserInfo
 
 Run a specific API test requiring the framework test tools:
     ./run_tests.sh -api -with_framework_test_tools test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
