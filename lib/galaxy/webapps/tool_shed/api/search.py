@@ -22,12 +22,20 @@ class SearchController ( BaseAPIController ):
         TS config option toolshed_search_on has to be turned on and
         toolshed_whoosh_index_dir has to be specified and existing.
 
-        :param search_term:
-        :param page:
-        :param jsonp:
-        :param callback:
+        :param search_term:   (required)the term to search
+        :type  search_term:   str
 
-        :returns dict:
+        :param page:          (optional)requested page of the search
+        :type  page:          int
+
+        :param jsonp:         (optional)flag whether to use jsonp format response, defaults to False
+        :type  jsonp:         bool
+
+        :param callback:      (optional)name of the function to wrap callback in
+                              used only when jsonp is true, defaults to 'callback'
+        :type  callback:      str
+
+        :returns dict:        object containing list of results and a hostname
         """
         if not self.app.config.toolshed_search_on:
             raise exceptions.ConfigDoesNotAllowException( 'Searching the TS through the API is turned off for this instance.' )
@@ -46,7 +54,7 @@ class SearchController ( BaseAPIController ):
         results[ 'hostname' ] = url_for( '/', qualified = True )
 
         if return_jsonp:
-            response = '%s(%s);' % ( callback, json.dumps( results ) )
+            response = str( '%s(%s);' % ( callback, json.dumps( results ) ) )
         else:
             response = json.dumps( results )
         return response
