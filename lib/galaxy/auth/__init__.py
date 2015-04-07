@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 # <auth>
 #     <authenticator>
-#         <type>ldap_ad</type>
+#         <type>ldap</type>
 #         <filter>'[login]'.endswith('@students.latrobe.edu.au')</filter>
 #         <options>
 #             <auto-register>True</auto-register>
