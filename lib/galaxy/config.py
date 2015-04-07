@@ -318,8 +318,10 @@ class Configuration( object ):
             log.error('Unknown value for \'remote_datasets_referral_method\' : ' + str(self.remote_datasets_referral_method));
             self.remote_datasets_referral_method = self.REMOTE_DATASETS_REFERENCE_BY_IDENTICAL_FILESYSTEM;
         if(self.use_remote_datasets and self.outputs_to_working_directory):
-            log.warning('Configurations \'use_remote_datasets=True\' and \'outputs_to_working_directory\'=True are incompatible as of now; setting \'outputs_to_working_directory\' to False');
+            log.error('Configurations \'use_remote_datasets=True\' and \'outputs_to_working_directory=True\' are incompatible as of now; setting \'outputs_to_working_directory\' to False');
             self.outputs_to_working_directory = False;
+        #CCC
+        self.use_CCC_DRMAA = string_as_bool( kwargs.get( 'use_CCC_DRMAA', False ) );
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get( 'aws_access_key', None) is not None:
             self.os_access_key = kwargs.get( 'aws_access_key', None )

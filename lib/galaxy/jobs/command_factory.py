@@ -174,9 +174,11 @@ def __handle_output_dataset_json(commands_builder, job_wrapper, remote_command_p
         ext = job_output_ds_assoc.dataset.extension.replace(delim, replace_delim);
         dataset_id = str(job_output_ds_assoc.dataset.dataset.id);
         dataset_final_path_string = job_wrapper.get_final_path_string_for_dataset(job_wrapper.get_output_fnames()[job_output_ds_assoc_idx]);
-        dataset_output_dir = os.path.dirname(dataset_final_path_string);
-        if(dataset_output_dir not in output_dirs_to_create):
-            output_dirs_to_create.add(dataset_output_dir);
+        #Don't bother with directory structure for UUID based remote dataset creation
+        if(not job_wrapper.app.config.use_uuids_for_dataset_reference()):
+            dataset_output_dir = os.path.dirname(dataset_final_path_string);
+            if(dataset_output_dir not in output_dirs_to_create):
+                output_dirs_to_create.add(dataset_output_dir);
         #wrap in quotes and replace delimiter
         dataset_final_path_string = '\"' + dataset_final_path_string.replace(delim, replace_delim)  + '\"';
         dataset_descriptor_list.append(delim.join([name, ext, dataset_id, dataset_final_path_string]));

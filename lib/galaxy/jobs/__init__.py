@@ -1261,9 +1261,9 @@ class JobWrapper( object ):
                                 if normalized_path.startswith( normalized_remote_working_directory ):
                                     return normalized_path.replace( normalized_remote_working_directory, self.working_directory, 1 )
                                 return path
-
-                            #Copies meta-data to Galaxy _metadata directory and deletes file in job working directory
-                            dataset.metadata.from_JSON_dict( output_filename, path_rewriter=path_rewriter )
+                            if( not is_remote_dataset_flag ):
+                                #Copies meta-data to Galaxy _metadata directory and deletes file in job working directory
+                                dataset.metadata.from_JSON_dict( output_filename, path_rewriter=path_rewriter )
                         #Karthik: for remote datasets, don't bother with peek
                         if(not is_remote_dataset_flag):
                             try:
