@@ -859,22 +859,24 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         status = 'done'
         try:
             id = trans.app.security.decode_id( dataset_id )
-            history = trans.get_history()
             user = trans.get_user()
             hda = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             # Invalid HDA
             assert hda, 'Invalid history dataset ID'
+
             # Walk up parent datasets to find the containing history
+            history = trans.get_history()
             topmost_parent = hda
             while topmost_parent.parent:
                 topmost_parent = topmost_parent.parent
-            assert topmost_parent in history.datasets, "Data does not belong to current history"
             # If the user is anonymous, make sure the HDA is owned by the current session.
             if not user:
-                assert trans.galaxy_session.current_history_id == trans.history.id, 'Invalid history dataset ID'
+                current_history_id = trans.galaxy_session.current_history_id
+                assert topmost_parent.history.id == current_history_id, 'Data does not belong to current user'
             # If the user is known, make sure the HDA is owned by the current user.
             else:
-                assert topmost_parent.history.user == trans.user, 'Invalid history dataset ID'
+                assert topmost_parent.history.user == user, 'Data does not belong to current user'
+
             # Ensure HDA is deleted
             hda.deleted = True
             # HDA is purgeable
@@ -897,8 +899,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                 except:
                     log.exception( 'Unable to purge dataset (%s) on purge of HDA (%s):' % ( hda.dataset.id, hda.id ) )
             trans.sa_session.flush()
-        except Exception:
-            msg = 'HDA purge failed (encoded: %s, decoded: %s)' % ( dataset_id, id )
+        except Exception, exc:
+            msg = 'HDA purge failed (encoded: %s, decoded: %s): %s' % ( dataset_id, id, exc )
             log.exception( msg )
             trans.log_event( msg )
             message = 'Dataset removal from disk failed'
