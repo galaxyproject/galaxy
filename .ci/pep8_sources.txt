@@ -3,7 +3,7 @@ lib/galaxy/config.py
 lib/galaxy/exceptions/error_codes.py
 lib/galaxy/jobs/{__init__,error_level,manager,stock_rules}.py
 lib/galaxy/main.py
-lib/galaxy/managers/{api_keys,citations,collections,collections_util,folders,tags,workflows}.py
+lib/galaxy/managers/{api_keys,citations,collections,collections_util,datasets,folders,pages,tags,workflows}.py
 lib/galaxy/model/orm/{engine_factory,now}.py
 lib/galaxy/model/util.py
 lib/galaxy/model/tool_shed_install/__init__.py
