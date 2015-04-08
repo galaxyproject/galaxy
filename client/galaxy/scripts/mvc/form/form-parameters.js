@@ -185,13 +185,16 @@ define(['utils/utils',
                 if (!Utils.validate(input_def.value)) {
                     input_def.value = '';
                 } else {
-                    if (input_def.value instanceof Array) {
-                        input_def.value = value.toString();
-                    } else {
-                        input_def.value = String(input_def.value).replace(/[\[\]'"\s]/g, '');
-                        if (input_def.multiple) {
-                            input_def.value = input_def.value.replace(/,/g, '\n');
+                    if ($.isArray(input_def.value)) {
+                        var str_value = '';
+                        for (var i in input_def.value) {
+                            str_value += String(input_def.value[i]);
+                            if (!input_def.multiple) {
+                                break;
+                            }
+                            str_value += '\n';
                         }
+                        input_def.value = str_value;
                     }
                 }
             }
