@@ -356,6 +356,8 @@ class Configuration( object ):
 
         # Default URL (with schema http/https) of the Galaxy instance within the
         # local network - used to remotely communicate with the Galaxy API.
+        web_port = kwargs.get("galaxy_infrastructure_web_port", None)
+        self.galaxy_infrastructure_web_port = web_port
         galaxy_infrastructure_url = kwargs.get( 'galaxy_infrastructure_url', None )
         galaxy_infrastructure_url_set = True
         if galaxy_infrastructure_url is None:
@@ -363,9 +365,9 @@ class Configuration( object ):
             # so dependending on the context a better default can be used (
             # request url in a web thread, Docker parent in IE stuff, etc...)
             galaxy_infrastructure_url = "http://localhost"
-            port = self.guess_galaxy_port()
-            if port:
-                galaxy_infrastructure_url += ":%s" % (port)
+            web_port = self.galaxy_infrastructure_web_port or self.guess_galaxy_port()
+            if web_port:
+                galaxy_infrastructure_url += ":%s" % (web_port)
             galaxy_infrastructure_url_set = False
         if "HOST_IP" in galaxy_infrastructure_url:
             galaxy_infrastructure_url = string.Template(galaxy_infrastructure_url).safe_substitute({

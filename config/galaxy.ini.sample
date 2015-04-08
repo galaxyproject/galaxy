@@ -476,6 +476,15 @@ nglims_config_file = tool-data/nglims.yaml
 # IPython Docker container for communicating back with Galaxy via the API.
 #galaxy_infrastructure_url = http://localhost:8080
 
+# If the above URL cannot be determined ahead of time in dynamic environments
+# but the port which should be used to access Galaxy can be - this should be
+# set to prevent Galaxy from having to guess. For example if Galaxy is sitting
+# behind a proxy with REMOTE_USER enabled - infrastructure shouldn't talk to
+# Python processes directly and this should be set to 80 or 443, etc.... If
+# unset this file will be read for a server block defining a port
+# corresponding to the webapp.
+#galaxy_infrastructure_web_port = 8080
+
 # The URL of the page to display in Galaxy's middle pane when loaded.  This can
 # be an absolute or relative URL.
 #welcome_url = /static/welcome.html
