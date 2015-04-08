@@ -70,11 +70,12 @@ def app_factory( global_conf, **kwargs ):
         webapp = wrap_in_static( webapp, global_conf, **kwargs )
     # Close any pooled database connections before forking
     try:
-        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
+        galaxy.model.mapping.metadata.bind.dispose()
     except:
-        pass
+        log.exception("Unable to dispose of pooled galaxy model database connections.")
     # Return
     return webapp
+
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """Based on the configuration wrap `app` in a set of common and useful middleware."""
