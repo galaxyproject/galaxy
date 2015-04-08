@@ -1,8 +1,6 @@
 """
 Manager and Serializer for Datasets.
 """
-import json
-
 from galaxy import model
 from galaxy import exceptions
 import galaxy.datatypes.metadata
@@ -125,7 +123,7 @@ class DatasetRBACPermissions( object ):
     # ---- conv. settings
     def set_public_with_single_manager( self, dataset, user, flush=True ):
         manage = self.manage.grant( dataset, user, flush=flush )
-        access = self.access.clear( dataset, flush=False )
+        self.access.clear( dataset, flush=False )
         return ( [ manage ], [] )
 
     def set_private_to_one_user( self, dataset, user, flush=True ):
@@ -327,7 +325,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             # underlying dataset
             'dataset'       : lambda i, k, **c: self.dataset_serializer.serialize_to_view( i.dataset, view='summary', **c ),
             'dataset_id'    : self._proxy_to_dataset( key='id' ),
-            #TODO: why is this named uuid!? The da doesn't have a uuid - it's the underlying dataset's uuid!
+            # TODO: why is this named uuid!? The da doesn't have a uuid - it's the underlying dataset's uuid!
             'uuid'          : self._proxy_to_dataset( key='uuid' ),
             # 'dataset_uuid'  : self._proxy_to_dataset( key='uuid' ),
             'file_name'     : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_file_name ),
