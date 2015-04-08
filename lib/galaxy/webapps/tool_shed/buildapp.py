@@ -163,9 +163,9 @@ def app_factory( global_conf, **kwargs ):
             webapp = wrap_in_static( webapp, global_conf, **kwargs )
     # Close any pooled database connections before forking
     try:
-        galaxy.webapps.tool_shed.model.mapping.metadata.engine.connection_provider._pool.dispose()
+        galaxy.webapps.tool_shed.model.mapping.metadata.bind.dispose()
     except:
-        pass
+        log.exception("Unable to dispose of pooled tool_shed model database connections.")
     # Return
     return webapp
 
