@@ -10,6 +10,7 @@ Libraries should be DatasetCollections.
 
 import operator
 
+from galaxy import model
 import galaxy.exceptions
 import galaxy.util
 
@@ -95,7 +96,7 @@ class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
     # can contain two types of subcontainer: LibraryFolder, LibraryDatasetCollectionAssociation
     # has as the top level container: Library
 
-    contained_class = model.LibraryDatasetAssociation
+    contained_class = model.LibraryDataset
     subcontainer_class = model.LibraryFolder
     # subcontainer_class = model.LibraryDatasetCollectionAssociation
     order_contents_on = operator.attrgetter( 'create_time' )
@@ -107,7 +108,7 @@ class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
 
     def _content_manager( self, content ):
         # type snifffing is inevitable
-        if   isinstance( content, model.LibraryDatasetAssociation ):
+        if   isinstance( content, model.LibraryDataset ):
             return self.lda_manager
         elif isinstance( content, model.LibraryFolder ):
             return self.folder_manager
