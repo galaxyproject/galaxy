@@ -841,9 +841,9 @@ class SelectToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, context={} ):
         # Dynamic options are not yet supported in workflow, allow
         # specifying the value as text for now.
-        if self.need_late_validation( trans, context ):
-            if value is not None:
-                assert isinstance( value, UnvalidatedValue ), "Late validation needed for '%s', but provided value (%s) is not of type UnvalidatedValue (%s)." % ( self.name, value, type( value ) )
+        options = self.get_options( trans, context )
+        if self.need_late_validation( trans, options ):
+            if isinstance( value, UnvalidatedValue ):
                 value = value.value
             if self.multiple:
                 if value is None:
@@ -859,7 +859,6 @@ class SelectToolParameter( ToolParameter ):
             # We could have an unvalidated value here when e.g. running a workflow.
             value = [ val.value if isinstance( val, UnvalidatedValue ) else val for val in value ]
         field = form_builder.SelectField( self.name, self.multiple, self.display, self.refresh_on_change, refresh_on_change_values=self.refresh_on_change_values )
-        options = self.get_options( trans, context )
         for text, optval, selected in options:
             if isinstance( optval, UnvalidatedValue ):
                 optval = optval.value
@@ -870,7 +869,8 @@ class SelectToolParameter( ToolParameter ):
         return field
 
     def from_html( self, value, trans=None, context={} ):
-        if self.need_late_validation( trans, context ):
+        legal_values = self.get_legal_values( trans, context )
+        if self.need_late_validation( trans, legal_values ):
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -885,7 +885,6 @@ class SelectToolParameter( ToolParameter ):
                         # use \r\n to separate lines.
                         value = value.split()
             return UnvalidatedValue( value )
-        legal_values = self.get_legal_values( trans, context )
         if not legal_values and self.optional:
             return None
         if not legal_values:
@@ -952,61 +951,22 @@ class SelectToolParameter( ToolParameter ):
             return UnvalidatedValue( value["value"] )
         return super( SelectToolParameter, self ).value_from_basic( value, app, ignore_errors=ignore_errors )
 
-    def need_late_validation( self, trans, context ):
+    def need_late_validation( self, trans, options ):
         """
         Determine whether we need to wait to validate this parameters value
         given the current state. For parameters with static options this is
-        always false (can always validate immediately). For parameters with
-        dynamic options, we need to check whether the other parameters which
-        determine what options are valid have been set. For the old style
-        dynamic options which do not specify dependencies, this is always true
-        (must validate at runtime).
+        always false (can always validate immediately).
         """
-        # Option list is statically defined, never need late validation
-        if not self.is_dynamic:
-            return False
-        # Old style dynamic options, no dependency information so there isn't
-        # a lot we can do: if we're dealing with workflows, have to assume
-        # late validation no matter what.
-        if self.dynamic_options is not None and ( trans is None or trans.workflow_building_mode ):
+        if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
             return True
-        # If we got this far, we can actually look at the dependencies
-        # to see if their values will not be available until runtime.
-        for dep_name in self.get_dependencies():
-            # This may not be completely correct, but it's possible to go
-            # through the layers indicated below without assigning dep_value,
-            # which is even worse.  TODO fix it?
-            dep_value = None
-            if dep_name in context:
-                dep_value = context[ dep_name ]
-            else:
-                # Quick hack to check deeper in the context.
-                # TODO: Context should really be scoped and the correct subset passed along.
-                # This happens specifically in all the GATK tools, the way the reference genome is handled.
-                for layer in context.itervalues():
-                    if isinstance( layer, dict ) and self.name in layer and dep_name in layer:
-                        dep_value = layer[dep_name]
-            # Dependency on a dataset that does not yet exist
-            if isinstance( dep_value, DummyDataset ):
-                return True
-            # Dependency on a value that has not been checked
-            if isinstance( dep_value, UnvalidatedValue ):
-                return True
-            # Dependency on a value that does not yet exist
-            if isinstance( dep_value, RuntimeValue ):
-                return True
-            #dataset not ready yet
-            if hasattr( self, 'ref_input' ) and isinstance( dep_value, self.tool.app.model.HistoryDatasetAssociation ) and ( dep_value.is_pending or not dep_value.datatype.matches_any( self.ref_input.formats ) ):
-                return True
-        # Dynamic, but all dependenceis are known and have values
         return False
 
     def get_initial_value( self, trans, context, history=None ):
         # More working around dynamic options for workflow
-        if self.need_late_validation( trans, context ):
+        options = list( self.get_options( trans, context ) )
+        if self.need_late_validation( trans, options ):
             # Really the best we can do?
             return UnvalidatedValue( None )
-        options = list( self.get_options( trans, context ) )
         value = [ optval for _, optval, selected in options if selected ]
         if len( value ) == 0:
             if not self.multiple and options:
@@ -1255,8 +1215,12 @@ class ColumnListParameter( SelectToolParameter ):
             return []
         column_list = None
         for dataset in util.listify( dataset ):
-            # Handle columns not available.
-            if not dataset.metadata.columns:
+            unavailable = False
+            if not hasattr(dataset, 'metadata'):
+                unavailable = True
+            elif not dataset.metadata.columns:
+                unavailable = True
+            if unavailable:
                 default_column_list = []
                 if self.accept_default:
                     default_column_list.append( self.default_value or '1' )
@@ -1316,9 +1280,6 @@ class ColumnListParameter( SelectToolParameter ):
 
     def get_initial_value( self, trans, context, history=None ):
         if self.default_value is not None:
-            # dataset not ready / in workflow / etc
-            if self.need_late_validation( trans, context ):
-                return UnvalidatedValue( self.default_value )
             return self.default_value
         return SelectToolParameter.get_initial_value( self, trans, context )
 
@@ -1327,33 +1288,6 @@ class ColumnListParameter( SelectToolParameter ):
 
     def get_dependencies( self ):
         return [ self.data_ref ]
-
-    def need_late_validation( self, trans, context ):
-        if super( ColumnListParameter, self ).need_late_validation( trans, context ):
-            return True
-        if self.data_ref not in context:
-            return False
-        # Get the selected dataset if selected
-        referent = context[ self.data_ref ]
-        if getattr( referent, 'history_content_type', None ) == "dataset_collection":
-            # TODO: also check datasets have been populated.
-            referent = referent.collection.dataset_instances
-
-        datasets = util.listify( referent )
-        for dataset in datasets:
-            if dataset:
-                # Check if metadata is available
-                if not hasattr(dataset, 'metadata'):
-                    return True
-
-                # Check if the dataset does not have the expected metadata for columns
-                if not dataset.metadata.columns:
-                    # Only allow late validation if the dataset is not yet ready
-                    # (since we have reason to expect the metadata to be ready eventually)
-                    if dataset.is_pending or not dataset.datatype.matches_any( self.ref_input.formats ):
-                        return True
-        # No late validation
-        return False
 
     def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # call parent to_dict
@@ -1558,9 +1492,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     def get_html_field( self, trans=None, value=None, other_values={} ):
         # Dynamic options are not yet supported in workflow, allow
         # specifying the value as text for now.
-        if self.need_late_validation( trans, other_values ):
-            if value is not None:
-                assert isinstance( value, UnvalidatedValue ), "Late validation needed for '%s', but provided value (%s) is not of type UnvalidatedValue (%s)." % ( self.name, value, type( value ) )
+        options = self.get_options( trans, value, other_values )
+        if self.need_late_validation( trans, options ):
+            if isinstance( value, UnvalidatedValue ):
                 value = value.value
             if self.multiple:
                 if value is None:
@@ -1570,10 +1504,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                 return form_builder.TextArea( self.name, value=value )
             else:
                 return form_builder.TextField( self.name, value=(value or "") )
-        return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, self.get_options( trans, value, other_values ), value, refresh_on_change_values=self.refresh_on_change_values )
+        return form_builder.DrillDownField( self.name, self.multiple, self.display, self.refresh_on_change, options, value, refresh_on_change_values=self.refresh_on_change_values )
 
     def from_html( self, value, trans=None, other_values={} ):
-        if self.need_late_validation( trans, other_values ):
+        legal_values = self.get_legal_values( trans, other_values )
+        if self.need_late_validation( trans, legal_values ):
             if self.multiple:
                 if value == '':  # No option selected
                     value = None
@@ -1589,7 +1524,6 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         if not( self.repeat ) and len( value ) > 1:
             assert self.multiple, "Multiple values provided but parameter %s is not expecting multiple values" % self.name
         rval = []
-        legal_values = self.get_legal_values( trans, other_values )
         assert legal_values, "Parameter %s requires a value, but has no legal values defined" % self.name
         for val in value:
             if val not in legal_values:
@@ -1645,8 +1579,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     initial_values.append( option['value'] )
                 recurse_options( initial_values, option['options'] )
         # More working around dynamic options for workflow
-        if self.need_late_validation( trans, context ):
-            # Really the best we can do?
+        initial_values = []
+        recurse_options( initial_values, self.get_options( trans=trans, other_values=context ) )
+        if self.need_late_validation( trans, initial_values ):
             return UnvalidatedValue( None )
         initial_values = []
         recurse_options( initial_values, self.get_options( trans=trans, other_values=context ) )
