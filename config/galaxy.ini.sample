@@ -960,6 +960,17 @@ use_interactive = True
 # always, onsuccess, never
 #cleanup_job = always
 
+# For sites where all users in Galaxy match users on the system on which Galaxy
+# runs, the DRMAA job runner can be configured to submit jobs to the DRM as the
+# actual user instead of as the user running the Galaxy server process.  For
+# details on these options, see the documentation at:
+#
+# http://galaxyproject.org/wiki/Admin/Config/Performance/Cluster
+#
+#drmaa_external_runjob_script = scripts/drmaa_external_runner.py
+#drmaa_external_killjob_script = scripts/drmaa_external_killer.py
+#external_chown_script = scripts/external_chown_script.py
+
 # File to source to set up the environment when running jobs.  By default, the
 # environment in which the Galaxy server starts is used when running jobs
 # locally, and the environment set up per the DRM's submission method and

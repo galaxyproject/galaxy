@@ -252,10 +252,7 @@
           -->
         </destination>
         <destination id="real_user_cluster" runner="drmaa">
-            <!-- TODO: The real user options should maybe not be considered runner params. -->
-            <param id="galaxy_external_runjob_script">scripts/drmaa_external_runner.py</param>
-            <param id="galaxy_external_killjob_script">scripts/drmaa_external_killer.py</param>
-            <param id="galaxy_external_chown_script">scripts/external_chown_script.py</param>
+            <!-- Make sure to setup 3 real user parameters in galaxy.ini. -->
         </destination>
         <destination id="dynamic" runner="dynamic">
             <!-- A destination that represents a method in the dynamic runner. -->
