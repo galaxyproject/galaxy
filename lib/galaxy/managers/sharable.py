@@ -126,7 +126,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
        """
        Return a list of all published items.
        """
-       query = self._query_published( user, **kwargs )
+       query = self._query_published( **kwargs )
        return self.list( query=query, **kwargs )
 
     # .... user sharing

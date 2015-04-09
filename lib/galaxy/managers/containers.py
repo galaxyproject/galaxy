@@ -48,20 +48,20 @@ class ContainerManagerMixin( object ):
         iters.append( self.subcontainers( container ) )
         return galaxy.util.merge_sorted_iterables( self.order_contents_on, *iters )
 
-    def contained( self, container ):
+    def contained( self, container, **kwargs ):
         """
         Returns non-container objects.
         """
-        return self._filter_contents( container, self.contained_class, **kwds )
+        return self._filter_contents( container, self.contained_class, **kwargs )
 
-    def subcontainers( self, container ):
+    def subcontainers( self, container, **kwargs ):
         """
         Returns only the containers within this one.
         """
-        return self._filter_contents( container, self.subcontainer_class, **kwds )
+        return self._filter_contents( container, self.subcontainer_class, **kwargs )
 
     # ---- private
-    def _filter_contents( self, container, content_class, **kwds ):
+    def _filter_contents( self, container, content_class, **kwargs ):
         # TODO: use list (or by_history etc.)
         container_filter = self._filter_to_contained( container, content_class )
         query = self.session().query( content_class ).filter( container_filter )
@@ -70,7 +70,7 @@ class ContainerManagerMixin( object ):
     def _filter_to_contained( self, container, content_class ):
         raise galaxy.exceptions.NotImplemented( 'Abstract class' )
 
-    def _content_manager( self, content_class ):
+    def _content_manager( self, content ):
         raise galaxy.exceptions.NotImplemented( 'Abstract class' )
 
 
@@ -84,12 +84,12 @@ class HistoryAsContainerManagerMixin( ContainerManagerMixin ):
         return content_class.history == container
 
     def _content_manager( self, content ):
-        # type snifffing is inevitable
+        # type sniffing is inevitable
         if   isinstance( content, model.HistoryDatasetAssociation ):
             return self.hda_manager
         elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
             return self.hdca_manager
-        raise TypeError( 'Unknown contents class: ' + str( content_class ) )
+        raise TypeError( 'Unknown contents class: ' + str( content ) )
 
 
 class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
@@ -102,9 +102,9 @@ class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
     order_contents_on = operator.attrgetter( 'create_time' )
 
     def _filter_to_contained( self, container, content_class ):
-        if content_class == subcontainer_class:
-            return subcontainer_class.parent == container
-        return contained_class.folder == container
+        if content_class == self.subcontainer_class:
+            return self.subcontainer_class.parent == container
+        return self.contained_class.folder == container
 
     def _content_manager( self, content ):
         # type snifffing is inevitable
@@ -112,7 +112,7 @@ class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
             return self.lda_manager
         elif isinstance( content, model.LibraryFolder ):
             return self.folder_manager
-        raise TypeError( 'Unknown contents class: ' + str( content_class ) )
+        raise TypeError( 'Unknown contents class: ' + str( content ) )
 
 
 class DatasetCollectionAsContainerManagerMixin( ContainerManagerMixin ):
@@ -131,7 +131,7 @@ class DatasetCollectionAsContainerManagerMixin( ContainerManagerMixin ):
             return self.collection_manager
         elif isinstance( content, model.DatasetCollection ):
             return self.collection_manager
-        raise TypeError( 'Unknown contents class: ' + str( content_class ) )
+        raise TypeError( 'Unknown contents class: ' + str( content ) )
 
 
 # ====

@@ -220,7 +220,7 @@ class HDAManager( datasets.DatasetAssociationManager,
             return truncated, hda_data
 
         truncated = preview and os.stat( hda.file_name ).st_size > MAX_PEEK_SIZE
-        hda_data = open( hda.file_name ).read( max_peek_size )
+        hda_data = open( hda.file_name ).read( MAX_PEEK_SIZE )
         return truncated, hda_data
 
 

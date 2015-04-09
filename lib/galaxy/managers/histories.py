@@ -140,15 +140,16 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
                 elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
                     try:
                         service = self.app.dataset_collections_service
-                        dataset_collection_instance = service.get_dataset_collection_instance(
+                        collection = service.get_dataset_collection_instance(
                             trans=trans,
                             instance_type='history',
                             id=self.app.security.encode_id( content.id ),
                         )
-                        contents_dict = dictify_dataset_collection_instance( dataset_collection_instance,
-                                                                             security=self.app.security,
-                                                                             parent=dataset_collection_instance.history,
-                                                                             view="element" )
+                        serializer = collections_util.dictify_dataset_collection_instance
+                        contents_dict = serializer( collection,
+                                                    security=self.app.security,
+                                                    parent=collection.history,
+                                                    view="element" )
                     except Exception, exc:
                         log.exception( "Error in history API at listing dataset collection: %s", exc )
                         # TODO: return some dict with the error
