@@ -2218,7 +2218,7 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json (self, trans, kwd={}, is_dynamic=True):
+    def to_json (self, trans, kwd={}, is_workflow=False):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -2330,7 +2330,7 @@ class Tool( object, Dictifiable ):
             error = 'State validation failed.'
 
             # skip dynamic fields if deactivated
-            if not is_dynamic and input.is_dynamic:
+            if is_workflow and input.is_dynamic:
                 return [value, None]
 
             # validate value content

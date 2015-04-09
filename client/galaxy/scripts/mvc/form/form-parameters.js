@@ -84,7 +84,7 @@ define(['utils/utils',
         /** Data input field
         */
         _fieldData: function(input_def) {
-            if (!this.app.options.is_dynamic) {
+            if (this.app.options.is_workflow) {
                 input_def.info = 'Data input \'' + input_def.name + '\' (' + Utils.textify(input_def.extensions.toString()) + ')';
                 input_def.value = null;
                 return this._fieldHidden(input_def);
@@ -107,7 +107,7 @@ define(['utils/utils',
         */
         _fieldSelect: function (input_def) {
             // show text field in if dynamic fields are disabled e.g. in workflow editor
-            if (!this.app.options.is_dynamic && input_def.is_dynamic) {
+            if (input_def.options.length == 0 && this.app.options.is_workflow) {
                 return this._fieldText(input_def);
             }
 
@@ -157,10 +157,10 @@ define(['utils/utils',
         */
         _fieldDrilldown: function (input_def) {
             // show text field in if dynamic fields are disabled e.g. in workflow editor
-            if (!this.app.options.is_dynamic && input_def.is_dynamic) {
+            if (input_def.options.length == 0 && this.app.options.is_workflow) {
                 return this._fieldText(input_def);
             }
-            
+
             // create drill down field
             var self = this;
             return new Ui.Drilldown.View({
