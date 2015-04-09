@@ -202,9 +202,6 @@ class ToolParameter( object, Dictifiable ):
         for validator in self.validators:
             validator.validate( value, history )
 
-    def need_late_validation( self, trans, context ):
-        return False
-
     def to_dict( self, trans, view='collection', value_mapper=None ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
         tool_dict = super( ToolParameter, self ).to_dict()
@@ -842,7 +839,7 @@ class SelectToolParameter( ToolParameter ):
         # Dynamic options are not yet supported in workflow, allow
         # specifying the value as text for now.
         options = self.get_options( trans, context )
-        if self.need_late_validation( trans, options ):
+        if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
             if isinstance( value, UnvalidatedValue ):
                 value = value.value
             if self.multiple:
@@ -870,7 +867,7 @@ class SelectToolParameter( ToolParameter ):
 
     def from_html( self, value, trans=None, context={} ):
         legal_values = self.get_legal_values( trans, context )
-        if self.need_late_validation( trans, legal_values ):
+        if len(list(legal_values)) == 0 and (trans is None or trans.workflow_building_mode):
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -951,20 +948,10 @@ class SelectToolParameter( ToolParameter ):
             return UnvalidatedValue( value["value"] )
         return super( SelectToolParameter, self ).value_from_basic( value, app, ignore_errors=ignore_errors )
 
-    def need_late_validation( self, trans, options ):
-        """
-        Determine whether we need to wait to validate this parameters value
-        given the current state. For parameters with static options this is
-        always false (can always validate immediately).
-        """
-        if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
-            return True
-        return False
-
     def get_initial_value( self, trans, context, history=None ):
         # More working around dynamic options for workflow
         options = list( self.get_options( trans, context ) )
-        if self.need_late_validation( trans, options ):
+        if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
             # Really the best we can do?
             return UnvalidatedValue( None )
         value = [ optval for _, optval, selected in options if selected ]
@@ -1493,7 +1480,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         # Dynamic options are not yet supported in workflow, allow
         # specifying the value as text for now.
         options = self.get_options( trans, value, other_values )
-        if self.need_late_validation( trans, options ):
+        if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
             if isinstance( value, UnvalidatedValue ):
                 value = value.value
             if self.multiple:
@@ -1508,7 +1495,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
 
     def from_html( self, value, trans=None, other_values={} ):
         legal_values = self.get_legal_values( trans, other_values )
-        if self.need_late_validation( trans, legal_values ):
+        if len(list(legal_values)) == 0 and (trans is None or trans.workflow_building_mode):
             if self.multiple:
                 if value == '':  # No option selected
                     value = None
@@ -1581,7 +1568,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
         # More working around dynamic options for workflow
         initial_values = []
         recurse_options( initial_values, self.get_options( trans=trans, other_values=context ) )
-        if self.need_late_validation( trans, initial_values ):
+        if len(list(initial_values)) == 0 and (trans is None or trans.workflow_building_mode):
             return UnvalidatedValue( None )
         initial_values = []
         recurse_options( initial_values, self.get_options( trans=trans, other_values=context ) )
@@ -2043,11 +2030,6 @@ class DataToolParameter( BaseDataToolParameter ):
                         validator.validate( v, history )
             else:
                 validator.validate( value, history )
-
-    def need_late_validation( self, trans, context ):
-        if trans is None or trans.workflow_building_mode:
-            return True
-        return False
 
     def get_dependencies( self ):
         """
