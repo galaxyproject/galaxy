@@ -2573,8 +2573,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
             if not ( is_admin or \
                      ( trans.app.security_agent.can_manage_library_item( current_user_roles, item ) and
-                       trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset ) ) ):
-                message = "You are not authorized to manage permissions on library dataset (%s)." % escape( library_dataset.name )
+                       trans.app.security_agent.can_manage_dataset( current_user_roles, item.library_dataset_dataset_association.dataset ) ) ):
+                message = "You are not authorized to manage permissions on library dataset (%s)." % escape( item.name )
                 if cntrller == 'api':
                     return 403, message
                 return trans.response.send_redirect( web.url_for( controller='library_common',
