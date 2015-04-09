@@ -2,6 +2,7 @@
 <toolbox tool_path="${tool_conf_dir}">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
+  <tool file="inheritance_simple.xml" />
   <tool file="composite.xml" />
   <tool file="compare_bam_as_sam.xml" />
   <tool file="code_file.xml" />
