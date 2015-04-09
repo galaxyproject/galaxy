@@ -1590,14 +1590,16 @@ class JobWrapper( object ):
         results = []
         job = self.get_job()
         for joda in job.output_datasets + job.output_library_datasets:
-            results.append(str(joda.dataset.dataset.uuid));
+            if(joda and joda.dataset):   #output dataset could be None? maybe
+                results.append(str(joda.dataset.dataset.uuid));
         return results;
 
     def get_input_string_uuids( self ):
         results = []
         job = self.get_job()
         for jida in job.input_datasets + job.input_library_datasets:
-            results.append(str(jida.dataset.dataset.uuid));
+            if(jida and jida.dataset):   #input dataset could be None if the argument to the tool is optional
+                results.append(str(jida.dataset.dataset.uuid));
         return results;
 
     def get_tool_provided_job_metadata( self ):
