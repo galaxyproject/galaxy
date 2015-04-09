@@ -360,7 +360,7 @@ var HistoryPanelEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleHdaVisibleChange : function( itemModel ){
-        if( itemModel.hidden() && !this.storage.showHidden ){
+        if( itemModel.hidden() && !this.showHidden ){
             this.removeItemView( itemModel );
         }
         this._renderCounts();
