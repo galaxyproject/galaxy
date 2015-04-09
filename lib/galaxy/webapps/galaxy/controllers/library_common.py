@@ -1432,7 +1432,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 message = 'Select at least one dataset from the list of active datasets in your current history'
                 status = 'error'
                 upload_option = kwd.get( 'upload_option', 'import_from_history' )
-                widgets = self._get_populated_widgets( folder )
                 # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
                 file_formats = trans.app.datatypes_registry.upload_file_formats
                 # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
@@ -1459,7 +1458,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             last_used_build=last_used_build,
                                             roles_select_list=roles_select_list,
                                             history=history,
-                                            widgets=widgets,
+                                            widgets=[],
                                             template_id=template_id,
                                             space_to_tab=space_to_tab,
                                             link_data_only=link_data_only,
@@ -1514,16 +1513,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         continue
                 upload_option_select_list.add_option( option_label, option_value, selected=option_value==upload_option )
         return upload_option_select_list
-
-    def _get_populated_widgets( self, folder ):
-        # See if we have any inherited templates.
-        info_association, inherited = folder.get_info_association( inherited=True )
-        if info_association and info_association.inheritable:
-            widgets = folder.get_template_widgets( trans, get_contents=True )
-            # Retain contents of widget fields when form was submitted via refresh_on_change.
-            return self.populate_widgets_from_kwd( trans, widgets, **kwd )
-        else:
-            return []
 
     @web.expose
     def download_dataset_from_folder( self, trans, cntrller, id, library_id=None, **kwd ):
