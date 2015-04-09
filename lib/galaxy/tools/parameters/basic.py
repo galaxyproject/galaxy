@@ -202,7 +202,7 @@ class ToolParameter( object, Dictifiable ):
         for validator in self.validators:
             validator.validate( value, history )
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         """ to_dict tool parameter. This can be overridden by subclasses. """
         tool_dict = super( ToolParameter, self ).to_dict()
         #TODO: wrapping html as it causes a lot of errors on subclasses - needs histories, etc.
@@ -277,7 +277,7 @@ class TextToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context, history=None ):
         return self.value
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         d = super(TextToolParameter, self).to_dict(trans)
         d['area'] = self.area
         d['size'] = self.size
@@ -482,7 +482,7 @@ class BooleanToolParameter( ToolParameter ):
         else:
             return self.falsevalue
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         d = super(BooleanToolParameter, self).to_dict(trans)
         d['value'] = self.checked
         d['truevalue'] = self.truevalue
@@ -692,7 +692,7 @@ class BaseURLToolParameter( ToolParameter ):
         # BaseURLToolParameters are ultimately "hidden" parameters
         return None
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         d = super( BaseURLToolParameter, self ).to_dict( trans )
         d['value'] = self.get_value( trans )
         return d
@@ -1079,7 +1079,7 @@ class GenomeBuildParameter( SelectToolParameter ):
     def get_legal_values( self, trans, other_values ):
         return set( dbkey for dbkey, _ in self._get_dbkey_names( trans=trans ) )
 
-    def to_dict( self, trans, view='collection', value_mapper=None ):
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
         # skip SelectToolParameter (the immediate parent) bc we need to get options in a different way here
         d = ToolParameter.to_dict( self, trans )
 

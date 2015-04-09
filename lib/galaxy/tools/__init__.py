@@ -2418,33 +2418,35 @@ class Tool( object, Dictifiable ):
                                 current_state = group_state
                             iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, current_state, other_values)
                 else:
-                    # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
+                    # identify name
+                    input_name = tool_dict.get('name')
+
+                    # create expanded input dictionary incl. repeats and dynamic_parameters
                     try:
                         tool_dict = input.to_dict(trans, other_values=other_values)
                     except Exception:
+                        log.exception('tools::to_json() - Skipping parameter expansion for %s.' % input_name)
                         pass
 
-                    # identify name
-                    input_name = tool_dict.get('name')
-                    if input_name:
-                        # backup default value
-                        try:
-                            tool_dict['default_value'] = input.get_initial_value(trans, other_values)
-                        except Exception:
-                            # get initial value failed due to improper late validation
-                            tool_dict['default_value'] = None
-                            pass
+                    # backup default value
+                    try:
+                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                    except Exception:
+                        log.exception('tools::to_json() - Getting initial value failed %s.' % input_name)
+                        # get initial value failed due to improper late validation
+                        tool_dict['default_value'] = None
+                        pass
 
-                        # update input value from tool state
-                        tool_dict['value'] = state_inputs.get(input_name, None)
+                    # update input value from tool state
+                    tool_dict['value'] = state_inputs.get(input_name, None)
 
-                        # sanitize values
-                        sanitize(tool_dict, 'value')
-                        sanitize(tool_dict, 'default_value')
+                    # sanitize values
+                    sanitize(tool_dict, 'value')
+                    sanitize(tool_dict, 'default_value')
 
-                        # use default value
-                        if tool_dict['value'] is None:
-                            tool_dict['value'] = tool_dict['default_value']
+                    # use default value
+                    if tool_dict['value'] is None:
+                        tool_dict['value'] = tool_dict['default_value']
 
                 # backup final input dictionary
                 group_inputs[input_index] = tool_dict
