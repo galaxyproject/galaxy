@@ -302,6 +302,8 @@ class Configuration( object ):
         self.nginx_x_archive_files_base = kwargs.get( 'nginx_x_archive_files_base', False )
         self.nginx_upload_store = kwargs.get( 'nginx_upload_store', False )
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
+        self.nginx_upload_job_files_store = kwargs.get( 'nginx_upload_job_files_store', False )
+        self.nginx_upload_job_files_path = kwargs.get( 'nginx_upload_job_files_path', False )
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
