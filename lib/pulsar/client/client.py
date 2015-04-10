@@ -1,5 +1,6 @@
 import os
 from json import dumps
+from json import loads
 
 from .destination import submit_params
 from .setup_handler import build as build_setup_handler
@@ -170,10 +171,13 @@ class JobClient(BaseJobClient):
         input_path = path
         if contents:
             input_path = None
-        if action_type == 'transfer':
+        # action type == 'message' should either copy or transfer
+        # depending on default not just fallback to transfer.
+        if action_type in ['transfer', 'message']:
             return self._upload_file(args, contents, input_path)
         elif action_type == 'copy':
-            pulsar_path = self._raw_execute('path', args)
+            path_response = self._raw_execute('path', args)
+            pulsar_path = loads(path_response)['path']
             copy(path, pulsar_path)
             return {'path': pulsar_path}
 
