@@ -227,7 +227,7 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
                         ##<div class="form-row"><input type="submit" name="${prefix}${input.name}_add" value="Add new ${input.title}"></div>
                     </div>
                 %endif
-            %else:
+            %elif input.type != "section":
                 ${row_for_param( prefix, input, tool_state, errors, other_values )}
             %endif
         %endfor

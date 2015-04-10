@@ -96,9 +96,9 @@ return Backbone.Model.extend({
                                 convert(job_input_id, head[input.id + '-section-' + selectedCase]);
                             }
                             break;
-                        // handle custom sub sections
+                        // handle sections
                         case 'section':
-                            convert('', node);
+                            convert(job_input_id, node);
                             break;
                         default:
                             // get field
@@ -190,6 +190,9 @@ return Backbone.Model.extend({
                         if (selectedCase != -1) {
                             search (index, node.cases[selectedCase].inputs);
                         }
+                        break;
+                    case 'section':
+                        search (index, node.inputs);
                         break;
                     default:
                         var input_id = self.map_dict[index];

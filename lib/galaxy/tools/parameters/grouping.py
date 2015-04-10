@@ -129,6 +129,55 @@ class Repeat( Group ):
         repeat_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return repeat_dict
 
+class Section( Group ):
+
+    dict_collection_visible_keys = ( 'name', 'type', 'title', 'help', 'expanded')
+
+    type = "section"
+    def __init__( self ):
+        Group.__init__( self )
+        self.title = None
+        self.inputs = None
+        self.help = None
+        self.expanded = False
+    @property
+    def title_plural( self ):
+        return inflector.pluralize( self.title )
+    def label( self ):
+        return "Section (%s)" % self.title
+    def value_to_basic( self, value, app ):
+        rval = {}
+        for input in self.inputs.itervalues():
+            rval[ input.name ] = input.value_to_basic( value[input.name], app )
+        return rval
+    def value_from_basic( self, value, app, ignore_errors=False ):
+        rval = {}
+        try:
+            for input in self.inputs.itervalues():
+                if not ignore_errors or input.name in value:
+                    rval[ input.name ] = input.value_from_basic( value[ input.name ], app, ignore_errors )
+        except Exception, e:
+            if not ignore_errors:
+                raise e
+        return rval
+    def visit_inputs( self, prefix, value, callback ):
+        for input in self.inputs.itervalues():
+            if isinstance( input, ToolParameter ):
+                callback( prefix, input, value[input.name], parent = value )
+            else:
+                input.visit_inputs( prefix, value[input.name], callback )
+    def get_initial_value( self, trans, context, history=None ):
+        rval = {}
+        child_context = ExpressionContext( rval, context )
+        for child_input in self.inputs.itervalues():
+            rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
+        return rval
+    def to_dict( self, trans, view='collection', value_mapper=None ):
+        section_dict = super( Section, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+        def input_to_dict( input ):
+            return input.to_dict( trans, view=view, value_mapper=value_mapper )
+        section_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
+        return section_dict
 
 class UploadDataset( Group ):
     type = "upload_dataset"

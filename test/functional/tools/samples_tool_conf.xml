@@ -29,6 +29,7 @@
   <tool file="column_param.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
+  <tool file="section.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />
