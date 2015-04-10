@@ -97,7 +97,7 @@ class JobFilesAPIController( BaseAPIController ):
             input_file = payload.get( "file",
                                       payload.get( "__file", None ) ).file
         try:
-            shutil.copyfile( input_file.name, path )
+            shutil.move( input_file.name, path )
         finally:
             input_file.close()
         return {"message": "ok"}
