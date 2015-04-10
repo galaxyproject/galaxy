@@ -107,7 +107,9 @@ def app_factory( global_conf, **kwargs ):
     except:
         log.exception("Unable to dispose of pooled galaxy model database connections.")
     try:
-        galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
+        # This model may not actually be bound.
+        if galaxy.model.tool_shed_install.mapping.metadata.bind:
+            galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
     except:
         log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
