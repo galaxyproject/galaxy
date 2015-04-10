@@ -63,7 +63,7 @@ def index_bam_files( bam_filenames, tmp_dir ):
     print "Indexing bam files: %s" % bam_filenames
     for bam_filename in bam_filenames:
         bam_index_filename = "%s.bai" % bam_filename
-        if os.path.exists( bam_index_filename ):
+        if not os.path.exists( bam_index_filename ):
             #need to index this bam file
             stderr_name = tempfile.NamedTemporaryFile( prefix = "bam_index_stderr" ).name
             command = 'samtools index %s %s' % ( bam_filename, bam_index_filename )
