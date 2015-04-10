@@ -166,7 +166,12 @@ class ToolTestBuilder( object ):
                         # an infinite loop - hence the "case_value is not None"
                         # check.
                         expanded_inputs[ case_context.for_state() ] = expanded_case_value
-
+            elif isinstance( value, galaxy.tools.parameters.grouping.Section ):
+                context = ParamContext( name=value.name, parent_context=parent_context )
+                for r_name, r_value in value.inputs.iteritems():
+                    expanded_input = self.__process_raw_inputs( { context.for_state(): r_value }, raw_inputs, parent_context=context )
+                    if expanded_input:
+                        expanded_inputs.update( expanded_input )
             elif isinstance( value, galaxy.tools.parameters.grouping.Repeat ):
                 repeat_index = 0
                 while True:

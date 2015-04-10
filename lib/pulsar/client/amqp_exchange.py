@@ -83,7 +83,7 @@ class PulsarExchange(object):
                                 connection.drain_events(timeout=self.__timeout)
                             except socket.timeout:
                                 pass
-            except (IOError, socket.error), exc:
+            except (IOError, socket.error) as exc:
                 self.__handle_io_error(exc, heartbeat_thread)
             except BaseException:
                 log.exception("Problem consuming queue, consumer quitting in problematic fashion!")

@@ -13,11 +13,11 @@ class LocalDB(AuthProvider):
     """Authenticate users against the local Galaxy database (as per usual)."""
     plugin_type = 'localdb'
 
-    def authenticate(self, username, password, options):
+    def authenticate(self, login, password, options):
         """
         See abstract method documentation.
         """
-        return (False, '')  # it can never auto-create based of localdb (chicken-egg)
+        return (False, '', '')  # it can never auto-create based of localdb (chicken-egg)
 
     def authenticate_user(self, user, password, options):
         """

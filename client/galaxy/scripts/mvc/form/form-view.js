@@ -200,6 +200,13 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 inputs : this.options.inputs
             });
 
+            // switch to classic tool form mako if the form definition is incompatible
+            if (this.incompatible) {
+                this.$el.hide();
+                $('#tool-form-classic').show();
+                return;
+            }
+
             // create portlet
             this.portlet = new Portlet.View({
                 icon        : 'fa-wrench',

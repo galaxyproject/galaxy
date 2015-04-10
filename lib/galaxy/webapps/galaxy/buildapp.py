@@ -103,13 +103,15 @@ def app_factory( global_conf, **kwargs ):
             webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
     # Close any pooled database connections before forking
     try:
-        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
+        galaxy.model.mapping.metadata.bind.dispose()
     except:
-        pass
+        log.exception("Unable to dispose of pooled galaxy model database connections.")
     try:
-        galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
+        # This model may not actually be bound.
+        if galaxy.model.tool_shed_install.mapping.metadata.bind:
+            galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
     except:
-        pass
+        log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
     if not app.config.is_uwsgi:
         postfork_setup()

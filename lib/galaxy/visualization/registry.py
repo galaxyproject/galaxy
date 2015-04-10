@@ -961,7 +961,7 @@ class ResourceParser( object ):
 
         elif param_type == 'dataset':
             decoded_dataset_id = trans.security.decode_id( query_param )
-            parsed_param = controller.hda_manager.get_accessible( trans, decoded_dataset_id, trans.user )
+            parsed_param = controller.hda_manager.get_accessible( decoded_dataset_id, trans.user )
 
         elif param_type == 'hda_or_ldda':
             encoded_dataset_id = query_param

@@ -10,6 +10,7 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
         ## This avoids making two separate requests since the classic form requires the mako anyway.
         params = dict(trans.request.params)
         params['__dataset_id__'] = params.get('id', None)
+        params['__job_id__'] = params.get('job_id', None)
         self.form_config = tool.to_json(trans, params)
         self.form_config.update({
             'id'                : tool.id,
@@ -226,7 +227,7 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
                         ##<div class="form-row"><input type="submit" name="${prefix}${input.name}_add" value="Add new ${input.title}"></div>
                     </div>
                 %endif
-            %else:
+            %elif input.type != "section":
                 ${row_for_param( prefix, input, tool_state, errors, other_values )}
             %endif
         %endfor

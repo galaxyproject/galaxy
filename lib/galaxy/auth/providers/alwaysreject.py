@@ -16,11 +16,11 @@ class AlwaysReject(AuthProvider):
     """
     plugin_type = 'alwaysreject'
 
-    def authenticate(self, username, password, options):
+    def authenticate(self, login, password, options):
         """
         See abstract method documentation.
         """
-        return (None, '')
+        return (None, '', '')
 
     def authenticate_user(self, user, password, options):
         """

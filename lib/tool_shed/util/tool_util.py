@@ -237,12 +237,19 @@ def new_state( trans, tool, invalid=False ):
     if invalid:
         # We're attempting to display a tool in the tool shed that has been determined to have errors, so is invalid.
         return state
+    try:
+        # Attempt to generate the tool state using the standard Galaxy-side code
+        return tool.new_state( trans )
+    except Exception, e:
+        # Fall back to building tool state as below
+        log.debug( 'Failed to build tool state for tool "%s" using standard method, will try to fall back on custom method: %s', tool.id, e )
     inputs = tool.inputs_by_page[ 0 ]
     context = ExpressionContext( state.inputs, parent=None )
     for input in inputs.itervalues():
         try:
             state.inputs[ input.name ] = input.get_initial_value( trans, context )
         except:
+            # FIXME: not all values should be an empty list
             state.inputs[ input.name ] = []
     return state
 

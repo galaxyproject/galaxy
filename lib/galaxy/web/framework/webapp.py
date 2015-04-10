@@ -668,7 +668,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         """
         history = None
         if self.galaxy_session:
-            history = self.galaxy_session.current_history
+            if hasattr( self.galaxy_session, 'current_history' ):
+                history = self.galaxy_session.current_history
         if not history and util.string_as_bool( create ):
             history = self.new_history()
         return history

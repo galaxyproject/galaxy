@@ -238,7 +238,7 @@ class AssertDirectoryExecutable( RecipeStep ):
             return False
         if os.path.isdir( full_path ):
             # Make sure the owner has execute permission on the directory.
-            # See http://docs.python.org/2/library/stat.html
+            # See https://docs.python.org/2/library/stat.html
             if stat.S_IXUSR & os.stat( full_path )[ stat.ST_MODE ] == 64:
                 return True
         return False
@@ -334,7 +334,7 @@ class AssertFileExecutable( RecipeStep ):
             return False
         if os.path.exists( full_path ):
             # Make sure the owner has execute permission on the file.
-            # See http://docs.python.org/2/library/stat.html
+            # See https://docs.python.org/2/library/stat.html
             if stat.S_IXUSR & os.stat( full_path )[ stat.ST_MODE ] == 64:
                 return True
         return False
@@ -896,7 +896,7 @@ class SetEnvironment( RecipeStep ):
         in the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
         tool_dependencies.xml file contained in the osra repository, which is available at:
     
-        http://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
+        https://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
     
         The first tag set defines a complex repository dependency like this.  This tag set ensures that changeset
         revision XXX of the repository named package_graphicsmagick_1_3 owned by YYY in the tool shed ZZZ has been

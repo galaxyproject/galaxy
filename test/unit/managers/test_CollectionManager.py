@@ -36,10 +36,10 @@ class DatasetCollectionManagerTestCase( BaseTestCase ):
 
     def set_up_managers( self ):
         super( DatasetCollectionManagerTestCase, self ).set_up_managers()
-        self.dataset_mgr = DatasetManager( self.app )
-        self.hda_mgr = HDAManager( self.app )
-        self.history_mgr = HistoryManager( self.app )
-        self.collection_mgr = DatasetCollectionManager( self.app )
+        self.dataset_manager = DatasetManager( self.app )
+        self.hda_manager = HDAManager( self.app )
+        self.history_manager = HistoryManager( self.app )
+        self.collection_manager = DatasetCollectionManager( self.app )
 
     def build_element_identifiers( self, elements ):
         identifier_list = []
@@ -54,20 +54,20 @@ class DatasetCollectionManagerTestCase( BaseTestCase ):
         return identifier_list
 
     def test_create_simple_list( self ):
-        owner = self.user_mgr.create( self.trans, **user2_data )
+        owner = self.user_manager.create( **user2_data )
 
-        history = self.history_mgr.create( self.trans, name='history1', user=owner )
+        history = self.history_manager.create( name='history1', user=owner )
 
-        hda1 = self.hda_mgr.create( self.trans, name='one',
-            history=history, dataset=self.dataset_mgr.create( self.trans ) )
-        hda2 = self.hda_mgr.create( self.trans, name='two',
-            history=history, dataset=self.dataset_mgr.create( self.trans ) )
-        hda3 = self.hda_mgr.create( self.trans, name='three',
-            history=history, dataset=self.dataset_mgr.create( self.trans ) )
+        hda1 = self.hda_manager.create( name='one',
+            history=history, dataset=self.dataset_manager.create() )
+        hda2 = self.hda_manager.create( name='two',
+            history=history, dataset=self.dataset_manager.create() )
+        hda3 = self.hda_manager.create( name='three',
+            history=history, dataset=self.dataset_manager.create() )
 
         self.log( "should be able to create a new Collection via ids" )
         element_identifiers = self.build_element_identifiers( [ hda1, hda2, hda3 ] )
-        hdca = self.collection_mgr.create( self.trans, history, 'test collection', 'list',
+        hdca = self.collection_manager.create( self.trans, history, 'test collection', 'list',
                                            element_identifiers=element_identifiers )
         self.assertIsInstance( hdca, model.HistoryDatasetCollectionAssociation )
         self.assertEqual( hdca.name, 'test collection' )
@@ -117,26 +117,26 @@ class DatasetCollectionManagerTestCase( BaseTestCase ):
 
         self.log( "should be able to create a new Collection via objects" )
         elements = dict( one=hda1, two=hda2, three=hda3 )
-        hdca2 = self.collection_mgr.create( self.trans, history, 'test collection 2', 'list', elements=elements )
+        hdca2 = self.collection_manager.create( self.trans, history, 'test collection 2', 'list', elements=elements )
         self.assertIsInstance( hdca2, model.HistoryDatasetCollectionAssociation )
 
     def test_update_from_dict( self ):
-        owner = self.user_mgr.create( self.trans, **user2_data )
+        owner = self.user_manager.create( **user2_data )
 
-        history = self.history_mgr.create( self.trans, name='history1', user=owner )
+        history = self.history_manager.create( name='history1', user=owner )
 
-        hda1 = self.hda_mgr.create( self.trans, name='one',
-            history=history, dataset=self.dataset_mgr.create( self.trans ) )
-        hda2 = self.hda_mgr.create( self.trans, name='two',
-            history=history, dataset=self.dataset_mgr.create( self.trans ) )
-        hda3 = self.hda_mgr.create( self.trans, name='three',
-            history=history, dataset=self.dataset_mgr.create( self.trans ) )
+        hda1 = self.hda_manager.create( name='one',
+            history=history, dataset=self.dataset_manager.create() )
+        hda2 = self.hda_manager.create( name='two',
+            history=history, dataset=self.dataset_manager.create() )
+        hda3 = self.hda_manager.create( name='three',
+            history=history, dataset=self.dataset_manager.create() )
 
         elements = dict( one=hda1, two=hda2, three=hda3 )
-        hdca = self.collection_mgr.create( self.trans, history, 'test collection', 'list', elements=elements )
+        hdca = self.collection_manager.create( self.trans, history, 'test collection', 'list', elements=elements )
 
         self.log( "should be set from a dictionary" )
-        self.collection_mgr._set_from_dict( self.trans, hdca, {
+        self.collection_manager._set_from_dict( self.trans, hdca, {
             'deleted'   : True,
             'visible'   : False,
             'name'      : 'New Name',

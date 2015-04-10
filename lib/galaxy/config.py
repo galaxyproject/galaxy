@@ -262,7 +262,7 @@ class Configuration( object ):
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
-        self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.galaxyproject.org/' )
+        self.wiki_url = kwargs.get( 'wiki_url', 'https://wiki.galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
@@ -302,6 +302,8 @@ class Configuration( object ):
         self.nginx_x_archive_files_base = kwargs.get( 'nginx_x_archive_files_base', False )
         self.nginx_upload_store = kwargs.get( 'nginx_upload_store', False )
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
+        self.nginx_upload_job_files_store = kwargs.get( 'nginx_upload_job_files_store', False )
+        self.nginx_upload_job_files_path = kwargs.get( 'nginx_upload_job_files_path', False )
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
@@ -356,6 +358,8 @@ class Configuration( object ):
 
         # Default URL (with schema http/https) of the Galaxy instance within the
         # local network - used to remotely communicate with the Galaxy API.
+        web_port = kwargs.get("galaxy_infrastructure_web_port", None)
+        self.galaxy_infrastructure_web_port = web_port
         galaxy_infrastructure_url = kwargs.get( 'galaxy_infrastructure_url', None )
         galaxy_infrastructure_url_set = True
         if galaxy_infrastructure_url is None:
@@ -363,9 +367,9 @@ class Configuration( object ):
             # so dependending on the context a better default can be used (
             # request url in a web thread, Docker parent in IE stuff, etc...)
             galaxy_infrastructure_url = "http://localhost"
-            port = self.guess_galaxy_port()
-            if port:
-                galaxy_infrastructure_url += ":%s" % (port)
+            web_port = self.galaxy_infrastructure_web_port or self.guess_galaxy_port()
+            if web_port:
+                galaxy_infrastructure_url += ":%s" % (web_port)
             galaxy_infrastructure_url_set = False
         if "HOST_IP" in galaxy_infrastructure_url:
             galaxy_infrastructure_url = string.Template(galaxy_infrastructure_url).safe_substitute({

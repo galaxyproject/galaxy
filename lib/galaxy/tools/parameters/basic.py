@@ -38,14 +38,15 @@ class ToolParameter( object, Dictifiable ):
     moment but in the future should encapsulate more complex parameters (lists
     of valid choices, validation logic, ...)
     """
-    dict_collection_visible_keys = ( 'name', 'type', 'label', 'help' )
+    dict_collection_visible_keys = ( 'name', 'argument', 'type', 'label', 'help' )
 
     def __init__( self, tool, input_source, context=None ):
         input_source = ensure_input_source(input_source)
         self.tool = tool
         self.refresh_on_change = False
         self.refresh_on_change_values = []
-        self.name = input_source.get("name")
+        self.argument = input_source.get("argument")
+        self.name = ToolParameter.parse_name( input_source )
         self.type = input_source.get("type")
         self.hidden = input_source.get("hidden", False)
         self.is_dynamic = False
@@ -222,9 +223,7 @@ class ToolParameter( object, Dictifiable ):
     @classmethod
     def build( cls, tool, param ):
         """Factory method to create parameter of correct type"""
-        param_name = param.get( "name" )
-        if not param_name:
-            raise ValueError( "Tool parameter '%s' requires a 'name'" % (param_name ) )
+        param_name = cls.parse_name( param )
         param_type = param.get("type")
         if not param_type:
             raise ValueError( "Tool parameter '%s' requires a 'type'" % ( param_name ) )
@@ -232,6 +231,17 @@ class ToolParameter( object, Dictifiable ):
             raise ValueError( "Tool parameter '%s' uses an unknown type '%s'" % ( param_name, param_type ) )
         else:
             return parameter_types[param_type]( tool, param )
+
+    @classmethod
+    def parse_name(cls, input_source):
+        name = input_source.get("name", None)
+        if name is None:
+            argument = input_source.get("argument")
+            if argument:
+                name = argument.lstrip("-")
+            else:
+                raise ValueError("Tool parameter must specify a name.")
+        return name
 
 
 class TextToolParameter( ToolParameter ):
@@ -813,7 +823,8 @@ class SelectToolParameter( ToolParameter ):
             call_other_values = self._get_dynamic_options_call_other_values( trans, other_values )
             try:
                 return eval( self.dynamic_options, self.tool.code_namespace, call_other_values )
-            except Exception:
+            except Exception, e:
+                log.debug( "Error determining dynamic options for parameter '%s' in tool '%s':", self.name, self.tool.id, exc_info=e )
                 return []
         else:
             return self.static_options

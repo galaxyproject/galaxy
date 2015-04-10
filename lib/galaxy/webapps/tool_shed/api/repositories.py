@@ -12,6 +12,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.exceptions import ActionInputError
 from galaxy.exceptions import ObjectNotFound
 from galaxy.exceptions import MalformedId

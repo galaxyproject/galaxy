@@ -40,7 +40,7 @@ from galaxy.tools.parameters.basic import (BaseURLToolParameter,
                                            DataToolParameter, DataCollectionToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
                                            SelectToolParameter, ToolParameter, UnvalidatedValue,
                                            IntegerToolParameter, FloatToolParameter)
-from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, UploadDataset
+from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
@@ -972,6 +972,15 @@ class Tool( object, Dictifiable ):
                         case.inputs = odict()
                         group.cases.append( case )
                 rval[group.name] = group
+            elif input_type == "section":
+                group = Section()
+                group.name = input_source.get( "name" )
+                group.title = input_source.get( "title" )
+                group.help = input_source.get( "help", None )
+                group.expanded = input_source.get_bool( "expanded", False )
+                page_source = input_source.parse_nested_inputs_source()
+                group.inputs = self.parse_input_elem( page_source, enctypes, context )
+                rval[group.name] = group
             elif input_type == "upload_dataset":
                 elem = input_source.elem()
                 group = UploadDataset()
@@ -1505,6 +1514,20 @@ class Tool( object, Dictifiable ):
                     group_state['__current_case__'] = current_case
                     # Store the value of the test element
                     group_state[ input.test_param.name ] = value
+            elif isinstance( input, Section ):
+                group_state = state[input.name]
+                group_prefix = "%s|" % ( key )
+                self.fill_in_new_state( trans, input.inputs, group_state, context, history=history )
+                group_errors = self.populate_state( trans,
+                                                    input.inputs,
+                                                    group_state,
+                                                    incoming,
+                                                    history,
+                                                    source,
+                                                    prefix=group_prefix,
+                                                    context=context )
+                if group_errors:
+                    errors[ input.name ] = group_errors
             elif isinstance( input, UploadDataset ):
                 group_state = state[input.name]
                 group_errors = []
@@ -1714,6 +1737,22 @@ class Tool( object, Dictifiable ):
                 group_state['__current_case__'] = current_case
                 # Store the value of the test element
                 group_state[ input.test_param.name ] = value
+            elif isinstance( input, Section ):
+                group_state = state[input.name]
+                group_old_errors = old_errors.get( input.name, {} )
+                group_prefix = "%s|" % ( key )
+                group_errors = self.update_state( trans,
+                                                  input.inputs,
+                                                  group_state,
+                                                  incoming,
+                                                  prefix=group_prefix,
+                                                  context=context,
+                                                  source=source,
+                                                  update_only=update_only,
+                                                  old_errors=group_old_errors,
+                                                  item_callback=item_callback )
+                if group_errors:
+                    errors[ input.name ] = group_errors
             elif isinstance( input, UploadDataset ):
                 group_state = state[input.name]
                 group_errors = []
@@ -2383,6 +2422,10 @@ class Tool( object, Dictifiable ):
                             errors[test_param_key] = 'The selected case is unavailable/invalid.'
                             pass
                     group_state[input.test_param.name] = value
+                elif input.type == 'section':
+                    group_state = state[input.name]
+                    group_prefix = "%s|" % ( key )
+                    populate_state(trans, input.inputs, group_state, errors, incoming, prefix=group_prefix, context=context)
                 else:
                     default_value = incoming.get(key, state.get(input.name, None))
                     value, error = check_state(trans, input, default_value, context)
@@ -2417,11 +2460,13 @@ class Tool( object, Dictifiable ):
                             if i == group_state.get('__current_case__', None):
                                 current_state = group_state
                             iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, current_state, other_values)
+                elif input.type == 'section':
+                    iterate( tool_dict['inputs'], input.inputs, group_state, other_values )
                 else:
                     # identify name
                     input_name = tool_dict.get('name')
 
-                    # create expanded input dictionary incl. repeats and dynamic_parameters
+                    # expand input dictionary incl. repeats and dynamic_parameters
                     try:
                         tool_dict = input.to_dict(trans, other_values=other_values)
                     except Exception:
@@ -2555,28 +2600,44 @@ class Tool( object, Dictifiable ):
         # dataset used; parameter should be the analygous dataset in the
         # current history.
         history = trans.get_history()
-        hda_source_dict = {} # Mapping from HDA in history to source HDAs.
+
+        # Create index for hdas.
+        hda_source_dict = {}
         for hda in history.datasets:
-            source_hda = hda.copied_from_history_dataset_association
-            while source_hda:
-                if source_hda.dataset.id not in hda_source_dict or source_hda.hid == hda.hid:
-                    hda_source_dict[ source_hda.dataset.id ] = hda
-                source_hda = source_hda.copied_from_history_dataset_association
+            key = '%s_%s' % (hda.hid, hda.dataset.id)
+            hda_source_dict[ hda.dataset.id ] = hda_source_dict[ key ] = hda
 
         # Ditto for dataset collections.
         hdca_source_dict = {}
         for hdca in history.dataset_collections:
-            source_hdca = hdca.copied_from_history_dataset_collection_association
-            while source_hdca:
-                if source_hdca.collection.id not in hdca_source_dict or source_hdca.hid == hdca.hid:
-                    hdca_source_dict[ source_hdca.collection.id ] = hdca
-                source_hdca = source_hdca.copied_from_history_dataset_collection_association
+            key = '%s_%s' % (hdca.hid, hdca.collection.id)
+            hdca_source_dict[ hda.collection.id ] = hdca_source_dict[ key ] = hdca
+
+        # Map dataset or collection to current history
+        def map_to_history(value):
+            id = None
+            source = None
+            if isinstance(value, trans.app.model.HistoryDatasetAssociation):
+                id = value.dataset.id
+                source = hda_source_dict
+            elif isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation):
+                id = value.collection.id
+                source = hdca_source_dict
+            else:
+                return None
+            key = '%s_%s' % (value.hid, id)
+            if key in source:
+                return source[ key ]
+            elif id in source:
+                return source[ id ]
+            else:
+                return None
 
         # Unpack unvalidated values to strings, they'll be validated when the
         # form is submitted (this happens when re-running a job that was
         # initially run by a workflow)
         #This needs to be done recursively through grouping parameters
-        def rerun_callback( input, value, prefixed_name, prefixed_label ):
+        def mapping_callback( input, value, prefixed_name, prefixed_label ):
             if isinstance( value, UnvalidatedValue ):
                 try:
                     return input.to_html_value( value.value, trans.app )
@@ -2588,22 +2649,17 @@ class Tool( object, Dictifiable ):
                 if isinstance(value,list):
                     values = []
                     for val in value:
-                        if isinstance(val, trans.app.model.HistoryDatasetAssociation):
-                            if val.dataset.id in hda_source_dict:
-                                values.append( hda_source_dict[ val.dataset.id ] )
-                            else:
-                                values.append( val )
+                        new_val = map_to_history( val )
+                        if new_val:
+                            values.append( new_val )
+                        else:
+                            values.append( val )
                     return values
-                if isinstance(value, trans.app.model.HistoryDatasetAssociation):
-                    if value.dataset.id in hda_source_dict:
-                        return hda_source_dict[ value.dataset.id ]
-                if isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation):
-                    if value.collection.id in hdca_source_dict:
-                        return hdca_source_dict[ value.collection.id ]
+                else:
+                    return map_to_history( value )
             elif isinstance( input, DataCollectionToolParameter ):
-                if value.collection.id in hdca_source_dict:
-                    return hdca_source_dict[ value.collection.id ]
-        visit_input_values( tool_inputs, params, rerun_callback )
+                return map_to_history( value )
+        visit_input_values( tool_inputs, params, mapping_callback )
 
     def _compare_tool_version( self, trans, job ):
         """

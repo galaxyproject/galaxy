@@ -8,6 +8,7 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.grouping import (
     Repeat,
     Conditional,
+    Section
 )
 PARAMS_UNWRAPPED = object()
 
@@ -44,6 +45,9 @@ class WrappedParameters( object ):
                 values = input_values[ input.name ]
                 current = values[ "__current_case__" ]
                 self.wrap_values( input.cases[current].inputs, values, skip_missing_values=skip_missing_values )
+            elif isinstance( input, Section ):
+                values = input_values[ input.name ]
+                self.wrap_values( input.inputs, values, skip_missing_values=skip_missing_values )
             elif isinstance( input, DataToolParameter ) and input.multiple:
                 input_values[ input.name ] = \
                     galaxy.tools.DatasetListWrapper( input_values[ input.name ],

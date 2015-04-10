@@ -16,6 +16,8 @@ from galaxy import objectstore
 from galaxy.model import mapping
 from galaxy.util.bunch import Bunch
 
+from galaxy.managers import tags
+from galaxy import quota
 
 # =============================================================================
 class OpenObject( object ):
@@ -29,6 +31,8 @@ class MockApp( object ):
         self.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store )
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
+        self.tag_handler = tags.GalaxyTagManager( self )
+        self.quota_agent = quota.QuotaAgent( self.model )
 
 class MockAppConfig( Bunch ):
     def __init__( self, **kwargs ):
@@ -53,10 +57,15 @@ class MockWebapp( object ):
     def __init__( self, **kwargs ):
         self.name = kwargs.get( 'name', 'galaxy' )
 
+class MockVisualizationsRegistry( object ):
+    def get_visualizations( self, trans, target ):
+        return []
+
 class MockTrans( object ):
     def __init__( self, user=None, history=None, **kwargs ):
 
         self.app = MockApp( **kwargs )
+        self.model = self.app.model
         self.webapp = MockWebapp( **kwargs )
         self.sa_session = self.app.model.session
 
@@ -91,7 +100,3 @@ class MockTrans( object ):
         template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
         return template.render( **kwargs )
-
-class MockVisualizationsRegistry( object ):
-    def get_visualizations( self, trans, target ):
-        return []
