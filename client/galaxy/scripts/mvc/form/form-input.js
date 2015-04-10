@@ -34,7 +34,7 @@ define([], function() {
             this.field.skip = false;
             var v = this.field.value && this.field.value();
             this.field.skip = Boolean(options.optional &&
-                                        (v === null || v === '' || v === this.default_value ||
+                                        (v === this.default_value ||
                                          String(v) === String(this.default_value) ||
                                          Number(v) === Number(this.default_value) ||
                                          JSON.stringify(v) === JSON.stringify(this.default_value)));

@@ -2481,15 +2481,11 @@ class Tool( object, Dictifiable ):
                             pass
 
                         # update input value from tool state
-                        tool_dict['value'] = state_inputs.get(input_name, None)
+                        tool_dict['value'] = state_inputs.get(input_name, tool_dict['default_value'])
 
                         # sanitize values
                         sanitize(tool_dict, 'value')
                         sanitize(tool_dict, 'default_value')
-
-                        # use default value
-                        if tool_dict['value'] is None:
-                            tool_dict['value'] = tool_dict['default_value']
 
                 # backup final input dictionary
                 group_inputs[input_index] = tool_dict
