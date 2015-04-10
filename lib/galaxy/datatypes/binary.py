@@ -24,6 +24,9 @@ from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListPa
 from galaxy.datatypes import metadata
 import dataproviders
 
+eggs.require( "pysam" )
+from pysam import csamtools
+
 log = logging.getLogger(__name__)
 
 # Currently these supported binary data types must be manually set on upload
@@ -146,6 +149,12 @@ class Bam( Binary ):
     data_sources = { "data": "bai", "index": "bigwig" }
 
     MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True )
+    MetadataElement( name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None )
+    MetadataElement( name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None )
+    MetadataElement( name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
 
     def _get_samtools_version( self ):
         # Determine the version of samtools being used.  Wouldn't it be nice if
@@ -291,6 +300,17 @@ class Bam( Binary ):
         dataset.metadata.bam_index = index_file
         # Remove temp file
         os.unlink( stderr_name )
+        # Now use pysam with BAI index to determine additional metadata
+        try:
+            bam_file = csamtools.Samfile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
+            dataset.metadata.bam_header = bam_file.header
+            dataset.metadata.read_groups = [ read_group['ID'] for read_group in dataset.metadata.bam_header.get( 'RG', [] ) if 'ID' in read_group ]
+            dataset.metadata.reference_names = list( bam_file.references )
+            dataset.metadata.reference_lengths = list( bam_file.lengths )
+            dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
+            dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
+        except:
+            pass
 
     def sniff( self, filename ):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
