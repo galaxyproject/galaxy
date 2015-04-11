@@ -63,7 +63,7 @@
           <% group_errors = errors.get( input.name, {} ) %>
           ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, group_prefix, ctx, allow_runtime=False )}
           ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, group_prefix, ctx )}
-        %else:
+        %elif input.type != "section":
           %if input.name in values:
             ${row_for_param( input, values[ input.name ], errors, prefix, ctx )}
           %else:
