@@ -90,8 +90,8 @@ class JobFilesAPIController( BaseAPIController ):
                                    " nginx_upload_module but Galaxy is not"
                                    " configured to recognize it" )
             assert file_path.startswith( upload_store ), \
-                    ( "Filename provided by nginx (%s) is not in correct"
-                      " directory (%s)" % ( file_path, upload_store ) )
+                ( "Filename provided by nginx (%s) is not in correct"
+                  " directory (%s)" % ( file_path, upload_store ) )
             input_file = open( file_path )
         else:
             input_file = payload.get( "file",
