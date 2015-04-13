@@ -137,7 +137,8 @@ def get_repos( sa_session ):
         #  Parse all the tools within repo for separate index.
         tools_dict = []
         from galaxy.webapps.tool_shed.model import directory_hash_id
-        path = os.path.join( '/Users/marten/devel/git/galaxy/database/community_files', *directory_hash_id( repo.id ))
+        path = os.path.join( os.getcwd(), 'database/community_files' )
+        path = os.path.join( path, *directory_hash_id( repo.id ))
         path = os.path.join( path, "repo_%d" % repo.id )
         from galaxy.tools.loader_directory import load_tool_elements_from_path
         if os.path.exists(path):
