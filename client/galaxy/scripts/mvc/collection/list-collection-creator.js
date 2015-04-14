@@ -40,7 +40,7 @@ var DatasetCollectionElementView = Backbone.View.extend( BASE_MVC.LoggableMixin 
         '<span class="name" title="', _l( 'Click to rename' ), '"><%= element.name %></span>',
         '<button class="discard btn btn-sm" title="', _l( 'Remove this dataset from the list' ), '">',
             _l( 'Discard' ),
-        '</span>',
+        '</button>',
     ].join('')),
 
     select : function( toggle ){
@@ -143,7 +143,6 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         /** unordered, original list - cache to allow reversal */
         this.initialElements = attributes.elements;
         /** a list of invalid elements and the reasons they aren't valid */
-//TODO: display invalid and allow the user to move forward
         this.invalidElements = [];
         /** data for list in progress */
         this.workingElements = [];
@@ -180,7 +179,8 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         this.workingElements = this.initialElements.slice( 0 );
         this._ensureElementIds();
         this._validateElements();
-        this._sortElements();
+        this._mangleDuplicateNames();
+        // this._sortElements();
     },
 
     /** add ids to dataset objs in initial list if none */
@@ -195,7 +195,8 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
     /** separate working list into valid and invalid elements for this collection */
     _validateElements : function(){
-        var creator = this;
+        var creator = this,
+            existingNames = {};
         creator.invalidElements = [];
 
         this.workingElements = this.workingElements.filter( function( element ){
@@ -229,6 +230,25 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
     },
 
     /** sort a list of datasets */
+    _mangleDuplicateNames : function(){
+        var SAFETY = 900,
+            counter = 1,
+            existingNames = {};
+        this.workingElements.forEach( function( element ){
+            var currName = element.name;
+            while( existingNames.hasOwnProperty( currName ) ){
+                currName = element.name + ' (' + counter + ')';
+                counter += 1;
+                if( counter >= SAFETY ){
+                    throw new Error( 'Safety hit in while loop - thats impressive' );
+                }
+            }
+            element.name = currName;
+            existingNames[ element.name ] = true;
+        });
+    },
+
+    /** sort a list of elements */
     _sortElements : function( list ){
         // currently only natural sort by name
         this.workingElements.sort( function( a, b ){ return naturalSort( a.name, b.name ); });
@@ -442,6 +462,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         this.on( 'error', this._errorHandler );
 
         this.once( 'rendered', function(){
+            this.$( '.collection-name' ).focus();
             this.trigger( 'rendered:initial', this );
         });
 
@@ -497,7 +518,6 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         'click .clear-selected'         : 'clearSelectedElements',
 
         // elements - selection
-//TODO: this is not enough area - no affordance
         'click .collection-elements'    : 'clearSelectedElements',
 
         // elements - drop target
