@@ -2276,7 +2276,7 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .collection-creator.list-collection-creator .collection-element .discard{float:right !important;float:right}
 .collection-creator.list-collection-creator .element-drop-placeholder{width:60px;height:3px;margin:2px 0px 0px 6px;background:black}.collection-creator.list-collection-creator .element-drop-placeholder:before{float:left;font-size:120%;margin:-9px 0 0 -6px;font-family:FontAwesome;content:'\f0da'}
 .collection-creator.list-collection-creator .element-drop-placeholder:last-child{margin-bottom:4px}
-.collection-creator.list-collection-creator .no-elements-left-message{margin:8px;color:grey;font-style:italic;text-align:center}
+.collection-creator.list-collection-creator .empty-message{margin:8px;color:grey;font-style:italic;text-align:center}
 .collection-creator.list-of-pairs-collection-creator .column-headers{margin-bottom:8px}
 .search-input .search-query{width:100%;padding-right:24px}
 .search-input .search-clear,.search-input .search-loading{position:relative;display:inline-block;float:right;margin-top:-24px;margin-right:4px;font-size:1.4em;line-height:23px;color:grey}
