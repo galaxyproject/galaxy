@@ -1,8 +1,8 @@
 """ 
 Build indexes for searching the TS.
-Run this script from the galaxy folder, example:
+Run this script from the Tool Shed folder, example:
 
-$ python scripts/tool_shed/build_ts_whoosh_index_test.py config/tool_shed.ini
+$ python scripts/tool_shed/build_ts_whoosh_index_test.py -c config/tool_shed.ini -r database/community_files
 
 Make sure you adjusted your config to:
  * turn on searching via toolshed_search_on
@@ -11,6 +11,7 @@ Make sure you adjusted your config to:
 import sys
 import os
 import ConfigParser
+from optparse import OptionParser
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )  # remove scripts/ from the path
@@ -18,7 +19,9 @@ sys.path = new_path
 
 from galaxy.util import pretty_print_time_interval
 import galaxy.webapps.tool_shed.model.mapping
-from galaxy.webapps.tool_shed import config, model
+from galaxy.webapps.tool_shed import config
+from galaxy.webapps.tool_shed import model
+from galaxy.tools.loader_directory import load_tool_elements_from_path
 
 from galaxy import eggs
 eggs.require( "SQLAlchemy" )
@@ -50,7 +53,7 @@ tool_schema = Schema(
     repo_id=STORED )
 
 
-def build_index( sa_session, toolshed_whoosh_index_dir ):
+def build_index( sa_session, toolshed_whoosh_index_dir, path_to_repositories ):
     """
     Build the search indexes. One for repositories and another for tools within.
     """
@@ -76,7 +79,7 @@ def build_index( sa_session, toolshed_whoosh_index_dir ):
     repos_indexed = 0
     tools_indexed = 0
 
-    for repo in get_repos( sa_session ):
+    for repo in get_repos( sa_session, path_to_repositories ):
 
         repo_index_writer.add_document( id=repo.get( 'id' ),
                              name=to_unicode( repo.get( 'name' ) ),
@@ -112,7 +115,7 @@ def build_index( sa_session, toolshed_whoosh_index_dir ):
     print "TOTAL tools indexed: ", tools_indexed
 
 
-def get_repos( sa_session ):
+def get_repos( sa_session, path_to_repositories ):
     """
     Load repos from DB and included tools from .xml configs.
     """
@@ -147,12 +150,8 @@ def get_repos( sa_session ):
 
         #  Parse all the tools within repo for separate index.
         tools_list = []
-        from galaxy.webapps.tool_shed.model import directory_hash_id
-        path = '/srv/toolshed/test/var/data/repos'
-        # path = os.path.join( os.getcwd(), 'database/community_files' )
-        path = os.path.join( path, *directory_hash_id( repo.id ))
+        path = os.path.join( path_to_repositories, *model.directory_hash_id( repo.id ))
         path = os.path.join( path, "repo_%d" % repo.id )
-        from galaxy.tools.loader_directory import load_tool_elements_from_path
         if os.path.exists(path):
             tool_elems = load_tool_elements_from_path(path)
             if tool_elems:
@@ -185,9 +184,9 @@ def get_repos( sa_session ):
     return results
 
 
-def get_sa_session_and_needed_config_settings( ini_file ):
+def get_sa_session_and_needed_config_settings( path_to_tool_shed_config ):
     conf_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )
-    conf_parser.read( ini_file )
+    conf_parser.read( path_to_tool_shed_config )
     kwds = dict()
     for key, value in conf_parser.items( "app:main" ):
         kwds[ key ] = value
@@ -199,7 +198,12 @@ def get_sa_session_and_needed_config_settings( ini_file ):
     return model.context.current, config_settings
 
 if __name__ == "__main__":
-    ini_file = sys.argv[ 1 ]
-    sa_session, config_settings = get_sa_session_and_needed_config_settings( ini_file )
+    parser = OptionParser()
+    parser.add_option("-c", "--config", dest="path_to_tool_shed_config", default="config/tool_shed.ini", help="specify tool_shed.ini location")
+    parser.add_option("-r", "--repos", dest="path_to_repositories", default="database/community_files", help="specify path to folder with repositories")
+    (options, args) = parser.parse_args()
+    path_to_tool_shed_config = options.path_to_tool_shed_config
+    path_to_repositories = options.path_to_repositories
+    sa_session, config_settings = get_sa_session_and_needed_config_settings( path_to_tool_shed_config )
     toolshed_whoosh_index_dir = config_settings.get( 'toolshed_whoosh_index_dir', None )
-    build_index( sa_session, toolshed_whoosh_index_dir )
+    build_index( sa_session, toolshed_whoosh_index_dir, path_to_repositories )
