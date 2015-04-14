@@ -2330,6 +2330,12 @@ class Tool( object, Dictifiable ):
                     'id'  : trans.security.encode_id(v.id),
                     'src' : 'hdca'
                 }
+            elif isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
+                return {
+                    'id'  : trans.security.encode_id(v.id),
+                    'name': v.name,
+                    'src' : 'ldda'
+                }
             elif isinstance(v, bool):
                 if v is True:
                     return 'true'

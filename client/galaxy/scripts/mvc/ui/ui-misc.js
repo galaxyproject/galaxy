@@ -277,6 +277,7 @@ var Message = Backbone.View.extend({
     optionsDefault: {
         message     : null,
         status      : 'info',
+        cls         : '',
         persistent  : false
     },
 
@@ -286,7 +287,7 @@ var Message = Backbone.View.extend({
         this.options = Utils.merge(options, this.optionsDefault);
 
         // create new element
-        this.setElement('<div></div>');
+        this.setElement('<div class="' + this.options.cls + '"/>');
 
         // show initial message
         if (this.options.message) {

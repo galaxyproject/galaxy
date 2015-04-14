@@ -285,6 +285,11 @@ define(['utils/utils',
                 }
             });
 
+            // add expansion event handler
+            this.app.on('expand', function(input_id) {
+                (portlet.$el.find('#' + input_id).length > 0) && !visible && portlet.$header.trigger('click');
+            });
+
             // show sub section if requested
             if (input_def.expanded) {
                 portlet.$header.trigger('click');
