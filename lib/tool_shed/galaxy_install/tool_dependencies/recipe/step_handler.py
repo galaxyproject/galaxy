@@ -1337,18 +1337,22 @@ class SetupRubyEnvironment( Download, RecipeStep ):
             with settings( warn_only=True ):
                 ruby_package_tups = action_dict.get( 'ruby_package_tups', [] )
                 for ruby_package_tup in ruby_package_tups:
-                    gem, gem_version = ruby_package_tup
+                    gem, gem_version, gem_parameters = ruby_package_tup
+                    if gem_parameters:
+                        gem_parameters = '-- %s' % gem_parameters
+                    else:
+                        gem_parameters = ''
                     if os.path.isfile( gem ):
                         # we assume a local shipped gem file
                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local %s''' % ( gem )
+                                gem install --local %s %s''' % ( gem, gem_parameters )
                     elif gem.find( '://' ) != -1:
                         # We assume a URL to a gem file.
                         url = gem
                         gem_name = url.split( '/' )[ -1 ]
                         self.url_download( work_dir, gem_name, url, extract=False )
                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local %s ''' % ( gem_name )
+                                gem install --local %s %s''' % ( gem_name, gem_parameters )
                     else:
                         # gem file from rubygems.org with or without version number
                         if gem_version:
@@ -1356,11 +1360,11 @@ class SetupRubyEnvironment( Download, RecipeStep ):
                             # Use raw strings so that python won't automatically unescape the quotes before passing the command
                             # to subprocess.Popen.
                             cmd = r'''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install %s --version "=%s"''' % ( gem, gem_version)
+                                gem install %s --version "=%s" %s''' % ( gem, gem_version, gem_parameters)
                         else:
                             # no version number given
                             cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install %s''' % ( gem )
+                                gem install %s %s''' % ( gem, gem_parameters )
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                       cmd=cmd,
@@ -1413,15 +1417,16 @@ class SetupRubyEnvironment( Download, RecipeStep ):
                 #    protk
                 #    ftp://ftp.gruening.de/protk.gem
                 gem_token = env_elem.text.strip().split( '=' )
+                gem_parameters = env_elem.get( 'parameters', None)
                 if len( gem_token ) == 2:
                     # version string
                     gem_name = gem_token[ 0 ]
                     gem_version = gem_token[ 1 ]
-                    ruby_package_tups.append( ( gem_name, gem_version ) )
+                    ruby_package_tups.append( ( gem_name, gem_version, gem_parameters ) )
                 else:
                     # gem name for rubygems.org without version number
                     gem = env_elem.text.strip()
-                    ruby_package_tups.append( ( gem, None ) )
+                    ruby_package_tups.append( ( gem, None, gem_parameters ) )
         if ruby_package_tups:
             action_dict[ 'ruby_package_tups' ] = ruby_package_tups
         return action_dict
