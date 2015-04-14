@@ -57,12 +57,17 @@ var DatasetCollectionElementView = Backbone.View.extend( BASE_MVC.LoggableMixin 
         var view = this,
             parentWidth = this.$el.parent().width();
         this.$el.animate({ 'margin-right' : parentWidth }, 'fast', function(){
-            view.off();
-            view.$el.remove();
+            view.destroy();
             view.trigger( 'discard', {
                 source : view
             });
         });
+    },
+
+    /** remove the DOM and any listeners */
+    destroy : function(){
+        this.off();
+        this.$el.remove();
     },
 
     events : {
@@ -133,8 +138,10 @@ var DatasetCollectionElementView = Backbone.View.extend( BASE_MVC.LoggableMixin 
  */
 var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
 
+    /** the class used to display individual elements */
+    elementViewClass : DatasetCollectionElementView,
     /** the class this creator will create and save */
-    collectionClass : HDCA.HistoryListDatasetCollection,
+    collectionClass  : HDCA.HistoryListDatasetCollection,
     className : 'list-collection-creator collection-creator flex-row-container',
 
     defaultAttributes : {
@@ -195,7 +202,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         this._ensureElementIds();
         this._validateElements();
         this._mangleDuplicateNames();
-        // this._sortElements();
+        this._sortElements();
     },
 
     /** add ids to dataset objs in initial list if none */
@@ -265,16 +272,18 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
     /** sort a list of elements */
     _sortElements : function( list ){
-        // currently only natural sort by name
-        this.workingElements.sort( function( a, b ){ return naturalSort( a.name, b.name ); });
-        return this.workingElements;
+        // // currently only natural sort by name
+        // this.workingElements.sort( function( a, b ){ return naturalSort( a.name, b.name ); });
+        // return this.workingElements;
     },
 
     // ------------------------------------------------------------------------ rendering
+    // templates : ListCollectionCreator.templates,
+
     /** render the entire interface */
     render : function( speed, callback ){
         //this.debug( '-- _render' );
-        this.$el.empty().html( ListCollectionCreator.templates.main() );
+        this.$el.empty().html( this.templates.main() );
         this._renderHeader( speed );
         this._renderMiddle( speed );
         this._renderFooter( speed );
@@ -286,8 +295,8 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
     /** render the header section */
     _renderHeader : function( speed, callback ){
-        var $header = this.$( '.header' ).empty().html( ListCollectionCreator.templates.header() )
-            .find( '.help-content' ).prepend( $( ListCollectionCreator.templates.helpContent() ) );
+        var $header = this.$( '.header' ).empty().html( this.templates.header() )
+            .find( '.help-content' ).prepend( $( this.templates.helpContent() ) );
         //TODO: should only show once despite calling _renderHeader again
         if( this.invalidElements.length ){
             this._invalidElementsAlert();
@@ -297,14 +306,14 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
     /** render the middle including the elements */
     _renderMiddle : function( speed, callback ){
-        var $middle = this.$( '.middle' ).empty().html( ListCollectionCreator.templates.middle() );
+        var $middle = this.$( '.middle' ).empty().html( this.templates.middle() );
         this._renderList( speed );
         return $middle;
     },
 
     /** render the footer, completion controls, and cancel controls */
     _renderFooter : function( speed, callback ){
-        var $footer = this.$( '.footer' ).empty().html( ListCollectionCreator.templates.footer() );
+        var $footer = this.$( '.footer' ).empty().html( this.templates.footer() );
         if( typeof this.oncancel === 'function' ){
             this.$( '.cancel-create.btn' ).show();
         }
@@ -361,14 +370,19 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
     /** render the elements in order (or a warning if no elements found) */
     _renderList : function( speed, callback ){
+        //this.debug( '-- _renderList' );
+        var creator = this,
+            $tmp = jQuery( '<div/>' );
+
+        _.each( this.elementViews, function( view ){
+            view.destroy();
+            creator.removeElementView( view );
+        });
+
         if( !this.workingElements.length ){
             this._renderNoValidElements();
             return;
         }
-
-        //this.debug( '-- _renderList' );
-        var creator = this,
-            $tmp = jQuery( '<div/>' );
 
         creator.workingElements.forEach( function( element ){
             var elementView = creator._createElementView( element );
@@ -382,7 +396,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
     /** create an element view, cache in elementViews, set up listeners, and return */
     _createElementView : function( element ){
-        var elementView = new DatasetCollectionElementView({
+        var elementView = new this.elementViewClass({
 //TODO: use non-generic class or not all
             // model : COLLECTION.DatasetDCE( element )
             element : element,
@@ -441,7 +455,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
     /** render a message in the list that no valid elements were found to create a collection */
     _renderNoValidElements : function(){
-        this.$( '.collection-elements' ).append( ListCollectionCreator.templates.noValidElements() );
+        this.$( '.collection-elements' ).append( this.templates.noValidElements() );
     },
 
     // ------------------------------------------------------------------------ API
@@ -758,139 +772,139 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         }
     },
 
+    // ------------------------------------------------------------------------ templates
+    //TODO: move to require text plugin and load these as text
+    //TODO: underscore currently unnecc. bc no vars are used
+    //TODO: better way of localizing text-nodes in long strings
+    /** underscore template fns attached to class */
+    templates : {
+        /** the skeleton */
+        main : _.template([
+            '<div class="header flex-row no-flex"></div>',
+            '<div class="middle flex-row flex-row-container"></div>',
+            '<div class="footer flex-row no-flex">'
+        ].join('')),
+
+        /** the header (not including help text) */
+        header : _.template([
+            '<div class="main-help well clear">',
+                '<a class="more-help" href="javascript:void(0);">', _l( 'More help' ), '</a>',
+                '<div class="help-content">',
+                    '<a class="less-help" href="javascript:void(0);">', _l( 'Less' ), '</a>',
+                '</div>',
+            '</div>',
+            '<div class="alert alert-dismissable">',
+                '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>',
+                '<span class="alert-message"></span>',
+            '</div>',
+        ].join('')),
+
+        /** the middle: element list */
+        middle : _.template([
+            '<div class="collection-elements-controls">',
+                '<a class="reset" href="javascript:void(0);" title="', _l( 'Undo all reordering and discards' ), '">',
+                    _l( 'Start over' ),
+                '</a>',
+                '<a class="clear-selected" href="javascript:void(0);" title="', _l( 'De-select all selected datasets' ), '">',
+                    _l( 'Clear selected' ),
+                '</a>',
+            '</div>',
+            '<div class="collection-elements scroll-container flex-row">',
+            '</div>'
+        ].join('')),
+
+        /** creation and cancel controls */
+        footer : _.template([
+            '<div class="attributes clear">',
+                '<div class="clear">',
+                    '<input class="collection-name form-control pull-right" ',
+                        'placeholder="', _l( 'Enter a name for your new list' ), '" />',
+                    '<div class="collection-name-prompt pull-right">', _l( 'Name' ), ':</div>',
+                '</div>',
+            '</div>',
+
+            '<div class="actions clear vertically-spaced">',
+                '<div class="other-options pull-left">',
+                    '<button class="cancel-create btn" tabindex="-1">', _l( 'Cancel' ), '</button>',
+                    '<div class="create-other btn-group dropup">',
+                        '<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                              _l( 'Create a different kind of collection' ),
+                              ' <span class="caret"></span>',
+                        '</button>',
+                        '<ul class="dropdown-menu" role="menu">',
+                              '<li><a href="#">', _l( 'Create a <i>single</i> pair' ), '</a></li>',
+                              '<li><a href="#">', _l( 'Create a list of <i>unpaired</i> datasets' ), '</a></li>',
+                        '</ul>',
+                    '</div>',
+                '</div>',
+
+                '<div class="main-options pull-right">',
+                    '<button class="create-collection btn btn-primary">', _l( 'Create list' ), '</button>',
+                '</div>',
+            '</div>'
+        ].join('')),
+
+        /** help content */
+        helpContent : _.template([
+            '<p>', _l([
+                'Collections of datasets are permanent, ordered lists of datasets that can be passed to tools and ',
+                'workflows in order to have analyses done on each member of the entire group. This interface allows ',
+                'you to create a collection and re-order the final collection.'
+            ].join( '' )), '</p>',
+            '<ul>',
+                '<li>', _l([
+                    'Rename elements in the list by clicking on ',
+                    '<i data-target=".collection-element .name">the existing name</i>.'
+                ].join( '' )), '</li>',
+                '<li>', _l([
+                    'Discard elements from the final created list by clicking on the ',
+                    '<i data-target=".collection-element .discard">"Discard"</i> button.'
+                ].join( '' )), '</li>',
+                '<li>', _l([
+                    'Reorder the list by clicking and dragging elements. Select multiple elements by clicking on ',
+                    '<i data-target=".collection-element">them</i> and you can then move those selected by dragging the ',
+                    'entire group. Deselect them by clicking them again or by clicking the ',
+                    'the <i data-target=".clear-selected">"Clear selected"</i> link.'
+                ].join( '' )), '</li>',
+                '<li>', _l([
+                    'Click the <i data-target=".reset">"Start over"</i> link to begin again as if you had just opened ',
+                    'the interface.'
+                ].join( '' )), '</li>',
+                '<li>', _l([
+                    'Click the <i data-target=".cancel-create">"Cancel"</i> button to exit the interface.'
+                ].join( '' )), '</li>',
+            '</ul><br />',
+            '<p>', _l([
+                'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
+                'click <i data-target=".create-collection">"Create list"</i>.'
+            ].join( '' )), '</p>'
+        ].join('')),
+
+        /** shown in list when all elements are discarded */
+        noElementsLeft : _.template([
+            '<li class="no-elements-left-message empty-message">',
+                _l( 'No elements left' ), '<br />',
+                _l( 'Would you like to ' ),
+                '<a class="reset" href="javascript:void(0)">', _l( 'start over' ), '</a>?',
+            '</li>'
+        ].join('')),
+
+        /** shown in list when no valid elements were found to begin with */
+        noValidElements : _.template([
+            '<li class="no-valid-elements-message empty-message">',
+                _l( 'No valid elements!' ), '<br />',
+                _l( 'You may need to ' ),
+                '<a class="cancel-create" href="javascript:void(0)">', _l( 'cancel' ), '</a> ',
+                'and reselect new elements',
+            '</li>'
+        ].join(''))
+    },
+
     // ------------------------------------------------------------------------ misc
     /** string rep */
     toString : function(){ return 'ListCollectionCreator'; }
 });
 
-
-//TODO: move to require text plugin and load these as text
-//TODO: underscore currently unnecc. bc no vars are used
-//TODO: better way of localizing text-nodes in long strings
-/** underscore template fns attached to class */
-ListCollectionCreator.templates = ListCollectionCreator.templates || {
-
-    /** the skeleton */
-    main : _.template([
-        '<div class="header flex-row no-flex"></div>',
-        '<div class="middle flex-row flex-row-container"></div>',
-        '<div class="footer flex-row no-flex">'
-    ].join('')),
-
-    /** the header (not including help text) */
-    header : _.template([
-        '<div class="main-help well clear">',
-            '<a class="more-help" href="javascript:void(0);">', _l( 'More help' ), '</a>',
-            '<div class="help-content">',
-                '<a class="less-help" href="javascript:void(0);">', _l( 'Less' ), '</a>',
-            '</div>',
-        '</div>',
-        '<div class="alert alert-dismissable">',
-            '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>',
-            '<span class="alert-message"></span>',
-        '</div>',
-    ].join('')),
-
-    /** the middle: element list */
-    middle : _.template([
-        '<div class="collection-elements-controls">',
-            '<a class="reset" href="javascript:void(0);" title="', _l( 'Undo all reordering and discards' ), '">',
-                _l( 'Start over' ),
-            '</a>',
-            '<a class="clear-selected" href="javascript:void(0);" title="', _l( 'De-select all selected datasets' ), '">',
-                _l( 'Clear selected' ),
-            '</a>',
-        '</div>',
-        '<div class="collection-elements scroll-container flex-row">',
-        '</div>'
-    ].join('')),
-
-    /** creation and cancel controls */
-    footer : _.template([
-        '<div class="attributes clear">',
-            '<div class="clear">',
-                '<input class="collection-name form-control pull-right" ',
-                    'placeholder="', _l( 'Enter a name for your new list' ), '" />',
-                '<div class="collection-name-prompt pull-right">', _l( 'Name' ), ':</div>',
-            '</div>',
-        '</div>',
-
-        '<div class="actions clear vertically-spaced">',
-            '<div class="other-options pull-left">',
-                '<button class="cancel-create btn" tabindex="-1">', _l( 'Cancel' ), '</button>',
-                '<div class="create-other btn-group dropup">',
-                    '<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
-                          _l( 'Create a different kind of collection' ),
-                          ' <span class="caret"></span>',
-                    '</button>',
-                    '<ul class="dropdown-menu" role="menu">',
-                          '<li><a href="#">', _l( 'Create a <i>single</i> pair' ), '</a></li>',
-                          '<li><a href="#">', _l( 'Create a list of <i>unpaired</i> datasets' ), '</a></li>',
-                    '</ul>',
-                '</div>',
-            '</div>',
-
-            '<div class="main-options pull-right">',
-                '<button class="create-collection btn btn-primary">', _l( 'Create list' ), '</button>',
-            '</div>',
-        '</div>'
-    ].join('')),
-
-    /** help content */
-    helpContent : _.template([
-        '<p>', _l([
-            'Collections of datasets are permanent, ordered lists of datasets that can be passed to tools and ',
-            'workflows in order to have analyses done on each member of the entire group. This interface allows ',
-            'you to create a collection and re-order the final collection.'
-        ].join( '' )), '</p>',
-        '<ul>',
-            '<li>', _l([
-                'Rename elements in the list by clicking on ',
-                '<i data-target=".collection-element .name">the existing name</i>.'
-            ].join( '' )), '</li>',
-            '<li>', _l([
-                'Discard elements from the final created list by clicking on the ',
-                '<i data-target=".collection-element .discard">"Discard"</i> button.'
-            ].join( '' )), '</li>',
-            '<li>', _l([
-                'Reorder the list by clicking and dragging elements. Select multiple elements by clicking on ',
-                '<i data-target=".collection-element">them</i> and you can then move those selected by dragging the ',
-                'entire group. Deselect them by clicking them again or by clicking the ',
-                'the <i data-target=".clear-selected">"Clear selected"</i> link.'
-            ].join( '' )), '</li>',
-            '<li>', _l([
-                'Click the <i data-target=".reset">"Start over"</i> link to begin again as if you had just opened ',
-                'the interface.'
-            ].join( '' )), '</li>',
-            '<li>', _l([
-                'Click the <i data-target=".cancel-create">"Cancel"</i> button to exit the interface.'
-            ].join( '' )), '</li>',
-        '</ul><br />',
-        '<p>', _l([
-            'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
-            'click <i data-target=".create-collection">"Create list"</i>.'
-        ].join( '' )), '</p>'
-    ].join('')),
-
-    /** shown in list when all elements are discarded */
-    noElementsLeft : _.template([
-        '<li class="no-elements-left-message empty-message">',
-            _l( 'No elements left' ), '<br />',
-            _l( 'Would you like to ' ),
-            '<a class="reset" href="javascript:void(0)">', _l( 'start over' ), '</a>?',
-        '</li>'
-    ].join('')),
-
-    /** shown in list when no valid elements were found to begin with */
-    noValidElements : _.template([
-        '<li class="no-valid-elements-message empty-message">',
-            _l( 'No valid elements!' ), '<br />',
-            _l( 'You may need to ' ),
-            '<a class="cancel-create" href="javascript:void(0)">', _l( 'cancel' ), '</a> ',
-            'and reselect new elements',
-        '</li>'
-    ].join(''))
-};
 
 
 //=============================================================================
@@ -967,6 +981,7 @@ function createListCollection( contents ){
 
 //==============================================================================
     return {
+        DatasetCollectionElementView: DatasetCollectionElementView,
         ListCollectionCreator       : ListCollectionCreator,
 
         collectionCreatorModal      : collectionCreatorModal,

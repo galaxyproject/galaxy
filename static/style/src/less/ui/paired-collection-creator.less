@@ -534,6 +534,68 @@
 
 // ======================================================================== pair
 .collection-creator.pair-collection-creator {
+    .footer {
+        margin-top: 8px;
+    }
+
+    .main-help {
+        cursor: pointer;
+    }
+
+    .collection-elements-controls {
+        margin-bottom: 8px;
+
+        .clear-selected {
+            .pull-right;
+            display: none;
+        }
+    }
+    .collection-elements {
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    // TODO: taken from .dataset above - swap these out
+    .collection-element {
+        height: 32px;
+        margin: 2px 4px 0px 4px;
+        opacity: 1.0;
+        border: 1px solid lightgrey;
+        border-radius: 3px;
+        padding: 0 8px 0 8px;
+        line-height: 28px;
+        cursor: pointer;
+        overflow: hidden;
+
+        &:last-of-type {
+            margin-bottom: 2px;
+        }
+        &:hover {
+            border-color: black;
+        }
+
+        button {
+            margin-top: 3px;
+        }
+        .identifier {
+            &:after {
+                content: ':';
+                margin-right: 6px;
+            }
+        }
+        .name {
+            &:hover {
+                text-decoration: none;
+            }
+        }
+    }
+    .empty-message {
+        margin: 8px;
+        color: grey;
+        font-style: italic;
+        text-align: center;
+    }
 }
 
 // ======================================================================== list of pairs

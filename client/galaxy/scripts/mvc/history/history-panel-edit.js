@@ -293,7 +293,7 @@ var HistoryPanelEdit = _super.extend(
             },
             // TODO: Only show quick pair if two things selected.
             {   html: _l( 'Build Dataset Pair' ), func: function() {
-                    PAIR_COLLECTION_CREATOR.createPairHDCA( panel.getSelectedModels() )
+                    PAIR_COLLECTION_CREATOR.createPairCollection( panel.getSelectedModels() )
                         .done( function(){ panel.model.refresh() });
                 }
             },

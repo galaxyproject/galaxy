@@ -51,17 +51,21 @@ $(function(){
     define( 'app', function(){
         require([
             'mvc/history/history-contents',
-            'mvc/collection/list-collection-creator'
-        ], function( HISTORY_CONTENTS, LCC ){
+            // 'mvc/collection/list-collection-creator'
+            'mvc/collection/pair-collection-creator'
+        // ], function( HISTORY_CONTENTS, LCC ){
+        ], function( HISTORY_CONTENTS, PCC ){
             $(function(){
                 var hdas = bootstrapped.hdas.filter( function( hda ){
-                    return !( hda.deleted || hda.purged );
+                    return  ( hda.state === 'ok' )
+                        && !( hda.deleted || hda.purged );
                 });
+                hdas = hdas.slice( 0, 2 )
                 console.debug( hdas );
                 var collection = new HISTORY_CONTENTS.HistoryContents( hdas, { historyId : bootstrapped.history.id })
 
                 // LCC.listCollectionCreatorModal( hdas )
-                LCC.createListCollection( collection )
+                PCC.createPairCollection( collection )
                     .done( function( response ){
                         console.info( 'creation succeeded:', arguments );
                     })
