@@ -1,4 +1,13 @@
-""" Build indexes for searching the TS """
+""" 
+Build indexes for searching the TS.
+Run this script from the galaxy folder, example:
+
+$ python scripts/tool_shed/build_ts_whoosh_index_test.py config/tool_shed.ini
+
+Make sure you adjusted your config to:
+ * turn on searching via toolshed_search_on
+ * specify toolshed_whoosh_index_dir where the indexes will be placed
+"""
 import sys
 import os
 import ConfigParser
@@ -81,7 +90,7 @@ def build_index( sa_session, toolshed_whoosh_index_dir ):
                              last_updated=repo.get( 'last_updated' ),
                              full_last_updated=repo.get( 'full_last_updated' ) )
         #  Tools get their own index
-        for tool in repo.get( 'tools_dict' ):
+        for tool in repo.get( 'tools_list' ):
             # print tool
             tool_index_writer.add_document( id=to_unicode( tool.get( 'id' ) ),
                                             name=to_unicode( tool.get( 'name' ) ),
@@ -91,19 +100,21 @@ def build_index( sa_session, toolshed_whoosh_index_dir ):
                                             repo_owner_username=to_unicode( repo.get( 'repo_owner_username' ) ),
                                             repo_id=repo.get( 'id' ) )
             tools_indexed += 1
+            print tools_indexed, 'tools (', tool.get( 'id' ), ')'
 
         repos_indexed += 1
+        print repos_indexed, 'repos (', repo.get( 'id' ), ')'
 
     tool_index_writer.commit()
     repo_index_writer.commit()
 
-    print "Number of repos indexed: ", repos_indexed
-    print "Number of tools indexed: ", tools_indexed
+    print "TOTAL repos indexed: ", repos_indexed
+    print "TOTAL tools indexed: ", tools_indexed
 
 
 def get_repos( sa_session ):
     """
-    Load repos from DB
+    Load repos from DB and included tools from .xml configs.
     """
     results = []
     for repo in sa_session.query( model.Repository ).filter_by( deleted=False ).filter_by( deprecated=False ).filter( model.Repository.type != 'tool_dependency_definition' ):
@@ -135,9 +146,10 @@ def get_repos( sa_session ):
         full_last_updated = repo.update_time.strftime( "%Y-%m-%d %I:%M %p" )
 
         #  Parse all the tools within repo for separate index.
-        tools_dict = []
+        tools_list = []
         from galaxy.webapps.tool_shed.model import directory_hash_id
-        path = os.path.join( os.getcwd(), 'database/community_files' )
+        path = '/srv/toolshed/test/var/data/repos'
+        # path = os.path.join( os.getcwd(), 'database/community_files' )
         path = os.path.join( path, *directory_hash_id( repo.id ))
         path = os.path.join( path, "repo_%d" % repo.id )
         from galaxy.tools.loader_directory import load_tool_elements_from_path
@@ -147,11 +159,16 @@ def get_repos( sa_session ):
                 for elem in tool_elems:
                     root = elem[1].getroot()
                     if root.tag == 'tool':
-                        tools_dict.append( dict( id=root.attrib.get('id'),
-                                                 name=root.attrib.get('name'),
-                                                 version=root.attrib.get('version'),
-                                                 description=root.find('description').text,
-                                                 help=root.find('help').text ) )
+                        tool = {}
+                        if root.find('help') is not None:
+                            tool.update( dict( help=root.find( 'help' ).text ) )
+                        if root.find('description') is not None:
+                            tool.update( dict( description=root.find( 'description' ).text ) )
+                        tool.update( dict( id=root.attrib.get('id'),
+                                           name=root.attrib.get('name'),
+                                           version=root.attrib.get('version') ) )
+
+                        tools_list.append( tool )
 
         results.append(dict( id=repo_id,
                              name=name,
@@ -164,7 +181,7 @@ def get_repos( sa_session ):
                              approved=approved,
                              last_updated=last_updated,
                              full_last_updated=full_last_updated,
-                             tools_dict=tools_dict ) )
+                             tools_list=tools_list ) )
     return results
 
 
