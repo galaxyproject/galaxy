@@ -5,7 +5,8 @@ define([
     "mvc/base-mvc",
     "mvc/ui/ui-modal",
     "utils/natural-sort",
-    "utils/localization"
+    "utils/localization",
+    "ui/hoverhighlight"
 ], function( HDCA, STATES, BASE_MVC, UI_MODAL, naturalSort, _l ){
 /*==============================================================================
 
@@ -842,37 +843,6 @@ ListCollectionCreator.templates = ListCollectionCreator.templates || {
         ].join( '' )), '</p>'
     ].join(''))
 };
-
-
-//=============================================================================
-(function(){
-    /** plugin that will highlight an element when this element is hovered over */
-    jQuery.fn.extend({
-        hoverhighlight : function $hoverhighlight( scope, color ){
-            scope = scope || 'body';
-            if( !this.size() ){ return this; }
-
-            $( this ).each( function(){
-                var $this = $( this ),
-                    targetSelector = $this.data( 'target' );
-
-                if( targetSelector ){
-                    $this.mouseover( function( ev ){
-                        $( targetSelector, scope ).css({
-                            background: color
-                        });
-                    })
-                    .mouseout( function( ev ){
-                        $( targetSelector ).css({
-                            background: ''
-                        });
-                    });
-                }
-            });
-            return this;
-        }
-    });
-}());
 
 
 //=============================================================================

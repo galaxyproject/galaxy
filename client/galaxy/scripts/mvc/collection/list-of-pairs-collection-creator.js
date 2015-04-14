@@ -3,7 +3,8 @@ define([
     "utils/natural-sort",
     "mvc/collection/list-collection-creator",
     "mvc/base-mvc",
-    "utils/localization"
+    "utils/localization",
+    "ui/hoverhighlight"
 ], function( levenshteinDistance, naturalSort, LIST_COLLECTION_CREATOR, baseMVC, _l ){
 /* ============================================================================
 TODO:
@@ -1654,37 +1655,6 @@ PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
         ].join( '' )), '</p>'
     ].join(''))
 };
-
-
-//=============================================================================
-(function(){
-    /** plugin that will highlight an element when this element is hovered over */
-    jQuery.fn.extend({
-        hoverhighlight : function $hoverhighlight( scope, color ){
-            scope = scope || 'body';
-            if( !this.size() ){ return this; }
-
-            $( this ).each( function(){
-                var $this = $( this ),
-                    targetSelector = $this.data( 'target' );
-
-                if( targetSelector ){
-                    $this.mouseover( function( ev ){
-                        $( targetSelector, scope ).css({
-                            background: color
-                        });
-                    })
-                    .mouseout( function( ev ){
-                        $( targetSelector ).css({
-                            background: ''
-                        });
-                    });
-                }
-            });
-            return this;
-        }
-    });
-}());
 
 
 //=============================================================================
