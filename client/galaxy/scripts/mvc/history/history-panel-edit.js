@@ -287,7 +287,7 @@ var HistoryPanelEdit = _super.extend(
         var panel = this;
         return [
             {   html: _l( 'Build Dataset List' ), func: function() {
-                    LIST_COLLECTION_CREATOR.createListHDCA( panel.getSelectedModels() )
+                    LIST_COLLECTION_CREATOR.createListCollection( panel.getSelectedModels() )
                         .done( function(){ panel.model.refresh() });
                 }
             },

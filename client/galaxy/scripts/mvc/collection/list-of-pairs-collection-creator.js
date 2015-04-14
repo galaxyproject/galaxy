@@ -185,7 +185,7 @@ function autoPairFnBuilder( options ){
  */
 var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
-    className: 'collection-creator flex-row-container',
+    className: 'list-of-pairs-collection-creator collection-creator flex-row-container',
 
     /** set up initial options, instance vars, behaviors, and autopair (if set to do so) */
     initialize : function( attributes ){
@@ -1728,12 +1728,8 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
 
 //=============================================================================
 function createListOfPairsCollection( collection ){
-    var elements = LIST_COLLECTION_CREATOR.validElements( collection );
-    if( !elements.length ){
-        LIST_COLLECTION_CREATOR.noValidElementsErrorModal();
-        return jQuery.Deferred().reject( LIST_COLLECTION_CREATOR.noValidElementsMessage );
-    }
-
+    var elements = collection.toJSON();
+//TODO: validate elements
     return pairedCollectionCreatorModal( elements, {
         historyId : collection.historyId
     });

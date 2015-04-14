@@ -1,4 +1,4 @@
-// --- main layout elements
+// ======================================================================== all types
 .collection-creator {
 
     height: 100%;
@@ -106,6 +106,11 @@
 
     .header .alert {
         display: none;
+
+        li {
+            list-style: circle;
+            margin-left: 32px;
+        }
     }
 
     // ------------------------------------------------------------------------ columns
@@ -139,8 +144,6 @@
 
     // ------------------------------------------------------------------------ header
     .header {
-        padding-bottom: 8px;
-
         .main-help {
             margin-bottom: 17px;
             overflow: hidden;
@@ -434,3 +437,109 @@
         padding-bottom: 8px;
     }
 }
+
+// ======================================================================== list
+.collection-creator.list-collection-creator {
+
+    .footer {
+        margin-top: 8px;
+    }
+
+    .main-help {
+        cursor: pointer;
+    }
+
+    .collection-elements-controls {
+        margin-bottom: 8px;
+
+        .clear-selected {
+            .pull-right;
+            display: none;
+        }
+    }
+    .collection-elements {
+        max-height: 400px;
+        border: 1px solid lightgrey;
+        border-width: 1px 0px 1px 0px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    // TODO: taken from .dataset above - swap these out
+    .collection-element {
+        height: 32px;
+        margin: 2px 4px 0px 4px;
+        opacity: 1.0;
+        border: 1px solid lightgrey;
+        border-radius: 3px;
+        padding: 0 8px 0 8px;
+        line-height: 28px;
+        cursor: pointer;
+        overflow: hidden;
+
+        &:last-of-type {
+            margin-bottom: 2px;
+        }
+        &:hover {
+            border-color: black;
+        }
+        &.selected {
+            border-color: black;
+            background: black;
+            color: white;
+        }
+        &.dragging {
+            opacity: 0.4;
+            button {
+                display: none;
+            }
+        }
+
+        .name {
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+        button {
+            margin-top: 3px;
+        }
+        .discard {
+            .pull-right;
+        }
+    }
+    //TODO: copied from paired-drop-placeholder above - unifiy
+    .element-drop-placeholder {
+        width   : 60px;
+        height  : 3px;
+        margin : 2px 0px 0px 6px;
+        background : black;
+        &:before {
+            float: left;
+            font-size: 120%;
+            margin: -9px 0px 0px -6px;
+            font-family: FontAwesome;
+            content: '\f0da';
+        }
+        &:last-child {
+            margin-bottom: 4px;
+        }
+    }
+    .no-elements-left-message {
+        margin: 8px;
+        color: grey;
+        font-style: italic;
+        text-align: center;
+    }
+}
+
+// ======================================================================== pair
+.collection-creator.pair-collection-creator {
+}
+
+// ======================================================================== list of pairs
+.collection-creator.list-of-pairs-collection-creator {
+    .column-headers {
+        margin-bottom: 8px;
+    }
+}
+
