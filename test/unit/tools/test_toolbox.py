@@ -8,6 +8,10 @@ from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 import tools_support
 
+import routes
+
+from .test_toolbox_filters import mock_trans
+
 
 CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
     """    <tool file="tool.xml" guid="github.com/galaxyproject/example/test_tool/0.${version}">
@@ -141,6 +145,46 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         assert toolbox.get_tool( "test_tool" ) is not None
         assert toolbox.get_tool( "not_a_test_tool" ) is None
 
+    def test_to_dict_in_panel( self ):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect( "tool_runner", "/test/tool_runner" )
+        as_dict = self.toolbox.to_dict( mock_trans() )
+        test_section = self._find_section(as_dict, "t")
+        assert len(test_section["elems"]) == 1
+        assert test_section["elems"][0]["id"] == "test_tool"
+
+    def test_to_dict_out_of_panel( self ):
+        self._init_tool_in_section()
+        mapper = routes.Mapper()
+        mapper.connect( "tool_runner", "/test/tool_runner" )
+        as_dict = self.toolbox.to_dict( mock_trans(), in_panel=False )
+        assert as_dict[0]["id"] == "test_tool"
+
+    def test_out_of_panel_filtering( self ):
+        self._init_tool_in_section()
+
+        mapper = routes.Mapper()
+        mapper.connect( "tool_runner", "/test/tool_runner" )
+        as_dict = self.toolbox.to_dict( mock_trans(), in_panel=False )
+        assert len(as_dict) == 1
+
+        def allow_user_access(user, attempting_access):
+            assert not attempting_access
+            return False
+
+        # Disable access to the tool, make sure it is filtered out.
+        self.toolbox.get_tool("test_tool").allow_user_access = allow_user_access
+        as_dict = self.toolbox.to_dict( mock_trans(), in_panel=False )
+        assert len(as_dict) == 0
+
+    def _find_section( self, as_dict, section_id ):
+        for elem in as_dict:
+            if elem.get("id") == section_id:
+                assert elem["model_class"] == "ToolSection"
+                return elem
+        assert False, "Failed to find section with id [%s]" % id
+
     def test_tool_shed_properties( self ):
         self._init_tool()
         self._setup_two_versions_in_config( section=False )
@@ -163,8 +207,7 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         assert test_tool.installed_changeset_revision is None
 
     def test_load_file_in_section( self ):
-        self._init_tool()
-        self._add_config( """<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""" )
+        self._init_tool_in_section()
 
         toolbox = self.toolbox
         assert toolbox.get_tool( "test_tool" ) is not None
@@ -257,6 +300,10 @@ class ToolBoxTestCase( BaseToolBoxTestCase ):
         assert len( self.toolbox._tool_panel ) == 1
         section = self.toolbox._tool_panel[ 'tid' ]
         self.__check_test_labels( section.elems )
+
+    def _init_tool_in_section( self ):
+        self._init_tool()
+        self._add_config( """<toolbox><section id="t" name="test"><tool file="tool.xml" /></section></toolbox>""" )
 
     def __check_test_labels( self, panel_dict ):
         assert panel_dict.keys() == ["label_lab1", "label_lab2"]
