@@ -16,6 +16,7 @@
   <tool file="composite_output.xml" />
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
+  <tool file="detect_errors_aggressive.xml" />
   <tool file="job_properties.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
