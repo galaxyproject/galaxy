@@ -849,7 +849,7 @@ class SelectToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, context={} ):
         # Dynamic options are not yet supported in workflow, allow
         # specifying the value as text for now.
-        options = self.get_options( trans, context )
+        options = list(self.get_options( trans, context ))
         if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
             if isinstance( value, UnvalidatedValue ):
                 value = value.value
