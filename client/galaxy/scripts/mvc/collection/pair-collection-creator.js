@@ -1,11 +1,15 @@
 define([
     "mvc/collection/list-collection-creator",
     "mvc/history/hdca-model",
-    "mvc/ui/error-modal",
     "mvc/base-mvc",
     "utils/localization"
-], function( LIST_CREATOR, HDCA, errorModal, BASE_MVC, _l ){
+], function( LIST_CREATOR, HDCA, BASE_MVC, _l ){
 /*==============================================================================
+TODO:
+    the paired creator doesn't really mesh with the list creator as parent
+        it may be better to make an abstract super class for both
+    composites may inherit from this (or vis-versa)
+    PairedDatasetCollectionElementView doesn't make a lot of sense
 
 ==============================================================================*/
 /**  */
@@ -58,53 +62,75 @@ var PairCollectionCreator = _super.extend({
     collectionClass : HDCA.HistoryPairDatasetCollection,
     className : 'pair-collection-creator collection-creator flex-row-container',
 
-    /** mangle duplicate names using a mac-like '(counter)' addition to any duplicates */
-    _mangleDuplicateNames : function(){
+    /** override to no-op */
+    _mangleDuplicateNames : function(){},
+
+    // TODO: this whole pattern sucks. There needs to be two classes of problem area:
+    //      bad inital choices and
+    //      when the user has painted his/her self into a corner during creation/use-of-the-creator
+    /** render the entire interface */
+    render : function( speed, callback ){
+        var elementsLength = this.workingElements.length;
+        if( elementsLength === 2 ){
+            return _super.prototype.render.call( this, speed, callback );
+        }
+        return this._renderInvalid( speed, callback );
+    },
+
+    /** render a simplified interface aimed at telling the user why they can't move forward */
+    _renderInvalid : function( speed, callback ){
+        //this.debug( '-- _render' );
+        this.$el.empty().html( this.templates.invalidInitial({
+            problems: this.invalidElements,
+            elements: this.workingElements,
+        }));
+        if( typeof this.oncancel === 'function' ){
+            this.$( '.cancel-create.btn' ).show();
+        }
+        this.trigger( 'rendered', this );
+        return this;
     },
 
     // ------------------------------------------------------------------------ rendering elements
-    /** render the elements in order (or a warning if no elements found) */
+    /** render forward/reverse */
     _renderList : function( speed, callback ){
         //this.debug( '-- _renderList' );
+        //precondition: there are two valid elements in workingElements
         var creator = this,
-            $tmp = jQuery( '<div/>' );
+            $tmp = jQuery( '<div/>' ),
+            $list = creator.$list();
 
+        // lose the original views, create the new, append all at once, then call their renders
         _.each( this.elementViews, function( view ){
             view.destroy();
             creator.removeElementView( view );
         });
-
-        if( this.workingElements.length < 2 ){
-            this._renderNoValidElements();
-            return;
-        }
         $tmp.append( creator._createForwardElementView().$el );
         $tmp.append( creator._createReverseElementView().$el );
-        creator.$list().empty().append( $tmp.children() );
+        $list.empty().append( $tmp.children() );
         _.invoke( creator.elementViews, 'render' );
     },
 
+    /** create the forward element view */
     _createForwardElementView : function(){
-        var element = this.workingElements[0],
-            view = this._createElementView( element );
-        view.identifier = _l( 'Forward' );
-        return view;
+        return this._createElementView( this.workingElements[0], { identifier: 'forward' } );
     },
 
+    /** create the forward element view */
     _createReverseElementView : function(){
-        var element = this.workingElements[1],
-            view = this._createElementView( element );
-        view.identifier = _l( 'Reverse' );
-        return view;
+        return this._createElementView( this.workingElements[1], { identifier: 'reverse' } );
     },
 
-    /** listen to any element events */
-    _listenToElementView : function( view ){
-        // var creator = this;
-        // creator.listenTo( view, {
-        // });
+    /** create an element view, cache in elementViews, and return */
+    _createElementView : function( element, options ){
+        var elementView = new this.elementViewClass( _.extend( options, {
+            element : element,
+        }));
+        this.elementViews.push( elementView );
+        return elementView;
     },
 
+    /** swap the forward, reverse elements and re-render */
     swap : function(){
         this.workingElements = [
             this.workingElements[1],
@@ -114,7 +140,7 @@ var PairCollectionCreator = _super.extend({
     },
 
     events : _.extend( _.clone( _super.prototype.events ), {
-        'click .swap'              : 'swap',
+        'click .swap' : 'swap',
     }),
 
     // ------------------------------------------------------------------------ templates
@@ -155,7 +181,45 @@ var PairCollectionCreator = _super.extend({
                 'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
                 'click <i data-target=".create-collection">"Create list"</i>.'
             ].join( '' )), '</p>'
-        ].join(''))
+        ].join('')),
+
+        /** a simplified page communicating what went wrong and why the user needs to reselect something else */
+        invalidInitial : _.template([
+            '<div class="header flex-row no-flex">',
+                '<div class="alert alert-warning" style="display: block">',
+                    '<span class="alert-message">',
+                        '<% if( _.size( problems ) ){ %>',
+                            _l( 'The following selections could not be included due to problems' ),
+                            '<ul><% _.each( problems, function( problem ){ %>',
+                                '<li><b><%= problem.element.name %></b>: <%= problem.text %></li>',
+                            '<% }); %></ul>',
+                        '<% } else if( _.size( elements ) < 2 ){ %>',
+                            _l( 'Not enough datasets were selected' ), ': <%= _.size( elements ) %>',
+                        '<% } else if( _.size( elements ) > 2 ){ %>',
+                            _l( 'Too many datasets were selected' ), ': <%= _.pluck( elements, "name" ) %>',
+                        '<% } %>',
+                    '</span>',
+                '</div>',
+            '</div>',
+            '<div class="middle flex-row flex-row-container">',
+                '<div class="collection-elements scroll-container flex-row">',
+                    '<li class="pair-needs-2-message empty-message">',
+                        _l( 'Two (and only two) elements are needed for the pair' ), '. ',
+                        _l( 'You may need to ' ),
+                        '<a class="cancel-create" href="javascript:void(0)">', _l( 'cancel' ), '</a> ',
+                        _l( 'and reselect new elements' ), '.',
+                    '</li>',
+                '</div>',
+            '</div>',
+            '<div class="footer flex-row no-flex">',
+                '<div class="actions clear vertically-spaced">',
+                    '<div class="other-options pull-left">',
+                        '<button class="cancel-create btn" tabindex="-1">', _l( 'Cancel' ), '</button>',
+                        // _l( 'Create a different kind of collection' ),
+                    '</div>',
+                '</div>',
+            '</div>'
+        ].join('')),
     }),
 
     // ------------------------------------------------------------------------ misc
@@ -178,14 +242,6 @@ var pairCollectionCreatorModal = function _pairCollectionCreatorModal( elements,
  *  @returns {Deferred} resolved when the collection is added to the history.
  */
 function createPairCollection( contents ){
-    if( contents.length !== 2 ){
-        errorModal(
-            'When pairing datasets, select only two datasets: one forward and one reverse.',
-            'Not a valid pair'
-        );
-        return jQuery.Deferred().reject( 'invalid pair' );
-    }
-
     var elements = contents.toJSON(),
         promise = pairCollectionCreatorModal( elements, {
             creationFn : function( elements, name ){

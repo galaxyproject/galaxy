@@ -9,6 +9,11 @@ define([
     "ui/hoverhighlight"
 ], function( HDCA, STATES, BASE_MVC, UI_MODAL, naturalSort, _l ){
 /*==============================================================================
+TODO:
+    use proper Element model and not just json
+    straighten out createFn, collection.createHDCA
+    possibly stop using modals for this
+    It would be neat to do a drag and drop
 
 ==============================================================================*/
 /** A view for both DatasetDCEs and NestedDCDCEs
@@ -327,15 +332,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
     /** build and show an alert describing any elements that could not be included due to problems */
     _invalidElementsAlert : function(){
-        var message = _l( 'The following selections could not be included due to problems' ) + ':';
-        message += '<ul>';
-        message += this.invalidElements.map( function( problem ){
-            return [
-                '<li><b>', problem.element.name, '</b>: ',  problem.text, '</li>'
-            ].join( '' );
-        }).join( '' );
-        message += '</ul>';
-        this._showAlert( message, 'alert-warning' );
+        this._showAlert( this.templates.invalidElements({ problems: this.invalidElements }), 'alert-warning' );
     },
 
     /** add (or clear if clear is truthy) a validation warning to the DOM element described in what */
@@ -445,12 +442,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
 
     /** render a message in the list that no elements remain to create a collection */
     _renderNoElementsLeft : function(){
-        var $message = $( '<li class="no-elements-left-message empty-message"></li>' );
-        $message.html([
-            _l( 'No elements left' ), '<br />', _l( 'Would you like to ' ),
-            '<a class="reset" href="javascript:void(0)">', _l( 'start over' ), '</a>?'
-        ].join( '' ));
-        this.$( '.collection-elements' ).append( $message );
+        this.$( '.collection-elements' ).append( this.templates.noElementsLeft() );
     },
 
     /** render a message in the list that no valid elements were found to create a collection */
@@ -782,7 +774,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         main : _.template([
             '<div class="header flex-row no-flex"></div>',
             '<div class="middle flex-row flex-row-container"></div>',
-            '<div class="footer flex-row no-flex">'
+            '<div class="footer flex-row no-flex"></div>'
         ].join('')),
 
         /** the header (not including help text) */
@@ -878,6 +870,14 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
                 'Once your collection is complete, enter a <i data-target=".collection-name">name</i> and ',
                 'click <i data-target=".create-collection">"Create list"</i>.'
             ].join( '' )), '</p>'
+        ].join('')),
+
+        /** shown in list when all elements are discarded */
+        invalidElements : _.template([
+            _l( 'The following selections could not be included due to problems' ),
+            '<ul><% _.each( problems, function( problem ){ %>',
+                '<li><b><%= problem.element.name %></b>: <%= problem.text %></li>',
+            '<% }); %></ul>'
         ].join('')),
 
         /** shown in list when all elements are discarded */

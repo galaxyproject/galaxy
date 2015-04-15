@@ -16,65 +16,32 @@ $(function(){
 </script>
 </%def>
 
-## <%def name="javascript_app()">
-## <script type="text/javascript">
-## define( 'app', function(){
-##     require([
-##         //'mvc/history/history-panel'
-##         //'mvc/history/history-panel-annotated'
-##         'mvc/history/history-panel-edit'
-##         //'mvc/history/history-panel-edit-current'
-##     ], function( historyPanel ){
-##         $(function(){
-##             // history module is already in the dpn chain from the panel. We can re-scope it here.
-##             var historyModel    = require( 'mvc/history/history-model' );
-##             //window.panel = new historyPanel.HistoryPanel({
-##             //window.panel = new historyPanel.AnnotatedHistoryPanel({
-##             window.panel = new historyPanel.HistoryPanelEdit({
-##             //window.panel = new historyPanel.CurrentHistoryPanel({
-##                 show_deleted    : bootstrapped.show_deleted,
-##                 show_hidden     : bootstrapped.show_hidden,
-##                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
-##                 model           : new historyModel.History( bootstrapped.history, bootstrapped.hdas )
-##             });
-##             panel.render().$el.appendTo( 'body' );
-##             //$( 'body' ).css( 'padding', '10px' );
-##         });
-##     });
-## });
-## </script>
-## ${ galaxy_client.load( app='app', history=history, hdas=hdas, show_deleted=show_deleted, show_hidden=show_hidden ) }
-## </%def>
-
 <%def name="javascript_app()">
 <script type="text/javascript">
-    define( 'app', function(){
-        require([
-            'mvc/history/history-contents',
-            // 'mvc/collection/list-collection-creator'
-            'mvc/collection/pair-collection-creator'
-        // ], function( HISTORY_CONTENTS, LCC ){
-        ], function( HISTORY_CONTENTS, PCC ){
-            $(function(){
-                var hdas = bootstrapped.hdas.filter( function( hda ){
-                    return  ( hda.state === 'ok' )
-                        && !( hda.deleted || hda.purged );
-                });
-                hdas = hdas.slice( 0, 2 )
-                console.debug( hdas );
-                var collection = new HISTORY_CONTENTS.HistoryContents( hdas, { historyId : bootstrapped.history.id })
-
-                // LCC.listCollectionCreatorModal( hdas )
-                PCC.createPairCollection( collection )
-                    .done( function( response ){
-                        console.info( 'creation succeeded:', arguments );
-                    })
-                    .fail( function( response ){
-                        console.error( 'creation failed:', arguments );
-                    });
+define( 'app', function(){
+    require([
+        //'mvc/history/history-panel'
+        //'mvc/history/history-panel-annotated'
+        'mvc/history/history-panel-edit'
+        //'mvc/history/history-panel-edit-current'
+    ], function( historyPanel ){
+        $(function(){
+            // history module is already in the dpn chain from the panel. We can re-scope it here.
+            var historyModel    = require( 'mvc/history/history-model' );
+            //window.panel = new historyPanel.HistoryPanel({
+            //window.panel = new historyPanel.AnnotatedHistoryPanel({
+            window.panel = new historyPanel.HistoryPanelEdit({
+            //window.panel = new historyPanel.CurrentHistoryPanel({
+                show_deleted    : bootstrapped.show_deleted,
+                show_hidden     : bootstrapped.show_hidden,
+                purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
+                model           : new historyModel.History( bootstrapped.history, bootstrapped.hdas )
             });
+            panel.render().$el.appendTo( 'body' );
+            //$( 'body' ).css( 'padding', '10px' );
         });
     });
+});
 </script>
 ${ galaxy_client.load( app='app', history=history, hdas=hdas, show_deleted=show_deleted, show_hidden=show_hidden ) }
 </%def>
