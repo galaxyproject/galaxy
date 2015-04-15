@@ -250,6 +250,14 @@
     <label id="mutect" text="MuTect version 1.1.7" />
 	    <tool file="mutect/muTect.xml" />
   </section>  
+  <section id="RNA_sequencing" name="RNA sequencing tools">
+     <label id="tophat2" text="Tophat2 version 2.0.14" />
+            <tool file="tophat/tophat2_wrapper.xml" />
+     <label id="cufflinks" text="Cufflinks version 2.2.1" />
+	    <tool file="cufflinks/cuffmerge_wrapper.xml" />
+	    <tool file="cufflinks/cufflinks_wrapper.xml" />
+	    <tool file="cufflinks/cuffdiff_wrapper.xml" />
+  </section>  
   <section id="cbioportal_tools" name="cBioPortal Tools">
     <tool file="cbioportal/cbioportal_create_files.xml" />
     <tool file="cbioportal/cbioportal_importer_tool.xml" />
