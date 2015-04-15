@@ -550,7 +550,7 @@ class Tool( object, Dictifiable ):
     def get_panel_section( self ):
         return self.app.toolbox.get_integrated_section_for_tool( self )
 
-    def allow_user_access( self, user ):
+    def allow_user_access( self, user, attempting_access=True ):
         """
         :returns: bool -- Whether the user is allowed to access the tool.
         """
@@ -2961,16 +2961,26 @@ class DataManagerTool( OutputParameterJSONTool ):
                     history = None
         return history
 
-    def allow_user_access( self, user ):
+    def allow_user_access( self, user, attempting_access=True ):
         """
+        :param user: model object representing user.
+        :type user: galaxy.model.User
+        :param attempting_access: is the user attempting to do something with the
+                               the tool (set false for incidental checks like toolbox
+                               listing)
+        :type attempting_access:  bool
+
         :returns: bool -- Whether the user is allowed to access the tool.
         Data Manager tools are only accessible to admins.
         """
         if super( DataManagerTool, self ).allow_user_access( user ) and self.app.config.is_admin_user( user ):
             return True
-        if user:
-            user = user.id
-        log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id ) 
+        # If this is just an incidental check - do not log the scary message
+        # about users attempting to do something problematic.
+        if attempting_access:
+            if user:
+                user = user.id
+            log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id )
         return False
 
 # Populate tool_type to ToolClass mappings
