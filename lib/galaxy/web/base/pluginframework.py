@@ -15,7 +15,7 @@ import imp
 import pkg_resources
 pkg_resources.require( 'MarkupSafe' )
 pkg_resources.require( 'Mako' )
-import mako
+import mako.lookup
 
 from galaxy import util
 from galaxy.util import odict
@@ -590,12 +590,12 @@ class PageServingPluginManager( PluginManager ):
         :returns:       rendered template
         """
         if 'plugin_path' not in kwargs:
-            kwargs[ 'plugin_path'] = os.path.abspath( plugin.path )
+            kwargs[ 'plugin_path' ] = os.path.abspath( plugin.path )
 
-        plugin_type = plugin.config["plugin_type"]
-        if plugin_type == "interactive_environment":
+        plugin_config = plugin.get( 'config', {} )
+        if plugin_config.get( 'plugin_type', 'visualization' ) == "interactive_environment":
             request = InteractiveEnviornmentRequest(trans, plugin)
-            kwargs["ie_request"] = request
+            kwargs[ "ie_request" ] = request
 
         # defined here to be overridden
         return trans.fill_template( template_filename, template_lookup=plugin.template_lookup, **kwargs )

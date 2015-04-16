@@ -6,10 +6,12 @@ import logging
 logging.getLogger( __name__ )
 log = logging
 
+
 class TempFileCache( object ):
     """
     Creates and caches tempfiles with/based-on the given contents.
     """
+
     def __init__( self, logger=None ):
         if logger:
             global log

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 """
-import sys
 import os
-import pprint
+import imp
 import unittest
 
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
@@ -15,10 +14,8 @@ import sqlalchemy
 
 from galaxy import model
 from galaxy import exceptions
-from galaxy.util.bunch import Bunch
 
-import mock
-from test_ModelManager import BaseTestCase
+from base import BaseTestCase
 from galaxy.managers import users
 from galaxy.managers import histories
 
@@ -67,7 +64,7 @@ class UserManagerTestCase( BaseTestCase ):
             [ user3, user2, self.admin_user ] )
 
     def test_invalid_create( self ):
-        user2 = self.user_manager.create( **user2_data )
+        self.user_manager.create( **user2_data )
 
         self.log( "emails must be unique" )
         self.assertRaises( exceptions.Conflict, self.user_manager.create,
@@ -83,13 +80,11 @@ class UserManagerTestCase( BaseTestCase ):
         self.log( "should be able to query by email" )
         self.assertEqual( self.user_manager.by_email( user2_data[ 'email' ] ), user2 )
 
-        #note: sorted by email alpha
-        users = self.trans.sa_session.query( model.User ).all()
+        # note: sorted by email alpha
         self.assertEqual( self.user_manager.by_email_like( '%@%' ), [ self.admin_user, user2, user3 ] )
 
     def test_admin( self ):
         user2 = self.user_manager.create( **user2_data )
-        user3 = self.user_manager.create( **user3_data )
 
         self.log( "should be able to test whether admin" )
         self.assertTrue( self.user_manager.is_admin( self.admin_user ) )
@@ -108,7 +103,6 @@ class UserManagerTestCase( BaseTestCase ):
 
     def test_current( self ):
         user2 = self.user_manager.create( **user2_data )
-        user3 = self.user_manager.create( **user3_data )
 
         self.log( "should be able to tell if a user is the current (trans) user" )
         self.assertEqual( self.user_manager.current_user( self.trans ), self.admin_user )
@@ -116,7 +110,6 @@ class UserManagerTestCase( BaseTestCase ):
 
     def test_api_keys( self ):
         user2 = self.user_manager.create( **user2_data )
-        user3 = self.user_manager.create( **user3_data )
 
         self.log( "should return None if no APIKey has been created" )
         self.assertEqual( self.user_manager.valid_api_key( user2 ), None )
@@ -147,7 +140,7 @@ class UserSerializerTestCase( BaseTestCase ):
 
         self.log( 'should have the summary view as default view' )
         default_view = self.user_serializer.serialize_to_view( user, default_view='summary' )
-        self.assertKeys( summary_view, self.user_serializer.views[ 'summary' ] )
+        self.assertKeys( default_view, self.user_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
         for key in self.user_serializer.serializable_keyset:

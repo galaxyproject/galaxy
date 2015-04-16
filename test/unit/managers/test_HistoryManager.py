@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 """
-import sys
 import os
-import pprint
+import imp
 import unittest
 
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
+import galaxy_mock
 
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
@@ -15,10 +15,8 @@ import sqlalchemy
 
 from galaxy import model
 from galaxy import exceptions
-from galaxy.util.bunch import Bunch
 
-import mock
-from test_ModelManager import BaseTestCase
+from base import BaseTestCase
 
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.histories import HistorySerializer
@@ -221,7 +219,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         item1 = self.history_manager.create( user=owner )
 
         non_owner = self.user_manager.create( **user3_data )
-        #third_party = self.user_manager.create( **user4_data )
+        # third_party = self.user_manager.create( **user4_data )
 
         self.log( "should be unshared by default" )
         self.assertEqual( self.history_manager.get_share_assocs( item1 ), [] )
@@ -245,7 +243,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual(
             self.history_manager.get_share_assocs( item1, user=non_owner ), [] )
 
-    #TODO: test slug formation
+    # TODO: test slug formation
 
     def test_anon( self ):
         anon_user = None
@@ -318,6 +316,7 @@ testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
 HistorySerializer.url_for = staticmethod( testable_url_for )
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 
+
 class HistorySerializerTestCase( BaseTestCase ):
 
     def set_up_managers( self ):
@@ -340,7 +339,7 @@ class HistorySerializerTestCase( BaseTestCase ):
 
         self.log( 'should have the summary view as default view' )
         default_view = self.history_serializer.serialize_to_view( history1, default_view='summary' )
-        self.assertKeys( summary_view, self.history_serializer.views[ 'summary' ] )
+        self.assertKeys( default_view, self.history_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
         for key in self.history_serializer.serializable_keyset:
@@ -508,7 +507,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
             ( 'name', 'like', 'history%' ),
         ])
         histories = self.history_manager.list( filters=filters )
-        #for h in histories:
+        # for h in histories:
         #    print h.name
         self.assertEqual( histories, [ history1, history2, history3 ])
 
@@ -577,7 +576,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.assertEqual( len( filters ), 1 )
 
         filter_ = filters[0]
-        fake = mock.OpenObject()
+        fake = galaxy_mock.OpenObject()
         fake.name = '123'
         self.log( '123 should return true through the filter' )
         self.assertTrue( filter_( fake ) )

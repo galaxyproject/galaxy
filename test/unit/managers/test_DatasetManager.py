@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 """
-import sys
 import os
-import pprint
+import imp
 import unittest
 
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
@@ -15,12 +14,12 @@ import sqlalchemy
 
 from galaxy import model
 from galaxy import exceptions
-from galaxy.util.bunch import Bunch
 
-import mock
-from test_ModelManager import BaseTestCase
+from base import BaseTestCase
+
 from galaxy.managers.datasets import (
     DatasetManager, DatasetRBACPermissions, DatasetSerializer, DatasetDeserializer )
+
 from galaxy.managers.datasets import DatasetAssociationManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.hdas import HDAManager
