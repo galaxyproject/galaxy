@@ -150,7 +150,11 @@ class ScrambleEgg( Egg ):
         cur = os.getcwd()
         os.chdir( unpack_path )
         for member in members:
-            t.extract( member )
+            try:
+                t.extract( member )
+            except:
+                log.exception("Could not extract %s" % member)
+                raise
         t.close()
         os.rename( tld, self.name )
         os.chdir( cur )
