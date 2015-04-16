@@ -459,7 +459,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.assertEqual( len( filters ), 3 )
 
         self.log( 'values should be parsed' )
-        self.assertEqual( filters[1].right.value, True )
+        self.assertTrue( isinstance( filters[1].right, sqlalchemy.sql.elements.True_ ) )
 
     def test_parse_filters_invalid_filters( self ):
         self.log( 'should error on non-column attr')
