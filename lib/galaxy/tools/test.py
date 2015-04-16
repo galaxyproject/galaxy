@@ -133,6 +133,7 @@ class ToolTestBuilder( object ):
             self.stderr = test_dict.get("stderr", None)
             self.expect_exit_code = test_dict.get("expect_exit_code", None)
             self.expect_failure = test_dict.get("expect_failure", False)
+            self.md5 = test_dict.get("md5", None)
         except Exception, e:
             self.error = True
             self.exception = e
