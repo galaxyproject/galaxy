@@ -2257,7 +2257,7 @@ class Tool( object, Dictifiable ):
 
         return tool_dict
 
-    def to_json (self, trans, kwd={}, is_dynamic=True):
+    def to_json (self, trans, kwd={}, is_workflow=False):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -2369,7 +2369,7 @@ class Tool( object, Dictifiable ):
             error = 'State validation failed.'
 
             # skip dynamic fields if deactivated
-            if not is_dynamic and input.is_dynamic:
+            if is_workflow and input.is_dynamic:
                 return [value, None]
 
             # validate value content
@@ -2463,29 +2463,31 @@ class Tool( object, Dictifiable ):
                 elif input.type == 'section':
                     iterate( tool_dict['inputs'], input.inputs, group_state, other_values )
                 else:
-                    # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
+                    # identify name
+                    input_name = tool_dict.get('name')
+
+                    # expand input dictionary incl. repeats and dynamic_parameters
                     try:
                         tool_dict = input.to_dict(trans, other_values=other_values)
                     except Exception:
+                        log.exception('tools::to_json() - Skipping parameter expansion for %s.' % input_name)
                         pass
 
-                    # identify name
-                    input_name = tool_dict.get('name')
-                    if input_name:
-                        # backup default value
-                        try:
-                            tool_dict['default_value'] = input.get_initial_value(trans, other_values)
-                        except Exception:
-                            # get initial value failed due to improper late validation
-                            tool_dict['default_value'] = None
-                            pass
+                    # backup default value
+                    try:
+                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                    except Exception:
+                        log.exception('tools::to_json() - Getting initial value failed %s.' % input_name)
+                        # get initial value failed due to improper late validation
+                        tool_dict['default_value'] = None
+                        pass
 
-                        # update input value from tool state
-                        tool_dict['value'] = state_inputs.get(input_name, tool_dict['default_value'])
+                    # update input value from tool state
+                    tool_dict['value'] = state_inputs.get(input_name, tool_dict['default_value'])
 
-                        # sanitize values
-                        sanitize(tool_dict, 'value')
-                        sanitize(tool_dict, 'default_value')
+                    # sanitize values
+                    sanitize(tool_dict, 'value')
+                    sanitize(tool_dict, 'default_value')
 
                 # backup final input dictionary
                 group_inputs[input_index] = tool_dict

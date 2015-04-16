@@ -84,7 +84,7 @@ define(['utils/utils',
         /** Data input field
         */
         _fieldData: function(input_def) {
-            if (!this.app.options.is_dynamic) {
+            if (this.app.options.is_workflow) {
                 input_def.info = 'Data input \'' + input_def.name + '\' (' + Utils.textify(input_def.extensions.toString()) + ')';
                 input_def.value = null;
                 return this._fieldHidden(input_def);
@@ -107,7 +107,7 @@ define(['utils/utils',
         */
         _fieldSelect: function (input_def) {
             // show text field in if dynamic fields are disabled e.g. in workflow editor
-            if (!this.app.options.is_dynamic && input_def.is_dynamic) {
+            if (input_def.options.length == 0 && this.app.options.is_workflow) {
                 return this._fieldText(input_def);
             }
 
@@ -157,10 +157,10 @@ define(['utils/utils',
         */
         _fieldDrilldown: function (input_def) {
             // show text field in if dynamic fields are disabled e.g. in workflow editor
-            if (!this.app.options.is_dynamic && input_def.is_dynamic) {
+            if (input_def.options.length == 0 && this.app.options.is_workflow) {
                 return this._fieldText(input_def);
             }
-            
+
             // create drill down field
             var self = this;
             return new Ui.Drilldown.View({
@@ -185,13 +185,16 @@ define(['utils/utils',
                 if (!Utils.validate(input_def.value)) {
                     input_def.value = '';
                 } else {
-                    if (input_def.value instanceof Array) {
-                        input_def.value = value.toString();
-                    } else {
-                        input_def.value = String(input_def.value).replace(/[\[\]'"\s]/g, '');
-                        if (input_def.multiple) {
-                            input_def.value = input_def.value.replace(/,/g, '\n');
+                    if ($.isArray(input_def.value)) {
+                        var str_value = '';
+                        for (var i in input_def.value) {
+                            str_value += String(input_def.value[i]);
+                            if (!input_def.multiple) {
+                                break;
+                            }
+                            str_value += '\n';
                         }
+                        input_def.value = str_value;
                     }
                 }
             }

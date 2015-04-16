@@ -24,7 +24,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 text_disable    : 'Set at Runtime',
 
                 // configure workflow style
-                is_dynamic      : false,
+                is_workflow     : true,
                 narrow          : true,
                 initial_errors  : true,
                 cls             : 'ui-portlet-narrow',
@@ -34,13 +34,6 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 update          : function(data) {
                     self.node.update_field_data(data);
                     self.form.errors(data && data.tool_model)
-                }
-            });
-
-            // declare fields as optional
-            Utils.deepeach(options.inputs, function(item) {
-                if (item.type) {
-                    item.optional = (['data', 'data_hidden', 'hidden', 'repeat', 'conditional']).indexOf(item.type) == -1;
                 }
             });
 

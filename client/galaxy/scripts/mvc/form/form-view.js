@@ -11,8 +11,8 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         initialize: function(options) {
             // options
             this.optionsDefault = {
-                // uses dynamic fields instead of text fields
-                is_dynamic      : true,
+                // uses workflow editor mode i.e. text instead of select fields
+                is_workflow     : false,
                 // shows form in narrow view mode
                 narrow          : false,
                 // shows errors on start
