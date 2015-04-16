@@ -3,37 +3,20 @@
 """
 from __future__ import print_function
 
-import sys
 import os
-import pprint
+import imp
 import unittest
 
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
+import galaxy_mock
 
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
-import sqlalchemy
-
-from galaxy import model
-from galaxy import exceptions
-from galaxy.util.bunch import Bunch
-
-import mock
 from galaxy.managers.users import UserManager
-
-from galaxy.managers import base
 
 # =============================================================================
 admin_email = 'admin@admin.admin'
 admin_users = admin_email
 default_password = '123456'
-
-#def setUpModule():
-#    print '=' * 20, 'begin module'
-#
-#def tearDownModule():
-#    print '=' * 20, 'end module'
 
 
 # =============================================================================
@@ -57,7 +40,7 @@ class BaseTestCase( unittest.TestCase ):
         self.set_up_trans()
 
     def set_up_mocks( self ):
-        self.trans = mock.MockTrans( admin_users=admin_users )
+        self.trans = galaxy_mock.MockTrans( admin_users=admin_users )
         self.app = self.trans.app
 
     def set_up_managers( self ):

@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """
 """
-import sys
 import os
-import pprint
+import imp
 import unittest
 
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
+import galaxy_mock
 
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
@@ -15,10 +15,8 @@ import sqlalchemy
 
 from galaxy import model
 from galaxy import exceptions
-from galaxy.util.bunch import Bunch
 
-import mock
-from test_ModelManager import BaseTestCase
+from base import BaseTestCase
 
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.histories import HistorySerializer
@@ -87,11 +85,9 @@ class HistoryManagerTestCase( BaseTestCase ):
 
     def test_has_user( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )
-        non_owner = self.user_mgr.create( self.trans, **user3_data )
 
         item1 = self.history_mgr.create( self.trans, user=owner )
         item2 = self.history_mgr.create( self.trans, user=owner )
-        item3 = self.history_mgr.create( self.trans, user=non_owner )
 
         self.log( "should be able to list items by user" )
         user_histories = self.history_mgr.by_user( self.trans, owner )
@@ -221,7 +217,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         item1 = self.history_mgr.create( self.trans, user=owner )
 
         non_owner = self.user_mgr.create( self.trans, **user3_data )
-        #third_party = self.user_mgr.create( self.trans, **user4_data )
+        # third_party = self.user_mgr.create( self.trans, **user4_data )
 
         self.log( "should be unshared by default" )
         self.assertEqual( self.history_mgr.get_share_assocs( self.trans, item1 ), [] )
@@ -245,7 +241,7 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.assertEqual(
             self.history_mgr.get_share_assocs( self.trans, item1, user=non_owner ), [] )
 
-    #TODO: test slug formation
+    # TODO: test slug formation
 
     def test_anon( self ):
         anon_user = None
@@ -289,7 +285,6 @@ class HistoryManagerTestCase( BaseTestCase ):
         self.history_mgr.undelete( self.trans, history1 )
         self.assertFalse( history1.deleted )
 
-        history2 = self.history_mgr.create( self.trans, name='history2', user=user2 )
         self.history_mgr.purge( self.trans, history1 )
         self.assertTrue( history1.purged )
 
@@ -337,7 +332,6 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.assertKeys( detailed_view, self.history_serializer.views[ 'detailed' ] )
 
         self.log( 'should have the summary view as default view' )
-        default_view = self.history_serializer.serialize_to_view( self.trans, history1, default_view='summary' )
         self.assertKeys( summary_view, self.history_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
@@ -398,7 +392,7 @@ class HistorySerializerTestCase( BaseTestCase ):
     def test_history_serializers( self ):
         user2 = self.user_mgr.create( self.trans, **user2_data )
         history1 = self.history_mgr.create( self.trans, name='history1', user=user2 )
-        
+
         serialized = self.history_serializer.serialize( self.trans, history1, [ 'size', 'nice_size' ])
         self.assertIsInstance( serialized[ 'size' ], int )
         self.assertIsInstance( serialized[ 'nice_size' ], basestring )
@@ -432,6 +426,7 @@ class HistorySerializerTestCase( BaseTestCase ):
 
         serialized = self.history_serializer.serialize( self.trans, history1, [ 'contents' ] )
         self.assertHasKeys( serialized[ 'contents' ][0], [ 'id', 'name', 'peek', 'create_time' ])
+
 
 # =============================================================================
 class HistoryDeserializerTestCase( BaseTestCase ):
@@ -498,7 +493,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
             ( 'name', 'like', 'history%' ),
         ])
         histories = self.history_mgr.list( self.trans, filters=filters )
-        #for h in histories:
+        # for h in histories:
         #    print h.name
         self.assertEqual( histories, [ history1, history2, history3 ])
 
@@ -567,7 +562,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.assertEqual( len( filters ), 1 )
 
         filter_ = filters[0]
-        fake = mock.OpenObject()
+        fake = galaxy_mock.OpenObject()
         fake.name = '123'
         self.log( '123 should return true through the filter' )
         self.assertTrue( filter_( fake ) )

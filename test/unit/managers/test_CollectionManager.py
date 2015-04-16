@@ -1,23 +1,16 @@
 #!/usr/bin/env python
 """
 """
-import sys
 import os
-import pprint
+import imp
 import unittest
 
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
-
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
-import sqlalchemy
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 from galaxy import model
-from galaxy import exceptions
 
-import mock
-from test_ModelManager import BaseTestCase
+from base import BaseTestCase
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.hdas import HDAManager
@@ -45,9 +38,9 @@ class DatasetCollectionManagerTestCase( BaseTestCase ):
         identifier_list = []
         for element in elements:
             src = 'hda'
-            #if isinstance( element, model.DatasetCollection ):
+            # if isinstance( element, model.DatasetCollection ):
             #    src = 'collection'#?
-            #elif isinstance( element, model.LibraryDatasetDatasetAssociation ):
+            # elif isinstance( element, model.LibraryDatasetDatasetAssociation ):
             #    src = 'ldda'#?
             encoded_id = self.trans.security.encode_id( element.id )
             identifier_list.append( dict( src=src, name=element.name, id=encoded_id ) )
@@ -75,9 +68,9 @@ class DatasetCollectionManagerTestCase( BaseTestCase ):
         self.assertFalse( hdca.deleted )
         self.assertTrue( hdca.visible )
 
-        #print 'hdca dir:'
-        #for k in dir( hdca ):
-        #    print k, getattr( hdca, k, '(?)' )
+        # print 'hdca dir:'
+        # for k in dir( hdca ):
+        #     print k, getattr( hdca, k, '(?)' )
 
         self.log( "should contain an underlying, well-formed DatasetCollection" )
         self.assertIsInstance( hdca.collection, model.DatasetCollection )
@@ -87,14 +80,14 @@ class DatasetCollectionManagerTestCase( BaseTestCase ):
         self.assertEqual( len( collection.dataset_instances ), 3 )
         self.assertEqual( len( collection.elements ), 3 )
 
-        #print 'hdca.collection dir:'
-        #for k in dir( hdca.collection ):
-        #    print k, getattr( hdca.collection, k, '(?)' )
+        # print 'hdca.collection dir:'
+        # for k in dir( hdca.collection ):
+        #     print k, getattr( hdca.collection, k, '(?)' )
 
-        #elements = collection.elements
-        #print 'hdca.collection element dir:'
-        #for k in dir( elements[0] ):
-        #    print k, getattr( elements[0], k, '(?)' )
+        # elements = collection.elements
+        # print 'hdca.collection element dir:'
+        # for k in dir( elements[0] ):
+        #     print k, getattr( elements[0], k, '(?)' )
 
         self.log( "and that collection should have three well-formed Elements" )
         self.assertIsInstance( collection.elements[0], model.DatasetCollectionElement )
@@ -140,17 +133,17 @@ class DatasetCollectionManagerTestCase( BaseTestCase ):
             'deleted'   : True,
             'visible'   : False,
             'name'      : 'New Name',
-            #TODO: doesn't work
-            #'tags'      : [ 'one', 'two', 'three' ]
-            #'annotations'      : [?]
+            # TODO: doesn't work
+            # 'tags'      : [ 'one', 'two', 'three' ]
+            # 'annotations'      : [?]
         })
         self.assertEqual( hdca.name, 'New Name' )
         self.assertTrue( hdca.deleted )
         self.assertFalse( hdca.visible )
-        #self.assertEqual( hdca.tags, [ 'one', 'two', 'three' ] )
-        #self.assertEqual( hdca.annotations, [ 'one', 'two', 'three' ] )
+        # self.assertEqual( hdca.tags, [ 'one', 'two', 'three' ] )
+        # self.assertEqual( hdca.annotations, [ 'one', 'two', 'three' ] )
 
-    #def test_validation( self ):
+    # def test_validation( self ):
     #    self.log( "should be able to change the name" )
     #    self.log( "should be able to set deleted" )
     #    self.log( "should be able to set visible" )

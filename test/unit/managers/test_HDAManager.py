@@ -1,10 +1,9 @@
-import sys
 import os
-import pprint
+import imp
 import unittest
 
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
@@ -12,10 +11,9 @@ import sqlalchemy
 
 from galaxy import model
 from galaxy import exceptions
-from galaxy.util.bunch import Bunch
 
-import mock
-from test_ModelManager import BaseTestCase
+from base import BaseTestCase
+
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
@@ -65,7 +63,6 @@ class HDAManagerTestCase( BaseTestCase ):
 
     def test_create( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )
-        non_owner = self.user_mgr.create( self.trans, **user3_data )
 
         history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
         dataset1 = self.dataset_mgr.create( self.trans )
@@ -107,7 +104,7 @@ class HDAManagerTestCase( BaseTestCase ):
         self.assertEqual( hda2.dataset, hda1.dataset )
         self.assertNotEqual( hda2, hda1 )
 
-    #def test_copy_from_ldda( self ):
+    # def test_copy_from_ldda( self ):
     #    owner = self.user_mgr.create( self.trans, **user2_data )
     #    history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
     #
@@ -181,7 +178,6 @@ class HDAManagerTestCase( BaseTestCase ):
 
     def test_accessible( self ):
         owner = self.user_mgr.create( self.trans, **user2_data )
-        non_owner = self.user_mgr.create( self.trans, **user3_data )
 
         history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
         dataset1 = self.dataset_mgr.create( self.trans )
@@ -191,7 +187,7 @@ class HDAManagerTestCase( BaseTestCase ):
         for user in self.user_mgr.list( self.trans ):
             self.assertTrue( self.hda_mgr.is_accessible( self.trans, item1, user ) )
 
-        #TODO: set perms on underlying dataset and then test accessible
+        # TODO: set perms on underlying dataset and then test accessible
 
     def test_anon( self ):
         anon_user = None
