@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool name="GenomeSpace Exporter" id="genomespace_exporter" require_login="True" version="0.0.2">
+<tool name="GenomeSpace Exporter" id="genomespace_exporter" require_login="True" version="0.0.3">
     <description> - send data to GenomeSpace</description>
     <command interpreter="python">genomespace_exporter.py 
         --genomespace_site "prod"
@@ -36,7 +36,7 @@
         <param format="data" name="input1" type="data" label="Send this dataset to GenomeSpace" />
         <param name="base_url" type="baseurl" />
         <param name="subdirectory" type="drill_down" display="radio" hierarchy="exact" multiple="False" optional="True" label="Choose Target Directory" dynamic_options="galaxy_code_get_genomespace_folders( genomespace_site = 'prod', trans=__trans__, value=__value__, input_dataset=input1, base_url=base_url )" help="Leave blank to generate automatically"/>
-        <param name="filename" type="text" size="80" help="Leave blank to generate automatically" />
+        <param name="filename" type="text" size="80" label="Filename" help="Leave blank to generate automatically" />
     </inputs>
     <outputs>
         <data format="html" name="output_log" />
