@@ -70,25 +70,10 @@ var PairCollectionCreator = _super.extend({
     //      when the user has painted his/her self into a corner during creation/use-of-the-creator
     /** render the entire interface */
     render : function( speed, callback ){
-        var elementsLength = this.workingElements.length;
-        if( elementsLength === 2 ){
+        if( this.workingElements.length === 2 ){
             return _super.prototype.render.call( this, speed, callback );
         }
         return this._renderInvalid( speed, callback );
-    },
-
-    /** render a simplified interface aimed at telling the user why they can't move forward */
-    _renderInvalid : function( speed, callback ){
-        //this.debug( '-- _render' );
-        this.$el.empty().html( this.templates.invalidInitial({
-            problems: this.invalidElements,
-            elements: this.workingElements,
-        }));
-        if( typeof this.oncancel === 'function' ){
-            this.$( '.cancel-create.btn' ).show();
-        }
-        this.trigger( 'rendered', this );
-        return this;
     },
 
     // ------------------------------------------------------------------------ rendering elements
@@ -193,8 +178,10 @@ var PairCollectionCreator = _super.extend({
                             '<ul><% _.each( problems, function( problem ){ %>',
                                 '<li><b><%= problem.element.name %></b>: <%= problem.text %></li>',
                             '<% }); %></ul>',
-                        '<% } else if( _.size( elements ) < 2 ){ %>',
-                            _l( 'Not enough datasets were selected' ), ': <%= _.size( elements ) %>',
+                        '<% } else if( _.size( elements ) === 0 ){ %>',
+                            _l( 'No datasets were selected' ), '.',
+                        '<% } else if( _.size( elements ) === 1 ){ %>',
+                            _l( 'Only one dataset was selected' ), ': <%= elements[0].name %>',
                         '<% } else if( _.size( elements ) > 2 ){ %>',
                             _l( 'Too many datasets were selected' ), ': <%= _.pluck( elements, "name" ) %>',
                         '<% } %>',

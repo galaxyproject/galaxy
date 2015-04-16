@@ -2266,7 +2266,7 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .collection-creator.list-collection-creator .footer{margin-top:8px}
 .collection-creator.list-collection-creator .main-help{cursor:pointer}
 .collection-creator.list-collection-creator .collection-elements-controls{margin-bottom:8px}.collection-creator.list-collection-creator .collection-elements-controls .clear-selected{float:right !important;float:right;display:none}
-.collection-creator.list-collection-creator .collection-elements{max-height:400px;border:1px solid lightgrey;border-width:1px 0px 1px 0px;overflow-y:auto;overflow-x:hidden}
+.collection-creator.list-collection-creator .collection-elements{max-height:400px;border:0px solid lightgrey;overflow-y:auto;overflow-x:hidden}
 .collection-creator.list-collection-creator .collection-element{height:32px;margin:2px 4px 0px 4px;opacity:1.0;border:1px solid lightgrey;border-radius:3px;padding:0 8px 0 8px;line-height:28px;cursor:pointer;overflow:hidden}.collection-creator.list-collection-creator .collection-element:last-of-type{margin-bottom:2px}
 .collection-creator.list-collection-creator .collection-element:hover{border-color:black}
 .collection-creator.list-collection-creator .collection-element.selected{border-color:black;background:black;color:white}
@@ -2277,15 +2277,16 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .collection-creator.list-collection-creator .element-drop-placeholder{width:60px;height:3px;margin:2px 0px 0px 6px;background:black}.collection-creator.list-collection-creator .element-drop-placeholder:before{float:left;font-size:120%;margin:-9px 0 0 -6px;font-family:FontAwesome;content:'\f0da'}
 .collection-creator.list-collection-creator .element-drop-placeholder:last-child{margin-bottom:4px}
 .collection-creator.list-collection-creator .empty-message{margin:8px;color:grey;font-style:italic;text-align:center}
+.collection-creator.list-collection-creator .no-elements-left-message{text-align:left}
 .collection-creator.pair-collection-creator .footer{margin-top:8px}
 .collection-creator.pair-collection-creator .main-help{cursor:pointer}
 .collection-creator.pair-collection-creator .collection-elements-controls{margin-bottom:8px}.collection-creator.pair-collection-creator .collection-elements-controls .clear-selected{float:right !important;float:right;display:none}
-.collection-creator.pair-collection-creator .collection-elements{max-height:400px;overflow-y:auto;overflow-x:hidden}
+.collection-creator.pair-collection-creator .collection-elements{max-height:400px;border:0px solid lightgrey;overflow-y:auto;overflow-x:hidden}
 .collection-creator.pair-collection-creator .collection-element{height:32px;margin:2px 4px 0px 4px;opacity:1.0;border:1px solid lightgrey;border-radius:3px;padding:0 8px 0 8px;line-height:28px;cursor:pointer;overflow:hidden}.collection-creator.pair-collection-creator .collection-element:last-of-type{margin-bottom:2px}
 .collection-creator.pair-collection-creator .collection-element:hover{border-color:black}
 .collection-creator.pair-collection-creator .collection-element button{margin-top:3px}
 .collection-creator.pair-collection-creator .collection-element .identifier:after{content:':';margin-right:6px}
-.collection-creator.pair-collection-creator .collection-element .name:hover{text-decoration:auto}
+.collection-creator.pair-collection-creator .collection-element .name:hover{text-decoration:none}
 .collection-creator.pair-collection-creator .empty-message{margin:8px;color:grey;font-style:italic;text-align:center}
 .collection-creator.list-of-pairs-collection-creator .column-headers{margin-bottom:8px}
 .search-input .search-query{width:100%;padding-right:24px}
