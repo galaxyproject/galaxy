@@ -29,7 +29,7 @@ class ToolsTestCase( api.ApiTestCase ):
     def test_show_repeat( self ):
         tool_info = self._show_valid_tool( "cat1" )
         parameters = tool_info[ "inputs" ]
-        assert len( parameters ) == 2
+        assert len( parameters ) == 2, "Expected two inputs - got [%s]" % parameters
         assert parameters[ 0 ][ "name" ] == "input1"
         assert parameters[ 1 ][ "name" ] == "queries"
 
@@ -219,9 +219,7 @@ class ToolsTestCase( api.ApiTestCase ):
             'col': "' ; echo 'moo",
         }
         response = self._run( "column_param", history_id, inputs )
-        if response.status_code == 200:
-            message = "Known, high priority issue. Column parameters are sanitized but invalid values should prevent execution and doesn't."
-            raise AssertionError(message)
+        assert response.status_code != 200
 
     @skip_without_tool( "collection_paired_test" )
     def test_collection_parameter( self ):
