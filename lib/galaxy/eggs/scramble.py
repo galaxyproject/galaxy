@@ -153,7 +153,7 @@ class ScrambleEgg( Egg ):
             try:
                 t.extract( member )
             except:
-                log.exception("Could not extract %s" % member)
+                log.exception( "Could not extract %s", member )
                 raise
         t.close()
         os.rename( tld, self.name )
