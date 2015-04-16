@@ -97,13 +97,13 @@ def add_file( dataset, registry, json_file, output_path ):
     # See if we have an empty file
     #Karthik: file path check here
     #Karthik: somehow pass data_type,ext instead of checking here
-    if is_remote_dataset_flag == False and not os.path.exists( dataset.path ):
+    if not is_remote_dataset_flag and not os.path.exists( dataset.path ):
         file_err( 'Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file )
         return
-    if is_remote_dataset_flag == False and not os.path.getsize( dataset.path ) > 0:
+    if not is_remote_dataset_flag and not os.path.getsize( dataset.path ) > 0:
         file_err( 'The uploaded file is empty', dataset, json_file )
         return
-    if is_remote_dataset_flag == False and not dataset.type == 'url':
+    if not is_remote_dataset_flag and not dataset.type == 'url':
         # Already set is_multi_byte above if type == 'url'
         try:
             dataset.is_multi_byte = util.is_multi_byte( codecs.open( dataset.path, 'r', 'utf-8' ).read( 100 ) )
