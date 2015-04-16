@@ -2,31 +2,22 @@
 Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
-# currently because of dataproviders.dataset importing galaxy.model this doesn't work
-#TODO: fix imports there after dist and retry
-
-#TODO: fix off by ones in FilteredDataProvider counters
 
 import imp
 import os
 import unittest
-import StringIO
 
-import tempfilecache
+import logging
+log = logging.getLogger( __name__ )
+
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
+
 import test_base_dataproviders
-
-utility = imp.load_source( 'utility', os.path.join( os.path.dirname( __file__ ), '../../util/utility.py' ) )
-log = utility.set_up_filelogger( __name__ + '.log' )
-utility.add_galaxy_lib_to_path( 'test/unit/datatypes/dataproviders' )
-
-from galaxy import eggs
 from galaxy.datatypes.dataproviders import line
 
-_TODO = """
-TestCase hierarchy is a bit of mess here.
-"""
 
-
+# TODO: TestCase hierarchy is a bit of mess here.
 class Test_FilteredLineDataProvider( test_base_dataproviders.Test_FilteredDataProvider ):
     provider_class = line.FilteredLineDataProvider
     default_file_contents = """
@@ -63,19 +54,19 @@ class Test_FilteredLineDataProvider( test_base_dataproviders.Test_FilteredDataPr
         def limit_offset_combo( limit, offset, data_should_be, read, valid, returned ):
             ( contents, provider, data ) = self.contents_provider_and_data( limit=limit, offset=offset )
             self.assertEqual( data, data_should_be )
-            #self.assertCounters( provider, read, valid, returned )
+            # self.assertCounters( provider, read, valid, returned )
         result_data = self.parses_default_content_as()
         test_data = [
             ( 0, 0, [], 0, 0, 0 ),
-            ( 1, 0, self.parses_default_content_as()[:1], 1, 1, 1 ),
-            ( 2, 0, self.parses_default_content_as()[:2], 2, 2, 2 ),
-            ( 3, 0, self.parses_default_content_as()[:3], 3, 3, 3 ),
-            ( 1, 1, self.parses_default_content_as()[1:2], 1, 1, 1 ),
-            ( 2, 1, self.parses_default_content_as()[1:3], 2, 2, 2 ),
-            ( 3, 1, self.parses_default_content_as()[1:3], 2, 2, 2 ),
-            ( 1, 2, self.parses_default_content_as()[2:3], 1, 1, 1 ),
-            ( 2, 2, self.parses_default_content_as()[2:3], 1, 1, 1 ),
-            ( 3, 2, self.parses_default_content_as()[2:3], 1, 1, 1 ),
+            ( 1, 0, result_data[:1], 1, 1, 1 ),
+            ( 2, 0, result_data[:2], 2, 2, 2 ),
+            ( 3, 0, result_data[:3], 3, 3, 3 ),
+            ( 1, 1, result_data[1:2], 1, 1, 1 ),
+            ( 2, 1, result_data[1:3], 2, 2, 2 ),
+            ( 3, 1, result_data[1:3], 2, 2, 2 ),
+            ( 1, 2, result_data[2:3], 1, 1, 1 ),
+            ( 2, 2, result_data[2:3], 1, 1, 1 ),
+            ( 3, 2, result_data[2:3], 1, 1, 1 ),
         ]
         for test in test_data:
             log.debug( 'limit_offset_combo: %s', ', '.join([ str( e ) for e in test ]) )
@@ -149,7 +140,7 @@ class Test_RegexLineDataProvider( Test_FilteredLineDataProvider ):
         """
         ( contents, provider, data ) = self.contents_provider_and_data( regex_list=[ r'^T' ], limit=1 )
         self.assertEqual( data, [ 'Two' ] )
-        #TODO: once again, valid data, returned data is off
+        # TODO: once again, valid data, returned data is off
         self.assertCounters( provider, 6, 1, 1 )
 
         ( contents, provider, data ) = self.contents_provider_and_data( regex_list=[ r'^T' ], limit=1, offset=1 )
@@ -167,14 +158,19 @@ class Test_BlockDataProvider( test_base_dataproviders.Test_FilteredDataProvider 
             EFGH
         Three
     """
-        
+
     def parses_default_content_as( self ):
         return [ ['One'], ['ABCD'], ['Two'], ['ABCD'], ['EFGH'], ['Three'] ]
 
-    #TODO: well, this is ham-handed...
-    def test_stringio( self ): pass
-    def test_iterators( self ): pass
-    def test_readlines( self ): pass
+    # TODO: well, this is ham-handed...
+    def test_stringio( self ):
+        pass
+
+    def test_iterators( self ):
+        pass
+
+    def test_readlines( self ):
+        pass
 
     def test_file( self ):
         """should work with files
@@ -223,14 +219,16 @@ class Test_BlockDataProvider( test_base_dataproviders.Test_FilteredDataProvider 
         def is_not_indented( line ):
             strip_diff = len( line ) - len( line.lstrip() )
             return ( strip_diff == 0 )
-        #def empty_block( block ):
+        # def empty_block( block ):
         #    if len( block ) <= 1:
         #        return None
         #    return block
+
         def no_tw( block ):
             if block[0].startswith( 'Tw' ):
                 return None
             return block
+
         ( contents, provider, data ) = self.contents_provider_and_data( strip_lines=False, strip_newlines=True,
             new_block_delim_fn=is_not_indented, block_filter_fn=no_tw )
         self.assertEqual( data, [[ 'One', '    ABCD' ], [ 'Three' ]] )
@@ -244,10 +242,12 @@ class Test_BlockDataProvider( test_base_dataproviders.Test_FilteredDataProvider 
         def is_not_indented( line ):
             strip_diff = len( line ) - len( line.lstrip() )
             return ( strip_diff == 0 )
+
         def empty_block( block ):
             if len( block ) <= 1:
                 return None
             return { 'header': block[0].strip(), 'data': [ b.strip() for b in block[1:] if b.strip() ] }
+
         ( contents, provider, data ) = self.contents_provider_and_data(
             strip_lines=False, strip_newlines=True,
             new_block_delim_fn=is_not_indented, block_filter_fn=empty_block )
@@ -261,10 +261,12 @@ class Test_BlockDataProvider( test_base_dataproviders.Test_FilteredDataProvider 
         def is_not_indented( line ):
             strip_diff = len( line ) - len( line.lstrip() )
             return ( strip_diff == 0 )
+
         def empty_block( block ):
             if len( block ) <= 1:
                 return None
             return block
+
         ( contents, provider, data ) = self.contents_provider_and_data( strip_lines=False, strip_newlines=True,
             new_block_delim_fn=is_not_indented, block_filter_fn=empty_block, limit=1 )
         self.assertEqual( data, [[ 'One', '    ABCD' ]] )
@@ -286,10 +288,13 @@ class Test_BlockDataProvider( test_base_dataproviders.Test_FilteredDataProvider 
             ABCD
             EFGH
             """
+
         def fasta_header( line ):
             return line.startswith( '>' )
+
         def id_seq( block ):
             return { 'id': block[0][1:], 'seq': ( ''.join( block[1:] ) ) }
+
         ( contents, provider, data ) = self.contents_provider_and_data( contents=file_contents,
             new_block_delim_fn=fasta_header, block_filter_fn=id_seq )
         self.assertEqual( data, [{ 'id': 'One', 'seq': 'ABCD' }, { 'id': 'Two', 'seq': 'ABCDEFGH' }] )

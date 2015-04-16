@@ -3,6 +3,9 @@ Mock infrastructure for testing ModelManagers.
 """
 import sys
 import os
+import tempfile
+import shutil
+
 
 __GALAXY_ROOT__ = os.getcwd() + '/../../../'
 sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
@@ -23,7 +26,9 @@ from galaxy import quota
 class OpenObject( object ):
     pass
 
+
 class MockApp( object ):
+
     def __init__( self, **kwargs ):
         self.config = MockAppConfig( **kwargs )
         self.security = self.config.security
@@ -34,8 +39,10 @@ class MockApp( object ):
         self.tag_handler = tags.GalaxyTagManager( self )
         self.quota_agent = quota.QuotaAgent( self.model )
 
+
 class MockAppConfig( Bunch ):
-    def __init__( self, **kwargs ):
+
+    def __init__( self, root=None, **kwargs ):
         Bunch.__init__( self, **kwargs )
         self.security = security.SecurityHelper( id_secret='bler' )
         self.file_path = '/tmp'
@@ -53,17 +60,19 @@ class MockAppConfig( Bunch ):
         self.allow_user_dataset_purge = True
         self.enable_old_display_applications = True
 
+        # set by MockDir
+        self.root = root
+
+
 class MockWebapp( object ):
+
     def __init__( self, **kwargs ):
         self.name = kwargs.get( 'name', 'galaxy' )
 
-class MockVisualizationsRegistry( object ):
-    def get_visualizations( self, trans, target ):
-        return []
 
 class MockTrans( object ):
-    def __init__( self, user=None, history=None, **kwargs ):
 
+    def __init__( self, user=None, history=None, **kwargs ):
         self.app = MockApp( **kwargs )
         self.model = self.app.model
         self.webapp = MockWebapp( **kwargs )
@@ -100,3 +109,42 @@ class MockTrans( object ):
         template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
         return template.render( **kwargs )
+
+
+class MockVisualizationsRegistry( object ):
+
+    def get_visualizations( self, trans, target ):
+        return []
+
+
+class MockDir( object ):
+
+    def __init__( self, structure_dict, where=None ):
+        self.structure_dict = structure_dict
+        self.create_root( structure_dict, where )
+
+    def create_root( self, structure_dict, where=None ):
+        self.root_path = tempfile.mkdtemp( dir=where )
+        # print 'created root:', self.root_path
+        self.create_structure( self.root_path, structure_dict )
+
+    def create_structure( self, current_path, structure_dict ):
+        for k, v in structure_dict.items():
+            # if value is string, create a file in the current path and write v as file contents
+            if isinstance( v, str ):
+                self.create_file( os.path.join( current_path, k ), v )
+            # if it's a dict, create a dir here named k and recurse into it
+            if isinstance( v, dict ):
+                subdir_path = os.path.join( current_path, k )
+                # print 'subdir:', subdir_path
+                os.mkdir( subdir_path )
+                self.create_structure( subdir_path, v )
+
+    def create_file( self, path, contents ):
+        # print 'file:', path
+        with open( path, 'w' ) as newfile:
+            newfile.write( contents )
+
+    def remove( self ):
+        # print 'removing:', self.root_path
+        shutil.rmtree( self.root_path )
