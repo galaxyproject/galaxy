@@ -26,6 +26,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import loads
 from galaxy.util import unicodify
+from galaxy.datatypes import sniff
 
 from .output_checker import check_output
 from .datasets import TaskPathRewriter
@@ -1153,6 +1154,11 @@ class JobWrapper( object ):
                     # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
                     if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
                          and self.app.config.retry_metadata_internally ):
+                        # If Galaxy was expected to sniff type and didn't - do so.
+                        if dataset.ext == "_sniff_":
+                            extension = sniff.handle_uploaded_dataset_file( dataset.dataset.file_name, self.app.datatypes_registry )
+                            dataset.extension = extension
+
                         # call datatype.set_meta directly for the initial set_meta call during dataset creation
                         dataset.datatype.set_meta( dataset, overwrite=False )
                     elif ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )

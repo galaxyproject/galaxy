@@ -166,6 +166,9 @@ class MetadataCollection( object ):
                 # if the metadata value is not found in our externally set metadata but it has a value in the 'old'
                 # metadata associated with our dataset, we'll delete it from our dataset's metadata dict
                 del dataset._metadata[ name ]
+        if '__extension__' in JSONified_dict:
+            dataset.extension = JSONified_dict['__extension__']
+
 
     def to_JSON_dict( self, filename=None ):
         # galaxy.model.customtypes.json_encoder.encode()
@@ -174,6 +177,8 @@ class MetadataCollection( object ):
         for name, spec in self.spec.items():
             if name in dataset_meta_dict:
                 meta_dict[ name ] = spec.param.to_external_value( dataset_meta_dict[ name ] )
+        if '__extension__' in dataset_meta_dict:
+            meta_dict[ '__extension__' ] = dataset_meta_dict['__extension__']
         if filename is None:
             return json.dumps( meta_dict )
         json.dump( meta_dict, open( filename, 'wb+' ) )
