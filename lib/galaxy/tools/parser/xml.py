@@ -15,6 +15,10 @@ from .interface import (
     TestCollectionDef,
     TestCollectionOutputDef,
 )
+from .util import (
+    error_on_exit_code,
+    aggressive_error_checks,
+)
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
 from galaxy.tools.deps import requirements
@@ -229,8 +233,20 @@ class XmlToolSource(ToolSource):
         return output
 
     def parse_stdio(self):
-        parser = StdioParser(self.root)
-        return parser.stdio_exit_codes, parser.stdio_regexes
+        command_el = self._command_el
+        detect_errors = None
+        if command_el is not None:
+            detect_errors = command_el.get("detect_errors")
+        if detect_errors and detect_errors != "default":
+            if detect_errors == "exit_code":
+                return error_on_exit_code()
+            elif detect_errors == "aggressive":
+                return aggressive_error_checks()
+            else:
+                raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
+        else:
+            parser = StdioParser(self.root)
+            return parser.stdio_exit_codes, parser.stdio_regexes
 
     def parse_help(self):
         help_elem = self.root.find( 'help' )
@@ -346,11 +362,13 @@ def __parse_test_attributes( output_elem, attrib ):
     metadata = {}
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
-    if not (assert_list or file or extra_files or metadata):
-        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, etc...)")
+    md5sum = attrib.get("md5", None)
+    if not (assert_list or file or extra_files or metadata or md5sum):
+        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or md5 tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
+    attributes['md5'] = md5sum
     return file, attributes
 
 

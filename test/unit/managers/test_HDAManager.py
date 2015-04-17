@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-import sys
 import os
-import pprint
+import imp
 import unittest
 
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
@@ -13,10 +12,9 @@ import sqlalchemy
 
 from galaxy import model
 from galaxy import exceptions
-from galaxy.util.bunch import Bunch
 
-import mock
-from test_ModelManager import BaseTestCase
+from base import BaseTestCase
+
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers import hdas
@@ -27,6 +25,8 @@ default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
 user3_data = dict( email='user3@user3.user3', username='user3', password=default_password )
 
+
+# =============================================================================
 class HDATestCase( BaseTestCase ):
 
     def set_up_managers( self ):
@@ -74,8 +74,7 @@ class HDAManagerTestCase( HDATestCase ):
             [ hda3, hda2, hda1 ] )
 
     def test_create( self ):
-        owner = self.user_manager.create( **user2_data )
-        non_owner = self.user_manager.create( **user3_data )
+        owner = self.user_manager.create( self.trans, **user2_data )
 
         history1 = self.history_manager.create( name='history1', user=owner )
         dataset1 = self.dataset_manager.create()
@@ -117,9 +116,9 @@ class HDAManagerTestCase( HDATestCase ):
         self.assertEqual( hda2.dataset, hda1.dataset )
         self.assertNotEqual( hda2, hda1 )
 
-    #def test_copy_from_ldda( self ):
-    #    owner = self.user_manager.create( **user2_data )
-    #    history1 = self.history_manager.create( name='history1', user=owner )
+    # def test_copy_from_ldda( self ):
+    #    owner = self.user_manager.create( self.trans, **user2_data )
+    #    history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
     #
     #    self.log( "should be able to copy an HDA" )
     #    hda2 = self.hda_manager.copy_ldda( history1, hda1 )
@@ -198,6 +197,7 @@ class HDAManagerTestCase( HDATestCase ):
         item1 = self.hda_manager.create( history1, dataset1 )
 
         self.log( "(by default, dataset permissions are lax) should be accessible to all" )
+
         for user in self.user_manager.list():
             self.assertTrue( self.hda_manager.is_accessible( item1, user ) )
 
@@ -225,7 +225,7 @@ class HDAManagerTestCase( HDATestCase ):
         anon_user = None
         self.trans.set_user( anon_user )
         history3 = self.history_manager.create( name='anon_history', user=anon_user )
-        self.trans.set_history( history2 )
+        self.trans.set_history( history3 )
         self.assertRaises( exceptions.ItemAccessibilityException,
             self.hda_manager.get_accessible, item1.id, anon_user, current_history=self.trans.history )
 
@@ -314,6 +314,7 @@ class HDAManagerTestCase( HDATestCase ):
 testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 
+
 class HDASerializerTestCase( HDATestCase ):
 
     def set_up_managers( self ):
@@ -329,7 +330,7 @@ class HDASerializerTestCase( HDATestCase ):
 
         self.log( 'should have the summary view as default view' )
         default_view = self.hda_serializer.serialize_to_view( hda, default_view='summary' )
-        self.assertKeys( summary_view, self.hda_serializer.views[ 'summary' ] )
+        self.assertKeys( default_view, self.hda_serializer.views[ 'summary' ] )
 
         # self.log( 'should have a detailed view' )
         # detailed_view = self.hda_serializer.serialize_to_view( hda, view='detailed' )
@@ -580,7 +581,6 @@ class HDAFilterParserTestCase( HDATestCase ):
         self.assertFnFilter( self.filter_parser.parse_filter( 'tag', 'has', 'wot' ) )
         # annotatable
         self.assertFnFilter( self.filter_parser.parse_filter( 'annotation', 'has', 'wot' ) )
-
 
     def test_genome_build_filters( self ):
         pass

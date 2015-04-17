@@ -849,7 +849,7 @@ class SelectToolParameter( ToolParameter ):
     def get_html_field( self, trans=None, value=None, context={} ):
         # Dynamic options are not yet supported in workflow, allow
         # specifying the value as text for now.
-        options = self.get_options( trans, context )
+        options = list(self.get_options( trans, context ))
         if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
             if isinstance( value, UnvalidatedValue ):
                 value = value.value
@@ -962,7 +962,7 @@ class SelectToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context, history=None ):
         # More working around dynamic options for workflow
         options = list( self.get_options( trans, context ) )
-        if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
+        if len(options) == 0 and (trans is None or trans.workflow_building_mode):
             # Really the best we can do?
             return UnvalidatedValue( None )
         value = [ optval for _, optval, selected in options if selected ]
@@ -1577,12 +1577,11 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
                     initial_values.append( option['value'] )
                 recurse_options( initial_values, option['options'] )
         # More working around dynamic options for workflow
-        initial_values = []
-        recurse_options( initial_values, self.get_options( trans=trans, other_values=context ) )
-        if len(list(initial_values)) == 0 and (trans is None or trans.workflow_building_mode):
+        options = self.get_options( trans=trans, other_values=context )
+        if len(list(options)) == 0 and (trans is None or trans.workflow_building_mode):
             return UnvalidatedValue( None )
         initial_values = []
-        recurse_options( initial_values, self.get_options( trans=trans, other_values=context ) )
+        recurse_options( initial_values, options )
         if len( initial_values ) == 0:
             initial_values = None
         return initial_values
