@@ -3,6 +3,7 @@ import galaxy.tools
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
     DataCollectionToolParameter,
+    LibraryDatasetToolParameter,
     SelectToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
@@ -68,6 +69,10 @@ class WrappedParameters( object ):
                     datatypes_registry=trans.app.datatypes_registry,
                     tool=tool,
                     name=input.name,
+                )
+            elif isinstance( input, LibraryDatasetToolParameter ):
+                input_values[ input.name ] = galaxy.tools.LibraryDatasetValueWrapper(
+                    input, input_values[ input.name ], incoming
                 )
             else:
                 input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )

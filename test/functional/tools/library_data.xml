@@ -1,0 +1,16 @@
+<tool id="library_data" name="library_data" version="1.0.0">
+    <command>
+        #for $input in $library_datasets
+            cat $input.get_file_name() >> $output
+        #end for
+    </command>
+    <inputs>
+        <param name="library_datasets" type="library_data" />
+    </inputs>
+    <outputs>
+        <data name="output" format="data" />
+    </outputs>
+    <tests>
+        <!-- These parameters cannot be tested. -->
+    </tests>
+</tool>
