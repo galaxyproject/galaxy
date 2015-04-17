@@ -42,7 +42,9 @@ var DatasetCollectionElementView = Backbone.View.extend( BASE_MVC.LoggableMixin 
 
     //TODO: lots of unused space in the element - possibly load details and display them horiz.
     template : _.template([
-        '<span class="name" title="', _l( 'Click to rename' ), '"><%= element.name %></span>',
+        '<a class="name" title="', _l( 'Click to rename' ), '" href="javascript:void(0)">',
+            '<%= element.name %>',
+        '</a>',
         '<button class="discard btn btn-sm" title="', _l( 'Remove this dataset from the list' ), '">',
             _l( 'Discard' ),
         '</button>',
@@ -96,7 +98,9 @@ var DatasetCollectionElementView = Backbone.View.extend( BASE_MVC.LoggableMixin 
     _clickName : function( ev ){
         ev.stopPropagation();
         ev.preventDefault();
-        var response = prompt( _l( 'Enter a new name for the element' ) + ':', this.element.name );
+        var promptString = [ _l( 'Enter a new name for the element' ), ':\n(',
+                             _l( 'Note that changing the name here will not rename the dataset' ), ')' ].join( '' ),
+            response = prompt( _l( 'Enter a new name for the element' ) + ':', this.element.name );
         if( response ){
             this.element.name = response;
             this.render();
@@ -645,7 +649,8 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
     _showAlert : function( message, alertClass ){
         alertClass = alertClass || 'alert-danger';
         this.$( '.main-help' ).hide();
-        this.$( '.header .alert' ).attr( 'class', 'alert alert-dismissable' ).addClass( alertClass ).show()
+        this.$( '.header .alert' )
+            .attr( 'class', 'alert alert-dismissable' ).addClass( alertClass ).show()
             .find( '.alert-message' ).html( message );
     },
     /** hide the alerts at the top */
@@ -827,7 +832,8 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
                 '</div>',
             '</div>',
             '<div class="alert alert-dismissable">',
-                '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>',
+                '<button type="button" class="close" data-dismiss="alert" ',
+                    'title="', _l( 'Close and show more help' ), '" aria-hidden="true">&times;</button>',
                 '<span class="alert-message"></span>',
             '</div>',
         ].join('')),
@@ -835,10 +841,12 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
         /** the middle: element list */
         middle : _.template([
             '<div class="collection-elements-controls">',
-                '<a class="reset" href="javascript:void(0);" title="', _l( 'Undo all reordering and discards' ), '">',
+                '<a class="reset" href="javascript:void(0);" ',
+                    'title="', _l( 'Undo all reordering and discards' ), '">',
                     _l( 'Start over' ),
                 '</a>',
-                '<a class="clear-selected" href="javascript:void(0);" title="', _l( 'De-select all selected datasets' ), '">',
+                '<a class="clear-selected" href="javascript:void(0);" ',
+                    'title="', _l( 'De-select all selected datasets' ), '">',
                     _l( 'Clear selected' ),
                 '</a>',
             '</div>',
@@ -851,7 +859,7 @@ var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).exten
             '<div class="attributes clear">',
                 '<div class="clear">',
                     '<input class="collection-name form-control pull-right" ',
-                        'placeholder="', _l( 'Enter a name for your new list' ), '" />',
+                        'placeholder="', _l( 'Enter a name for your new collection' ), '" />',
                     '<div class="collection-name-prompt pull-right">', _l( 'Name' ), ':</div>',
                 '</div>',
             '</div>',

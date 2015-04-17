@@ -1308,8 +1308,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         //this.debug( ev.originalEvent.clientX, ev.originalEvent.clientY );
         var $nearest = this._getNearestPairedDatasetLi( ev.originalEvent.clientY );
 
-        $( '.paired-drop-placeholder' ).remove();
-        var $placeholder = $( '<div class="paired-drop-placeholder"></div>' );
+        $( '.element-drop-placeholder' ).remove();
+        var $placeholder = $( '<div class="element-drop-placeholder"></div>' );
         if( !$nearest.size() ){
             $list.append( $placeholder );
         } else {
@@ -1389,7 +1389,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** drag communication with pair sub-views: dragend - remove the placeholder */
     _pairDragend : function( ev, pair ){
         //this.debug( '_pairDragend', ev, pair )
-        $( '.paired-drop-placeholder' ).remove();
+        $( '.element-drop-placeholder' ).remove();
         this.$dragging = null;
     },
 

@@ -290,6 +290,9 @@
                 border-color: black;
                 background: black;
                 color: white;
+                a {
+                    color: white;
+                }
             }
         }
     }
@@ -377,24 +380,24 @@
                 background: #DEDEDE;
             }
         }
-        .paired-drop-placeholder {
-            width   : 60px;
-            height  : 3px;
-            margin : 2px 0px 0px 14px;
-            background : black;
-            &:before {
-                float: left;
-                font-size: 120%;
-                margin: -9px 0px 0px -8px;
-                font-family: FontAwesome;
-                content: '\f0da';
-            }
-            &:last-child {
-                margin-bottom: 8px;
-            }
-        }
         .empty-message {
             text-align: center;
+        }
+    }
+    .element-drop-placeholder {
+        width   : 60px;
+        height  : 3px;
+        margin : 2px 0px 0px 14px;
+        background : black;
+        &:before {
+            float: left;
+            font-size: 120%;
+            margin: -9px 0px 0px -8px;
+            font-family: FontAwesome;
+            content: '\f0da';
+        }
+        &:last-child {
+            margin-bottom: 8px;
         }
     }
 
@@ -486,6 +489,9 @@
             border-color: black;
             background: black;
             color: white;
+            a {
+                color: white;
+            }
         }
         &.dragging {
             opacity: 0.4;
@@ -506,21 +512,10 @@
             .pull-right;
         }
     }
-    //TODO: copied from paired-drop-placeholder above - unifiy
     .element-drop-placeholder {
-        width   : 60px;
-        height  : 3px;
-        margin : 2px 0px 0px 6px;
-        background : black;
+        margin-left : 8px;
         &:before {
-            float: left;
-            font-size: 120%;
-            margin: -9px 0px 0px -6px;
-            font-family: FontAwesome;
-            content: '\f0da';
-        }
-        &:last-child {
-            margin-bottom: 4px;
+            margin: -8.5px 0px 0px -8px;
         }
     }
     .empty-message {
