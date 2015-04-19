@@ -3,7 +3,7 @@
     <!-- Adapted from Dan Blankenberg -->
   <command interpreter="python">writeGenotype.py
     -p '
-    java -jar \${SEATTLESEQ_WRITEGENOTYPE_JAR_PATH}/writeGenotypeAndAnnotationFilesSNPsAndIndelsGoddard138.jar  <!-- SEATTLESEQ_WRITEGENOTYPE_JAR_PATH defined in Galaxy's run.sh  -->
+    java -Xmx15g -jar \${SEATTLESEQ_WRITEGENOTYPE_JAR_PATH}/writeGenotypeAndAnnotationFilesSNPsAndIndelsGoddard138.jar  <!-- SEATTLESEQ_WRITEGENOTYPE_JAR_PATH defined in Galaxy's run.sh  -->
     '
     -v $input_vcf
     -a $input_getAnnotation

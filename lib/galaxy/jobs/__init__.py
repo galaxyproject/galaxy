@@ -1284,7 +1284,7 @@ class JobWrapper( object ):
             job.user.total_disk_usage += bytes
 
 	if(self.app.config.external_chown_script != None):
-	    for dataset_path in self.get_output_fnames():
+	    for dataset_path in self.get_mutable_output_fnames():
 		try:
 		    self.set_ownership_of_output(self.user_system_pwent[0], str(self.user_system_pwent[3]), dataset_path.real_path);
 		except:

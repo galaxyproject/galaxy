@@ -27,12 +27,14 @@ def validate_paramters():
     return path, galaxy_user_name, gid 
 
 def main():
+    daemon_username = 'galaxyuser';
+    daemon_groupname = 'galaxy';
     path, galaxy_user_name, gid  = validate_paramters()
     os.system('chown -Rh %s %s' %(galaxy_user_name, path))
     os.system('chgrp -Rh %s %s' %(gid, path))
     os.system('chmod og-rwX -R %s' %(path))
-    os.system('setfacl -R -m g:galaxy:rX %s' %(path))	#should be group so that nginx user can also see this dataset
-    os.system('setfacl -R -m u:galaxyuser:rwX %s' %(path))	#for metadata - write permission
+    os.system('setfacl -R -m g:%s:rX %s' %(daemon_groupname, path))	#should be group so that nginx user can also see this dataset
+    os.system('setfacl -R -m u:%s:rwX %s' %(daemon_username, path))	#for metadata - write permission
     #os.system('chmod o-rwX -R %s' %(path))
     #os.system('chmod g+rwX -R %s' %(path))
 
