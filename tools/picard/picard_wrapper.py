@@ -381,7 +381,7 @@ def __main__():
     op.add_option('-n', '--title', default="Pick a Picard Tool")
     op.add_option('-t', '--htmlout', default=None)
     op.add_option('-d', '--outdir', default=None)
-    op.add_option('-x', '--maxjheap', default='12g') ## Abi changed this to 12g from 4g
+    op.add_option('-x', '--maxjheap', default='15g') ## Requesting 15g only 
     op.add_option('-b', '--bisulphite', default='false')
     op.add_option('-s', '--sortorder', default='query')     
     op.add_option('','--tmpdir', default='/tmp')

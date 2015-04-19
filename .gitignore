@@ -129,3 +129,5 @@ database/disk_object
 
 #Miscellaneous
 api_test
+#The following file is now a symbolic link only
+scripts/external_chown_script.py
