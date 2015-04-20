@@ -2390,6 +2390,9 @@ class LibraryDatasetToolParameter( ToolParameter ):
     def from_html( self, value, trans, other_values={} ):
         return self.to_python( value, trans.app, other_values=other_values, validate=True )
 
+    def to_param_dict_string( self, value, other_values={} ):
+        return [ dataset.get_file_name() for dataset in value ]
+
     # converts values to json representation:
     #   { id: LibraryDatasetDatasetAssociation.id, name: LibraryDatasetDatasetAssociation.name, src: 'lda' }
     def to_string( self, value, app ):

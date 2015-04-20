@@ -11,15 +11,14 @@ from galaxy.tools.wrappers import (
     DatasetFilenameWrapper,
     DatasetListWrapper,
     DatasetCollectionWrapper,
-    LibraryDatasetValueWrapper,
     SelectToolParameterWrapper,
     InputValueWrapper,
+    ListValueWrapper,
     RawObjectWrapper
 )
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
     DataCollectionToolParameter,
-    LibraryDatasetToolParameter,
     SelectToolParameter,
 )
 from galaxy.tools.parameters.grouping import Conditional, Repeat, Section
@@ -228,9 +227,8 @@ class ToolEvaluator( object ):
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
                     input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
-            elif isinstance( input, LibraryDatasetToolParameter ):
-                # TODO: Handle input rewrites in here? How to test LibraryDatasetToolParameters?
-                input_values[ input.name ] = LibraryDatasetValueWrapper(
+            elif isinstance( input_values[ input.name ], list ):
+                input_values[ input.name ] = ListValueWrapper(
                     input, input_values[ input.name ], param_dict )
             else:
                 input_values[ input.name ] = InputValueWrapper(
