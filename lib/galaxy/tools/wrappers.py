@@ -91,6 +91,12 @@ class InputValueWrapper( ToolParameterValueWrapper ):
     def __getattr__( self, key ):
         return getattr( self.value, key )
 
+    def __int__(self):
+        return int(str(self))
+
+    def __float__(self):
+        return float(str(self))
+
 
 class SelectToolParameterWrapper( ToolParameterValueWrapper ):
     """
