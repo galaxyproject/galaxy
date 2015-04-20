@@ -1,18 +1,9 @@
 """
 Mock infrastructure for testing ModelManagers.
 """
-import sys
 import os
 import tempfile
 import shutil
-
-
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
-
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
-import sqlalchemy
 
 from galaxy.web import security
 from galaxy import objectstore
@@ -21,6 +12,7 @@ from galaxy.util.bunch import Bunch
 
 from galaxy.managers import tags
 from galaxy import quota
+
 
 # =============================================================================
 class OpenObject( object ):

@@ -3,11 +3,13 @@
 import os
 import imp
 import unittest
+import re
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 import galaxy_mock
 
+from galaxy import model
 from galaxy.visualization.registry import VisualizationsRegistry
 
 # ----------------------------------------------------------------------------- globals
@@ -33,6 +35,28 @@ config1 = """\
 </visualization>
 """
 
+ipython_config = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
+<interactive_environment name="IPython">
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">data.Text</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <template>ipython.mako</template>
+</interactive_environment>
+"""
+ipython_template = """\
+${ ie_request }-${ get_api_key() }
+"""
+
 
 # -----------------------------------------------------------------------------
 class VisualizationsRegistry_TestCase( unittest.TestCase ):
@@ -46,10 +70,8 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
             template_cache_dir=template_cache_dir )
 
         expected_plugins_path = os.path.join( glx_dir, vis_reg_path )
-        print 'expected_plugins_path:', expected_plugins_path
         self.assertEqual( plugin_mgr.base_url, 'visualizations' )
         self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        print plugin_mgr.plugins
 
         scatterplot = plugin_mgr.plugins[ 'scatterplot' ]
         self.assertEqual( scatterplot.name, 'scatterplot' )
@@ -135,6 +157,60 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         self.assertEqual( vis2.base_url, '/'.join([ plugin_mgr.base_url, vis2.name ]) )
         self.assertFalse( vis2.serves_static )
         self.assertFalse( vis2.serves_templates )
+
+        mock_app_dir.remove()
+
+    def test_interactive_environ_plugin_load( self ):
+        """
+        """
+        mock_app_dir = galaxy_mock.MockDir({
+            'plugins'   : {
+                'ipython' : {
+                    'config' : {
+                        'ipython.xml' : ipython_config
+                    },
+                    'templates' : {
+                        'ipython.mako': ipython_template
+                    }
+                },
+            }
+        })
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
+        plugin_mgr = VisualizationsRegistry( mock_app,
+            directories_setting='plugins',
+            template_cache_dir=mock_app_dir.root_path )
+        # use a mock request factory - this will be written into the filled template to show it was used
+        plugin_mgr.IE_REQUEST_FACTORY = lambda t, p: 'mock_ie'
+
+        expected_plugins_path = os.path.join( mock_app_dir.root_path, 'plugins' )
+        expected_plugin_names = [ 'ipython' ]
+
+        self.assertEqual( plugin_mgr.base_url, 'visualizations' )
+        self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        self.assertItemsEqual( plugin_mgr.plugins.keys(), expected_plugin_names )
+
+        ipython_ie = plugin_mgr.plugins[ 'ipython' ]
+        config = ipython_ie.get( 'config' )
+
+        self.assertEqual( ipython_ie.name, 'ipython' )
+        self.assertEqual( config.get( 'plugin_type' ), 'interactive_environment' )
+
+        # get_api_key needs a user, fill_template a trans
+        user = model.User( email="blah@bler.blah", password="dockerDockerDOCKER" )
+        trans = galaxy_mock.MockTrans( user=user )
+
+        # should return the (new) api key for the above user (see the template above)
+        response = plugin_mgr.fill_template( trans, ipython_ie, 'ipython.mako' )
+        response.strip()
+        self.assertIsInstance( response, basestring )
+        self.assertTrue( '-' in response )
+        ie_request, api_key = response.split( '-' )
+
+        self.assertEqual( ie_request, 'mock_ie' )
+
+        match = re.match( r'[a-f0-9]{32}', api_key )
+        self.assertIsNotNone( match )
+        self.assertEqual( match.span(), ( 0, 32 ) )
 
         mock_app_dir.remove()
 
