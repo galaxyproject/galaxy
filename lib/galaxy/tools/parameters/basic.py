@@ -2381,7 +2381,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
     def __init__( self, tool, input_source, context=None ):
         input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
-        self.multiple = input_source.get_bool( 'multiple', False )
+        self.multiple = input_source.get_bool( 'multiple', True )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.LibraryField( self.name, value=value, trans=trans )
