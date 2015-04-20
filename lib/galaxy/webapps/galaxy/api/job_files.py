@@ -83,9 +83,21 @@ class JobFilesAPIController( BaseAPIController ):
         self.__check_job_can_write_to_path( trans, job, path )
 
         # Is this writing an unneeded file? Should this just copy in Python?
-        input_file = payload.get( "file", payload.get( "__file", None ) ).file
+        if '__file_path' in payload:
+            file_path = payload.get( '__file_path' )
+            upload_store = trans.app.config.nginx_upload_job_files_store
+            assert upload_store, ( "Request appears to have been processed by"
+                                   " nginx_upload_module but Galaxy is not"
+                                   " configured to recognize it" )
+            assert file_path.startswith( upload_store ), \
+                ( "Filename provided by nginx (%s) is not in correct"
+                  " directory (%s)" % ( file_path, upload_store ) )
+            input_file = open( file_path )
+        else:
+            input_file = payload.get( "file",
+                                      payload.get( "__file", None ) ).file
         try:
-            shutil.copyfile( input_file.name, path )
+            shutil.move( input_file.name, path )
         finally:
             input_file.close()
         return {"message": "ok"}

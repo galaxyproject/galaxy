@@ -35,6 +35,7 @@ notebook_access_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/note
 notebook_login_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/login?next=%2Fipython%2F${PORT}%2Ftree')
 
 docker_cmd = ie_request.docker_cmd(temp_dir)
+ie_request.log.info("Starting IPython docker container with command [%s]" % docker_cmd)
 subprocess.call(docker_cmd, shell=True)
 %>
 <html>

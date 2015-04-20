@@ -1136,7 +1136,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         link_data_only = params.get( 'link_data_only', 'copy_files' )
         uuid_str =  params.get( 'uuid', None )
-        file_type = params.get( 'file_type' )
+        file_type = params.get( 'file_type', None )
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
         new_name = name
@@ -1152,8 +1152,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         uploaded_dataset.type = type
         uploaded_dataset.ext = None
         uploaded_dataset.file_type = file_type
-        uploaded_dataset.dbkey = params.get( 'dbkey' )
-        uploaded_dataset.space_to_tab = params.get( 'space_to_tab' )
+        uploaded_dataset.dbkey = params.get( 'dbkey', None )
+        uploaded_dataset.space_to_tab = params.get( 'space_to_tab', None )
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
@@ -1432,7 +1432,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 message = 'Select at least one dataset from the list of active datasets in your current history'
                 status = 'error'
                 upload_option = kwd.get( 'upload_option', 'import_from_history' )
-                widgets = self._get_populated_widgets( folder )
                 # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
                 file_formats = trans.app.datatypes_registry.upload_file_formats
                 # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
@@ -1459,7 +1458,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                             last_used_build=last_used_build,
                                             roles_select_list=roles_select_list,
                                             history=history,
-                                            widgets=widgets,
+                                            widgets=[],
                                             template_id=template_id,
                                             space_to_tab=space_to_tab,
                                             link_data_only=link_data_only,
@@ -1514,16 +1513,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         continue
                 upload_option_select_list.add_option( option_label, option_value, selected=option_value==upload_option )
         return upload_option_select_list
-
-    def _get_populated_widgets( self, folder ):
-        # See if we have any inherited templates.
-        info_association, inherited = folder.get_info_association( inherited=True )
-        if info_association and info_association.inheritable:
-            widgets = folder.get_template_widgets( trans, get_contents=True )
-            # Retain contents of widget fields when form was submitted via refresh_on_change.
-            return self.populate_widgets_from_kwd( trans, widgets, **kwd )
-        else:
-            return []
 
     @web.expose
     def download_dataset_from_folder( self, trans, cntrller, id, library_id=None, **kwd ):
@@ -2584,8 +2573,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
             if not ( is_admin or \
                      ( trans.app.security_agent.can_manage_library_item( current_user_roles, item ) and
-                       trans.app.security_agent.can_manage_dataset( current_user_roles, library_dataset.library_dataset_dataset_association.dataset ) ) ):
-                message = "You are not authorized to manage permissions on library dataset (%s)." % escape( library_dataset.name )
+                       trans.app.security_agent.can_manage_dataset( current_user_roles, item.library_dataset_dataset_association.dataset ) ) ):
+                message = "You are not authorized to manage permissions on library dataset (%s)." % escape( item.name )
                 if cntrller == 'api':
                     return 403, message
                 return trans.response.send_redirect( web.url_for( controller='library_common',

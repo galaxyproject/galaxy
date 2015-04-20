@@ -4,18 +4,14 @@ import os
 import imp
 import unittest
 
-utility = imp.load_source( 'utility', os.path.join( os.path.dirname( __file__ ), '../../util/utility.py' ) )
-log = utility.set_up_filelogger( __name__ + '.log' )
-
-relative_test_path = '/test/unit/visualizations/registry'
-utility.add_galaxy_lib_to_path( relative_test_path )
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
+import galaxy_mock
 
 from galaxy.visualization.registry import VisualizationsRegistry
 
-base_mock = imp.load_source( 'mock',  os.path.join( os.path.dirname( __file__ ), '../../web/base/mock.py' ) )
-
 # ----------------------------------------------------------------------------- globals
-glx_dir = os.getcwd().replace( relative_test_path, '' )
+glx_dir = test_utils.get_galaxy_root()
 template_cache_dir = os.path.join( glx_dir, 'database', 'compiled_templates' )
 vis_reg_path = 'config/plugins/visualizations'
 
@@ -37,21 +33,24 @@ config1 = """\
 </visualization>
 """
 
+
 # -----------------------------------------------------------------------------
 class VisualizationsRegistry_TestCase( unittest.TestCase ):
 
     # ------------------------------------------------------------------------- vis plugin discovery
     def test_plugin_load_from_repo( self ):
         """should attempt load if criteria met"""
-        mock_app = base_mock.MockApp( glx_dir )
+        mock_app = galaxy_mock.MockApp( root=glx_dir )
         plugin_mgr = VisualizationsRegistry( mock_app,
             directories_setting=vis_reg_path,
             template_cache_dir=template_cache_dir )
 
         expected_plugins_path = os.path.join( glx_dir, vis_reg_path )
+        print 'expected_plugins_path:', expected_plugins_path
         self.assertEqual( plugin_mgr.base_url, 'visualizations' )
         self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        
+        print plugin_mgr.plugins
+
         scatterplot = plugin_mgr.plugins[ 'scatterplot' ]
         self.assertEqual( scatterplot.name, 'scatterplot' )
         self.assertEqual( scatterplot.path, os.path.join( expected_plugins_path, 'scatterplot' ) )
@@ -72,7 +71,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
 
     def test_plugin_load( self ):
         """"""
-        mock_app_dir = base_mock.MockDir({
+        mock_app_dir = galaxy_mock.MockDir({
             'plugins'   : {
                 'vis1'          : {
                     'config' : {
@@ -107,7 +106,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
                 },
             }
         })
-        mock_app = base_mock.MockApp( mock_app_dir.root_path )
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = VisualizationsRegistry( mock_app,
             directories_setting='plugins',
             template_cache_dir='bler' )
@@ -140,7 +139,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         mock_app_dir.remove()
 
 
-#TODO: config parser tests (in separate file)
+# TODO: config parser tests (in separate file)
 
 if __name__ == '__main__':
     unittest.main()

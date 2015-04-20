@@ -123,14 +123,18 @@
                 ## ${render_long_description( to_html_string( repository.long_description ) )}
             </div>
         %endif
+        %if repository.homepage_url:
         <div class="form-row">
             <b>Content homepage:</b>
             <a href="${repository.homepage_url | h}" target="_blank">${repository.homepage_url | h}</a>
         </div>
+        %endif
+        %if repository.remote_repository_url:
         <div class="form-row">
             <b>Development repository:</b>
             <a href="${repository.remote_repository_url | h}" target="_blank">${repository.remote_repository_url | h}</a>
         </div>
+        %endif
         <div class="form-row">
             <b>${sharable_link_label}</b>
             <a href="${ repository.share_url }" target="_blank">${ repository.share_url }</a>

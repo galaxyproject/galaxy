@@ -2,6 +2,7 @@
 <toolbox tool_path="${tool_conf_dir}">
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
+  <tool file="inheritance_simple.xml" />
   <tool file="composite.xml" />
   <tool file="compare_bam_as_sam.xml" />
   <tool file="code_file.xml" />
@@ -14,6 +15,9 @@
   <tool file="multi_output_assign_primary.xml" />
   <tool file="composite_output.xml" />
   <tool file="metadata.xml" />
+  <tool file="metadata_bam.xml" />
+  <tool file="detect_errors_aggressive.xml" />
+  <tool file="md5sum.xml" />
   <tool file="job_properties.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
@@ -28,6 +32,7 @@
   <tool file="column_param.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
+  <tool file="section.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />
@@ -35,6 +40,7 @@
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="tool_directory.xml" />
+  <tool file="output_action_change_format.xml" />
   <tool file="collection_paired_test.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />
@@ -45,6 +51,8 @@
   <tool file="collection_creates_list_2.xml" />
   <tool file="collection_optional_param.xml" />
   <tool file="collection_split_on_column.xml" />
+
+  <tool file="cheetah_casting.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />

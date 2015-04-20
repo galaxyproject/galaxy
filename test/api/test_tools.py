@@ -29,7 +29,7 @@ class ToolsTestCase( api.ApiTestCase ):
     def test_show_repeat( self ):
         tool_info = self._show_valid_tool( "cat1" )
         parameters = tool_info[ "inputs" ]
-        assert len( parameters ) == 2
+        assert len( parameters ) == 2, "Expected two inputs - got [%s]" % parameters
         assert parameters[ 0 ][ "name" ] == "input1"
         assert parameters[ 1 ][ "name" ] == "queries"
 
@@ -58,7 +58,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self._assert_has_keys( case2, "value", "inputs" )
         case2_inputs = case2[ "inputs" ]
         assert len( case2_inputs ) == 1
-        self._assert_has_keys( case2_inputs[ 0 ], 'name', 'type', 'label', 'help' )
+        self._assert_has_keys( case2_inputs[ 0 ], 'name', 'type', 'label', 'help', 'argument' )
         assert case2_inputs[ 0 ][ "name" ] == "seed"
 
     def _show_valid_tool( self, tool_id ):
@@ -219,9 +219,7 @@ class ToolsTestCase( api.ApiTestCase ):
             'col': "' ; echo 'moo",
         }
         response = self._run( "column_param", history_id, inputs )
-        if response.status_code == 200:
-            message = "Known, high priority issue. Column parameters are sanitized but invalid values should prevent execution and doesn't."
-            raise AssertionError(message)
+        assert response.status_code != 200
 
     @skip_without_tool( "collection_paired_test" )
     def test_collection_parameter( self ):
@@ -538,6 +536,59 @@ class ToolsTestCase( api.ApiTestCase ):
             "input1": { 'batch': True, 'values': [ { 'src': 'hdca', 'id': hdca_id } ] },
         }
         self._run_and_check_simple_collection_mapping( history_id, inputs )
+
+    @skip_without_tool( "output_action_change_format" )
+    def test_map_over_with_output_format_actions( self ):
+        for use_action in ["do", "dont"]:
+            history_id = self.dataset_populator.new_history()
+            hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
+            inputs = {
+                "input_cond|dispatch": use_action,
+                "input_cond|input": { 'batch': True, 'values': [ { 'src': 'hdca', 'id': hdca_id } ] },
+            }
+            create = self._run( 'output_action_change_format', history_id, inputs ).json()
+            outputs = create[ 'outputs' ]
+            jobs = create[ 'jobs' ]
+            implicit_collections = create[ 'implicit_collections' ]
+            self.assertEquals( len( jobs ), 2 )
+            self.assertEquals( len( outputs ), 2 )
+            self.assertEquals( len( implicit_collections ), 1 )
+            output1 = outputs[ 0 ]
+            output2 = outputs[ 1 ]
+            output1_details = self.dataset_populator.get_history_dataset_details( history_id, dataset=output1 )
+            output2_details = self.dataset_populator.get_history_dataset_details( history_id, dataset=output2 )
+            assert output1_details[ "file_ext" ] == "txt" if (use_action == "do") else "data"
+            assert output2_details[ "file_ext" ] == "txt" if (use_action == "do") else "data"
+
+    @skip_without_tool( "Cut1" )
+    def test_map_over_with_complex_output_actions( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self._bed_list(history_id)
+        inputs = {
+            "columnList": "c1,c2,c3,c4,c5",
+            "delimiter": "T",
+            "input": { 'batch': True, 'values': [ { 'src': 'hdca', 'id': hdca_id } ] },
+        }
+        create = self._run( 'Cut1', history_id, inputs ).json()
+        outputs = create[ 'outputs' ]
+        jobs = create[ 'jobs' ]
+        implicit_collections = create[ 'implicit_collections' ]
+        self.assertEquals( len( jobs ), 2 )
+        self.assertEquals( len( outputs ), 2 )
+        self.assertEquals( len( implicit_collections ), 1 )
+        output1 = outputs[ 0 ]
+        output2 = outputs[ 1 ]
+        output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
+        output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
+        assert output1_content.startswith("chr1")
+        assert output2_content.startswith("chr1")
+
+    def _bed_list(self, history_id):
+        bed1_contents = open(self.get_filename("1.bed"), "r").read()
+        bed2_contents = open(self.get_filename("2.bed"), "r").read()
+        contents = [bed1_contents, bed2_contents]
+        hdca = self.dataset_collection_populator.create_list_in_history( history_id, contents=contents ).json()
+        return hdca["id"]
 
     def _run_and_check_simple_collection_mapping( self, history_id, inputs ):
         create = self._run_cat1( history_id, inputs=inputs, assert_ok=True )

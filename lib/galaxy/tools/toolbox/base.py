@@ -984,10 +984,9 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
     def tool_panel_contents( self, trans, **kwds ):
         """ Filter tool_panel contents for displaying for user.
         """
-        context = Bunch( toolbox=self, trans=trans )
-        filters = self._filter_factory.build_filters( trans )
+        filter_method = self._build_filter_method( trans )
         for _, item_type, elt in self._tool_panel.panel_items_iter():
-            elt = _filter_for_panel( elt, item_type, filters, context )
+            elt = filter_method( elt, item_type )
             if elt:
                 yield elt
 
@@ -1006,8 +1005,12 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             for elt in panel_elts:
                 rval.append( elt.to_dict( **kwargs ) )
         else:
+            filter_method = self._build_filter_method( trans )
             tools = []
             for id, tool in self._tools_by_id.items():
+                tool = filter_method( tool, panel_item_types.TOOL )
+                if not tool:
+                    continue
                 tools.append( tool.to_dict( trans, link_details=True ) )
             rval = tools
 
@@ -1051,6 +1054,11 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             return self._tools_by_id.get( lineage_tool_version.id, None )
         else:
             return self._tool_versions_by_id.get( lineage_tool_version.id, {} ).get( lineage_tool_version.version, None )
+
+    def _build_filter_method( self, trans ):
+        context = Bunch( toolbox=self, trans=trans )
+        filters = self._filter_factory.build_filters( trans )
+        return lambda element, item_type: _filter_for_panel(element, item_type, filters, context)
 
 
 def _filter_for_panel( item, item_type, filters, context ):

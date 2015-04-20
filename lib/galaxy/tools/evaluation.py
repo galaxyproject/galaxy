@@ -22,7 +22,7 @@ from galaxy.tools.parameters.basic import (
     LibraryDatasetToolParameter,
     SelectToolParameter,
 )
-from galaxy.tools.parameters.grouping import Conditional, Repeat
+from galaxy.tools.parameters.grouping import Conditional, Repeat, Section
 from galaxy.jobs.datasets import dataset_path_rewrites
 
 import logging
@@ -143,6 +143,9 @@ class ToolEvaluator( object ):
                     values = input_values[ input.name ]
                     current = values["__current_case__"]
                     do_walk( input.cases[current].inputs, values )
+                elif isinstance( input, Section ):
+                    values = input_values[ input.name ]
+                    do_walk( input.inputs, values )
                 else:
                     func( input_values, input )
 

@@ -190,16 +190,20 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 %endif
                 <div style="clear: both"></div>
             </div>
+            %if repository.homepage_url:
             <div class="form-row">
                 <b>Content homepage:</b>
                 <input name="homepage_url" type="textfield" value="${homepage_url | h}" size="80"/>
                 <div style="clear: both"></div>
             </div>
+            %endif
+            %if repository.remote_repository_url:
             <div class="form-row">
                 <b>Development repository:</b>
                 <input name="remote_repository_url" type="textfield" value="${remote_repository_url | h}" size="80"/>
                 <div style="clear: both"></div>
             </div>
+            %endif
             <div class="form-row">
                 <b>${sharable_link_label}</b>
                 <a href="${ repository.share_url }" target="_blank">${ repository.share_url }</a>

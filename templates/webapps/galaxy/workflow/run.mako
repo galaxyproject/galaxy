@@ -154,11 +154,11 @@
 
          $(".workflow-edit-button").on("click",function(){
                 var state = $(this).attr("name");
-                var stepToolBox = $(this).parent().find('input:not([class]):not([type="hidden"]), select:not([class])');
-                var labels = $(this).parent().find('label');
+                var stepToolBox = $(this).parent().parent().find('.editable-param').find('input:not([class]):not([type="hidden"]), select:not([class])');
+                var labels = $(this).parent().parent().find('.editable-param').find('label');
                 var split_name = stepToolBox.attr("name").split("|");
                 var step_id = split_name[0];
-                var step_name = split_name.slice(1, split_name.length).join("|");
+                var step_name = split_name.slice(2, split_name.length).join("|");
                 var hidden_html = "<input type='hidden' name='"+step_id+"|__runtime__"+step_name+"' value='true' />";
                 var html = "";
                 if (state === "edit"){
@@ -179,9 +179,9 @@
                 }
                 else{
                     $(this).parent().find(".editable").hide();
+                    $(this).parent().find(".editable").empty();
                     $(this).parent().parent().find(".uneditable_field").show();
                     $(this).attr("name", "edit");
-                    stepToolBox.hide();
                     readyParameter($(this));
                 }
             }).each(function(i, icon) {
@@ -281,6 +281,9 @@
     .editable {
         display: none;
     }
+    .editable-param {
+        display: none;
+    }
 
     .workflow-edit-button-editing {
         color: black;
@@ -358,7 +361,7 @@ if wf_parms:
       <span class="conditional-start"></span>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step, already_used )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values, already_used )}
-    %else:
+    %elif input.type != "section":
       ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step, already_used )}
     %endif
   %endfor
@@ -448,10 +451,16 @@ if wf_parms:
                     </span>
                     <span class="editable_field">
                         <span class="editable">
-                            ${param.get_html_field( t, value, other_values).get_html( str(step.id) + "|"+ prefix )}
                         </span>
 
                         <i class="fa workflow-edit-button"></i>
+                    </span>
+                    <span class="editable-param">
+                        <!-- Pristine variant of param, this will be cloned
+                             and modified when the user opts to make this
+                             editable.
+                        -->
+                        ${param.get_html_field( t, value, other_values).get_html( str(step.id) + "|"+ "editable" + "|" + prefix )}
                     </span>
                 </span>
                 %endif

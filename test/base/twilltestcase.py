@@ -2271,6 +2271,14 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg = 'History item %s different than expected\n' % (hid)
                 errmsg += str( err )
                 raise AssertionError( errmsg )
+        if attributes is not None and attributes.get("md5", None) is not None:
+            md5 = attributes.get("md5")
+            try:
+                self._verify_md5(data, md5)
+            except AssertionError, err:
+                errmsg = 'History item %s different than expected\n' % (hid)
+                errmsg += str( err )
+                raise AssertionError( errmsg )
         if filename is not None:
             local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
             temp_name = self.makeTfname(fname=filename)
@@ -2322,6 +2330,18 @@ class TwillTestCase( unittest.TestCase ):
             finally:
                 if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
                     os.remove( temp_name )
+
+    def _verify_md5( self, data, expected_md5 ):
+        import md5
+        m = md5.new()
+        m.update( data )
+        actual_md5 = m.hexdigest()
+        if expected_md5 != actual_md5:
+            template = "Output md5sum [%s] does not match expected [%s]."
+            message = template % (actual_md5, expected_md5)
+            assert False, message
+
+
 
     def view_external_service( self, external_service_id, strings_displayed=[] ):
         self.visit_url( '%s/external_service/view_external_service?id=%s' % ( self.url, external_service_id ) )

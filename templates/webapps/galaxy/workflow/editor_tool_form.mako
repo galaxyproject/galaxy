@@ -8,7 +8,7 @@
         from galaxy.tools.parameters import params_to_incoming
         incoming = {}
         params_to_incoming( incoming, tool.inputs, module.state.inputs, trans.app, to_html=False)
-        self.form_config = tool.to_json(trans, incoming, is_dynamic=False)
+        self.form_config = tool.to_json(trans, incoming, is_workflow=True)
         self.form_config.update({
             'id'                : tool.id,
             'job_id'            : trans.security.encode_id( job.id ) if job else None,
@@ -63,7 +63,7 @@
           <% group_errors = errors.get( input.name, {} ) %>
           ${row_for_param( input.test_param, group_values[ input.test_param.name ], group_errors, group_prefix, ctx, allow_runtime=False )}
           ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, group_prefix, ctx )}
-        %else:
+        %elif input.type != "section":
           %if input.name in values:
             ${row_for_param( input, values[ input.name ], errors, prefix, ctx )}
           %else:

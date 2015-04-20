@@ -2,7 +2,7 @@ from .interface import ToolSource
 from .interface import PagesSource
 from .interface import PageSource
 from .interface import InputSource
-from .interface import ToolStdioExitCode
+from .util import error_on_exit_code
 
 from galaxy.tools.deps import requirements
 from galaxy.tools.parameters import output_collect
@@ -57,18 +57,7 @@ class YamlToolSource(ToolSource):
         return PagesSource([page_source])
 
     def parse_stdio(self):
-        from galaxy.jobs.error_level import StdioErrorLevel
-
-        # New format - starting out just using exit code.
-        exit_code_lower = ToolStdioExitCode()
-        exit_code_lower.range_start = float("-inf")
-        exit_code_lower.range_end = -1
-        exit_code_lower.error_level = StdioErrorLevel.FATAL
-        exit_code_high = ToolStdioExitCode()
-        exit_code_high.range_start = 1
-        exit_code_high.range_end = float("inf")
-        exit_code_lower.error_level = StdioErrorLevel.FATAL
-        return [exit_code_lower, exit_code_high], []
+        return error_on_exit_code()
 
     def parse_help(self):
         return self.root_dict.get("help", None)

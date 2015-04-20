@@ -2,8 +2,8 @@
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
 
- define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/lunr" ],
-         function(_, util, data, lunr) {
+ define( ["libs/underscore", "viz/trackster/util", "mvc/data" ],
+         function(_, util, data) {
 
 /**
  * Mixin for tracking model visibility.
@@ -339,11 +339,6 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * Tool search that updates results when query is changed. Result value of null
  * indicates that query was not run; if not null, results are from search using
  * query.
- */
-
-/**
- * TODO: Integrate lunr search here with tools from API instead of making
- * repeated requests.
  */
 var ToolSearch = Backbone.Model.extend({
     defaults: {
