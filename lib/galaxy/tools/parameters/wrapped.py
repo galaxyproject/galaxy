@@ -7,7 +7,6 @@ from galaxy.tools.parameters.basic import (
 )
 from galaxy.tools.wrappers import (
     InputValueWrapper,
-    ListValueWrapper,
     SelectToolParameterWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
@@ -78,8 +77,6 @@ class WrappedParameters( object ):
                     tool=tool,
                     name=input.name,
                 )
-            elif isinstance( value, list ):
-                input_values[ input.name ] = ListValueWrapper( input, value, incoming )
             else:
                 input_values[ input.name ] = InputValueWrapper( input, value, incoming )
 

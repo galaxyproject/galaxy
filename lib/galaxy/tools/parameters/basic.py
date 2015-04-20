@@ -2379,6 +2379,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
     """
 
     def __init__( self, tool, input_source, context=None ):
+        input_source = ensure_input_source( input_source )
         ToolParameter.__init__( self, tool, input_source )
         self.multiple = input_source.get_bool( 'multiple', False )
 

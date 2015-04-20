@@ -13,7 +13,6 @@ from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     SelectToolParameterWrapper,
     InputValueWrapper,
-    ListValueWrapper,
     RawObjectWrapper
 )
 from galaxy.tools.parameters.basic import (
@@ -227,9 +226,6 @@ class ToolEvaluator( object ):
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
                     input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
-            elif isinstance( input_values[ input.name ], list ):
-                input_values[ input.name ] = ListValueWrapper(
-                    input, input_values[ input.name ], param_dict )
             else:
                 input_values[ input.name ] = InputValueWrapper(
                     input, input_values[ input.name ], param_dict )

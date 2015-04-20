@@ -57,9 +57,9 @@ class RawObjectWrapper( ToolParameterValueWrapper ):
         return getattr( self.obj, key )
 
 
-class ListValueWrapper( ToolParameterValueWrapper ):
+class InputValueWrapper( ToolParameterValueWrapper ):
     """
-    Wraps an input so that __str__ gives the "param_dict" representation for list values.
+    Wraps an input so that __str__ gives the "param_dict" representation.
     """
     def __init__( self, input, value, other_values={} ):
         self.input = input
@@ -77,22 +77,6 @@ class ListValueWrapper( ToolParameterValueWrapper ):
             return iter( [self.to_param_dict_string] )
         else:
             return iter( self.to_param_dict_string )
-
-    def __getattr__( self, key ):
-        return getattr( self.value, key )
-
-
-class InputValueWrapper( ToolParameterValueWrapper ):
-    """
-    Wraps an input so that __str__ gives the "param_dict" representation.
-    """
-    def __init__( self, input, value, other_values={} ):
-        self.input = input
-        self.value = value
-        self._other_values = other_values
-
-    def __str__( self ):
-        return self.input.to_param_dict_string( self.value, self._other_values )
 
     def __getattr__( self, key ):
         return getattr( self.value, key )
