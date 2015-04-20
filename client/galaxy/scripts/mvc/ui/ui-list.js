@@ -11,6 +11,7 @@ var View = Backbone.View.extend({
         // initialize options
         this.options = options;
         this.name = options.name || 'element';
+        this.multiple = options.multiple || false;
 
         // create message handler
         this.message = new Ui.Message({ cls: 'ui-margin-top' });
@@ -105,8 +106,10 @@ var View = Backbone.View.extend({
     /** Refresh view */
     _refresh: function() {
         if (this.$('.ui-list-id').length > 0) {
+            !this.multiple && this.button.disable();
             this.$('.ui-list-portlet').show();
         } else {
+            this.button.enable();
             this.$('.ui-list-portlet').hide();
         }
         this.options.onchange && this.options.onchange();

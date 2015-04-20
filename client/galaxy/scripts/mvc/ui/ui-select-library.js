@@ -47,6 +47,7 @@ var View = Backbone.View.extend({
         this.dataset_list = new List.View({
             name        : 'dataset',
             optional    : options.optional,
+            multiple    : options.multiple,
             onchange    : function() {
                 self.trigger('change');
             }

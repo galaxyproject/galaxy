@@ -67,10 +67,16 @@ class ListValueWrapper( ToolParameterValueWrapper ):
         self.to_param_dict_string = self.input.to_param_dict_string( self.value, other_values )
 
     def __str__( self ):
-        return ','.join( self.to_param_dict_string )
+        if isinstance( self.to_param_dict_string, list):
+            return ','.join( self.to_param_dict_string )
+        else:
+            return self.to_param_dict_string
 
     def __iter__( self ):
-        return iter( self.to_param_dict_string )
+        if not isinstance( self.to_param_dict_string, list):
+            return iter( [self.to_param_dict_string] )
+        else:
+            return iter( self.to_param_dict_string )
 
     def __getattr__( self, key ):
         return getattr( self.value, key )

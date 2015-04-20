@@ -2380,6 +2380,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
 
     def __init__( self, tool, input_source, context=None ):
         ToolParameter.__init__( self, tool, input_source )
+        self.multiple = input_source.get_bool( 'multiple', False )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.LibraryField( self.name, value=value, trans=trans )
@@ -2391,7 +2392,12 @@ class LibraryDatasetToolParameter( ToolParameter ):
         return self.to_python( value, trans.app, other_values=other_values, validate=True )
 
     def to_param_dict_string( self, value, other_values={} ):
-        return [ dataset.get_file_name() for dataset in value ]
+        if value is None:
+            return 'None'
+        elif self.multiple:
+            return [ dataset.get_file_name() for dataset in value ]
+        else:
+            return value[ 0 ].get_file_name()
 
     # converts values to json representation:
     #   { id: LibraryDatasetDatasetAssociation.id, name: LibraryDatasetDatasetAssociation.name, src: 'lda' }
@@ -2454,6 +2460,11 @@ class LibraryDatasetToolParameter( ToolParameter ):
             return None
         else:
             return lst
+
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+        d = super( LibraryDatasetToolParameter, self ).to_dict( trans )
+        d['multiple'] = self.multiple
+        return d
 
 # class RawToolParameter( ToolParameter ):
 #     """
