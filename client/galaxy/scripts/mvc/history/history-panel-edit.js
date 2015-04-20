@@ -458,7 +458,6 @@ var HistoryPanelEdit = _super.extend(
         var dropTarget = this.$( '.history-drop-target' ).get(0);
         for( var evName in this._dropHandlers ){
             if( this._dropHandlers.hasOwnProperty( evName ) ){
-                console.debug( evName, this._dropHandlers[ evName ] );
                 dropTarget.off( evName, this._dropHandlers[ evName ] );
             }
         }
