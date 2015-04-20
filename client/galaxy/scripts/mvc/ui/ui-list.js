@@ -19,7 +19,7 @@ var View = Backbone.View.extend({
         this.portlet = new Portlet.View({ cls: 'ui-portlet-section' });
 
         // create select field containing the options which can be inserted into the list
-        this.select = new Ui.Select.View();
+        this.select = new Ui.Select.View({ optional : options.optional });
 
         // create insert new list element button
         this.button = new Ui.ButtonIcon({

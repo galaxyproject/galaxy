@@ -46,6 +46,7 @@ var View = Backbone.View.extend({
         // create ui-list view to keep track of selected data libraries
         this.dataset_list = new List.View({
             name        : 'dataset',
+            optional    : options.optional,
             onchange    : function() {
                 self.trigger('change');
             }
