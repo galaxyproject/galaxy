@@ -2,7 +2,12 @@
 
 cd `dirname $0`
 
-source contrib/intel_env.sh
+if [ -n "$USE_OHSU_EXACLOUD_ENVIRONMENT" ];
+then
+    source contrib/ohsu_exacloud_env.sh
+else
+    source contrib/intel_env.sh
+fi
 
 # If there is a .venv/ directory, assume it contains a virtualenv that we
 # should run this instance in.
