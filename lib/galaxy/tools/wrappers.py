@@ -68,14 +68,14 @@ class InputValueWrapper( ToolParameterValueWrapper ):
 
     def __str__( self ):
         to_param_dict_string = self.input.to_param_dict_string( self.value, self._other_values )
-        if isinstance( to_param_dict_string, list):
+        if isinstance( to_param_dict_string, list ):
             return ','.join( to_param_dict_string )
         else:
             return to_param_dict_string
 
     def __iter__( self ):
         to_param_dict_string = self.input.to_param_dict_string( self.value, self._other_values )
-        if not isinstance( to_param_dict_string, list):
+        if not isinstance( to_param_dict_string, list ):
             return iter( [ to_param_dict_string ] )
         else:
             return iter( to_param_dict_string )
