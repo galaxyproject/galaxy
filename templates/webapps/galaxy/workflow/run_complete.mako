@@ -31,7 +31,7 @@
 </div>
 
 <script type="text/javascript">
-    if( top.Galaxy && top.Galaxy.currHistoryPanel ){
-        top.Galaxy.currHistoryPanel.refreshContents();
+    if( parent.Galaxy && parent.Galaxy.currHistoryPanel ){
+        parent.Galaxy.currHistoryPanel.refreshContents();
     }
 </script>
