@@ -307,6 +307,12 @@ if [ "$driver" = "python" ]; then
     else
         structured_data_args=""
     fi
+    # The following lines allow to run ./run_tests from directories outside the galaxy home directory
+    parental_dir=$(dirname $0)
+    if [ "$parental_dir" != "" ]; then
+        export PYTHONPATH=$PYTHONPATH:$parental_dir"/test"
+        test_script=$parental_dir"/"$test_script
+    fi
     python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $with_framework_test_tools_arg $extra_args
 else
     ensure_grunt
