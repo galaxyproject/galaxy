@@ -8,7 +8,7 @@
         <div class="workflow-invocation-complete">
             %if invocation['new_history']:
                 <p>These datasets will appear in a new history:
-                <a target='_top' href="${h.url_for( controller='history', action='switch_to_history', hist_id=trans.security.encode_id(invocation['new_history'].id) ) | n}">
+                <a class='new_history_link' id="nhl:${trans.security.encode_id(invocation['new_history'].id)}" target='_top' href="${h.url_for( controller='history', action='switch_to_history', hist_id=trans.security.encode_id(invocation['new_history'].id) ) | n}">
                     '${h.to_unicode(invocation['new_history'].name)}'.
                 </a></p>
             %endif
@@ -34,4 +34,11 @@
     if( parent.Galaxy && parent.Galaxy.currHistoryPanel ){
         parent.Galaxy.currHistoryPanel.refreshContents();
     }
+    $('a.new_history_link').click(function(event){
+        if( parent.Galaxy && parent.Galaxy.currHistoryPanel ){
+            event.preventDefault();
+            // new_history_links have the id 'nhl:<id>'
+            parent.Galaxy.currHistoryPanel.switchToHistory(this.id.slice(4));
+        }
+    });
 </script>
