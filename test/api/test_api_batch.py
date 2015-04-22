@@ -1,5 +1,6 @@
 import simplejson
 from requests import post
+import pprint
 
 from base import api
 # from .helpers import DatasetPopulator
@@ -20,6 +21,9 @@ class ApiBatchTestCase( api.ApiTestCase ):
         data = simplejson.dumps({ "batch" : batch })
         return post( "%s/batch" % ( self.galaxy_interactor.api_url ), data=data )
 
+    def log_reponse( self, response ):
+        log.debug( 'RESPONSE %s\n%s', ( '-' * 40 ), pprint.pformat( response ) )
+
     def test_simple_array( self ):
         batch = [
             dict( url=self._with_key( '/api/histories' ) ),
@@ -29,7 +33,7 @@ class ApiBatchTestCase( api.ApiTestCase ):
         ]
         response = self._post_batch( batch )
         response = response.json()
-        # log.debug( 'RESPONSE %s\n%s', ( '-' * 40 ), pprint.pformat( response ) )
+        # self.log_reponse( response )
         self.assertIsInstance( response, list )
         self.assertEquals( len( response ), 3 )
 
@@ -39,6 +43,18 @@ class ApiBatchTestCase( api.ApiTestCase ):
         ]
         response = self._post_batch( batch )
         response = response.json()
-        # log.debug( 'RESPONSE %s\n%s', ( '-' * 40 ), pprint.pformat( response ) )
+        # self.log_reponse( response )
         self.assertIsInstance( response, list )
         self.assertEquals( response[0][ 'status' ], 404 )
+
+    def test_errors( self ):
+        batch = [
+            dict( url=self._with_key( '/api/histories/abc123' ) ),
+            dict( url=self._with_key( '/api/users/123' ), method='PUT' ),
+        ]
+        response = self._post_batch( batch )
+        response = response.json()
+        # self.log_reponse( response )
+        self.assertIsInstance( response, list )
+        self.assertEquals( response[0][ 'status' ], 400 )
+        self.assertEquals( response[1][ 'status' ], 501 )

@@ -103,7 +103,7 @@ class BatchMiddleware(object):
 
         # We have to re-create the handle request method here in order to bypass reusing the 'api/batch' request
         #   because reuse will cause the paste error:
-        # File "/Users/carleberhard/galaxy/api-v2/eggs/Paste-1.7.5.1-py2.7.egg/paste/httpserver.py", line 166, in wsgi_start_response
+        # File "./eggs/Paste-1.7.5.1-py2.7.egg/paste/httpserver.py", line 166, in wsgi_start_response
         #     assert 0, "Attempt to set headers a second time w/o an exc_info"
         try:
             response = self.galaxy.handle_request( environ, start_response, body_renderer=self.body_renderer )

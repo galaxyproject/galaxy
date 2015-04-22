@@ -51,14 +51,26 @@ spaceghost.test.begin( 'Test the API batch system', 0, function suite( test ){
 
         this.test.comment( 'API batching should handle bad routes well' );
         responses = apiBatch([
-            { url : '/api/bler' }
+            { url : '/api/bler' },
         ]);
         // this.debug( 'responses:' + this.jsonStr( responses ) );
-        this.test.assert( responses.length === 1, 'Has one response' );
+        this.test.assert( responses.length === 1 );
         var badRouteResponse = responses[0];
         this.test.assert( badRouteResponse.status === 404 );
         this.test.assert( utils.isObject( badRouteResponse.body )
                        && this.countKeys( badRouteResponse.body ) === 0 );
+
+        this.test.comment( 'API batching should handle errors well' );
+        responses = apiBatch([
+            { url : '/api/histories/abc123' },
+            { url : '/api/users/123', method: 'PUT' }
+        ]);
+        // this.debug( 'responses:' + this.jsonStr( responses ) );
+        this.test.assert( responses.length === 2 );
+        var badIdResponse = responses[0],
+            notImplemented = responses[1];
+        this.test.assert( badIdResponse.status === 400 );
+        this.test.assert( notImplemented.status === 501 );
 
     /*
     */
