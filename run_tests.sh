@@ -51,7 +51,7 @@ EOF
 }
 
 show_list() {
-    python $parental_dir"tool_list.py"
+    python tool_list.py
     echo "==========================================================================================================================================="
     echo "'${0##*/} -id bbb'               for testing one tool with id 'bbb' ('bbb' is the tool id)"
     echo "'${0##*/} -sid ccc'              for testing one section with sid 'ccc' ('ccc' is the string after 'section::')"
