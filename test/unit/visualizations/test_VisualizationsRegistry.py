@@ -10,9 +10,9 @@ test_utils = imp.load_source( 'test_utils',
 import galaxy_mock
 
 from galaxy import model
-from galaxy.visualization.registry import VisualizationsRegistry
+from galaxy.visualization.plugins.registry import VisualizationsRegistry
 
-# ----------------------------------------------------------------------------- globals
+# -----------------------------------------------------------------------------
 glx_dir = test_utils.get_galaxy_root()
 template_cache_dir = os.path.join( glx_dir, 'database', 'compiled_templates' )
 vis_reg_path = 'config/plugins/visualizations'
@@ -179,8 +179,6 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         plugin_mgr = VisualizationsRegistry( mock_app,
             directories_setting='plugins',
             template_cache_dir=mock_app_dir.root_path )
-        # use a mock request factory - this will be written into the filled template to show it was used
-        plugin_mgr.IE_REQUEST_FACTORY = lambda t, p: 'mock_ie'
 
         expected_plugins_path = os.path.join( mock_app_dir.root_path, 'plugins' )
         expected_plugin_names = [ 'ipython' ]
@@ -189,24 +187,25 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
         self.assertItemsEqual( plugin_mgr.plugins.keys(), expected_plugin_names )
 
-        ipython_ie = plugin_mgr.plugins[ 'ipython' ]
-        config = ipython_ie.get( 'config' )
+        ipython = plugin_mgr.plugins[ 'ipython' ]
+        config = ipython.config
 
-        self.assertEqual( ipython_ie.name, 'ipython' )
+        self.assertEqual( ipython.name, 'ipython' )
         self.assertEqual( config.get( 'plugin_type' ), 'interactive_environment' )
 
         # get_api_key needs a user, fill_template a trans
         user = model.User( email="blah@bler.blah", password="dockerDockerDOCKER" )
         trans = galaxy_mock.MockTrans( user=user )
-
+        # use a mock request factory - this will be written into the filled template to show it was used
+        ipython.INTENV_REQUEST_FACTORY = lambda t, p: 'mock'
         # should return the (new) api key for the above user (see the template above)
-        response = plugin_mgr.fill_template( trans, ipython_ie, 'ipython.mako' )
+        response = ipython._fill_template( trans )
         response.strip()
         self.assertIsInstance( response, basestring )
         self.assertTrue( '-' in response )
         ie_request, api_key = response.split( '-' )
 
-        self.assertEqual( ie_request, 'mock_ie' )
+        self.assertEqual( ie_request, 'mock' )
 
         match = re.match( r'[a-f0-9]{32}', api_key )
         self.assertIsNotNone( match )
