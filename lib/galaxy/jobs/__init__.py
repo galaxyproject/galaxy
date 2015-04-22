@@ -962,12 +962,11 @@ class JobWrapper( object ):
             job.set_state( job.states.PAUSED )
             self.sa_session.add( job )
 
-    def mark_as_resubmitted( self ):
+    def mark_as_resubmitted( self, info=None ):
         job = self.get_job()
         self.sa_session.refresh( job )
-        for dataset in [ dataset_assoc.dataset for dataset_assoc in job.output_datasets + job.output_library_datasets ]:
-            dataset._state = model.Dataset.states.RESUBMITTED
-            self.sa_session.add( dataset )
+        if info is not None:
+            job.info = info
         job.set_state( model.Job.states.RESUBMITTED )
         self.sa_session.add( job )
         self.sa_session.flush()
@@ -1250,6 +1249,16 @@ class JobWrapper( object ):
 
         if job.user:
             job.user.total_disk_usage += bytes
+
+        # Emperically, we need to update job.user and
+        # job.workflow_invocation_step.workflow_invocation in separate
+        # transactions. Best guess as to why is that the workflow_invocation
+        # may or may not exist when the job is first loaded by the handler -
+        # and depending on whether it is or not sqlalchemy orders the updates
+        # differently and deadlocks can occur (one thread updates user and
+        # waits on invocation and the other updates invocation and waits on
+        # user).
+        self.sa_session.flush()
 
         # fix permissions
         for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:

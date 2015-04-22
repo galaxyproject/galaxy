@@ -293,6 +293,8 @@ class Configuration( object ):
         self.nginx_x_archive_files_base = kwargs.get( 'nginx_x_archive_files_base', False )
         self.nginx_upload_store = kwargs.get( 'nginx_upload_store', False )
         self.nginx_upload_path = kwargs.get( 'nginx_upload_path', False )
+        self.nginx_upload_job_files_store = kwargs.get( 'nginx_upload_job_files_store', False )
+        self.nginx_upload_job_files_path = kwargs.get( 'nginx_upload_job_files_path', False )
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath( self.nginx_upload_store )
         self.object_store = kwargs.get( 'object_store', 'disk' )
@@ -466,7 +468,7 @@ class Configuration( object ):
             datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
             job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
-            job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml' ],
+            job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml','config/job_metrics_conf.xml.sample' ],
             dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
             job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
             migrated_tools_config=[ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],

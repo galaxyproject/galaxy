@@ -81,7 +81,7 @@ var FolderView = Backbone.View.extend({
 
     var self = this;
     if (this.options.fetched_permissions === undefined){
-      $.get( "/api/folders/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
+      $.get( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/folders/" + self.id + "/permissions?scope=current").done(function(fetched_permissions) {
         self.prepareSelectBoxes({fetched_permissions:fetched_permissions});
       }).fail(function(){
           mod_toastr.error('An error occurred while attempting to fetch folder permissions.');
@@ -125,7 +125,7 @@ var FolderView = Backbone.View.extend({
       placeholder: 'Click to select a role',
       container: self.$el.find('#' + id),
       ajax: {
-          url: "/api/folders/" + self.id + "/permissions?scope=available",
+          url: ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/folders/" + self.id + "/permissions?scope=available",
           dataType: 'json',
           quietMillis: 100,
           data: function (term, page) { // page is the one-based page number tracked by Select2
@@ -195,7 +195,7 @@ var FolderView = Backbone.View.extend({
     var manage_ids = this._extractIds(this.manageSelectObject.$el.select2('data'));
     var modify_ids = this._extractIds(this.modifySelectObject.$el.select2('data'));
 
-    $.post("/api/folders/" + self.id + "/permissions?action=set_permissions", { 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
+    $.post( ( window.galaxy_config ? galaxy_config.root : '/' ) + "api/folders/" + self.id + "/permissions?action=set_permissions", { 'add_ids[]': add_ids, 'manage_ids[]': manage_ids, 'modify_ids[]': modify_ids, } )
     .done(function(fetched_permissions){
       //fetch dataset again
       self.showPermissions({fetched_permissions:fetched_permissions})

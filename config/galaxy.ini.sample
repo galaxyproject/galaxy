@@ -580,6 +580,13 @@ nglims_config_file = tool-data/nglims.yaml
 # requests.
 #nginx_upload_path = False
 
+# Galaxy can also use nginx_upload_module to receive files staged out upon job
+# completion by remote job runners (i.e. Pulsar) that initiate staging
+# operations on the remote end.  See the Galaxy nginx documentation for the
+# corresponding nginx configuration.
+#nginx_upload_job_files_store = False
+#nginx_upload_job_files_path = False
+
 # Have Galaxy manage dynamic proxy component for routing requests to other
 # services based on Galaxy's session cookie.  It will attempt to do this by
 # default though you do need to install node+npm and do an npm install from
@@ -959,6 +966,17 @@ use_interactive = True
 # and DRM stdout and stderr files (if using a DRM).  Possible values are:
 # always, onsuccess, never
 #cleanup_job = always
+
+# For sites where all users in Galaxy match users on the system on which Galaxy
+# runs, the DRMAA job runner can be configured to submit jobs to the DRM as the
+# actual user instead of as the user running the Galaxy server process.  For
+# details on these options, see the documentation at:
+#
+# http://galaxyproject.org/wiki/Admin/Config/Performance/Cluster
+#
+#drmaa_external_runjob_script = scripts/drmaa_external_runner.py
+#drmaa_external_killjob_script = scripts/drmaa_external_killer.py
+#external_chown_script = scripts/external_chown_script.py
 
 # File to source to set up the environment when running jobs.  By default, the
 # environment in which the Galaxy server starts is used when running jobs
