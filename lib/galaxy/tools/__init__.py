@@ -2611,7 +2611,7 @@ class Tool( object, Dictifiable ):
         hdca_source_dict = {}
         for hdca in history.dataset_collections:
             key = '%s_%s' % (hdca.hid, hdca.collection.id)
-            hdca_source_dict[ hda.collection.id ] = hdca_source_dict[ key ] = hdca
+            hdca_source_dict[ hdca.collection.id ] = hdca_source_dict[ key ] = hdca
 
         # Map dataset or collection to current history
         def map_to_history(value):
