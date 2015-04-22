@@ -6,7 +6,7 @@ from urlparse import urlparse
 import simplejson as json
 
 import pkg_resources
-pkg_resources.require("Paste")
+pkg_resources.require( "Paste" )
 from paste import httpexceptions
 
 import pprint
