@@ -1,13 +1,13 @@
 """
 """
 
-import pkg_resources
-pkg_resources.require( "Routes" )
-import routes
-
 import StringIO
 from urlparse import urlparse
 import simplejson as json
+
+import pkg_resources
+pkg_resources.require("Paste")
+from paste import httpexceptions
 
 import pprint
 
@@ -98,29 +98,35 @@ class BatchMiddleware(object):
     def _proccess_batch_request( self, request, environ, start_response ):
         # log.debug( ( '.' * 40 ) )
 
+        # We may need to include middleware to record various reponses, but this way of doing that won't work:
+        # status, headers, body = self.application( environ, start_response, body_renderer=self.body_renderer )
+
         # We have to re-create the handle request method here in order to bypass reusing the 'api/batch' request
         #   because reuse will cause the paste error:
         # File "/Users/carleberhard/galaxy/api-v2/eggs/Paste-1.7.5.1-py2.7.egg/paste/httpserver.py", line 166, in wsgi_start_response
         #     assert 0, "Attempt to set headers a second time w/o an exc_info"
-        status, headers, body = self.galaxy.handle_request( environ, start_response, body_renderer=self.body_renderer )
-
-        # We may need to include middleware to record various reponses, but this way of doing that won't work:
-        # status, headers, body = self.application( environ, start_response, body_renderer=self.body_renderer )
-
+        try:
+            response = self.galaxy.handle_request( environ, start_response, body_renderer=self.body_renderer )
+        # handle errors from galaxy.handle_request (only 404s)
+        except httpexceptions.HTTPNotFound:
+            response = dict( status=404, headers=self._default_headers(), body={} )
+        return response
         # log.debug( ( '.' * 40 ) )
-        return dict(
-            status=status,
-            headers=headers,
-            body=body,
-        )
 
     def body_renderer( self, trans, body, environ, start_response ):
         # this is a dummy renderer that does not call start_response
-        return (
-            trans.response.status,
-            trans.response.headers,
-            json.loads( self.galaxy.make_body_iterable( trans, body )[0] )
+        return dict(
+            status=trans.response.status,
+            headers=trans.response.headers,
+            body=json.loads( self.galaxy.make_body_iterable( trans, body )[0] )
         )
+
+    def _default_headers( self ):
+        return {
+            'x-frame-options': 'SAMEORIGIN',
+            'content-type'   : 'application/json',
+            'cache-control'  : 'max-age=0,no-cache,no-store'
+        }
 
     def handle_exception( self, environ ):
         return False

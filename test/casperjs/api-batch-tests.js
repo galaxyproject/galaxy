@@ -4,6 +4,14 @@ var require = patchRequire( require ),
     utils = require( 'utils' ),
     format = utils.format;
 
+function apiBatch( batch ){
+    return spaceghost.api._ajax( 'api/batch', {
+        type        : 'POST',
+        contentType : 'application/json',
+        data        : { batch : batch }
+    });
+}
+
 spaceghost.test.begin( 'Test the API batch system', 0, function suite( test ){
     spaceghost.start();
 
@@ -22,19 +30,12 @@ spaceghost.test.begin( 'Test the API batch system', 0, function suite( test ){
     spaceghost.then( function(){
         // --------------------------------------------------------------------
         this.test.comment( 'API batching should allow multiple requests and responses, executed in order' );
-        var batch = [
+        var responses = apiBatch([
                 { url : '/api/histories' },
                 { url : '/api/histories', type: 'POST', body: JSON.stringify({ name: 'wert' }) },
                 { url : '/api/histories' },
-            ],
-            responses = this.api._ajax( 'api/batch', {
-                type        : 'POST',
-                contentType : 'application/json',
-                data        : { batch : batch }
-                // data        : JSON.stringify({ batch : batch })
-            });
-        this.debug( 'responses:' + this.jsonStr( responses ) );
-
+            ]);
+        // this.debug( 'responses:' + this.jsonStr( responses ) );
         this.test.assert( utils.isArray( responses ), "returned an array: length " + responses.length );
         this.test.assert( responses.length === 3, 'Has three responses' );
 
@@ -46,6 +47,19 @@ spaceghost.test.begin( 'Test the API batch system', 0, function suite( test ){
         this.test.assert( utils.isObject( createdHistory.body ), 'history create returned an object' );
         this.test.assert( historiesAfterCreate.body[0].id === createdHistory.body.id,
             "second histories call includes the newly created history:" + historiesAfterCreate.body[0].id );
+
+
+        this.test.comment( 'API batching should handle bad routes well' );
+        responses = apiBatch([
+            { url : '/api/bler' }
+        ]);
+        // this.debug( 'responses:' + this.jsonStr( responses ) );
+        this.test.assert( responses.length === 1, 'Has one response' );
+        var badRouteResponse = responses[0];
+        this.test.assert( badRouteResponse.status === 404 );
+        this.test.assert( utils.isObject( badRouteResponse.body )
+                       && this.countKeys( badRouteResponse.body ) === 0 );
+
     /*
     */
     });
