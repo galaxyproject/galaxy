@@ -763,7 +763,7 @@ class JobExternalOutputMetadataWrapper( object ):
             metadata_files = self.get_output_filenames_by_dataset( dataset, sa_session )
             if not metadata_files:
                 job = sa_session.query( galaxy.model.Job ).get( self.job_id )
-                metadata_files = galaxy.model.JobExternalOutputMetadata( job=job, dataset=dataset)
+                metadata_files = galaxy.model.JobExternalOutputMetadata( job=job, dataset=dataset )
                 # we are using tempfile to create unique filenames, tempfile always returns an absolute path
                 # we will use pathnames relative to the galaxy root, to accommodate instances where the galaxy root
                 # is located differently, i.e. on a cluster node with a different filesystem structure
