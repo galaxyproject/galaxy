@@ -18,6 +18,33 @@ import psycopg2
 from sqlalchemy.engine import url
 
 
+DATA_SOURCES = ('metrics', 'history')
+METRICS_SQL = """
+    SELECT metric_value
+    FROM job_metric_numeric jmn
+    JOIN job j ON jmn.job_id = j.id
+    WHERE j.state = 'ok'
+          AND jmn.plugin = 'core'
+          AND jmn.metric_name = 'runtime_seconds'
+          {tool_clause}
+          {user_clause}
+          {time_clause}
+"""
+HISTORY_SQL = """
+    SELECT ctimes[1] - ctimes[2] AS delta
+    FROM (SELECT jsh.job_id,
+                 array_agg(jsh.create_time ORDER BY jsh.create_time DESC) AS ctimes
+          FROM job_state_history jsh
+          JOIN job j ON jsh.job_id = j.id
+          WHERE jsh.state IN ('running','ok')
+                AND j.state = 'ok'
+                {tool_clause}
+                {user_clause}
+          GROUP BY jsh.job_id) AS t_arrs
+    {time_clause}
+"""
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description='Generate walltime statistics')
@@ -28,7 +55,7 @@ def parse_arguments():
                         help='Use SQL `LIKE` operator to find '
                              'a shed-installed tool using the tool\'s '
                              '"short" id')
-    parser.add_argument('-c', '--config', help='Galaxy Config file')
+    parser.add_argument('-c', '--config', help='Galaxy config file')
     parser.add_argument('-d', '--debug',
                         action='store_true',
                         default=False,
@@ -36,19 +63,28 @@ def parse_arguments():
     parser.add_argument('-m', '--min',
                         type=int,
                         default=-1,
-                        help='Ignore runtimes less than m seconds')
+                        help='Ignore runtimes less than MIN seconds')
     parser.add_argument('-M', '--max',
                         type=int,
                         default=-1,
-                        help='Ignore runtimes greater than M seconds')
+                        help='Ignore runtimes greater than MAX seconds')
     parser.add_argument('-u', '--user',
                         help='Return stats for only this user')
+    parser.add_argument('-s', '--source',
+                        default='metrics',
+                        help='Runtime data source (SOURCES: %s)'
+                             % ', '.join(DATA_SOURCES))
     args = parser.parse_args()
 
     if args.like and '/' in args.tool_id:
         print('ERROR: Do not use --like with a tool shed tool id (the tool '
               'id should not contain `/` characters)')
         sys.exit(2)
+
+    args.source = args.source.lower()
+    if args.source not in ('metrics', 'history'):
+        print('ERROR: Data source `%s` unknown, valid source are: %s'
+              % (args.source, ', '.join(DATA_SOURCES)))
 
     if args.config:
         cp = configparser.ConfigParser()
@@ -66,8 +102,8 @@ def parse_arguments():
 
     return args
 
-def query(tool_id=None, user=None, like=None, connect_args=None, debug=False,
-          min=-1, max=-1, **kwargs):
+def query(tool_id=None, user=None, like=None, source='metrics',
+          connect_args=None, debug=False, min=-1, max=-1, **kwargs):
 
     connect_arg_str = ''
     for k, v in connect_args.items():
@@ -106,51 +142,50 @@ def query(tool_id=None, user=None, like=None, connect_args=None, debug=False,
 
     sql_args = [query_tool_id]
 
-    sql = """
-        SELECT ctimes[1] - ctimes[2] AS delta
-        FROM (SELECT jsh.job_id,
-                     array_agg(jsh.create_time ORDER BY jsh.create_time DESC) AS ctimes
-              FROM job_state_history jsh
-              JOIN job j ON jsh.job_id = j.id
-              WHERE jsh.state IN ('running','ok')
-    """
-
     if like:
-        sql += """
-              AND j.tool_id LIKE %s
-        """
+        tool_clause = "AND j.tool_id LIKE %s"
     else:
-        sql += """
-              AND j.tool_id = %s
-        """
+        tool_clause = "AND j.tool_id = %s"
 
     if user:
-        sql += """
-              AND j.user_id = %s
-        """
+        user_clause = "AND j.user_id = %s"
         sql_args.append(user_id)
+    else:
+        user_clause = ""
 
-    sql += """
-              GROUP BY jsh.job_id) AS t_arrs
-    """
+    if source == 'metrics':
+        if min > 0 and max > 0:
+            time_clause = """AND metric_value > %s
+          AND metric_value < %s"""
+            sql_args.append(min)
+            sql_args.append(max)
+        elif min > 0:
+            time_clause = "AND metric_value > %s"
+            sql_args.append(min)
+        elif max > 0:
+            time_clause = "AND metric_value < %s"
+            sql_args.append(max)
+        else:
+            time_clause = ""
+        sql = METRICS_SQL
+    elif source == 'history':
+        if min > 0 and max > 0:
+            time_clause = """WHERE ctimes[1] - ctimes[2] > interval %s
+          AND ctimes[1] - ctimes[2] < interval %s"""
+            sql_args.append('%s seconds' % min)
+            sql_args.append('%s seconds' % max)
+        elif min > 0:
+            time_clause = "WHERE ctimes[1] - ctimes[2] > interval %s"
+            sql_args.append('%s seconds' % min)
+        elif max > 0:
+            time_clause = "WHERE ctimes[1] - ctimes[2] < interval %s"
+            sql_args.append('%s seconds' % max)
+        else:
+            time_clause = ""
+        sql = HISTORY_SQL
 
-    if min > 0 and max > 0:
-        sql += """
-        WHERE ctimes[1] - ctimes[2] > interval %s
-            AND ctimes[1] - ctimes[2] < interval %s
-        """
-        sql_args.append('%s seconds' % min)
-        sql_args.append('%s seconds' % max)
-    elif min > 0:
-        sql += """
-        WHERE ctimes[1] - ctimes[2] > interval %s
-        """
-        sql_args.append('%s seconds' % min)
-    elif max > 0:
-        sql += """
-        WHERE ctimes[1] - ctimes[2] < interval %s
-        """
-        sql_args.append('%s seconds' % max)
+    sql = sql.format(tool_clause=tool_clause, user_clause=user_clause,
+                     time_clause=time_clause)
 
     cur.execute(sql, sql_args)
     if debug:
@@ -158,7 +193,10 @@ def query(tool_id=None, user=None, like=None, connect_args=None, debug=False,
         print(cur.query)
     print('Query returned %d rows' % cur.rowcount)
 
-    times = numpy.array([ r[0].total_seconds() for r in cur if r[0] ])
+    if source == 'metrics':
+        times = numpy.array([ r[0] for r in cur if r[0] ])
+    elif source == 'history':
+        times = numpy.array([ r[0].total_seconds() for r in cur if r[0] ])
 
     print('Collected %d times' % times.size)
 
@@ -169,7 +207,9 @@ def query(tool_id=None, user=None, like=None, connect_args=None, debug=False,
         print('Displaying statistics for user %s' % user)
 
     stats = (('Mean runtime', numpy.mean(times)),
-             ('Standard deviation', numpy.std(times)))
+             ('Standard deviation', numpy.std(times)),
+             ('Minimum runtime', times.min()),
+             ('Maximum runtime', times.max()))
 
     for name, seconds in stats:
         hours, minutes = nice_times(seconds)
