@@ -213,10 +213,10 @@ class BaseJobRunner( object ):
         output_paths = {}
         for dataset_path in job_wrapper.get_output_fnames():
             path = dataset_path.real_path
-            if self.app.config.outputs_to_working_directory:
+            if self.app.config.outputs_to_working_directory or self.app.config.use_uuids_for_dataset_reference():
                 path = dataset_path.false_path
             output_paths[ dataset_path.dataset_id ] = path
-
+        
         output_pairs = []
         # Walk job's output associations to find and use from_work_dir attributes.
         job = job_wrapper.get_job()
