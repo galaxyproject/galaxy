@@ -83,10 +83,10 @@ class RepoSearch( object ):
         :returns results: dictionary containing number of hits, hits themselves and matched terms for each
         """
         if search_ready:
-            toolshed_whoosh_index_dir = trans.app.config.toolshed_whoosh_index_dir
-            index_exists = whoosh.index.exists_in( toolshed_whoosh_index_dir )
+            whoosh_index_dir = trans.app.config.whoosh_index_dir
+            index_exists = whoosh.index.exists_in( whoosh_index_dir )
             if index_exists:
-                index = whoosh.index.open_dir( toolshed_whoosh_index_dir )
+                index = whoosh.index.open_dir( whoosh_index_dir )
                 try:
                     # Some literature about BM25F:
                     # http://trec.nist.gov/pubs/trec13/papers/microsoft-cambridge.web.hard.pdf

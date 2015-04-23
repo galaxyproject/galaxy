@@ -20,7 +20,7 @@ class SearchController ( BaseAPIController ):
         Perform a search over the Whoosh index. 
         The index has to be pre-created with build_ts_whoosh_index.sh.
         TS config option toolshed_search_on has to be turned on and
-        toolshed_whoosh_index_dir has to be specified and existing.
+        whoosh_index_dir has to be specified.
 
         :param search_term:   (required)the term to search
         :type  search_term:   str
@@ -39,7 +39,7 @@ class SearchController ( BaseAPIController ):
         """
         if not self.app.config.toolshed_search_on:
             raise exceptions.ConfigDoesNotAllowException( 'Searching the TS through the API is turned off for this instance.' )
-        if not self.app.config.toolshed_whoosh_index_dir:
+        if not self.app.config.whoosh_index_dir:
             raise exceptions.ConfigDoesNotAllowException( 'There is no directory for the search index specified. Please ontact the administrator.' )
         search_term = search_term.strip()
         if len( search_term ) < 3:

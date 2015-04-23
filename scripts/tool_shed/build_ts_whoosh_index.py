@@ -6,7 +6,9 @@ $ python scripts/tool_shed/build_ts_whoosh_index_test.py -c config/tool_shed.ini
 
 Make sure you adjusted your config to:
  * turn on searching via toolshed_search_on
- * specify toolshed_whoosh_index_dir where the indexes will be placed
+ * specify whoosh_index_dir where the indexes will be placed
+
+Also make sure that GALAXY_EGGS_PATH variable is properly set.
 """
 import sys
 import os
@@ -53,15 +55,18 @@ tool_schema = Schema(
     repo_id=STORED )
 
 
-def build_index( sa_session, toolshed_whoosh_index_dir, path_to_repositories ):
+def build_index( sa_session, whoosh_index_dir, path_to_repositories ):
     """
     Build the search indexes. One for repositories and another for tools within.
     """
-    repo_index_storage = FileStorage( toolshed_whoosh_index_dir )
-    tool_index_dir = os.path.join( toolshed_whoosh_index_dir, 'tools' )
-    #  Rare race condition exists here
+    #  Rare race condition exists here and below
+    if not os.path.exists( whoosh_index_dir ):
+        os.makedirs( whoosh_index_dir )
+    tool_index_dir = os.path.join( whoosh_index_dir, 'tools' )
     if not os.path.exists( tool_index_dir ):
         os.makedirs( tool_index_dir )
+
+    repo_index_storage = FileStorage( whoosh_index_dir )
     tool_index_storage = FileStorage( tool_index_dir )
 
     repo_index = repo_index_storage.create_index( repo_schema )
@@ -205,5 +210,5 @@ if __name__ == "__main__":
     path_to_tool_shed_config = options.path_to_tool_shed_config
     path_to_repositories = options.path_to_repositories
     sa_session, config_settings = get_sa_session_and_needed_config_settings( path_to_tool_shed_config )
-    toolshed_whoosh_index_dir = config_settings.get( 'toolshed_whoosh_index_dir', None )
-    build_index( sa_session, toolshed_whoosh_index_dir, path_to_repositories )
+    whoosh_index_dir = config_settings.get( 'whoosh_index_dir', None )
+    build_index( sa_session, whoosh_index_dir, path_to_repositories )

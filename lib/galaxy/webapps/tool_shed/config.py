@@ -43,8 +43,8 @@ class Configuration( object ):
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         # Whoosh search
-        self.toolshed_search_on = string_as_bool( kwargs.get( "toolshed_search_on", False ) )
-        self.toolshed_whoosh_index_dir = kwargs.get( "toolshed_whoosh_index_dir", None )
+        self.toolshed_search_on = string_as_bool( kwargs.get( "toolshed_search_on", True ) )
+        self.whoosh_index_dir = kwargs.get( "whoosh_index_dir", 'database/toolshed_whoosh_indexes' )
         # Analytics
         self.ga_code = kwargs.get( "ga_code", None )
         self.session_duration = int(kwargs.get( 'session_duration', 0 ))

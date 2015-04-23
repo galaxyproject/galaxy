@@ -217,7 +217,13 @@ class XmlToolSource(ToolSource):
         default_metadata_source="",
     ):
         output = galaxy.tools.ToolOutput( data_elem.get("name") )
-        output.format = data_elem.get("format", default_format)
+        output_format = data_elem.get("format", default_format)
+        auto_format = string_as_bool( data_elem.get( "auto_format", "false" ) )
+        if auto_format and output_format != "data":
+            raise ValueError("Setting format and auto_format is not supported at this time.")
+        elif auto_format:
+            output_format = "_sniff_"
+        output.format = output_format
         output.change_format = data_elem.findall("change_format")
         output.format_source = data_elem.get("format_source", default_format_source)
         output.metadata_source = data_elem.get("metadata_source", default_metadata_source)

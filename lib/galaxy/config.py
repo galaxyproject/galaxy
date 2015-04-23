@@ -231,7 +231,7 @@ class Configuration( object ):
         # be someday - the following two properties can also be used to force this
         # behavior in under conditions - namely for workflows that have a minimum
         # number of steps or that consume collections.
-        self.force_beta_workflow_scheduled_min_steps = int( kwargs.get( 'force_beta_workflow_scheduled_min_steps', '250' ) )
+        self.force_beta_workflow_scheduled_min_steps = int( kwargs.get( 'force_beta_workflow_scheduled_min_steps', '40' ) )
         self.force_beta_workflow_scheduled_for_collections = string_as_bool( kwargs.get( 'force_beta_workflow_scheduled_for_collections', 'False' ) )
 
         # Per-user Job concurrency limitations

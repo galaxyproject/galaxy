@@ -3,7 +3,8 @@ define([
     "utils/natural-sort",
     "mvc/collection/list-collection-creator",
     "mvc/base-mvc",
-    "utils/localization"
+    "utils/localization",
+    "ui/hoverhighlight"
 ], function( levenshteinDistance, naturalSort, LIST_COLLECTION_CREATOR, baseMVC, _l ){
 /* ============================================================================
 TODO:
@@ -185,7 +186,7 @@ function autoPairFnBuilder( options ){
  */
 var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
-    className: 'collection-creator flex-row-container',
+    className: 'list-of-pairs-collection-creator collection-creator flex-row-container',
 
     /** set up initial options, instance vars, behaviors, and autopair (if set to do so) */
     initialize : function( attributes ){
@@ -1307,8 +1308,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         //this.debug( ev.originalEvent.clientX, ev.originalEvent.clientY );
         var $nearest = this._getNearestPairedDatasetLi( ev.originalEvent.clientY );
 
-        $( '.paired-drop-placeholder' ).remove();
-        var $placeholder = $( '<div class="paired-drop-placeholder"></div>' );
+        $( '.element-drop-placeholder' ).remove();
+        var $placeholder = $( '<div class="element-drop-placeholder"></div>' );
         if( !$nearest.size() ){
             $list.append( $placeholder );
         } else {
@@ -1388,7 +1389,7 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
     /** drag communication with pair sub-views: dragend - remove the placeholder */
     _pairDragend : function( ev, pair ){
         //this.debug( '_pairDragend', ev, pair )
-        $( '.paired-drop-placeholder' ).remove();
+        $( '.element-drop-placeholder' ).remove();
         this.$dragging = null;
     },
 
@@ -1657,37 +1658,6 @@ PairedCollectionCreator.templates = PairedCollectionCreator.templates || {
 
 
 //=============================================================================
-(function(){
-    /** plugin that will highlight an element when this element is hovered over */
-    jQuery.fn.extend({
-        hoverhighlight : function $hoverhighlight( scope, color ){
-            scope = scope || 'body';
-            if( !this.size() ){ return this; }
-
-            $( this ).each( function(){
-                var $this = $( this ),
-                    targetSelector = $this.data( 'target' );
-
-                if( targetSelector ){
-                    $this.mouseover( function( ev ){
-                        $( targetSelector, scope ).css({
-                            background: color
-                        });
-                    })
-                    .mouseout( function( ev ){
-                        $( targetSelector ).css({
-                            background: ''
-                        });
-                    });
-                }
-            });
-            return this;
-        }
-    });
-}());
-
-
-//=============================================================================
 /** a modal version of the paired collection creator */
 var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datasets, options ){
 
@@ -1728,12 +1698,8 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal( datas
 
 //=============================================================================
 function createListOfPairsCollection( collection ){
-    var elements = LIST_COLLECTION_CREATOR.validElements( collection );
-    if( !elements.length ){
-        LIST_COLLECTION_CREATOR.noValidElementsErrorModal();
-        return jQuery.Deferred().reject( LIST_COLLECTION_CREATOR.noValidElementsMessage );
-    }
-
+    var elements = collection.toJSON();
+//TODO: validate elements
     return pairedCollectionCreatorModal( elements, {
         historyId : collection.historyId
     });

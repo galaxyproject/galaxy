@@ -417,13 +417,14 @@ class Tool( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
     default_template = 'tool_form.mako'
 
-    def __init__( self, config_file, tool_source, app, guid=None, repository_id=None ):
+    def __init__( self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True ):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
         self.repository_id = repository_id
+        self._allow_code_files = allow_code_files
         #setup initial attribute values
         self.inputs = odict()
         self.stdio_exit_codes = list()
@@ -704,14 +705,15 @@ class Tool( object, Dictifiable ):
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
-        for code_elem in root.findall("code"):
-            for hook_elem in code_elem.findall("hook"):
-                for key, value in hook_elem.items():
-                    # map hook to function
-                    self.hook_map[key] = value
-            file_name = code_elem.get("file")
-            code_path = os.path.join( self.tool_dir, file_name )
-            execfile( code_path, self.code_namespace )
+        if self._allow_code_files:
+            for code_elem in root.findall("code"):
+                for hook_elem in code_elem.findall("hook"):
+                    for key, value in hook_elem.items():
+                        # map hook to function
+                        self.hook_map[key] = value
+                file_name = code_elem.get("file")
+                code_path = os.path.join( self.tool_dir, file_name )
+                execfile( code_path, self.code_namespace )
 
         # User interface hints
         uihints_elem = root.find( "uihints" )
@@ -2611,7 +2613,7 @@ class Tool( object, Dictifiable ):
         hdca_source_dict = {}
         for hdca in history.dataset_collections:
             key = '%s_%s' % (hdca.hid, hdca.collection.id)
-            hdca_source_dict[ hda.collection.id ] = hdca_source_dict[ key ] = hdca
+            hdca_source_dict[ hdca.collection.id ] = hdca_source_dict[ key ] = hdca
 
         # Map dataset or collection to current history
         def map_to_history(value):

@@ -166,6 +166,8 @@ class MetadataCollection( object ):
                 # if the metadata value is not found in our externally set metadata but it has a value in the 'old'
                 # metadata associated with our dataset, we'll delete it from our dataset's metadata dict
                 del dataset._metadata[ name ]
+        if '__extension__' in JSONified_dict:
+            dataset.extension = JSONified_dict['__extension__']
 
     def to_JSON_dict( self, filename=None ):
         # galaxy.model.customtypes.json_encoder.encode()
@@ -174,6 +176,8 @@ class MetadataCollection( object ):
         for name, spec in self.spec.items():
             if name in dataset_meta_dict:
                 meta_dict[ name ] = spec.param.to_external_value( dataset_meta_dict[ name ] )
+        if '__extension__' in dataset_meta_dict:
+            meta_dict[ '__extension__' ] = dataset_meta_dict['__extension__']
         if filename is None:
             return json.dumps( meta_dict )
         json.dump( meta_dict, open( filename, 'wb+' ) )
@@ -758,8 +762,8 @@ class JobExternalOutputMetadataWrapper( object ):
             # so we will only populate the dictionary once
             metadata_files = self.get_output_filenames_by_dataset( dataset, sa_session )
             if not metadata_files:
-                metadata_files = galaxy.model.JobExternalOutputMetadata( dataset=dataset)
-                metadata_files.job_id = self.job_id
+                job = sa_session.query( galaxy.model.Job ).get( self.job_id )
+                metadata_files = galaxy.model.JobExternalOutputMetadata( job=job, dataset=dataset )
                 # we are using tempfile to create unique filenames, tempfile always returns an absolute path
                 # we will use pathnames relative to the galaxy root, to accommodate instances where the galaxy root
                 # is located differently, i.e. on a cluster node with a different filesystem structure

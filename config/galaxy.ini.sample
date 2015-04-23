@@ -860,7 +860,7 @@ use_interactive = True
 # scheduling).
 # Workflows containing more than the specified number of steps will always use
 # the Galaxy's beta workflow scheduling.
-#force_beta_workflow_scheduled_min_steps=250
+#force_beta_workflow_scheduled_min_steps=40
 # Switch to using Galaxy's beta workflow scheduling for all workflows involving
 # ccollections.
 #force_beta_workflow_scheduled_for_collections=False
