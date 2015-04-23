@@ -169,6 +169,11 @@ class Bam( Binary ):
                 break
         return version
 
+    @staticmethod
+    def merge(split_files, output_file):
+        params = ["samtools", "merge", "-f", output_file, " ".join(split_files)]
+        subprocess.Popen(" ".join(params), shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE).stdout.read()
+
     def _is_coordinate_sorted( self, file_name ):
         """See if the input BAM file is sorted from the header information."""
         params = [ "samtools", "view", "-H", file_name ]
