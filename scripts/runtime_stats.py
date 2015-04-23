@@ -1,6 +1,33 @@
 #!/usr/bin/env python
 """
 Collect and report statistics on job run times
+
+To use metrics (which provide more accurate information), see:
+
+    https://github.com/galaxyproject/galaxy/blob/dev/config/job_metrics_conf.xml.sample
+
+If you do not have metrics enabled, use the `--source history` option to use
+the less accurate job_state_history table.
+
+Examples
+--------
+
+# Stats for Nate's runs of the Bowtie 2 tool installed from the Tool Shed (all
+# versions):
+% ./runtime_stats.py -c galaxy.ini -u nate@bx.psu.edu 'toolshed.g2.bx.psu.edu/repos/devteam/bowtie2/bowtie2/'
+
+# Stats for all runs of the Bowtie 2 tool installed from the Tool Shed (version
+# 0.4 only):
+% ./runtime_stats.py -c galaxy.ini 'toolshed.g2.bx.psu.edu/repos/devteam/bowtie2/bowtie2/0.4'
+
+# Stats for all runs of the Bowtie 2 tool installed from the Tool Shed but we
+# don't feel like figuring out or typing the long ID (matches any tool with
+# '/tophat2/' in its full ID):
+% ./runtime_stats.py -c galaxy.ini --like 'bowtie2'
+
+# Stats for all runs of Tophat 2 that took longer than 2 minutes but less than
+# 2 days:
+% ./runtime_stats.py -c galaxy.ini --like -m $((2 * 60)) -M $((2 * 24 * 60 * 60)) 'tophat2'
 """
 from __future__ import print_function
 
@@ -48,7 +75,7 @@ HISTORY_SQL = """
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description='Generate walltime statistics')
-    parser.add_argument('tool_id', help='Tool to collect stats about')
+    parser.add_argument('tool_id', help='Tool (by ID) to collect stats about')
     parser.add_argument('--like',
                         action='store_true',
                         default=False,
@@ -69,7 +96,8 @@ def parse_arguments():
                         default=-1,
                         help='Ignore runtimes greater than MAX seconds')
     parser.add_argument('-u', '--user',
-                        help='Return stats for only this user')
+                        help='Return stats for only this user (id, email, '
+                             'or username)')
     parser.add_argument('-s', '--source',
                         default='metrics',
                         help='Runtime data source (SOURCES: %s)'
