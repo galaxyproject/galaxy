@@ -169,7 +169,6 @@ class MetadataCollection( object ):
         if '__extension__' in JSONified_dict:
             dataset.extension = JSONified_dict['__extension__']
 
-
     def to_JSON_dict( self, filename=None ):
         # galaxy.model.customtypes.json_encoder.encode()
         meta_dict = {}
@@ -763,8 +762,8 @@ class JobExternalOutputMetadataWrapper( object ):
             # so we will only populate the dictionary once
             metadata_files = self.get_output_filenames_by_dataset( dataset, sa_session )
             if not metadata_files:
-                metadata_files = galaxy.model.JobExternalOutputMetadata( dataset=dataset)
-                metadata_files.job_id = self.job_id
+                job = sa_session.query( galaxy.model.Job ).get( self.job_id )
+                metadata_files = galaxy.model.JobExternalOutputMetadata( job=job, dataset=dataset)
                 # we are using tempfile to create unique filenames, tempfile always returns an absolute path
                 # we will use pathnames relative to the galaxy root, to accommodate instances where the galaxy root
                 # is located differently, i.e. on a cluster node with a different filesystem structure
