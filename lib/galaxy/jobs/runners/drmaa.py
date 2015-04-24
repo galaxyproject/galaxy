@@ -15,6 +15,7 @@ from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from galaxy.util import asbool
 
 eggs.require( "drmaa" )
 
@@ -112,7 +113,8 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
     def queue_job( self, job_wrapper ):
         """Create job script and submit it to the DRM"""
         # prepare the job
-        if not self.prepare_job( job_wrapper, include_metadata=True ):
+        include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
+        if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
             return
 
         # get configured job destination
@@ -230,6 +232,10 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 ajs.fail_message = "The cluster DRM system terminated this job"
                 self.work_queue.put( ( self.fail_job, ajs ) )
         elif drmaa_state == drmaa.JobState.DONE:
+            # External metadata processing for external runjobs
+            external_metadata = not asbool( ajs.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
+            if external_metadata:
+                self._handle_metadata_externally( ajs.job_wrapper, resolve_requirements=True )
             super( DRMAAJobRunner, self )._complete_terminal_job( ajs )
 
     def check_watched_items( self ):

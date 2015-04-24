@@ -236,6 +236,10 @@
         </destination>
         <destination id="remote_cluster" runner="drmaa" tags="longjobs"/>
         <destination id="java_cluster" runner="drmaa">
+          <!-- Set to False if cluster nodes don't shared Galaxy library,
+               it will perform metadata calculation locally after the job finishes.
+          -->
+          <param id="embed_metadata_in_job">True</param>
           <!-- set arbitrary environment variables at runtime. General
                dependencies for tools should be configured via
                tool_dependency_dir and package options and these
