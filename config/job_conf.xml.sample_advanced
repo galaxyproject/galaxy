@@ -236,6 +236,10 @@
         </destination>
         <destination id="remote_cluster" runner="drmaa" tags="longjobs"/>
         <destination id="java_cluster" runner="drmaa">
+          <!-- Allow users that are not mapped to any real users to run jobs
+               as a Galaxy (fallback). Default is False.
+          -->
+          <param id="allow_guests">True</param>
           <!-- Set to False if cluster nodes don't shared Galaxy library,
                it will perform metadata calculation locally after the job finishes.
           -->

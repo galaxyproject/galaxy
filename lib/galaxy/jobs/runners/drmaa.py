@@ -196,9 +196,15 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 return
         else:
             job_wrapper.change_ownership_for_run()
-            # if user credentials are not available, use galaxy credentials
+            # if user credentials are not available, use galaxy credentials (if permitted)
+            allow_guests = asbool(job_wrapper.job_destination.params.get( "allow_guests", False) )
             pwent = job_wrapper.user_system_pwent
             if pwent is None:
+                if not allow_guests:
+                    fail_msg = "User %s is not mapped to any real user, and not permitted to start jobs." % job_wrapper.user
+                    job_wrapper.fail( fail_msg )
+                    self.ds.deleteJobTemplate( jt )
+                    return
                 pwent = job_wrapper.galaxy_system_pwent
             log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, pwent[0], pwent[2] ) )
             filename = self.store_jobtemplate(job_wrapper, jt)
