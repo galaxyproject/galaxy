@@ -587,6 +587,14 @@ class FTPFileToolParameter( ToolParameter ):
         """
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
+        self.multiple = input_source.get_bool( 'multiple', True )
+        self.user_ftp_dir = ''
+
+    def get_initial_value( self, trans, context, history=None ):
+        if not trans is None:
+            if not trans.user is None:
+                self.user_ftp_dir = "%s/" % trans.user_ftp_dir
+        return None
 
     @property
     def visible( self ):
@@ -601,28 +609,45 @@ class FTPFileToolParameter( ToolParameter ):
             user_ftp_dir = trans.user_ftp_dir
         return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value=value )
 
+    def to_param_dict_string( self, value, other_values={} ):
+        if value is '':
+            return 'None'
+        lst = [ '%s%s' % (self.user_ftp_dir, dataset) for dataset in value ]
+        if self.multiple:
+            return lst
+        else:
+            return lst[ 0 ]
+
     def from_html( self, value, trans=None, other_values={} ):
-        try:
-            assert type( value ) is list
-        except:
-            value = [ value ]
-        return value
+        return self.to_python( value, trans.app, validate=True )
 
     def to_string( self, value, app ):
-        if value in [ None, '' ]:
-            return None
-        elif isinstance( value, unicode ) or isinstance( value, str ) or isinstance( value, list ):
-            return value
+        return self.to_python( value, app )
 
-    def to_python( self, value, app ):
-        if value is None:
-            return None
-        elif isinstance( value, unicode ) or isinstance( value, str ) or isinstance( value, list ):
-            return value
+    def to_python( self, value, app, validate=False ):
+        if validate and self.tool.app.config.ftp_upload_dir is None:
+            raise ValueError( "The FTP directory is not configured." )
+        if not isinstance( value, list ):
+            value = [ value ]
+        lst = []
+        for val in value:
+            if val is None:
+                lst = []
+                break
+            if isinstance( val, dict ):
+                lst.append( val[ 'name' ] )
+            else:
+                lst.append( val )
+        if len( lst ) == 0:
+            if not self.optional and validate:
+                raise ValueError( "Please select a valid FTP file." )
+            return ''
+        return lst
 
-    def get_initial_value( self, trans, context, history=None ):
-        return None
-
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+        d = super( FTPFileToolParameter, self ).to_dict( trans )
+        d['multiple'] = self.multiple
+        return d
 
 class HiddenToolParameter( ToolParameter ):
     """

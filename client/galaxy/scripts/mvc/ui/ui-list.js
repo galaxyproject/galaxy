@@ -50,10 +50,21 @@ var View = Backbone.View.extend({
             this.portlet.empty();
             if ($.isArray(val)) {
                 for (var i in val) {
-                    this.add({
-                        id      : val[i].id,
-                        name    : val[i].name
-                    });
+                    var v = val[i];
+                    var v_id = null;
+                    var v_name = null;
+                    if ($.type(v) != 'string') {
+                        v_id = v.id;
+                        v_name = v.name;
+                    } else {
+                        v_id = v_name = v;
+                    }
+                    if (v_id != null) {
+                        this.add({
+                            id      : v_id,
+                            name    : v_name
+                        });
+                    }
                 }
             }
             this._refresh();
@@ -66,13 +77,16 @@ var View = Backbone.View.extend({
                 name    : $(this).find('.ui-list-name').html()
             });
         });
+        if (lst.length == 0) {
+            return null;
+        }
         return lst;
     },
 
     /** Add row */
     add: function(options) {
         var self = this;
-        if (this.$('#' + options.id).length === 0) {
+        if (this.$('[id="' + options.id + '"]').length === 0) {
             if (Utils.validate(options.id)) {
                 var $el = $(this._templateRow({
                     id      : options.id,
