@@ -83,7 +83,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         :returns:               the loaded plugin
         """
         plugin_name = os.path.split( plugin_path )[1]
-# TODO: this is the standard/older way to config
+        # TODO: this is the standard/older way to config
         config_file = os.path.join( plugin_path, 'config', ( plugin_name + '.xml' ) )
         config = self.config_parser.parse_file( config_file )
         # config file is required, otherwise skip this visualization

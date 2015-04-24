@@ -96,12 +96,14 @@ class VisualizationsConfigParser( object ):
             raise ParsingException( 'No valid data_sources for visualization' )
         returned[ 'data_sources' ] = data_sources
 
+        # TODO: this is effectively required due to param_confs.findall( 'param' )
         # parameters spell out how to convert query string params into resources and data
         #   that will be parsed, fetched, etc. and passed to the template
         # list or dict? ordered or not?
         params = {}
         param_confs = xml_tree.find( 'params' )
-        for param_conf in param_confs.findall( 'param' ):
+        param_elements = param_confs.findall( 'param' ) if param_confs is not None else []
+        for param_conf in param_elements:
             param = self.param_parser.parse( param_conf )
             if param:
                 params[ param_conf.text ] = param
@@ -113,7 +115,8 @@ class VisualizationsConfigParser( object ):
         # store these modifiers in a 2-level dictionary { target_param: { param_modifier_key: { param_mod_data }
         # ugh - wish we didn't need these
         param_modifiers = {}
-        for param_modifier_conf in param_confs.findall( 'param_modifier' ):
+        param_modifier_elements = param_confs.findall( 'param_modifier' ) if param_confs is not None else []
+        for param_modifier_conf in param_modifier_elements:
             param_modifier = self.param_modifier_parser.parse( param_modifier_conf )
             # param modifiers map accrd. to the params they modify (for faster lookup)
             target_param = param_modifier_conf.get( 'modifies' )

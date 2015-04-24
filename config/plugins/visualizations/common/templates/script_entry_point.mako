@@ -6,5 +6,5 @@
 ## No javascript libraries
 <%def name="late_javascripts()">
     <% tag_attrs = ' '.join([ '{}="{}"'.format( key, attr ) for key, attr in script_tag_attributes.items() ]) %>
-    <script type="text/javascript"${tag_attrs}></script>
+    <script type="text/javascript" ${tag_attrs}></script>
 </%def>

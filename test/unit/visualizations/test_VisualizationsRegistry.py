@@ -6,15 +6,17 @@ import unittest
 import re
 
 test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
+    os.path.join( os.path.dirname( __file__), '..', 'unittest_utils', 'utility.py' ) )
 import galaxy_mock
 
 from galaxy import model
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from galaxy.visualization.plugins import plugin
 
 # -----------------------------------------------------------------------------
 glx_dir = test_utils.get_galaxy_root()
 template_cache_dir = os.path.join( glx_dir, 'database', 'compiled_templates' )
+addtional_templates_dir = os.path.join( glx_dir, 'config', 'plugins', 'visualizations', 'common', 'templates' )
 vis_reg_path = 'config/plugins/visualizations'
 
 config1 = """\
@@ -35,33 +37,10 @@ config1 = """\
 </visualization>
 """
 
-ipython_config = """\
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
-<interactive_environment name="IPython">
-    <data_sources>
-        <data_source>
-            <model_class>HistoryDatasetAssociation</model_class>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">data.Text</test>
-            <to_param param_attr="id">dataset_id</to_param>
-        </data_source>
-    </data_sources>
-    <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
-    </params>
-    <template>ipython.mako</template>
-</interactive_environment>
-"""
-ipython_template = """\
-${ ie_request }-${ get_api_key() }
-"""
-
 
 # -----------------------------------------------------------------------------
 class VisualizationsRegistry_TestCase( unittest.TestCase ):
 
-    # ------------------------------------------------------------------------- vis plugin discovery
     def test_plugin_load_from_repo( self ):
         """should attempt load if criteria met"""
         mock_app = galaxy_mock.MockApp( root=glx_dir )
@@ -163,6 +142,25 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
     def test_interactive_environ_plugin_load( self ):
         """
         """
+        ipython_config = test_utils.clean_multiline_string( """\
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
+        <interactive_environment name="IPython">
+            <data_sources>
+                <data_source>
+                    <model_class>HistoryDatasetAssociation</model_class>
+                    <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
+                    <test type="isinstance" test_attr="datatype" result_type="datatype">data.Text</test>
+                    <to_param param_attr="id">dataset_id</to_param>
+                </data_source>
+            </data_sources>
+            <params>
+                <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+            </params>
+            <template>ipython.mako</template>
+        </interactive_environment>
+        """ )
+        ipython_template = "${ ie_request }-${ get_api_key() }"
         mock_app_dir = galaxy_mock.MockDir({
             'plugins'   : {
                 'ipython' : {
@@ -213,7 +211,52 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
 
         mock_app_dir.remove()
 
+    def test_script_entry( self ):
+        """"""
+        script_entry_config = test_utils.clean_multiline_string( """\
+        <?xml version="1.0" encoding="UTF-8"?>
+        <visualization name="js-test">
+            <data_sources>
+                <data_source>
+                    <model_class>HistoryDatasetAssociation</model_class>
+                </data_source>
+            </data_sources>
+            <entry_point entry_point_type="script" data-main="one" src="bler"></entry_point>
+        </visualization>
+        """ )
 
+        mock_app_dir = galaxy_mock.MockDir({
+            'plugins' : {
+                'jstest' : {
+                    'config' : {
+                        'jstest.xml' : script_entry_config
+                    },
+                    'static' : {}
+                },
+            }
+        })
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
+        plugin_mgr = VisualizationsRegistry( mock_app,
+            directories_setting='plugins',
+            template_cache_dir='plugins' )
+        script_entry = plugin_mgr.plugins[ 'jstest' ]
+
+        self.assertIsInstance( script_entry, plugin.ScriptVisualizationPlugin )
+        self.assertEqual( script_entry.name, 'jstest' )
+        self.assertTrue(  script_entry.serves_static )
+        self.assertTrue(  script_entry.serves_templates )
+        self.assertEqual( script_entry.static_path, os.path.join( script_entry.path, 'static' ) )
+
+        trans = galaxy_mock.MockTrans()
+        script_entry._set_up_template_plugin( 'plugins', [ addtional_templates_dir ] )
+        response = script_entry._fill_template( trans, embedded=True )
+        # print response
+        self.assertTrue( '<script type="text/javascript" src="bler" data-main="one"></script>' in response )
+
+        mock_app_dir.remove()
+
+
+# -----------------------------------------------------------------------------
 # TODO: config parser tests (in separate file)
 
 if __name__ == '__main__':

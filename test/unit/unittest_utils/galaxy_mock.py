@@ -100,6 +100,7 @@ class MockTrans( object ):
     def fill_template( self, filename, template_lookup=None, **kwargs ):
         template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
+        kwargs.update( h=MockTemplateHelpers() )
         return template.render( **kwargs )
 
 
@@ -140,3 +141,11 @@ class MockDir( object ):
     def remove( self ):
         # print 'removing:', self.root_path
         shutil.rmtree( self.root_path )
+
+
+class MockTemplateHelpers( object ):
+    def js( *js_files ):
+        pass
+
+    def css( *css_files ):
+        pass
