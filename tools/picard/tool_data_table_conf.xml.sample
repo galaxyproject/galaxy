@@ -1,0 +1,8 @@
+<!-- Use the file tool_data_table_conf.xml.oldlocstyle if you don't want to update your loc files as changed in revision 4550:535d276c92bc-->
+<tables>
+    <!-- Location of Picard dict file and other files -->
+    <table name="picard_indexes" comment_char="#">
+        <columns>value, dbkey, name, path</columns>
+        <file path="tool-data/picard_index.loc" />
+    </table>
+</tables>

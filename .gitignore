@@ -4,6 +4,7 @@ eggs
 scripts/scramble/build
 scripts/scramble/lib
 scripts/scramble/archives
+.eggs_cache
 
 # Python virtualenv
 .venv
@@ -19,6 +20,7 @@ database/pbs
 database/tmp
 database/*.sqlite
 database/openid_consumer_cache
+database/dataset_library_import
 
 # Python bytecode
 *.pyc
@@ -43,25 +45,19 @@ reports_webapp.pid
 # Config files
 universe_wsgi.ini
 reports_wsgi.ini
+safe_universe_wsgi.ini
 tool_shed_wsgi.ini
 
 # Config files.
-datatypes_conf.xml
-tool_conf.xml
 external_service_types_conf.xml
 migrated_tools_conf.xml
-shed_tool_conf.xml
-tool_data_table_conf.xml
 tool_sheds_conf.xml
 integrated_tool_panel.xml
 openid_conf.xml
 shed_tool_data_table_conf.xml
-job_conf.xml
 data_manager_conf.xml
 shed_data_manager_conf.xml
 object_store_conf.xml
-job_metrics_conf.xml
-workflow_schedulers_conf.xml
 config/*
 static/welcome.html.*
 static/welcome.html
@@ -117,3 +113,21 @@ doc/build
 *.rej
 *~
 
+#Logs
+*.log
+*.log-*
+*.swp
+*.pid
+whoosh_indexes
+collectl_logs
+safe_universe_wsgi.ini
+
+#DRMAA
+drmaa/drmaa/*.o
+drmaa/drmaa/*.a
+database/disk_object
+
+#Miscellaneous
+api_test
+#The following file is now a symbolic link only
+scripts/external_chown_script.py

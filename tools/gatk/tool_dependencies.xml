@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <set_environment version="1.0">
+        <environment_variable action="set_to" name="GATK2_PATH">/please set the path to your GATK2 dir in the corresponding env.sh file/</environment_variable>
+    </set_environment>
+    <!-- 
+    Use GATK2_SITE_OPTIONS to set additional parameters that should be inserted in every GATK2 call.
+    The intended use case was to prohibit GATK2 to collect and send data.
+    For example:
+    
+    -et "NO_ET" -K "/data/gatk2_key_file" ##ET no phone home
+    -->
+    <set_environment version="1.0">
+        <environment_variable action="set_to" name="GATK2_SITE_OPTIONS"> </environment_variable>
+    </set_environment>
+
+    <package name="samtools" version="0.1.19">
+        <repository changeset_revision="00e17a794a2e" name="package_samtools_0_1_19" owner="iuc" toolshed="http://toolshed.g2.bx.psu.edu" />
+    </package>
+</tool_dependency>

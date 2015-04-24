@@ -1,0 +1,310 @@
+<tool id="cufflinks" name="Cufflinks" version="@VERSION@.0">
+    <description>transcript assembly and FPKM (RPKM) estimates for RNA-Seq data</description>
+    <expand macro="requirements" />
+    <expand macro="stdio" />
+    <macros>
+      <import>cuff_macros.xml</import>
+    </macros>
+    <version_command>cufflinks 2>&amp;1 | head -n 1</version_command>
+<!-- this is a test -->
+    <command interpreter="python">
+        cufflinks_wrapper.py 
+            --input=$input
+            --assembled-isoforms-output=$assembled_isoforms
+            --num-threads="\${GALAXY_SLOTS:-4}"
+            -I $max_intron_len
+            -F $min_isoform_fraction
+            -j $pre_mrna_fraction
+            $length_correction
+            
+            ## Include reference annotation?
+            #if $reference_annotation.use_ref == "Use reference annotation":
+                -G $reference_annotation.reference_annotation_file
+                $reference_annotation.compatible_hits_norm
+            #end if
+            #if $reference_annotation.use_ref == "Use reference annotation guide":
+                -g $reference_annotation.reference_annotation_guide_file
+                --3-overhang-tolerance=$reference_annotation.three_overhang_tolerance
+                --intron-overhang-tolerance=$reference_annotation.intron_overhang_tolerance
+                $reference_annotation.no_faux_reads
+            #end if
+            
+            ## Bias correction?
+            #if $bias_correction.do_bias_correction == "Yes":
+                -b
+                #if $bias_correction.seq_source.index_source == "history":
+                    --ref_file=$bias_correction.seq_source.ref_file
+                #else:
+                    --index=${bias_correction.seq_source.index.fields.path}
+                #end if
+            #end if
+
+            ## Multi-read correct?
+            #if str($multiread_correct) == "Yes":
+            -u
+            #end if
+
+            ## Include global model if available.
+            #if $global_model:
+                --global_model=$global_model
+            #end if
+
+            ## advanced settings
+            #if $advanced_settings.use_advanced_settings == "Yes":
+            --library-type=$advanced_settings.library_type
+            #if $advanced_settings.mask_file:
+                --mask-file=$advanced_settings.mask_file
+                #end if
+            --inner-mean-dist=$advanced_settings.inner_mean_dist
+            --inner-dist-std-dev=$advanced_settings.inner_dist_std_dev
+            --max-mle-iterations=$advanced_settings.max_mle_iterations
+            --junc-alpha=$advanced_settings.junc_alpha
+            --small-anchor-fraction=$advanced_settings.small_anchor_fraction
+            --overhang-tolerance=$advanced_settings.overhang_tolerance
+            --max-bundle-length=$advanced_settings.max_bundle_length
+            --max-bundle-frags=$advanced_settings.max_bundle_frags
+            --min-intron-length=$advanced_settings.min_intron_length
+            --trim-3-avgcov-thresh=$advanced_settings.trim_three_avgcov_thresh
+            --trim-3-dropoff-frac=$advanced_settings.trim_three_dropoff_frac
+            #end if
+
+    </command>
+    <inputs>
+        <param format="sam,bam" name="input" type="data" label="SAM or BAM file of aligned RNA-Seq reads" help=""/>
+    <param name="max_intron_len" type="integer" value="300000" min="1" max="600000" label="Max Intron Length" help="ignore alignments with gaps longer than this"/>
+        <param name="min_isoform_fraction" type="float" value="0.10" min="0" max="1" label="Min Isoform Fraction" help="suppress transcripts below this abundance level"/>
+        <param name="pre_mrna_fraction" type="float" value="0.15" min="0" max="1" label="Pre MRNA Fraction" help="suppress intra-intronic transcripts below this level"/>
+        <conditional name="reference_annotation">
+            <param name="use_ref" type="select" label="Use Reference Annotation">
+                <option value="No" selected="true">No</option>
+                <option value="Use reference annotation">Use reference annotation</option>
+                <option value="Use reference annotation guide">Use reference annotation as guide</option>
+            </param>
+            <when value="No"></when>
+            <when value="Use reference annotation">
+                <param format="gff3,gtf" name="reference_annotation_file" type="data" label="Reference Annotation" help="Gene annotation dataset in GTF or GFF3 format."/>
+        <param name="compatible_hits_norm" type="select" label="Count hits compatible with reference RNAs only" 
+            help="With this option, Cufflinks counts only those fragments compatible with some reference transcript towards the number of mapped hits used in the FPKM denominator. This option can only be used in combination with --GTF.">
+            <option value="" selected="True">No</option>
+            <option value="--compatible-hits-norm">Yes</option>
+        </param>
+            </when>
+            <when value="Use reference annotation guide">
+                <param format="gff3,gtf" name="reference_annotation_guide_file" type="data" label="Reference Annotation" help="Gene annotation dataset in GTF or GFF3 format."/>
+                <param name="three_overhang_tolerance" type="integer" value="600" label="3prime overhang tolerance" 
+                    help="The number of bp allowed to overhang the 3prime end of a reference transcript when determining if an assembled transcript should be merged with it (ie, the assembled transcript is not novel). The default is 600 bp." />
+                <param name="intron_overhang_tolerance" type="integer" value="30" label="Intronic overhang tolerance" help="The number of bp allowed to enter the intron of a reference transcript when determining if an assembled transcript should be merged with it (ie, the assembled transcript is not novel). The default is 30 bp." />
+                <param name="no_faux_reads" type="select" label="Disable tiling of reference transcripts" help="This option disables tiling of the reference transcripts with faux reads. Use this if you only want to use sequencing reads in assembly but do not want to output assembled transcripts that lay within reference transcripts. All reference transcripts in the input annotation will also be included in the output.">
+                    <option value="" selected="True">No</option>
+                    <option value="--no-faux-reads">Yes</option>
+                </param>
+            </when>
+        </conditional>
+        <conditional name="bias_correction">
+            <param name="do_bias_correction" type="select" label="Perform Bias Correction"
+                help="Bias detection and correction can significantly improve accuracy of transcript abundance estimates.">
+                <option value="No" selected="true">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="Yes">
+                <conditional name="seq_source">
+                  <param name="index_source" type="select" label="Reference sequence data">
+                    <option value="cached"  selected="true">Locally cached</option>
+                    <option value="history">History</option>
+                  </param>
+                  <when value="cached">
+                    <param name="index" type="select" label="Using reference genome">
+                      <options from_data_table="fasta_indexes">
+                        <filter type="data_meta" ref="input" key="dbkey" column="1" />
+                        <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+                      </options>
+                    </param>
+                  </when>
+                  <when value="history">
+                      <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+                  </when>
+                </conditional>
+            </when>
+            <when value="No"></when>
+        </conditional>
+        
+        <param name="multiread_correct" type="select" label="Use multi-read correct" 
+            help="Tells Cufflinks to do an initial estimation procedure to more accurately weight reads mapping to multiple locations in the genome.">
+            <option value="No" selected="true">No</option>
+            <option value="Yes">Yes</option>
+        </param>
+
+        <param name="length_correction" type="select" label="Apply length correction" help="Mode of length normalization to transcript FPKM.">
+            <option value="" selected="true">Cufflinks Effective Length Correction</option>
+            <option value="--no-effective-length-correction">Standard Length Correction</option>
+        <option value="--no-length-correction">No Length Correction at all (use raw counts)</option>
+        </param>
+
+        <param name="global_model" type="hidden_data" label="Global model (for use in Trackster)" optional="True"/>
+
+        <!-- advanced settings -->
+        <conditional name="advanced_settings">
+            <param name="use_advanced_settings" type="select" label="Set advanced Cufflinks options" help="">
+            <option value="No" selected="true">No</option>
+            <option value="Yes" >Yes</option>
+            </param>
+            <when value="No"></when>
+            <when value="Yes">
+
+            <param type="select" name="library_type" label="Library prep used for input reads" help="">
+                <option value="auto" selected="True">Auto Detect</option>
+                <option value="ff-firststrand">ff-firststrand</option>
+                <option value="ff-secondstrand">ff-secondstrand</option>
+                <option value="ff-unstranded">ff-unstranded</option>
+                <option value="fr-firststrand">fr-firststrand</option>
+                <option value="fr-secondstrand">fr-secondstrand</option>
+                <option value="fr-unstranded" >fr-unstranded</option>
+                <option value="transfrags">transfrags</option>
+            </param>
+
+            <param name="mask_file" type="data" format="gff3,gtf" label="Mask File" help="Ignore all alignment within transcripts in this file " optional="True" />
+            <param name="inner_mean_dist" type="integer" value="45" label="Inner mean distance" help="This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments selected at 300bp,where each end is 50bp, you should set it as 200. The default is 45bp." />
+            <param name="inner_dist_std_dev" type="integer" value="20" label="Inner distance standard deviation" help="The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp." />
+            <param name="max_mle_iterations" type="integer" value="5000" label="Max MLE iterations" help="Sets the number of iterations allowed during maximum likelihood estimation of abundances. Default: 5000" />
+            <param name="junc_alpha" type="float" value="0.001" min="0" max="1" label="Alpha value for the binomial test used during false positive spliced alignment filtration" help="Default: 0.001" />
+            <param name="small_anchor_fraction" type="float" value="0.09" min="0" max="1" label="percent read overhang taken as suspiciously small" help="Spliced reads with less than this percent of their length on each side of the junction are considered suspicious and are candidates for filtering prior to assembly. Default: 0.09." />    
+            <param name="overhang_tolerance" type="integer" value="8" label="Intronic overhang tolerance" help="The number of bp allowed to enter the intron of a transcript when determining if a read or another transcript is mappable to/compatible with it. The default is 8 bp based on the default bowtie/TopHat parameters." />
+            <param name="max_bundle_length" type="integer" value="3500000" label="Maximum genomic length of a given bundle" help="Default: 3,500,000bp" />
+            <param name="max_bundle_frags" type="integer" value="500000" label="Maximum number of fragments per locus" help="Sets the maximum number of fragments a locus may have before being skipped. Skipped loci are listed in skipped.gtf. Default: 500,000" />
+            <param name="min_intron_length" type="integer" value="50" label="Minimal allowed intron size" help="Default: 50bp" />
+            <param name="trim_three_avgcov_thresh" type="integer" value="10" label="Minimum average coverage required to attempt 3prime trimming." help="Default: 10" />
+            <param name="trim_three_dropoff_frac" type="float" value="0.1" min="0" max="1" label="The fraction of average coverage below which to trim the 3prime end of an assembled transcript." help="Default: 0.1"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data format="tabular" name="genes_expression" label="${tool.name} on ${on_string}: gene expression" from_work_dir="genes.fpkm_tracking"/>
+        <data format="tabular" name="transcripts_expression" label="${tool.name} on ${on_string}: transcript expression" from_work_dir="isoforms.fpkm_tracking"/>
+        <data format="gtf" name="assembled_isoforms" label="${tool.name} on ${on_string}: assembled transcripts"/>
+        <data format="txt" name="total_map_mass" label="${tool.name} on ${on_string}: total map mass" hidden="true" from_work_dir="global_model.txt"/>
+        <data format="gtf" name="skipped" label="${tool.name} on ${on_string}: Skipped Transcripts" from_working_dir="skipped.gtf"/>
+    </outputs>
+
+    <trackster_conf>
+        <action type="set_param" name="global_model" output_name="total_map_mass"/>
+    </trackster_conf>
+    <tests>
+        <!--
+            Simple test that uses test data included with cufflinks.
+        -->
+        <test>
+            <param name="input" value="cufflinks_in.bam"/>
+            <param name="max_intron_len" value="300000"/>
+            <param name="min_isoform_fraction" value="0.05"/>
+            <param name="pre_mrna_fraction" value="0.05"/>
+            <param name="use_ref" value="No"/>
+            <param name="do_bias_correction" value="No"/>
+            <param name="multiread_correct" value="No"/>
+            <param name="length_correction" value=""/>
+            <param name="use_advanced_settings" value="No" />
+            <output name="genes_expression" format="tabular" lines_diff="2" file="cufflinks_out3.fpkm_tracking"/>
+            <output name="transcripts_expression" format="tabular" lines_diff="2" file="cufflinks_out2.fpkm_tracking"/>
+            <output name="assembled_isoforms" file="cufflinks_out1.gtf"/>
+            <output name="global_model" file="cufflinks_out4.txt"/>
+        <output name="skipped" file="cufflinks_out4.gtf"/> 
+        </test>
+    </tests>
+
+    <help>
+**Cufflinks Overview**
+
+Cufflinks_ assembles transcripts, estimates their abundances, and tests for differential expression and regulation in RNA-Seq samples. It accepts aligned RNA-Seq reads and assembles the alignments into a parsimonious set of transcripts. Cufflinks then estimates the relative abundances of these transcripts based on how many reads support each one.  Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. Nature Biotechnology doi:10.1038/nbt.1621
+
+.. _Cufflinks: http://cole-trapnell-lab.github.io/cufflinks/
+
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as an automated gearshift in expression analysis. It is all like stick-shift driving in San Francisco. In other words, running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
+
+.. __: http://cole-trapnell-lab.github.io/cufflinks/cufflinks/
+
+------
+
+**Input formats**
+
+Cufflinks takes a text file of SAM alignments as input. The RNA-Seq read mapper TopHat produces output in this format, and is recommended for use with Cufflinks. However Cufflinks will accept SAM alignments generated by any read mapper. Here's an example of an alignment Cufflinks will accept::
+
+  s6.25mer.txt-913508    16    chr1 4482736 255 14M431N11M * 0 0 \
+     CAAGATGCTAGGCAAGTCTTGGAAG IIIIIIIIIIIIIIIIIIIIIIIII NM:i:0 XS:A:-
+    
+Note the use of the custom tag XS. This attribute, which must have a value of "+" or "-", indicates which strand the RNA that produced this read came from. While this tag can be applied to any alignment, including unspliced ones, it must be present for all spliced alignment records (those with a 'N' operation in the CIGAR string).
+The SAM file supplied to Cufflinks must be sorted by reference position. If you aligned your reads with TopHat, your alignments will be properly sorted already. If you used another tool, you may want to make sure they are properly sorted as follows::
+
+  sort -k 3,3 -k 4,4n hits.sam > hits.sam.sorted
+
+NOTE: Cufflinks currently only supports SAM alignments with the CIGAR match ('M') and reference skip ('N') operations. Support for the other operations, such as insertions, deletions, and clipping, will be added in the future.
+
+------
+
+**Outputs**
+
+Cufflinks produces three output files:
+
+Transcripts and Genes:
+
+This GTF file contains Cufflinks' assembled isoforms. The first 7 columns are standard GTF, and the last column contains attributes, some of which are also standardized (e.g. gene_id, transcript_id). There one GTF record per row, and each record represents either a transcript or an exon within a transcript. The columns are defined as follows::
+
+  Column number   Column name   Example     Description
+  -----------------------------------------------------
+  1               seqname       chrX        Chromosome or contig name
+  2               source        Cufflinks   The name of the program that generated this file (always 'Cufflinks')
+  3               feature       exon        The type of record (always either "transcript" or "exon").
+  4               start         77696957    The leftmost coordinate of this record (where 0 is the leftmost possible coordinate)
+  5               end           77712009    The rightmost coordinate of this record, inclusive.
+  6               score         77712009    The most abundant isoform for each gene is assigned a score of 1000. Minor isoforms are scored by the ratio (minor FPKM/major FPKM)
+  7               strand        +           Cufflinks' guess for which strand the isoform came from. Always one of '+', '-' '.'
+  7               frame         .           Cufflinks does not predict where the start and stop codons (if any) are located within each transcript, so this field is not used.
+  8               attributes    See below
+  
+Each GTF record is decorated with the following attributes::
+
+  Attribute       Example       Description
+  -----------------------------------------
+  gene_id         CUFF.1        Cufflinks gene id
+  transcript_id   CUFF.1.1      Cufflinks transcript id
+  FPKM            101.267       Isoform-level relative abundance in Reads Per Kilobase of exon model per Million mapped reads
+  frac            0.7647        Reserved. Please ignore, as this attribute may be deprecated in the future
+  conf_lo         0.07          Lower bound of the 95% confidence interval of the abundance of this isoform, as a fraction of the isoform abundance. That is, lower bound = FPKM * (1.0 - conf_lo)
+  conf_hi         0.1102        Upper bound of the 95% confidence interval of the abundance of this isoform, as a fraction of the isoform abundance. That is, upper bound = FPKM * (1.0 + conf_lo)
+  cov             100.765       Estimate for the absolute depth of read coverage across the whole transcript
+  
+
+Transcripts only:
+  This file is simply a tab delimited file containing one row per transcript and with columns containing the attributes above. There are a few additional attributes not in the table above, but these are reserved for debugging, and may change or disappear in the future.
+    
+Genes only:
+This file contains gene-level coordinates and expression values.
+    
+-------
+
+**Cufflinks settings**
+
+All of the options have a default value. You can change any of them. Most of the options in Cufflinks have been implemented here.
+
+------
+
+**Cufflinks parameter list**
+
+This is a list of implemented Cufflinks options::
+
+  -m INT    This is the expected (mean) inner distance between mate pairs. For, example, for paired end runs with fragments selected at 300bp, where each end is 50bp, you should set -r to be 200. The default is 45bp.
+  -s INT    The standard deviation for the distribution on inner distances between mate pairs. The default is 20bp.
+  -I INT    The minimum intron length. Cufflinks will not report transcripts with introns longer than this, and will ignore SAM alignments with REF_SKIP CIGAR operations longer than this. The default is 300,000.
+  -F         After calculating isoform abundance for a gene, Cufflinks filters out transcripts that it believes are very low abundance, because isoforms expressed at extremely low levels often cannot reliably be assembled, and may even be artifacts of incompletely spliced precursors of processed transcripts. This parameter is also used to filter out introns that have far fewer spliced alignments supporting them. The default is 0.05, or 5% of the most abundant isoform (the major isoform) of the gene.
+  -j        Some RNA-Seq protocols produce a significant amount of reads that originate from incompletely spliced transcripts, and these reads can confound the assembly of fully spliced mRNAs. Cufflinks uses this parameter to filter out alignments that lie within the intronic intervals implied by the spliced alignments. The minimum depth of coverage in the intronic region covered by the alignment is divided by the number of spliced reads, and if the result is lower than this parameter value, the intronic alignments are ignored. The default is 5%.
+  -G        Tells Cufflinks to use the supplied reference annotation to estimate isoform expression. It will not assemble novel transcripts, and the program will ignore alignments not structurally compatible with any reference transcript.  
+  -N        With this option, Cufflinks excludes the contribution of the top 25 percent most highly expressed genes from the number of mapped fragments used in the FPKM denominator. This can improve robustness of differential expression calls for less abundant genes and transcripts.
+    </help>
+    <citations>
+        <citation type="doi">10.1038/nbt.1621</citation>
+    </citations>
+</tool>

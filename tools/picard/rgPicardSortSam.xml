@@ -1,0 +1,100 @@
+<tool name="Picard - Sort Sam" id="rgPicardSortSam" version="1.110.0">
+  <command interpreter="python">
+   picard_wrapper.py -i "${input_file}"
+   --tmpdir "${__new_file_path__}" -o "${out_file}"
+   --sortOrder "${sortOrder}" --quiet "${quietOn}" 
+   --compression "${compressionLvl}" --maxramrecords "${maxRamRecords}" 
+   --createindex "${createIndex}" --createmd5 "${createMd5}" 
+   -j "\${PICARD_PATH}/SortSam.jar" -d "${html_file.files_path}" 
+   -t "${html_file}" -e "${input_file.ext}"
+  </command>
+  <requirements><requirement type="package" version="1.110.0">picard</requirement></requirements>
+  <description>Sorts the input SAM or BAM.</description>
+  <inputs>
+    <param format="bam,sam" name="input_file" type="data" label="SAM/BAM dataset to mark duplicates in"
+      help="If empty, upload or import a SAM/BAM dataset."/>
+    <param name="createMd5" value="false" type="boolean"  label="Create MD 5 file"
+      truevalue="true" falsevalue="false" checked="yes" 
+      help="Check to create md5 file (true); uncheck to not create MD 5 file (false) - OHSU default."/>
+    <param name="createIndex" value="false" type="boolean"  label="Create Index"
+      truevalue="true" falsevalue="false" checked="yes" 
+      help="Check to create index file (true); uncheck to not create index file (false) - OHSU default."/>
+    <param name="compressionLvl" value="5" type="integer"
+     label="Compression level" size="5"
+     help="Compression level."/>
+    <param name="maxRamRecords" value="500000" type="integer"
+     label="Maximum records in RAM" size="9"
+     help="Max records in RAM. Picard default is 500000"/>
+    <param name="quietOn" value="false" type="boolean" label="Quiet - suppress job summary info on Sytem.err"
+     truevalue="true" falsevalue="false" checked="yes"  
+     help="Check to turn Quiet on (true); uncheck to turn it off (false) - OHSU default."/>
+    <param name="sortOrder" value="coordinate" type="text"
+     label="Sort Order" help="Sort Order"/>
+  </inputs>
+  <outputs>
+    <data format="bam" name="out_file" label="${tool.name} on ${on_string}: Sorted BAM"/>
+    <data format="html" name="html_file" label="${tool.name} on ${on_string}.html"/>
+  </outputs>
+  <tests>
+    <test>
+    </test>
+  </tests>
+  
+  <help>
+
+.. class:: infomark
+
+**Purpose**
+
+Sorts the input SAM or BAM
+Input and output formats are determined by file extension.
+Version: 1.110(1752)
+
+**Picard documentation**
+
+This is a Galaxy wrapper for SortSam, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+-----
+
+.. class:: infomark
+
+**Inputs, outputs, and parameters**
+
+Picard documentation says (reformatted for Galaxy):
+
+Options:
+
+--help
+-h                            Displays options specific to this tool.
+
+--stdhelp
+-H                            Displays options specific to this tool AND options common to all Picard command line
+                              tools.
+
+--version                     Displays program version.
+
+INPUT=File
+I=File                        The BAM or SAM file to sort.  Required.
+
+OUTPUT=File
+O=File                        The sorted BAM or SAM output file.   Required.
+
+SORT_ORDER=SortOrder
+SO=SortOrder                  Sort order of output file  Required. Possible values: {unsorted, queryname, coordinate}
+
+  </help>
+</tool>
+
+
+
+
+
+
+
+
+
+
+
+
