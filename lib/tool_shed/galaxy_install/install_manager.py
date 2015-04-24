@@ -1026,6 +1026,6 @@ def fetch_tool_versions( app, tool_shed_repository ):
             failed_to_fetch = True
     except Exception:
         failed_to_fetch = True
-    if failed_to_fetch:
         log.exception("Failed to fetch tool shed repository verion information.")
+    if failed_to_fetch:
         return FAILED_TO_FETCH_VERSIONS
