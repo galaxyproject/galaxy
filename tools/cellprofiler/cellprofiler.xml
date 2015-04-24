@@ -1,0 +1,50 @@
+<tool id="cellprofiler" name="CellProfiler Pipeline" version="1.0.0">
+    <description>Analyze images using OHSU CellProfiler Pipelines</description>
+    <command interpreter="python">
+        runcp.py
+        -p $cp_pipe 
+	#for $i, $input_file in enumerate( $input_images ):
+	  -i ${input_file.input_file}
+	  -n ${input_file.input_file.name}
+	#end for
+	-o $output
+    </command>
+    <inputs>
+    	<repeat name="input_images" title="Input Image(s)" min="1" help="input images will be symbolically linked into a folder">
+    	<param format="tiff,png" name="input_file" type="data" label="TIFF/PNG dataset to analyze" help="If empty, upload or import TIFF/PNG images"/>
+    	</repeat>
+        <param name="cp_pipe" type="select" label="Select CP Pipeline">
+            <option value="bcc">Brenden Colson Center</option>
+            <option value="corl">Corless Pipeline</option>
+            <option value="gray">Gray Lab</option>
+            <option value="yant">Yantasee Lab - IF</option>
+	    <option value="yant2">Yantasee Lab - Blood Vessel</option>
+            <option value="taka">Tsujikawa Lab</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data format="tabular" name="output">
+            <discover_datasets pattern="*" ext="csv" directory="output" visible="true" />
+        </data>
+    </outputs>
+    <help>
+.. class:: infomark
+        
+**CellProfiler Pipeline**
+
+This tool will run one of the 6 cellprofiler pipeline's aqcuired from OHSU.
+
+*Brenden Colson Center*: Evaluate # of nuclei appearing within enlarged ducts.
+
+*Gray Lab*: 		High Throughput Imaging
+
+*Corless Lab*: 		Tumor Prevalence Estimation
+
+*Yantasee Lab*: 	Compares Her2+ Cells vs Total Cells
+
+*Yantasee Lab*:		Quantify percentage of image occupied by blood vessels		
+
+*Tsujikawa Lab*: 	Provides flow cytometry data for aligned images; Differentiates immune cells against cancer cells
+
+    </help>
+</tool>
