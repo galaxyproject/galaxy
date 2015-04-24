@@ -98,7 +98,7 @@ class ServesTemplatesPluginMixin( object ):
 class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, ServesTemplatesPluginMixin ):
     """
     """
-    INTENV_REQUEST_FACTORY = interactive_environments.InteractiveEnviornmentRequest
+    # AKA: MakoVisualizationPlugin
 
     def __init__( self, app, path, name, config, context=None, **kwargs ):
         super( VisualizationPlugin, self ).__init__( app, path, name, config, context=None, **kwargs )
@@ -189,21 +189,6 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
 
     # ---------------- getting resources for visualization templates from link query strings
     def _fill_template( self, trans, **kwargs ):
-        # No longer needed but being left around for a few releases as ipython-galaxy
-        # as an external visualization plugin is deprecated in favor of core interactive
-        # environment plugin.
-        if 'get_api_key' not in kwargs:
-            def get_api_key():
-                return api_keys.ApiKeyManager( trans.app ).get_or_create_api_key( trans.user )
-            kwargs[ 'get_api_key' ] = get_api_key
-
-        if 'plugin_path' not in kwargs:
-            kwargs[ 'plugin_path' ] = os.path.abspath( self.path )
-
-        if self.config.get( 'plugin_type', 'visualization' ) == "interactive_environment":
-            request = self.INTENV_REQUEST_FACTORY( trans, self )
-            kwargs[ "ie_request" ] = request
-
         template_filename = self.config[ 'entry_point' ][ 'file' ]
         return trans.fill_template( template_filename, template_lookup=self.template_lookup, **kwargs )
 
@@ -236,3 +221,83 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
         param_confs = self.config.get( 'params', {} )
         config = self.resource_parser.parse_config( trans, controller, param_confs, query_dict )
         return config
+
+
+# =============================================================================
+class InteractiveEnvironmentPlugin( VisualizationPlugin ):
+    """
+    Serves web-based REPLs such as IPython and RStudio.
+    """
+    INTENV_REQUEST_FACTORY = interactive_environments.InteractiveEnviornmentRequest
+
+    def _fill_template( self, trans, **kwargs ):
+        # No longer needed but being left around for a few releases as ipython-galaxy
+        # as an external visualization plugin is deprecated in favor of core interactive
+        # environment plugin.
+        if 'get_api_key' not in kwargs:
+            def get_api_key():
+                return api_keys.ApiKeyManager( trans.app ).get_or_create_api_key( trans.user )
+            kwargs[ 'get_api_key' ] = get_api_key
+
+        if 'plugin_path' not in kwargs:
+            kwargs[ 'plugin_path' ] = os.path.abspath( self.path )
+
+        if self.config.get( 'plugin_type', 'visualization' ) == "interactive_environment":
+            request = self.INTENV_REQUEST_FACTORY( trans, self )
+            kwargs[ "ie_request" ] = request
+
+        template_filename = self.config[ 'entry_point' ][ 'file' ]
+        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **kwargs )
+
+
+# =============================================================================
+class ScriptVisualizationPlugin( VisualizationPlugin ):
+    """
+    A visualization plugin that starts by loading a single (js) script.
+
+    The script is loaded into a pre-defined mako template:
+        `config/plugins/visualizations/common/templates/script_entry_point.mako`
+    """
+    MAKO_TEMPLATE = 'script_entry_point.mako'
+
+    def _set_up_template_plugin( self, template_cache_dir, additional_template_paths=None, **kwargs ):
+        """
+        Override to build template lookup despite not having a `template/` directory.
+        """
+        self.serves_templates = True
+        self.template_path = self._build_template_path()
+        self.template_lookup = self._build_template_lookup( template_cache_dir,
+            additional_template_paths=additional_template_paths )
+        return self.serves_templates
+
+    def _fill_template( self, trans, **kwargs ):
+        """
+        Return the script entry point mako rendering with the script attributes sent in.
+        """
+        template_filename = os.path.join( self.MAKO_TEMPLATE )
+        kwargs.update({
+            "script_tag_attributes" : self.config[ 'entry_point' ][ 'attr' ]
+        })
+        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **kwargs )
+
+
+# =============================================================================
+class StaticFileVisualizationPlugin( VisualizationPlugin ):
+    """
+    A visualiztion plugin that starts by loading a static html file defined
+    in the visualization's config file.
+    """
+    def _fill_template( self, trans, **kwargs ):
+        static_file_path = self.config[ 'entry_point' ][ 'file' ]
+        static_file_path = os.path.join( self.path, static_file_path )
+        with open( static_file_path, 'r' ) as outfile:
+            return outfile.read()
+
+
+# # =============================================================================
+# class PyGeneratedVisualizationPlugin( VisualizationPlugin ):
+#     """
+#     Selectively import one module and call a specified fn within it to generate the
+#     HTML served.
+#     """
+#     pass

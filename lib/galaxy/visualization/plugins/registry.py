@@ -89,14 +89,29 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         # config file is required, otherwise skip this visualization
         if not config:
             return None
-# TODO: plugin class from config
-        plugin = vis_plugins.VisualizationPlugin( self.app(), plugin_path, plugin_name, config, context=dict(
+        plugin = self._build_plugin( plugin_name, plugin_path, config )
+        return plugin
+
+    def _build_plugin( self, plugin_name, plugin_path, config ):
+        # TODO: as builder not factory
+
+        # default class
+        plugin_class = vis_plugins.VisualizationPlugin
+        # ipython, etc
+        if config[ 'plugin_type' ] == 'interactive_environment':
+            plugin_class = vis_plugins.InteractiveEnvironmentPlugin
+        # js only
+        elif config[ 'entry_point' ][ 'type' ] == 'script':
+            plugin_class = vis_plugins.ScriptVisualizationPlugin
+        # from a static file (html, etc)
+        elif config[ 'entry_point' ][ 'type' ] == 'html':
+            plugin_class = vis_plugins.StaticFileVisualizationPlugin
+
+        plugin = plugin_class( self.app(), plugin_path, plugin_name, config, context=dict(
             base_url=self.base_url,
             template_cache_dir=self.template_cache_dir,
             additional_template_paths=self.additional_template_paths
         ))
-        # plugin = self._set_up_static_plugin( plugin )
-        # plugin = self._set_up_template_plugin( plugin )
         return plugin
 
     # -- building links to visualizations from objects --

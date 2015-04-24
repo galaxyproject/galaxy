@@ -36,7 +36,7 @@
 <%def name="get_body()"></%def>
 
 ## Default title
-<%def name="title()">${visualization_name}</%def>
+<%def name="title()">${ visualization_display_name + ' | Galaxy' }</%def>
 
 ## Additional metas can be defined by templates inheriting from this one.
 <%def name="metas()"></%def>
