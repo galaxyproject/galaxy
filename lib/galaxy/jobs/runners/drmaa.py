@@ -25,7 +25,7 @@ __all__ = [ 'DRMAAJobRunner' ]
 drmaa = None
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
-                                 'jobName', 'email', 'project' ]
+                                 'workingDirectory', 'jobName', 'email', 'project' ]
 
 
 class DRMAAJobRunner( AsynchronousJobRunner ):
@@ -134,6 +134,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         jt = self.ds.createJobTemplate()
         jt.remoteCommand = ajs.job_file
         jt.jobName = ajs.job_name
+        jt.workingDirectory = job_wrapper.working_directory
         jt.outputPath = ":%s" % ajs.output_file
         jt.errorPath = ":%s" % ajs.error_file
 
