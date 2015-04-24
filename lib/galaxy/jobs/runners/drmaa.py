@@ -358,7 +358,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             except:
                 pass
         s = json.dumps(data)
-        f = open(filename,'w')
+        f = open(filename,'w+')
         f.write(s)
         f.close()
         log.debug( '(%s) Job script for external submission is: %s' % ( job_wrapper.job_id, filename ) )
