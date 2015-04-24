@@ -30,7 +30,6 @@
     </body>
 </html>
 </%def>
-##TODO: late_javascripts
 
 ## Default title
 <%def name="title()">${ visualization_display_name + ' | Galaxy' }</%def>
@@ -49,6 +48,7 @@ ${h.js(
     "libs/jquery/jquery",
     "libs/jquery/jquery.migrate"
 )}
+## connect to Galaxy here
 
 <script type="text/javascript">
     // console protection
@@ -64,4 +64,14 @@ ${h.js(
 </%def>
 
 ## Default body
-<%def name="get_body()"></%def>
+<%def name="get_body()">
+    ${self.late_javascripts()}
+</%def>
+
+## Default javascripts
+<%def name="late_javascripts()">
+${h.js(
+    "libs/jquery/jquery",
+    "libs/jquery/jquery.migrate"
+)}
+</%def>
