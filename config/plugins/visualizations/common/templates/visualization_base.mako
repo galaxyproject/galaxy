@@ -32,9 +32,6 @@
 </%def>
 ##TODO: late_javascripts
 
-## Default body
-<%def name="get_body()"></%def>
-
 ## Default title
 <%def name="title()">${ visualization_display_name + ' | Galaxy' }</%def>
 
@@ -65,3 +62,6 @@ ${h.js(
     };
 </script>
 </%def>
+
+## Default body
+<%def name="get_body()"></%def>
