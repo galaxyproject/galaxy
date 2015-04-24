@@ -53,6 +53,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
         # shed_tool_conf.xml file.
         self._dynamic_tool_confs = []
         self._tools_by_id = {}
+        self._integrated_section_by_tool = {}
         # Tool lineages can contain chains of related tools with different ids
         # so each will be present once in the above dictionary. The following
         # dictionary can instead hold multiple tools with different versions.
@@ -217,19 +218,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
 
     def get_integrated_section_for_tool( self, tool ):
         tool_id = tool.id
-        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
-            if item:
-                if item_type == panel_item_types.TOOL:
-                    if item.id == tool_id:
-                        return '', ''
-                if item_type == panel_item_types.SECTION:
-                    section_id = item.id or ''
-                    section_name = item.name or ''
-                    for section_key, section_item_type, section_item in item.panel_items_iter():
-                        if section_item_type == panel_item_types.TOOL:
-                            if section_item:
-                                if section_item.id == tool_id:
-                                    return section_id, section_name
+
+        if tool_id in self._integrated_section_by_tool:
+            return self._integrated_section_by_tool[tool_id]
+
         return None, None
 
     def __resolve_tool_path(self, tool_path, config_filename):
@@ -310,6 +302,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                 tool_id = key.replace( 'tool_', '', 1 )
                 if tool_id in self._tools_by_id:
                     self.__add_tool_to_tool_panel( val, self._tool_panel, section=False )
+                    self._integrated_section_by_tool[tool_id] = '', ''
             elif item_type == panel_item_types.WORKFLOW:
                 workflow_id = key.replace( 'workflow_', '', 1 )
                 if workflow_id in self._workflows_by_id:
@@ -331,6 +324,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                         tool_id = section_key.replace( 'tool_', '', 1 )
                         if tool_id in self._tools_by_id:
                             self.__add_tool_to_tool_panel( section_val, section, section=True )
+                            self._integrated_section_by_tool[tool_id] = key, val.name
                     elif section_item_type == panel_item_types.WORKFLOW:
                         workflow_id = section_key.replace( 'workflow_', '', 1 )
                         if workflow_id in self._workflows_by_id:
@@ -560,6 +554,9 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                 itegrated_items = integrated_has_elems.panel_items()
                 if tool_key in itegrated_items:
                     del itegrated_items[ tool_key ]
+
+                if tool_id in self._integrated_section_by_tool:
+                    del self._integrated_section_by_tool[ tool_id ]
 
         if section_key:
             _, tool_section = self.get_section( section_key )
@@ -934,6 +931,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                             break
                 if tool_id in self.data_manager_tools:
                     del self.data_manager_tools[ tool_id ]
+
+                if tool_id in self._integrated_section_by_tool:
+                    del self._integrated_section_by_tool[ tool_id ]
+
             # TODO: do we need to manually remove from the integrated panel here?
             message = "Removed the tool:<br/>"
             message += "<b>name:</b> %s<br/>" % tool.name
