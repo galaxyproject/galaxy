@@ -1,3 +1,8 @@
+"""
+Visualization plugins: instantiate/deserialize data and models
+from a query string and render a webpage based on those data.
+"""
+
 import os
 
 import pkg_resources
@@ -12,17 +17,26 @@ from galaxy.web.base import interactive_environments
 from galaxy.visualization.plugins import resource_parser
 from galaxy.visualization.plugins import utils
 
-
 import logging
 log = logging.getLogger( __name__ )
 
 
 # =============================================================================
+# TODO:
+# move mixins to facade'd objects
+# allow config to override static/template settings
+# allow config detection in alternate places: galaxy-visualization.xml
+# =============================================================================
 class ServesStaticPluginMixin( object ):
+    """
+    An object that serves static files from the server.
+    """
 
     def _set_up_static_plugin( self, **kwargs ):
         """
+        Detect and set up static paths and urls if needed.
         """
+        # TODO: allow config override
         self.serves_static = False
         if self._is_static_plugin():
             self.static_path = self._build_static_path()
@@ -32,6 +46,7 @@ class ServesStaticPluginMixin( object ):
 
     def _is_static_plugin( self ):
         """
+        Detect whether this plugin should serve static resources.
         """
         return os.path.isdir( self._build_static_path() )
 
@@ -44,6 +59,9 @@ class ServesStaticPluginMixin( object ):
 
 # =============================================================================
 class ServesTemplatesPluginMixin( object ):
+    """
+    An object that renders (mako) template files from the server.
+    """
 
     #: default number of templates to search for plugin template lookup
     DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
@@ -52,6 +70,7 @@ class ServesTemplatesPluginMixin( object ):
 
     def _set_up_template_plugin( self, template_cache_dir, additional_template_paths=None, **kwargs ):
         """
+        Detect and set up template paths if the plugin serves templates.
         """
         self.serves_templates = False
         if self._is_template_plugin():
@@ -70,6 +89,7 @@ class ServesTemplatesPluginMixin( object ):
     def _build_template_lookup( self, template_cache_dir, additional_template_paths=None,
             collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING ):
         """
+        Build a mako template filename lookup for the plugin.
         """
         template_lookup_paths = self.template_path
         if additional_template_paths:
@@ -97,8 +117,11 @@ class ServesTemplatesPluginMixin( object ):
 # =============================================================================
 class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, ServesTemplatesPluginMixin ):
     """
+    A plugin that instantiates resources, serves static files, and uses mako
+    templates to render web pages.
     """
     # AKA: MakoVisualizationPlugin
+    # config[ 'entry_point' ][ 'type' ] == 'mako'
 
     def __init__( self, app, path, name, config, context=None, **kwargs ):
         super( VisualizationPlugin, self ).__init__( app, path, name, config, context=None, **kwargs )
@@ -114,19 +137,21 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
         additional_template_paths = context.get( 'additional_template_paths', [] )
         self._set_up_template_plugin( template_cache_dir, additional_template_paths=additional_template_paths )
 
-        self.resource_parser = resource_parser.ResourceParser()
+        self.resource_parser = resource_parser.ResourceParser( app )
 
-    def render( self, controller=None, trans=None, visualization=None, config=None, embedded=None, **kwargs ):
+    def render( self, trans=None, visualization=None, config=None, embedded=None, **kwargs ):
+        """
+        Return the text of the rendered plugin webpage/fragment.
+        """
         if visualization:
-            return self._render_saved( visualization, config,
-                controller=controller, trans=trans, embedded=embedded, **kwargs )
+            return self._render_saved( visualization, config, trans=trans, embedded=embedded, **kwargs )
 
         # get the config for passing to the template from the kwargs dict, parsed using the plugin's params setting
-        config_from_kwargs = self._query_dict_to_config( trans, controller, kwargs )
+        config_from_kwargs = self._query_dict_to_config( trans, kwargs )
         config = utils.OpenObject( **config_from_kwargs )
 
         # further parse config to resources (models, etc.) used in template based on registry config
-        resources = self._query_dict_to_resources( trans, controller, config )
+        resources = self._query_dict_to_resources( trans, config )
 
         # if a saved visualization, pass in the encoded visualization id or None if a new render
         encoded_visualization_id = None
@@ -153,16 +178,19 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
             **resources
         )
 
-    def _render_saved( self, visualization, config, controller=None, trans=None, embedded=None, **kwargs ):
+    def _render_saved( self, visualization, config, trans=None, embedded=None, **kwargs ):
+        """
+        Return the text of the saved visualization.
+        """
         config = config or {}
 
         # get the config for passing to the template from the kwargs dict, parsed using the plugin's params setting
-        config_from_kwargs = self._query_dict_to_config( trans, controller, kwargs )
+        config_from_kwargs = self._query_dict_to_config( trans, kwargs )
         config.update( config_from_kwargs )
         config = utils.OpenObject( **config )
 
         # further parse config to resources (models, etc.) used in template based on registry config
-        resources = self._query_dict_to_resources( trans, controller, config )
+        resources = self._query_dict_to_resources( trans, config )
 
         # if a saved visualization, pass in the encoded visualization id or None if a new render
         encoded_visualization_id = trans.security.encode_id( visualization.id )
@@ -202,24 +230,24 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
         param_modifiers = self.config.get( 'param_modifiers', {} )
         return ( expected_params, param_modifiers )
 
-    def _query_dict_to_resources( self, trans, controller, query_dict ):
+    def _query_dict_to_resources( self, trans, query_dict ):
         """
-        Use a resource parser, controller, and a visualization's param configuration
+        Use a resource parser and a visualization's param configuration
         to convert a query string into the resources and variables a visualization
         template needs to start up.
         """
         param_confs, param_modifiers = self._get_resource_params_and_modifiers()
         resources = self.resource_parser.parse_parameter_dictionary(
-            trans, controller, param_confs, query_dict, param_modifiers )
+            trans, param_confs, query_dict, param_modifiers )
         return resources
 
-    def _query_dict_to_config( self, trans, controller, query_dict ):
+    def _query_dict_to_config( self, trans, query_dict ):
         """
         Given a query string dict (i.e. kwargs) from a controller action, parse
         and return any key/value pairs found in the plugin's `params` section.
         """
         param_confs = self.config.get( 'params', {} )
-        config = self.resource_parser.parse_config( trans, controller, param_confs, query_dict )
+        config = self.resource_parser.parse_config( trans, param_confs, query_dict )
         return config
 
 
@@ -260,15 +288,12 @@ class ScriptVisualizationPlugin( VisualizationPlugin ):
     """
     MAKO_TEMPLATE = 'script_entry_point.mako'
 
-    def _set_up_template_plugin( self, template_cache_dir, additional_template_paths=None, **kwargs ):
+    def _is_template_plugin( self ):
         """
-        Override to build template lookup despite not having a `template/` directory.
+        Override to always yield true since this plugin type always uses the
+        pre-determined mako template.
         """
-        self.serves_templates = True
-        self.template_path = self._build_template_path()
-        self.template_lookup = self._build_template_lookup( template_cache_dir,
-            additional_template_paths=additional_template_paths )
-        return self.serves_templates
+        return True
 
     def _fill_template( self, trans, **kwargs ):
         """
@@ -287,6 +312,7 @@ class StaticFileVisualizationPlugin( VisualizationPlugin ):
     A visualiztion plugin that starts by loading a static html file defined
     in the visualization's config file.
     """
+    # TODO: should do render here since most of the calc done there is unneeded in this case
     def _fill_template( self, trans, **kwargs ):
         static_file_path = self.config[ 'entry_point' ][ 'file' ]
         static_file_path = os.path.join( self.path, static_file_path )

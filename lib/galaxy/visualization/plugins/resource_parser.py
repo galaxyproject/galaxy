@@ -1,4 +1,14 @@
+"""
+Deserialize Galaxy resources (hdas, ldas, datasets, genomes, etc.) from
+a dictionary of string data/ids (often from a query string).
+"""
+import weakref
+
+import galaxy.exceptions
 import galaxy.util
+from galaxy.util import bunch
+from galaxy.managers import visualizations as visualization_manager
+from galaxy.managers import hdas as hda_manager
 
 import logging
 log = logging.getLogger( __name__ )
@@ -25,12 +35,17 @@ class ResourceParser( object ):
             galaxy.util.sanitize_html.sanitize_html( param ) ) ),
     }
 
-    # TODO: kinda torn as to whether this belongs here or in controllers.visualization
-    #   taking the (questionable) design path of passing a controller in
-    #       (which is the responsible party for getting model, etc. resources )
-    # consider making this a base controller? use get_object for the model resources
-    #   don't like passing in the app, tho
-    def parse_parameter_dictionary( self, trans, controller, param_config_dict, query_params, param_modifiers=None ):
+    def __init__( self, app, *args, **kwargs ):
+        self.app = weakref.ref( app )
+        self.managers = self._init_managers( app )
+
+    def _init_managers( self, app ):
+        return bunch.Bunch(
+            visualization=visualization_manager.VisualizationManager( app ),
+            hda=hda_manager.HDAManager( app )
+        )
+
+    def parse_parameter_dictionary( self, trans, param_config_dict, query_params, param_modifiers=None ):
         """
         Parse all expected params from the query dictionary `query_params`.
 
@@ -41,7 +56,7 @@ class ResourceParser( object ):
         # parse the modifiers first since they modify the params coming next
         # TODO: this is all really for hda_ldda - which we could replace with model polymorphism
         params_that_modify_other_params = self.parse_parameter_modifiers(
-            trans, controller, param_modifiers, query_params )
+            trans, param_modifiers, query_params )
 
         resources = {}
         for param_name, param_config in param_config_dict.items():
@@ -55,7 +70,7 @@ class ResourceParser( object ):
             if query_val is not None:
                 try:
                     target_param_modifiers = params_that_modify_other_params.get( param_name, None )
-                    resource = self.parse_parameter( trans, controller, param_config,
+                    resource = self.parse_parameter( trans, param_config,
                         query_val, param_modifiers=target_param_modifiers )
 
                 except Exception, exception:
@@ -71,13 +86,13 @@ class ResourceParser( object ):
             if resource is None:
                 if param_config[ 'required' ]:
                     raise KeyError( 'required param %s not found in URL' % ( param_name ) )
-                resource = self.parse_parameter_default( trans, controller, param_config )
+                resource = self.parse_parameter_default( trans, param_config )
 
             resources[ var_name_in_template ] = resource
 
         return resources
 
-    def parse_config( self, trans, controller, param_config_dict, query_params ):
+    def parse_config( self, trans, param_config_dict, query_params ):
         """
         Return `query_params` dict parsing only JSON serializable params.
         Complex params such as models, etc. are left as the original query value.
@@ -90,7 +105,7 @@ class ResourceParser( object ):
             config_val = query_params.get( param_name, None )
             if config_val is not None and param_config[ 'type' ] in self.primitive_parsers:
                 try:
-                    config_val = self.parse_parameter( trans, controller, param_config, config_val )
+                    config_val = self.parse_parameter( trans, param_config, config_val )
 
                 except Exception, exception:
                     log.warn( 'Exception parsing visualization param from query: '
@@ -102,14 +117,14 @@ class ResourceParser( object ):
             if config_val is None:
                 if param_config.get( 'default', None ) is None:
                     continue
-                config_val = self.parse_parameter_default( trans, controller, param_config )
+                config_val = self.parse_parameter_default( trans, param_config )
 
             config[ param_name ] = config_val
 
         return config
 
     # TODO: I would LOVE to rip modifiers out completely
-    def parse_parameter_modifiers( self, trans, controller, param_modifiers, query_params ):
+    def parse_parameter_modifiers( self, trans, param_modifiers, query_params ):
         """
         Parse and return parameters that are meant to modify other parameters,
         be grouped with them, or are needed to successfully parse other parameters.
@@ -127,15 +142,15 @@ class ResourceParser( object ):
             for modifier_name, modifier_config in modifier_dict.items():
                 query_val = query_params.get( modifier_name, None )
                 if query_val is not None:
-                    modifier = self.parse_parameter( trans, controller, modifier_config, query_val )
+                    modifier = self.parse_parameter( trans, modifier_config, query_val )
                     target_modifiers[ modifier_name ] = modifier
                 else:
                     # TODO: required attr?
-                    target_modifiers[ modifier_name ] = self.parse_parameter_default( trans, controller, modifier_config )
+                    target_modifiers[ modifier_name ] = self.parse_parameter_default( trans, modifier_config )
 
         return parsed_modifiers
 
-    def parse_parameter_default( self, trans, controller, param_config ):
+    def parse_parameter_default( self, trans, param_config ):
         """
         Parse any default values for the given param, defaulting the default
         to `None`.
@@ -148,17 +163,13 @@ class ResourceParser( object ):
         # otherwise, parse (currently param_config['default'] is a string just like query param and needs to be parsed)
         #   this saves us the trouble of parsing the default when the config file is read
         #   (and adding this code to the xml parser)
-        return self.parse_parameter( trans, controller, param_config, default )
+        return self.parse_parameter( trans, param_config, default )
 
-    def parse_parameter( self, trans, controller, expected_param_data, query_param,
+    def parse_parameter( self, trans, expected_param_data, query_param,
                          recurse=True, param_modifiers=None ):
         """
         Use data in `expected_param_data` to parse `query_param` from a string into
         a resource usable directly by a template.
-
-        'Primitive' types (string, int, etc.) are parsed here and more complex
-        resources (such as ORM models) are parsed via the `controller` passed
-        in.
         """
         param_type = expected_param_data.get( 'type' )
         # constrain_to = expected_param_data.get( 'constrain_to' )
@@ -181,23 +192,24 @@ class ResourceParser( object ):
         # TODO: constrain_to: this gets complicated - remove?
 
         # db models
-        # TODO: subclass here?
         elif param_type == 'visualization':
-            encoded_visualization_id = query_param
-            # log.debug( 'visualization param, id : %s', encoded_visualization_id )
-            # TODO:?? some fallback if there's no get_X in controller that's passed?
-            parsed_param = controller.get_visualization( trans, encoded_visualization_id,
-                check_ownership=False, check_accessible=True )
+            # ?: is this even used anymore/anywhere?
+            decoded_visualization_id = self._decode_id( query_param )
+            parsed_param = self.managers.visualization.get_accessible( decoded_visualization_id, trans.user )
 
         elif param_type == 'dataset':
-            decoded_dataset_id = trans.security.decode_id( query_param )
-            parsed_param = controller.hda_manager.get_accessible( decoded_dataset_id, trans.user )
+            decoded_dataset_id = self._decode_id( query_param )
+            parsed_param = self.managers.hda.get_accessible( decoded_dataset_id, trans.user )
 
         elif param_type == 'hda_or_ldda':
             encoded_dataset_id = query_param
             # needs info from another param...
             hda_ldda = param_modifiers.get( 'hda_ldda' )
-            parsed_param = controller.get_hda_or_ldda( trans, hda_ldda, encoded_dataset_id )
+            if hda_ldda == 'hda':
+                decoded_dataset_id = self._decode_id( encoded_dataset_id )
+                parsed_param = self.managers.hda.get_accessible( decoded_dataset_id, trans.user )
+            else:
+                parsed_param = self.managers.ldda.get( trans, encoded_dataset_id )
 
         # TODO: ideally this would check v. a list of valid dbkeys
         elif param_type == 'dbkey':
@@ -205,3 +217,12 @@ class ResourceParser( object ):
             parsed_param = galaxy.util.sanitize_html.sanitize_html( dbkey, 'utf-8' )
 
         return parsed_param
+
+    def _decode_id( self, id ):
+        try:
+            return self.app().security.decode_id( str( id ) )
+        except ( ValueError, TypeError ):
+            raise galaxy.exceptions.MalformedId(
+                "Malformed id ( %s ) specified, unable to decode" % ( str( id ) ),
+                id=str( id )
+            )
