@@ -194,10 +194,14 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 return
         else:
             job_wrapper.change_ownership_for_run()
-            log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )
+            # if user credentials are not available, use galaxy credentials
+            pwent = job_wrapper.user_system_pwent
+            if pwent is None:
+                pwent = job_wrapper.galaxy_system_pwent
+            log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, pwent[0], pwent[2] ) )
             filename = self.store_jobtemplate(job_wrapper, jt)
-            self.userid =  job_wrapper.user_system_pwent[2]
-            external_job_id = self.external_runjob(filename, job_wrapper.user_system_pwent[2]).strip()
+            self.userid =  pwent[2]
+            external_job_id = self.external_runjob(filename, pwent[2]).strip()
         log.info( "(%s) queued as %s" % ( galaxy_id_tag, external_job_id ) )
 
         # store runner information for tracking if Galaxy restarts
