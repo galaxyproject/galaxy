@@ -159,16 +159,16 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_base_url(self):
         param = self._parameter_for(xml="""
-            <param name="urlp" type="baseurl" value="http://twitter.com/" />
+            <param name="urlp" type="baseurl" value="history/list" />
         """)
         assert param.name == "urlp"
         assert param.type == "baseurl"
-        assert param.value == "http://twitter.com/"
+        assert param.value == "history/list"
 
         param = self._parameter_for(xml="""
             <param name="urlp" type="baseurl" />
         """)
-        assert param.value == ""
+        assert param.value is None
 
     def test_select_static(self):
         param = self._parameter_for(xml="""
