@@ -676,36 +676,19 @@ class ColorToolParameter( ToolParameter ):
 ## it for now to avoid breaking any tools.
 
 
-class BaseURLToolParameter( ToolParameter ):
+class BaseURLToolParameter( HiddenToolParameter ):
     """
     Returns a parameter the contains its value prepended by the
     current server base url. Used in all redirects.
     """
-
-    def __init__( self, tool, input_source ):
-        input_source = ensure_input_source( input_source )
-        ToolParameter.__init__( self, tool, input_source )
-        self.value = input_source.get( 'value', '' )
-
-    def get_value( self, trans ):
-        # url = trans.request.base + self.value
-        url = url_for( self.value, qualified=True )
-        return url
-
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        return form_builder.HiddenField( self.name, self.get_value( trans ) )
-
     def get_initial_value( self, trans, context, history=None ):
+        self.url_for = url_for( '', qualified=True )
         return self.value
 
-    def get_label( self ):
-        # BaseURLToolParameters are ultimately "hidden" parameters
-        return None
-
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
-        d = super( BaseURLToolParameter, self ).to_dict( trans )
-        d['value'] = self.get_value( trans )
-        return d
+    def to_param_dict_string( self, value, other_values={} ):
+        if value is None:
+            value = ''
+        return '%s/%s' % (self.url_for, value)
 
 
 DEFAULT_VALUE_MAP = lambda x: x
