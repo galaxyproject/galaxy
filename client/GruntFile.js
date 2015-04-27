@@ -127,6 +127,16 @@ module.exports = function(grunt) {
 
     grunt.registerTask( 'default', [ 'uglify' ] );
 
+    // -------------------------------------------------------------------------- decompress for easier debugging
+    grunt.registerTask( 'decompress', function(){
+        grunt.log.writeln( "decompressing... (don't forget to call 'grunt' again before committing)" );
+        grunt.config( 'uglify.options', { beautify: true });
+        grunt.config( 'uglify.target.options', {});
+        grunt.task.run( 'uglify' );
+    });
+    // alias for symmetry
+    grunt.registerTask( 'compress', [ 'uglify' ] );
+
     // -------------------------------------------------------------------------- copy,pack only those changed
     // adapted from grunt-contrib-watch jslint example
     //TODO: a bit hacky and there's prob. a better way
