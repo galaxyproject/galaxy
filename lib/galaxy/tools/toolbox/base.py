@@ -546,17 +546,21 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                         has_elems.insert( tool_panel_index,
                                           replacement_tool_key,
                                           replacement_tool_version )
+                        self._integrated_section_by_tool[ tool_id ] = available_tool_section_id, available_tool_section_name
                     else:
                         del has_elems[ tool_key ]
+
+                        if tool_id in self._integrated_section_by_tool:
+                            del self._integrated_section_by_tool[ tool_id ]
                 else:
                     del has_elems[ tool_key ]
+
+                    if tool_id in self._integrated_section_by_tool:
+                        del self._integrated_section_by_tool[ tool_id ]
             if remove_from_config:
                 itegrated_items = integrated_has_elems.panel_items()
                 if tool_key in itegrated_items:
                     del itegrated_items[ tool_key ]
-
-                if tool_id in self._integrated_section_by_tool:
-                    del self._integrated_section_by_tool[ tool_id ]
 
         if section_key:
             _, tool_section = self.get_section( section_key )
@@ -678,6 +682,14 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                 index=sub_index,
                 internal=True,
             )
+
+        # Ensure each tool's section is stored
+        for section_key, section_item_type, section_item in integrated_elems.panel_items_iter():
+            if section_item_type == panel_item_types.TOOL:
+                if section_item:
+                    tool_id = section_key.replace( 'tool_', '', 1 )
+                    self._integrated_section_by_tool[tool_id] = integrated_section.id, integrated_section.name
+
         if load_panel_dict:
             self._tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
@@ -931,10 +943,6 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                             break
                 if tool_id in self.data_manager_tools:
                     del self.data_manager_tools[ tool_id ]
-
-                if tool_id in self._integrated_section_by_tool:
-                    del self._integrated_section_by_tool[ tool_id ]
-
             # TODO: do we need to manually remove from the integrated panel here?
             message = "Removed the tool:<br/>"
             message += "<b>name:</b> %s<br/>" % tool.name
