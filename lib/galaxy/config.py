@@ -123,6 +123,7 @@ class Configuration( object ):
         self.manage_dependency_relationships = string_as_bool( kwargs.get( 'manage_dependency_relationships', False ) )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
+        self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         if isinstance( self.hours_between_check, basestring ):
             self.hours_between_check = float( self.hours_between_check )
         try:
