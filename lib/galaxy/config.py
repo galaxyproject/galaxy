@@ -123,6 +123,7 @@ class Configuration( object ):
         self.manage_dependency_relationships = string_as_bool( kwargs.get( 'manage_dependency_relationships', False ) )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
+        self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         if isinstance( self.hours_between_check, basestring ):
             self.hours_between_check = float( self.hours_between_check )
         try:
@@ -231,7 +232,7 @@ class Configuration( object ):
         # be someday - the following two properties can also be used to force this
         # behavior in under conditions - namely for workflows that have a minimum
         # number of steps or that consume collections.
-        self.force_beta_workflow_scheduled_min_steps = int( kwargs.get( 'force_beta_workflow_scheduled_min_steps', '40' ) )
+        self.force_beta_workflow_scheduled_min_steps = int( kwargs.get( 'force_beta_workflow_scheduled_min_steps', '250' ) )
         self.force_beta_workflow_scheduled_for_collections = string_as_bool( kwargs.get( 'force_beta_workflow_scheduled_for_collections', 'False' ) )
 
         # Per-user Job concurrency limitations
