@@ -110,7 +110,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = VisualizationsRegistry( mock_app,
             directories_setting='plugins',
-            template_cache_dir='bler' )
+            template_cache_dir=template_cache_dir )
 
         expected_plugins_path = os.path.join( mock_app_dir.root_path, 'plugins' )
         expected_plugin_names = [ 'vis1', 'vis2' ]
@@ -176,7 +176,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = VisualizationsRegistry( mock_app,
             directories_setting='plugins',
-            template_cache_dir=mock_app_dir.root_path )
+            template_cache_dir=template_cache_dir )
 
         expected_plugins_path = os.path.join( mock_app_dir.root_path, 'plugins' )
         expected_plugin_names = [ 'ipython' ]
@@ -238,7 +238,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = VisualizationsRegistry( mock_app,
             directories_setting='plugins',
-            template_cache_dir='plugins' )
+            template_cache_dir=template_cache_dir )
         script_entry = plugin_mgr.plugins[ 'jstest' ]
 
         self.assertIsInstance( script_entry, plugin.ScriptVisualizationPlugin )
@@ -248,7 +248,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         self.assertEqual( script_entry.static_path, os.path.join( script_entry.path, 'static' ) )
 
         trans = galaxy_mock.MockTrans()
-        script_entry._set_up_template_plugin( 'plugins', [ addtional_templates_dir ] )
+        script_entry._set_up_template_plugin( mock_app_dir.root_path, [ addtional_templates_dir ] )
         response = script_entry._fill_template( trans, embedded=True )
         # print response
         self.assertTrue( '<script type="text/javascript" src="bler" data-main="one"></script>' in response )
