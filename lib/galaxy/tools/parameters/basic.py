@@ -683,12 +683,12 @@ class BaseURLToolParameter( HiddenToolParameter ):
     """
     def get_initial_value( self, trans, context, history=None ):
         self.url_for = url_for( '', qualified=True )
-        return self.value
+        return self.to_param_dict_string()
 
-    def to_param_dict_string( self, value, other_values={} ):
-        if value is None:
-            value = ''
-        return '%s/%s' % (self.url_for, value)
+    def to_param_dict_string( self, value=None, other_values={} ):
+        if self.value is None:
+            self.value = ''
+        return '%s/%s' % (self.url_for, self.value)
 
 
 DEFAULT_VALUE_MAP = lambda x: x
