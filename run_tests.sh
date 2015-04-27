@@ -217,6 +217,12 @@ do
           NOSE_WITH_COVERAGE=true
           shift
           ;;
+      -p|--pdb)
+          #TODO ipdb would be nicer.
+          NOSE_PDB=True
+          export NOSE_PDB
+          shift
+          ;;
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           test_script="./scripts/nosetests.py"
