@@ -2456,7 +2456,8 @@ class Tool( object, Dictifiable ):
                 elif input.type == 'conditional':
                     if 'test_param' in tool_dict:
                         test_param = tool_dict['test_param']
-                        test_param['value'] = jsonify(group_state.get(test_param['name'], None))
+                        test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values))
+                        test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
                         for i in range (len ( tool_dict['cases'] ) ):
                             current_state = {}
                             if i == group_state.get('__current_case__', None):

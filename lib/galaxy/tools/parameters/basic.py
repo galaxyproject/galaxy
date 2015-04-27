@@ -696,7 +696,7 @@ class BaseURLToolParameter( ToolParameter ):
         return form_builder.HiddenField( self.name, self.get_value( trans ) )
 
     def get_initial_value( self, trans, context, history=None ):
-        return self.value
+        return self.get_value( trans )
 
     def get_label( self ):
         # BaseURLToolParameters are ultimately "hidden" parameters
