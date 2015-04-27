@@ -39,7 +39,7 @@ Extra options:
 
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
- --pdb                 On python test error or failure invoke a pdb shell for interactive debugging of the test
+ --debug               On python test error or failure invoke a pdb shell for interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
  --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
@@ -218,7 +218,7 @@ do
           NOSE_WITH_COVERAGE=true
           shift
           ;;
-      -p|--pdb)
+      --debug)
           #TODO ipdb would be nicer.
           NOSE_PDB=True
           export NOSE_PDB
