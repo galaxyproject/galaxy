@@ -12,5 +12,6 @@
     <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true" />
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true" />
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM" />
+    <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bcf' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BCF" />
   </registration>
 </datatypes>

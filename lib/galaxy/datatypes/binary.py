@@ -471,7 +471,6 @@ class Bcf( Binary):
         # Remove temp file
         os.unlink( stderr_name )
 
-
 Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
 
 
