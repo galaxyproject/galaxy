@@ -1,0 +1,16 @@
+<tool id="metadata_bcf" name="metadata_BCF" version="1.0.0">
+    <command>file "${input_bcf.metadata.bcf_index}" &gt; "${output_of_input_metadata}"</command>
+    <inputs>
+      <param name="input_bcf" type="data" format="bcf" label="BCF File"/>
+    </inputs>
+    <outputs>
+      <data format="txt" name="output_of_input_metadata" />
+    </outputs>
+    <tests>
+      <test>
+        <param name="input_bcf" value="bcf_index_metadata_test.bcf" ftype="bcf" />
+        <!-- Tests whether the .bcf.csi file is of "gzip compressed data, extra field" type -->
+        <output name="output_of_input_metadata" ftype="txt" file="bcf_index_metadata_test.txt" compare="contains"/>
+      </test>
+    </tests>
+</tool>
