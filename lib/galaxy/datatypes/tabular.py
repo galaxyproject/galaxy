@@ -15,6 +15,7 @@ from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers, get_test_fname
 from galaxy.util.json import dumps
+import csv
 import dataproviders
 
 log = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ class Tabular( data.Text ):
 
     # All tabular data is chunkable.
     CHUNKABLE = True
+    delimiter = '\t'
 
     """Add metadata elements"""
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
@@ -57,6 +59,13 @@ class Tabular( data.Text ):
            Since metadata can now be processed on cluster nodes, we've merged the line count portion
            of the set_peek() processing here, and we now check the entire contents of the file.
         """
+        # Sniff delimiter from the dataset
+        try:
+            dialect = csv.Sniffer().sniff(open(dataset.file_name, 'r').read(1024))
+            self.delimiter = dialect.delimiter
+        except:
+            pass
+
         # Store original skip value to check with later
         requested_skip = skip
         if skip is None:
@@ -124,7 +133,7 @@ class Tabular( data.Text ):
                 else:
                     data_lines += 1
                     if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
-                        fields = line.split( '\t' )
+                        fields = line.split( self.delimiter )
                         for field_count, field in enumerate( fields ):
                             if field_count >= len( column_types ): #found a previously unknown column, we append None
                                 column_types.append( None )
@@ -244,7 +253,7 @@ class Tabular( data.Text ):
                 if line.startswith( tuple( skipchars ) ):
                     out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
                 elif line:
-                    elems = line.split( '\t' )
+                    elems = line.split( self.delimiter )
                     # we may have an invalid comment line or invalid data
                     if len( elems ) != columns:
                         out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
@@ -336,6 +345,7 @@ class Tabular( data.Text ):
     @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
     def column_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
+        settings['delimiter'] = self.delimiter
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.column.ColumnarDataProvider( dataset_source, **settings )
 
@@ -343,17 +353,20 @@ class Tabular( data.Text ):
                                                     dataproviders.column.ColumnarDataProvider.settings )
     def dataset_column_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
+        settings['delimiter'] = self.delimiter
         return dataproviders.dataset.DatasetColumnarDataProvider( dataset, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
     def dict_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
+        settings['delimiter'] = self.delimiter
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.column.DictDataProvider( dataset_source, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
     def dataset_dict_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
+        settings['delimiter'] = self.delimiter
         return dataproviders.dataset.DatasetDictDataProvider( dataset, **settings )
 
 
