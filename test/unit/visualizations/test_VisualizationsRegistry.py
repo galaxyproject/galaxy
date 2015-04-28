@@ -46,7 +46,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         mock_app = galaxy_mock.MockApp( root=glx_dir )
         plugin_mgr = VisualizationsRegistry( mock_app,
             directories_setting=vis_reg_path,
-            template_cache_dir=template_cache_dir )
+            template_cache_dir=None )
 
         expected_plugins_path = os.path.join( glx_dir, vis_reg_path )
         self.assertEqual( plugin_mgr.base_url, 'visualizations' )
@@ -138,6 +138,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         self.assertFalse( vis2.serves_templates )
 
         mock_app_dir.remove()
+        template_cache_dir
 
     def test_interactive_environ_plugin_load( self ):
         """
@@ -160,24 +161,32 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
             <template>ipython.mako</template>
         </interactive_environment>
         """ )
-        ipython_template = "${ ie_request }-${ get_api_key() }"
-        mock_app_dir = galaxy_mock.MockDir({
+
+        mock_app_dir = {
             'plugins'   : {
                 'ipython' : {
                     'config' : {
                         'ipython.xml' : ipython_config
                     },
-                    'templates' : {
-                        'ipython.mako': ipython_template
-                    }
+                    'templates' : {}
                 },
-            }
-        })
+            },
+        }
+
+        # going to use a fake template here to simplify testing
+        ipython_template = "${ ie_request }-${ get_api_key() }"
+        mock_app_dir[ 'plugins' ][ 'ipython' ][ 'templates' ][ 'ipython.mako' ] = ipython_template
+        # so that we don't create a cached version of that fake template in the real mako caches
+        #   we'll set up a cache in the temp dir
+        mock_app_dir[ 'caches' ] = {}
+        # and make sure the vis reg uses that
+        mock_app_dir = galaxy_mock.MockDir( mock_app_dir )
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = VisualizationsRegistry( mock_app,
             directories_setting='plugins',
-            template_cache_dir=template_cache_dir )
+            template_cache_dir=os.join( mock_app_dir.root_path, 'caches' ) )
 
+        # ...then start testing
         expected_plugins_path = os.path.join( mock_app_dir.root_path, 'plugins' )
         expected_plugin_names = [ 'ipython' ]
 
