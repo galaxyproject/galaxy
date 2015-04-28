@@ -137,7 +137,7 @@ class LocalJobRunner( BaseJobRunner ):
         try:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             assert pid not in [ None, '' ]
-        except:
+        except Exception:
             # metadata internal or job not complete yet
             pid = job.get_job_runner_external_id()
         if pid in [ None, '' ]:
