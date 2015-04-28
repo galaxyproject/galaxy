@@ -118,6 +118,7 @@ class Tabular( data.Text ):
         data_lines = 0
         comment_lines = 0
         column_types = []
+        column_names = ''
         first_line_column_types = [default_column_type] # default value is one column of type str
         if dataset.has_data():
             #NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
@@ -130,6 +131,9 @@ class Tabular( data.Text ):
                 if i < skip or not line or line.startswith( '#' ):
                     # We'll call blank lines comments
                     comment_lines += 1
+                    # Check if it resembles a header
+                    if line.startswith( '#' ) and csv.Sniffer().has_header( line[1:] ):
+                        column_names = line[1:]
                 else:
                     data_lines += 1
                     if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
@@ -181,6 +185,10 @@ class Tabular( data.Text ):
         dataset.metadata.comment_lines = comment_lines
         dataset.metadata.column_types = column_types
         dataset.metadata.columns = len( column_types )
+        # Try to unpack column names
+        column_names = [c.strip() for c in column_names.split(self.delimiter)]
+        if len(column_names) == dataset.metadata.columns:
+            dataset.metadata.column_names = column_names
     def make_html_table( self, dataset, **kwargs ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
