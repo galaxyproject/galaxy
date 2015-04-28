@@ -37,13 +37,13 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         'column_count'  : 'int',
         'column_types'  : 'list:str',
         'parse_columns' : 'bool',
-        'deliminator'   : 'str',
+        'delimiter'     : 'str',
         'filters'       : 'list:str'
     }
 
     def __init__( self, source, indeces=None,
             column_count=None, column_types=None, parsers=None, parse_columns=True,
-            deliminator='\t', filters=None, **kwargs ):
+            delimiter='\t', filters=None, **kwargs ):
         """
         :param indeces: a list of indeces of columns to gather from each row
             Optional: will default to `None`.
@@ -74,14 +74,13 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
             Optional: defaults to `True`.
         :type parse_columns: bool
 
-        :param deliminator: character(s) used to split each row/line of the source.
+        :param delimiter: character(s) used to split each row/line of the source.
             Optional: defaults to the tab character.
-        :type deliminator: str
+        :type delimiter: str
 
         .. note: that the subclass constructors are passed kwargs - so they're
         params (limit, offset, etc.) are also applicable here.
         """
-        #TODO: other columnar formats: csv, etc.
         super( ColumnarDataProvider, self ).__init__( source, **kwargs )
 
         #IMPLICIT: if no indeces, column_count, or column_types passed: return all columns
@@ -98,7 +97,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         if not self.selected_column_indeces and self.column_count:
             self.selected_column_indeces = list( xrange( self.column_count ) )
 
-        self.deliminator = deliminator
+        self.delimiter = delimiter
 
         # how/whether to parse each column value
         self.parsers = {}
@@ -256,7 +255,7 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
         :type line: str
         """
         #TODO: too much going on in this loop - the above should all be precomputed AMAP...
-        all_columns = line.split( self.deliminator )
+        all_columns = line.split( self.delimiter )
         # if no indeces were passed to init, return all columns
         selected_indeces = self.selected_column_indeces or list( xrange( len( all_columns ) ) )
         parsed_columns = []
