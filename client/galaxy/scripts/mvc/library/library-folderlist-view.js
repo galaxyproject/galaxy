@@ -55,6 +55,8 @@ var FolderListView = Backbone.View.extend({
         // start to listen if someone modifies the collection
         this.listenTo( this.collection, 'add', this.renderOne );
         this.listenTo( this.collection, 'remove', this.removeOne );
+        this.listenTo( this.collection, 'sort', this.rePaint );
+        this.listenTo( this.collection, 'reset', this.rePaint );
 
         this.fetchFolder();
     },
@@ -85,7 +87,7 @@ var FolderListView = Backbone.View.extend({
         });
     },
 
-    render: function ( options ){
+    render: function( options ){
         this.options = _.extend( this.options, options );
         var template = this.templateFolder();
         $(".tooltip").hide();
@@ -142,8 +144,14 @@ var FolderListView = Backbone.View.extend({
             items_to_render = [];
         }
         Galaxy.libraries.folderToolbarView.renderPaginator( this.options );
-        this.collection.reset();
-        this.addAll( items_to_render )
+        this.collection.reset( items_to_render );
+    },
+
+    rePaint: function( options ){
+        this.options = _.extend( this.options, options );
+        this.removeAllRows();
+        this.renderAll();
+        this.checkEmptiness();
     },
 
     /**
@@ -153,7 +161,7 @@ var FolderListView = Backbone.View.extend({
      */
     addAll: function( models ){
         _.each(models, function( model ) {
-            Galaxy.libraries.folderListView.collection.add( model );
+            Galaxy.libraries.folderListView.collection.add( model, { sort: false } );
         });
         $( "#center [data-toggle]" ).tooltip();
         this.checkEmptiness();
@@ -213,11 +221,18 @@ var FolderListView = Backbone.View.extend({
     },
 
     /**
-     * removes the view of the given model from the DOM
+     * Remove the view of the given model from the DOM.
      * @param {Item or FolderAsModel} model of the view that will be removed
      */
     removeOne: function( model ){
        this.$el.find( '#' + model.id ).remove();
+    },
+
+    /**
+     * Remove all dataset and folder row elements from the DOM.
+     */
+    removeAllRows: function(){
+        $('.library-row').remove();
     },
 
     /** Checks whether the list is empty and adds/removes the message */
@@ -239,9 +254,7 @@ var FolderListView = Backbone.View.extend({
             this.sortFolder('name','asc');
             this.sort = 'asc';
         }
-        this.render();
-        this.renderAll();
-        this.checkEmptiness();
+        this.renderSortIcon();
     },
 
     /**
@@ -324,6 +337,14 @@ var FolderListView = Backbone.View.extend({
         $row.find('.fa-file').removeClass('fa-file').addClass('fa-file-o');
     },
 
+    renderSortIcon: function(){
+        if (this.sort === 'asc'){
+            $('.sort-icon').removeClass('fa-sort-alpha-desc').addClass('fa-sort-alpha-asc');
+        } else {
+            $('.sort-icon').removeClass('fa-sort-alpha-asc').addClass('fa-sort-alpha-desc');
+        }
+    },
+
     templateFolder : function (){
         var tmpl_array = [];
 
@@ -344,7 +365,7 @@ var FolderListView = Backbone.View.extend({
         tmpl_array.push('   <thead>');
         tmpl_array.push('       <th class="button_heading"></th>');
         tmpl_array.push('       <th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>');
-        tmpl_array.push('       <th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
+        tmpl_array.push('       <th><a class="sort-folder-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon fa fa-sort-alpha-<%- order %>"></span></th>');
         tmpl_array.push('       <th style="width:5%;">data type</th>');
         tmpl_array.push('       <th style="width:10%;">size</th>');
         tmpl_array.push('       <th style="width:160px;">time updated (UTC)</th>');

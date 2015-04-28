@@ -16,6 +16,7 @@ from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from galaxy.util import asbool
 
 eggs.require( "drmaa" )
 
@@ -26,7 +27,7 @@ __all__ = [ 'DRMAAJobRunner' ]
 drmaa = None
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
-                                 'jobName', 'email', 'project' ]
+                                 'workingDirectory', 'jobName', 'email', 'project' ]
 
 class DRMAAJobRunner( AsynchronousJobRunner ):
     """
@@ -122,7 +123,8 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 	append_to_command = None;
 
         # prepare the job
-        if not self.prepare_job( job_wrapper, include_metadata=True, append_to_command=append_to_command ):
+        include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
+        if not self.prepare_job( job_wrapper, include_metadata=include_metadata, append_to_command=append_to_command ):
             return
 
         # get configured job destination
@@ -144,8 +146,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         jt = self.ds.createJobTemplate()
         jt.remoteCommand = ajs.job_file
         jt.jobName = ajs.job_name
-
-	#Karthik: Use this only for non-buggy DRMAA implementation 
+        jt.workingDirectory = job_wrapper.working_directory
         jt.outputPath = ":%s" % ajs.output_file
         jt.errorPath = ":%s" % ajs.error_file
 
@@ -223,10 +224,20 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 return
         else:
             job_wrapper.change_ownership_for_run()
-            log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, job_wrapper.user_system_pwent[0], job_wrapper.user_system_pwent[2] ) )
+            # if user credentials are not available, use galaxy credentials (if permitted)
+            allow_guests = asbool(job_wrapper.job_destination.params.get( "allow_guests", False) )
+            pwent = job_wrapper.user_system_pwent
+            if pwent is None:
+                if not allow_guests:
+                    fail_msg = "User %s is not mapped to any real user, and not permitted to start jobs." % job_wrapper.user
+                    job_wrapper.fail( fail_msg )
+                    self.ds.deleteJobTemplate( jt )
+                    return
+                pwent = job_wrapper.galaxy_system_pwent
+            log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, pwent[0], pwent[2] ) )
             filename = self.store_jobtemplate(job_wrapper, jt)
-            self.userid =  job_wrapper.user_system_pwent[2]
-            external_job_id = self.external_runjob(filename, job_wrapper.user_system_pwent[2]).strip()
+            self.userid =  pwent[2]
+            external_job_id = self.external_runjob(filename, pwent[2]).strip()
         log.info( "(%s) queued as %s" % ( galaxy_id_tag, external_job_id ) )
 
         # store runner information for tracking if Galaxy restarts
@@ -255,6 +266,10 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 ajs.fail_message = "The cluster DRM system terminated this job"
                 self.work_queue.put( ( self.fail_job, ajs ) )
         elif drmaa_state == drmaa.JobState.DONE:
+            # External metadata processing for external runjobs
+            external_metadata = not asbool( ajs.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
+            if external_metadata:
+                self._handle_metadata_externally( ajs.job_wrapper, resolve_requirements=True )
             super( DRMAAJobRunner, self )._complete_terminal_job( ajs )
 
     def check_watched_items( self ):
@@ -389,7 +404,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             except:
                 pass
         s = json.dumps(data)
-        f = open(filename,'w')
+        f = open(filename,'w+')
         f.write(s)
         f.close()
         log.debug( '(%s) Job script for external submission is: %s' % ( job_wrapper.job_id, filename ) )
