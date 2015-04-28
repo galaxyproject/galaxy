@@ -66,7 +66,7 @@ class Tabular( data.Text ):
         try:
             dialect = sniffer.sniff(open(dataset.file_name, 'r').read(self.peek_size))
             self.delimiter = dialect.delimiter
-        except:
+        except Exception:
             # We're interested only if sniffing is successful or not
             pass
 
@@ -139,7 +139,7 @@ class Tabular( data.Text ):
                     try:
                         if line.startswith( '#' ) and sniffer.has_header( line[1:] ):
                             column_names = line[1:]
-                    except:
+                    except Exception:
                         pass # Failed to identify CSV file
                 else:
                     data_lines += 1
