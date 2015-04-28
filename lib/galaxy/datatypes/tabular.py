@@ -851,3 +851,19 @@ class FeatureLocationIndex( Tabular ):
     MetadataElement( name="columns", default=2, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[] )
 
+class CSV( Tabular ):
+    """
+    CSV-style table containing a header.
+    """
+    file_ext = 'csv'
+    delimiter = ','
+
+    def sniff( self, filename ):
+        """ Is valid if it has a CSV header. """
+        return csv.Sniffer().has_header(open(filename, 'r').read(1024))
+
+    def set_meta( self, dataset, **kwd ):
+        """ Read the column names from header and skip it. """
+        with open(dataset.file_name, 'r') as csvfile:
+            dataset.metadata.column_names = csv.reader(csvfile).next()
+        Tabular.set_meta( self, dataset, skip = 1, **kwd )
