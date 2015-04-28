@@ -322,12 +322,12 @@ class Tabular( data.Text ):
             #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             #We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
-            if os.stat( dataset.file_name ).st_size < max_peek_size:
+            if os.stat( dataset.file_name ).st_size < self.max_peek_size:
                 return open( dataset.file_name )
             else:
                 trans.response.set_content_type( "text/html" )
                 return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
+                                            truncated_data = open( dataset.file_name ).read(self.max_peek_size),
                                             data = dataset)
         else:
             column_names = 'null'
