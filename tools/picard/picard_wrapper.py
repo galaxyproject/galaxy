@@ -166,7 +166,7 @@ class PicardBase():
         """
         """
         print '## sortSam got infile=%s,outfile=%s,outdir=%s' % (infile,outfile,outdir)
-        cl = ['samtools sort',infile,outfile]
+        cl = ['samtools sort -f ',infile,outfile]
         tlog,stdouts,rval = self.runCL(cl,outdir)
         return tlog
 
@@ -679,13 +679,20 @@ def __main__():
            logging.info(stdouts)
        
     elif pic.picname == 'SamFormatConverter':
-        print opts.input 
-	cl.append('INPUT=%s' % opts.input)
-        cl.append('OUTPUT=%s' % opts.output) 
+        fd,unsorted_output = tempfile.mkstemp(dir=opts.outdir,suffix='_unsorted.bam');
+        os.close(fd);
+        cl.append('INPUT=%s' % opts.input)
+        cl.append('OUTPUT=%s' % unsorted_output) 
         cl.append('COMPRESSION_LEVEL=%s' % opts.compressionLvl) 
         stdouts,rval = pic.runPic(opts.jar, cl)
-        
-     
+        #Sort output bam
+        try:
+            tlog = pic.sortSam(unsorted_output, opts.output, opts.outdir)
+            stdouts += '\n' + tlog + '\n';
+        except : # bug - [bam_sort_core] not being ignored - TODO fixme
+            print '## exception %s on sorting bam file %s' % (sys.exc_info()[0], unsorted_output)
+            rval = -1;  #something went wrong
+
     elif pic.picname == 'SortSam':
         cl.append('INPUT=%s' % opts.input)
         cl.append('OUTPUT=%s' % opts.output) 
