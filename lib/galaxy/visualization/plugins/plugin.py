@@ -129,7 +129,7 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
         self.config = config
 
         base_url = context.get( 'base_url', '' )
-        self.base_url = '/'.join([ base_url, self.name ])
+        self.base_url = '/'.join([ base_url, self.name ]) if base_url else self.name
 
         self._set_up_static_plugin()
 
@@ -139,87 +139,79 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
 
         self.resource_parser = resource_parser.ResourceParser( app )
 
-    def render( self, trans=None, visualization=None, config=None, embedded=None, **kwargs ):
+    def render( self, trans=None, embedded=None, **kwargs ):
         """
-        Return the text of the rendered plugin webpage/fragment.
+        Render and return the text of the non-saved plugin webpage/fragment.
         """
-        if visualization:
-            return self._render_saved( visualization, config, trans=trans, embedded=embedded, **kwargs )
+        config = {}
+        context = self._default_context_vars( embedded=embedded, **kwargs )
+        return self._render( config, trans=trans, embedded=embedded, context=context, **kwargs )
 
-        # get the config for passing to the template from the kwargs dict, parsed using the plugin's params setting
-        config_from_kwargs = self._query_dict_to_config( trans, kwargs )
-        config = utils.OpenObject( **config_from_kwargs )
-
-        # further parse config to resources (models, etc.) used in template based on registry config
-        resources = self._query_dict_to_resources( trans, config )
-
-        # if a saved visualization, pass in the encoded visualization id or None if a new render
-        encoded_visualization_id = None
-
-        visualization_display_name = self.config[ 'name' ]
-        title = kwargs.get( 'title', None )
-
-        return self._fill_template( trans,
-
-            visualization_name=self.name,
-            visualization_display_name=visualization_display_name,
-            title=title,
+    def render_saved( self, visualization, config, trans=None, embedded=None, **kwargs ):
+        """
+        Render and return the text of the plugin webpage/fragment using the
+        config/data of a saved visualization.
+        """
+        context = self._default_context_vars( embedded=embedded, **kwargs )
+        # update any values that were loaded from the Visualization
+        context.update( dict(
+            title=visualization.latest_revision.title,
             saved_visualization=visualization,
-            visualization_id=encoded_visualization_id,
+            visualization_id=trans.security.encode_id( visualization.id ),
+        ))
+        return self._render( config, trans=trans, embedded=embedded, context=context, **kwargs )
 
-            embedded=embedded,
+    # ---- non-public
+    def _default_context_vars( self, **kwargs ):
+        """
+        Meta variables passed to the template/renderer to describe the visualization
+        being rendered.
+
+        These are the defaults used when a saved visualization isn't present to
+        provide them.
+        """
+        return dict(
+            visualization_name=self.name,
+            visualization_display_name=self.config[ 'name' ],
+            title=kwargs.get( 'title', None ),
+            saved_visualization=None,
+            visualization_id=None,
             # NOTE: passing *unparsed* kwargs as query
             query=kwargs,
-            # NOTE: vars is a dictionary for shared data in the template
-            #   this feels hacky to me but it's what mako recommends:
-            #   http://docs.makotemplates.org/en/latest/runtime.html
-            vars={},
-            config=config,
-            **resources
         )
 
-    def _render_saved( self, visualization, config, trans=None, embedded=None, **kwargs ):
+    def _render( self, config, context, trans=None, embedded=None, **kwargs ):
         """
-        Return the text of the saved visualization.
+        Build/fetch the variables needed to render the visualization and call the renderer.
         """
-        config = config or {}
+        template_args = {}
 
         # get the config for passing to the template from the kwargs dict, parsed using the plugin's params setting
+        config = config or {}
         config_from_kwargs = self._query_dict_to_config( trans, kwargs )
         config.update( config_from_kwargs )
         config = utils.OpenObject( **config )
+        template_args[ 'config' ] = config
 
         # further parse config to resources (models, etc.) used in template based on registry config
         resources = self._query_dict_to_resources( trans, config )
+        template_args.update( resources )
 
-        # if a saved visualization, pass in the encoded visualization id or None if a new render
-        encoded_visualization_id = trans.security.encode_id( visualization.id )
+        # add any extra variables dealing with the visualization itself, saved visualizations, etc.
+        template_args.update( context )
 
-        visualization_display_name = self.config[ 'name' ]
-        title = visualization.latest_revision.title
+        template_args.update( embedded=embedded )
+        return self._fill_template( trans, **template_args )
 
-        return self._fill_template( trans,
-            visualization_name=self.name,
-            visualization_display_name=visualization_display_name,
-            title=title,
-            saved_visualization=visualization,
-            visualization_id=encoded_visualization_id,
-            embedded=embedded,
-            # NOTE: passing *unparsed* kwargs as query
-            query=kwargs,
-            # NOTE: vars is a dictionary for shared data in the template
-            #   this feels hacky to me but it's what mako recommends:
-            #   http://docs.makotemplates.org/en/latest/runtime.html
-            vars={},
-            config=config,
-            **resources
-        )
-
-    # ---------------- getting resources for visualization templates from link query strings
     def _fill_template( self, trans, **kwargs ):
+        # NOTE: (mako specific) vars is a dictionary for shared data in the template
+        #   this feels hacky to me but it's what mako recommends:
+        #   http://docs.makotemplates.org/en/latest/runtime.html
+        kwargs.update( vars={} )
         template_filename = self.config[ 'entry_point' ][ 'file' ]
         return trans.fill_template( template_filename, template_lookup=self.template_lookup, **kwargs )
 
+    # ---------------- getting resources for visualization templates from link query strings
     def _get_resource_params_and_modifiers( self ):
         """
         Get params and modifiers for the given visualization as a 2-tuple.

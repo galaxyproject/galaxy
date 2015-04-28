@@ -8,6 +8,7 @@ import os
 import weakref
 
 from galaxy.web import url_for
+import galaxy.exceptions
 
 from galaxy.web.base import pluginframework
 from galaxy.visualization.plugins import config_parser
@@ -113,6 +114,14 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             additional_template_paths=self.additional_template_paths
         ))
         return plugin
+
+    def get_plugin( self, key ):
+        """
+        Wrap to throw error if plugin not in registry.
+        """
+        if key not in self.plugins:
+            raise galaxy.exceptions.ObjectNotFound( 'Unknown or invalid visualization: ' + key )
+        return self.plugins[ key ]
 
     # -- building links to visualizations from objects --
     def get_visualizations( self, trans, target_object ):
