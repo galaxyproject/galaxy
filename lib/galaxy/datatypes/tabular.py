@@ -249,7 +249,11 @@ class Tabular( data.Text ):
             columns = dataset.metadata.columns
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
+            i = 0
             for line in dataset.peek.splitlines():
+                if i < dataset.metadata.comment_lines:
+                   i += 1
+                   continue
                 if line.startswith( tuple( skipchars ) ):
                     out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
                 elif line:
@@ -281,6 +285,15 @@ class Tabular( data.Text ):
         while cursor and ck_data[-1] != '\n':
             ck_data += cursor
             cursor = f.read(1)
+        # If this is first chunk, skip comment lines
+        if ck_index == 0:
+            to_skip = 0
+            for i in range(0, dataset.metadata.comment_lines):
+                to_skip = ck_data.find('\n', to_skip) + 1
+            ck_data = ck_data[to_skip:]
+        # Replace non-standard delimiter
+        if self.delimiter != '\t':
+            ck_data = ck_data.replace(self.delimiter, '\t')
         return dumps( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
