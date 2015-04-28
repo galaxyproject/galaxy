@@ -15,6 +15,7 @@ from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers, get_test_fname
 from galaxy.util.json import dumps
+import csv
 import dataproviders
 
 log = logging.getLogger(__name__)
@@ -25,6 +26,9 @@ class Tabular( data.Text ):
 
     # All tabular data is chunkable.
     CHUNKABLE = True
+    delimiter = '\t'
+    peek_size = 1024 # Size of the chunk used for sniffing file separator/header
+    max_peek_size = 1000000 # 1 MB, dataset size limit for templated output
 
     """Add metadata elements"""
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
@@ -57,6 +61,15 @@ class Tabular( data.Text ):
            Since metadata can now be processed on cluster nodes, we've merged the line count portion
            of the set_peek() processing here, and we now check the entire contents of the file.
         """
+        # Sniff delimiter from the dataset
+        sniffer = csv.Sniffer()
+        try:
+            dialect = sniffer.sniff(open(dataset.file_name, 'r').read(self.peek_size))
+            self.delimiter = dialect.delimiter
+        except Exception:
+            # We're interested only if sniffing is successful or not
+            pass
+
         # Store original skip value to check with later
         requested_skip = skip
         if skip is None:
@@ -109,6 +122,7 @@ class Tabular( data.Text ):
         data_lines = 0
         comment_lines = 0
         column_types = []
+        column_names = ''
         first_line_column_types = [default_column_type] # default value is one column of type str
         if dataset.has_data():
             #NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
@@ -121,10 +135,16 @@ class Tabular( data.Text ):
                 if i < skip or not line or line.startswith( '#' ):
                     # We'll call blank lines comments
                     comment_lines += 1
+                    # Check if it resembles a header
+                    try:
+                        if line.startswith( '#' ) and sniffer.has_header( line[1:] ):
+                            column_names = line[1:]
+                    except Exception:
+                        pass # Failed to identify CSV file
                 else:
                     data_lines += 1
                     if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
-                        fields = line.split( '\t' )
+                        fields = line.split( self.delimiter )
                         for field_count, field in enumerate( fields ):
                             if field_count >= len( column_types ): #found a previously unknown column, we append None
                                 column_types.append( None )
@@ -172,6 +192,10 @@ class Tabular( data.Text ):
         dataset.metadata.comment_lines = comment_lines
         dataset.metadata.column_types = column_types
         dataset.metadata.columns = len( column_types )
+        # Try to unpack column names
+        column_names = [c.strip() for c in column_names.split(self.delimiter)]
+        if len(column_names) == dataset.metadata.columns:
+            dataset.metadata.column_names = column_names
     def make_html_table( self, dataset, **kwargs ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -240,11 +264,15 @@ class Tabular( data.Text ):
             columns = dataset.metadata.columns
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
+            i = 0
             for line in dataset.peek.splitlines():
+                if i < dataset.metadata.comment_lines:
+                   i += 1
+                   continue
                 if line.startswith( tuple( skipchars ) ):
                     out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
                 elif line:
-                    elems = line.split( '\t' )
+                    elems = line.split( self.delimiter )
                     # we may have an invalid comment line or invalid data
                     if len( elems ) != columns:
                         out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
@@ -272,6 +300,15 @@ class Tabular( data.Text ):
         while cursor and ck_data[-1] != '\n':
             ck_data += cursor
             cursor = f.read(1)
+        # If this is first chunk, skip comment lines
+        if ck_index == 0:
+            to_skip = 0
+            for i in range(0, dataset.metadata.comment_lines):
+                to_skip = ck_data.find('\n', to_skip) + 1
+            ck_data = ck_data[to_skip:]
+        # Replace non-standard delimiter
+        if self.delimiter != '\t':
+            ck_data = ck_data.replace(self.delimiter, '\t')
         return dumps( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
@@ -285,13 +322,12 @@ class Tabular( data.Text ):
             #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             #We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
-            max_peek_size = 1000000 # 1 MB
-            if os.stat( dataset.file_name ).st_size < max_peek_size:
+            if os.stat( dataset.file_name ).st_size < self.max_peek_size:
                 return open( dataset.file_name )
             else:
                 trans.response.set_content_type( "text/html" )
                 return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
+                                            truncated_data = open( dataset.file_name ).read(self.max_peek_size),
                                             data = dataset)
         else:
             column_names = 'null'
@@ -336,6 +372,7 @@ class Tabular( data.Text ):
     @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
     def column_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
+        settings['delimiter'] = self.delimiter
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.column.ColumnarDataProvider( dataset_source, **settings )
 
@@ -343,17 +380,20 @@ class Tabular( data.Text ):
                                                     dataproviders.column.ColumnarDataProvider.settings )
     def dataset_column_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
+        settings['delimiter'] = self.delimiter
         return dataproviders.dataset.DatasetColumnarDataProvider( dataset, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
     def dict_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
+        settings['delimiter'] = self.delimiter
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.column.DictDataProvider( dataset_source, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
     def dataset_dict_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
+        settings['delimiter'] = self.delimiter
         return dataproviders.dataset.DatasetDictDataProvider( dataset, **settings )
 
 
@@ -817,3 +857,19 @@ class FeatureLocationIndex( Tabular ):
     MetadataElement( name="columns", default=2, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[] )
 
+class CSV( Tabular ):
+    """
+    CSV-style table containing a header.
+    """
+    file_ext = 'csv'
+    delimiter = ','
+
+    def sniff( self, filename ):
+        """ Is valid if it has a CSV header. """
+        return csv.Sniffer().has_header(open(filename, 'r').read(self.peek_size))
+
+    def set_meta( self, dataset, **kwd ):
+        """ Read the column names from header and skip it. """
+        with open(dataset.file_name, 'r') as csvfile:
+            dataset.metadata.column_names = csv.reader(csvfile).next()
+        Tabular.set_meta( self, dataset, skip = 1, **kwd )
