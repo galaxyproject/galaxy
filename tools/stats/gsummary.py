@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys, re, tempfile
+import csv
 try:
     from rpy2.rpy_classic import *
 except:
@@ -68,26 +69,20 @@ def main():
     skipped_lines = 0
     first_invalid_line = 0
     i = 0
-    for i, line in enumerate( file( datafile ) ):
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ):
-            valid = True
-            fields = line.split( '\t' )
-            # Write the R data row to the temporary file
-            for col in cols:
-                try:
-                    float( fields[ col ] )
-                except:
-                    skipped_lines += 1
-                    if not first_invalid_line:
-                        first_invalid_line = i + 1
-                    valid = False
-                    break
-            if valid:
-                data_str = "\t".join( fields[ col ] for col in cols )
-                tmp_file.write( "%s\n" % data_str )
-    tmp_file.flush()
 
+    # csv reader will sniff the correct delimiter and special values
+    reader = csv.DictReader(open(datafile, 'r'), fieldnames = cols)
+    for row in reader:
+        try:
+            data_str = "\t".join( row[ col ] for col in cols )
+            tmp_file.write( "%s\n" % data_str )
+            i += 1
+        except:
+            skipped_lines += 1
+            if first_invalid_line == 0:
+                first_invalid_line = i
+
+    tmp_file.flush()
     if skipped_lines == i + 1:
         stop_err( "Invalid column or column data values invalid for computation.  See tool tips and syntax for data requirements." )
     else:
