@@ -60,8 +60,9 @@ class Tabular( data.Text ):
            of the set_peek() processing here, and we now check the entire contents of the file.
         """
         # Sniff delimiter from the dataset
+        sniffer = csv.Sniffer()
         try:
-            dialect = csv.Sniffer().sniff(open(dataset.file_name, 'r').read(1024))
+            dialect = sniffer.sniff(open(dataset.file_name, 'r').read(1024))
             self.delimiter = dialect.delimiter
         except:
             pass
@@ -132,8 +133,11 @@ class Tabular( data.Text ):
                     # We'll call blank lines comments
                     comment_lines += 1
                     # Check if it resembles a header
-                    if line.startswith( '#' ) and csv.Sniffer().has_header( line[1:] ):
-                        column_names = line[1:]
+                    try:
+                        if line.startswith( '#' ) and sniffer.has_header( line[1:] ):
+                            column_names = line[1:]
+                    except:
+                        pass # Failed to identify CSV file
                 else:
                     data_lines += 1
                     if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
