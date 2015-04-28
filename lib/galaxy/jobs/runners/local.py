@@ -134,9 +134,11 @@ class LocalJobRunner( BaseJobRunner ):
     def stop_job( self, job ):
         #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         job_ext_output_metadata = job.get_external_output_metadata()
-        if job_ext_output_metadata:
+        try:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
-        else:
+            assert pid not in [ None, '' ]
+        except:
+            # metadata internal or job not complete yet
             pid = job.get_job_runner_external_id()
         if pid in [ None, '' ]:
             log.warning( "stop_job(): %s: no PID in database for job, unable to stop" % job.get_id() )
