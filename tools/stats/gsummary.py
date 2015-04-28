@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
 import sys, re, tempfile
-from rpy import *
+import csv
+try:
+    from rpy2.rpy_classic import *
+except:
+    # RPy isn't maintained, and doesn't work with R>3.0, use it as a fallback
+    from rpy import *
+
 # Older py compatibility
 try:
     set()
@@ -63,35 +69,29 @@ def main():
     skipped_lines = 0
     first_invalid_line = 0
     i = 0
-    for i, line in enumerate( file( datafile ) ):
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ):
-            valid = True
-            fields = line.split( '\t' )
-            # Write the R data row to the temporary file
-            for col in cols:
-                try:
-                    float( fields[ col ] )
-                except:
-                    skipped_lines += 1
-                    if not first_invalid_line:
-                        first_invalid_line = i + 1
-                    valid = False
-                    break
-            if valid:
-                data_str = "\t".join( fields[ col ] for col in cols )
-                tmp_file.write( "%s\n" % data_str )
-    tmp_file.flush()
 
+    # csv reader will sniff the correct delimiter and special values
+    reader = csv.DictReader(open(datafile, 'r'), fieldnames = cols)
+    for row in reader:
+        try:
+            data_str = "\t".join( row[ col ] for col in cols )
+            tmp_file.write( "%s\n" % data_str )
+            i += 1
+        except:
+            skipped_lines += 1
+            if first_invalid_line == 0:
+                first_invalid_line = i
+
+    tmp_file.flush()
     if skipped_lines == i + 1:
         stop_err( "Invalid column or column data values invalid for computation.  See tool tips and syntax for data requirements." )
     else:
         # summary function and return labels
+        set_default_mode( NO_CONVERSION )
         summary_func = r( "function( x ) { c( sum=sum( as.numeric( x ), na.rm=T ), mean=mean( as.numeric( x ), na.rm=T ), stdev=sd( as.numeric( x ), na.rm=T ), quantile( as.numeric( x ), na.rm=TRUE ) ) }" )
         headings = [ 'sum', 'mean', 'stdev', '0%', '25%', '50%', '75%', '100%' ]
         headings_str = "\t".join( headings )
         
-        set_default_mode( NO_CONVERSION )
         r_data_frame = r.read_table( tmp_file.name, header=True, sep="\t" )
         
         outfile = open( outfile_name, 'w' )
@@ -105,7 +105,7 @@ def main():
             stop_err( "Computation resulted in the following error: %s" % str( s ) )
         summary = summary.as_py( BASIC_CONVERSION )
         outfile.write( "#%s\n" % headings_str )
-        outfile.write( "%s\n" % "\t".join( [ "%g" % ( summary[ k ] ) for k in headings ] ) )
+        outfile.write( "%s\n" % "\t".join( [ "%g" % k for k in summary ] ) )
         outfile.close()
 
         if skipped_lines:
