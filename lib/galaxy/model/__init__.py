@@ -551,16 +551,16 @@ class Job( object, HasJobMetrics, Dictifiable ):
             input_dict = {}
             for i in self.input_datasets:
                 if i.dataset is not None:
-                    i_d = {"id" : i.dataset.id, "src" : "hda"}
-                    if i.dataset.dataset.uuid is not None:
-                        i_d['uuid'] = str(i.dataset.dataset.uuid)
-                    input_dict[i.name] = i_d
+                    input_dict[i.name] = {
+                        "id" : i.dataset.id, "src" : "hda",
+                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                    }
             for i in self.input_library_datasets:
                 if i.dataset is not None:
-                    i_d = {"id" : i.dataset.id, "src" : "ldda"}
-                    if i.dataset.dataset.uuid is not None:
-                        i_d['uuid'] = str(i.dataset.dataset.uuid)
-                    input_dict[i.name] = i_d
+                    input_dict[i.name] = {
+                        "id" : i.dataset.id, "src" : "ldda",
+                        "uuid": str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                    }
             for k in input_dict:
                 if k in param_dict:
                     del param_dict[k]
@@ -569,16 +569,16 @@ class Job( object, HasJobMetrics, Dictifiable ):
             output_dict = {}
             for i in self.output_datasets:
                 if i.dataset is not None:
-                    i_d = {"id" : i.dataset.id, "src" : "hda"}
-                    if i.dataset.dataset.uuid is not None:
-                        i_d['uuid'] = str(i.dataset.dataset.uuid)
-                    output_dict[i.name] = i_d
+                    output_dict[i.name] = {
+                        "id" : i.dataset.id, "src" : "hda",
+                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                    }
             for i in self.output_library_datasets:
                 if i.dataset is not None:
-                    i_d = {"id" : i.dataset.id, "src" : "ldda"}
-                    if i.dataset.dataset.uuid is not None:
-                        i_d['uuid'] = str(i.dataset.dataset.uuid)
-                    output_dict[i.name] = i_d
+                    output_dict[i.name] = {
+                        "id" : i.dataset.id, "src" : "ldda",
+                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                    }
             rval['outputs'] = output_dict
 
         return rval
@@ -3268,12 +3268,15 @@ class WorkflowInvocation( object, Dictifiable ):
         # is relatively intutitive.
         return map( lambda wi: wi.id, query.all() )
 
-    def to_dict( self, view='collection', value_mapper=None ):
+    def to_dict( self, view='collection', value_mapper=None, step_details=False ):
         rval = super( WorkflowInvocation, self ).to_dict( view=view, value_mapper=value_mapper )
         if view == 'element':
             steps = []
             for step in self.steps:
-                v = step.to_dict(view='element')
+                if step_details:
+                    v = step.to_dict(view='element')
+                else:
+                    v = step.to_dict(view='collection')
                 steps.append( v )
             rval['steps'] = steps
 
@@ -3286,10 +3289,10 @@ class WorkflowInvocation( object, Dictifiable ):
                             src = "hda" if output_step_type == 'data_input' else 'hdca'
                             for job_input in step.job.input_datasets:
                                 if job_input.name == step_input.input_name:
-                                    in_d = { "id": job_input.dataset_id, "src": src }
-                                    if job_input.dataset.dataset.uuid is not None:
-                                        in_d['uuid'] = str(job_input.dataset.dataset.uuid)
-                                    inputs[str(step_input.output_step.order_index)] = in_d
+                                    inputs[str(step_input.output_step.order_index)] = {
+                                        "id": job_input.dataset_id, "src": src,
+                                        "uuid" : str(job_input.dataset.dataset.uuid) if job_input.dataset.dataset.uuid is not None else None
+                                    }
             rval['inputs'] = inputs
         return rval
 
@@ -3335,16 +3338,16 @@ class WorkflowInvocationStep( object, Dictifiable ):
             output_dict = {}
             for i in self.job.output_datasets:
                 if i.dataset is not None:
-                    j = {"id" : i.dataset.id, "src" : "hda"}
-                    if i.dataset.dataset.uuid is not None:
-                        j['uuid'] = str(i.dataset.dataset.uuid)
-                    output_dict[i.name] = j
+                    output_dict[i.name] = {
+                        "id" : i.dataset.id, "src" : "hda",
+                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                    }
             for i in self.job.output_library_datasets:
                 if i.dataset is not None:
-                    j = {"id" : i.dataset.id, "src" : "ldda"}
-                    if i.dataset.dataset.uuid is not None:
-                        j['uuid'] = str(i.dataset.dataset.uuid)
-                    output_dict[i.name] = j
+                    output_dict[i.name] = {
+                        "id" : i.dataset.id, "src" : "ldda",
+                        "uuid" : str(i.dataset.dataset.uuid) if i.dataset.dataset.uuid is not None else None
+                    }
             rval['outputs'] = output_dict
         return rval
 
