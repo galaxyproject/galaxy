@@ -27,6 +27,8 @@ class Tabular( data.Text ):
     # All tabular data is chunkable.
     CHUNKABLE = True
     delimiter = '\t'
+    peek_size = 1024 # Size of the chunk used for sniffing file separator/header
+    max_peek_size = 1000000 # 1 MB, dataset size limit for templated output
 
     """Add metadata elements"""
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
@@ -62,9 +64,10 @@ class Tabular( data.Text ):
         # Sniff delimiter from the dataset
         sniffer = csv.Sniffer()
         try:
-            dialect = sniffer.sniff(open(dataset.file_name, 'r').read(1024))
+            dialect = sniffer.sniff(open(dataset.file_name, 'r').read(self.peek_size))
             self.delimiter = dialect.delimiter
         except:
+            # We're interested only if sniffing is successful or not
             pass
 
         # Store original skip value to check with later
@@ -319,7 +322,6 @@ class Tabular( data.Text ):
             #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             #We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
-            max_peek_size = 1000000 # 1 MB
             if os.stat( dataset.file_name ).st_size < max_peek_size:
                 return open( dataset.file_name )
             else:
@@ -864,7 +866,7 @@ class CSV( Tabular ):
 
     def sniff( self, filename ):
         """ Is valid if it has a CSV header. """
-        return csv.Sniffer().has_header(open(filename, 'r').read(1024))
+        return csv.Sniffer().has_header(open(filename, 'r').read(self.peek_size))
 
     def set_meta( self, dataset, **kwd ):
         """ Read the column names from header and skip it. """
