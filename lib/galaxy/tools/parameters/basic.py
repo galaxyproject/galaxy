@@ -674,7 +674,7 @@ class ColorToolParameter( ToolParameter ):
 
 class BaseURLToolParameter( HiddenToolParameter ):
     """
-    Returns a parameter the contains its value prepended by the
+    Returns a parameter that contains its value prepended by the
     current server base url. Used in all redirects.
     """
     def from_html( self, url, trans=None, context={} ):
