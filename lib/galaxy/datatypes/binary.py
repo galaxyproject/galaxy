@@ -189,11 +189,10 @@ class Bam( Binary ):
                 input_file_bai = value.file_name
 
         # Link files with bam extensions in order to fulfil some tools requirements
-        commands = ["ln -sf " + input_file + " " + input_file + ".bam",
-                    "ln -sf " + input_file_bai + " " + input_file + ".bam.bai"]
-        for cmd in commands:
-            if 0 != os.system(cmd):
-                raise Exception("Executing '%s' failed" % cmd)
+        tmpdir = tempfile.mkdtemp()
+        input_file_tmpdir = tmpdir + "/aux_file.bam"
+        os.symlink(input_file, input_file_tmpdir)
+        os.symlink(input_file_bai, input_file_tmpdir + ".bai")
 
         if 'split_mode' not in split_params:
             raise Exception('Tool does not define a split mode')
@@ -218,7 +217,7 @@ class Bam( Binary ):
 
                     split_data = dict(class_name='%s.%s' % (cls.__module__, cls.__name__),
                                       output_name=part_path,
-                                      input_name=input_file,
+                                      input_name=input_file_tmpdir,
                                       args=dict(chromosome=chrName))
                     f = open(os.path.join(part_dir, 'split_info_%s.json' % base_name), 'w')
                     json.dump(split_data, f)
@@ -238,20 +237,25 @@ class Bam( Binary ):
         output_name = data['output_name']
         chromosome = args['chromosome']
 
-        commands = Bam.get_split_commands_chromosome(input_name, output_name, chromosome)
-        for cmd in commands:
-            if 0 != os.system(cmd):
-                raise Exception("Executing '%s' failed" % cmd)
+        tmp_dir = tempfile.mkdtemp()
+        stderr_name = tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "bam_view_stderr" ).name
+        command = "samtools view -bh %s %s -o %s" % (input_name, chromosome, output_name)
+        proc = subprocess.Popen(args=command, shell=True, stderr=open( stderr_name, 'wb' ))
+        exit_code = proc.wait()
+        #  Did view succeed?
+        stderr = open(stderr_name).read().strip()
+        print stderr
+        if stderr:
+            if exit_code != 0:
+                shutil.rmtree(tmp_dir) #clean up
+                raise Exception, "Error in samtools view: %s" % stderr
+            else:
+                print stderr
+
+        os.unlink(stderr_name)
+        os.rmdir(tmp_dir)
         return True
     process_split_file = staticmethod(process_split_file)
-
-    def get_split_commands_chromosome(input_name, output_name, chromosome):
-        commands = [
-            "samtools view -bh " + input_name + ".bam " + chromosome + " > " + output_name
-        ]
-        return commands
-    get_split_commands_chromosome = staticmethod(get_split_commands_chromosome)
-
 
     def _is_coordinate_sorted( self, file_name ):
         """See if the input BAM file is sorted from the header information."""
@@ -786,7 +790,7 @@ class SQlite ( Binary ):
 
 class GeminiSQLite( SQlite ):
     """Class describing a Gemini Sqlite database """
-    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version", 
+    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version",
                      readonly=True, visible=True, no_value='0.10.0' )
     file_ext = "gemini.sqlite"
 
@@ -805,7 +809,7 @@ class GeminiSQLite( SQlite ):
 
     def sniff( self, filename ):
         if super( GeminiSQLite, self ).sniff( filename ):
-            gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples", 
+            gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
                                   "variant_impacts", "variants", "version" ]
             try:
                 conn = sqlite.connect( filename )
