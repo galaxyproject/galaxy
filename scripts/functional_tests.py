@@ -216,9 +216,7 @@ def main():
             datatypes_conf_override = os.path.join( framework_tool_dir, 'sample_datatypes_conf.xml' )
         else:
             # Use tool_conf.xml toolbox.
-            tool_conf = None
-            if __check_arg( '-with_framework_test_tools' ):
-                tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', os.path.join( framework_tool_dir, 'samples_tool_conf.xml' ) )
+            tool_conf = "%s,%s" % ( 'config/tool_conf.xml.sample', os.path.join( framework_tool_dir, 'samples_tool_conf.xml' ) )
         test_dir = default_galaxy_test_file_dir
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
         galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )

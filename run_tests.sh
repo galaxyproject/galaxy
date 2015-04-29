@@ -29,9 +29,6 @@ indicated with the optional parameter (test_path).  A few examples are:
 Run all TestUserInfo functional tests:
     ./run_tests.sh test/functional/test_user_info.py:TestUserInfo
 
-Run a specific API test requiring the framework test tools:
-    ./run_tests.sh -api -with_framework_test_tools test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
-
 
 Extra options:
 
@@ -72,7 +69,6 @@ test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 xunit_report_file=""
 structured_data_report_file=""
-with_framework_test_tools_arg=""
 
 driver="python"
 
@@ -142,10 +138,6 @@ do
               toolshed_script="./test/tool_shed/functional"
               shift 1
           fi
-          ;;
-      -with_framework_test_tools|--with_framework_test_tools)
-          with_framework_test_tools_arg="-with_framework_test_tools"
-          shift
           ;;
       -w|-workflow|--workflow)
           if [ $# -gt 1 ]; then
@@ -325,7 +317,7 @@ if [ "$driver" = "python" ]; then
     else
         structured_data_args=""
     fi
-    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $with_framework_test_tools_arg $extra_args
+    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
 else
     ensure_grunt
     if [ -n "$watch" ]; then
