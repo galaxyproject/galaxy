@@ -38,9 +38,11 @@ config1 = """\
 
 # -----------------------------------------------------------------------------
 class VisualizationsPlugin_TestCase( unittest.TestCase ):
+    plugin_class = vis_plugin.VisualizationPlugin
 
     def test_default_init( self ):
         """
+        A plugin with no context passed in should have sane defaults.
         """
         vis_dir = galaxy_mock.MockDir({
             'config' : {
@@ -50,7 +52,7 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
             'templates' : {},
         })
         config = dict()
-        plugin = vis_plugin.VisualizationPlugin( galaxy_mock.MockApp(), vis_dir.root_path,
+        plugin = self.plugin_class( galaxy_mock.MockApp(), vis_dir.root_path,
             'myvis', config )
         self.assertEqual( plugin.name, 'myvis' )
         self.assertEqual( plugin.path, vis_dir.root_path )
@@ -69,6 +71,7 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
 
     def test_init_with_context( self ):
         """
+        A plugin with context passed in should use those in it's set up.
         """
         vis_dir = galaxy_mock.MockDir({
             'config' : {
@@ -83,7 +86,7 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
             template_cache_dir='template_cache',
             additional_template_paths=[ 'one' ]
         )
-        plugin = vis_plugin.VisualizationPlugin( galaxy_mock.MockApp(), vis_dir.root_path,
+        plugin = self.plugin_class( galaxy_mock.MockApp(), vis_dir.root_path,
             'myvis', config, context=context )
         self.assertEqual( plugin.base_url, 'u/wot/m8/myvis' )
         # static
@@ -93,17 +96,27 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
 
     def test_init_without_static_or_templates( self ):
         """
+        A plugin that has neither template or static directory should serve neither.
         """
         vis_dir = galaxy_mock.MockDir({
             'config' : {
                 'vis1.xml' : ''
             }
         })
-        plugin = vis_plugin.VisualizationPlugin( galaxy_mock.MockApp(), vis_dir.root_path,
+        plugin = self.plugin_class( galaxy_mock.MockApp(), vis_dir.root_path,
             'myvis', dict() )
         self.assertFalse( plugin.serves_static )
         self.assertFalse( plugin.serves_templates )
         # not sure what this would do, but...
+
+    def test_default_context_vars( self ):
+        """
+        Context vars passed to render should default properly.
+        """
+        # well, that's kind of a lot of typing to say nothing new
+        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', dict() )
+
+
 
 # -----------------------------------------------------------------------------
 # TODO: config parser tests (in separate file)

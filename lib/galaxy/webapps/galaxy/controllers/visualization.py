@@ -719,31 +719,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
     # ------------------------- registry.
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
-    def saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):
-        """
-        """
-        if trans.request.method == 'POST':
-            self._POST_to_saved( trans, id=id, revision=revision, type=type, config=config, title=title, **kwargs )
-
-        if id is None:
-            return HTTPBadRequest( 'A valid visualization id is required to load a visualization' )
-
-        # render the saved visualization by passing to render, sending latest revision config
-        # TODO: allow loading a specific revision - should be part of UsesVisualization
-        visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
-        config = copy.copy( visualization.latest_revision.config )
-
-        # re-add title to kwargs for passing to render
-        if title:
-            kwargs[ 'title' ] = title
-        plugin = self._get_plugin_from_registry( trans, visualization.type )
-        try:
-            return plugin.render_saved( visualization, config, trans=trans, **kwargs )
-        except Exception, exception:
-            self._handle_plugin_error( trans, visualization.type, exception )
-
-    @web.expose
-    @web.require_login( "use Galaxy visualizations", use_panels=True )
     def render( self, trans, visualization_name, embedded=None, **kwargs ):
         """
         Render the appropriate visualization template, parsing the `kwargs`
@@ -757,6 +732,52 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             return plugin.render( trans=trans, embedded=embedded, **kwargs )
         except Exception, exception:
             self._handle_plugin_error( trans, visualization_name, exception )
+
+    def _get_plugin_from_registry( self, trans, visualization_name ):
+        """
+        Get the named plugin from the registry.
+        :raises HTTPNotFound: if registry has been turned off in config.
+        :raises HTTPNotFound: if visualization_name isn't a registered plugin.
+        """
+        if not trans.app.visualizations_registry:
+            raise HTTPNotFound( 'No visualization registry (possibly disabled in galaxy.ini)' )
+        return trans.app.visualizations_registry.get_plugin( visualization_name )
+
+    def _handle_plugin_error( self, trans, visualization_name, exception ):
+        """
+        Log, raise if debugging; log and show html message if not.
+        """
+        log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
+        if trans.debug:
+            raise
+        return trans.show_error_message(
+            "There was an error rendering the visualization. " +
+            "Contact your Galaxy administrator if the problem persists." +
+            "<br/>Details: " + str( exception ), use_panels=False )
+
+    @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):
+        """
+        Save (on POST) or load (on GET) a visualization then render.
+        """
+        # TODO: consider merging saved and render at this point (could break saved URLs, tho)
+        if trans.request.method == 'POST':
+            self._POST_to_saved( trans, id=id, revision=revision, type=type, config=config, title=title, **kwargs )
+
+        # check the id and load the saved visualization
+        if id is None:
+            return HTTPBadRequest( 'A valid visualization id is required to load a visualization' )
+        visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+
+        # re-add title to kwargs for passing to render
+        if title:
+            kwargs[ 'title' ] = title
+        plugin = self._get_plugin_from_registry( trans, visualization.type )
+        try:
+            return plugin.render_saved( visualization, trans=trans, **kwargs )
+        except Exception, exception:
+            self._handle_plugin_error( trans, visualization.type, exception )
 
     def _POST_to_saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):
         """
@@ -786,28 +807,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         # redirect to GET to prevent annoying 'Do you want to post again?' dialog on page reload
         render_url = web.url_for( controller='visualization', action='saved', id=returned.get( 'vis_id' ) )
         return trans.response.send_redirect( render_url )
-
-    def _get_plugin_from_registry( self, trans, visualization_name ):
-        """
-        Get the named plugin from the registry.
-        :raises HTTPNotFound: if registry has been turned off in config.
-        :raises HTTPNotFound: if visualization_name isn't a registered plugin.
-        """
-        if not trans.app.visualizations_registry:
-            raise HTTPNotFound( 'No visualization registry (possibly disabled in galaxy.ini)' )
-        return trans.app.visualizations_registry.get_plugin( visualization_name )
-
-    def _handle_plugin_error( self, trans, visualization_name, exception ):
-        """
-        Log, raise if debugging; log and show html message if not.
-        """
-        log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
-        if trans.debug:
-            raise
-        return trans.show_error_message(
-            "There was an error rendering the visualization. " +
-            "Contact your Galaxy administrator if the problem persists." +
-            "<br/>Details: " + str( exception ), use_panels=False )
 
     #
     # Visualizations.

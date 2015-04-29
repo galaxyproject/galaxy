@@ -4,6 +4,7 @@ from a query string and render a webpage based on those data.
 """
 
 import os
+import copy
 
 import pkg_resources
 pkg_resources.require( 'MarkupSafe' )
@@ -100,19 +101,6 @@ class ServesTemplatesPluginMixin( object ):
             collection_size=collection_size,
             output_encoding=output_encoding )
 
-    def _fill_template( self, trans, template_filename, **kwargs ):
-        """
-        Pass control over to trans and render ``template_filename``.
-
-        :type   trans:              ``galaxy.web.framework.webapp.GalaxyWebTransaction``
-        :param  trans:              transaction doing the rendering
-        :type   template_filename:  string
-        :param  template_filename:  the path of the template to render relative to
-            ``plugin.template_path``
-        :returns:       rendered template
-        """
-        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **kwargs )
-
 
 # =============================================================================
 class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, ServesTemplatesPluginMixin ):
@@ -122,6 +110,7 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
     """
     # AKA: MakoVisualizationPlugin
     # config[ 'entry_point' ][ 'type' ] == 'mako'
+# TODO: concept/name collision between plugin config and visualization config
 
     def __init__( self, app, path, name, config, context=None, **kwargs ):
         super( VisualizationPlugin, self ).__init__( app, path, name, config, context=None, **kwargs )
@@ -143,34 +132,45 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
         """
         Render and return the text of the non-saved plugin webpage/fragment.
         """
+        # not saved - no existing config
         config = {}
-        context = self._default_context_vars( embedded=embedded, **kwargs )
-        return self._render( config, trans=trans, embedded=embedded, context=context, **kwargs )
+        # set up render vars based on plugin.config and kwargs
+        render_vars = self._build_render_vars( config, trans=trans, **kwargs )
+        return self._render( render_vars, trans=trans, embedded=embedded )
 
-    def render_saved( self, visualization, config, trans=None, embedded=None, **kwargs ):
+    def render_saved( self, visualization, trans=None, embedded=None, **kwargs ):
         """
         Render and return the text of the plugin webpage/fragment using the
         config/data of a saved visualization.
         """
-        context = self._default_context_vars( embedded=embedded, **kwargs )
-        # update any values that were loaded from the Visualization
-        context.update( dict(
+        config = self._get_saved_visualization_config( visualization, **kwargs )
+        # pass the saved visualization config for parsing into render vars
+        render_vars = self._build_render_vars( config, trans=trans, **kwargs )
+        # update any values that were loaded from the saved Visualization
+        render_vars.update( dict(
             title=visualization.latest_revision.title,
             saved_visualization=visualization,
             visualization_id=trans.security.encode_id( visualization.id ),
         ))
-        return self._render( config, trans=trans, embedded=embedded, context=context, **kwargs )
+        return self._render( render_vars, trans=trans, embedded=embedded )
+
+    def _get_saved_visualization_config( self, visualization, revision=None, **kwargs ):
+        """
+        Return the config of a saved visualization and revision.
+
+        If no revision given, default to latest revision.
+        """
+        # TODO: allow loading a specific revision - should be part of UsesVisualization
+        return copy.deepcopy( visualization.latest_revision.config )
 
     # ---- non-public
-    def _default_context_vars( self, **kwargs ):
+    def _build_render_vars( self, config, trans=None, **kwargs ):
         """
-        Meta variables passed to the template/renderer to describe the visualization
-        being rendered.
-
-        These are the defaults used when a saved visualization isn't present to
-        provide them.
+        Build all the variables that will be passed into the renderer.
         """
-        return dict(
+        render_vars = {}
+        # Meta variables passed to the template/renderer to describe the visualization being rendered.
+        render_vars.update(
             visualization_name=self.name,
             visualization_display_name=self.config[ 'name' ],
             title=kwargs.get( 'title', None ),
@@ -179,68 +179,70 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
             # NOTE: passing *unparsed* kwargs as query
             query=kwargs,
         )
-
-    def _render( self, config, context, trans=None, embedded=None, **kwargs ):
-        """
-        Build/fetch the variables needed to render the visualization and call the renderer.
-        """
-        template_args = {}
-
-        # get the config for passing to the template from the kwargs dict, parsed using the plugin's params setting
-        config = config or {}
-        config_from_kwargs = self._query_dict_to_config( trans, kwargs )
-        config.update( config_from_kwargs )
-        config = utils.OpenObject( **config )
-        template_args[ 'config' ] = config
-
+        # config based on existing or kwargs
+        render_vars[ 'config' ] = self._build_config( config, trans=trans, **kwargs )
         # further parse config to resources (models, etc.) used in template based on registry config
-        resources = self._query_dict_to_resources( trans, config )
-        template_args.update( resources )
+        resources = self._kwargs_to_resources( trans, kwargs )
+        render_vars.update( resources )
 
-        # add any extra variables dealing with the visualization itself, saved visualizations, etc.
-        template_args.update( context )
+        return render_vars
 
-        template_args.update( embedded=embedded )
-        return self._fill_template( trans, **template_args )
-
-    def _fill_template( self, trans, **kwargs ):
-        # NOTE: (mako specific) vars is a dictionary for shared data in the template
-        #   this feels hacky to me but it's what mako recommends:
-        #   http://docs.makotemplates.org/en/latest/runtime.html
-        kwargs.update( vars={} )
-        template_filename = self.config[ 'entry_point' ][ 'file' ]
-        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **kwargs )
-
-    # ---------------- getting resources for visualization templates from link query strings
-    def _get_resource_params_and_modifiers( self ):
+    def _build_config( self, config, trans=None, **kwargs ):
         """
-        Get params and modifiers for the given visualization as a 2-tuple.
+        Build the configuration for this new/saved visualization by combining
+        any existing config and the kwargs (gen. from the url query).
+        """
+        # first, pull from any existing config
+        if config:
+            config = copy.deepcopy( config )
+        else:
+            config = {}
+        # then, overwrite with keys/values from kwargs (gen. a query string)
+        config_from_kwargs = self._kwargs_to_config( trans, kwargs )
+        config.update( config_from_kwargs )
+        # to object format for easier querying
+        config = utils.OpenObject( **config )
+        return config
 
-        Both `params` and `param_modifiers` default to an empty dictionary.
+    # TODO: the difference between config & resources is unclear in this section - is it needed?
+    def _kwargs_to_config( self, trans, kwargs ):
+        """
+        Given a kwargs dict (gen. a query string dict from a controller action), parse
+        and return any key/value pairs found in the plugin's `params` section.
+        """
+        expected_params = self.config.get( 'params', {} )
+        config = self.resource_parser.parse_config( trans, expected_params, kwargs )
+        return config
+
+    def _kwargs_to_resources( self, trans, kwargs ):
+        """
+        Use a resource parser and a visualization's param configuration to
+        instantiate/deserialize the resources (HDAs, LDDAs, etc.) given in a query
+        string into variables a visualization renderer can use.
         """
         expected_params = self.config.get( 'params', {} )
         param_modifiers = self.config.get( 'param_modifiers', {} )
-        return ( expected_params, param_modifiers )
-
-    def _query_dict_to_resources( self, trans, query_dict ):
-        """
-        Use a resource parser and a visualization's param configuration
-        to convert a query string into the resources and variables a visualization
-        template needs to start up.
-        """
-        param_confs, param_modifiers = self._get_resource_params_and_modifiers()
-        resources = self.resource_parser.parse_parameter_dictionary(
-            trans, param_confs, query_dict, param_modifiers )
+        resources = self.resource_parser.parse_parameter_dictionary( trans, expected_params, kwargs, param_modifiers )
         return resources
 
-    def _query_dict_to_config( self, trans, query_dict ):
+    def _render( self, render_vars, trans=None, embedded=None, **kwargs ):
         """
-        Given a query string dict (i.e. kwargs) from a controller action, parse
-        and return any key/value pairs found in the plugin's `params` section.
+        Render the visualization via Mako and the plugin's template file.
         """
-        param_confs = self.config.get( 'params', {} )
-        config = self.resource_parser.parse_config( trans, param_confs, query_dict )
-        return config
+        render_vars[ 'embedded' ] = self._parse_embedded( embedded )
+        # NOTE: (mako specific) vars is a dictionary for shared data in the template
+        #   this feels hacky to me but it's what mako recommends:
+        #   http://docs.makotemplates.org/en/latest/runtime.html
+        render_vars.update( vars={} )
+        template_filename = self.config[ 'entry_point' ][ 'file' ]
+        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **render_vars )
+
+    def _parse_embedded( self, embedded ):
+        """
+        Parse information on dimensions, readonly, etc. from the embedded query val.
+        """
+        # as is for now
+        return embedded
 
 
 # =============================================================================
@@ -250,24 +252,32 @@ class InteractiveEnvironmentPlugin( VisualizationPlugin ):
     """
     INTENV_REQUEST_FACTORY = interactive_environments.InteractiveEnviornmentRequest
 
-    def _fill_template( self, trans, **kwargs ):
+    def _render( self, render_vars, trans=None, embedded=None, **kwargs ):
+        """
+        Override to add interactive environment specific template vars.
+        """
+        render_vars[ 'embedded' ] = self._parse_embedded( embedded )
+        # NOTE: (mako specific) vars is a dictionary for shared data in the template
+        #   this feels hacky to me but it's what mako recommends:
+        #   http://docs.makotemplates.org/en/latest/runtime.html
+        render_vars.update( vars={} )
         # No longer needed but being left around for a few releases as ipython-galaxy
         # as an external visualization plugin is deprecated in favor of core interactive
         # environment plugin.
-        if 'get_api_key' not in kwargs:
+        if 'get_api_key' not in render_vars:
             def get_api_key():
                 return api_keys.ApiKeyManager( trans.app ).get_or_create_api_key( trans.user )
-            kwargs[ 'get_api_key' ] = get_api_key
+            render_vars[ 'get_api_key' ] = get_api_key
 
-        if 'plugin_path' not in kwargs:
-            kwargs[ 'plugin_path' ] = os.path.abspath( self.path )
+        if 'plugin_path' not in render_vars:
+            render_vars[ 'plugin_path' ] = os.path.abspath( self.path )
 
         if self.config.get( 'plugin_type', 'visualization' ) == "interactive_environment":
             request = self.INTENV_REQUEST_FACTORY( trans, self )
-            kwargs[ "ie_request" ] = request
+            render_vars[ "ie_request" ] = request
 
         template_filename = self.config[ 'entry_point' ][ 'file' ]
-        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **kwargs )
+        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **render_vars )
 
 
 # =============================================================================
@@ -287,15 +297,18 @@ class ScriptVisualizationPlugin( VisualizationPlugin ):
         """
         return True
 
-    def _fill_template( self, trans, **kwargs ):
+    def _render( self, render_vars, trans=None, embedded=None, **kwargs ):
         """
-        Return the script entry point mako rendering with the script attributes sent in.
+        Override to add script attributes and point mako at the script entry point
+        template.
         """
-        template_filename = os.path.join( self.MAKO_TEMPLATE )
-        kwargs.update({
+        render_vars[ 'embedded' ] = self._parse_embedded( embedded )
+        render_vars.update( vars={} )
+        render_vars.update({
             "script_tag_attributes" : self.config[ 'entry_point' ][ 'attr' ]
         })
-        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **kwargs )
+        template_filename = os.path.join( self.MAKO_TEMPLATE )
+        return trans.fill_template( template_filename, template_lookup=self.template_lookup, **render_vars )
 
 
 # =============================================================================
@@ -304,8 +317,15 @@ class StaticFileVisualizationPlugin( VisualizationPlugin ):
     A visualiztion plugin that starts by loading a static html file defined
     in the visualization's config file.
     """
-    # TODO: should do render here since most of the calc done there is unneeded in this case
-    def _fill_template( self, trans, **kwargs ):
+    # TODO: these are not embeddable by their nature - update config
+    # TODO: should do render/render_saved here since most of the calc done there is unneeded in this case
+    def _render( self, render_vars, trans=None, embedded=None, **kwargs ):
+        """
+        Render the static file simply by reading and returning it.
+        """
+        render_vars[ 'embedded' ] = self._parse_embedded( embedded )
+        render_vars.update( vars={} )
+
         static_file_path = self.config[ 'entry_point' ][ 'file' ]
         static_file_path = os.path.join( self.path, static_file_path )
         with open( static_file_path, 'r' ) as outfile:

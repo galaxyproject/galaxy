@@ -184,7 +184,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = VisualizationsRegistry( mock_app,
             directories_setting='plugins',
-            template_cache_dir=os.join( mock_app_dir.root_path, 'caches' ) )
+            template_cache_dir=os.path.join( mock_app_dir.root_path, 'caches' ) )
 
         # ...then start testing
         expected_plugins_path = os.path.join( mock_app_dir.root_path, 'plugins' )
@@ -205,8 +205,9 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         trans = galaxy_mock.MockTrans( user=user )
         # use a mock request factory - this will be written into the filled template to show it was used
         ipython.INTENV_REQUEST_FACTORY = lambda t, p: 'mock'
+
         # should return the (new) api key for the above user (see the template above)
-        response = ipython._fill_template( trans )
+        response = ipython._render( {}, trans=trans )
         response.strip()
         self.assertIsInstance( response, basestring )
         self.assertTrue( '-' in response )
@@ -258,7 +259,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
 
         trans = galaxy_mock.MockTrans()
         script_entry._set_up_template_plugin( mock_app_dir.root_path, [ addtional_templates_dir ] )
-        response = script_entry._fill_template( trans, embedded=True )
+        response = script_entry._render( {}, trans=trans, embedded=True )
         # print response
         self.assertTrue( '<script type="text/javascript" src="bler" data-main="one"></script>' in response )
 
