@@ -30,9 +30,7 @@ class VisualizationsConfigParser( object ):
     #: what are the allowed href targets when clicking on a visualization anchor
     VALID_RENDER_TARGETS = [ 'galaxy_main', '_top', '_blank' ]
 
-    def __init__( self, debug=False ):
-        self.debug = debug
-
+    def __init__( self ):
         # what parsers should be used for sub-components
         self.data_source_parser = DataSourceParser()
         self.param_parser = ParamParser()
