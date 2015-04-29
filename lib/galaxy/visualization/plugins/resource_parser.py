@@ -28,8 +28,8 @@ class ResourceParser( object ):
     primitive_parsers = {
         'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html( param, 'utf-8' ),
         'bool'  : lambda param: galaxy.util.string_as_bool( param ),
-        'int'   : lambda param: int( param ),
-        'float' : lambda param: float( param ),
+        'int'   : int,
+        'float' : float,
         # 'date'  : lambda param: ,
         'json'  : ( lambda param: galaxy.util.json.loads(
             galaxy.util.sanitize_html.sanitize_html( param ) ) ),
