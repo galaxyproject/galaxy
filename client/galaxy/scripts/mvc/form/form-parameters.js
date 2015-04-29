@@ -25,7 +25,7 @@ define(['utils/utils',
             'color'             : '_fieldColor',
             'hidden'            : '_fieldHidden',
             'hidden_data'       : '_fieldHidden',
-            'baseurl'           : '_fieldHidden',
+            'baseurl'           : '_fieldBaseUrl',
             'library_data'      : '_fieldLibrary'
         },
         
@@ -231,6 +231,17 @@ define(['utils/utils',
             return new Ui.Hidden({
                 id          : 'field-' + input_def.id,
                 info        : input_def.info
+            });
+        },
+
+        /** Base url field
+        */
+        _fieldBaseUrl: function(input_def) {
+            return new Ui.Hidden({
+                id          : 'field-' + input_def.id,
+                info        : input_def.info,
+                value       : window.location.origin,
+                fixed       : true
             });
         },
 

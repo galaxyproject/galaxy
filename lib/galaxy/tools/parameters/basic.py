@@ -671,24 +671,16 @@ class ColorToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context, history=None ):
         return self.value.lower();
 
-## This is clearly a HACK, parameters should only be used for things the user
-## can change, there needs to be a different way to specify this. I'm leaving
-## it for now to avoid breaking any tools.
-
 
 class BaseURLToolParameter( HiddenToolParameter ):
     """
     Returns a parameter the contains its value prepended by the
     current server base url. Used in all redirects.
     """
-    def get_initial_value( self, trans, context, history=None ):
-        self.url_for = url_for( '', qualified=True )
-        return self.to_param_dict_string()
-
-    def to_param_dict_string( self, value=None, other_values={} ):
+    def from_html( self, url, trans=None, context={} ):
         if self.value is None:
             self.value = ''
-        return '%s/%s' % (self.url_for, self.value)
+        return '%s/%s' % (url, self.value)
 
 
 DEFAULT_VALUE_MAP = lambda x: x

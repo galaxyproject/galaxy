@@ -451,6 +451,9 @@ var Hidden = Backbone.View.extend({
 
     // value
     value : function (new_val) {
+        if (this.options.fixed) {
+            return this.options.value;
+        }
         if (new_val !== undefined) {
             this.$('hidden').val(new_val);
         }
