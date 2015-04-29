@@ -7,6 +7,7 @@ pkg_resources.require( "bx-python" )
 import gzip
 import logging
 import os
+import csv
 from cgi import escape
 from galaxy import util
 from galaxy.datatypes import data
@@ -20,17 +21,209 @@ import dataproviders
 log = logging.getLogger(__name__)
 
 @dataproviders.decorators.has_dataproviders
-class Tabular( data.Text ):
-    """Tab delimited data"""
+class TabularData( data.Text ):
+    """Generic tabular data"""
 
     # All tabular data is chunkable.
     CHUNKABLE = True
 
     """Add metadata elements"""
     MetadataElement( name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0 )
+    MetadataElement( name="data_lines", default=0, desc="Number of data lines", readonly=True, visible=False, optional=True, no_value=0 )
     MetadataElement( name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0 )
     MetadataElement( name="column_types", default=[], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[] )
     MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="delimiter", default='\t', desc="Data delimiter", readonly=True, visible=False, optional=True, no_value=[] )
+
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False):
+        super(TabularData, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
+        if dataset.metadata.comment_lines:
+            dataset.blurb = "%s, %s comments" % ( dataset.blurb, util.commaify( str( dataset.metadata.comment_lines ) ) )
+
+    def displayable( self, dataset ):
+        try:
+            return dataset.has_data() \
+                and dataset.state == dataset.states.OK \
+                and dataset.metadata.columns > 0 \
+                and dataset.metadata.data_lines != 0
+        except:
+            return False
+
+    def get_chunk(self, trans, dataset, chunk):
+        ck_index = int(chunk)
+        f = open(dataset.file_name)
+        f.seek(ck_index * trans.app.config.display_chunk_size)
+        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
+        if f.tell() != 0:
+            cursor = f.read(1)
+            while cursor and cursor != '\n':
+                cursor = f.read(1)
+        ck_data = f.read(trans.app.config.display_chunk_size)
+        cursor = f.read(1)
+        while cursor and ck_data[-1] != '\n':
+            ck_data += cursor
+            cursor = f.read(1)
+        return dumps( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
+
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
+        preview = util.string_as_bool( preview )
+        if chunk:
+            return self.get_chunk(trans, dataset, chunk)
+        elif to_ext or not preview:
+            to_ext = to_ext or dataset.extension
+            return self._serve_raw(trans, dataset, to_ext)
+        elif dataset.metadata.columns > 50:
+            #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
+            #We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
+            #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
+            max_peek_size = 1000000 # 1 MB
+            if os.stat( dataset.file_name ).st_size < max_peek_size:
+                return open( dataset.file_name )
+            else:
+                trans.response.set_content_type( "text/html" )
+                return trans.stream_template_mako( "/dataset/large_file.mako",
+                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
+                                            data = dataset)
+        else:
+            column_names = 'null'
+            if dataset.metadata.column_names:
+                column_names = dataset.metadata.column_names
+            elif hasattr(dataset.datatype, 'column_names'):
+                column_names = dataset.datatype.column_names
+            column_types = dataset.metadata.column_types
+            if not column_types:
+                column_types = []
+            column_number = dataset.metadata.columns
+            if column_number is None:
+                column_number = 'null'
+            return trans.fill_template( "/dataset/tabular_chunked.mako",
+                        dataset = dataset,
+                        chunk = self.get_chunk(trans, dataset, 0),
+                        column_number = column_number,
+                        column_names = column_names,
+                        column_types = column_types )
+
+    def make_html_table( self, dataset, **kwargs ):
+        """Create HTML table, used for displaying peek"""
+        out = ['<table cellspacing="0" cellpadding="3">']
+        try:
+            out.append( self.make_html_peek_header( dataset, **kwargs ) )
+            out.append( self.make_html_peek_rows( dataset, **kwargs ) )
+            out.append( '</table>' )
+            out = "".join( out )
+        except Exception, exc:
+            out = "Can't create peek %s" % str( exc )
+        return out
+
+    def make_html_peek_header( self, dataset, skipchars=None, column_names=None, column_number_format='%s', column_parameter_alias=None, **kwargs ):
+        if skipchars is None:
+            skipchars = []
+        if column_names is None:
+            column_names = []
+        if column_parameter_alias is None:
+            column_parameter_alias = {}
+        out = []
+        try:
+            if not column_names and dataset.metadata.column_names:
+                column_names = dataset.metadata.column_names
+
+            columns = dataset.metadata.columns
+            if columns is None:
+                columns = dataset.metadata.spec.columns.no_value
+            column_headers = [None] * columns
+
+            # fill in empty headers with data from column_names
+            for i in range( min( columns, len( column_names ) ) ):
+                if column_headers[i] is None and column_names[i] is not None:
+                    column_headers[i] = column_names[i]
+
+            # fill in empty headers from ColumnParameters set in the metadata
+            for name, spec in dataset.metadata.spec.items():
+                if isinstance( spec.param, metadata.ColumnParameter ):
+                    try:
+                        i = int( getattr( dataset.metadata, name ) ) - 1
+                    except:
+                        i = -1
+                    if 0 <= i < columns and column_headers[i] is None:
+                        column_headers[i] = column_parameter_alias.get(name, name)
+
+            out.append( '<tr>' )
+            for i, header in enumerate( column_headers ):
+                out.append( '<th>' )
+                if header is None:
+                    out.append( column_number_format % str( i + 1 ) )
+                else:
+                    out.append( '%s.%s' % ( str( i + 1 ), escape( header ) ) )
+                out.append( '</th>' )
+            out.append( '</tr>' )
+        except Exception, exc:
+            log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
+            raise Exception, "Can't create peek header %s" % str( exc )
+        return "".join( out )
+
+    def make_html_peek_rows( self, dataset, skipchars=None, **kwargs ):
+        if skipchars is None:
+            skipchars = []
+        out = []
+        try:
+            if not dataset.peek:
+                dataset.set_peek()
+            columns = dataset.metadata.columns
+            if columns is None:
+                columns = dataset.metadata.spec.columns.no_value
+            for line in dataset.peek.splitlines():
+                if line.startswith( tuple( skipchars ) ):
+                    out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
+                elif line:
+                    elems = line.split( dataset.metadata.delimiter )
+                    # we may have an invalid comment line or invalid data
+                    if len( elems ) != columns:
+                        out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
+                    else:
+                        out.append( '<tr>' )
+                        for elem in elems:
+                            out.append( '<td>%s</td>' % escape( elem ) )
+                        out.append( '</tr>' )
+        except Exception, exc:
+            log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
+            raise Exception, "Can't create peek rows %s" % str( exc )
+        return "".join( out )
+
+    def display_peek( self, dataset ):
+        """Returns formatted html of peek"""
+        return self.make_html_table( dataset )
+
+    # ------------- Dataproviders
+    @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
+    def column_dataprovider( self, dataset, **settings ):
+        """Uses column settings that are passed in"""
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        delimiter = dataset.metadata.delimiter
+        return dataproviders.column.ColumnarDataProvider( dataset_source, deliminator = delimiter, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'dataset-column',
+                                                    dataproviders.column.ColumnarDataProvider.settings )
+    def dataset_column_dataprovider( self, dataset, **settings ):
+        """Attempts to get column settings from dataset.metadata"""
+        delimiter = dataset.metadata.delimiter
+        return dataproviders.dataset.DatasetColumnarDataProvider( dataset, deliminator = delimiter, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
+    def dict_dataprovider( self, dataset, **settings ):
+        """Uses column settings that are passed in"""
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        delimiter = dataset.metadata.delimiter
+        return dataproviders.column.DictDataProvider( dataset_source, deliminator = delimiter, **settings )
+
+    @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
+    def dataset_dict_dataprovider( self, dataset, **settings ):
+        """Attempts to get column settings from dataset.metadata"""
+        delimiter = dataset.metadata.delimiter
+        return dataproviders.dataset.DatasetDictDataProvider( dataset, deliminator = delimiter, **settings )
+
+@dataproviders.decorators.has_dataproviders
+class Tabular( TabularData ):
+    """Tab delimited data"""
 
     def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 100000, max_guess_type_data_lines = None, **kwd ):
         """
@@ -172,190 +365,12 @@ class Tabular( data.Text ):
         dataset.metadata.comment_lines = comment_lines
         dataset.metadata.column_types = column_types
         dataset.metadata.columns = len( column_types )
-    def make_html_table( self, dataset, **kwargs ):
-        """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
-        try:
-            out.append( self.make_html_peek_header( dataset, **kwargs ) )
-            out.append( self.make_html_peek_rows( dataset, **kwargs ) )
-            out.append( '</table>' )
-            out = "".join( out )
-        except Exception, exc:
-            out = "Can't create peek %s" % str( exc )
-        return out
+        dataset.metadata.delimiter = '\t'
 
-    def make_html_peek_header( self, dataset, skipchars=None, column_names=None, column_number_format='%s', column_parameter_alias=None, **kwargs ):
-        if skipchars is None:
-            skipchars = []
-        if column_names is None:
-            column_names = []
-        if column_parameter_alias is None:
-            column_parameter_alias = {}
-        out = []
-        try:
-            if not column_names and dataset.metadata.column_names:
-                column_names = dataset.metadata.column_names
-
-            columns = dataset.metadata.columns
-            if columns is None:
-                columns = dataset.metadata.spec.columns.no_value
-            column_headers = [None] * columns
-
-            # fill in empty headers with data from column_names
-            for i in range( min( columns, len( column_names ) ) ):
-                if column_headers[i] is None and column_names[i] is not None:
-                    column_headers[i] = column_names[i]
-
-            # fill in empty headers from ColumnParameters set in the metadata
-            for name, spec in dataset.metadata.spec.items():
-                if isinstance( spec.param, metadata.ColumnParameter ):
-                    try:
-                        i = int( getattr( dataset.metadata, name ) ) - 1
-                    except:
-                        i = -1
-                    if 0 <= i < columns and column_headers[i] is None:
-                        column_headers[i] = column_parameter_alias.get(name, name)
-
-            out.append( '<tr>' )
-            for i, header in enumerate( column_headers ):
-                out.append( '<th>' )
-                if header is None:
-                    out.append( column_number_format % str( i + 1 ) )
-                else:
-                    out.append( '%s.%s' % ( str( i + 1 ), escape( header ) ) )
-                out.append( '</th>' )
-            out.append( '</tr>' )
-        except Exception, exc:
-            log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
-            raise Exception, "Can't create peek header %s" % str( exc )
-        return "".join( out )
-
-    def make_html_peek_rows( self, dataset, skipchars=None, **kwargs ):
-        if skipchars is None:
-            skipchars = []
-        out = []
-        try:
-            if not dataset.peek:
-                dataset.set_peek()
-            columns = dataset.metadata.columns
-            if columns is None:
-                columns = dataset.metadata.spec.columns.no_value
-            for line in dataset.peek.splitlines():
-                if line.startswith( tuple( skipchars ) ):
-                    out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
-                elif line:
-                    elems = line.split( '\t' )
-                    # we may have an invalid comment line or invalid data
-                    if len( elems ) != columns:
-                        out.append( '<tr><td colspan="100%%">%s</td></tr>' % escape( line ) )
-                    else:
-                        out.append( '<tr>' )
-                        for elem in elems:
-                            out.append( '<td>%s</td>' % escape( elem ) )
-                        out.append( '</tr>' )
-        except Exception, exc:
-            log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
-            raise Exception, "Can't create peek rows %s" % str( exc )
-        return "".join( out )
-
-    def get_chunk(self, trans, dataset, chunk):
-        ck_index = int(chunk)
-        f = open(dataset.file_name)
-        f.seek(ck_index * trans.app.config.display_chunk_size)
-        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
-        if f.tell() != 0:
-            cursor = f.read(1)
-            while cursor and cursor != '\n':
-                cursor = f.read(1)
-        ck_data = f.read(trans.app.config.display_chunk_size)
-        cursor = f.read(1)
-        while cursor and ck_data[-1] != '\n':
-            ck_data += cursor
-            cursor = f.read(1)
-        return dumps( { 'ck_data': util.unicodify( ck_data ), 'ck_index': ck_index + 1 } )
-
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
-        preview = util.string_as_bool( preview )
-        if chunk:
-            return self.get_chunk(trans, dataset, chunk)
-        elif to_ext or not preview:
-            to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext)
-        elif dataset.metadata.columns > 50:
-            #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
-            #We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
-            #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
-            max_peek_size = 1000000 # 1 MB
-            if os.stat( dataset.file_name ).st_size < max_peek_size:
-                return open( dataset.file_name )
-            else:
-                trans.response.set_content_type( "text/html" )
-                return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
-                                            data = dataset)
-        else:
-            column_names = 'null'
-            if dataset.metadata.column_names:
-                column_names = dataset.metadata.column_names
-            elif hasattr(dataset.datatype, 'column_names'):
-                column_names = dataset.datatype.column_names
-            column_types = dataset.metadata.column_types
-            if not column_types:
-                column_types = []
-            column_number = dataset.metadata.columns
-            if column_number is None:
-                column_number = 'null'
-            return trans.fill_template( "/dataset/tabular_chunked.mako",
-                        dataset = dataset,
-                        chunk = self.get_chunk(trans, dataset, 0),
-                        column_number = column_number,
-                        column_names = column_names,
-                        column_types = column_types )
-
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False):
-        super(Tabular, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
-        if dataset.metadata.comment_lines:
-            dataset.blurb = "%s, %s comments" % ( dataset.blurb, util.commaify( str( dataset.metadata.comment_lines ) ) )
-    def display_peek( self, dataset ):
-        """Returns formatted html of peek"""
-        return self.make_html_table( dataset )
-    def displayable( self, dataset ):
-        try:
-            return dataset.has_data() \
-                and dataset.state == dataset.states.OK \
-                and dataset.metadata.columns > 0 \
-                and dataset.metadata.data_lines != 0
-        except:
-            return False
     def as_gbrowse_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
     def as_ucsc_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
-
-    # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory( 'column', dataproviders.column.ColumnarDataProvider.settings )
-    def column_dataprovider( self, dataset, **settings ):
-        """Uses column settings that are passed in"""
-        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
-        return dataproviders.column.ColumnarDataProvider( dataset_source, **settings )
-
-    @dataproviders.decorators.dataprovider_factory( 'dataset-column',
-                                                    dataproviders.column.ColumnarDataProvider.settings )
-    def dataset_column_dataprovider( self, dataset, **settings ):
-        """Attempts to get column settings from dataset.metadata"""
-        return dataproviders.dataset.DatasetColumnarDataProvider( dataset, **settings )
-
-    @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
-    def dict_dataprovider( self, dataset, **settings ):
-        """Uses column settings that are passed in"""
-        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
-        return dataproviders.column.DictDataProvider( dataset_source, **settings )
-
-    @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
-    def dataset_dict_dataprovider( self, dataset, **settings ):
-        """Attempts to get column settings from dataset.metadata"""
-        return dataproviders.dataset.DatasetDictDataProvider( dataset, **settings )
-
 
 class Taxonomy( Tabular ):
     def __init__(self, **kwd):
@@ -817,3 +832,73 @@ class FeatureLocationIndex( Tabular ):
     MetadataElement( name="columns", default=2, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[] )
 
+@dataproviders.decorators.has_dataproviders
+class CSV( TabularData ):
+    """
+    Delimiter-separated table data.
+    This includes CSV, TSV and other dialects understood by the
+    Python 'csv' module https://docs.python.org/2/library/csv.html
+    """
+    delimiter = ','
+    file_ext = 'csv' # File extension
+    peek_size = 1024 # File chunk used for sniffing CSV dialect
+
+    def is_int( self, column_text ):
+        try:
+            int( column_text )
+            return True
+        except:
+            return False
+
+    def is_float( self, column_text ):
+        try:
+            float( column_text )
+            return True
+        except:
+            if column_text.strip().lower() == 'na':
+                return True #na is special cased to be a float
+            return False
+
+    def guess_type( self, text ):
+        if self.is_int(text):   return 'int'
+        if self.is_float(text): return 'float'
+        else:                   return 'str'
+
+    def sniff( self, filename ):
+        """ Return True if if recognizes dialect and header. """
+        if not csv.Sniffer().has_header(open(filename, 'r').read(self.peek_size)):
+            return False
+        # Fetch at least three consecutive lines to be reasonably sure
+        reader = csv.reader(open(filename, 'r'))
+        for i in range(0, 3):
+            reader.next()
+        return True
+
+    def set_meta( self, dataset, **kwd ):
+        with open(dataset.file_name, 'r') as csvfile:
+            # Parse file
+            reader = csv.reader(csvfile)
+            data_row = None
+            header_row = None
+            try:
+                header_row = reader.next()
+                data_row = reader.next()
+                for row in reader:
+                    pass
+            except csv.Error as e:
+                  raise ('line %d: %s' % (reader.line_num, e))
+
+            # Guess column types
+            if len(header_row) != len(data_row):
+                raise ('mismatching number of columns in header and data')
+            column_types = []
+            for cell in data_row:
+                column_types.append(self.guess_type(cell))
+
+            # Set metadata
+            dataset.metadata.data_lines = reader.line_num - 1
+            dataset.metadata.comment_lines = 1
+            dataset.metadata.column_types = column_types
+            dataset.metadata.columns = len(header_row)
+            dataset.metadata.column_names = header_row
+            dataset.metadata.delimiter = reader.dialect.delimiter
