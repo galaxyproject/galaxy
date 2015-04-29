@@ -77,8 +77,10 @@ def do_split (job_wrapper):
             this_input_files = job_wrapper.get_input_dataset_fnames(input.dataset)
             if len(this_input_files) > 1:
                 log_error = "The input '%s' is composed of multiple files - splitting is not allowed" % str(input.name)
-                log.error(log_error)
-                raise Exception(log_error)
+
+                # log.error(log_error)
+                # raise Exception(log_error)
+                log.info(log_error)
             input_datasets.append(input.dataset)
 
     input_type = type_to_input_map.keys()[0]
