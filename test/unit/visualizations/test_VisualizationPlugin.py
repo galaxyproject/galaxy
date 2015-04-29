@@ -10,30 +10,7 @@ import galaxy_mock
 
 from galaxy.visualization.plugins import plugin as vis_plugin
 from galaxy.visualization.plugins import resource_parser
-
-# -----------------------------------------------------------------------------
-glx_dir = test_utils.get_galaxy_root()
-template_cache_dir = os.path.join( glx_dir, 'database', 'compiled_templates' )
-addtional_templates_dir = os.path.join( glx_dir, 'config', 'plugins', 'visualizations', 'common', 'templates' )
-vis_reg_path = 'config/plugins/visualizations'
-
-config1 = """\
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="scatterplot">
-    <data_sources>
-        <data_source>
-            <model_class>HistoryDatasetAssociation</model_class>
-            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
-            <to_param param_attr="id">dataset_id</to_param>
-        </data_source>
-    </data_sources>
-    <params>
-        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
-    </params>
-    <template>scatterplot.mako</template>
-</visualization>
-"""
+from galaxy.visualization.plugins import utils as vis_utils
 
 
 # -----------------------------------------------------------------------------
@@ -109,13 +86,108 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
         self.assertFalse( plugin.serves_templates )
         # not sure what this would do, but...
 
-    def test_default_context_vars( self ):
+    def test_build_render_vars_default( self ):
         """
-        Context vars passed to render should default properly.
+        Render vars passed to render should default properly.
         """
         # well, that's kind of a lot of typing to say nothing new
-        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', dict() )
+        config = dict(
+            name='Cat Fancy Magazine\'s Genomic Visualization'
+        )
+        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', config )
 
+        render_vars = plugin._build_render_vars( config )
+        self.assertEqual( render_vars[ 'visualization_name' ], plugin.name )
+        self.assertEqual( render_vars[ 'visualization_display_name' ], plugin.config[ 'name' ] )
+        self.assertEqual( render_vars[ 'title' ], None )
+        self.assertEqual( render_vars[ 'saved_visualization' ], None )
+        self.assertEqual( render_vars[ 'visualization_id' ], None )
+        self.assertEqual( render_vars[ 'query' ], {} )
+        self.assertIsInstance( render_vars[ 'config' ], vis_utils.OpenObject )
+        self.assertEqual( render_vars[ 'config' ].__dict__, {} )
+
+    def test_build_config( self ):
+        """
+        """
+        plugin_config = dict()
+        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', plugin_config )
+        config = plugin._build_config( {} )
+        self.assertIsInstance( config, vis_utils.OpenObject )
+        self.assertEqual( config.__dict__, {} )
+
+        # existing should flow through
+        plugin_config = dict()
+        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', plugin_config )
+        existing_config = dict( wat=1 )
+        config = plugin._build_config( existing_config )
+        self.assertEqual( config.wat, 1 )
+
+        # unlisted/non-param kwargs should NOT overwrite existing
+        plugin_config = dict()
+        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', plugin_config )
+        existing_config = dict( wat=1 )
+        config = plugin._build_config( existing_config, wat=2 )
+        self.assertEqual( config.wat, 1 )
+
+        # listed/param kwargs *should* overwrite existing
+        plugin_config = dict(
+            params=dict(
+                wat={
+                    'csv'       : False,
+                    'required'  : False,
+                    'type'      : 'int',
+                    'var_name_in_template': 'wot'
+                },
+            )
+        )
+        plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', plugin_config )
+        existing_config = dict( wat=1 )
+        # send as string like a query would - should be parsed
+        config = plugin._build_config( existing_config, wat='2' )
+        self.assertEqual( config.wat, 2 )
+
+    def test_render( self ):
+        """
+        """
+        # use the python in a template to test for variables that should be there
+        # TODO: gotta be a better way
+        testing_template = test_utils.clean_multiline_string( """\
+        <%
+            found_all = True
+            should_have = [
+                title, visualization_name, visualization_display_name,
+                visualization_id, saved_visualization,
+                query, config,
+                embedded,
+                vars
+            ]
+            for var in should_have:
+                try:
+                    var = str( var )
+                except NameError, name_err:
+                    found_all = False
+                    break
+        %>
+        ${ found_all }
+        """ )
+
+        mock_app_dir = galaxy_mock.MockDir({
+            'cache' : {},
+            'template.mako' : testing_template
+        })
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
+        plugin = self.plugin_class( mock_app, '', 'myvis', {
+            "name" : "Vlad News Bears"
+        })
+
+        # somewhat easier to set this up by hand
+        plugin.config[ 'entry_point' ] = { 'file' : 'template.mako' }
+        plugin.template_path = mock_app_dir.root_path
+        plugin.template_lookup = plugin._build_template_lookup( mock_app_dir.root_path )
+
+        response = plugin.render( trans=galaxy_mock.MockTrans( app=mock_app ) )
+        self.assertIsInstance( response, basestring )
+        self.assertEqual( response.strip(), "True" )
 
 
 # -----------------------------------------------------------------------------

@@ -64,8 +64,8 @@ class MockWebapp( object ):
 
 class MockTrans( object ):
 
-    def __init__( self, user=None, history=None, **kwargs ):
-        self.app = MockApp( **kwargs )
+    def __init__( self, app=None, user=None, history=None, **kwargs ):
+        self.app = app or MockApp( **kwargs )
         self.model = self.app.model
         self.webapp = MockWebapp( **kwargs )
         self.sa_session = self.app.model.session
