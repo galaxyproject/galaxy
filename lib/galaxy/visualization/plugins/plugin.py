@@ -161,7 +161,7 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
         If no revision given, default to latest revision.
         """
         # TODO: allow loading a specific revision - should be part of UsesVisualization
-        return copy.deepcopy( visualization.latest_revision.config )
+        return copy.copy( visualization.latest_revision.config )
 
     # ---- non-public
     def _build_render_vars( self, config, trans=None, **kwargs ):
@@ -180,9 +180,10 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
             query=kwargs,
         )
         # config based on existing or kwargs
-        render_vars[ 'config' ] = self._build_config( config, trans=trans, **kwargs )
+        config = self._build_config( config, trans=trans, **kwargs )
+        render_vars[ 'config' ] = config
         # further parse config to resources (models, etc.) used in template based on registry config
-        resources = self._kwargs_to_resources( trans, kwargs )
+        resources = self._config_to_resources( trans, config )
         render_vars.update( resources )
 
         return render_vars
@@ -194,7 +195,7 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
         """
         # first, pull from any existing config
         if config:
-            config = copy.deepcopy( config )
+            config = copy.copy( config )
         else:
             config = {}
         # then, overwrite with keys/values from kwargs (gen. a query string)
@@ -214,15 +215,14 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
         config = self.resource_parser.parse_config( trans, expected_params, kwargs )
         return config
 
-    def _kwargs_to_resources( self, trans, kwargs ):
+    def _config_to_resources( self, trans, config ):
         """
-        Use a resource parser and a visualization's param configuration to
-        instantiate/deserialize the resources (HDAs, LDDAs, etc.) given in a query
-        string into variables a visualization renderer can use.
+        Instantiate/deserialize the resources (HDAs, LDDAs, etc.) given in a
+        visualization config into models/variables a visualization renderer can use.
         """
         expected_params = self.config.get( 'params', {} )
         param_modifiers = self.config.get( 'param_modifiers', {} )
-        resources = self.resource_parser.parse_parameter_dictionary( trans, expected_params, kwargs, param_modifiers )
+        resources = self.resource_parser.parse_parameter_dictionary( trans, expected_params, config, param_modifiers )
         return resources
 
     def _render( self, render_vars, trans=None, embedded=None, **kwargs ):
