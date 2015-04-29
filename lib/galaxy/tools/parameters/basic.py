@@ -677,10 +677,10 @@ class BaseURLToolParameter( HiddenToolParameter ):
     Returns a parameter that contains its value prepended by the
     current server base url. Used in all redirects.
     """
-    def from_html( self, url, trans=None, context={} ):
+    def from_html( self, value=None, trans=None, context={} ):
         if self.value is None:
             self.value = ''
-        return '%s/%s' % (url, self.value)
+        return url_for( self.value, qualified=True )
 
 
 DEFAULT_VALUE_MAP = lambda x: x
