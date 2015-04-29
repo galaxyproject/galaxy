@@ -241,7 +241,7 @@ define(['utils/utils',
                 id          : 'field-' + input_def.id,
                 info        : input_def.info,
                 value       : window.location.origin,
-                fixed       : true
+                locked      : true
             });
         },
 
