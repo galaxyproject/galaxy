@@ -174,8 +174,8 @@ class Bam( Binary ):
 
         tmp_dir = tempfile.mkdtemp()
         stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
-        command = "samtools merge -f %s %s" % (output_file, " ".join(split_files))
-        proc = subprocess.Popen(args=command, shell=True, cwd=tmp_dir, stderr=open(stderr_name, 'wb'))
+        command = ["samtools", "merge", "-f", output_file] + split_files
+        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
         exit_code = proc.wait()
         # Did merge succeed?
         stderr = open(stderr_name).read().strip()
