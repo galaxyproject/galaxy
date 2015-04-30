@@ -171,8 +171,22 @@ class Bam( Binary ):
 
     @staticmethod
     def merge(split_files, output_file):
-        params = ["samtools", "merge", "-f", output_file, " ".join(split_files)]
-        subprocess.Popen(" ".join(params), shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE).stdout.read()
+
+        tmp_dir = tempfile.mkdtemp()
+        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
+        command = "samtools merge -f %s %s" % (output_file, " ".join(split_files))
+        proc = subprocess.Popen(args=command, shell=True, cwd=tmp_dir, stderr=open(stderr_name, 'wb'))
+        exit_code = proc.wait()
+        # Did merge succeed?
+        stderr = open(stderr_name).read().strip()
+        if stderr:
+            if exit_code != 0:
+                shutil.rmtree(tmp_dir)  # clean up
+                raise Exception, "Error merging BAM files: %s" % stderr
+            else:
+                print stderr
+        os.unlink(stderr_name)
+        os.rmdir(tmp_dir)
 
     def _is_coordinate_sorted( self, file_name ):
         """See if the input BAM file is sorted from the header information."""
