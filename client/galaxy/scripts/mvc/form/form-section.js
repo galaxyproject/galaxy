@@ -313,7 +313,7 @@ define(['utils/utils',
             var input_element = new InputElement(this.app, {
                 label           : input_def.label,
                 default_value   : input_def.default_value,
-                optional        : input_def.optional,
+                collapsable     : input_def.collapsable,
                 help            : input_def.help,
                 field           : field
             });
