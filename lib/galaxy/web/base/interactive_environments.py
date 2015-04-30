@@ -63,9 +63,9 @@ class InteractiveEnviornmentRequest(object):
         self.attr.APACHE_URLS = _boolean_option("apache_urls")
         self.attr.SSL_URLS = _boolean_option("ssl")
 
-    def write_conf_file(self, output_directory, extra={}):
+    def get_conf_dict(self, extra={}):
         """
-            Build up a configuration file that is standard for ALL IEs.
+            Build up a configuration dictionary that is standard for ALL IEs.
 
             TODO: replace hashed password with plaintext.
         """
@@ -87,7 +87,9 @@ class InteractiveEnviornmentRequest(object):
         else:
             conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
             web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
-            conf_file['galaxy_paster_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+            conf_file['galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+            # Galaxy paster port is deprecated
+            conf_file['galaxy_paster_port'] = conf_file['galaxy_web_port']
 
         if self.attr.PASSWORD_AUTH:
             # Generate a random password + salt
@@ -105,6 +107,13 @@ class InteractiveEnviornmentRequest(object):
             conf_file[extra_key] = extra[extra_key]
 
         self.attr.notebook_pw = notebook_pw
+        return conf_file
+
+    def write_conf_file(self, output_directory, extra={}):
+        """
+            Will create a yaml configuration file in a given output directory.
+        """
+        conf_file = self.get_conf_dict( output_directory, extra )
         # Write conf
         with open( os.path.join( output_directory, 'conf.yaml' ), 'wb' ) as handle:
             handle.write( yaml.dump(conf_file, default_flow_style=False) )
