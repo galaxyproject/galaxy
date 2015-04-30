@@ -33,7 +33,7 @@ define([], function() {
             // decide wether to expand or collapse optional fields
             this.field.skip = false;
             var v = this.field.value && this.field.value();
-            this.field.skip = Boolean(options.collapsable &&
+            this.field.skip = Boolean(options.collapsible &&
                                         (v === this.default_value ||
                                          String(v) === String(this.default_value) ||
                                          Number(v) === Number(this.default_value) ||
@@ -114,7 +114,7 @@ define([], function() {
                             '<div class="ui-table-form-title">';
 
             // is optional
-            if (options.collapsable) {
+            if (options.collapsible) {
                 tmp +=          '<div class="ui-table-form-optional">' +
                                     '<i class="icon"/>' + options.label +
                                 '</div>';
