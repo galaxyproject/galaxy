@@ -8,14 +8,14 @@
 <body>
     <div class="document">
         <div class="donemessagelarge">
-            <strong>Hello world! It's running...</strong>
+            <p><strong>Your Galaxy is running!</strong></p>
             <hr>
             <ul>
                 <li>To learn how to use Galaxy please see our <a href="https://wiki.galaxyproject.org/Learn">wiki</a></li>
                 <li>To install new tools to your Galaxy follow the <a href="https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial">tutorial</a></li>
                 <li>To set up your Galaxy for others to use please read <a href="https://wiki.galaxyproject.org/Admin/Config/Performance/ProductionServer">this</a></li>
             </ul>
-            <p><h5>Thank you for trying Galaxy!</h5></p>
+            <p><h5>Thank you for trying Galaxy.</h5></p>
         </div>
         <p>To customize this page edit <code>static/welcome.html</code></p>
         <br/>
