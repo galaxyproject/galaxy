@@ -14,7 +14,7 @@ temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
 # Get all configurations
 conf = ie_request.get_conf_dict()
-ENV = '-e ' + ' -e '.join(['"%s=%s"' % (key.upper(), item) for key, item in conf.items()])
+ENV = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
 
 ## IPython Specific
 # Prepare an empty notebook

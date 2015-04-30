@@ -7,8 +7,6 @@ import random
 from galaxy.util.bunch import Bunch
 from galaxy import web
 from galaxy import eggs
-eggs.require("PyYAML")
-import yaml
 from galaxy.managers import api_keys
 
 import logging
@@ -108,15 +106,6 @@ class InteractiveEnviornmentRequest(object):
 
         self.attr.notebook_pw = notebook_pw
         return conf_file
-
-    def write_conf_file(self, output_directory, extra={}):
-        """
-            Will create a yaml configuration file in a given output directory.
-        """
-        conf_file = self.get_conf_dict( output_directory, extra )
-        # Write conf
-        with open( os.path.join( output_directory, 'conf.yaml' ), 'wb' ) as handle:
-            handle.write( yaml.dump(conf_file, default_flow_style=False) )
 
     def generate_hex(self, length):
         return ''.join(random.choice('0123456789abcdef') for _ in range(length))
