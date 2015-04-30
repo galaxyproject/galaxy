@@ -594,3 +594,18 @@ class PageServingPluginManager( PluginManager ):
     #TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
     #TODO: add template helpers specific to the plugins
     #TODO: some sort of url_for for these plugins
+
+
+# =============================================================================
+class Plugin( object ):
+    """
+    Plugin as object/class.
+    """
+
+    def __init__( self, app, path, name, config, context=None, **kwargs ):
+        context = context or {}
+
+        self.app = app
+        self.path = path
+        self.name = name
+        self.config = config

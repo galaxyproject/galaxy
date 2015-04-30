@@ -12,7 +12,7 @@ from galaxy.datatypes.interval import Bed
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util.json import loads
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization import registry
+from galaxy.visualization.plugins import registry
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.data_providers.genome import RawBedDataProvider
 from galaxy.visualization.genomes import decode_dbkey
@@ -25,26 +25,6 @@ from .library import LibraryListGrid
 
 import logging
 log = logging.getLogger( __name__ )
-
-# -- Misc.
-class OpenObject( dict ):
-    #TODO: move to util.data_structures
-    """
-    A dict that allows assignment and attribute retrieval using the dot
-    operator.
-
-    If an attribute isn't contained in the dict `None` is returned (no
-    KeyError).
-    JSON-serializable.
-    """
-    def __getitem__( self, key ):
-        if key not in self:
-            return None
-        return super( OpenObject, self ).__getitem__( key )
-
-    def __getattr__( self, key ):
-        return self.__getitem__( key )
-
 
 
 #
@@ -736,56 +716,10 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako" )
 
-    #
-    # Visualizations.
-    #
+    # ------------------------- registry.
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
-    def saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):
-        """
-        """
-        DEFAULT_VISUALIZATION_NAME = 'Unnamed Visualization'
-
-        # post to saved in order to save a visualization
-        #TODO: re-route this one to clear up signature
-        if trans.request.method == 'POST':
-            if type is None or config is None:
-                return HTTPBadRequest( 'A visualization type and config are required to save a visualization' )
-            if isinstance( config, basestring ):
-                config = loads( config )
-            title = title or DEFAULT_VISUALIZATION_NAME
-
-            #TODO: allow saving to (updating) a specific revision - should be part of UsesVisualization
-            #TODO: would be easier if this returned the visualization directly
-            # check security if posting to existing visualization
-            if id is not None:
-                visualization = self.get_visualization( trans, id, check_ownership=True, check_accessible=False )
-                #??: on not owner: error raised, but not returned (status = 200)
-
-            #TODO: there's no security check in save visualization (if passed an id)
-            returned = self.save_visualization( trans, config, type, id, title )
-
-            # redirect to GET to prevent annoying 'Do you want to post again?' dialog on page reload
-            render_url = web.url_for( controller='visualization', action='saved', id=returned.get( 'vis_id' ) )
-            return trans.response.send_redirect( render_url )
-
-        if id is None:
-            return HTTPBadRequest( 'A valid visualization id is required to load a visualization' )
-
-        # render the saved visualization by passing to render, sending latest revision config
-        #TODO: allow loading a specific revision - should be part of UsesVisualization
-        #visualization = self.get_visualization( trans, id, check_ownership=True, check_accessible=False )
-        visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
-        config = copy.copy( visualization.latest_revision.config )
-
-        # re-add title to kwargs for passing to render
-        if title:
-            kwargs[ 'title' ] = title
-        return self.render( trans, visualization.type, visualization, config=config, **kwargs )
-
-    @web.expose
-    @web.require_login( "use Galaxy visualizations", use_panels=True )
-    def render( self, trans, visualization_name, visualization=None, config=None, embedded=None, **kwargs ):
+    def render( self, trans, visualization_name, embedded=None, **kwargs ):
         """
         Render the appropriate visualization template, parsing the `kwargs`
         into appropriate variables and resources (such as ORM models)
@@ -793,62 +727,90 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
 
         URL: /visualization/show/{visualization_name}
         """
-        config = config or {}
-
-        # validate name vs. registry
-        registry = trans.app.visualizations_registry
-        if not registry:
-            raise HTTPNotFound( 'No visualization registry (possibly disabled in galaxy.ini)' )
-        if visualization_name not in registry.plugins:
-            raise HTTPNotFound( 'Unknown or invalid visualization: ' + visualization_name )
-        plugin = registry.plugins[ visualization_name ]
-
-        returned = None
+        plugin = self._get_plugin_from_registry( trans, visualization_name )
         try:
-            # get the config for passing to the template from the kwargs dict, parsed using the plugin's params setting
-            config_from_kwargs = registry.query_dict_to_config( trans, self, visualization_name, kwargs )
-            config.update( config_from_kwargs )
-            config = OpenObject( **config )
-            # further parse config to resources (models, etc.) used in template based on registry config
-            resources = registry.query_dict_to_resources( trans, self, visualization_name, config )
-
-            # if a saved visualization, pass in the encoded visualization id or None if a new render
-            encoded_visualization_id = None
-            if visualization:
-                encoded_visualization_id = trans.security.encode_id( visualization.id )
-
-            visualization_display_name = plugin.config[ 'name' ]
-            title = visualization.latest_revision.title if visualization else kwargs.get( 'title', None )
-
-            # look up template and render
-            template_path = plugin.config[ 'template' ]
-            returned = registry.fill_template( trans, plugin, template_path,
-                visualization_name=visualization_name,
-                visualization_display_name=visualization_display_name,
-                title=title,
-                saved_visualization=visualization,
-                visualization_id=encoded_visualization_id,
-                embedded=embedded,
-                #NOTE: passing *unparsed* kwargs as query
-                query=kwargs,
-                #NOTE: vars is a dictionary for shared data in the template
-                #   this feels hacky to me but it's what mako recommends:
-                #   http://docs.makotemplates.org/en/latest/runtime.html
-                vars={},
-                config=config,
-                **resources
-            )
-
+            return plugin.render( trans=trans, embedded=embedded, **kwargs )
         except Exception, exception:
-            log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
-            if trans.debug: raise
-            returned = trans.show_error_message(
-                "There was an error rendering the visualization. " +
-                "Contact your Galaxy administrator if the problem persists." +
-                "<br/>Details: " + str( exception ), use_panels=False )
+            self._handle_plugin_error( trans, visualization_name, exception )
 
-        return returned
+    def _get_plugin_from_registry( self, trans, visualization_name ):
+        """
+        Get the named plugin from the registry.
+        :raises HTTPNotFound: if registry has been turned off in config.
+        :raises HTTPNotFound: if visualization_name isn't a registered plugin.
+        """
+        if not trans.app.visualizations_registry:
+            raise HTTPNotFound( 'No visualization registry (possibly disabled in galaxy.ini)' )
+        return trans.app.visualizations_registry.get_plugin( visualization_name )
 
+    def _handle_plugin_error( self, trans, visualization_name, exception ):
+        """
+        Log, raise if debugging; log and show html message if not.
+        """
+        log.exception( 'error rendering visualization (%s): %s', visualization_name, str( exception ) )
+        if trans.debug:
+            raise
+        return trans.show_error_message(
+            "There was an error rendering the visualization. " +
+            "Contact your Galaxy administrator if the problem persists." +
+            "<br/>Details: " + str( exception ), use_panels=False )
+
+    @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):
+        """
+        Save (on POST) or load (on GET) a visualization then render.
+        """
+        # TODO: consider merging saved and render at this point (could break saved URLs, tho)
+        if trans.request.method == 'POST':
+            self._POST_to_saved( trans, id=id, revision=revision, type=type, config=config, title=title, **kwargs )
+
+        # check the id and load the saved visualization
+        if id is None:
+            return HTTPBadRequest( 'A valid visualization id is required to load a visualization' )
+        visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+
+        # re-add title to kwargs for passing to render
+        if title:
+            kwargs[ 'title' ] = title
+        plugin = self._get_plugin_from_registry( trans, visualization.type )
+        try:
+            return plugin.render_saved( visualization, trans=trans, **kwargs )
+        except Exception, exception:
+            self._handle_plugin_error( trans, visualization.type, exception )
+
+    def _POST_to_saved( self, trans, id=None, revision=None, type=None, config=None, title=None, **kwargs ):
+        """
+        Save the visualiztion info (revision, type, config, title, etc.) to
+        the Visualization at `id` or to a new Visualization if `id` is None.
+
+        Uses POST/redirect/GET after a successful save, redirecting to GET.
+        """
+        DEFAULT_VISUALIZATION_NAME = 'Unnamed Visualization'
+
+        # post to saved in order to save a visualization
+        if type is None or config is None:
+            return HTTPBadRequest( 'A visualization type and config are required to save a visualization' )
+        if isinstance( config, basestring ):
+            config = loads( config )
+        title = title or DEFAULT_VISUALIZATION_NAME
+
+        # TODO: allow saving to (updating) a specific revision - should be part of UsesVisualization
+        # TODO: would be easier if this returned the visualization directly
+        # check security if posting to existing visualization
+        if id is not None:
+            self.get_visualization( trans, id, check_ownership=True, check_accessible=False )
+            # ??: on not owner: error raised, but not returned (status = 200)
+        # TODO: there's no security check in save visualization (if passed an id)
+        returned = self.save_visualization( trans, config, type, id, title )
+
+        # redirect to GET to prevent annoying 'Do you want to post again?' dialog on page reload
+        render_url = web.url_for( controller='visualization', action='saved', id=returned.get( 'vis_id' ) )
+        return trans.response.send_redirect( render_url )
+
+    #
+    # Visualizations.
+    #
     @web.expose
     @web.require_login()
     def trackster(self, trans, **kwargs):
@@ -884,7 +846,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             app['viz_config'] = self.get_visualization_config( trans, vis )
 
         # backup id
-        app['id'] = id;
+        app['id'] = id
 
         # add dataset id
         app['add_dataset'] = new_dataset_id
