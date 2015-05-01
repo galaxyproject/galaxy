@@ -3,8 +3,6 @@ Provides factory methods to assemble the Galaxy web application
 """
 
 import atexit
-import os
-import os.path
 import sys
 
 from paste import httpexceptions
@@ -535,6 +533,7 @@ def populate_api_routes( webapp, app ):
     #    controller="metrics", action="show", conditions=dict( method=["GET"] ) )
     webapp.mapper.connect( "create", "/api/metrics", controller="metrics",
                            action="create", conditions=dict( method=["POST"] ) )
+
 
 def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
     # Not just using map.resources because actions should be based on name not id
