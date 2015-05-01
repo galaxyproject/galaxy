@@ -1,5 +1,24 @@
 module.exports = function(grunt) {
-    var DEV_PATH = './galaxy/scripts',
+    "use strict";
+
+    var _ = grunt.util._,
+        fmt = _.sprintf;
+
+    var theme = grunt.option( 'theme', 'blue' ),
+        styleDistPath = '../static/style/blue',
+        imagesPath = '../static/images',
+        lessPath = './galaxy/style/less',
+        lessFiles = [
+            'base',
+            'autocomplete_tagging',
+            'embed_item',
+            'iphone',
+            'masthead',
+            'library',
+            'trackster',
+            'circster'
+        ],
+        DEV_PATH = './galaxy/scripts',
         DIST_PATH = '../static/scripts',
         MAPS_PATH = '../static/maps',
         // this symlink allows us to serve uncompressed scripts in DEV_PATH for use with sourcemaps
@@ -61,6 +80,48 @@ module.exports = function(grunt) {
             }
         },
 
+        // Create sprite images and .less files
+        sprite: {
+            options: {
+                algorithm: 'binary-tree'
+            },
+            'history-buttons': {
+                src: fmt( '%s/history-buttons/*.png', imagesPath ),
+                destImg: fmt( '%s/sprite-history-buttons.png', styleDistPath ),
+                destCSS: fmt( '%s/sprite-history-buttons.less', lessPath )
+            },
+            'history-states': {
+                src: fmt( '%s/history-states/*.png', imagesPath ),
+                destImg: fmt( '%s/sprite-history-states.png', styleDistPath ),
+                destCSS: fmt( '%s/sprite-history-states.less', lessPath )
+            },
+            'fugue': {
+                src: fmt( '%s/fugue/*.png', imagesPath ),
+                destImg: fmt( '%s/sprite-fugue.png', styleDistPath ),
+                destCSS: fmt( '%s/sprite-fugue.less', lessPath )
+            }
+        },
+
+        // Compile less files
+        less: {
+            options: {
+                compress: true,
+                paths: [ styleDistPath ]
+            },
+            dist: {
+                files: _.reduce( lessFiles, function( d, s ) {
+                    d[ fmt( '%s/%s.css', styleDistPath, s ) ] = [ fmt( '%s/%s.less', lessPath, s ) ]; return d;
+                }, {} )
+            }
+        },
+
+        // remove tmp files
+        clean: {
+            clean : [
+                fmt( '%s/tmp-site-config.less', lessPath )
+            ]
+        },
+
         // call bower to install libraries and other external resources
         "bower-install-simple" : {
             options: {
@@ -120,11 +181,19 @@ module.exports = function(grunt) {
         }
 
     });
+    // Write theme variable for less
+    grunt.registerTask( 'less-site-config', 'Write site configuration for less', function() {
+        grunt.file.write( fmt( '%s/tmp-site-config.less', lessPath ), fmt( "@theme-name: %s;", theme ) );
+    });
 
     grunt.loadNpmTasks( 'grunt-contrib-watch' );
     grunt.loadNpmTasks( 'grunt-contrib-uglify' );
+    grunt.loadNpmTasks( 'grunt-contrib-less' );
+    grunt.loadNpmTasks( 'grunt-spritesmith' );
+    grunt.loadNpmTasks( 'grunt-contrib-clean' );
     grunt.loadNpmTasks( 'grunt-bower-install-simple');
 
+    grunt.registerTask( 'style', [ 'sprite', 'less-site-config', 'less', 'clean' ] );
     grunt.registerTask( 'default', [ 'uglify' ] );
 
     // -------------------------------------------------------------------------- decompress for easier debugging
@@ -186,5 +255,4 @@ module.exports = function(grunt) {
     grunt.registerTask( 'copy-libs', 'copy external libraries to src', copyLibs );
     grunt.registerTask( 'install-libs', 'fetch external libraries and copy to src',
                       [ 'bower-install-simple:prod', 'copy-libs' ] );
-
 };
