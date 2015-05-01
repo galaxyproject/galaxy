@@ -124,7 +124,7 @@ def postfork_setup():
     if app.config.is_uwsgi:
         import uwsgi
         app.config.server_name += ".%s" % uwsgi.worker_id()
-    app.setup_control_queue()
+    app.bind_and_start_control_queue()
 
 
 def populate_api_routes( webapp, app ):

@@ -24,52 +24,6 @@ logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
-    """
-    This is a flexible worker for galaxy's queues.  Each process, web or
-    handler, will have one of these used for dispatching so called 'control'
-    tasks.
-    """
-    def __init__(self, app, queue, task_mapping, connection=None):
-        super(GalaxyQueueWorker, self).__init__()
-        log.info("Initalizing Galaxy Queue Worker on %s", util.mask_password_from_url(app.config.amqp_internal_connection))
-        if connection:
-            self.connection = connection
-        else:
-            self.connection = Connection(app.config.amqp_internal_connection)
-        self.app = app
-        # Eventually we may want different workers w/ their own queues and task
-        # mappings.  Right now, there's only the one.
-        self.control_queue = queue
-        self.task_mapping = task_mapping
-        self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config)
-        # TODO we may want to purge the queue at the start to avoid executing
-        # stale 'reload_tool', etc messages.  This can happen if, say, a web
-        # process goes down and messages get sent before it comes back up.
-        # Those messages will no longer be useful (in any current case)
-
-    def get_consumers(self, Consumer, channel):
-        return [Consumer(queues=self.control_queue,
-                         callbacks=[self.process_task])]
-
-    def process_task(self, body, message):
-        if body['task'] in self.task_mapping:
-            if body.get('noop', None) != self.app.config.server_name:
-                try:
-                    f = self.task_mapping[body['task']]
-                    log.info("Instance recieved '%s' task, executing now." % body['task'])
-                    f(self.app, **body['kwargs'])
-                except Exception:
-                    # this shouldn't ever throw an exception, but...
-                    log.exception("Error running control task type: %s" % body['task'])
-        else:
-            log.warning("Recieved a malformed task message:\n%s" % body)
-        message.ack()
-
-    def shutdown(self):
-        self.should_stop = True
-
-
 def send_control_task(trans, task, noop_self=False, kwargs={}):
     log.info("Sending %s control task." % task)
     payload = {'task': task,
@@ -127,3 +81,58 @@ control_message_to_task = { 'reload_tool': reload_tool,
                             'reload_display_application': reload_display_application,
                             'reload_tool_data_tables': reload_tool_data_tables,
                             'admin_job_lock': admin_job_lock}
+
+
+class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
+    """
+    This is a flexible worker for galaxy's queues.  Each process, web or
+    handler, will have one of these used for dispatching so called 'control'
+    tasks.
+    """
+    def __init__(self, app, queue=None, task_mapping=control_message_to_task, connection=None):
+        super(GalaxyQueueWorker, self).__init__()
+        log.info("Initalizing Galaxy Queue Worker on %s", util.mask_password_from_url(app.config.amqp_internal_connection))
+        self.daemon = True
+        if connection:
+            self.connection = connection
+        else:
+            self.connection = app.amqp_internal_connection_obj
+        # explicitly force connection instead of lazy-connecting the first
+        # time it is required.
+        self.connection.connect()
+        self.app = app
+        # Eventually we may want different workers w/ their own queues and task
+        # mappings.  Right now, there's only the one.
+        if queue:
+            # Allows assignment of a particular queue for this worker.
+            self.control_queue = queue
+        else:
+            # Default to figuring out which control queue to use based on the app config.
+            queue = galaxy.queues.control_queue_from_config(app.config)
+        self.task_mapping = task_mapping
+        self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config)
+        # TODO we may want to purge the queue at the start to avoid executing
+        # stale 'reload_tool', etc messages.  This can happen if, say, a web
+        # process goes down and messages get sent before it comes back up.
+        # Those messages will no longer be useful (in any current case)
+
+    def get_consumers(self, Consumer, channel):
+        return [Consumer(queues=self.control_queue,
+                         callbacks=[self.process_task])]
+
+    def process_task(self, body, message):
+        if body['task'] in self.task_mapping:
+            if body.get('noop', None) != self.app.config.server_name:
+                try:
+                    f = self.task_mapping[body['task']]
+                    log.info("Instance recieved '%s' task, executing now." % body['task'])
+                    f(self.app, **body['kwargs'])
+                except Exception:
+                    # this shouldn't ever throw an exception, but...
+                    log.exception("Error running control task type: %s" % body['task'])
+        else:
+            log.warning("Recieved a malformed task message:\n%s" % body)
+        message.ack()
+
+    def shutdown(self):
+        self.should_stop = True
