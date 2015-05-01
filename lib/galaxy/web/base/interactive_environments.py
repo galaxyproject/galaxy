@@ -43,6 +43,11 @@ class InteractiveEnviornmentRequest(object):
         self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
     def load_deploy_config(self, default_dict={}):
+        # For backwards compat, any new variables added to the base .ini file
+        # will need to be recorded here. The ConfigParser doesn't provide a
+        # .get() that will ignore missing sections, so we must make use of
+        # their defaults dictionary instead.
+        default_dict['command_inject'] = '--sig-proxy=true'
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
         if not os.path.exists( conf_path ):
