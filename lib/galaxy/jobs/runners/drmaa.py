@@ -189,7 +189,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 jt.nativeSpecification += '\n' + 'ShouldTransferFiles = IF_NEEDED';
             else:
                 jt.nativeSpecification += '\n' + 'transfer_input_files = '+job_wrapper.working_directory + os.sep;
-                jt.nativeSpecification += '\n' + 'should_transfer_files = IF_NEEDED';
+                jt.nativeSpecification += '\n' + 'should_transfer_files = YES';
 
         #For CCC
         if(self.app.config.use_CCC_DRMAA):
