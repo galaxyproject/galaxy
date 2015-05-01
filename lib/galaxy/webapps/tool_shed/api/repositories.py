@@ -20,9 +20,11 @@ from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
+from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
 
 from tool_shed.capsule import capsule_manager
 from tool_shed.metadata import repository_metadata_manager
@@ -316,20 +318,54 @@ class RepositoriesController( BaseAPIController ):
             return_dict[ key ] = val
         return return_dict
 
-    @web.expose_api_anonymous
+    @expose_api_raw_anonymous_and_sessionless
     def index( self, trans, deleted=False, owner=None, name=None, **kwd ):
         """
         GET /api/repositories
+        Displays a collection of repositories with optional criteria.
 
-        :param deleted: True/False, displays repositories that are or are not set to deleted.
-        :param owner: the owner's public username.
-        :param name: the repository name.
+        :param q:        (optional)if present search on the given query will be performed
+        :type  q:        str 
 
-        Displays a collection (list) of repositories.
+        :param page:     (optional)requested page of the search
+        :type  page:     int
+
+        :param jsonp:    (optional)flag whether to use jsonp format response, defaults to False
+        :type  jsonp:    bool
+
+        :param callback: (optional)name of the function to wrap callback in
+                         used only when jsonp is true, defaults to 'callback'
+        :type  callback: str
+
+        :param deleted:  (optional)displays repositories that are or are not set to deleted.
+        :type  deleted:  bool
+
+        :param owner:    (optional)the owner's public username.
+        :type  owner:    str
+        
+        :param name:     (optional)the repository name.
+        :type  name:     str
+
+        :returns dict:   object containing list of results
+
+        Examples:
+            GET http://localhost:9009/api/repositories
+            GET http://localhost:9009/api/repositories?q=fastq
         """
-        # Example URL: http://localhost:9009/api/repositories
         repository_dicts = []
         deleted = util.asbool( deleted )
+        q = kwd.get( 'q', '' )
+        if q:
+            page = kwd.get( 'page', 1 )
+            return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )
+            callback = kwd.get( 'callback', 'callback' )  
+            search_results = self._search( trans, q, page )
+            if return_jsonp:
+                response = str( '%s(%s);' % ( callback, json.dumps( search_results ) ) )
+            else:
+                response = json.dumps( search_results )
+            return response
+
         clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == False,
                               trans.app.model.Repository.table.c.deleted == deleted ) ]
         if owner is not None:
@@ -345,7 +381,28 @@ class RepositoriesController( BaseAPIController ):
             repository_dict[ 'category_ids' ] = \
                     [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
             repository_dicts.append( repository_dict )
-        return repository_dicts
+        return json.dumps( repository_dicts )
+
+    def _search( self, trans, q, page=1 ):
+        """
+        Perform the search over TS repositories.
+        Note that search works over the Whoosh index which you have
+        to pre-create with scripts/tool_shed/build_ts_whoosh_index.sh manually.
+        Also TS config option toolshed_search_on has to be True and
+        whoosh_index_dir has to be specified.
+        """
+        if not self.app.config.toolshed_search_on:
+            raise exceptions.ConfigDoesNotAllowException( 'Searching the TS through the API is turned off for this instance.' )
+        if not self.app.config.whoosh_index_dir:
+            raise exceptions.ConfigDoesNotAllowException( 'There is no directory for the search index specified. Please contact the administrator.' )
+        search_term = q.strip()
+        if len( search_term ) < 3:
+            raise exceptions.RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
+
+        repo_search = RepoSearch()
+        results = repo_search.search( trans, search_term, page )
+        results[ 'hostname' ] = web.url_for( '/', qualified = True )
+        return results
 
     @web.expose_api
     def remove_repository_registry_entry( self, trans, payload, **kwd ):
