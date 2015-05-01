@@ -86,7 +86,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     conf = global_conf.copy()
     conf.update(local_conf)
     debug = asbool( conf.get( 'debug', False ) )
-    is_uwsgi = process_is_uwsgi()
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
@@ -118,7 +117,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             from paste.debug import prints
             app = prints.PrintDebugMiddleware( app, conf )
             log.debug( "Enabling 'print debug' middleware" )
-    if debug and asbool( conf.get( 'use_interactive', False ) ) and not is_uwsgi:
+    if debug and asbool( conf.get( 'use_interactive', False ) ) and not process_is_uwsgi:
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
@@ -128,7 +127,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
                                            templating_formatters=build_template_error_formatters() )
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
-        if debug and asbool( conf.get( 'use_interactive', False ) ) and is_uwsgi:
+        if debug and asbool( conf.get( 'use_interactive', False ) ) and process_is_uwsgi:
             log.error("Interactive debugging middleware is enabled in your configuration "
                       "but this is a uwsgi process.  Refusing to wrap in interactive error middleware.")
         # Not in interactive debug mode, just use the regular error middleware

@@ -24,25 +24,23 @@ from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
 
+# The uwsgi module is automatically injected by the parent uwsgi
+# process and only exists that way.  If anything works, this is a
+# uwsgi-managed process.
+try:
+    import uwsgi
+    if uwsgi.numproc:
+        process_is_uwsgi = True
+except ImportError:
+    # This is not a uwsgi process, or something went horribly wrong.
+    process_is_uwsgi = False
+
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
     if not os.path.isabs( path ):
         path = os.path.join( root, path )
     return path
-
-
-def process_is_uwsgi():
-    try:
-        # The uwsgi module is automatically injected by the parent uwsgi
-        # process and only exists that way.  If anything works, this is a
-        # uwsgi-managed process.
-        import uwsgi
-        if uwsgi.numproc:
-            return True
-    except ImportError:
-        # This is not a uwsgi process, or something went horribly wrong.
-        return False
 
 
 class Configuration( object ):
@@ -60,7 +58,6 @@ class Configuration( object ):
         os.umask( self.umask )  # can't get w/o set, so set it back
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
-        self.is_uwsgi = process_is_uwsgi()
         self.version_major = VERSION_MAJOR
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
