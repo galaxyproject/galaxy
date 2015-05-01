@@ -8,7 +8,7 @@
 
 [docker]
 command = docker
-image = bgruening/docker-ipython-notebook
+image = bgruening/docker-ipython-notebook:0.2
 
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
 # this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the
