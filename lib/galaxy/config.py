@@ -32,6 +32,19 @@ def resolve_path( path, root ):
     return path
 
 
+
+def process_is_uwsgi():
+    try:
+        # The uwsgi module is automatically injected by the parent uwsgi
+        # process and only exists that way.  If anything works, this is a
+        # uwsgi-managed process.
+        import uwsgi
+        if uwsgi.numproc:
+            return True
+    except ImportError:
+        # This is not a uwsgi process, or something went horribly wrong.
+        return False
+
 class Configuration( object ):
     deprecated_options = ( 'database_file', )
 
@@ -47,19 +60,7 @@ class Configuration( object ):
         os.umask( self.umask )  # can't get w/o set, so set it back
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
-        # TEST FOR UWSGI
-        self.is_uwsgi = False
-        try:
-            # The uwsgi module is automatically injected by the parent uwsgi
-            # process and only exists that way.  If anything works, this is a
-            # uwsgi-managed process.
-            import uwsgi
-            if uwsgi.numproc:
-                self.is_uwsgi = True
-        except ImportError:
-            # This is not a uwsgi process, or something went horribly wrong.
-            pass
-
+        self.is_uwsgi = process_is_uwsgi()
         self.version_major = VERSION_MAJOR
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
