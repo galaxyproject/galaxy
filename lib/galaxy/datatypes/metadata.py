@@ -24,6 +24,7 @@ from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util import stringify_dictionary_keys
 from galaxy.util import string_as_bool
 from galaxy.util import in_directory
+from galaxy.util.json import safe_dumps
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 
@@ -507,7 +508,7 @@ class DictParameter( MetadataParameter ):
 
     def to_safe_string( self, value ):
         # We do not sanitize json dicts
-        return json.safe_dumps( value )
+        return safe_dumps( value )
 
 
 class PythonObjectParameter( MetadataParameter ):
