@@ -32,7 +32,6 @@ def resolve_path( path, root ):
     return path
 
 
-
 def process_is_uwsgi():
     try:
         # The uwsgi module is automatically injected by the parent uwsgi
@@ -44,6 +43,7 @@ def process_is_uwsgi():
     except ImportError:
         # This is not a uwsgi process, or something went horribly wrong.
         return False
+
 
 class Configuration( object ):
     deprecated_options = ( 'database_file', )
