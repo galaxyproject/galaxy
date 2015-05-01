@@ -91,7 +91,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
     """
     def __init__(self, app, queue=None, task_mapping=control_message_to_task, connection=None):
         super(GalaxyQueueWorker, self).__init__()
-        log.info("Initalizing Galaxy Queue Worker on %s", util.mask_password_from_url(app.config.amqp_internal_connection))
+        log.info("Initalizing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))
         self.daemon = True
         if connection:
             self.connection = connection
@@ -116,6 +116,11 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
         # process goes down and messages get sent before it comes back up.
         # Those messages will no longer be useful (in any current case)
 
+    def bind_and_start(self):
+        log.info("Binding and starting galaxy control worker for %s", self.app.config.server_name)
+        self.control_queue = galaxy.queues.control_queue_from_config(self.app.config)
+        self.start()
+
     def get_consumers(self, Consumer, channel):
         return [Consumer(queues=self.control_queue,
                          callbacks=[self.process_task])]
@@ -125,7 +130,7 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             if body.get('noop', None) != self.app.config.server_name:
                 try:
                     f = self.task_mapping[body['task']]
-                    log.info("Instance recieved '%s' task, executing now." % body['task'])
+                    log.info("Instance '%s' recieved '%s' task, executing now.", self.app.config.server_name, body['task'])
                     f(self.app, **body['kwargs'])
                 except Exception:
                     # this shouldn't ever throw an exception, but...

@@ -157,11 +157,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
 
-    def bind_and_start_control_queue(self):
-        log.info("Binding and starting galaxy control worker for %s", app.config.server_name)
-        self.control_worker.control_queue = galaxy.queues.control_queue_from_config(self.config)
-        self.control_worker.start()
-
     def shutdown( self ):
         self.workflow_scheduling_manager.shutdown()
         self.job_manager.shutdown()
