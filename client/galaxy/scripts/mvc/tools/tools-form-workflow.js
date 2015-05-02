@@ -41,7 +41,11 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             Utils.deepeach(options.inputs, function(item) {
                 if (item.type) {
                     if (item.type == 'conditional') {
-                        item.test_param.optional = false;
+                        item.test_param.collapsible = false;
+                    } else {
+                        if ((['data', 'data_collection']).indexOf(item.type) == -1) {
+                            item.collapsible = true;
+                        }
                     }
                 }
             });
@@ -140,6 +144,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             var input_config = {
                 title   : 'Add Actions: \'' + output_id + '\'',
                 type    : 'section',
+                flat    : true,
                 inputs  : [{
                     action      : 'RenameDatasetAction',
                     argument    : 'newname',

@@ -98,7 +98,7 @@ return Backbone.Model.extend({
                             break;
                         // handle sections
                         case 'section':
-                            convert(job_input_id, node);
+                            convert(input.flat && job_input_id || '', node);
                             break;
                         default:
                             // get field
