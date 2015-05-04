@@ -173,6 +173,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 },{
                     title   : 'Assign columns',
                     type    : 'section',
+                    flat    : true,
                     inputs  : [{
                         action      : 'ColumnSetAction',
                         argument    : 'chromCol',
