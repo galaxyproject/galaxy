@@ -1,3 +1,8 @@
+/**
+ * Grunt task to compress/bundle static/scripts.
+ * @param  {Object} grunt main grunt file
+ * @return {Function} callback to build this task
+ */
 module.exports = function( grunt ){
     "use strict";
 
