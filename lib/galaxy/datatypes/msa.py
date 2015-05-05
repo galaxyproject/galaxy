@@ -2,30 +2,12 @@ from galaxy.datatypes.data import Text
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
-import subprocess
+from galaxy.datatypes.util import generic_util
 import os
 
 
 import logging
 log = logging.getLogger(__name__)
-
-
-def count_special_lines( word, filename, invert=False ):
-    """
-        searching for special 'words' using the grep tool
-        grep is used to speed up the searching and counting
-        The number of hits is returned.
-    """
-    try:
-        cmd = ["grep", "-c"]
-        if invert:
-            cmd.append('-v')
-        cmd.extend([word, filename])
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        return int(out.communicate()[0].split()[0])
-    except:
-        pass
-    return 0
 
 
 class Hmmer( Text ):
@@ -84,7 +66,7 @@ class Stockholm_1_0( Text ):
             dataset.blurb = 'file purged from disc'
 
     def sniff( self, filename ):
-        if count_special_lines('^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', filename) > 0:
+        if generic_util.count_special_lines('^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', filename) > 0:
             return True
         else:
             return False
@@ -94,7 +76,7 @@ class Stockholm_1_0( Text ):
 
         Set the number of models in dataset.
         """
-        dataset.metadata.number_of_models = count_special_lines('^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', dataset.file_name)
+        dataset.metadata.number_of_models = generic_util.count_special_lines('^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', dataset.file_name)
 
     def split( cls, input_datasets, subdir_generator_function, split_params):
         """
