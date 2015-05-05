@@ -1656,8 +1656,6 @@ class BaseDataToolParameter( ToolParameter ):
         class_name = self.__class__.__name__
         assert trans is not None, "%s requires a trans" % class_name
         if history is None:
-            history = trans.get_history()
-        if history is None:
             history = trans.get_history( create=True )
         assert history is not None, "%s requires a history" % class_name
         return history
