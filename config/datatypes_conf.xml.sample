@@ -272,7 +272,8 @@
     <!-- Excel datatypes -->
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" />
     <!-- MSA Datatypes -->
-    <datatype extension="hmm" type="galaxy.datatypes.text:Hmmer3" display_in_upload="true" />
+    <datatype extension="hmm" type="galaxy.datatypes.msa:Hmmer3" display_in_upload="true" />
+    <datatype extension="stockholm" type="galaxy.datatypes.msa:Stockholm_1_0" display_in_upload="True" />
   </registration>
   <sniffers>
     <!--
@@ -335,6 +336,8 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
+    <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
+    <sniffer type="galaxy.datatypes.msa:Hmmer3" />
     <!--
     Keep this commented until the sniff method in the assembly.py
     module is fixed to not read the entire file.
