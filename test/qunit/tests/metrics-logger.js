@@ -66,7 +66,6 @@ define([
     };
 
     module( "Metrics logger tests" );
-    console.debug( '\n' );
     // ======================================================================== MetricsLogger
     test( "logger construction/initializiation defaults", function() {
         var logger = new metrics.MetricsLogger({});
@@ -177,7 +176,7 @@ define([
         logger.emit( 'metric', 'test', [ 1, 2, { three: 3 }] );
         logger._postCache();
         server.respond();
-        
+
         ok( callback.calledOnce, 'onServerResponse was called' );
         equal( logger.cache.length(), 0, 'should have emptied cache (on success)' );
         equal( logger._postSize, 1000, '_postSize still at default' );
