@@ -139,7 +139,7 @@ class Obo( Text ):
 
     def sniff( self, filename ):
         """
-            Try to guess the Obo filetype. 
+            Try to guess the Obo filetype.
             It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
         """
         stanza = re.compile(r'^\[.*\]$')
@@ -158,7 +158,7 @@ class Obo( Text ):
 
 class Arff( Text ):
     """
-        An ARFF (Attribute-Relation File Format) file is an ASCII text file that describes a list of instances sharing a set of attributes. 
+        An ARFF (Attribute-Relation File Format) file is an ASCII text file that describes a list of instances sharing a set of attributes.
         http://weka.wikispaces.com/ARFF
     """
     file_ext = "arff"
@@ -179,7 +179,7 @@ class Arff( Text ):
 
     def sniff( self, filename ):
         """
-            Try to guess the Arff filetype. 
+            Try to guess the Arff filetype.
             It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
         """
         with open( filename ) as handle:
@@ -318,7 +318,7 @@ class SnpSiftDbNSFP( Text ):
     composite_type = 'auto_primary_file'
     allow_datatype_change = False
     """
-    ## The dbNSFP file is a tabular file with 1 header line 
+    ## The dbNSFP file is a tabular file with 1 header line
     ## The first 4 columns are required to be: chrom	pos	ref	alt
     ## These match columns 1,2,4,5 of the VCF file
     ## SnpSift requires the file to be block-gzipped and the indexed with samtools tabix
@@ -335,14 +335,14 @@ class SnpSiftDbNSFP( Text ):
     def init_meta( self, dataset, copy_from=None ):
         Text.init_meta( self, dataset, copy_from=copy_from )
     def generate_primary_file( self, dataset = None ):
-        """ 
+        """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
         self.regenerate_primary_file( dataset )
     def regenerate_primary_file(self,dataset):
         """
-        cannot do this until we are setting metadata 
+        cannot do this until we are setting metadata
         """
         annotations = "dbNSFP Annotations: %s\n" % ','.join(dataset.metadata.annotation)
         f = open(dataset.file_name,'a')
@@ -366,7 +366,7 @@ class SnpSiftDbNSFP( Text ):
                             lines = buf.splitlines()
                             headers = lines[0].split('\t')
                             dataset.metadata.annotation = headers[4:]
-                        except Exception,e:        
+                        except Exception,e:
                             log.warn("set_meta fname: %s  %s" % (fname,str(e)))
                         finally:
                             fh.close()
@@ -376,3 +376,27 @@ class SnpSiftDbNSFP( Text ):
         except Exception,e:
             log.warn("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown',str(e)))
 
+
+class Hmmer3( Text ):
+    file_ext = "hmm"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.blurb = "HMMER3 Database"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff(self, filename):
+        """HMMER3 files start with HMMER3/f
+        """
+        with open(filename, 'r') as handle:
+            return handle.read(8) == 'HMMER3/f'
+        return False
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "HMMER3 database (%s)" % ( nice_size( dataset.get_size() ) )

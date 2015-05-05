@@ -271,6 +271,8 @@
     <datatype extension="rdf" type="galaxy.datatypes.graph:Rdf" display_in_upload="true"/>
     <!-- Excel datatypes -->
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" />
+    <!-- MSA Datatypes -->
+    <datatype extension="hmm" type="galaxy.datatypes.text:Hmmer3" display_in_upload="true" />
   </registration>
   <sniffers>
     <!--
