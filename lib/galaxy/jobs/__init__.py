@@ -1801,7 +1801,7 @@ class TaskWrapper(JobWrapper):
         task.command_line = self.command_line
         self.sa_session.flush()
 
-    def cleanup( self ):
+    def cleanup( self, delete_files=True ):
         # There is no task cleanup.  The job cleans up for all tasks.
         pass
 
