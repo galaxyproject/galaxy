@@ -272,7 +272,7 @@
     <!-- Excel datatypes -->
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" />
     <!-- MSA Datatypes -->
-    <datatype extension="hmm" type="galaxy.datatypes.msa:Hmmer3" display_in_upload="true" />
+    <datatype extension="hmm3" type="galaxy.datatypes.msa:Hmmer3" display_in_upload="true" />
     <datatype extension="stockholm" type="galaxy.datatypes.msa:Stockholm_1_0" display_in_upload="True" />
   </registration>
   <sniffers>
