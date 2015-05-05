@@ -6,36 +6,26 @@ from galaxy.webapps.tool_shed import model
 import logging
 log = logging.getLogger( __name__ )
 
-# Whoosh is compatible with Python 2.5+ 
-# Try to import Whoosh and set flag to indicate whether 
-# the tool search is ready.
-try:
-    eggs.require( "Whoosh" )
-    import whoosh.index
-    from whoosh import scoring
-    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT, STORED
-    from whoosh.scoring import BM25F
-    from whoosh.qparser import MultifieldParser
-    from whoosh.index import Index
-    search_ready = True
+eggs.require( "Whoosh" )
+import whoosh.index
+from whoosh import scoring
+from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT, STORED
+from whoosh.scoring import BM25F
+from whoosh.qparser import MultifieldParser
+from whoosh.index import Index
 
-    schema = Schema(
-        id = STORED,
-        name = TEXT( field_boost = 1.7, stored = True ),
-        description = TEXT( field_boost = 1.5, stored = True ),
-        long_description = TEXT( stored = True ),
-        homepage_url = TEXT( stored = True ),
-        remote_repository_url = TEXT( stored = True ),
-        repo_owner_username = TEXT( stored = True ),
-        times_downloaded = STORED,
-        approved = STORED,
-        last_updated = STORED,
-        full_last_updated = STORED )
-
-except ImportError, e:
-    log.error( 'There was an error while importing the Whoosh library.' )
-    search_ready = False
-    schema = None
+schema = Schema(
+    id = STORED,
+    name = TEXT( field_boost = 1.7, stored = True ),
+    description = TEXT( field_boost = 1.5, stored = True ),
+    long_description = TEXT( stored = True ),
+    homepage_url = TEXT( stored = True ),
+    remote_repository_url = TEXT( stored = True ),
+    repo_owner_username = TEXT( stored = True ),
+    times_downloaded = STORED,
+    approved = STORED,
+    last_updated = STORED,
+    full_last_updated = STORED )
 
     
 class RepoWeighting( scoring.BM25F ):
@@ -82,60 +72,57 @@ class RepoSearch( object ):
 
         :returns results: dictionary containing number of hits, hits themselves and matched terms for each
         """
-        if search_ready:
-            whoosh_index_dir = trans.app.config.whoosh_index_dir
-            index_exists = whoosh.index.exists_in( whoosh_index_dir )
-            if index_exists:
-                index = whoosh.index.open_dir( whoosh_index_dir )
-                try:
-                    # Some literature about BM25F:
-                    # http://trec.nist.gov/pubs/trec13/papers/microsoft-cambridge.web.hard.pdf
-                    # http://en.wikipedia.org/wiki/Okapi_BM25
-                    # __Basically__ the higher number the bigger weight.
-                    repo_weighting = RepoWeighting( field_B = { 'name_B' : 0.9,
-                                                                'description_B' : 0.6,
-                                                                'long_description_B' : 0.5,
-                                                                'homepage_url_B' : 0.3,
-                                                                'remote_repository_url_B' : 0.2,
-                                                                'repo_owner_username' : 0.3 } )
+        whoosh_index_dir = trans.app.config.whoosh_index_dir
+        index_exists = whoosh.index.exists_in( whoosh_index_dir )
+        if index_exists:
+            index = whoosh.index.open_dir( whoosh_index_dir )
+            try:
+                # Some literature about BM25F:
+                # http://trec.nist.gov/pubs/trec13/papers/microsoft-cambridge.web.hard.pdf
+                # http://en.wikipedia.org/wiki/Okapi_BM25
+                # __Basically__ the higher number the bigger weight.
+                repo_weighting = RepoWeighting( field_B = { 'name_B' : 0.9,
+                                                            'description_B' : 0.6,
+                                                            'long_description_B' : 0.5,
+                                                            'homepage_url_B' : 0.3,
+                                                            'remote_repository_url_B' : 0.2,
+                                                            'repo_owner_username' : 0.3 } )
 
-                    searcher = index.searcher( weighting = repo_weighting )
+                searcher = index.searcher( weighting = repo_weighting )
 
-                    parser = MultifieldParser( [
-                        'name',
-                        'description',
-                        'long_description',
-                        'homepage_url',
-                        'remote_repository_url',
-                        'repo_owner_username' ], schema = schema )
+                parser = MultifieldParser( [
+                    'name',
+                    'description',
+                    'long_description',
+                    'homepage_url',
+                    'remote_repository_url',
+                    'repo_owner_username' ], schema = schema )
 
-                    user_query = parser.parse( '*' + search_term + '*' )
-                    hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
+                user_query = parser.parse( '*' + search_term + '*' )
+                hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
 
-                    log.debug( 'searching for: #' +  str( search_term ) )
-                    log.debug( 'total hits: ' +  str( len( hits ) ) )
-                    log.debug( 'scored hits: ' + str( hits.scored_length() ) )
-                    results = {}
-                    results[ 'total_results'] = str( len( hits ) )
-                    results[ 'hits' ] = []
-                    for hit in hits:
-                        hit_dict = {}
-                        hit_dict[ 'id' ] = trans.security.encode_id( hit.get( 'id' ) )
-                        hit_dict[ 'repo_owner_username' ] = hit.get( 'repo_owner_username' )
-                        hit_dict[ 'name' ] = hit.get( 'name' )
-                        hit_dict[ 'long_description' ] = hit.get( 'long_description' )
-                        hit_dict[ 'remote_repository_url' ] = hit.get( 'remote_repository_url' )
-                        hit_dict[ 'homepage_url' ] = hit.get( 'homepage_url' )
-                        hit_dict[ 'description' ] = hit.get( 'description' )
-                        hit_dict[ 'last_updated' ] = hit.get( 'last_updated' )
-                        hit_dict[ 'full_last_updated' ] = hit.get( 'full_last_updated' )
-                        hit_dict[ 'approved' ] = hit.get( 'approved' )
-                        hit_dict[ 'times_downloaded' ] = hit.get( 'times_downloaded' )
-                        results[ 'hits' ].append( {'repository':  hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score } )
-                    return results
-                finally:
-                    searcher.close()
-            else:
-                raise exceptions.InternalServerError( 'The search index file is missing.' )
+                log.debug( 'searching for: #' +  str( search_term ) )
+                log.debug( 'total hits: ' +  str( len( hits ) ) )
+                log.debug( 'scored hits: ' + str( hits.scored_length() ) )
+                results = {}
+                results[ 'total_results'] = str( len( hits ) )
+                results[ 'hits' ] = []
+                for hit in hits:
+                    hit_dict = {}
+                    hit_dict[ 'id' ] = trans.security.encode_id( hit.get( 'id' ) )
+                    hit_dict[ 'repo_owner_username' ] = hit.get( 'repo_owner_username' )
+                    hit_dict[ 'name' ] = hit.get( 'name' )
+                    hit_dict[ 'long_description' ] = hit.get( 'long_description' )
+                    hit_dict[ 'remote_repository_url' ] = hit.get( 'remote_repository_url' )
+                    hit_dict[ 'homepage_url' ] = hit.get( 'homepage_url' )
+                    hit_dict[ 'description' ] = hit.get( 'description' )
+                    hit_dict[ 'last_updated' ] = hit.get( 'last_updated' )
+                    hit_dict[ 'full_last_updated' ] = hit.get( 'full_last_updated' )
+                    hit_dict[ 'approved' ] = hit.get( 'approved' )
+                    hit_dict[ 'times_downloaded' ] = hit.get( 'times_downloaded' )
+                    results[ 'hits' ].append( {'repository':  hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score } )
+                return results
+            finally:
+                searcher.close()
         else:
-            raise exceptions.InternalServerError( 'Could not initialize search.' )
+            raise exceptions.InternalServerError( 'The search index file is missing.' )
