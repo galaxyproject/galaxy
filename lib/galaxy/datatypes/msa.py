@@ -28,16 +28,35 @@ def count_special_lines( word, filename, invert=False ):
     return 0
 
 
-class Hmmer3( Text ):
+class Hmmer( Text ):
     file_ext = "hmm"
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
-            dataset.blurb = "HMMER3 Database"
+            dataset.blurb = "HMMER Database"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "HMMER database (%s)" % ( nice_size( dataset.get_size() ) )
+
+
+class Hmmer2( Hmmer ):
+
+    def sniff(self, filename):
+        """HMMER2 files start with HMMER2.0
+        """
+        with open(filename, 'r') as handle:
+            return handle.read(8) == 'HMMER2.0'
+        return False
+
+
+class Hmmer3( Hmmer ):
 
     def sniff(self, filename):
         """HMMER3 files start with HMMER3/f
@@ -45,12 +64,6 @@ class Hmmer3( Text ):
         with open(filename, 'r') as handle:
             return handle.read(8) == 'HMMER3/f'
         return False
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except:
-            return "HMMER3 database (%s)" % ( nice_size( dataset.get_size() ) )
 
 
 class Stockholm_1_0( Text ):
