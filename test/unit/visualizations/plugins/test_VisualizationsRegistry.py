@@ -262,8 +262,9 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         script_entry._set_up_template_plugin( mock_app_dir.root_path, [ addtional_templates_dir ] )
         response = script_entry._render( {}, trans=trans, embedded=True )
         # print response
-        self.assertTrue( '<script type="text/javascript" src="bler" data-main="one"></script>' in response )
-
+        self.assertTrue( 'src="bler"' in response )
+        self.assertTrue( 'type="text/javascript"' in response )
+        self.assertTrue( 'data-main="one"' in response )
         mock_app_dir.remove()
 
 
