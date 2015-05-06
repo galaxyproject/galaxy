@@ -62,10 +62,17 @@ def post_file(url, path):
 
 
 def get_file(url, path):
-    buf = _open_output(path)
+    if path and os.path.exists(path):
+        buf = _open_output(path, 'ab')
+        size = os.path.getsize(path)
+    else:
+        buf = _open_output(path)
+        size = 0
     try:
         c = _new_curl_object_for_url(url)
         c.setopt(c.WRITEFUNCTION, buf.write)
+        if size > 0:
+            c.setopt(c.RESUME_FROM, size)
         c.perform()
         status_code = c.getinfo(HTTP_CODE)
         if int(status_code) != 200:
@@ -75,8 +82,8 @@ def get_file(url, path):
         buf.close()
 
 
-def _open_output(output_path):
-    return open(output_path, 'wb') if output_path else StringIO()
+def _open_output(output_path, mode='wb'):
+    return open(output_path, mode) if output_path else StringIO()
 
 
 def _new_curl_object_for_url(url):
