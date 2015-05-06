@@ -106,13 +106,13 @@ def app_factory( global_conf, **kwargs ):
         pack_scripts()
     # Close any pooled database connections before forking
     try:
-        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
+        galaxy.model.mapping.metadata.bind.dispose()
     except:
-        pass
+        log.exception("Unable to dispose of pooled galaxy model database connections.")
     try:
-        galaxy.model.tool_shed_install.mapping.metadata.engine.connection_provider._pool.dispose()
+        galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
     except:
-        pass
+        log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
     if not app.config.is_uwsgi:
         postfork_setup()

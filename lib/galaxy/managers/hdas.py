@@ -154,8 +154,9 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
         # error here if disallowed - before jobs are stopped
         #TODO: poss. move to DatasetAssociationManager
         self.dataset_manager.error_unless_dataset_purge_allowed( trans, hda )
+        if trans.user:
+            trans.user.total_disk_usage -= hda.quota_amount( trans.user )
         super( HDAManager, self ).purge( trans, hda, flush=flush )
-
         if hda.creating_job_associations:
             job = hda.creating_job_associations[0].job
             if not job.finished:
@@ -194,6 +195,32 @@ class HDAManager( datasets.DatasetAssociationManager, secured.OwnableManagerMixi
             job = job_output_assoc.job
             break
         return job
+
+    def _job_state_history_query( self, hda ):
+        """
+        Return a query of the job's state history for the job that created this hda.
+        """
+        session = self.app.model.context
+        JobToOutputDatasetAssociation = model.JobToOutputDatasetAssociation
+        JobStateHistory = model.JobStateHistory
+
+        # TODO: this does not play well with copied hdas
+        # NOTE: don't eagerload (JODA will load the hda were using!)
+        hda_id = hda.id
+        query = ( session.query( JobToOutputDatasetAssociation, JobStateHistory )
+            .filter( JobToOutputDatasetAssociation.dataset_id == hda_id )
+            .filter( JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id )
+            .enable_eagerloads( False ) )
+        return query
+
+    def has_been_resubmitted( self, hda ):
+        """
+        Return True if the hda's job was resubmitted at any point.
+        """
+        job_states = model.Job.states
+        query = ( self._job_state_history_query( hda )
+            .filter( model.JobStateHistory.state == job_states.RESUBMITTED ) )
+        return self.app.model.context.query( query.exists() ).scalar()
 
     # .... serialization
     def get_display_apps( self, trans, hda ):
@@ -324,7 +351,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'history_content_type',
             'dataset_id',
             'state', 'extension',
-            'deleted', 'purged', 'visible', 'resubmitted',
+            'deleted', 'purged', 'visible',
             'type', 'url'
         ])
         self.add_view( 'detailed', [
@@ -340,7 +367,8 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'file_ext', 'file_size',
 
             'create_time', 'update_time',
-            'metadata', 'meta_files', 'data_type',
+            'resubmitted',
+             'metadata', 'meta_files', 'data_type',
             'peek',
 
             #TODO: why is this named uuid!? The hda doesn't have a uuid - it's the underlying dataset's uuid!
@@ -388,7 +416,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'hda_ldda'      : lambda *a: 'hda',
 
             # remapped
-            'info'          : lambda t, i, k: i.info.strip() if isinstance( i.info, basestring ) else i.info,
+            'info'          : lambda t, i, k: i.info.strip() if isinstance( i.info, basestring ) else '',
             'misc_info'     : lambda t, i, k: self.serializers[ 'info' ]( t, i, k ),
             'misc_blurb'    : lambda t, i, k: i.blurb,
             'genome_build'  : lambda t, i, k: i.dbkey,
@@ -400,7 +428,7 @@ class HDASerializer( datasets.DatasetAssociationSerializer,
             'copied_from_history_dataset_association_id'        : self.serialize_id,
             'copied_from_library_dataset_dataset_association_id': self.serialize_id,
 
-            'resubmitted'   : lambda t, i, k: i._state == t.app.model.Dataset.states.RESUBMITTED,
+            'resubmitted'   : lambda t, i, k: self.hda_manager.has_been_resubmitted( i ),
 
             'meta_files'    : self.serialize_meta_files,
             'file_path'     : self.serialize_file_path,
@@ -583,7 +611,8 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
 
             # remapped
             'genome_build'  : lambda t, i, k, v: self.deserialize_genome_build( t, i, 'dbkey', v ),
-            'misc_info'     : lambda t, i, k, v: self.deserialize_basestring( t, i, 'info', v ),
+            'misc_info'     : lambda t, i, k, v: (
+                self.deserialize_basestring( t, i, 'info', v, convert_none_to_empty=True ) ),
 
             #TODO: mixin: deletable
             'deleted'       : self.deserialize_bool,

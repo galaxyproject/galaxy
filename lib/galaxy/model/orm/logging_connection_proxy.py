@@ -2,7 +2,7 @@ import time
 import inspect
 import os
 
-from galaxy.model.orm import *
+from galaxy.model.orm import ConnectionProxy
 
 import logging
 

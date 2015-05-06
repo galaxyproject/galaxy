@@ -417,13 +417,14 @@ class Tool( object, Dictifiable ):
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
     default_template = 'tool_form.mako'
 
-    def __init__( self, config_file, tool_source, app, guid=None, repository_id=None ):
+    def __init__( self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True ):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
         self.repository_id = repository_id
+        self._allow_code_files = allow_code_files
         #setup initial attribute values
         self.inputs = odict()
         self.stdio_exit_codes = list()
@@ -704,14 +705,15 @@ class Tool( object, Dictifiable ):
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
-        for code_elem in root.findall("code"):
-            for hook_elem in code_elem.findall("hook"):
-                for key, value in hook_elem.items():
-                    # map hook to function
-                    self.hook_map[key] = value
-            file_name = code_elem.get("file")
-            code_path = os.path.join( self.tool_dir, file_name )
-            execfile( code_path, self.code_namespace )
+        if self._allow_code_files:
+            for code_elem in root.findall("code"):
+                for hook_elem in code_elem.findall("hook"):
+                    for key, value in hook_elem.items():
+                        # map hook to function
+                        self.hook_map[key] = value
+                file_name = code_elem.get("file")
+                code_path = os.path.join( self.tool_dir, file_name )
+                execfile( code_path, self.code_namespace )
 
         # User interface hints
         uihints_elem = root.find( "uihints" )
@@ -2435,7 +2437,7 @@ class Tool( object, Dictifiable ):
                     continue
 
                 # state for subsection/group
-                group_state = state_inputs[input.name]
+                group_state = state_inputs.get(input.name, {})
 
                 # iterate and update values
                 if input.type == 'repeat':
@@ -2446,10 +2448,12 @@ class Tool( object, Dictifiable ):
                 elif input.type == 'conditional':
                     if 'test_param' in tool_dict:
                         test_param = tool_dict['test_param']
-                        test_param['value'] = jsonify(group_state[test_param['name']])
-                        if '__current_case__' in group_state:
-                            i = group_state['__current_case__']
-                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, group_state, other_values)
+                        test_param['value'] = jsonify(group_state.get(test_param['name'], None))
+                        for i in range (len ( tool_dict['cases'] ) ):
+                            current_state = {}
+                            if i == group_state.get('__current_case__', None):
+                                current_state = group_state
+                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, current_state, other_values)
                 else:
                     # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
                     try:
@@ -2461,11 +2465,15 @@ class Tool( object, Dictifiable ):
                     input_name = tool_dict.get('name')
                     if input_name:
                         # backup default value
-                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                        try:
+                            tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                        except Exception:
+                            # get initial value failed due to improper late validation
+                            tool_dict['default_value'] = None
+                            pass
 
                         # update input value from tool state
-                        if input_name in state_inputs:
-                            tool_dict['value'] = state_inputs[input_name]
+                        tool_dict['value'] = state_inputs.get(input_name, None)
 
                         # sanitize values
                         sanitize(tool_dict, 'value')
@@ -2586,28 +2594,44 @@ class Tool( object, Dictifiable ):
         # dataset used; parameter should be the analygous dataset in the
         # current history.
         history = trans.get_history()
-        hda_source_dict = {} # Mapping from HDA in history to source HDAs.
+
+        # Create index for hdas.
+        hda_source_dict = {}
         for hda in history.datasets:
-            source_hda = hda.copied_from_history_dataset_association
-            while source_hda:
-                if source_hda.dataset.id not in hda_source_dict or source_hda.hid == hda.hid:
-                    hda_source_dict[ source_hda.dataset.id ] = hda
-                source_hda = source_hda.copied_from_history_dataset_association
+            key = '%s_%s' % (hda.hid, hda.dataset.id)
+            hda_source_dict[ hda.dataset.id ] = hda_source_dict[ key ] = hda
 
         # Ditto for dataset collections.
         hdca_source_dict = {}
         for hdca in history.dataset_collections:
-            source_hdca = hdca.copied_from_history_dataset_collection_association
-            while source_hdca:
-                if source_hdca.collection.id not in hdca_source_dict or source_hdca.hid == hdca.hid:
-                    hdca_source_dict[ source_hdca.collection.id ] = hdca
-                source_hdca = source_hdca.copied_from_history_dataset_collection_association
+            key = '%s_%s' % (hdca.hid, hdca.collection.id)
+            hdca_source_dict[ hdca.collection.id ] = hdca_source_dict[ key ] = hdca
+
+        # Map dataset or collection to current history
+        def map_to_history(value):
+            id = None
+            source = None
+            if isinstance(value, trans.app.model.HistoryDatasetAssociation):
+                id = value.dataset.id
+                source = hda_source_dict
+            elif isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation):
+                id = value.collection.id
+                source = hdca_source_dict
+            else:
+                return None
+            key = '%s_%s' % (value.hid, id)
+            if key in source:
+                return source[ key ]
+            elif id in source:
+                return source[ id ]
+            else:
+                return None
 
         # Unpack unvalidated values to strings, they'll be validated when the
         # form is submitted (this happens when re-running a job that was
         # initially run by a workflow)
         #This needs to be done recursively through grouping parameters
-        def rerun_callback( input, value, prefixed_name, prefixed_label ):
+        def mapping_callback( input, value, prefixed_name, prefixed_label ):
             if isinstance( value, UnvalidatedValue ):
                 try:
                     return input.to_html_value( value.value, trans.app )
@@ -2619,22 +2643,17 @@ class Tool( object, Dictifiable ):
                 if isinstance(value,list):
                     values = []
                     for val in value:
-                        if isinstance(val, trans.app.model.HistoryDatasetAssociation):
-                            if val.dataset.id in hda_source_dict:
-                                values.append( hda_source_dict[ val.dataset.id ] )
-                            else:
-                                values.append( val )
+                        new_val = map_to_history( val )
+                        if new_val:
+                            values.append( new_val )
+                        else:
+                            values.append( val )
                     return values
-                if isinstance(value, trans.app.model.HistoryDatasetAssociation):
-                    if value.dataset.id in hda_source_dict:
-                        return hda_source_dict[ value.dataset.id ]
-                if isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation):
-                    if value.collection.id in hdca_source_dict:
-                        return hdca_source_dict[ value.collection.id ]
+                else:
+                    return map_to_history( value )
             elif isinstance( input, DataCollectionToolParameter ):
-                if value.collection.id in hdca_source_dict:
-                    return hdca_source_dict[ value.collection.id ]
-        visit_input_values( tool_inputs, params, rerun_callback )
+                return map_to_history( value )
+        visit_input_values( tool_inputs, params, mapping_callback )
 
     def _compare_tool_version( self, trans, job ):
         """
