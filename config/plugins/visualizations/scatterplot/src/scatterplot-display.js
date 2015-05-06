@@ -20,7 +20,8 @@ var ScatterplotDisplay = Backbone.View.extend({
         var view = this,
             config = this.model.get( 'config' ),
             //TODO: very tied to datasets - should be generalized eventually
-            xhr = jQuery.getJSON(((typeof parent.galaxy_config.root == 'undefined') ? '/' : parent.galaxy_config.root) + 'api/datasets/' + this.dataset.id, {
+            baseUrl = ( window.parent && parent.galaxy_config )? parent.galaxy_config.root : '/',
+            xhr = jQuery.getJSON( baseUrl + 'api/datasets/' + this.dataset.id, {
                 data_type   : 'raw_data',
                 provider    : 'dataset-column',
                 limit       : config.pagination.perPage,

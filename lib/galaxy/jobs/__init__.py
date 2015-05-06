@@ -745,7 +745,7 @@ class JobWrapper( object ):
         # Tool versioning variables
         self.write_version_cmd = None
         self.version_string = ""
-        self.galaxy_lib_dir = None
+        self.__galaxy_lib_dir = None
         # With job outputs in the working directory, we need the working
         # directory to be set before prepare is run, or else premature deletion
         # and job recovery fail.
@@ -793,6 +793,12 @@ class JobWrapper( object ):
     @property
     def commands_in_new_shell(self):
         return self.app.config.commands_in_new_shell
+
+    @property
+    def galaxy_lib_dir(self):
+        if self.__galaxy_lib_dir is None:
+            self.__galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
+        return self.__galaxy_lib_dir
 
     # legacy naming
     get_job_runner = get_job_runner_url
@@ -855,8 +861,8 @@ class JobWrapper( object ):
         self.sa_session.flush()
 
         self.command_line, self.extra_filenames = tool_evaluator.build()
-        # FIXME: for now, tools get Galaxy's lib dir in their path
-        self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
+        # Ensure galaxy_lib_dir is set in case there are any later chdirs
+        self.galaxy_lib_dir
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
@@ -1700,9 +1706,8 @@ class TaskWrapper(JobWrapper):
 
         self.command_line, self.extra_filenames = tool_evaluator.build()
 
-        # FIXME: for now, tools get Galaxy's lib dir in their path
-        if self.command_line and self.command_line.startswith( 'python' ):
-            self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
+        # Ensure galaxy_lib_dir is set in case there are any later chdirs
+        self.galaxy_lib_dir
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
@@ -1796,7 +1801,7 @@ class TaskWrapper(JobWrapper):
         task.command_line = self.command_line
         self.sa_session.flush()
 
-    def cleanup( self ):
+    def cleanup( self, delete_files=True ):
         # There is no task cleanup.  The job cleans up for all tasks.
         pass
 

@@ -213,7 +213,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Newer version of this API just returns the invocation as a dict, to
         # facilitate migration - produce the newer style response and blend in
         # the older information.
-        invocation_response = self.__encode_invocation( trans, invocation )
+        invocation_response = self.__encode_invocation( trans, invocation, step_details=kwd.get('step_details', False) )
         invocation_response.update( rval )
         return invocation_response
 
@@ -463,7 +463,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         results = self.workflow_manager.build_invocations_query( trans, stored_workflow.id )
         out = []
         for r in results:
-            out.append( self.__encode_invocation( trans, r ) )
+            out.append( self.__encode_invocation( trans, r, view="collection" ) )
         return out
 
     @expose_api
@@ -483,7 +483,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         decoded_workflow_invocation_id = self.decode_id( invocation_id )
         workflow_invocation = self.workflow_manager.get_invocation( trans, decoded_workflow_invocation_id )
         if workflow_invocation:
-            return self.__encode_invocation( trans, workflow_invocation )
+            return self.__encode_invocation( trans, workflow_invocation, step_details=kwd.get('step_details', False) )
         return None
 
     @expose_api
@@ -596,9 +596,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.ObjectNotFound( "No such workflow found." )
         return stored_workflow
 
-    def __encode_invocation( self, trans, invocation, view="element" ):
+    def __encode_invocation( self, trans, invocation, view="element", step_details=False ):
         return self.encode_all_ids(
             trans,
-            invocation.to_dict( view ),
+            invocation.to_dict( view, step_details=step_details ),
             True
         )
