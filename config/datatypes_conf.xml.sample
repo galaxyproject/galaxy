@@ -322,6 +322,7 @@
     <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2" />
     <sniffer type="galaxy.datatypes.msa:Hmmer3" />
+    <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>
@@ -339,7 +340,6 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
-    <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
     <!--
     Keep this commented until the sniff method in the assembly.py
     module is fixed to not read the entire file.

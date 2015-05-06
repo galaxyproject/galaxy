@@ -1,4 +1,4 @@
-from galaxy.datatypes.data import Text
+from galaxy.datatypes.data import Text, Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
@@ -46,6 +46,42 @@ class Hmmer3( Hmmer ):
         with open(filename, 'r') as handle:
             return handle.read(8) == 'HMMER3/f'
         return False
+
+
+class HmmerPress( Binary ):
+    """Class for hmmpress database files."""
+    file_ext = 'hmmpress'
+    allow_datatype_change = False
+    composite_type = 'basic'
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        """Set the peek and blurb text."""
+        if not dataset.dataset.purged:
+            dataset.peek = "HMMER Binary database"
+            dataset.blurb = "HMMER Binary database"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        """Create HTML content, used for displaying peek."""
+        try:
+            return dataset.peek
+        except:
+            return "HMMER3 database (multiple files)"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        # Binary model
+        self.add_composite_file('model.hmm.h3m', is_binary=True)
+        # SSI index for binary model
+        self.add_composite_file('model.hmm.h3i', is_binary=True)
+        # Profiles (MSV part)
+        self.add_composite_file('model.hmm.h3f', is_binary=True)
+        # Profiles (remained)
+        self.add_composite_file('model.hmm.h3p', is_binary=True)
+
+Binary.register_unsniffable_binary_ext("hmmpress")
 
 
 class Stockholm_1_0( Text ):
