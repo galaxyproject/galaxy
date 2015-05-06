@@ -37,7 +37,5 @@
   "resolutions": {
     "jquery": "~1.11.1"
   },
-  "devDependencies": {
-    "requirejs": "~2.1.17"
-  }
+  "devDependencies": {}
 }
