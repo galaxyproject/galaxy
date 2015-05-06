@@ -2,7 +2,11 @@
 <auth>
 <!--<authenticator>
         <type>ldap</type>
-        <filter>'{email}'.endswith('@example.com')</filter>
+-->
+        <!-- Filter users for which this authenticator applies. This is a Python
+             expression which is evaluated after replacing instances of {email}
+             and {username} with the corresponding user's values. -->
+<!--    <filter>'{email}'.endswith('@example.com')</filter>
         <options>
             <auto-register>True</auto-register>
             <server>ldap://dc1.example.com</server>
@@ -20,7 +24,7 @@
             <auto-register-username>{sAMAccountName}</auto-register-username>
             <auto-register-email>{mail}</auto-register-email>
 -->
-            <!-- To allow login with username instead of email -->
+            <!-- To allow login with username instead of email, default is False -->
 <!--        <login-use-username>True</login-use-username>
         </options>
      </authenticator>

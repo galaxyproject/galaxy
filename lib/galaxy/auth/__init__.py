@@ -64,7 +64,7 @@ class AuthManager(object):
         """Checks if the provided email/username is allowed to register."""
         message = ''
         status = 'done'
-        for provider, options in self.active_authenticators(email, password):
+        for provider, options in self.active_authenticators(email, username, password):
             allow_reg = _get_tri_state(options, 'allow-register', True)
             if allow_reg is None:  # i.e. challenge
                 auth_result, msg = provider.authenticate(email, username, password, options)
@@ -87,14 +87,17 @@ class AuthManager(object):
         Checks the username/email & password using auth providers in order.
         If a match is found, returns the 'auto-register' option for that provider.
         """
-        for provider, options in self.active_authenticators(login, password):
+        if '@' in login:
+            email = login
+            username = None
+        else:
+            email = None
+            username = login
+        for provider, options in self.active_authenticators(email, username, password):
             if provider is None:
                 log.debug( "Unable to find module: %s" % options )
             else:
-                if '@' in login:
-                    auth_result, auto_email, auto_username = provider.authenticate(login, None, password, options)
-                else:
-                    auth_result, auto_email, auto_username = provider.authenticate(None, login, password, options)
+                auth_result, auto_email, auto_username = provider.authenticate(email, username, password, options)
                 auto_email = str(auto_email).lower()
                 auto_username = str(auto_username).lower()
                 if auth_result is True:
@@ -117,7 +120,7 @@ class AuthManager(object):
 
     def check_password(self, user, password):
         """Checks the username/email and password using auth providers."""
-        for provider, options in self.active_authenticators(user.email, password):
+        for provider, options in self.active_authenticators(user.email, user.username, password):
             if provider is None:
                 log.debug( "Unable to find module: %s" % options )
             else:
@@ -132,7 +135,7 @@ class AuthManager(object):
         """Checks that auth provider allows password changes and current_password
         matches.
         """
-        for provider, options in self.active_authenticators(user.email, current_password):
+        for provider, options in self.active_authenticators(user.email, user.username, current_password):
             if provider is None:
                 log.debug( "Unable to find module: %s" % options )
             else:
@@ -146,7 +149,7 @@ class AuthManager(object):
                     return (False, 'Password change not supported')
         return (False, 'Invalid current password')
 
-    def active_authenticators(self, email, password):
+    def active_authenticators(self, email, username, password):
         """Yields AuthProvider instances for the provided configfile that match the
         filters.
         """
@@ -154,7 +157,7 @@ class AuthManager(object):
             for authenticator in self.authenticators:
                 filter_template = authenticator.filter_template
                 if filter_template:
-                    filter_str = filter_template.format(email=email, password=password)
+                    filter_str = filter_template.format(email=email, username=username, password=password)
                     passed_filter = eval(filter_str, {"__builtins__": None}, {'str': str})
                     if not passed_filter:
                         continue  # skip to next
