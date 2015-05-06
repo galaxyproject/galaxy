@@ -46,6 +46,14 @@ session_data_dir = %(here)s/database/beaker_sessions
 session_key = galaxysessions
 session_secret = changethisinproduction
 
+# -- Repository and Tool search
+# Using the script located at scripts/build_ts_whoosh_index.py
+# you can generate search index and allow full text API searching over
+# the repositories and tools within the Tool Shed given that you specify
+# the following two config options.
+#toolshed_search_on = True
+#whoosh_index_dir = database/toolshed_whoosh_indexes
+
 # -- Analytics
 
 # You can enter tracking code here to track visitor's behavior

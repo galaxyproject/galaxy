@@ -124,6 +124,11 @@ def app_factory( global_conf, **kwargs ):
                             name_prefix='user_',
                             path_prefix='/api',
                             parent_resources=dict( member_name='user', collection_name='users' ) )
+    webapp.mapper.connect( 'update_repository',
+                          '/api/repositories/:id',
+                           controller='repositories',
+                           action='update',
+                           conditions=dict( method=[ "PATCH", "PUT" ] ) )
     webapp.mapper.connect( 'repository_create_changeset_revision',
                            '/api/repositories/:id/changeset_revision',
                            controller='repositories',

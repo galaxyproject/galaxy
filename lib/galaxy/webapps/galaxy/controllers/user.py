@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.model.orm import and_
+from galaxy.model.orm import and_, or_
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
                                                  validate_password,
@@ -28,6 +28,7 @@ from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
 from galaxy.web.framework.helpers import escape, grids, time_ago
+
 
 log = logging.getLogger( __name__ )
 
@@ -466,7 +467,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         status = kwd.get( 'status', 'done' )
         header = ''
         user = trans.user
-        email = kwd.get( 'email', '' )
+        login = kwd.get( 'login', '' )
         if user:
             # Already logged in.
             redirect_url = redirect
@@ -495,7 +496,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 else:
                     header = REQUIRE_LOGIN_TEMPLATE % ( "Galaxy tool shed", "" )
         return trans.fill_template( '/user/login.mako',
-                                    email=email,
+                                    login=login,
                                     header=header,
                                     use_panels=use_panels,
                                     redirect_url=redirect_url,
@@ -509,16 +510,37 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
 
     def __validate_login( self, trans, **kwd ):
         """Validates numerous cases that might happen during the login time."""
-        message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'error' )
-        email = kwd.get( 'email', '' )
+        login = kwd.get( 'login', '' )
         password = kwd.get( 'password', '' )
-        username = kwd.get( 'username', '' )
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         success = False
-        user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
+        user = trans.sa_session.query( trans.app.model.User ).filter(or_(
+            trans.app.model.User.table.c.email == login,
+            trans.app.model.User.table.c.username == login
+        )).first()
+        log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if not user:
-            message = "No such user (please note that login is case sensitive)"
+            autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
+            if autoreg[0]:
+                kwd['email'] = autoreg[1]
+                kwd['username'] = autoreg[2]
+                params = util.Params( kwd )
+                message = validate_email( trans, kwd['email'] )  #self.__validate( trans, params, email, password, password, username )
+                if not message:
+                    message, status, user, success = self.__register( trans, 'user', False, **kwd )
+                    if success:
+                        # The handle_user_login() method has a call to the history_set_default_permissions() method
+                        # (needed when logging in with a history), user needs to have default permissions set before logging in
+                        trans.handle_user_login( user )
+                        trans.log_event( "User (auto) created a new account" )
+                        trans.log_event( "User logged in" )
+                    else:
+                        message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+                else:
+                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+            else:
+                message = "No such user or invalid password"
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
@@ -527,16 +549,16 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
-        elif not user.check_password( password ):
+        elif not trans.app.auth_manager.check_password(user, password):
             message = "Invalid password"
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if ( trans.app.config.activation_grace_period != 0 ):  # grace period is ON
                 if self.is_outside_grace_period( trans, user.create_time ):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                    message, status = self.resend_verification_email( trans, email, username )
+                    message, status = self.resend_verification_email( trans, user.email, user.username )
                 else:  # User is within the grace period, let him log in.
                     message, success, status = self.proceed_login( trans, user, redirect )
             else:  # Grace period is off. Login is disabled and user will have the activation email resent.
-                message, status = self.resend_verification_email( trans, email, username )
+                message, status = self.resend_verification_email( trans, user.email, user.username )
         else:  # activation is OFF
             message, success, status = self.proceed_login( trans, user, redirect )
         return ( message, status, user, success )
@@ -655,41 +677,44 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 message += ' Contact: %s' % trans.app.config.error_email_to
             status = 'error'
         else:
-            if not refresh_frames:
-                if trans.webapp.name == 'galaxy':
-                    if trans.app.config.require_login:
-                        refresh_frames = [ 'masthead', 'history', 'tools' ]
+            # check user is allowed to register
+            message, status = trans.app.auth_manager.check_registration_allowed(email, password)
+            if message == '':
+                if not refresh_frames:
+                    if trans.webapp.name == 'galaxy':
+                        if trans.app.config.require_login:
+                            refresh_frames = [ 'masthead', 'history', 'tools' ]
+                        else:
+                            refresh_frames = [ 'masthead', 'history' ]
                     else:
-                        refresh_frames = [ 'masthead', 'history' ]
-                else:
-                    refresh_frames = [ 'masthead' ]
-            # Create the user, save all the user info and login to Galaxy
-            if params.get( 'create_user_button', False ):
-                # Check email and password validity
-                message = self.__validate( trans, params, email, password, confirm, username )
-                if not message:
-                    # All the values are valid
-                    message, status, user, success = self.__register( trans,
-                                                                      cntrller,
-                                                                      subscribe_checked,
-                                                                      **kwd )
-                    if trans.webapp.name == 'tool_shed':
-                        redirect_url = url_for( '/' )
-                    if success and not is_admin:
-                        # The handle_user_login() method has a call to the history_set_default_permissions() method
-                        # (needed when logging in with a history), user needs to have default permissions set before logging in
-                        trans.handle_user_login( user )
-                        trans.log_event( "User created a new account" )
-                        trans.log_event( "User logged in" )
-                    if success and is_admin:
-                        message = 'Created new user account (%s)' % escape( user.email )
-                        trans.response.send_redirect( web.url_for( controller='admin',
-                                                                   action='users',
-                                                                   cntrller=cntrller,
-                                                                   message=message,
-                                                                   status=status ) )
-                else:
-                    status = 'error'
+                        refresh_frames = [ 'masthead' ]
+                # Create the user, save all the user info and login to Galaxy
+                if params.get( 'create_user_button', False ):
+                    # Check email and password validity
+                    message = self.__validate( trans, params, email, password, confirm, username )
+                    if not message:
+                        # All the values are valid
+                        message, status, user, success = self.__register( trans,
+                                                                          cntrller,
+                                                                          subscribe_checked,
+                                                                          **kwd )
+                        if trans.webapp.name == 'tool_shed':
+                            redirect_url = url_for( '/' )
+                        if success and not is_admin:
+                            # The handle_user_login() method has a call to the history_set_default_permissions() method
+                            # (needed when logging in with a history), user needs to have default permissions set before logging in
+                            trans.handle_user_login( user )
+                            trans.log_event( "User created a new account" )
+                            trans.log_event( "User logged in" )
+                        if success and is_admin:
+                            message = 'Created new user account (%s)' % escape( user.email )
+                            trans.response.send_redirect( web.url_for( controller='admin',
+                                                                       action='users',
+                                                                       cntrller=cntrller,
+                                                                       message=message,
+                                                                       status=status ) )
+                    else:
+                        status = 'error'
         if trans.webapp.name == 'galaxy':
             user_type_form_definition = self.__get_user_type_form_definition( trans, user=None, **kwd )
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
@@ -812,7 +837,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                       trans.app.config.error_email_to,
                                       trans.app.config.instance_resource_url))
         to = email
-        frm = trans.app.config.activation_email
+        frm = trans.app.config.email_from
         subject = 'Galaxy Account Activation'
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
@@ -1104,10 +1129,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
             else:
                 # The user is changing their own password, validate their current password
-                if trans.user.check_password( current ):
+                (ok, message) = trans.app.auth_manager.check_change_password(trans.user, current )
+                if ok:
                     user = trans.user
                 else:
-                    message = 'Invalid current password'
                     status = 'error'
             if user:
                 # Validate the new password
@@ -1139,8 +1164,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                     message=message )
 
     @web.expose
-    def reset_password( self, trans, email=None, token=None, **kwd ):
-        """Reset the user's password. Send an email with the new password."""
+    def reset_password( self, trans, email=None, **kwd ):
+        """Reset the user's password. Send an email with token that allows a password change."""
         if trans.app.config.smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this Galaxy instance "
                                              "and password reset information cannot be sent. "
@@ -1149,28 +1174,31 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
         status = 'done'
         if kwd.get( 'reset_password_button', False ):
             # Default to a non-userinfo-leaking response message
-            message = "Your reset request for %s has been received.  Please check your email account for more instructions.  If you do not receive an email shortly, please contact an administrator." % ( escape( email ) )
+            message = ( "Your reset request for %s has been received.  "
+                        "Please check your email account for more instructions.  "
+                        "If you do not receive an email shortly, please contact an administrator." % ( escape( email ) ) )
             reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
-            user = trans.get_user()
             if reset_user:
                 prt = trans.app.model.PasswordResetToken( reset_user )
                 trans.sa_session.add( prt )
                 trans.sa_session.flush()
                 host = trans.request.host.split( ':' )[ 0 ]
-                if host == 'localhost':
+                if host in [ 'localhost', '127.0.0.1', '0.0.0.0' ]:
                     host = socket.getfqdn()
                 reset_url = url_for( controller='user',
-                                        action="change_password",
-                                        token=prt.token, qualified=True)
+                                     action="change_password",
+                                     token=prt.token, qualified=True)
                 body = PASSWORD_RESET_TEMPLATE % ( host, reset_url, reset_url )
-                frm = 'galaxy-no-reply@' + host
+                frm = trans.app.config.email_from
+                if frm is None:
+                    frm = 'galaxy-no-reply@' + host
                 subject = 'Galaxy Password Reset'
                 try:
                     util.send_mail( frm, email, subject, body, trans.app.config )
                     trans.sa_session.add( reset_user )
                     trans.sa_session.flush()
                     trans.log_event( "User reset password: %s" % email )
-                except Exception, e:
+                except Exception:
                     log.exception( 'Unable to reset password.' )
         return trans.fill_template( '/user/reset_password.mako',
                                     message=message,

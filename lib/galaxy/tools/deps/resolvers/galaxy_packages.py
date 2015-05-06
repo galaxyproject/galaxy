@@ -71,4 +71,4 @@ class GalaxyPackageDependency(Dependency):
             commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % ( base_path, self.script )
         return commands
 
-__all__ = [GalaxyPackageDependencyResolver, GalaxyPackageDependency]
+__all__ = ['GalaxyPackageDependencyResolver', 'GalaxyPackageDependency']

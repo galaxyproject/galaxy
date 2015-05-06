@@ -661,6 +661,11 @@ def get_repository_in_tool_shed( app, id ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
 
+def get_repository_categories( app, id ):
+    """Get categories of a repository on the tool shed side from the database via id"""
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.RepositoryCategoryAssociation ) \
+        .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id==app.security.decode_id( id ))
 
 def get_repository_metadata_by_changeset_revision( app, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database."""
@@ -973,7 +978,7 @@ def handle_email_alerts( app, host, repository, content_alert_str='', new_repo_a
         # Send email alert to users that want them.
         if app.config.email_from is not None:
             email_from = app.config.email_from
-        elif host.split( ':' )[0] == 'localhost':
+        elif host.split( ':' )[0] in [ 'localhost', '127.0.0.1', '0.0.0.0' ]:
             email_from = 'galaxy-no-reply@' + socket.getfqdn()
         else:
             email_from = 'galaxy-no-reply@' + host.split( ':' )[0]

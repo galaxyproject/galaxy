@@ -152,7 +152,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if 'from_history_id' in payload:
             from_history_id = payload.get( 'from_history_id' )
             from_history_id = self.decode_id( from_history_id )
-            history = self.history_manager.get_accessible( trans, from_history_id, trans.user )
+            history = self.history_manager.get_accessible( from_history_id, trans.user, current_history=trans.history )
 
             job_ids = map( self.decode_id, payload.get( 'job_ids', [] ) )
             dataset_ids = payload.get( 'dataset_ids', [] )
@@ -318,10 +318,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         tool_version    = payload.get( 'tool_version', None )
         tool_inputs     = payload.get( 'inputs', None )
         annotation      = payload.get( 'annotation', '' )
-        
+
         # load tool
         tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
-        
+
         # initialize module
         trans.workflow_building_mode = True
         module = module_factory.from_dict( trans, {
@@ -329,9 +329,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'tool_id'       : tool.id,
             'tool_state'    : None
         } )
-        
+
         # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json(trans, tool_inputs, is_dynamic=False)
+        tool_model = module.tool.to_json(trans, tool_inputs, is_workflow=True)
         module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
         return {
             'tool_model'        : tool_model,

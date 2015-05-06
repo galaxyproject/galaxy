@@ -1,4 +1,4 @@
-<tool id="gene2intron1" name="Gene BED To Intron BED">
+<tool id="gene2intron1" name="Gene BED To Intron BED" version="1.0.0">
 <description>expander</description>
   <command interpreter="python">ucsc_gene_bed_to_intron_bed.py --input=$input1 --output=$out_file1</command>
   <inputs>

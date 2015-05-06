@@ -10,6 +10,14 @@ from .interface import (
     PagesSource,
     PageSource,
     InputSource,
+    ToolStdioExitCode,
+    ToolStdioRegex,
+    TestCollectionDef,
+    TestCollectionOutputDef,
+)
+from .util import (
+    error_on_exit_code,
+    aggressive_error_checks,
 )
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
@@ -209,7 +217,13 @@ class XmlToolSource(ToolSource):
         default_metadata_source="",
     ):
         output = galaxy.tools.ToolOutput( data_elem.get("name") )
-        output.format = data_elem.get("format", default_format)
+        output_format = data_elem.get("format", default_format)
+        auto_format = string_as_bool( data_elem.get( "auto_format", "false" ) )
+        if auto_format and output_format != "data":
+            raise ValueError("Setting format and auto_format is not supported at this time.")
+        elif auto_format:
+            output_format = "_sniff_"
+        output.format = output_format
         output.change_format = data_elem.findall("change_format")
         output.format_source = data_elem.get("format_source", default_format_source)
         output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
@@ -225,8 +239,20 @@ class XmlToolSource(ToolSource):
         return output
 
     def parse_stdio(self):
-        parser = StdioParser(self.root)
-        return parser.stdio_exit_codes, parser.stdio_regexes
+        command_el = self._command_el
+        detect_errors = None
+        if command_el is not None:
+            detect_errors = command_el.get("detect_errors")
+        if detect_errors and detect_errors != "default":
+            if detect_errors == "exit_code":
+                return error_on_exit_code()
+            elif detect_errors == "aggressive":
+                return aggressive_error_checks()
+            else:
+                raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
+        else:
+            parser = StdioParser(self.root)
+            return parser.stdio_exit_codes, parser.stdio_regexes
 
     def parse_help(self):
         help_elem = self.root.find( 'help' )
@@ -319,7 +345,7 @@ def __parse_output_collection_elem( output_collection_elem ):
         if identifier is None:
             raise Exception( "Test primary dataset does not have a 'identifier'" )
         element_tests[ identifier ] = __parse_test_attributes( element, element_attrib )
-    return galaxy.tools.TestCollectionOutputDef( name, attrib, element_tests )
+    return TestCollectionOutputDef( name, attrib, element_tests )
 
 
 def __parse_test_attributes( output_elem, attrib ):
@@ -342,11 +368,13 @@ def __parse_test_attributes( output_elem, attrib ):
     metadata = {}
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
-    if not (assert_list or file or extra_files or metadata):
-        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, etc...)")
+    md5sum = attrib.get("md5", None)
+    if not (assert_list or file or extra_files or metadata or md5sum):
+        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or md5 tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
+    attributes['md5'] = md5sum
     return file, attributes
 
 
@@ -418,6 +446,13 @@ def __expand_input_elems( root_elem, prefix="" ):
         __pull_up_params( root_elem, cond_elem )
         root_elem.remove( cond_elem )
 
+    section_elems = root_elem.findall( 'section' )
+    for section_elem in section_elems:
+        new_prefix = __prefix_join( prefix, section_elem.get( "name" ) )
+        __expand_input_elems( section_elem, new_prefix )
+        __pull_up_params( root_elem, section_elem )
+        root_elem.remove( section_elem )
+
 
 def __append_prefix_to_params( elem, prefix ):
     for param_elem in elem.findall( 'param' ):
@@ -484,7 +519,7 @@ def __parse_param_elem( param_elem, i=0 ):
             elif child.tag == 'edit_attributes':
                 attrib['edit_attributes'].append( child )
             elif child.tag == 'collection':
-                attrib[ 'collection' ] = galaxy.tools.TestCollectionDef( child, __parse_param_elem )
+                attrib[ 'collection' ] = TestCollectionDef( child, __parse_param_elem )
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
@@ -524,7 +559,7 @@ class StdioParser(object):
             # attribute. If there is neither a range nor a value, then print
             # a warning and skip to the next.
             for exit_code_elem in ( stdio_elem.findall( "exit_code" ) ):
-                exit_code = galaxy.tools.ToolStdioExitCode()
+                exit_code = ToolStdioExitCode()
                 # Each exit code has an optional description that can be
                 # part of the "desc" or "description" attributes:
                 exit_code.desc = exit_code_elem.get( "desc" )
@@ -604,7 +639,7 @@ class StdioParser(object):
             # will have "match" and "source" (or "src") attributes.
             for regex_elem in ( stdio_elem.findall( "regex" ) ):
                 # TODO: Fill in ToolStdioRegex
-                regex = galaxy.tools.ToolStdioRegex()
+                regex = ToolStdioRegex()
                 # Each regex has an optional description that can be
                 # part of the "desc" or "description" attributes:
                 regex.desc = regex_elem.get( "desc" )

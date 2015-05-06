@@ -24,8 +24,20 @@ var DCListItemView = FoldoutListItemView.extend(
 
     /** override to add linkTarget */
     initialize : function( attributes ){
-        FoldoutListItemView.prototype.initialize.call( this, attributes );
         this.linkTarget = attributes.linkTarget || '_blank';
+        this.hasUser = attributes.hasUser;
+        FoldoutListItemView.prototype.initialize.call( this, attributes );
+    },
+
+    /** event listeners */
+    _setUpListeners : function(){
+        FoldoutListItemView.prototype._setUpListeners.call( this );
+        // re-rendering on deletion
+        this.model.on( 'change', function( model, options ){
+            if( _.isEqual( _.keys( model.changed ), [ 'deleted' ] ) ){
+                this.render();
+            }
+        }, this );
     },
 
     // ......................................................................... rendering
@@ -51,7 +63,8 @@ var DCListItemView = FoldoutListItemView.extend(
     _getFoldoutPanelOptions : function(){
         var options = FoldoutListItemView.prototype._getFoldoutPanelOptions.call( this );
         return _.extend( options, {
-            linkTarget : this.linkTarget
+            linkTarget  : this.linkTarget,
+            hasUser     : this.hasUser
         });
     },
 
@@ -72,6 +85,32 @@ var DCListItemView = FoldoutListItemView.extend(
 /** underscore templates */
 DCListItemView.prototype.templates = (function(){
 
+    var warnings = _.extend( {}, FoldoutListItemView.prototype.templates.warnings, {
+        error : BASE_MVC.wrapTemplate([
+            // error during index fetch - show error on dataset
+            '<% if( model.error ){ %>',
+                '<div class="errormessagesmall">',
+                    _l( 'There was an error getting the data for this collection' ), ': <%- model.error %>',
+                '</div>',
+            '<% } %>'
+        ]),
+        purged : BASE_MVC.wrapTemplate([
+            '<% if( model.purged ){ %>',
+                '<div class="purged-msg warningmessagesmall">',
+                    _l( 'This collection has been deleted and removed from disk' ),
+                '</div>',
+            '<% } %>'
+        ]),
+        deleted : BASE_MVC.wrapTemplate([
+            // deleted not purged
+            '<% if( model.deleted && !model.purged ){ %>',
+                '<div class="deleted-msg warningmessagesmall">',
+                    _l( 'This collection has been deleted' ),
+                '</div>',
+            '<% } %>'
+        ])
+    });
+
     // use element identifier
     var titleBarTemplate = BASE_MVC.wrapTemplate([
         '<div class="title-bar clear" tabindex="0">',
@@ -83,6 +122,7 @@ DCListItemView.prototype.templates = (function(){
     ], 'collection' );
 
     return _.extend( {}, FoldoutListItemView.prototype.templates, {
+        warnings : warnings,
         titleBar : titleBarTemplate
     });
 }());

@@ -1,4 +1,4 @@
-<tool id="Featured datasets4" name="Featured datasets">
+<tool id="Featured datasets4" name="Featured datasets" version="1.0.0">
   <description>(PSU prepared queries)</description>
   <command interpreter="python">import.py $data $output</command>
   <inputs>

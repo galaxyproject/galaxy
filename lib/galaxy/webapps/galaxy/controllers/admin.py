@@ -1,17 +1,17 @@
 import imp
 import logging
 import os
-
 from sqlalchemy.sql import expression
 
 import galaxy.queue_worker
 import galaxy.util
 from galaxy import model
-from galaxy.model import tool_shed_install as install_model
 from galaxy import web
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import MessageException
-from galaxy.util import sanitize_text
+from galaxy.model import tool_shed_install as install_model
+from galaxy.model.util import pgcalc
+from galaxy.util import nice_size, sanitize_text
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
@@ -124,7 +124,11 @@ class UserListGrid( grids.Grid ):
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=True,
                              allow_popup=False,
-                             url_args=dict( webapp="galaxy", action="reset_user_password" ) )
+                             url_args=dict( webapp="galaxy", action="reset_user_password" ) ),
+        grids.GridOperation( "Recalculate Disk Usage",
+                             condition=( lambda item: not item.deleted ),
+                             allow_multiple=False,
+                             url_args=dict( webapp="galaxy", action="recalculate_user_disk_usage" ) )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
@@ -856,3 +860,40 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         if not reloaded:
             return trans.show_warn_message( 'You need to request at least one display application to reload.' )
         return trans.show_ok_message( 'Reloaded %i requested display applications ("%s").' % ( len( reloaded ), '", "'.join( reloaded ) ) )
+
+    @web.expose
+    @web.require_admin
+    def recalculate_user_disk_usage( self, trans, **kwd ):
+        user_id = kwd.get( 'id', None )
+        user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
+        if not user:
+            return trans.show_error_message( "User not found for id (%s)" % sanitize_text( str( user_id ) ) )
+        engine = None
+        if trans.app.config.database_connection:
+            engine = trans.app.config.database_connection.split(':')[0]
+        if engine not in ( 'postgres', 'postgresql' ):
+            done = False
+            while not done:
+                current = user.get_disk_usage()
+                new = user.calculate_disk_usage()
+                trans.sa_session.refresh( user )
+                # make sure usage didn't change while calculating, set done
+                if user.get_disk_usage() == current:
+                    done = True
+                if new not in (current, None):
+                    user.set_disk_usage( new )
+                    trans.sa_session.add( user )
+                    trans.sa_session.flush()
+        else:
+            # We can use the lightning fast pgcalc!
+            current = user.get_disk_usage()
+            new = pgcalc( self.sa_session, user.id )
+        # yes, still a small race condition between here and the flush
+        if new in ( current, None ):
+            message = 'Usage is unchanged at %s.' % nice_size( current )
+        else:
+            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( new )  )
+        return trans.response.send_redirect( web.url_for( controller='admin',
+                                                          action='users',
+                                                          message=sanitize_text( message ),
+                                                          status='info' ) )

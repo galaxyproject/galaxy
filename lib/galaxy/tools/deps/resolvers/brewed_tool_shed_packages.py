@@ -147,4 +147,4 @@ def build_recipe_name(package_name, package_version, repository_owner, repositor
     return base
 
 
-__all__ = [HomebrewToolShedDependencyResolver]
+__all__ = ['HomebrewToolShedDependencyResolver']

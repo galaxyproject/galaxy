@@ -1,8 +1,7 @@
-.. figure:: https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=galaxyLogoTrimmed.png
+.. figure:: https://wiki.galaxyproject.org/Images/GalaxyLogo?action=AttachFile&do=get&target=galaxy_project_logo.jpg
    :alt: Galaxy Logo
 
-The latest information about Galaxy is always available via the Galaxy
-website: `http://galaxyproject.org/ <http://galaxyproject.org/>`__
+The latest information about Galaxy is available via `http://galaxyproject.org/ <http://galaxyproject.org/>`__
 
 Galaxy Quickstart
 =================
@@ -38,7 +37,7 @@ Not all dependencies are included for the tools provided in the sample
 https://wiki.galaxyproject.org/Admin/Tools/ToolDependencies
 
 Issues
-------
+======
 
 Issues can be submitted to trello via the `galaxyproject
 website <http://galaxyproject.org/trello/>`__ and viewed on the `Galaxy
@@ -50,6 +49,19 @@ Galaxy Development
 
 Galaxy welcomes new development! There is extensive documentation on developing
 with Galaxy on the `wiki <https://wiki.galaxyproject.org/Develop>`__.
+
+Source Repository
+-----------------
+
+Galaxy development has moved to `Github
+<https://github.com/galaxyproject/galaxy>`__.
+
+**Developers** should develop against the ``dev`` branch in the Github
+repository.
+
+**Deployers** can continue to pull Galaxy changes from Bitbucket without
+interruption. Alternatively, deployers can track the ``master`` branch in
+Github.
 
 Syncing a Fork
 --------------

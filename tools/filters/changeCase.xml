@@ -1,4 +1,4 @@
-<tool id="ChangeCase" name="Change Case">
+<tool id="ChangeCase" name="Change Case" version="1.0.0">
   <description> of selected columns</description>
   <stdio>
     <exit_code range="1:" err_level="fatal" />

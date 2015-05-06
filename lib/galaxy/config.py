@@ -15,6 +15,7 @@ import sys
 import tempfile
 from datetime import timedelta
 from galaxy import eggs
+from galaxy.exceptions import ConfigurationError
 from galaxy.util import listify
 from galaxy.util import string_as_bool
 from galaxy.util.dbkeys import GenomeBuilds
@@ -26,13 +27,9 @@ log = logging.getLogger( __name__ )
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
-    if not( os.path.isabs( path ) ):
+    if not os.path.isabs( path ):
         path = os.path.join( root, path )
     return path
-
-
-class ConfigurationError( Exception ):
-    pass
 
 
 class Configuration( object ):
@@ -97,6 +94,11 @@ class Configuration( object ):
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
+        integrated_tool_panel_tracking_directory = kwargs.get( 'integrated_tool_panel_tracking_directory', None )
+        if integrated_tool_panel_tracking_directory:
+            self.integrated_tool_panel_tracking_directory = resolve_path( integrated_tool_panel_tracking_directory, self.root )
+        else:
+            self.integrated_tool_panel_tracking_directory = None
         self.toolbox_filter_base_modules = listify( kwargs.get( "toolbox_filter_base_modules", "galaxy.tools.filters,galaxy.tools.toolbox.filters" ) )
         self.tool_filters = listify( kwargs.get( "tool_filters", [] ), do_strip=True )
         self.tool_label_filters = listify( kwargs.get( "tool_label_filters", [] ), do_strip=True )
@@ -121,6 +123,7 @@ class Configuration( object ):
         self.manage_dependency_relationships = string_as_bool( kwargs.get( 'manage_dependency_relationships', False ) )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
+        self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         if isinstance( self.hours_between_check, basestring ):
             self.hours_between_check = float( self.hours_between_check )
         try:
@@ -179,7 +182,9 @@ class Configuration( object ):
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.mailing_join_addr = kwargs.get('mailing_join_addr', 'galaxy-announce-join@bx.psu.edu')
         self.error_email_to = kwargs.get( 'error_email_to', None )
-        self.activation_email = kwargs.get( 'activation_email', None )
+        # activation_email was used until release_15.03
+        activation_email = kwargs.get( 'activation_email', None )
+        self.email_from = kwargs.get( 'email_from', activation_email )
         self.user_activation_on = string_as_bool( kwargs.get( 'user_activation_on', False ) )
         self.activation_grace_period = kwargs.get( 'activation_grace_period', None )
         self.inactivity_box_content = kwargs.get( 'inactivity_box_content', None )
@@ -197,7 +202,7 @@ class Configuration( object ):
                 with open( self.blacklist_file ) as blacklist:
                     self.blacklist_content = [ line.rstrip() for line in blacklist.readlines() ]
             except IOError:
-                    print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
+                print ( "CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str( self.blacklist_file ) )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
@@ -258,7 +263,7 @@ class Configuration( object ):
         self.message_box_content = kwargs.get( 'message_box_content', None )
         self.message_box_class = kwargs.get( 'message_box_class', 'info' )
         self.support_url = kwargs.get( 'support_url', 'https://wiki.galaxyproject.org/Support' )
-        self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.galaxyproject.org/' )
+        self.wiki_url = kwargs.get( 'wiki_url', 'https://wiki.galaxyproject.org/' )
         self.blog_url = kwargs.get( 'blog_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.library_import_dir = kwargs.get( 'library_import_dir', None )
@@ -277,6 +282,11 @@ class Configuration( object ):
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool( kwargs.get( "index_tool_help", True ) )
+        self.tool_name_boost = kwargs.get( "tool_name_boost", 9 )
+        self.tool_section_boost = kwargs.get( "tool_section_boost", 3 )
+        self.tool_description_boost = kwargs.get( "tool_description_boost", 2 )
+        self.tool_help_boost = kwargs.get( "tool_help_boost", 0.5 )
+        self.tool_search_limit = kwargs.get( "tool_search_limit", 20 )
         # Location for tool dependencies.
         if 'tool_dependency_dir' in kwargs:
             self.tool_dependency_dir = resolve_path( kwargs.get( "tool_dependency_dir" ), self.root )
@@ -350,6 +360,8 @@ class Configuration( object ):
 
         # Default URL (with schema http/https) of the Galaxy instance within the
         # local network - used to remotely communicate with the Galaxy API.
+        web_port = kwargs.get("galaxy_infrastructure_web_port", None)
+        self.galaxy_infrastructure_web_port = web_port
         galaxy_infrastructure_url = kwargs.get( 'galaxy_infrastructure_url', None )
         galaxy_infrastructure_url_set = True
         if galaxy_infrastructure_url is None:
@@ -357,9 +369,9 @@ class Configuration( object ):
             # so dependending on the context a better default can be used (
             # request url in a web thread, Docker parent in IE stuff, etc...)
             galaxy_infrastructure_url = "http://localhost"
-            port = self.guess_galaxy_port()
-            if port:
-                galaxy_infrastructure_url += ":%s" % (port)
+            web_port = self.galaxy_infrastructure_web_port or self.guess_galaxy_port()
+            if web_port:
+                galaxy_infrastructure_url += ":%s" % (web_port)
             galaxy_infrastructure_url_set = False
         if "HOST_IP" in galaxy_infrastructure_url:
             galaxy_infrastructure_url = string.Template(galaxy_infrastructure_url).safe_substitute({
@@ -412,7 +424,7 @@ class Configuration( object ):
         self.pretty_datetime_format = expand_pretty_datetime_format( kwargs.get( 'pretty_datetime_format', '$locale (UTC)' ) )
         self.master_api_key = kwargs.get( 'master_api_key', None )
         if self.master_api_key == "changethis":  # default in sample config file
-            raise Exception("Insecure configuration, please change master_api_key to something other than default (changethis)")
+            raise ConfigurationError("Insecure configuration, please change master_api_key to something other than default (changethis)")
 
         # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
@@ -465,11 +477,12 @@ class Configuration( object ):
         Backwards compatibility for config files moved to the config/ dir.
         """
         defaults = dict(
+            auth_config_file=[ 'config/auth_conf.xml', 'config/auth_conf.xml.sample' ],
             data_manager_config_file=[ 'config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample' ],
             datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             external_service_type_config_file=[ 'config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample' ],
             job_config_file=[ 'config/job_conf.xml', 'job_conf.xml' ],
-            job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml','config/job_metrics_conf.xml.sample' ],
+            job_metrics_config_file=[ 'config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample' ],
             dependency_resolvers_config_file=[ 'config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml' ],
             job_resource_params_file=[ 'config/job_resource_params_conf.xml', 'job_resource_params_conf.xml' ],
             migrated_tools_config=[ 'migrated_tools_conf.xml', 'config/migrated_tools_conf.xml' ],
@@ -626,7 +639,7 @@ class Configuration( object ):
               database in the future.
         """
         admin_users = [ x.strip() for x in self.get( "admin_users", "" ).split( "," ) ]
-        return ( user is not None and user.email in admin_users )
+        return user is not None and user.email in admin_users
 
     def resolve_path( self, path ):
         """ Resolve a path relative to Galaxy's root.

@@ -361,7 +361,7 @@ if wf_parms:
       <span class="conditional-start"></span>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step, already_used )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values, already_used )}
-    %else:
+    %elif input.type != "section":
       ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step, already_used )}
     %endif
   %endfor

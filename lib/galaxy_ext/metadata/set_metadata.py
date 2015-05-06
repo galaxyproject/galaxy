@@ -35,12 +35,28 @@ from galaxy.util import stringify_dictionary_keys
 from sqlalchemy.orm import clear_mappers
 
 
-def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds ):
+def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds, datatypes_registry ):
     # This method is somewhat odd, in that we set the metadata attributes from tool,
     # then call set_meta, then set metadata attributes from tool again.
     # This is intentional due to interplay of overwrite kwd, the fact that some metadata
     # parameters may rely on the values of others, and that we are accepting the
-    # values provided by the tool as Truth. 
+    # values provided by the tool as Truth.
+    extension = dataset_instance.extension
+    if extension == "_sniff_":
+        try:
+            from galaxy.datatypes import sniff
+            extension = sniff.handle_uploaded_dataset_file( dataset_instance.dataset.external_filename, datatypes_registry )
+            # We need to both set the extension so it is available to set_meta
+            # and record it in the metadata so it can be reloaded on the server
+            # side and the model updated (see MetadataCollection.{from,to}_JSON_dict)
+            dataset_instance.extension = extension
+            # Set special metadata property that will reload this on server side.
+            setattr( dataset_instance.metadata, "__extension__", extension )
+        except Exception:
+            # TODO: log this when metadata can log stuff...
+            # https://trello.com/c/Nrwodu9d
+            pass
+
     for metadata_name, metadata_value in file_dict.get( 'metadata', {} ).iteritems():
         setattr( dataset_instance.metadata, metadata_name, metadata_value )
     dataset_instance.datatype.set_meta( dataset_instance, **set_meta_kwds )
@@ -102,7 +118,7 @@ def set_metadata():
                         metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON( metadata_file_override )
                     setattr( dataset.metadata, metadata_name, metadata_file_override )
             file_dict = existing_job_metadata_dict.get( dataset.dataset.id, {} )
-            set_meta_with_tool_provided( dataset, file_dict, set_meta_kwds )
+            set_meta_with_tool_provided( dataset, file_dict, set_meta_kwds, datatypes_registry )
             dataset.metadata.to_JSON_dict( filename_out )  # write out results of set_meta
             json.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) )  # setting metadata has succeeded
         except Exception, e:
@@ -115,7 +131,7 @@ def set_metadata():
             new_dataset._extra_files_path = os.path.join( tool_job_working_directory, extra_files )
         new_dataset.state = new_dataset.states.OK
         new_dataset_instance = galaxy.model.HistoryDatasetAssociation( id=-i, dataset=new_dataset, extension=file_dict.get( 'ext', 'data' ) )
-        set_meta_with_tool_provided( new_dataset_instance, file_dict, set_meta_kwds )
+        set_meta_with_tool_provided( new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry )
         file_dict[ 'metadata' ] = json.loads( new_dataset_instance.metadata.to_JSON_dict() ) #storing metadata in external form, need to turn back into dict, then later jsonify
     if existing_job_metadata_dict or new_job_metadata_dict:
         with open( job_metadata, 'wb' ) as job_metadata_fh:

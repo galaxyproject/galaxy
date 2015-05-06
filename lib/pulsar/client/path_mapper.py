@@ -95,4 +95,4 @@ class PathMapper(object):
             message = "PathMapper cannot handle path type %s" % dataset_path_type
             raise Exception(message)
 
-__all__ = [PathMapper]
+__all__ = ['PathMapper']

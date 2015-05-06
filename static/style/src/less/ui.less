@@ -72,6 +72,7 @@
             font-size: 0.8em;
             font-weight: normal;
             top: -1px;
+            word-break:break-word;
         }
     }
     .button.disabled {
@@ -146,6 +147,7 @@
 // table form elements
 .ui-table-form-element {
     .ui-table-form-title {
+        word-break: break-word;
         font-weight: bold;
         .ui-table-form-optional {
             cursor: pointer;
@@ -198,6 +200,7 @@
         float: right;
         width:100%;
         .portlet-title {
+            word-break: break-word;
             display: inline;
             vertical-align: middle;
             .portlet-title-text {
@@ -231,6 +234,18 @@
             margin-bottom: @ui-margin-vertical;
         }
     }
+
+    .portlet-backdrop {
+        display: none;
+        z-index: 10;
+        position: absolute;
+        top: 0px;
+        width: 100%;
+        height: 100%;
+        opacity: 0.2;
+        background: @white;
+        cursor: not-allowed;
+    }
 }
 
 .ui-portlet-repeat {
@@ -257,6 +272,7 @@
 
 .ui-portlet-section {
     &:extend(.ui-portlet-repeat all);
+    margin-top: @ui-margin-vertical;
     border-left: solid 3px @side-panel-bg;
     .portlet-header {
         background: @side-panel-bg;
@@ -426,9 +442,12 @@
 }
 
 .ui-button-check {
-    font-size: 1.2em;
-    width: 1.2em;
+    .icon {
+        font-size: 1.2em;
+        width: 1.2em;
+    }
     cursor: pointer;
+    margin-bottom: @ui-margin-vertical;
 }
 
 .ui-color-picker {

@@ -198,12 +198,9 @@ spaceghost.openHomePage().then( function(){
     // removed since we have no pre-installed unicode builds
     //this.test.comment( 'update should allow unicode in genome builds' );
 
-    spaceghost.test.comment( 'An unknown reference/genome_build should return a 400' );
-    this.api.assertRaises( function(){
-        returned = this.api.histories.update( newFirstHistory.id, {
-            genome_build : 'wookiee12'
-        });
-    }, 400, 'invalid reference', 'Bad Request with invalid id: show' );
+    // removed since many data sources consider dbkey to be an open field
+    // spaceghost.test.comment( 'An unknown reference/genome_build should return a 400' );
+    // 400, 'invalid reference', 'Bad Request with invalid id: show' );
 
 
     // ........................................................................................... annotation

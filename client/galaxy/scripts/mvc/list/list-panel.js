@@ -306,7 +306,10 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         ].join(''));
         var $actions = actions.map( function( action ){
             var html = [ '<li><a href="javascript:void(0);">', action.html, '</a></li>' ].join( '' );
-            return $( html ).click( action.func );
+            return $( html ).click( function( ev ){
+                ev.preventDefault();
+                return action.func( ev );
+            });
         });
         $newMenu.find( 'ul' ).append( $actions );
         $menu.replaceWith( $newMenu );
@@ -364,11 +367,11 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         if( panel.views.length ){
             panel._attachItems( $whereTo );
             panel.$emptyMessage( $whereTo ).hide();
-            
+
         } else {
             panel._renderEmptyMessage( $whereTo ).show();
         }
-        
+
         return panel.views;
     },
 
@@ -542,7 +545,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
 
     /** get views based on model.id */
     viewFromModelId : function( id ){
-        for( var i=0; i<this.views.length; i++ ){
+        for( var i = 0; i < this.views.length; i++ ){
             if( this.views[i].model.id === id ){
                 return this.views[i];
             }
@@ -562,10 +565,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
             //return view.model.matches( properties );
 //TODO: replace with _.matches (underscore 1.6.0)
             var json = view.model.toJSON();
-            //console.debug( '\t', json, properties );
             for( var key in properties ){
                 if( properties.hasOwnProperty( key ) ){
-                    //console.debug( '\t\t', json[ key ], view.model.properties[ key ] );
                     if( json[ key ] !== view.model.get( key ) ){
                         return false;
                     }

@@ -482,14 +482,6 @@ class Registry( object ):
             data.init_meta( copy_from=data )
         return data
 
-    def old_change_datatype( self, data, ext ):
-        """Creates and returns a new datatype based on an existing data and an extension"""
-        newdata = factory( ext )( id=data.id )
-        for key, value in data.__dict__.items():
-            setattr( newdata, key, value )
-        newdata.ext = ext
-        return newdata
-
     def load_datatype_converters( self, toolbox, installed_repository_dict=None, deactivate=False ):
         """
         If deactivate is False, add datatype converters from self.converters or self.proprietary_converters

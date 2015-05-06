@@ -1,4 +1,4 @@
-<tool id="laj_1" name="LAJ">
+<tool id="laj_1" name="LAJ" version="1.0.0">
 <description>Pairwise Alignment Viewer</description>
   <command interpreter="python">LAJ.py $maf_input $out_file1</command>
   <inputs>

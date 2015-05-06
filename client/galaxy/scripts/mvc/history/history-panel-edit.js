@@ -7,6 +7,9 @@ define([
     "mvc/history/hdca-li-edit",
     "mvc/tags",
     "mvc/annotations",
+    "mvc/collection/list-collection-creator",
+    "mvc/collection/pair-collection-creator",
+    "mvc/collection/list-of-pairs-collection-creator",
     "ui/fa-icon-button",
     "mvc/ui/popup-menu",
     "utils/localization"
@@ -19,6 +22,9 @@ define([
     HDCA_LI_EDIT,
     TAGS,
     ANNOTATIONS,
+    LIST_COLLECTION_CREATOR,
+    PAIR_COLLECTION_CREATOR,
+    LIST_OF_PAIRS_COLLECTION_CREATOR,
     faIconButton,
     PopupMenu,
     _l
@@ -201,7 +207,7 @@ var HistoryPanelEdit = _super.extend(
     },
 
     /** Set up HistoryPanelEdit js/widget behaviours
-     *  In this override, add the multi select popup menu and make the name editable
+     *  In this override, make the name editable
      */
     _setUpBehaviors : function( $where ){
         $where = $where || this.$el;
@@ -215,7 +221,7 @@ var HistoryPanelEdit = _super.extend(
         }
 
         var panel = this,
-            nameSelector = '.controls .name';
+            nameSelector = '> .controls .name';
         $where.find( nameSelector )
             .attr( 'title', _l( 'Click to rename history' ) )
             .tooltip({ placement: 'bottom' })
@@ -272,48 +278,31 @@ var HistoryPanelEdit = _super.extend(
                 }
             });
         }
-        actions.push( {
-            html: _l( 'Build Dataset List' ), func: function() {
-                panel.getSelectedModels().promoteToHistoryDatasetCollection( panel.model, "list" );
-            }
-        });
-        actions.push( {
-            // TODO: Only show quick pair if two things selected.
-            html: _l( 'Build Dataset Pair' ), func: function() {
-                panel.getSelectedModels().promoteToHistoryDatasetCollection( panel.model, "paired" );
-            }
-        });
-        actions.push( {
-            // TODO: Only show quick pair if two things selected.
-            html: _l( 'Build List of Dataset Pairs' ),
-            func: _.bind( panel._showPairedCollectionModal, panel )
-        });
+        actions = actions.concat( panel._collectionActions() );
         return actions;
     },
 
-    _showPairedCollectionModal : function(){
-        var panel = this,
-            datasets = panel.getSelectedModels().toJSON().filter( function( content ){
-                return content.history_content_type === 'dataset'
-                    && content.state === STATES.OK;
-            });
-        if( datasets.length ){
-            require([ 'mvc/collection/paired-collection-creator' ], function( creator ){
-                window.creator = creator.pairedCollectionCreatorModal( datasets, {
-                    historyId : panel.model.id
-                });
-            });
-        } else {
-            Galaxy.modal.show({
-                title   : _l( 'No valid datasets were selected' ),
-                body    : _l([
-                              'Use the checkboxes at the left of the dataset names to select them.',
-                              'Selected datasets should be error-free and should have completed running.'
-                          ].join(' ')),
-                buttons : { 'Ok': function(){ Galaxy.modal.hide(); } },
-                closing_events: true
-            });
-        }
+    /**   */
+    _collectionActions : function(){
+        var panel = this;
+        return [
+            {   html: _l( 'Build Dataset List' ), func: function() {
+                    LIST_COLLECTION_CREATOR.createListCollection( panel.getSelectedModels() )
+                        .done( function(){ panel.model.refresh() });
+                }
+            },
+            // TODO: Only show quick pair if two things selected.
+            {   html: _l( 'Build Dataset Pair' ), func: function() {
+                    PAIR_COLLECTION_CREATOR.createPairCollection( panel.getSelectedModels() )
+                        .done( function(){ panel.model.refresh() });
+                }
+            },
+            {   html: _l( 'Build List of Dataset Pairs' ), func: function() {
+                    LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection( panel.getSelectedModels() )
+                        .done( function(){ panel.model.refresh() });
+                }
+            },
+        ];
     },
 
     // ------------------------------------------------------------------------ sub-views
@@ -371,7 +360,7 @@ var HistoryPanelEdit = _super.extend(
      *  @param {Model} the item model to check
      */
     _handleHdaVisibleChange : function( itemModel ){
-        if( itemModel.hidden() && !this.storage.showHidden ){
+        if( itemModel.hidden() && !this.showHidden ){
             this.removeItemView( itemModel );
         }
         this._renderCounts();
@@ -469,7 +458,6 @@ var HistoryPanelEdit = _super.extend(
         var dropTarget = this.$( '.history-drop-target' ).get(0);
         for( var evName in this._dropHandlers ){
             if( this._dropHandlers.hasOwnProperty( evName ) ){
-                console.debug( evName, this._dropHandlers[ evName ] );
                 dropTarget.off( evName, this._dropHandlers[ evName ] );
             }
         }

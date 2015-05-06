@@ -196,7 +196,7 @@ def build_workflow_run_config( trans, workflow, payload ):
         # Passing an existing history to use.
         encoded_history_id = history_param[ 8: ]
         history_id = __decode_id( trans, encoded_history_id, model_type="history" )
-        history = history_manager.get_owned( trans, history_id, trans.user )
+        history = history_manager.get_owned( history_id, trans.user, current_history=trans.history )
     else:
         # Send workflow outputs to new history.
         history = app.model.History(name=history_param, user=trans.user)
@@ -304,7 +304,7 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
         state = step.state
         serializable_runtime_state = step.module.normalize_runtime_state( state )
         step_state = model.WorkflowRequestStepState()
-        step_state.workflow_step_id = step.id
+        step_state.workflow_step = step
         step_state.value = serializable_runtime_state
         workflow_invocation.step_states.append( step_state )
 

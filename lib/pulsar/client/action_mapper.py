@@ -1,5 +1,7 @@
+from contextlib import contextmanager
 from json import load
 from os import makedirs
+from os import unlink
 from os.path import exists
 from os.path import abspath
 from os.path import dirname
@@ -16,6 +18,9 @@ from .util import directory_files
 from .util import unique_path_prefix
 from .transport import get_file
 from .transport import post_file
+from .transport import rsync_get_file, scp_get_file
+from .transport import rsync_post_file, scp_post_file
+import tempfile
 
 
 DEFAULT_MAPPED_ACTION = 'transfer'  # Not really clear to me what this should be, exception?
@@ -55,6 +60,9 @@ ACTION_DEFAULT_PATH_TYPES = [
     path_type.OUTPUT_WORKDIR,
 ]
 ALL_PATH_TYPES = ACTION_DEFAULT_PATH_TYPES + [path_type.UNSTRUCTURED]
+
+MISSING_FILES_ENDPOINT_ERROR = "Attempted to use remote_transfer action without defining a files_endpoint."
+MISSING_SSH_KEY_ERROR = "Attempt to use file transfer action requiring an SSH key without specifying a ssh_key."
 
 
 class FileActionMapper(object):
@@ -130,6 +138,10 @@ class FileActionMapper(object):
         if config is None:
             config = self.__client_to_config(client)
         self.default_action = config.get("default_action", "transfer")
+        self.ssh_key = config.get("ssh_key", None)
+        self.ssh_user = config.get("ssh_user", None)
+        self.ssh_host = config.get("ssh_host", None)
+        self.ssh_port = config.get("ssh_port", None)
         self.mappers = mappers_from_dicts(config.get("paths", []))
         self.files_endpoint = config.get("files_endpoint", None)
 
@@ -155,6 +167,10 @@ class FileActionMapper(object):
         return dict(
             default_action=self.default_action,
             files_endpoint=self.files_endpoint,
+            ssh_key=self.ssh_key,
+            ssh_user=self.ssh_user,
+            ssh_port=self.ssh_port,
+            ssh_host=self.ssh_host,
             paths=map(lambda m: m.to_dict(), self.mappers)
         )
 
@@ -166,6 +182,9 @@ class FileActionMapper(object):
             config = dict()
         config["default_action"] = client.default_file_action
         config["files_endpoint"] = client.files_endpoint
+        for attr in ['ssh_key', 'ssh_user', 'ssh_port', 'ssh_host']:
+            if hasattr(client, attr):
+                config[attr] = getattr(client, attr)
         return config
 
     def __load_action_config(self, path):
@@ -200,17 +219,34 @@ class FileActionMapper(object):
         """ Extension point to populate extra action information after an
         action has been created.
         """
-        if action.action_type == "remote_transfer":
-            url_base = self.files_endpoint
-            if not url_base:
-                raise Exception("Attempted to use remote_transfer action with defining a files_endpoint")
-            if "?" not in url_base:
-                url_base = "%s?" % url_base
-            # TODO: URL encode path.
-            url = "%s&path=%s&file_type=%s" % (url_base, action.path, file_type)
-            action.url = url
+        if getattr(action, "inject_url", False):
+            self.__inject_url(action, file_type)
+        if getattr(action, "inject_ssh_properties", False):
+            self.__inject_ssh_properties(action)
+
+    def __inject_url(self, action, file_type):
+        url_base = self.files_endpoint
+        if not url_base:
+            raise Exception(MISSING_FILES_ENDPOINT_ERROR)
+        if "?" not in url_base:
+            url_base = "%s?" % url_base
+        # TODO: URL encode path.
+        url = "%s&path=%s&file_type=%s" % (url_base, action.path, file_type)
+        action.url = url
+
+    def __inject_ssh_properties(self, action):
+        for attr in ["ssh_key", "ssh_host", "ssh_port", "ssh_user"]:
+            action_attr = getattr(action, attr)
+            if action_attr == UNSET_ACTION_KWD:
+                client_default_attr = getattr(self, attr, None)
+                setattr(action, attr, client_default_attr)
+
+        if action.ssh_key is None:
+            raise Exception(MISSING_SSH_KEY_ERROR)
+
 
 REQUIRED_ACTION_KWD = object()
+UNSET_ACTION_KWD = "__UNSET__"
 
 
 class BaseAction(object):
@@ -354,6 +390,7 @@ class RemoteTransferAction(BaseAction):
     it indicates the action should occur on the Pulsar server instead of on
     the client.
     """
+    inject_url = True
     action_type = "remote_transfer"
     staging = STAGING_ACTION_REMOTE
 
@@ -373,6 +410,94 @@ class RemoteTransferAction(BaseAction):
 
     def write_from_path(self, pulsar_path):
         post_file(self.url, pulsar_path)
+
+
+class PubkeyAuthenticatedTransferAction(BaseAction):
+    """Base class for file transfers requiring an SSH public/private key
+    """
+    inject_ssh_properties = True
+    action_spec = dict(
+        ssh_key=UNSET_ACTION_KWD,
+        ssh_user=UNSET_ACTION_KWD,
+        ssh_host=UNSET_ACTION_KWD,
+        ssh_port=UNSET_ACTION_KWD,
+    )
+    staging = STAGING_ACTION_REMOTE
+
+    def __init__(self, path, file_lister=None, ssh_user=UNSET_ACTION_KWD,
+                 ssh_host=UNSET_ACTION_KWD, ssh_port=UNSET_ACTION_KWD, ssh_key=UNSET_ACTION_KWD):
+        super(PubkeyAuthenticatedTransferAction, self).__init__(path, file_lister=file_lister)
+        self.ssh_user = ssh_user
+        self.ssh_host = ssh_host
+        self.ssh_port = ssh_port
+        self.ssh_key = ssh_key
+
+    def to_dict(self):
+        return dict(path=self.path, action_type=self.action_type,
+                    ssh_user=self.ssh_user, ssh_host=self.ssh_host,
+                    ssh_port=self.ssh_port)
+
+    @contextmanager
+    def _serialized_key(self):
+        key_file = self.__serialize_ssh_key()
+        yield key_file
+        self.__cleanup_ssh_key(key_file)
+
+    def __serialize_ssh_key(self):
+        f = tempfile.NamedTemporaryFile(delete=False)
+        if self.ssh_key is not None:
+            f.write(self.ssh_key)
+        else:
+            raise Exception("SSH_KEY not available")
+        return f.name
+
+    def __cleanup_ssh_key(self, keyfile):
+        if exists(keyfile):
+            unlink(keyfile)
+
+
+class RsyncTransferAction(PubkeyAuthenticatedTransferAction):
+    action_type = "remote_rsync_transfer"
+
+    @classmethod
+    def from_dict(cls, action_dict):
+        return RsyncTransferAction(path=action_dict["path"],
+                                   ssh_user=action_dict["ssh_user"],
+                                   ssh_host=action_dict["ssh_host"],
+                                   ssh_port=action_dict["ssh_port"],
+                                   ssh_key=action_dict["ssh_key"])
+
+    def write_to_path(self, path):
+        with self._serialized_key() as key_file:
+            rsync_get_file(self.path, path, self.ssh_user, self.ssh_host,
+                           self.ssh_port, key_file)
+
+    def write_from_path(self, pulsar_path):
+        with self._serialized_key() as key_file:
+            rsync_post_file(pulsar_path, self.path, self.ssh_user,
+                            self.ssh_host, self.ssh_port, key_file)
+
+
+class ScpTransferAction(PubkeyAuthenticatedTransferAction):
+    action_type = "remote_scp_transfer"
+
+    @classmethod
+    def from_dict(cls, action_dict):
+        return ScpTransferAction(path=action_dict["path"],
+                                 ssh_user=action_dict["ssh_user"],
+                                 ssh_host=action_dict["ssh_host"],
+                                 ssh_port=action_dict["ssh_port"],
+                                 ssh_key=action_dict["ssh_key"])
+
+    def write_to_path(self, path):
+        with self._serialized_key() as key_file:
+            scp_get_file(self.path, path, self.ssh_user, self.ssh_host,
+                         self.ssh_port, key_file)
+
+    def write_from_path(self, pulsar_path):
+        with self._serialized_key() as key_file:
+            scp_post_file(pulsar_path, self.path, self.ssh_user, self.ssh_host,
+                          self.ssh_port, key_file)
 
 
 class MessageAction(object):
@@ -408,7 +533,7 @@ class MessageAction(object):
         open(path, "w").write(self.contents)
 
 
-DICTIFIABLE_ACTION_CLASSES = [RemoteCopyAction, RemoteTransferAction, MessageAction]
+DICTIFIABLE_ACTION_CLASSES = [RemoteCopyAction, RemoteTransferAction, MessageAction, RsyncTransferAction, ScpTransferAction]
 
 
 def from_dict(action_dict):
@@ -436,6 +561,8 @@ class BasePathMapper(object):
                 message_template = "action_type %s requires key word argument %s"
                 message = message_template % (action_type, key)
                 raise Exception(message)
+            else:
+                action_kwds[key] = value
         self.action_type = action_type
         self.action_kwds = action_kwds
         path_types_str = config.get('path_types', "*defaults*")
@@ -517,10 +644,10 @@ MAPPER_CLASS_DICT = dict(map(lambda c: (c.match_type, c), MAPPER_CLASSES))
 
 
 def mappers_from_dicts(mapper_def_list):
-    return map(lambda m: __mappper_from_dict(m), mapper_def_list)
+    return map(lambda m: _mappper_from_dict(m), mapper_def_list)
 
 
-def __mappper_from_dict(mapper_dict):
+def _mappper_from_dict(mapper_dict):
     map_type = mapper_dict.get('match_type', DEFAULT_PATH_MAPPER_TYPE)
     return MAPPER_CLASS_DICT[map_type](mapper_dict)
 
@@ -554,14 +681,16 @@ ACTION_CLASSES = [
     CopyAction,
     RemoteCopyAction,
     RemoteTransferAction,
+    RsyncTransferAction,
+    ScpTransferAction,
 ]
 actions = dict([(clazz.action_type, clazz) for clazz in ACTION_CLASSES])
 
 
 __all__ = [
-    FileActionMapper,
-    path_type,
-    from_dict,
-    MessageAction,
-    RemoteTransferAction,  # For testing
+    'FileActionMapper',
+    'path_type',
+    'from_dict',
+    'MessageAction',
+    'RemoteTransferAction',  # For testing
 ]

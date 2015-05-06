@@ -14,9 +14,9 @@
         ${h.js( 'libs/jquery/jquery',
                 'libs/jquery/select2',
                 'libs/bootstrap',
-                'libs/require',
                 'libs/underscore',
                 'libs/backbone/backbone',
+                'libs/require',
                 'libs/d3')}
 
         ## shared css

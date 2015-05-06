@@ -26,7 +26,7 @@ def main( options ):
             response_dict = submit( url, data, api_key=api_key, return_formatted=False )
             print response_dict
         else:
-            print "Invalid tool_shed: ", base_tool_shed_url, " name: ", name, " or owner: ", owner, "."
+            print "Invalid tool_shed: ", base_tool_shed_url, " name: ", options.name, " or owner: ", options.owner, "."
     else:
         print "An API key for an admin user in the Tool Shed is required to remove entries from the Tool Shed's repository registry."
 

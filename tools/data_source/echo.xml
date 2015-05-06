@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<tool name="Echo" id="echo1">
+<tool name="Echo" id="echo1" version="1.0.0">
 
 	<description>
 		echoes parameters  

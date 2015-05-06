@@ -465,8 +465,8 @@ class TwoBitFastaDataProvider( DatasetDataProvider ):
     def __iter__( self ):
         for id_ in self.ids:
             yield {
-                'id'  : id_,
-                'seq' : self.source[ name ]
+                'id': id_,
+                'seq': self.source[ id_ ]
             }
 
 
@@ -690,7 +690,7 @@ class BcftoolsDataProvider( line.RegexLineDataProvider ):
     def __init__( self, dataset, **kwargs ):
         #TODO: as samtools
         raise NotImplementedError()
-        super( BCFDataProvider, self ).__init__( dataset, **kwargs )
+        super( BcftoolsDataProvider, self ).__init__( dataset, **kwargs )
 
 
 class BGzipTabixDataProvider( base.DataProvider ):

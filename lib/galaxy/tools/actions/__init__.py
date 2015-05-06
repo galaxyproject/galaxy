@@ -4,6 +4,7 @@ from galaxy import model
 from galaxy.tools.parameters import DataToolParameter
 from galaxy.tools.parameters import DataCollectionToolParameter
 from galaxy.tools.parameters.wrapped import WrappedParameters
+from galaxy.util import ExecutionTimer
 from galaxy.util.json import dumps
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
@@ -331,7 +332,9 @@ class DefaultToolAction( object ):
                         # of the hdca.
                         out_collection_instances[ name ] = hdca
                 else:
+                    handle_output_timer = ExecutionTimer()
                     handle_output( name, output )
+                    log.info("Handled output %s" % handle_output_timer)
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name in out_data.keys():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
@@ -377,6 +380,7 @@ class DefaultToolAction( object ):
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
         current_user_roles = trans.get_current_user_roles()
+        access_timer = ExecutionTimer()
         for name, dataset in inp_data.iteritems():
             if dataset:
                 if not trans.app.security_agent.can_access_dataset( current_user_roles, dataset.dataset ):
@@ -384,6 +388,7 @@ class DefaultToolAction( object ):
                 job.add_input_dataset( name, dataset )
             else:
                 job.add_input_dataset( name, None )
+        log.info("Verified access to datasets %s" % access_timer)
         for name, dataset in out_data.iteritems():
             job.add_output_dataset( name, dataset )
         for name, dataset_collection in out_collections.iteritems():

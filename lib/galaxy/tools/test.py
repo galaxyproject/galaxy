@@ -50,9 +50,9 @@ class ToolTestBuilder( object ):
         self.required_files = []
         self.inputs = []
         self.outputs = []
-        self.num_outputs = None  # By default do not making assertions on
-                                 # number of outputs - but to test filtering
-                                 # allow explicitly state number of outputs.
+        # By default do not making assertions on number of outputs - but to
+        # test filtering allow explicitly state number of outputs.
+        self.num_outputs = None
         self.error = False
         self.exception = None
 
@@ -133,6 +133,7 @@ class ToolTestBuilder( object ):
             self.stderr = test_dict.get("stderr", None)
             self.expect_exit_code = test_dict.get("expect_exit_code", None)
             self.expect_failure = test_dict.get("expect_failure", False)
+            self.md5 = test_dict.get("md5", None)
         except Exception, e:
             self.error = True
             self.exception = e
@@ -166,7 +167,12 @@ class ToolTestBuilder( object ):
                         # an infinite loop - hence the "case_value is not None"
                         # check.
                         expanded_inputs[ case_context.for_state() ] = expanded_case_value
-
+            elif isinstance( value, galaxy.tools.parameters.grouping.Section ):
+                context = ParamContext( name=value.name, parent_context=parent_context )
+                for r_name, r_value in value.inputs.iteritems():
+                    expanded_input = self.__process_raw_inputs( { context.for_state(): r_value }, raw_inputs, parent_context=context )
+                    if expanded_input:
+                        expanded_inputs.update( expanded_input )
             elif isinstance( value, galaxy.tools.parameters.grouping.Repeat ):
                 repeat_index = 0
                 while True:
@@ -246,7 +252,7 @@ def test_data_iter( required_files ):
         )
         edit_attributes = extra.get( 'edit_attributes', [] )
 
-        #currently only renaming is supported
+        # currently only renaming is supported
         for edit_att in edit_attributes:
             if edit_att.get( 'type', None ) == 'name':
                 new_name = edit_att.get( 'value', None )
@@ -336,46 +342,3 @@ class RootParamContext(object):
 
     def get_index( self ):
         return 0
-
-
-def expand_input_elems( root_elem, prefix="" ):
-    __append_prefix_to_params( root_elem, prefix )
-
-    repeat_elems = root_elem.findall( 'repeat' )
-    indices = {}
-    for repeat_elem in repeat_elems:
-        name = repeat_elem.get( "name" )
-        if name not in indices:
-            indices[ name ] = 0
-            index = 0
-        else:
-            index = indices[ name ] + 1
-            indices[ name ] = index
-
-        new_prefix = __prefix_join( prefix, name, index=index )
-        expand_input_elems( repeat_elem, new_prefix )
-        __pull_up_params( root_elem, repeat_elem )
-        root_elem.remove( repeat_elem )
-
-    cond_elems = root_elem.findall( 'conditional' )
-    for cond_elem in cond_elems:
-        new_prefix = __prefix_join( prefix, cond_elem.get( "name" ) )
-        expand_input_elems( cond_elem, new_prefix )
-        __pull_up_params( root_elem, cond_elem )
-        root_elem.remove( cond_elem )
-
-
-def __append_prefix_to_params( elem, prefix ):
-    for param_elem in elem.findall( 'param' ):
-        param_elem.set( "name", __prefix_join( prefix, param_elem.get( "name" ) ) )
-
-
-def __pull_up_params( parent_elem, child_elem ):
-    for param_elem in child_elem.findall( 'param' ):
-        parent_elem.append( param_elem )
-        child_elem.remove( param_elem )
-
-
-def __prefix_join( prefix, name, index=None ):
-    name = name if index is None else "%s_%d" % ( name, index )
-    return name if not prefix else "%s|%s" % ( prefix, name )

@@ -211,4 +211,4 @@ def procfilt_argument( procfilt_on ):
         return ""
 
 
-__all__ = [ CollectlPlugin ]
+__all__ = [ 'CollectlPlugin' ]

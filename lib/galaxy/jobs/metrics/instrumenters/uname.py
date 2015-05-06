@@ -31,4 +31,4 @@ class UnamePlugin( InstrumentPlugin ):
         return self._instrument_file_path( job_directory, "uname" )
 
 
-__all__ = [ UnamePlugin ]
+__all__ = [ 'UnamePlugin' ]

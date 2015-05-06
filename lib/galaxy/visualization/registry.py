@@ -13,6 +13,7 @@ import galaxy.model
 from galaxy.web import url_for
 
 from galaxy.web.base import pluginframework
+from galaxy.web.base.interactive_environments import InteractiveEnviornmentRequest
 from galaxy.managers import api_keys
 
 import logging
@@ -105,6 +106,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         'sweepster',
         'phyloviz'
     ]
+    IE_REQUEST_FACTORY = InteractiveEnviornmentRequest
 
     def __str__( self ):
         return self.__class__.__name__
@@ -349,11 +351,17 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         # as an external visualization plugin is deprecated in favor of core interactive
         # environment plugin.
         if 'get_api_key' not in kwargs:
-
             def get_api_key():
                 return api_keys.ApiKeyManager( trans.app ).get_or_create_api_key( trans.user )
-
             kwargs[ 'get_api_key' ] = get_api_key
+
+        if 'plugin_path' not in kwargs:
+            kwargs[ 'plugin_path' ] = os.path.abspath( plugin.path )
+
+        plugin_config = plugin.get( 'config', {} )
+        if plugin_config.get( 'plugin_type', 'visualization' ) == "interactive_environment":
+            request = self.IE_REQUEST_FACTORY( trans, plugin )
+            kwargs[ "ie_request" ] = request
 
         return super( VisualizationsRegistry, self ).fill_template( trans, plugin, template_filename, **kwargs )
 
@@ -961,7 +969,7 @@ class ResourceParser( object ):
 
         elif param_type == 'dataset':
             decoded_dataset_id = trans.security.decode_id( query_param )
-            parsed_param = controller.hda_manager.get_accessible( trans, decoded_dataset_id, trans.user )
+            parsed_param = controller.hda_manager.get_accessible( decoded_dataset_id, trans.user )
 
         elif param_type == 'hda_or_ldda':
             encoded_dataset_id = query_param

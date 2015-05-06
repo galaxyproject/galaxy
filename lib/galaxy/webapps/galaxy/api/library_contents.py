@@ -85,13 +85,12 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             raise exceptions.InternalServerError( 'Error loading from the database.' + str(e))
         if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
             raise exceptions.RequestParameterInvalidException( 'No library found with the id provided.' )
-        root_encoded_id = 'F' + trans.security.encode_id( library.root_folder.id )
-        root_name = library.root_folder.name
+        encoded_id = 'F' + trans.security.encode_id( library.root_folder.id )
         # appending root folder
-        rval.append( dict( id=root_encoded_id,
+        rval.append( dict( id=encoded_id,
                            type='folder',
-                           name=root_name,
-                           url=url_for( 'library_content', library_id=library_id, id=root_encoded_id ) ) )
+                           name='/',
+                           url=url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
         library.root_folder.api_path = ''
         # appending all other items in the library recursively
         for content in traverse( library.root_folder ):
@@ -305,8 +304,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             # check permissions on (all three?) resources: hda, library, folder
             # TODO: do we really need the library??
             from_hda_id = self.decode_id( from_hda_id )
-            hda = self.hda_manager.get_owned( trans, from_hda_id, trans.user )
-            hda = self.hda_manager.error_if_uploading( trans, hda )
+            hda = self.hda_manager.get_owned( from_hda_id, trans.user, current_history=trans.history )
+            hda = self.hda_manager.error_if_uploading( hda )
             # library = self.get_library( trans, library_id, check_accessible=True )
             folder = self.get_library_folder( trans, folder_id, check_accessible=True )
 

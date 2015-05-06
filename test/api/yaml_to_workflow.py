@@ -15,9 +15,12 @@ STEP_TYPE_ALIASES = {
     'input_collection': 'data_collection_input',
 }
 
-
 def yaml_to_workflow(has_yaml):
     as_python = yaml.load(has_yaml)
+    return python_to_workflow(as_python)
+
+
+def python_to_workflow(as_python):
 
     if isinstance(as_python, list):
         as_python = {"steps": as_python}

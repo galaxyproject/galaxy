@@ -137,7 +137,7 @@ class ScrambleEgg( Egg ):
         elif zipfile.is_zipfile( self.source_path ):
             self.unpack_zip()
         else:
-            raise Exception( "%s(): Unknown archive file type for %s" % ( sys._getframe().f_code.co_name, source_path ) )
+            raise Exception( "%s(): Unknown archive file type for %s" % ( sys._getframe().f_code.co_name, self.source_path ) )
         log.warning( "%s(): Unpacked to:" % sys._getframe().f_code.co_name )
         log.warning( "  %s" % self.buildpath )
     def unpack_zip( self ):
@@ -153,7 +153,11 @@ class ScrambleEgg( Egg ):
         cur = os.getcwd()
         os.chdir( unpack_path )
         for member in members:
-            t.extract( member )
+            try:
+                t.extract( member )
+            except:
+                log.exception( "Could not extract %s", member )
+                raise
         t.close()
         os.rename( tld, self.name )
         os.chdir( cur )

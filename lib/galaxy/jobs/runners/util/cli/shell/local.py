@@ -24,7 +24,7 @@ class LocalShell(BaseShellExec):
     True
     >>> exec_result.stdout.strip() == u'Hello World'
     True
-    >>> exec_result = exec_python("import time; time.sleep(90)", timeout=3, timeout_check_interval=1)
+    >>> exec_result = exec_python("import time; time.sleep(90)", timeout=1, timeout_check_interval=.1)
     >>> exec_result.stdout == u''
     True
     >>> exec_result.stderr == 'Execution timed out'

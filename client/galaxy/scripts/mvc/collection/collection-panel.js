@@ -37,12 +37,11 @@ var CollectionPanel = _super.extend(
         this.linkTarget = attributes.linkTarget || '_blank';
 
         this.hasUser = attributes.hasUser;
-
-        /**  */
+        /** A stack of panels that currently cover or hide this panel */
         this.panelStack = [];
-        /**  */
+        /** The text of the link to go back to the panel containing this one */
         this.parentName = attributes.parentName;
-        /**  */
+        /** foldout or drilldown */
         this.foldoutStyle = attributes.foldoutStyle || 'foldout';
     },
 

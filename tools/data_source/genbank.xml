@@ -1,4 +1,4 @@
-<tool id="genbank" name="Connect to Genbank">
+<tool id="genbank" name="Connect to Genbank" version="1.0.0">
 <!--  <description>queries genbank</description> -->
   <command interpreter="python">genbank.py $mode "$text" $output</command>
   <inputs>

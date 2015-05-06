@@ -529,8 +529,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns dataset's name and link. """
         decoded_id = self.decode_id( id )
-        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
-        dataset = self.hda_manager.error_if_uploading( trans, dataset )
+        dataset = self.hda_manager.get_accessible( decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( dataset )
         return_dict = { "name" : dataset.name, "link" : url_for( controller='dataset', action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
         return return_dict
 
@@ -538,8 +538,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
     def get_embed_html_async( self, trans, id ):
         """ Returns HTML for embedding a dataset in a page. """
         decoded_id = self.decode_id( id )
-        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
-        dataset = self.hda_manager.error_if_uploading( trans, dataset )
+        dataset = self.hda_manager.get_accessible( decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( dataset )
         if dataset:
             return "Embedded Dataset '%s'" % dataset.name
 
@@ -556,8 +556,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         """ Rate a dataset asynchronously and return updated community data. """
 
         decoded_id = self.decode_id( id )
-        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
-        dataset = self.hda_manager.error_if_uploading( trans, dataset )
+        dataset = self.hda_manager.get_accessible( decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( dataset )
         if not dataset:
             return trans.show_error_message( "The specified dataset does not exist." )
 
@@ -571,8 +571,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         """ Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id. """
         id = slug
         decoded_id = self.decode_id( id )
-        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
-        dataset = self.hda_manager.error_if_uploading( trans, dataset )
+        dataset = self.hda_manager.get_accessible( decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( dataset )
         if dataset:
             # Filename used for composite types.
             if filename:
@@ -614,8 +614,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         """ Returns item content in HTML format. """
 
         decoded_id = self.decode_id( id )
-        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
-        dataset = self.hda_manager.error_if_uploading( trans, dataset )
+        dataset = self.hda_manager.get_accessible( decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( dataset )
         if dataset is None:
             raise web.httpexceptions.HTTPNotFound()
         truncated, dataset_data = self.hda_manager.text_data( dataset, preview=True )
@@ -627,8 +627,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
     def annotate_async( self, trans, id, new_annotation=None, **kwargs ):
         #TODO:?? why is this an access check only?
         decoded_id = self.decode_id( id )
-        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
-        dataset = self.hda_manager.error_if_uploading( trans, dataset )
+        dataset = self.hda_manager.get_accessible( decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( dataset )
         if not dataset:
             web.httpexceptions.HTTPNotFound()
         if dataset and new_annotation:
@@ -641,8 +641,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
     @web.expose
     def get_annotation_async( self, trans, id ):
         decoded_id = self.decode_id( id )
-        dataset = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
-        dataset = self.hda_manager.error_if_uploading( trans, dataset )
+        dataset = self.hda_manager.get_accessible( decoded_id, trans.user )
+        dataset = self.hda_manager.error_if_uploading( dataset )
         if not dataset:
             web.httpexceptions.HTTPNotFound()
         annotation = self.get_item_annotation_str( trans.sa_session, trans.user, dataset )
@@ -701,6 +701,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             return trans.show_error_message( "A display application name and link name must be provided." )
         if self._can_access_dataset( trans, data, additional_roles=user_roles ):
             msg = []
+            preparable_steps = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
             if not display_app:
@@ -766,12 +767,18 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                             msg.append( ( 'You must import this dataset into your current history before you can view it at the desired display application.', 'error' ) )
                         else:
                             refresh = True
-                            msg.append( ( 'This display application is being prepared.', 'info' ) )
+                            msg.append( ( 'Launching this display application required additional datasets to be generated, you can view the status of these jobs below. ', 'info' ) )
                             if not display_link.preparing_display():
                                 display_link.prepare_display()
+                            preparable_steps = display_link.get_prepare_steps()
                     else:
                         raise Exception( 'Attempted a view action (%s) on a non-ready display application' % app_action )
-            return trans.fill_template_mako( "dataset/display_application/display.mako", msg = msg, display_app = display_app, display_link = display_link, refresh = refresh )
+            return trans.fill_template_mako( "dataset/display_application/display.mako",
+                                             msg = msg,
+                                             display_app = display_app,
+                                             display_link = display_link,
+                                             refresh = refresh,
+                                             preparable_steps = preparable_steps )
         return trans.show_error_message( 'You do not have permission to view this dataset at an external display application.' )
 
     def _delete( self, trans, dataset_id ):
@@ -1018,7 +1025,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
         user = trans.get_user()
         if source_history is not None:
             decoded_source_history_id = self.decode_id( source_history )
-            history = self.history_manager.get_owned( trans, decoded_source_history_id, trans.user )
+            history = self.history_manager.get_owned( decoded_source_history_id, trans.user, current_history=trans.history )
             current_history = trans.get_history()
         else:
             history = current_history = trans.get_history()
@@ -1124,8 +1131,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % ( len( target_histories ) )
             for dataset_id in dataset_ids:
                 decoded_id = self.decode_id( dataset_id )
-                data = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
-                data = self.hda_manager.error_if_uploading( trans, data )
+                data = self.hda_manager.get_accessible( decoded_id, trans.user )
+                data = self.hda_manager.error_if_uploading( data )
 
                 if data is None:
                     error_msg = error_msg + "You tried to copy a dataset that does not exist or that you do not have access to.  "

@@ -178,7 +178,7 @@ a.btn {
         paths   : {
             'jquery' : 'libs/jquery/jquery'
         },
-        urlArgs: 'v=${int(app.server_starttime)}'
+        urlArgs: 'v=${app.server_starttime}'
     })([
         'mvc/user/user-model',
         panelToUse.location,

@@ -10,10 +10,16 @@ from cgi import FieldStorage
 
 from galaxy import util
 from galaxy import web
-from galaxy import exceptions
+from galaxy.exceptions import RequestParameterMissingException
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import InsufficientPermissionsException
+from galaxy.exceptions import ActionInputError
+from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import MalformedId
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.web.framework.helpers import time_ago
@@ -47,7 +53,7 @@ class RepositoriesController( BaseAPIController ):
         Adds appropriate entries to the repository registry for the repository defined by the received name and owner.
 
         :param key: the user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed containing the Repository
         :param name (required): the name of the Repository
@@ -164,7 +170,7 @@ class RepositoriesController( BaseAPIController ):
             ]
         }
         """
-        # Example URL: 
+        # Example URL:
         # http://<xyz>/api/repositories/get_repository_revision_install_info?name=<n>&owner=<o>&changeset_revision=<cr>
         if name and owner and changeset_revision:
             # Get the repository information.
@@ -327,7 +333,7 @@ class RepositoriesController( BaseAPIController ):
         clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == False,
                               trans.app.model.Repository.table.c.deleted == deleted ) ]
         if owner is not None:
-            clause_list.append( and_( trans.app.model.User.table.c.username == owner, 
+            clause_list.append( and_( trans.app.model.User.table.c.username == owner,
                                       trans.app.model.Repository.table.c.user_id == trans.app.model.User.table.c.id ) )
         if name is not None:
             clause_list.append( trans.app.model.Repository.table.c.name == name )
@@ -336,9 +342,8 @@ class RepositoriesController( BaseAPIController ):
                                           .order_by( trans.app.model.Repository.table.c.name ):
             repository_dict = repository.to_dict( view='collection',
                                                   value_mapper=self.__get_value_mapper( trans ) )
-            repository_dict[ 'url' ] = web.url_for( controller='repositories',
-                                                    action='show',
-                                                    id=trans.security.encode_id( repository.id ) )
+            repository_dict[ 'category_ids' ] = \
+                    [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
             repository_dicts.append( repository_dict )
         return repository_dicts
 
@@ -349,7 +354,7 @@ class RepositoriesController( BaseAPIController ):
         Removes appropriate entries from the repository registry for the repository defined by the received name and owner.
 
         :param key: the user's API key
-        
+
         The following parameters are included in the payload.
         :param tool_shed_url (required): the base URL of the Tool Shed containing the Repository
         :param name (required): the name of the Repository
@@ -425,7 +430,7 @@ class RepositoriesController( BaseAPIController ):
         type tool_dependecy_definition first followed by repositories of type unrestricted, and only one pass is necessary.  If
         a new repository type is introduced, the process will undoubtedly need to be revisited.  To facilitate this order, an
         in-memory list of repository ids that have been processed is maintained.
-        
+
         :param key: the API key of the Tool Shed user.
 
         The following parameters can optionally be included in the payload.
@@ -515,9 +520,9 @@ class RepositoriesController( BaseAPIController ):
         PUT /api/repositories/reset_metadata_on_repository
 
         Resets all metadata on a specified repository in the Tool Shed.
-        
+
         :param key: the API key of the Tool Shed user.
-        
+
         The following parameters must be included in the payload.
         :param repository_id: the encoded id of the repository on which metadata is to be reset.
         """
@@ -560,28 +565,97 @@ class RepositoriesController( BaseAPIController ):
             results[ 'stop_time' ] = stop_time
         return json.dumps( results, sort_keys=True, indent=4 )
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):
         """
         GET /api/repositories/{encoded_repository_id}
         Returns information about a repository in the Tool Shed.
 
+        Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
+        
         :param id: the encoded id of the Repository object
+        :type  id: encoded str
+
+        :returns:   detailed repository information
+        :rtype:     dict
+
+        :raises:  ObjectNotFound, MalformedId
         """
-        # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
+        try:
+            trans.security.decode_id( id )
+        except Exception:
+            raise MalformedId( 'The given id is invalid.' )
+
         repository = suc.get_repository_in_tool_shed( trans.app, id )
         if repository is None:
-            log.debug( "Unable to locate repository record for id %s." % ( str( id ) ) )
-            return {}
+            raise ObjectNotFound( 'Unable to locate repository for the given id.' )
         repository_dict = repository.to_dict( view='element',
                                               value_mapper=self.__get_value_mapper( trans ) )
-        repository_dict[ 'url' ] = web.url_for( controller='repositories',
-                                                action='show',
-                                                id=trans.security.encode_id( repository.id ) )
+        # TODO the following property would be better suited in the to_dict method
+        repository_dict[ 'category_ids' ] = \
+            [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
         return repository_dict
 
     @expose_api
-    def create( self, trans, payload, **kwd ):
+    def update( self, trans, id, **kwd ):
+        """
+        PATCH /api/repositories/{encoded_repository_id}
+        Updates information about a repository in the Tool Shed.
+
+        :param id: the encoded id of the Repository object
+
+        :param payload: dictionary structure containing::
+            'name':                  repo's name (optional)
+            'synopsis':              repo's synopsis (optional)
+            'description':           repo's description (optional)
+            'remote_repository_url': repo's remote repo (optional)
+            'homepage_url':          repo's homepage url (optional)
+            'category_ids':          list of existing encoded TS category ids
+                                     the updated repo should be associated with (optional)
+        :type payload: dict
+
+        :returns:   detailed repository information
+        :rtype:     dict
+
+        :raises: RequestParameterInvalidException, InsufficientPermissionsException
+        """
+        payload = kwd.get( 'payload', None )
+        if not payload:
+            raise RequestParameterMissingException( "You did not specify any payload." )
+
+        name = payload.get( 'name', None )
+        synopsis = payload.get( 'synopsis', None )
+        description = payload.get( 'description', None )
+        remote_repository_url = payload.get( 'remote_repository_url', None )
+        homepage_url = payload.get( 'homepage_url', None )
+        category_ids = payload.get( 'category_ids', None )
+        if category_ids is not None:
+            # We need to know if it was actually passed, and listify turns None into []
+            category_ids = util.listify( category_ids )
+
+        update_kwds = dict(
+            name=name,
+            description=synopsis,
+            long_description=description,
+            remote_repository_url=remote_repository_url,
+            homepage_url=homepage_url,
+            category_ids=category_ids,
+        )
+
+        repo, message = repository_util.update_repository( app=trans.app, trans=trans, id=id, **update_kwds )
+        if repo is None:
+            if "You are not the owner" in message:
+                raise InsufficientPermissionsException( message )
+            else:
+                raise ActionInputError( message )
+
+        repository_dict = repo.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
+        repository_dict[ 'category_ids' ] = \
+            [ trans.security.encode_id( x.category.id ) for x in repo.categories ]
+        return repository_dict
+
+    @expose_api
+    def create( self, trans, **kwd ):
         """
         create( self, trans, payload, **kwd )
         * POST /api/repositories:
@@ -603,29 +677,31 @@ class RepositoriesController( BaseAPIController ):
         :returns:   detailed repository information
         :rtype:     dict
 
-        :raises: RequestParameterMissingException
+        :raises: RequestParameterMissingException, RequestParameterInvalidException
         """
-        params = util.Params( payload )
-        name = util.restore_text( params.get( 'name', None ) )
+        payload = kwd.get( 'payload', None )
+        if not payload:
+            raise RequestParameterMissingException( "You did not specify any payload." )
+        name = payload.get( 'name', None )
         if not name:
-            raise exceptions.RequestParameterMissingException( "Missing required parameter 'name'." )
-        synopsis = util.restore_text( params.get( 'synopsis', None ) )
+            raise RequestParameterMissingException( "Missing required parameter 'name'." )
+        synopsis = payload.get( 'synopsis', None )
         if not synopsis:
-            raise exceptions.RequestParameterMissingException( "Missing required parameter 'synopsis'." )
+            raise RequestParameterMissingException( "Missing required parameter 'synopsis'." )
 
-        description = util.restore_text( params.get( 'description', '' ) )
-        remote_repository_url = util.restore_text( params.get( 'remote_repository_url', '' ) )
-        homepage_url = util.restore_text( params.get( 'homepage_url', '' ) )
-        category_ids = util.listify( params.get( 'category_ids[]', '' ) )
+        description = payload.get( 'description', '' )
+        remote_repository_url = payload.get( 'remote_repository_url', '' )
+        homepage_url = payload.get( 'homepage_url', '' )
+        category_ids = util.listify( payload.get( 'category_ids[]', '' ) )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
 
-        repo_type = kwd.get( 'type', rt_util.UNRESTRICTED )
+        repo_type = payload.get( 'type', rt_util.UNRESTRICTED )
         if repo_type not in rt_util.types:
-            raise exceptions.RequestParameterInvalidException( 'This repository type is not valid' )
+            raise RequestParameterInvalidException( 'This repository type is not valid' )
 
         invalid_message = repository_util.validate_repository_name( trans.app, name, trans.user )
         if invalid_message:
-            raise exceptions.RequestParameterInvalidException( invalid_message )
+            raise RequestParameterInvalidException( invalid_message )
 
         repo, message = repository_util.create_repository( app=trans.app,
                                                   name=name,
@@ -637,7 +713,10 @@ class RepositoriesController( BaseAPIController ):
                                                   remote_repository_url=remote_repository_url,
                                                   homepage_url=homepage_url )
 
-        return repo.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
+        repository_dict = repo.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
+        repository_dict[ 'category_ids' ] = \
+            [ trans.security.encode_id( x.category.id ) for x in repo.categories ]
+        return repository_dict
 
     @web.expose_api
     def create_changeset_revision( self, trans, id, payload, **kwd ):
