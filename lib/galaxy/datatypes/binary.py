@@ -194,57 +194,101 @@ class Bam( Binary ):
         os.symlink(input_file, input_file_tmpdir)
         os.symlink(input_file_bai, input_file_tmpdir + ".bai")
 
+        # Get chromosomes info through bam header
+        params = ["samtools", "view", "-H", input_file]
+        output = subprocess.Popen( params, stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[0]
+        output = output.split("\n")
+        chr_list = []
+        for line in output:
+            fields = line.strip().split("\t")
+            if fields[0].startswith("@SQ"):
+                chr_item = []
+                if fields[1].startswith("SN:"):
+                    chr_item.append(fields[1].split("SN:")[1])
+                if fields[2].startswith("LN:"):
+                    chr_item.append(fields[2].split("LN:")[1])
+                chr_list.append(chr_item)
+
         if 'split_mode' not in split_params:
             raise Exception('Tool does not define a split mode')
+        elif split_params['split_mode'] == 'by_interval':
+            log.debug("Attempting to split BAM file %s by interval", input_file)
+            split_size = int(split_params['split_size'])
+            for chr_item in chr_list:
+                chr_name = chr_item[0]
+                chr_ln = int(chr_item[1])
+                chunks = chr_ln / split_size
+                chunks_mod = chr_ln % split_size
+                if chunks == 0:
+                    split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name, chr_start=1, chr_end=chr_ln)
+                    cls._create_task_dir(input_file, input_file_tmpdir, subdir_generator_function, split_data)
+                    continue
+
+                for i in range(chunks):
+                    # Calculate chunks/regions
+                    chunk_start = i * split_size + 1
+                    chunk_end = i * split_size + split_size
+                    split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name, chr_start=chunk_start, chr_end=chunk_end)
+                    cls._create_task_dir(input_file, input_file_tmpdir, subdir_generator_function, split_data)
+
+                chunk_start = chunks * split_size + 1
+                chunk_end = chunks * split_size + chunks_mod
+                split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name, chr_start=chunk_start, chr_end=chunk_end)
+                cls._create_task_dir(input_file, input_file_tmpdir, subdir_generator_function, split_data)
+
         elif split_params['split_mode'] == 'by_rname':
             log.debug("Attempting to split BAM file %s by chromosome", input_file)
-
-            # First get bam header
-            params = ["samtools", "view", "-H", input_file]
-            output = subprocess.Popen( params, stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[0]
-            output = output.split("\n")
-            chr_list = []
-            for line in output:
-                fields = line.strip().split("\t")
-                if fields[0].startswith("@SQ") and fields[1].startswith("SN:"):
-                    chr_list.append(fields[1].split("SN:")[1])
-
-            for chrName in chr_list:
-                try:
-                    part_dir = subdir_generator_function()
-                    base_name = os.path.basename(input_file)
-                    part_path = os.path.join(part_dir, base_name)
-
-                    split_data = dict(class_name='%s.%s' % (cls.__module__, cls.__name__),
-                                      output_name=part_path,
-                                      input_name=input_file_tmpdir,
-                                      args=dict(chromosome=chrName))
-                    f = open(os.path.join(part_dir, 'split_info_%s.json' % base_name), 'w')
-                    json.dump(split_data, f)
-                    f.close()
-
-                except Exception, e:
-                    log.error("Error: " + str(e))
-                    raise
+            for chr_item in chr_list:
+                chr_name = chr_item[0]
+                split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name)
+                cls._create_task_dir(input_file, input_file_tmpdir, subdir_generator_function, split_data)
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
     split = classmethod(split)
+
+    def _create_task_dir(cls, input_file, input_file_tmpdir, subdir_generator_function, dict_args):
+        try:
+            part_dir = subdir_generator_function()
+            base_name = os.path.basename(input_file)
+            part_path = os.path.join(part_dir, base_name)
+
+            split_data = dict(class_name='%s.%s' % (cls.__module__, cls.__name__),
+                              output_name=part_path,
+                              input_name=input_file_tmpdir,
+                              args=dict(dict_args))
+            f = open(os.path.join(part_dir, 'split_info_%s.json' % base_name), 'w')
+            json.dump(split_data, f)
+            f.close()
+
+        except Exception, e:
+            log.error("Error: " + str(e))
+            raise
+    _create_task_dir = classmethod(_create_task_dir)
 
     def process_split_file(data):
 
         args = data['args']
         input_name = data['input_name']
         output_name = data['output_name']
-        chromosome = args['chromosome']
+        split_mode = args['split_mode']
+        chr_region = []
+
+        if split_mode == 'by_interval':
+            chr_name = args['chr_name']
+            chr_start = args['chr_start']
+            chr_end = args['chr_end']
+            chr_region = chr_name + ":" + str(chr_start) + "-" + str(chr_end)
+
+        if split_mode == "by_rname":
+            chr_region = args['chr_name']
 
         tmp_dir = tempfile.mkdtemp()
-        stderr_name = tempfile.NamedTemporaryFile( dir = tmp_dir, prefix = "bam_view_stderr" ).name
-        command = "samtools view -bh %s %s -o %s" % (input_name, chromosome, output_name)
+        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_view_stderr").name
+        command = "samtools view -bh %s %s -o %s" % (input_name, chr_region, output_name)
         proc = subprocess.Popen(args=command, shell=True, stderr=open( stderr_name, 'wb' ))
         exit_code = proc.wait()
         #  Did view succeed?
         stderr = open(stderr_name).read().strip()
-        print stderr
         if stderr:
             if exit_code != 0:
                 shutil.rmtree(tmp_dir) #clean up
