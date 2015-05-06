@@ -91,7 +91,7 @@ class MockTrans( object ):
 
     user = property( get_user, set_user )
 
-    def get_history( self ):
+    def get_history( self, **kwargs ):
         return self.history
 
     def set_history( self, history ):
