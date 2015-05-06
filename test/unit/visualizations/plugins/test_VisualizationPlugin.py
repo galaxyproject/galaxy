@@ -3,7 +3,6 @@ Test lib/galaxy/visualization/plugins/plugin.
 """
 import os
 import imp
-import unittest
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '..', '..', 'unittest_utils', 'utility.py' ) )
@@ -15,7 +14,7 @@ from galaxy.visualization.plugins import utils as vis_utils
 
 
 # -----------------------------------------------------------------------------
-class VisualizationsPlugin_TestCase( unittest.TestCase ):
+class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
     plugin_class = vis_plugin.VisualizationPlugin
 
     def test_default_init( self ):
@@ -195,4 +194,4 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
 # TODO: config parser tests (in separate file)
 
 if __name__ == '__main__':
-    unittest.main()
+    test_utils.unittest.main()

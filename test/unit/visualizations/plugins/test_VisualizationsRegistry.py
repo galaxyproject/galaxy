@@ -3,7 +3,6 @@ Test lib/galaxy/visualization/plugins/registry.
 """
 import os
 import imp
-import unittest
 import re
 
 test_utils = imp.load_source( 'test_utils',
@@ -40,7 +39,7 @@ config1 = """\
 
 
 # -----------------------------------------------------------------------------
-class VisualizationsRegistry_TestCase( unittest.TestCase ):
+class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
 
     def test_plugin_load_from_repo( self ):
         """should attempt load if criteria met"""
@@ -262,8 +261,9 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         script_entry._set_up_template_plugin( mock_app_dir.root_path, [ addtional_templates_dir ] )
         response = script_entry._render( {}, trans=trans, embedded=True )
         # print response
-        self.assertTrue( '<script type="text/javascript" src="bler" data-main="one"></script>' in response )
-
+        self.assertTrue( 'src="bler"' in response )
+        self.assertTrue( 'type="text/javascript"' in response )
+        self.assertTrue( 'data-main="one"' in response )
         mock_app_dir.remove()
 
 
@@ -271,4 +271,4 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
 # TODO: config parser tests (in separate file)
 
 if __name__ == '__main__':
-    unittest.main()
+    test_utils.unittest.main()
