@@ -94,7 +94,7 @@ class HookPluginManager_TestCase( unittest.TestCase ):
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
         self.assertEqual( plugin.path, os.path.join( expected_plugins_path, 'plugin1' ) )
-        self.assertIsInstance( plugin.module, types.ModuleType )
+        self.assertTrue( isinstance( plugin.module, types.ModuleType ) )
         self.assertEqual( plugin.module.bler( 2 ), ( 2, 3 ) )
 
         mock_app_dir.remove()
@@ -162,7 +162,7 @@ class HookPluginManager_TestCase( unittest.TestCase ):
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
         self.assertEqual( plugin.path, os.path.join( expected_plugins_path, 'plugin1' ) )
-        self.assertIsInstance( plugin.module, types.ModuleType )
+        self.assertTrue( isinstance( plugin.module, types.ModuleType ) )
         self.assertEqual( plugin.module.blah( 1 ), ( 1, 2, 3 ) )
 
         mock_app_dir.remove()
@@ -188,7 +188,7 @@ class HookPluginManager_TestCase( unittest.TestCase ):
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin.name, 'plugin1' )
         self.assertEqual( plugin.path, os.path.join( expected_plugins_path, 'plugin1' ) )
-        self.assertIsInstance( plugin.module, types.ModuleType )
+        self.assertTrue( isinstance( plugin.module, types.ModuleType ) )
 
         self.assertEqual( plugin.module.blah( 'one,two' ), [ 'one', 'two' ] )
 

@@ -210,7 +210,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
         # should return the (new) api key for the above user (see the template above)
         response = ipython._render( {}, trans=trans )
         response.strip()
-        self.assertIsInstance( response, basestring )
+        self.assertTrue( isinstance( response, basestring ) )
         self.assertTrue( '-' in response )
         ie_request, api_key = response.split( '-' )
 
@@ -252,7 +252,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
             template_cache_dir=template_cache_dir )
         script_entry = plugin_mgr.plugins[ 'jstest' ]
 
-        self.assertIsInstance( script_entry, plugin.ScriptVisualizationPlugin )
+        self.assertTrue( isinstance( script_entry, plugin.ScriptVisualizationPlugin ) )
         self.assertEqual( script_entry.name, 'jstest' )
         self.assertTrue(  script_entry.serves_static )
         self.assertTrue(  script_entry.serves_templates )
