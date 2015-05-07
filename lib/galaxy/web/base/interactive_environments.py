@@ -6,7 +6,6 @@ import random
 
 from galaxy.util.bunch import Bunch
 from galaxy import web
-from galaxy import eggs
 from galaxy.managers import api_keys
 
 import logging
