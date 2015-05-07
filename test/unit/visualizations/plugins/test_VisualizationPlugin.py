@@ -15,7 +15,7 @@ from galaxy.visualization.plugins import utils as vis_utils
 
 
 # -----------------------------------------------------------------------------
-class VisualizationsPlugin_TestCase( unittest.TestCase ):
+class VisualizationsPlugin_TestCase( test_utils.unittest.TestCase ):
     plugin_class = vis_plugin.VisualizationPlugin
 
     def test_default_init( self ):
