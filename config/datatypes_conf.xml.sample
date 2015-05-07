@@ -277,7 +277,6 @@
     <datatype extension="stockholm" type="galaxy.datatypes.msa:Stockholm_1_0" display_in_upload="True" />
 
     <datatype extension="RData" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
-    <datatype extension="RDataGZ" type="galaxy.datatypes.binary:RDataGZ" display_in_upload="true" description="Stored data from an R session, gzipped"/>
   </registration>
   <sniffers>
     <!--
@@ -327,7 +326,6 @@
     <sniffer type="galaxy.datatypes.msa:Hmmer3" />
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
     <sniffer type="galaxy.datatypes.binary:RData" />
-    <sniffer type="galaxy.datatypes.binary:RDataGZ" />
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>

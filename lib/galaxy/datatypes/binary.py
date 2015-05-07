@@ -862,30 +862,24 @@ class Sra( Binary ):
 Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 
 
-class _RData( Binary ):
+class RData( Binary ):
     """Generic R Data file datatype implementation"""
     file_ext = 'rdata'
 
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
 
-class RData( _RData ):
-
     def sniff( self, filename ):
+        rdata_header = binascii.hexlify('RDX2\nX\n')
         try:
             header = open(filename).read(7)
-            return binascii.b2a_hex(header) == binascii.hexlify('RDX2\nX\n')
-        except:
-            return False
+            if binascii.b2a_hex(header) == rdata_header:
+                return True
 
-class RDataGZ( _RData ):
-
-    def sniff( self, filename ):
-        try:
             header = gzip.open( filename ).read(7)
-            return binascii.b2a_hex(header) == binascii.hexlify('RDX2\nX\n')
+            if binascii.b2a_hex(header) == rdata_header:
+                return True
         except:
             return False
 
 Binary.register_sniffable_binary_format('rdata', 'rdata', RData)
-Binary.register_sniffable_binary_format('rdata', 'rdata', RDataGZ)
