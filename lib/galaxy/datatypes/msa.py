@@ -1,4 +1,5 @@
-from galaxy.datatypes.data import Text, Binary
+from galaxy.datatypes.data import Text
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
