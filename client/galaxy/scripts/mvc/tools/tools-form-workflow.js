@@ -242,7 +242,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                         if (d) {
                             // mark as expanded
                             for (var j in head_list) {
-                                head_list[j].expand = true;
+                                head_list[j].expanded = true;
                             }
 
                             // update input field value
