@@ -246,10 +246,8 @@ class Bam( Binary ):
                               output_name=part_path,
                               input_name=input_file,
                               args=dict(dict_args))
-            f = open(os.path.join(part_dir, 'split_info_%s.json' % base_name), 'w')
-            json.dump(split_data, f)
-            f.close()
-
+            with open(os.path.join(part_dir, 'split_info_%s.json' % base_name), 'w') as f:
+                json.dump(split_data, f)
         except Exception, e:
             log.error("Error: " + str(e))
             raise
