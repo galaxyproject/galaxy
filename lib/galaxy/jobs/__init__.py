@@ -750,12 +750,7 @@ class JobWrapper( object ):
         # directory to be set before prepare is run, or else premature deletion
         # and job recovery fail.
         # Create the working dir if necessary
-        try:
-            self.app.object_store.create(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
-            self.working_directory = self.app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
-            log.debug('(%s) Working directory for job is: %s' % (self.job_id, self.working_directory))
-        except ObjectInvalid:
-            raise Exception('Unable to create job working directory, job failure')
+        self.create_working_directory()
         self.dataset_path_rewriter = self._job_dataset_path_rewriter( self.working_directory )
         self.output_paths = None
         self.output_hdas_and_paths = None
@@ -878,6 +873,19 @@ class JobWrapper( object ):
         else:
             self.write_version_cmd = None
         return self.extra_filenames
+
+    def create_working_directory( self ):
+        job = self.get_job()
+        try:
+            self.app.object_store.create(
+                    job, base_dir='job_work', dir_only=True, obj_dir=True )
+            self.working_directory = self.app.object_store.get_filename(
+                    job, base_dir='job_work', dir_only=True, obj_dir=True )
+            log.debug( '(%s) Working directory for job is: %s',
+                       self.job_id, self.working_directory )
+        except ObjectInvalid:
+            raise Exception( '(%s) Unable to create job working directory',
+                             job.id )
 
     def default_compute_environment( self, job=None ):
         if not job:
@@ -1334,7 +1342,7 @@ class JobWrapper( object ):
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
             if delete_files:
-                self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
+                self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
 
