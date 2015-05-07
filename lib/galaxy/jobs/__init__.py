@@ -1555,6 +1555,13 @@ class JobWrapper( object ):
                 return ExpressionContext( meta, job_context )
         return job_context
 
+    def invalidate_external_metadata( self ):
+        job = self.get_job()
+        self.external_output_metadata.invalidate_external_metadata( [ output_dataset_assoc.dataset for
+                                                                      output_dataset_assoc in
+                                                                      job.output_datasets + job.output_library_datasets ],
+                                                                    self.sa_session )
+
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None,
                                  dataset_files_path=None, config_root=None,
                                  config_file=None, datatypes_config=None,

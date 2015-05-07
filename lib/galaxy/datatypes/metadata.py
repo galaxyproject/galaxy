@@ -688,11 +688,15 @@ class JobExternalOutputMetadataWrapper( object ):
     def get_output_filenames_by_dataset( self, dataset, sa_session ):
         if isinstance( dataset, galaxy.model.HistoryDatasetAssociation ):
             return sa_session.query( galaxy.model.JobExternalOutputMetadata ) \
-                             .filter_by( job_id=self.job_id, history_dataset_association_id=dataset.id ) \
+                             .filter_by( job_id=self.job_id,
+                                         history_dataset_association_id=dataset.id,
+                                         is_valid=True ) \
                              .first()  # there should only be one or None
         elif isinstance( dataset, galaxy.model.LibraryDatasetDatasetAssociation ):
             return sa_session.query( galaxy.model.JobExternalOutputMetadata ) \
-                             .filter_by( job_id=self.job_id, library_dataset_dataset_association_id=dataset.id ) \
+                             .filter_by( job_id=self.job_id,
+                                         library_dataset_dataset_association_id=dataset.id,
+                                         is_valid=True ) \
                              .first()  # there should only be one or None
         return None
 
@@ -700,6 +704,16 @@ class JobExternalOutputMetadataWrapper( object ):
         # Set meta can be called on library items and history items,
         # need to make different keys for them, since ids can overlap
         return "%s_%d" % ( dataset.__class__.__name__, dataset.id )
+
+    def invalidate_external_metadata( self, datasets, sa_session ):
+        for dataset in datasets:
+            jeom = self.get_output_filenames_by_dataset( dataset, sa_session )
+            # shouldn't be more than one valid, but you never know
+            while jeom:
+                jeom.is_valid = False
+                sa_session.add( jeom )
+                sa_session.flush()
+                jeom = self.get_output_filenames_by_dataset( dataset, sa_session )
 
     def setup_external_metadata( self, datasets, sa_session, exec_dir=None,
                                  tmp_dir=None, dataset_files_path=None,
