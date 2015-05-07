@@ -91,6 +91,7 @@ test/tool_shed/tmp/*
 htmlcov
 run_unit_tests.html
 test/unit/**.log
+.tox
 
 # Project files
 *.kpf
