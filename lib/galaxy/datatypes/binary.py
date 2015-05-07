@@ -472,7 +472,7 @@ class Bcf( Binary):
         dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
                     '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
         os.symlink( dataset.file_name, dataset_symlink )
-           
+
         stderr_name = tempfile.NamedTemporaryFile( prefix = "bcf_index_stderr" ).name
         command = [ 'bcftools', 'index', dataset_symlink ]
         proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
@@ -753,7 +753,7 @@ class SQlite ( Binary ):
 
 class GeminiSQLite( SQlite ):
     """Class describing a Gemini Sqlite database """
-    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version", 
+    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version",
                      readonly=True, visible=True, no_value='0.10.0' )
     file_ext = "gemini.sqlite"
 
@@ -772,7 +772,7 @@ class GeminiSQLite( SQlite ):
 
     def sniff( self, filename ):
         if super( GeminiSQLite, self ).sniff( filename ):
-            gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples", 
+            gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
                                   "variant_impacts", "variants", "version" ]
             try:
                 conn = sqlite.connect( filename )
@@ -861,3 +861,31 @@ class Sra( Binary ):
 
 Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 
+
+class _RData( Binary ):
+    """Generic R Data file datatype implementation"""
+    file_ext = 'rdata'
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+
+class RData( _RData ):
+
+    def sniff( self, filename ):
+        try:
+            header = open(filename).read(7)
+            return binascii.b2a_hex(header) == binascii.hexlify('RDX2\nX\n')
+        except:
+            return False
+
+class RDataGZ( _RData ):
+
+    def sniff( self, filename ):
+        try:
+            header = gzip.open( filename ).read(7)
+            return binascii.b2a_hex(header) == binascii.hexlify('RDX2\nX\n')
+        except:
+            return False
+
+Binary.register_sniffable_binary_format('rdata', 'rdata', RData)
+Binary.register_sniffable_binary_format('rdata', 'rdata', RDataGZ)
