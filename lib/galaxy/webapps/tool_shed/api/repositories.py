@@ -16,6 +16,7 @@ from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.exceptions import ActionInputError
 from galaxy.exceptions import ObjectNotFound
 from galaxy.exceptions import MalformedId
+from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.web import _future_expose_api as expose_api
@@ -392,12 +393,12 @@ class RepositoriesController( BaseAPIController ):
         whoosh_index_dir has to be specified.
         """
         if not self.app.config.toolshed_search_on:
-            raise exceptions.ConfigDoesNotAllowException( 'Searching the TS through the API is turned off for this instance.' )
+            raise ConfigDoesNotAllowException( 'Searching the TS through the API is turned off for this instance.' )
         if not self.app.config.whoosh_index_dir:
-            raise exceptions.ConfigDoesNotAllowException( 'There is no directory for the search index specified. Please contact the administrator.' )
+            raise ConfigDoesNotAllowException( 'There is no directory for the search index specified. Please contact the administrator.' )
         search_term = q.strip()
         if len( search_term ) < 3:
-            raise exceptions.RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
+            raise RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
 
         repo_search = RepoSearch()
         results = repo_search.search( trans, search_term, page )
