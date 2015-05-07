@@ -878,9 +878,9 @@ class JobWrapper( object ):
         job = self.get_job()
         try:
             self.app.object_store.create(
-                    job, base_dir='job_work', dir_only=True, obj_dir=True )
+                job, base_dir='job_work', dir_only=True, obj_dir=True )
             self.working_directory = self.app.object_store.get_filename(
-                    job, base_dir='job_work', dir_only=True, obj_dir=True )
+                job, base_dir='job_work', dir_only=True, obj_dir=True )
             log.debug( '(%s) Working directory for job is: %s',
                        self.job_id, self.working_directory )
         except ObjectInvalid:
@@ -897,11 +897,11 @@ class JobWrapper( object ):
             return
 
         self.app.object_store.create(
-                job, base_dir='job_work', dir_only=True, obj_dir=True,
-                extra_dir='_cleared_contents', extra_dir_at_root=True )
+            job, base_dir='job_work', dir_only=True, obj_dir=True,
+            extra_dir='_cleared_contents', extra_dir_at_root=True )
         base = self.app.object_store.get_filename(
-                job, base_dir='job_work', dir_only=True, obj_dir=True,
-                extra_dir='_cleared_contents', extra_dir_at_root=True )
+            job, base_dir='job_work', dir_only=True, obj_dir=True,
+            extra_dir='_cleared_contents', extra_dir_at_root=True )
         date_str = datetime.datetime.now().strftime( '%Y%m%d-%H%M%S' )
         arc_dir = os.path.join( base, date_str )
         shutil.move( self.working_directory, arc_dir )
