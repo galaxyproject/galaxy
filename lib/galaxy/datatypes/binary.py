@@ -229,7 +229,8 @@ class Bam( Binary ):
             log.debug("Attempting to split BAM file %s by chromosome", input_file)
             for chr_item in chr_list:
                 chr_name = chr_item[0]
-                split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name)
+                chr_ln = int(chr_item[1])
+                split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name, chr_start=1, chr_end=chr_ln)
                 cls._create_task_dir(input_file, subdir_generator_function, split_data)
         else:
             raise Exception('Unsupported split mode %s' % split_params['split_mode'])
@@ -259,21 +260,14 @@ class Bam( Binary ):
         args = data['args']
         input_name = data['input_name']
         output_name = data['output_name']
-        split_mode = args['split_mode']
-        chr_region = ""
 
-        if split_mode == 'by_interval':
-            chr_name = args['chr_name']
-            chr_start = args['chr_start']
-            chr_end = args['chr_end']
-            chr_region = chr_name + "\t" + str(chr_start) + "\t" + str(chr_end)
-
-        if split_mode == "by_rname":
-            chr_region = args['chr_name']
+        chr_name = args['chr_name']
+        chr_start = args['chr_start']
+        chr_end = args['chr_end']
+        chr_region = chr_name + "\t" + str(chr_start) + "\t" + str(chr_end)
 
         # Create region file
-        # region_file = open(os.path.dirname(output_name)+"/region.bed", "w")
-        region_file = open(output_name+"/region.bed", "w")
+        region_file = open(os.path.dirname(output_name)+"/region.bed", "w")
         region_file.write(chr_region + "\n")
         region_file.close()
         os.symlink(input_name, output_name)
