@@ -347,4 +347,3 @@ else
     grunt --gruntfile=$gruntfile $grunt_task $grunt_args
 fi
 
-cd $pwd_dir

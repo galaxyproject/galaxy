@@ -17,9 +17,9 @@ module.exports = function( grunt ){
             'underscore':     [ 'underscore.js', 'underscore.js' ],
             'handlebars':     [ 'handlebars.runtime.js', 'handlebars.runtime.js' ],
             'backbone':       [ 'backbone.js', 'backbone/backbone.js' ],
+            'requirejs':      [ 'require.js', 'require.js' ],
 
             // these need to be updated and tested
-            //'require': [ 'build/require.js', 'require.js' ],
             //'d3': [ 'd3.js', 'd3.js' ],
             //'farbtastic': [ 'src/farbtastic.js', 'farbtastic.js' ],
             //'jQTouch': [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
