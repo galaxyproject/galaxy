@@ -3,7 +3,6 @@ Test lib/galaxy/visualization/plugins/registry.
 """
 import os
 import imp
-import unittest
 import re
 
 test_utils = imp.load_source( 'test_utils',
@@ -40,7 +39,7 @@ config1 = """\
 
 
 # -----------------------------------------------------------------------------
-class VisualizationsRegistry_TestCase( unittest.TestCase ):
+class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
 
     def test_plugin_load_from_repo( self ):
         """should attempt load if criteria met"""
@@ -272,4 +271,4 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
 # TODO: config parser tests (in separate file)
 
 if __name__ == '__main__':
-    unittest.main()
+    test_utils.unittest.main()
