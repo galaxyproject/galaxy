@@ -2550,7 +2550,8 @@ class Tool( object, Dictifiable ):
         tool_versions = []
         tools = self.app.toolbox.get_loaded_tools_by_lineage(self.id)
         for t in tools:
-            tool_versions.append(t.version)
+            if not t.version in tool_versions:
+                tool_versions.append(t.version)
 
         # add information with underlying requirements and their versions
         tool_requirements = []
