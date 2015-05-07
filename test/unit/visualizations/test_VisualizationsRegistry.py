@@ -2,7 +2,6 @@
 """
 import os
 import imp
-import unittest
 import re
 
 test_utils = imp.load_source( 'test_utils',
@@ -59,7 +58,7 @@ ${ ie_request }-${ get_api_key() }
 
 
 # -----------------------------------------------------------------------------
-class VisualizationsRegistry_TestCase( unittest.TestCase ):
+class VisualizationsRegistry_TestCase( test_utils.unittest.TestCase ):
 
     # ------------------------------------------------------------------------- vis plugin discovery
     def test_plugin_load_from_repo( self ):
@@ -218,4 +217,4 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
 # TODO: config parser tests (in separate file)
 
 if __name__ == '__main__':
-    unittest.main()
+    test_utils.unittest.main()
