@@ -887,6 +887,28 @@ class JobWrapper( object ):
             raise Exception( '(%s) Unable to create job working directory',
                              job.id )
 
+    def clear_working_directory( self ):
+        job = self.get_job()
+        if not os.path.exists( self.working_directory ):
+            log.warning( '(%s): Working directory clear requested but %s does '
+                         'not exist',
+                         self.job_id,
+                         self.working_directory )
+            return
+
+        self.app.object_store.create(
+                job, base_dir='job_work', dir_only=True, obj_dir=True,
+                extra_dir='_cleared_contents', extra_dir_at_root=True )
+        base = self.app.object_store.get_filename(
+                job, base_dir='job_work', dir_only=True, obj_dir=True,
+                extra_dir='_cleared_contents', extra_dir_at_root=True )
+        date_str = datetime.datetime.now().strftime( '%Y%m%d-%H%M%S' )
+        arc_dir = os.path.join( base, date_str )
+        shutil.move( self.working_directory, arc_dir )
+        self.create_working_directory()
+        log.debug( '(%s) Previous working directory moved to %s',
+                   self.job_id, arc_dir )
+
     def default_compute_environment( self, job=None ):
         if not job:
             job = self.get_job()

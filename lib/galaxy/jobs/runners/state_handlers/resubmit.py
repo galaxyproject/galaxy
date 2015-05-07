@@ -42,6 +42,7 @@ def failure(app, job_runner, job_state):
         new_destination = (job_state.job_wrapper.job_runner_mapper
                            .cache_job_destination(new_destination))
         # Reset job state
+        job_state.job_wrapper.clear_working_directory()
         job = job_state.job_wrapper.get_job()
         if resubmit.get('handler', None):
             log.debug('(%s/%s) Job reassigned to handler %s',
