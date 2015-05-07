@@ -234,7 +234,7 @@ do
               unit_extra=$2
               shift 2
           else 
-              unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners lib test/unit'
+              unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners --exclude dictobj --exclude=jstree lib test/unit'
               shift 1
           fi
           ;;

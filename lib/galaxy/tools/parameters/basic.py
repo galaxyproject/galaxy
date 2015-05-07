@@ -1376,8 +1376,12 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     <input type="radio" name="some_name" value="option5" >Option 5
     </div>
     </div>
-    >>> print p.options
-    [{'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 1', 'value': 'option1', 'options': []}, {'selected': False, 'name': 'Option 2', 'value': 'option2', 'options': []}, {'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 3', 'value': 'option3', 'options': []}, {'selected': False, 'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'selected': False, 'name': 'Option 5', 'value': 'option5', 'options': []}]
+    >>> print sorted(p.options[1].items())
+    [('name', 'Option 5'), ('options', []), ('selected', False), ('value', 'option5')]
+    >>> p.options[0]["name"]
+    'Heading 1'
+    >>> p.options[0]["selected"]
+    False
     """
     def __init__( self, tool, input_source, context=None ):
         input_source = ensure_input_source( input_source )
