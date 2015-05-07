@@ -45,7 +45,7 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
         self.assertEqual( plugin.template_path, vis_dir.root_path + '/templates' )
         self.assertEqual( plugin.template_lookup.__class__.__name__, 'TemplateLookup' )
         # resource parser
-        self.assertIsInstance( plugin.resource_parser, resource_parser.ResourceParser )
+        self.assertTrue( isinstance( plugin.resource_parser, resource_parser.ResourceParser ) )
 
     def test_init_with_context( self ):
         """
@@ -104,7 +104,7 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
         self.assertEqual( render_vars[ 'saved_visualization' ], None )
         self.assertEqual( render_vars[ 'visualization_id' ], None )
         self.assertEqual( render_vars[ 'query' ], {} )
-        self.assertIsInstance( render_vars[ 'config' ], vis_utils.OpenObject )
+        self.assertTrue( isinstance( render_vars[ 'config' ], vis_utils.OpenObject ) )
         self.assertEqual( render_vars[ 'config' ].__dict__, {} )
 
     def test_build_config( self ):
@@ -113,7 +113,7 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
         plugin_config = dict()
         plugin = self.plugin_class( galaxy_mock.MockApp(), '', 'myvis', plugin_config )
         config = plugin._build_config( {} )
-        self.assertIsInstance( config, vis_utils.OpenObject )
+        self.assertTrue( isinstance( config, vis_utils.OpenObject ) )
         self.assertEqual( config.__dict__, {} )
 
         # existing should flow through
@@ -187,7 +187,7 @@ class VisualizationsPlugin_TestCase( unittest.TestCase ):
         plugin.template_lookup = plugin._build_template_lookup( mock_app_dir.root_path )
 
         response = plugin.render( trans=galaxy_mock.MockTrans( app=mock_app ) )
-        self.assertIsInstance( response, basestring )
+        self.assertTrue( isinstance( response, basestring ) )
         self.assertEqual( response.strip(), "True" )
 
 
