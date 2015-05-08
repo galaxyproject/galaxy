@@ -4,19 +4,13 @@
     </columns>
     <labkeyInstances>
         <labkeyInstance>
-            <baseUrl>http://g0.spark0.intel.com:8080/labkey</baseUrl>
+            <baseUrl>http://g1.spark0.intel.com:9090/labkey</baseUrl>
             <containerPath>ccc</containerPath>
             <schemaName>lists</schemaName>
             <queryName>images</queryName>
         </labkeyInstance>
         <labkeyInstance>
-            <baseUrl>http://g1.spark0.intel.com:8080/labkey</baseUrl>
-            <containerPath>ccc</containerPath>
-            <schemaName>lists</schemaName>
-            <queryName>images</queryName>
-        </labkeyInstance>
-        <labkeyInstance>
-            <baseUrl>http://g2.spark0.intel.com:8080/labkey</baseUrl>
+            <baseUrl>http://g2.spark0.intel.com:9090/labkey</baseUrl>
             <containerPath>ccc</containerPath>
             <schemaName>lists</schemaName>
             <queryName>images</queryName>
