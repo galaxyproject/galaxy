@@ -652,6 +652,7 @@ class HiddenToolParameter( ToolParameter ):
     def get_label( self ):
         return None
 
+
 class ColorToolParameter( ToolParameter ):
     """
     Parameter that stores a color.
@@ -682,8 +683,22 @@ class BaseURLToolParameter( HiddenToolParameter ):
         super( BaseURLToolParameter, self ).__init__( tool, input_source )
         self.value = input_source.get( 'value', '' )
 
+    def get_initial_value( self, trans, context, history=None ):
+        return self._get_value()
+
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        return form_builder.HiddenField( self.name, self._get_value() )
+
     def from_html( self, value=None, trans=None, context={} ):
+        return self._get_value()
+
+    def _get_value( self ):
         return url_for( self.value, qualified=True )
+
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+        d = super( BaseURLToolParameter, self ).to_dict( trans )
+        d[ 'value' ] = self._get_value()
+        return d
 
 
 DEFAULT_VALUE_MAP = lambda x: x
