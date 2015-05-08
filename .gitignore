@@ -81,6 +81,7 @@ tool-data/shared/ucsc/publicbuilds.txt
 tool-data/shared/ucsc/ucsc_build_sites.txt
 tool-data/*.loc
 tool-data/genome/*
+tool-data/*.sample
 
 # Test output
 test-data-cache
