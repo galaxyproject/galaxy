@@ -42,8 +42,10 @@ class ToolInputTranslator( object ):
     ... ''' ) )
     >>> params = Params( { 'db':'hg17', 'URL':'URL_value', 'org':'Human', 'hgta_outputType':'primaryTable'  } )
     >>> translator.translate( params )
-    >>> print params
-    {'hgta_outputType': 'primaryTable', 'data_type': 'tabular', 'table': 'unknown table', 'URL': 'URL_value?GALAXY_URL=0&_export=1', 'org': 'Human', 'URL_method': 'post', 'db': 'hg17', 'organism': 'Human', 'dbkey': 'hg17', 'description': 'no description'}
+    >>> print sorted(list(params.__dict__.keys()))
+    ['URL', 'URL_method', 'data_type', 'db', 'dbkey', 'description', 'hgta_outputType', 'org', 'organism', 'table']
+    >>> params.get('URL', None) in ['URL_value?GALAXY_URL=0&_export=1', 'URL_value?_export=1&GALAXY_URL=0']
+    True
     """
     @classmethod
     def from_element( cls, elem ):

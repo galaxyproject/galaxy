@@ -15,7 +15,7 @@ import galaxy_mock
 from galaxy.web.base.pluginframework import PluginManager
 
 
-class PluginManager_TestCase( unittest.TestCase ):
+class PluginManager_TestCase( test_utils.unittest.TestCase ):
 
     def test_rel_path_search( self ):
         """should be able to search given rel. path"""

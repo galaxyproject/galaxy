@@ -23,6 +23,7 @@ import assembly
 import ngsindex
 import graph
 import text
+import msa
 import galaxy.util
 from galaxy.util.odict import odict
 from display_applications.application import DisplayApplication

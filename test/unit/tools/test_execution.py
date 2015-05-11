@@ -478,7 +478,7 @@ class MockTrans( object ):
         self.webapp = Bunch( name="galaxy" )
         self.sa_session = self.app.model.context
 
-    def get_history( self ):
+    def get_history( self, **kwargs ):
         return self.history
 
 

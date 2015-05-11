@@ -2,7 +2,6 @@
 """
 import os
 import imp
-import unittest
 import types
 
 import logging
@@ -70,7 +69,7 @@ def hook_filter_test( s ):
 
 
 # -----------------------------------------------------------------------------
-class HookPluginManager_TestCase( unittest.TestCase ):
+class HookPluginManager_TestCase( test_utils.unittest.TestCase ):
 
     def test_loading_point( self ):
         """should attempt load on dirs containing loading_point file"""
@@ -247,4 +246,4 @@ class HookPluginManager_TestCase( unittest.TestCase ):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    test_utils.unittest.main()

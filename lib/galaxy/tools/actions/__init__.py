@@ -33,7 +33,7 @@ class DefaultToolAction( object ):
         parameter name to Dataset instance for each tool parameter that is
         of the DataToolParameter type.
         """
-        input_datasets = dict()
+        input_datasets = odict()
 
         def visitor( prefix, input, value, parent=None ):
 
@@ -174,7 +174,9 @@ class DefaultToolAction( object ):
         input_names = []
         input_ext = 'data'
         input_dbkey = incoming.get( "dbkey", "?" )
-        for name, data in inp_data.items():
+        inp_items = inp_data.items()
+        inp_items.reverse()
+        for name, data in inp_items:
             if not data:
                 data = NoneDataset( datatypes_registry=trans.app.datatypes_registry )
                 continue

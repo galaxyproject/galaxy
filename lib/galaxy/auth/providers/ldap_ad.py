@@ -30,26 +30,35 @@ class LDAP(AuthProvider):
     """
     plugin_type = 'ldap'
 
-    def authenticate(self, login, password, options):
+    def authenticate(self, email, username, password, options):
         """
         See abstract method documentation.
         """
-        log.debug("Login: %s" % login)
-        log.debug("Options: %s" % options)
+        log.debug("LDAP authenticate: email is %s" % email)
+        log.debug("LDAP authenticate: username is %s" % username)
+        log.debug("LDAP authenticate: options are %s" % options)
 
         failure_mode = False  # reject but continue
         if options.get('continue-on-failure', 'False') == 'False':
             failure_mode = None  # reject and do not continue
 
+        if _get_bool(options, 'login-use-username', False):
+            if username is None:
+                log.debug('LDAP authenticate: username must be used to login, cannot be None')
+                return (failure_mode, '', '')
+        else:
+            if email is None:
+                log.debug('LDAP authenticate: email must be used to login, cannot be None')
+                return (failure_mode, '', '')
+
         try:
             import ldap
         except:
-            log.debug(
-                "Login: %s, LDAP: False (could not load ldap module)" % (login))
-            return (failure_mode, '')
+            log.debug('LDAP authenticate: could not load ldap module')
+            return (failure_mode, '', '')
 
         # do LDAP search (if required)
-        params = {'login': login, 'password': password}
+        params = {'email': email, 'username': username, 'password': password}
         if 'search-fields' in options:
             try:
                 # setup connection
@@ -74,8 +83,8 @@ class LDAP(AuthProvider):
                 # parse results
                 _, suser = l.result(result, 60)
                 dn, attrs = suser[0]
-                log.debug(("LDAP dn: %s" % dn))
-                log.debug(("LDAP Search attributes: %s" % attrs))
+                log.debug(("LDAP authenticate: dn is %s" % dn))
+                log.debug(("LDAP authenticate: search attributes are %s" % attrs))
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
                         if attr in attrs:
@@ -84,7 +93,7 @@ class LDAP(AuthProvider):
                             params[attr] = ""
                 params['dn'] = dn
             except Exception:
-                log.exception('LDAP Search Exception for login: %s' % login)
+                log.exception('LDAP authenticate: search exception')
                 return (failure_mode, '', '')
         # end search
 
@@ -97,10 +106,10 @@ class LDAP(AuthProvider):
             l.simple_bind_s(_get_subs(
                 options, 'bind-user', params), _get_subs(options, 'bind-password', params))
         except Exception:
-            log.exception('LDAP Authentication Exception for login %s' % login)
+            log.exception('LDAP authenticate: bind exception')
             return (failure_mode, '', '')
 
-        log.debug("Login: %s, LDAP: True" % (login))
+        log.debug('LDAP authentication successful')
         return (True,
                 _get_subs(options, 'auto-register-email', params),
                 _get_subs(options, 'auto-register-username', params))
@@ -109,11 +118,7 @@ class LDAP(AuthProvider):
         """
         See abstract method documentation.
         """
-
-        if _get_bool(options, 'login-use-username', False):
-            return self.authenticate(user.username, password, options)[0]
-        else:
-            return self.authenticate(user.email, password, options)[0]
+        return self.authenticate(user.email, user.username, password, options)[0]
 
 
 class ActiveDirectory(LDAP):
