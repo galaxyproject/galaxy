@@ -22,9 +22,12 @@ temp_dir = os.path.abspath( tempfile.mkdtemp() )
 PASSWORD = ie_request.generate_password(length=36)
 USERNAME = "galaxy"
 # Write out conf file...needs work
-ie_request.write_conf_file(temp_dir, {'notebook_username': 'galaxy', 'notebook_password': PASSWORD,
-                                      'cors_origin': ie_request.attr.proxy_url})
-# This is overwritten at the end of the above function call, so we need to re-overwrite it.
+ie_request.get_conf_dict(temp_dir, {'notebook_username': USERNAME,
+                                    'notebook_password': PASSWORD,
+                                    'cors_origin': ie_request.attr.proxy_url})
+ENV = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
+# This is overwritten at the end of the above function call, so we need to
+# re-overwrite it.
 ie_request.attr.notebook_pw = PASSWORD
 
 ## General IE specific
@@ -44,8 +47,10 @@ docker_cmd = ie_request.docker_cmd(temp_dir)
 # Hack out the -u galaxy_id statement because the RStudio IE isn't ready to run
 # as root
 docker_cmd = re.sub('-u (\d+) ', '', docker_cmd)
+# Add in ENV parameters
+docker_cmd = docker_cmd.replace('run', 'run %s' % ENV)
 subprocess.call(docker_cmd, shell=True)
-print docker_cmd
+ie_request.log.info("Starting RStudio docker container with command [%s]" % docker_cmd)
 %>
 <html>
 <head>
