@@ -65,7 +65,7 @@ class InteractiveEnviornmentRequest(object):
         self.attr.APACHE_URLS = _boolean_option("apache_urls")
         self.attr.SSL_URLS = _boolean_option("ssl")
 
-    def get_conf_dict(self, extra={}):
+    def get_conf_dict(self):
         """
             Build up a configuration dictionary that is standard for ALL IEs.
 
@@ -103,10 +103,6 @@ class InteractiveEnviornmentRequest(object):
             # Should we use password based connection or "default" connection style in galaxy
         else:
             notebook_pw = "None"
-
-        # Some will need to pass extra data
-        for extra_key in extra:
-            conf_file[extra_key] = extra[extra_key]
 
         self.attr.notebook_pw = notebook_pw
         return conf_file
