@@ -1513,7 +1513,7 @@ class TwillTestCase( unittest.TestCase ):
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "/user/login?use_panels=False" )
-            self.submit_form( 'login', 'login_button', email=email, redirect=redirect, password=password )
+            self.submit_form( 'login', 'login_button', login=email, redirect=redirect, password=password )
 
     def logout( self ):
         self.visit_url( "%s/user/logout" % self.url )
