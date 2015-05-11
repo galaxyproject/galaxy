@@ -31,7 +31,7 @@
 		#if $stage
 			 --filter "specimen_id/tumour_stage~eq=$stage"
 		#end if
-		;$__tool_directory__/import_datasets_by_uuid.py -A $script_file -H "${output.creating_job.history.name}" -f ${output}
+                ;\$BIOBLEND_REPO_DIR/sample_scripts/import_datasets_by_uuid.py -A $script_file -H "${output.creating_job.history.name}" -f ${output}
 
 	</command>
 	
