@@ -24,17 +24,17 @@ logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-def send_control_task(trans, task, noop_self=False, kwargs={}):
+def send_control_task(app, task, noop_self=False, kwargs={}):
     log.info("Sending %s control task." % task)
     payload = {'task': task,
                'kwargs': kwargs}
     if noop_self:
-        payload['noop'] = trans.app.config.server_name
+        payload['noop'] = app.config.server_name
     try:
-        c = Connection(trans.app.config.amqp_internal_connection)
+        c = Connection(app.config.amqp_internal_connection)
         with producers[c].acquire(block=True) as producer:
             producer.publish(payload, exchange=galaxy.queues.galaxy_exchange,
-                             declare=[galaxy.queues.galaxy_exchange] + galaxy.queues.all_control_queues_for_declare(trans.app.config),
+                             declare=[galaxy.queues.galaxy_exchange] + galaxy.queues.all_control_queues_for_declare(app.config),
                              routing_key='control')
     except Exception:
         # This is likely connection refused.
