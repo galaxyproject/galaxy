@@ -539,6 +539,12 @@ class ShedTwillTestCase( TwillTestCase ):
                 string = string.replace( character, replacement )
         return string
 
+    def expect_repo_created_strings( self, name ):
+        return [
+            'Repository <b>%s</b>' % name,
+            'Repository <b>%s</b> has been created' % name,
+        ]
+
     def export_capsule( self, repository ):
         url = '/repository/export?repository_id=%s&changeset_revision=%s' % \
             ( self.security.encode_id( repository.id ), self.get_repository_tip( repository ) )
