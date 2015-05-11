@@ -21,11 +21,6 @@ temp_dir = os.path.abspath( tempfile.mkdtemp() )
 # simply by passing `notebook_password` with a "plaintext", unhashed password.
 PASSWORD = ie_request.generate_password(length=36)
 USERNAME = "galaxy"
-# Write out conf file...needs work
-ie_request.write_conf_file(temp_dir, {'notebook_username': 'galaxy', 'notebook_password': PASSWORD,
-                                      'cors_origin': ie_request.attr.proxy_url})
-# This is overwritten at the end of the above function call, so we need to re-overwrite it.
-ie_request.attr.notebook_pw = PASSWORD
 
 ## General IE specific
 # Access URLs for the notebook from within galaxy.
@@ -40,7 +35,14 @@ if hda.datatype.__class__.__name__ == "RData":
     shutil.copy( hda.file_name, os.path.join(temp_dir, '.RData') )
 
 import re
-docker_cmd = ie_request.docker_cmd(temp_dir)
+docker_cmd = ie_request.docker_cmd(temp_dir, env_override={
+    'notebook_username': USERNAME,
+    'notebook_password': PASSWORD,
+    'cors_origin': ie_request.attr.proxy_url})
+# New vesion of docker_cmd calls the get_conf_dict wherein the password is set
+# incorrectly. This is overwritten at the end of the above function call, so we
+# need to re-overwrite it.
+ie_request.attr.notebook_pw = PASSWORD
 # Hack out the -u galaxy_id statement because the RStudio IE isn't ready to run
 # as root
 docker_cmd = re.sub('-u (\d+) ', '', docker_cmd)
