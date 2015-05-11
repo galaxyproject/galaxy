@@ -42,8 +42,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         category = self.test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
-        strings_displayed = [ 'Repository %s' % "'%s'" % repository_name, 
-                              'Repository %s has been created' % "<b>%s</b>" % repository_name ]
+        strings_displayed = self.expect_repo_created_strings(repository_name)
         self.get_or_create_repository( name=repository_name, 
                                        description=repository_description, 
                                        long_description=repository_long_description, 

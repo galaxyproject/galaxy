@@ -539,6 +539,12 @@ class ShedTwillTestCase( TwillTestCase ):
                 string = string.replace( character, replacement )
         return string
 
+    def expect_repo_created_strings( self, name ):
+        return [
+            'Repository <b>%s</b>' % name,
+            'Repository <b>%s</b> has been created' % name,
+        ]
+
     def export_capsule( self, repository ):
         url = '/repository/export?repository_id=%s&changeset_revision=%s' % \
             ( self.security.encode_id( repository.id ), self.get_repository_tip( repository ) )
@@ -573,7 +579,7 @@ class ShedTwillTestCase( TwillTestCase ):
             self.create_user_in_galaxy( email=email, password=password, username=username, redirect=redirect )
         if previously_created:
             self.visit_galaxy_url( "/user/login?use_panels=False" )
-            self.submit_form( '1', 'login_button', email=email, redirect=redirect, password=password )
+            self.submit_form( '1', 'login_button', login=email, redirect=redirect, password=password )
         
     def galaxy_logout( self ):
         self.visit_galaxy_url( "/user/logout" )
