@@ -846,7 +846,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def reload_display_application( self, trans, **kwd ):
-        galaxy.queue_worker.send_control_task(trans,
+        galaxy.queue_worker.send_control_task(trans.app,
                                               'reload_display_application',
                                               noop_self=True,
                                               kwargs={'display_application_ids': kwd.get( 'id' )} )
