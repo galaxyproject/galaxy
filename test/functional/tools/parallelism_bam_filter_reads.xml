@@ -1,0 +1,22 @@
+<tool id="parallelism_bam_filter_reads" name="filter reads">
+  <description>parallelism bam filter reads by mapping quality </description>
+  <parallelism method="multi" split_mode="by_rname" split_inputs="input" merge_outputs="outfile"></parallelism>
+
+  <command>
+      parallelism_bam_filter_reads.sh $input $outfile
+  </command>
+  <inputs>
+    <param format="bam" name="input" type="data" label="bam"/>
+  </inputs>
+  <outputs>
+    <data format="bam" name="outfile" />
+  </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="2.bam"/>
+            <output name="out_file" file="2_filt.bam"/>
+        </test>
+    </tests>
+  <help></help>
+
+</tool>

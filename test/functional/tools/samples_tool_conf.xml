@@ -29,6 +29,7 @@
   <tool file="min_repeat.xml" />
   <tool file="parallelism.xml" />
   <tool file="parallelism_optional.xml" />
+  <tool file="parallelism_bam_filter_reads.xml" />
   <tool file="implicit_default_conds.xml" />
   <tool file="multi_data_param.xml" />
   <tool file="column_param.xml" />

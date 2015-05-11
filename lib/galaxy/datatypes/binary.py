@@ -248,6 +248,7 @@ class Bam( Binary ):
                               args=dict(dict_args))
             with open(os.path.join(part_dir, 'split_info_%s.json' % base_name), 'w') as f:
                 json.dump(split_data, f)
+            
         except Exception, e:
             log.error("Error: " + str(e))
             raise
@@ -265,7 +266,7 @@ class Bam( Binary ):
         chr_region = chr_name + "\t" + str(chr_start) + "\t" + str(chr_end)
 
         # Create region file
-        region_file = open(os.path.dirname(output_name)+"/region.bed", "w")
+        region_file = open(os.path.dirname(output_name)+"/regions.bed", "w")
         region_file.write(chr_region + "\n")
         region_file.close()
         os.symlink(input_name, output_name)
