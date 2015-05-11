@@ -158,12 +158,16 @@ class InteractiveEnviornmentRequest(object):
             .replace('${PORT}', str(self.attr.PORT))
         return url
 
-    def docker_cmd(self, temp_dir):
+    def docker_cmd(self, temp_dir, env_override={}):
         """
             Generate and return the docker command to execute
         """
-        return '%s run -d %s -p %s:%s -v "%s:/import/" %s' % \
+        conf = self.get_conf_dict()
+        conf.update(env_override)
+        env_str = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
+        return '%s run %s -d %s -p %s:%s -v "%s:/import/" %s' % \
             (self.attr.viz_config.get("docker", "command"),
+            env_str,
             self.attr.viz_config.get("docker", "command_inject"),
             self.attr.PORT, self.attr.docker_port,
             temp_dir, self.attr.viz_config.get("docker", "image"))

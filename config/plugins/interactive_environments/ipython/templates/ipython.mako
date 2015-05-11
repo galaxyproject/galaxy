@@ -12,10 +12,6 @@ ie_request.attr.docker_port = 6789
 # Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
-# Get all configurations
-conf = ie_request.get_conf_dict()
-ENV = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
-
 ## IPython Specific
 # Prepare an empty notebook
 notebook_id = ie_request.generate_hex(64)
@@ -38,7 +34,7 @@ notebook_login_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/login
 
 
 # Add all environment variables collected from Galaxy's IE infrastructure
-docker_cmd = ie_request.docker_cmd(temp_dir).replace('run', 'run %s' % ENV)
+docker_cmd = ie_request.docker_cmd(temp_dir)
 ie_request.log.info("Starting IPython docker container with command [%s]" % docker_cmd)
 subprocess.call(docker_cmd, shell=True)
 

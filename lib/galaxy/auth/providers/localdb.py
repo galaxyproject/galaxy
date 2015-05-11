@@ -13,7 +13,7 @@ class LocalDB(AuthProvider):
     """Authenticate users against the local Galaxy database (as per usual)."""
     plugin_type = 'localdb'
 
-    def authenticate(self, login, password, options):
+    def authenticate(self, email, username, password, options):
         """
         See abstract method documentation.
         """

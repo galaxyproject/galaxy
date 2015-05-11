@@ -74,15 +74,19 @@ class ObjectStore(object):
         :type alt_name: string
         :param alt_name: Use this name as the alternative name for the created
                          dataset rather than the default.
+
+        :type obj_dir: bool
+        :param obj_dir: Append a subdirectory named with the object's ID (e.g.
+                        000/obj.id)
         """
         raise NotImplementedError()
 
-    def file_ready(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def file_ready(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """ A helper method that checks if a file corresponding to a dataset
         is ready and available to be used. Return True if so, False otherwise."""
         return True
 
-    def create(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def create(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Mark the object identified by `obj` as existing in the store, but with
         no content. This method will create a proper directory structure for
@@ -91,7 +95,7 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def empty(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def empty(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Test if the object identified by `obj` has content.
         If the object does not exist raises `ObjectNotFound`.
@@ -99,7 +103,7 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def size(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Return size of the object identified by `obj`.
         If the object does not exist, return 0.
@@ -107,7 +111,7 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def delete(self, obj, entire_dir=False, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def delete(self, obj, entire_dir=False, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Deletes the object identified by `obj`.
         See `exists` method for the description of other fields.
@@ -115,11 +119,12 @@ class ObjectStore(object):
         :type entire_dir: bool
         :param entire_dir: If True, delete the entire directory pointed to by
                            extra_dir. For safety reasons, this option applies
-                           only for and in conjunction with the extra_dir option.
+                           only for and in conjunction with the extra_dir or
+                           obj_dir options.
         """
         raise NotImplementedError()
 
-    def get_data(self, obj, start=0, count=-1, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def get_data(self, obj, start=0, count=-1, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Fetch `count` bytes of data starting at offset `start` from the
         object identified uniquely by `obj`.
@@ -134,7 +139,7 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Get the expected filename (including the absolute path) which can be used
         to access the contents of the object uniquely identified by `obj`.
@@ -142,7 +147,7 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def update_from_file(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, file_name=None, create=False):
+    def update_from_file(self, obj, base_dir=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, file_name=None, create=False):
         """
         Inform the store that the file associated with the object has been
         updated. If `file_name` is provided, update from that file instead
@@ -159,7 +164,7 @@ class ObjectStore(object):
         """
         raise NotImplementedError()
 
-    def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         If the store supports direct URL access, return a URL. Otherwise return
         None.
@@ -207,18 +212,18 @@ class DiskObjectStore(ObjectStore):
         if extra_dirs is not None:
             self.extra_dirs.update( extra_dirs )
 
-    def _get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def _get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """Class method that returns the absolute path for the file corresponding
         to the `obj`.id regardless of whether the file exists.
         """
-        path = self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name, old_style=True)
+        path = self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name, obj_dir=False, old_style=True)
         # For backward compatibility, check the old style root path first; otherwise,
         # construct hashed path
         if not os.path.exists(path):
             return self._construct_path(obj, base_dir=base_dir, dir_only=dir_only, extra_dir=extra_dir, extra_dir_at_root=extra_dir_at_root, alt_name=alt_name)
 
     # TODO: rename to _disk_path or something like that to avoid conflicts with children that'll use the local_extra_dirs decorator, e.g. S3
-    def _construct_path(self, obj, old_style=False, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, **kwargs):
+    def _construct_path(self, obj, old_style=False, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
         """ Construct the expected absolute path for accessing the object
             identified by `obj`.id.
 
@@ -256,6 +261,9 @@ class DiskObjectStore(ObjectStore):
         else:
             # Construct hashed path
             rel_path = os.path.join(*directory_hash_id(obj.id))
+            # Create a subdirectory for the object ID
+            if obj_dir:
+                rel_path = os.path.join(rel_path, str(obj.id))
             # Optionally append extra_dir
             if extra_dir is not None:
                 if extra_dir_at_root:
@@ -304,8 +312,9 @@ class DiskObjectStore(ObjectStore):
     def delete(self, obj, entire_dir=False, **kwargs):
         path = self.get_filename(obj, **kwargs)
         extra_dir = kwargs.get('extra_dir', None)
+        obj_dir = kwargs.get('obj_dir', False)
         try:
-            if entire_dir and extra_dir:
+            if entire_dir and (extra_dir or obj_dir):
                 shutil.rmtree(path)
                 return True
             if self.exists(obj, **kwargs):

@@ -101,7 +101,7 @@ def load_galaxy_app(
         global_conf={"__file__": config_builder.ini_path},
         **kwds
     )
-    app.setup_control_queue()
+    app.control_worker.bind_and_start()
     return app
 
 
