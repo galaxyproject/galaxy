@@ -2,7 +2,6 @@
 """
 import os
 import imp
-import unittest
 
 import logging
 log = logging.getLogger( __name__ )
@@ -19,7 +18,7 @@ contents1 = """${what} ${you} ${say}"""
 
 
 # -----------------------------------------------------------------------------
-class PageServingPluginManager_TestCase( unittest.TestCase ):
+class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
 
     def test_plugin_load( self ):
         """should attempt load if criteria met"""
@@ -123,4 +122,4 @@ class PageServingPluginManager_TestCase( unittest.TestCase ):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    test_utils.unittest.main()

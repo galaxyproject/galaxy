@@ -2,7 +2,7 @@
 
 ## Set vars so that there's no need to change the code below.
 <%
-    history = published_item 
+    history = published_item
     datasets = published_item_data
 %>
 
@@ -63,7 +63,6 @@
             el              : $( "#history-" + historyJSON.id ),
             model           : history
         }).render();
-        console.debug( historyPanel.$el )
     });
 </script>
 </%def>

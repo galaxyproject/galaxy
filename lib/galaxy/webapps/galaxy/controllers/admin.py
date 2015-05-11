@@ -892,7 +892,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         if new in ( current, None ):
             message = 'Usage is unchanged at %s.' % nice_size( current )
         else:
-            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( current )  )
+            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( new )  )
         return trans.response.send_redirect( web.url_for( controller='admin',
                                                           action='users',
                                                           message=sanitize_text( message ),

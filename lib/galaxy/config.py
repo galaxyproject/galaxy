@@ -24,6 +24,17 @@ from .version import VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
 
+# The uwsgi module is automatically injected by the parent uwsgi
+# process and only exists that way.  If anything works, this is a
+# uwsgi-managed process.
+try:
+    import uwsgi
+    if uwsgi.numproc:
+        process_is_uwsgi = True
+except ImportError:
+    # This is not a uwsgi process, or something went horribly wrong.
+    process_is_uwsgi = False
+
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
@@ -46,19 +57,6 @@ class Configuration( object ):
         self.umask = os.umask( 077 )  # get the current umask
         os.umask( self.umask )  # can't get w/o set, so set it back
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
-
-        # TEST FOR UWSGI
-        self.is_uwsgi = False
-        try:
-            # The uwsgi module is automatically injected by the parent uwsgi
-            # process and only exists that way.  If anything works, this is a
-            # uwsgi-managed process.
-            import uwsgi
-            if uwsgi.numproc:
-                self.is_uwsgi = True
-        except ImportError:
-            # This is not a uwsgi process, or something went horribly wrong.
-            pass
 
         self.version_major = VERSION_MAJOR
         # Database related configuration
@@ -123,6 +121,7 @@ class Configuration( object ):
         self.manage_dependency_relationships = string_as_bool( kwargs.get( 'manage_dependency_relationships', False ) )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
+        self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         if isinstance( self.hours_between_check, basestring ):
             self.hours_between_check = float( self.hours_between_check )
         try:

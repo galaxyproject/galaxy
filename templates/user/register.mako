@@ -1,7 +1,6 @@
 <%!
 #This is a hack, we should restructure templates to avoid this.
 def inherit(context):
-    print 'context:', context
     if context.get('trans').webapp.name == 'galaxy' and context.get( 'use_panels', True ):
         return '/webapps/galaxy/base_panels.mako'
     else:
