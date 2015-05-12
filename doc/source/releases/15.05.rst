@@ -16,19 +16,20 @@ Enhancements
 * Implement a new ``section`` tag for tools. `Pull Request 35`_,
   `Trello <https://trello.com/c/KxlQK0FB>`__
 * New UI widgets allowing much more flexibility when creating simple dataset
-  pair and list collections. `Pull Request 134`_
+  pair and list collections. `Pull Request 134`_,
+  `Trello <https://trello.com/c/xCdFQPBW>`__
 * Improved JavaScript build system for client code and libraries (now
   using uglify_ and featuring `Source Maps`_). 72c876c_, 9a7f5fc_, 648a623_,
-  22f280f_
+  22f280f_, `Trello <https://trello.com/c/7midE7Bx>`__
 * Add an `External Display Application`_ for viewing GFF/GTF files with IGV_.
-  `Pull Request 70`_
+  `Pull Request 70`_, `Trello <https://trello.com/c/Hfg3gYsL>`__
 * Use TravisCI_ and Tox_ for continuous integration testing.
   `Pull Request 40`_, `Pull Request 62`_, `Pull Request 97`_,
   `Pull Request 99`_, `Pull Request 123`_, `Pull Request 222`_,
   `Pull Request 235`_,
 * Infrastructure for improved toolbox and Tool Shed searching.
   `Pull Request 9`_, `Pull Request 116`_, `Pull Request 142`_,
-  `Pull Request 226`_, c2eb74c_, 2bf52fe_, ec549db_
+  `Pull Request 226`_, c2eb74c_, 2bf52fe_, ec549db_, `Trello <https://trello.com/c/YJW1dCkB>`__
 * Enhance UI to allow renaming dataset collections. 21d1d6b_
 * Improve highlighting of current/active content history panel.
   `Pull Request 126`_
@@ -61,7 +62,7 @@ Enhancements
 * Add fields and improve display of Tool Shed repositories.
   a24e206_, d6d61bc_
 * Enhance multi-selection widgets to allow key combinations ``Ctrl-A``
-  and ``Ctrl-X``. e8564d7_
+  and ``Ctrl-X``. e8564d7_, `Trello <https://trello.com/c/3QhD5l5h>`__
 * New, consistent button for displaying citation BibTeX. `Pull Request 19`_
 * Improved ``README`` reflecting move to Github - thanks in part to Eric
   Rasche. `PR #2 (old repo)
@@ -87,7 +88,7 @@ Enhancements
   `Pull Request 73`_, `Pull Request 131`_, `Pull Request 135`_,
   `Pull Request 152`_, `Pull Request 197`_
 * Enable multi-part upload for exporting files with the GenomeSpace export 
-  tool. `Pull Request 74`_
+  tool. `Pull Request 74`_, `Trello <https://trello.com/c/28O46iln>`__
 * Large refactoring, expansion, and increase in test coverage for "managers".
   `Pull Request 76`_
 * Improved display of headers in tool help. 157eba6_, 
@@ -101,7 +102,8 @@ Enhancements
 * Add experimental options to run tests in Docker. e99adb5_
 * Improve ``run_test.sh --help`` documentation to detail running specific
   tests. `Pull Request 86`_
-* Remove older, redundant history tests. `Pull Request 120`_
+* Remove older, redundant history tests. `Pull Request 120`_,
+  `Trello <https://trello.com/c/p6oOVhGp>`__
 * Add test tool demonstrating citing a Github repository. 65def71_
 * Add option to track all automated changes to the integrated tool panel.
   10bb492_
@@ -129,10 +131,10 @@ Fixes
   <https://github.com/galaxyproject/galaxy/compare/v15.03...release_15.03>`__
   (with special thanks to Björn Grüning and Marius van den Beek).
 * Fix race condition that would occasionally prevent Galaxy from starting
-  properly. `Pull Request 198`_
+  properly. `Pull Request 198`_, `Trello <https://trello.com/c/WVlaLsOh>`__
 * Fix scatter plot API communications for certain proxied Galaxy instances -
   thanks to @yhoogstrate. `Pull Request 89`_
-* Fix bug in collectl job metrics plugin - thanks to Carrie Ganote. 
+* Fix bug in collectl_ job metrics plugin - thanks to Carrie Ganote. 
   `Pull Request 231`_
 * Fix late validation of tool parameters. `Pull Request 115`_
 * Fix ``fasta_to_tabular_converter.py`` (for implicit conversion) - thanks to
@@ -148,7 +150,7 @@ Fixes
 * Fix data source tools that do not have SSL to open in ``_blank`` window.
   `Pull Request 17`_
 * Fix to fallback to name for tool parameters without labels.
-  `Pull Request 189`_
+  `Pull Request 189`_, `Trello <https://trello.com/c/Y2xbXqzZ>`__
 * Fix to remove redundant version ids in tool version selector.
   `Pull Request 244`_
 * Fix for downloading metadata files. `Pull Request 234`_
@@ -160,13 +162,13 @@ Fixes
 * Allow a tool data table to declare that duplicate entries are not
   allowed. `Pull Request 245`_
 * Fix for library UI duplication bug. `Pull Request 179`_
-* Fix for Backbone loading as AMD. 4e5218f_
+* Fix for `Backbone.js`_ loading as AMD_. 4e5218f_
 * Other small Tool Shed fixes. 815f86f_, 76e0915_
 * Fix file closing in ``lped_to_pbed_converter``. 182b67f_
 * Fix undefined variables in Tool Shed ``add_repository_entry`` API script.
   47e6f08_
 * Fix user registration to respect use_panels when in the Galaxy app.
-  7ac8631_
+  7ac8631_, `Trello <https://trello.com/c/lA1mdDrP>`__
 * Fix bug in scramble exception, incorrect reference to source_path 79d50d8_
 * Fix error handling in ``pbed_to_lped``. 7aecd7a_
 * Fix error handling in Tool Shed step handler for ``chmod`` action. 1454396_
@@ -178,7 +180,8 @@ Fixes
 * Fix bug when task splitting jobs fail. `Pull Request 214`_
 * Fix some minor typos in comment docs in ``config/galaxy.ini.sample``.
   `Pull Request 210`_
-* Fix admin disk usage message. `Pull Request 205`_
+* Fix admin disk usage message. `Pull Request 205`_,
+  `Trello <https://trello.com/c/2pdw2dK8>`__
 * Fix to sessionStorage Model to suppress QUOTA DOMExceptions when Safari
   users are in private browsing mode. 0c94f04_
 
@@ -189,6 +192,9 @@ Fixes
 .. _Tox: https://testrun.org/tox/latest/
 .. _Source Maps: https://developer.chrome.com/devtools/docs/javascript-debugging#source-maps
 .. _uglify: https://developer.chrome.com/devtools/docs/javascript-debugging#source-maps
+.. _collectl: http://collectl.sourceforge.net/
+.. _Backbone.js: http://backbonejs.org/
+.. _AMD: http://requirejs.org/docs/whyamd.html
 
 .. github_links
 .. _Pull Request 2: https://github.com/galaxyproject/galaxy/pull/2
