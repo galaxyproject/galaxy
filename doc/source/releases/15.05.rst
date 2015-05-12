@@ -29,7 +29,8 @@ Enhancements
   `Pull Request 235`_,
 * Infrastructure for improved toolbox and Tool Shed searching.
   `Pull Request 9`_, `Pull Request 116`_, `Pull Request 142`_,
-  `Pull Request 226`_, c2eb74c_, 2bf52fe_, ec549db_, `Trello <https://trello.com/c/YJW1dCkB>`__
+  `Pull Request 226`_, c2eb74c_, 2bf52fe_, ec549db_,
+  `Trello <https://trello.com/c/YJW1dCkB>`__, `Trello <https://trello.com/c/AG3qYRZe>`__
 * Enhance UI to allow renaming dataset collections. 21d1d6b_
 * Improve highlighting of current/active content history panel.
   `Pull Request 126`_
@@ -60,7 +61,7 @@ Enhancements
 * Do not configure Galaxy to use the test Tool Shed by default.
   `Pull Request 38`_
 * Add fields and improve display of Tool Shed repositories.
-  a24e206_, d6d61bc_
+  a24e206_, d6d61bc_, `Trello <https://trello.com/c/g1dt8WhA>`__
 * Enhance multi-selection widgets to allow key combinations ``Ctrl-A``
   and ``Ctrl-X``. e8564d7_, `Trello <https://trello.com/c/3QhD5l5h>`__
 * New, consistent button for displaying citation BibTeX. `Pull Request 19`_
