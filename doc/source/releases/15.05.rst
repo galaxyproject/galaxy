@@ -49,6 +49,7 @@ Enhancements
 * Add option to pass arbitrary parameters to gem install as part of
   the tool shed ``setup_ruby_environment`` Tool Shed install action -
   thanks to Björn Grüning. `Pull Request 118`_
+* Add ``argument`` attribute to tool parameters. `Pull Request 8`_
 * Improve link and message that appears after workflows are run.
   `Pull Request 143`_
 * Add NCBI SRA datatype - thanks to Matt Shirley. `Pull Request 87`_
@@ -121,8 +122,8 @@ Enhancements
 * Tweaks to the Pulsar's handling of async messages. `Pull Request 109`_
 * Return more specific API authentication errors. 71a64ca_
 * Upgrade Python dependency sqlalchemy to 1.0.0. d725aab_, `Pull Request 129`_
-* Upgrade Python dependency amqp to 1.4.6. e09761e_,  `Pull Request 128`_
-* Upgrade Python dependency kombu to 3.0.24. 8d3c531_,  `Pull Request 128`_
+* Upgrade Python dependency amqp to 1.4.6. `Pull Request 128`_
+* Upgrade Python dependency kombu to 3.0.24. `Pull Request 128`_
 * Upgrade JavaScript dependency raven.js to 1.1.17. bcd1701_
 
 Fixes
@@ -318,6 +319,7 @@ Fixes
 .. _Pull Request 11: https://github.com/galaxyproject/galaxy/pull/11
 .. _Pull Request 9: https://github.com/galaxyproject/galaxy/pull/9
 .. _632ec4e: https://github.com/galaxyproject/galaxy/commit/632ec4e
+.. _Pull Request 8: https://github.com/galaxyproject/galaxy/pull/8
 .. _Pull Request 7: https://github.com/galaxyproject/galaxy/pull/7
 .. _b52cc98: https://github.com/galaxyproject/galaxy/commit/b52cc98
 .. _1454396: https://github.com/galaxyproject/galaxy/commit/1454396

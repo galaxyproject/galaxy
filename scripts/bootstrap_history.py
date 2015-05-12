@@ -3,7 +3,10 @@
 # pull message down and embed, use arg parse, handle multiple, etc...
 import os
 import sys
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 import urlparse
 import textwrap
 
@@ -36,9 +39,14 @@ def main(argv):
         commit = req["commit"]
         message = commit["message"]
         message = get_first_sentence(message)
-    elif ident.startswith("pr"):
+    elif requests is not None and ident.startswith("pr"):
         pull_request = ident[len("pr"):]
         api_url = urlparse.urljoin(PROJECT_API, "pulls/%s" % pull_request)
+        req = requests.get(api_url).json()
+        message = req["title"]
+    elif requests is not None and ident.startswith("issue"):
+        issue = ident[len("issue"):]
+        api_url = urlparse.urljoin(PROJECT_API, "issues/%s" % pull_request)
         req = requests.get(api_url).json()
         message = req["title"]
     else:
