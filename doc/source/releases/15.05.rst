@@ -97,6 +97,8 @@ Enhancements
   Soranzo. `Pull Request 23`_
 * Allow setting ``job_conf.xml`` params via environment variables &
   ``galaxy.ini``. dde2fc9_
+* Allow a tool data table to declare that duplicate entries are not
+  allowed. `Pull Request 245`_
 * Add verbose test error flag option in run_tests.sh. 62f0495_
 * Update ``.gitignore`` to include ``run_api_tests.html``. b52cc98_
 * Add experimental options to run tests in Docker. e99adb5_
@@ -117,9 +119,9 @@ Enhancements
 * Remove demo sequencer app. 3af3bf5_
 * Tweaks to the Pulsar's handling of async messages. `Pull Request 109`_
 * Return more specific API authentication errors. 71a64ca_
-* Upgrade Python dependency sqlalchemy to 1.0.0. d725aab_
-* Upgrade Python dependency amqp to 1.4.6. e09761e_
-* Upgrade Python dependency kombu to 3.0.24. 8d3c531_
+* Upgrade Python dependency sqlalchemy to 1.0.0. d725aab_, `Pull Request 129`_
+* Upgrade Python dependency amqp to 1.4.6. e09761e_,  `Pull Request 128`_
+* Upgrade Python dependency kombu to 3.0.24. 8d3c531_,  `Pull Request 128`_
 * Upgrade JavaScript dependency raven.js to 1.1.17. bcd1701_
 
 Fixes
@@ -159,8 +161,6 @@ Fixes
 * Fixes for BaseURLToolParameter. `Pull Request 247`_
 * Fix to suppress pysam binary incompatibility warning when using datatypes
   in ``binary.py``. `Pull Request 252`_
-* Allow a tool data table to declare that duplicate entries are not
-  allowed. `Pull Request 245`_
 * Fix for library UI duplication bug. `Pull Request 179`_
 * Fix for `Backbone.js`_ loading as AMD_. 4e5218f_
 * Other small Tool Shed fixes. 815f86f_, 76e0915_
@@ -197,6 +197,8 @@ Fixes
 .. _AMD: http://requirejs.org/docs/whyamd.html
 
 .. github_links
+.. _Pull Request 129: https://github.com/galaxyproject/galaxy/pull/129
+.. _Pull Request 128: https://github.com/galaxyproject/galaxy/pull/128
 .. _Pull Request 2: https://github.com/galaxyproject/galaxy/pull/2
 .. _Pull Request 247: https://github.com/galaxyproject/galaxy/pull/247
 .. _Pull Request 252: https://github.com/galaxyproject/galaxy/pull/252
