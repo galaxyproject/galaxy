@@ -241,8 +241,8 @@ class DefaultToolAction( object ):
             else:
                 ext = determine_output_format( output, wrapped_params.params, inp_data, input_ext )
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
-                #CCC fetch tool 
-                if(tool.id == 'ccc_fetch'):
+                #Copy tools
+                if(tool.tool_type == 'copy_dataset_tool'):
                     #Same dataset as input - set UUID same as output
                     input_dataset = inp_data.values()[0].dataset;
                     data.dataset.uuid = input_dataset.uuid;

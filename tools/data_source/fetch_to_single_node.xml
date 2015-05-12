@@ -1,0 +1,14 @@
+<tool id="fetch_to_single_node" name="Fetch to a single node" tool_type="copy_dataset_tool">
+  <description>Tool to fetch dataset to a single node</description>
+  <command>rsync -a -e "ssh" $input $hostname:$fetched_copy;ln -s $input $fetched_copy</command>
+  <inputs>
+      <param name="input" type="data" label="input"/>
+      <param name="hostname" type="text" label="hostname"/>
+  </inputs>
+  <outputs>
+    <data name="fetched_copy" label="fetched_copy" format="input"/>
+  </outputs>
+  <help>
+    Fetch dataset to single node from remote node within the same cluster
+  </help>
+</tool>

@@ -2896,6 +2896,8 @@ class AsyncDataSourceTool( DataSourceTool ):
 class DataDestinationTool( Tool ):
     tool_type = 'data_destination'
 
+class CopyDatasetTool( Tool ):
+    tool_type = 'copy_dataset_tool'
 
 class SetMetadataTool( Tool ):
     """
@@ -3031,7 +3033,7 @@ class DataManagerTool( OutputParameterJSONTool ):
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
-                    DataDestinationTool ]:
+                    DataDestinationTool, CopyDatasetTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
 
