@@ -241,6 +241,11 @@ class DefaultToolAction( object ):
             else:
                 ext = determine_output_format( output, wrapped_params.params, inp_data, input_ext )
                 data = trans.app.model.HistoryDatasetAssociation( extension=ext, create_dataset=True, sa_session=trans.sa_session )
+                #CCC fetch tool 
+                if(tool.id == 'ccc_fetch'):
+                    #Same dataset as input - set UUID same as output
+                    input_dataset = inp_data.values()[0].dataset;
+                    data.dataset.uuid = input_dataset.uuid;
                 if output.hidden:
                     data.visible = False
                 # Commit the dataset immediately so it gets database assigned unique id

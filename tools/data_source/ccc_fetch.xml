@@ -1,0 +1,13 @@
+<tool id="ccc_fetch" name="CCC fetch">
+  <description>Tool to fetch dataset to central site</description>
+  <command>rsync -a $input CCC_FETCH_OUTPUT_PATH;ln -s \$PWD/CCC_FETCH_OUTPUT_PATH $fetched_copy</command>
+  <inputs>
+    <param name="input" type="data" label="input"/>
+  </inputs>
+  <outputs>
+    <data name="fetched_copy" label="fetched_copy" format="input"/>
+  </outputs>
+  <help>
+    Fetch dataset to central site
+  </help>
+</tool>
