@@ -11,9 +11,9 @@ Enhancements
 * Pluggable framework to custom authentication (including new LDAP/Active
   Directory integration). Thanks to many including Andrew Robinson,
   Nicola Soranzo, and David Trudgian. `Pull Request 1`_, `Pull Request 33`_,
-  `Pull Request 51`_, `Pull Request 74`_, `Pull Request 98`_,
+  `Pull Request 51`_, `Pull Request 75`_, `Pull Request 98`_,
   `Pull Request 216`_
-* Implement a new ``section`` tag for tools. `Pull Request 35`_,
+* Implement a new ``section`` tag for tool parameters. `Pull Request 35`_,
   `Trello <https://trello.com/c/KxlQK0FB>`__
 * New UI widgets allowing much more flexibility when creating simple dataset
   pair and list collections. `Pull Request 134`_,
