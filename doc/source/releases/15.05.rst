@@ -151,7 +151,7 @@ Fixes
   `Pull Request 18`_.
 * Fix Galaxy to default to using SSL for communicating with Tool Sheds.
   0b037a2_
-* Fix data source tools that do not have SSL to open in ``_blank`` window.
+* Fix data source tools to open in ``_top`` window.
   `Pull Request 17`_
 * Fix to fallback to name for tool parameters without labels.
   `Pull Request 189`_, `Trello <https://trello.com/c/Y2xbXqzZ>`__
