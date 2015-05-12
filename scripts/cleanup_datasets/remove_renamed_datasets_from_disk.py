@@ -8,7 +8,17 @@ import sys, os
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+def usage(prog) :
+    print "usage: %s file" % prog
+    print "The input file should contain a list of files to be deleted, one per line. The"
+    print "full path must be specified and must begin with /var/opt/galaxy"
+    print "\nA log of files deleted is created in a file with the same name as that input"
+    print "but with .removed.log appended"
+
 def main():
+    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help" :
+        usage(sys.argv[0])
+        sys.exit()
     infile = sys.argv[1]
     outfile = infile + ".removed.log"
     out = open( outfile, 'w' )
