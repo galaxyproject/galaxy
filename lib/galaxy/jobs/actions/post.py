@@ -8,6 +8,9 @@ import logging
 import socket
 from galaxy.util import send_mail
 from galaxy.util.json import dumps
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
@@ -50,7 +53,7 @@ class DefaultJobAction(object):
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments:
-            return "%s -> %s" % (pja.action_type, pja.action_arguments)
+            return "%s -> %s" % (pja.action_type, escape(pja.action_arguments))
         else:
             return "%s" % pja.action_type
 
@@ -91,7 +94,7 @@ class EmailAction(DefaultJobAction):
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments and 'host' in pja.action_arguments:
-            return "Email the current user from server %s when this job is complete." % pja.action_arguments['host']
+            return "Email the current user from server %s when this job is complete." % escape(pja.action_arguments['host'])
         else:
             return "Email the current user when this job is complete."
 
@@ -127,7 +130,8 @@ class ChangeDatatypeAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return "Set the datatype of output '%s' to '%s'" % (pja.output_name, pja.action_arguments['newtype'])
+        return "Set the datatype of output '%s' to '%s'" % (escape(pja.output_name),
+                                                            escape(pja.action_arguments['newtype']))
 
 
 class RenameDatasetAction(DefaultJobAction):
@@ -235,7 +239,8 @@ class RenameDatasetAction(DefaultJobAction):
     def get_short_str(cls, pja):
         # Prevent renaming a dataset to the empty string.
         if pja.action_arguments and pja.action_arguments.get('newname', ''):
-            return "Rename output '%s' to '%s'." % (pja.output_name, pja.action_arguments['newname'])
+            return "Rename output '%s' to '%s'." % (escape(pja.output_name),
+                                                    escape(pja.action_arguments['newname']))
         else:
             return "Rename action used without a new name specified.  Output name will be unchanged."
 
@@ -455,7 +460,8 @@ class TagDatasetAction(DefaultJobAction):
     @classmethod
     def get_short_str(cls, pja):
         if pja.action_arguments and pja.action_arguments.get('tags', ''):
-            return "Add tag(s) '%s' to '%s'." % (pja.action_arguments['tags'], pja.output_name)
+            return "Add tag(s) '%s' to '%s'." % (escape(pja.action_arguments['tags']),
+                                                 escape(pja.output_name))
         else:
             return "Tag addition action used without a tag specified.  No tag will be added."
 
