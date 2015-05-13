@@ -1,50 +1,57 @@
-======================================
+===========================================================
 May 2015 Galaxy Release (v 15.05)
-======================================
+===========================================================
 
-.. container:: floatright
-
-  .. image:: https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=GetGalaxyOrg.png
-
-`Get the Galaxy Release Your Way <http://getgalaxy.org>`__
+.. image:: https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=GetGalaxyOrg.png
+   :alt: Get the Galaxy Release Your Way
+   :target: http://getgalaxy.org
 
 Highlights
-======================================
+===========================================================
 
-* Galaxy now has native support for LDAP and Active Directory via a new 
+**Authentication Plugins**
+  Galaxy now has native support for LDAP and Active Directory via a new 
   community developed authentication plugin system.
-* Tool parameters may now be groupped into collapsable sections.
-* New widgets have been added that allow much more flexibility when creating
+
+**Tool Sections**
+  Tool parameters may now be groupped into collapsable sections.
+
+**Collection Creators**
+  New widgets have been added that allow much more flexibility when creating
   simple dataset pair and list collections.
 
-Github
-======================================
+`Github <https://github.com/galaxyproject/galaxy>`__
+===========================================================
 
-* New::
-
+New
+  .. code-block:: shell
+  
       % git clone -b master https://github.com/galaxyproject/galaxy.git
 
-* Update to latest stable release::
-
+Update to latest stable release
+  .. code-block:: shell
+  
       % git checkout master && pull --ff-only origin master
 
-* Update to exact version::
-
+Update to exact version
+  .. code-block:: shell
+  
       % git checkout v15.05
 
 See `getgalaxy.org <http://getgalaxy.org>`__ for additional details regarding Git branches.
 
 
-BitBucket
-======================================
+`BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
+===========================================================
 
-* Upgrade::
-
+Upgrade
+  .. code-block:: shell
+  
       % hg pull 
       % hg update latest_15.05
 
 Release Notes
-======================================
+===========================================================
 
 .. include:: 15.05.rst
    :start-after: enhancements
@@ -52,3 +59,4 @@ Release Notes
 *Thanks for using Galaxy!*
 
 `The Galaxy Team <https://wiki.galaxyproject.org/GalaxyTeam>`__
+
