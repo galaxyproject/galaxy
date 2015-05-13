@@ -441,6 +441,78 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )
 
+    def _history_state_from_states_and_deleted( self, user, hda_state_and_deleted_tuples ):
+        history = self.history_manager.create( name='name', user=user )
+        for state, deleted in hda_state_and_deleted_tuples:
+            hda = self.hda_manager.create( history=history )
+            hda = self.hda_manager.update( hda, dict( state=state, deleted=deleted ) )
+        history_state = self.history_serializer.serialize( history, [ 'state' ] )[ 'state' ]
+        return history_state
+
+    def test_state( self ):
+        dataset_states = model.Dataset.states
+        user2 = self.user_manager.create( **user2_data )
+
+        ready_states = [ ( state, False ) for state in [ dataset_states.OK, dataset_states.OK ] ]
+
+        self.log( 'a history\'s serialized state should be running if any of its datasets are running' )
+        self.assertEqual( 'running', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.RUNNING, False )] ))
+        self.assertEqual( 'running', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.SETTING_METADATA, False )] ))
+        self.assertEqual( 'running', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.UPLOAD, False )] ))
+
+        self.log( 'a history\'s serialized state should be queued if any of its datasets are queued' )
+        self.assertEqual( 'queued', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.QUEUED, False )] ))
+
+        self.log( 'a history\'s serialized state should be error if any of its datasets are errored' )
+        self.assertEqual( 'error', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.ERROR, False )] ))
+        self.assertEqual( 'error', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.FAILED_METADATA, False )] ))
+
+        self.log( 'a history\'s serialized state should be ok if *all* of its datasets are ok' )
+        self.assertEqual( 'ok', self._history_state_from_states_and_deleted( user2, ready_states ))
+
+        self.log( 'a history\'s serialized state should be not be affected by deleted datasets' )
+        self.assertEqual( 'ok', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.RUNNING, True )] ))
+
+    def test_contents( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history1 = self.history_manager.create( name='history1', user=user2 )
+
+        self.log( 'a history with no contents should be properly reflected in empty, etc.' )
+        keys = [ 'empty', 'count', 'state_ids', 'state_details', 'state', 'hdas' ]
+        serialized = self.history_serializer.serialize( history1, keys )
+        self.assertEqual( serialized[ 'state' ], 'new' )
+        self.assertEqual( serialized[ 'empty' ], True )
+        self.assertEqual( serialized[ 'count' ], 0 )
+        self.assertEqual( sum( serialized[ 'state_details' ].values() ), 0 )
+        self.assertEqual( serialized[ 'state_ids' ][ 'ok' ], [] )
+        self.assertIsInstance( serialized[ 'hdas' ], list )
+
+        self.log( 'a history with contents should be properly reflected in empty, etc.' )
+        hda1 = self.hda_manager.create( history=history1, hid=1 )
+        self.hda_manager.update( hda1, dict( state='ok' ) )
+
+        serialized = self.history_serializer.serialize( history1, keys )
+        self.assertEqual( serialized[ 'state' ], 'ok' )
+        self.assertEqual( serialized[ 'empty' ], False )
+        self.assertEqual( serialized[ 'count' ], 1 )
+        self.assertEqual( serialized[ 'state_details' ][ 'ok' ], 1 )
+        self.assertIsInstance( serialized[ 'state_ids' ][ 'ok' ], list )
+        self.assertIsInstance( serialized[ 'hdas' ], list )
+        self.assertIsInstance( serialized[ 'hdas' ][0], basestring )
+
+        serialized = self.history_serializer.serialize( history1, [ 'contents' ] )
+        self.assertHasKeys( serialized[ 'contents' ][0], [ 'id', 'name', 'peek', 'create_time' ])
+
+        self.log( 'serialized should jsonify well' )
+        self.assertIsJsonifyable( serialized )
+
 
 # # =============================================================================
 # class HistoryDeserializerTestCase( BaseTestCase ):
