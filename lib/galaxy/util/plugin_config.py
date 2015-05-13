@@ -25,6 +25,10 @@ def plugins_dict(module, plugin_type_identifier):
         # FIXME: this is not how one is suppose to use __all__ why did you do
         # this past John?
         for clazz in getattr( plugin_module, "__all__", [] ):
+            try:
+                clazz = getattr( plugin_module, clazz )
+            except TypeError:
+                clazz = clazz
             plugin_type = getattr( clazz, plugin_type_identifier, None )
             if plugin_type:
                 plugin_dict[ plugin_type ] = clazz

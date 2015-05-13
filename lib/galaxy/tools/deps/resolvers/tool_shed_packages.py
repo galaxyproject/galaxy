@@ -56,4 +56,4 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver, UsesIns
         return INDETERMINATE_DEPENDENCY
 
 
-__all__ = [ToolShedPackageDependencyResolver]
+__all__ = ['ToolShedPackageDependencyResolver']

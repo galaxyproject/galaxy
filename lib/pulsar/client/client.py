@@ -1,5 +1,6 @@
 import os
 from json import dumps
+from json import loads
 
 from .destination import submit_params
 from .setup_handler import build as build_setup_handler
@@ -9,7 +10,10 @@ from .decorators import retry
 from .util import copy
 from .util import ensure_directory
 from .util import to_base64_json
-from .action_mapper import path_type
+from .action_mapper import (
+    path_type,
+    actions,
+)
 
 import logging
 log = logging.getLogger(__name__)
@@ -29,9 +33,10 @@ class OutputNotFoundException(Exception):
 class BaseJobClient(object):
 
     def __init__(self, destination_params, job_id):
+        destination_params = destination_params or {}
         self.destination_params = destination_params
         self.job_id = job_id
-        if "jobs_directory" in (destination_params or {}):
+        if "jobs_directory" in destination_params:
             staging_directory = destination_params["jobs_directory"]
             sep = destination_params.get("remote_sep", os.sep)
             job_directory = RemoteJobDirectory(
@@ -41,11 +46,17 @@ class BaseJobClient(object):
             )
         else:
             job_directory = None
+
+        for attr in ["ssh_key", "ssh_user", "ssh_host", "ssh_port"]:
+            setattr(self, attr, destination_params.get(attr, None))
         self.env = destination_params.get("env", [])
         self.files_endpoint = destination_params.get("files_endpoint", None)
         self.job_directory = job_directory
 
-        self.default_file_action = self.destination_params.get("default_file_action", "transfer")
+        default_file_action = self.destination_params.get("default_file_action", "transfer")
+        if default_file_action not in actions:
+            raise Exception("Unknown Pulsar default file action type %s" % default_file_action)
+        self.default_file_action = default_file_action
         self.action_config_path = self.destination_params.get("file_action_config", None)
 
         self.setup_handler = build_setup_handler(self, destination_params)
@@ -160,10 +171,13 @@ class JobClient(BaseJobClient):
         input_path = path
         if contents:
             input_path = None
-        if action_type == 'transfer':
+        # action type == 'message' should either copy or transfer
+        # depending on default not just fallback to transfer.
+        if action_type in ['transfer', 'message']:
             return self._upload_file(args, contents, input_path)
         elif action_type == 'copy':
-            pulsar_path = self._raw_execute('path', args)
+            path_response = self._raw_execute('path', args)
+            pulsar_path = loads(path_response)['path']
             copy(path, pulsar_path)
             return {'path': pulsar_path}
 
@@ -271,6 +285,7 @@ class BaseMessageJobClient(BaseJobClient):
             launch_params['env'] = env
         if remote_staging:
             launch_params['remote_staging'] = remote_staging
+            launch_params['remote_staging']['ssh_key'] = self.ssh_key
         if job_config and self.setup_handler.local:
             # Setup not yet called, job properties were inferred from
             # destination arguments. Hence, must have Pulsar setup job

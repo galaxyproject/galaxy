@@ -140,7 +140,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         config_file=config_file,
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
-        kwds={ 'overwrite' : False }
+        kwds={ 'overwrite': False }
     ) or ''
     metadata_command = metadata_command.strip()
     if metadata_command:

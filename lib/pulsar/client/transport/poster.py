@@ -1,4 +1,7 @@
 from __future__ import absolute_import
+
+import logging
+
 try:
     from urllib2 import urlopen
 except ImportError:
@@ -20,7 +23,6 @@ except ImportError:
 
 POSTER_UNAVAILABLE_MESSAGE = "Pulsar configured to use poster module - but it is unavailable. Please install poster."
 
-import logging
 log = logging.getLogger(__name__)
 
 

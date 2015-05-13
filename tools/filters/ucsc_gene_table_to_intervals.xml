@@ -1,4 +1,4 @@
-<tool id="ucsc_gene_table_to_intervals1" name="Gene Table To BED">
+<tool id="ucsc_gene_table_to_intervals1" name="Gene Table To BED" version="1.0.0">
 <description>Parse a UCSC Gene Table dump</description>
   <command interpreter="python">ucsc_gene_table_to_intervals.py --input=$input1 --output=$out_file1 --region=$region $exon</command>
   <inputs>

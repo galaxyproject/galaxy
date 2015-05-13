@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<auth>
+<!--<authenticator>
+        <type>ldap</type>
+-->
+        <!-- Filter users for which this authenticator applies. This is a Python
+             expression which is evaluated after replacing instances of {email}
+             and {username} with the corresponding user's values. -->
+<!--    <filter>'{email}'.endswith('@example.com')</filter>
+        <options>
+            <auto-register>True</auto-register>
+            <server>ldap://dc1.example.com</server>
+-->
+            <!-- If search-fields is not present, all other search-* elements are ignored -->
+<!--        <search-fields>sAMAccountName,mail</search-fields>
+            <search-filter>(&amp;(objectClass=user)(mail={email}))</search-filter>
+            <search-base>dc=dc1,dc=example,dc=com</search-base>
+-->
+            <!-- If search-user not specified will bind anonymously to LDAP for search -->
+<!--        <search-user>jsmith</search-user>
+            <search-password>mysecret</search-password>
+            <bind-user>{sAMAccountName}@example.com</bind-user>
+            <bind-password>{password}</bind-password>
+            <auto-register-username>{sAMAccountName}</auto-register-username>
+            <auto-register-email>{mail}</auto-register-email>
+-->
+            <!-- To allow login with username instead of email, default is False -->
+<!--        <login-use-username>True</login-use-username>
+        </options>
+     </authenticator>
+-->
+
+    <authenticator>
+        <type>localdb</type>
+        <options>
+            <allow-password-change>true</allow-password-change>
+        </options>
+    </authenticator>
+</auth>

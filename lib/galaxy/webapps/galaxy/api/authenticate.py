@@ -45,17 +45,19 @@ class AuthenticationController( BaseAPIController ):
 
         user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).all()
 
-        if ( len( user ) is not 1 ):
-            # DB is inconsistent and we have more users with same email
-            raise exceptions.ObjectNotFound()
+        if len( user ) == 0:
+            raise exceptions.ObjectNotFound( 'The user does not exist.' )
+        elif len( user ) > 1:
+            # DB is inconsistent and we have more users with the same email.
+            raise exceptions.InconsistentDatabase( 'An error occured, please contact your administrator.' )
         else:
             user = user[0]
-            is_valid_user = user.check_password( password )
-        if ( is_valid_user ):
+            is_valid_user = self.app.auth_manager.check_password(user, password)
+        if is_valid_user:
             key = self.api_keys_manager.get_or_create_api_key( user )
             return dict( api_key=key )
         else:
-            raise exceptions.AuthenticationFailed()
+            raise exceptions.AuthenticationFailed( 'Invalid password.' )
 
     def _decode_baseauth( self, encoded_str ):
         """

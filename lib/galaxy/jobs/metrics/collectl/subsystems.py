@@ -69,4 +69,4 @@ def get_subsystem( name ):
     """
     return SUBSYSTEM_DICT[ name ]
 
-__all__ = [ get_subsystem ]
+__all__ = [ 'get_subsystem' ]

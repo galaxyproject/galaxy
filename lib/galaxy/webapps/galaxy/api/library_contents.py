@@ -213,8 +213,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if create_type == 'file' and from_hda_id:
             return self._copy_hda_to_library_folder( trans, from_hda_id, library_id, real_folder_id, ldda_message )
 
-        #check for extended metadata, store it and pop it out of the param
-        #otherwise sanitize_param will have a fit
+        # check for extended metadata, store it and pop it out of the param
+        # otherwise sanitize_param will have a fit
         ex_meta_payload = payload.pop('extended_metadata', None)
 
         # Now create the desired content object, either file or folder.
@@ -281,8 +281,8 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 for path, value in self._scan_json_block(a, prefix + "[%d]" % (i)):
                     yield path, value
         else:
-            #BUG: Everything is cast to string, which can lead to false positives
-            #for cross type comparisions, ie "True" == True
+            # BUG: Everything is cast to string, which can lead to false positives
+            # for cross type comparisions, ie "True" == True
             yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
 
     def _copy_hda_to_library_folder( self, trans, from_hda_id, library_id, folder_id, ldda_message='' ):
@@ -294,18 +294,18 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         in its payload.
         """
         log.debug( '_copy_hda_to_library_folder: %s' % ( str(( from_hda_id, library_id, folder_id, ldda_message )) ) )
-        #PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
-        #TODO: allow name and other, editable ldda attrs?
+        # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
+        # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
             ldda_message = util.sanitize_html.sanitize_html( ldda_message, 'utf-8' )
 
         rval = {}
         try:
             # check permissions on (all three?) resources: hda, library, folder
-            #TODO: do we really need the library??
+            # TODO: do we really need the library??
             from_hda_id = self.decode_id( from_hda_id )
-            hda = self.hda_manager.get_owned( trans, from_hda_id, trans.user )
-            hda = self.hda_manager.error_if_uploading( trans, hda )
+            hda = self.hda_manager.get_owned( from_hda_id, trans.user, current_history=trans.history )
+            hda = self.hda_manager.error_if_uploading( hda )
             # library = self.get_library( trans, library_id, check_accessible=True )
             folder = self.get_library_folder( trans, folder_id, check_accessible=True )
 
@@ -320,7 +320,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             rval = trans.security.encode_dict_ids( ldda_dict )
 
         except Exception, exc:
-            #TODO: grrr...
+            # TODO: grrr...
             if 'not accessible to the current user' in str( exc ):
                 trans.response.status = 403
                 return { 'error': str( exc ) }
@@ -412,7 +412,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 trans.sa_session.add( ld )
                 trans.sa_session.flush()
 
-                #TODO: had to change this up a bit from Dataset.user_can_purge
+                # TODO: had to change this up a bit from Dataset.user_can_purge
                 dataset = ld.library_dataset_dataset_association.dataset
                 no_history_assoc = len( dataset.history_associations ) == len( dataset.purged_history_associations )
                 no_library_assoc = dataset.library_associations == [ ld.library_dataset_dataset_association ]

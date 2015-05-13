@@ -424,6 +424,15 @@
             <param id="nativeSpecification">--mem-per-cpu=512</param>
             <resubmit condition="memory_limit_reached" destination="bigmem" />
         </destination>
+        <!-- Any tag param in this file can be set using an environment variable or using
+             values from galaxy.ini using the from_environ and from_config attributes
+             repectively. The text of the param will still be used if that environment variable
+             or config value isn't set.
+        -->
+        <destination id="params_from_environment" runner="slurm">
+            <param id="nativeSpecification" from_environ="NATIVE_SPECIFICATION">--time=00:05:00 --nodes=1</param>
+            <param id="docker_enabled" from_config="use_docker">false</param>
+        </destination>
 
     </destinations>
     <resources default="default">

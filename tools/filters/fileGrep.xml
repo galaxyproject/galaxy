@@ -1,4 +1,4 @@
-<tool id="fileGrep1" name="Match">
+<tool id="fileGrep1" name="Match" version="1.0.0">
   <description>a column from one Query against another Query</description>
   <command>cut -f $col $input1 | grep -f - $match $input2 > $out_file1</command>
   <inputs>

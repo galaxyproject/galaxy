@@ -90,8 +90,8 @@ class JobFilesAPIController( BaseAPIController ):
                                    " nginx_upload_module but Galaxy is not"
                                    " configured to recognize it" )
             assert file_path.startswith( upload_store ), \
-                    ( "Filename provided by nginx (%s) is not in correct"
-                      " directory (%s)" % ( file_path, upload_store ) )
+                ( "Filename provided by nginx (%s) is not in correct"
+                  " directory (%s)" % ( file_path, upload_store ) )
             input_file = open( file_path )
         else:
             input_file = payload.get( "file",
@@ -99,7 +99,12 @@ class JobFilesAPIController( BaseAPIController ):
         try:
             shutil.move( input_file.name, path )
         finally:
-            input_file.close()
+            try:
+                input_file.close()
+            except OSError:
+                # Fails to close file if not using nginx upload because the
+                # tempfile has moved and Python wants to delete it.
+                pass
         return {"message": "ok"}
 
     def __authorize_job_access(self, trans, encoded_job_id, **kwargs):

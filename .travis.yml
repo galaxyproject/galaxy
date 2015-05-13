@@ -1,0 +1,15 @@
+language: python
+python: 2.7
+env:
+  - TOX_ENV=py27-lint
+  - TOX_ENV=py26-lint
+  - TOX_ENV=py27-unit
+  - TOX_ENV=py26-unit
+  - TOX_ENV=qunit
+
+install:
+  - pip install tox
+  - if [ "$TOX_ENV" == "qunit" ]; then bash -c 'cd test/qunit && npm install'; fi
+
+script: tox -e $TOX_ENV
+

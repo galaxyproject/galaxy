@@ -26,7 +26,7 @@ Optional Arguments:
     --smtp - Specify smtp server
         If not specified, use smtp settings specified in config file
     --fromaddr - Specify from address
-        If not specified, use error_email_to specified in config file
+        If not specified, use email_from specified in config file
 
 Email Template Variables:
    cutoff - the cutoff in days
@@ -115,11 +115,11 @@ def main():
                      "or in the config file (smtp_server)")
 
     if options.fromaddr is not None:
-        config_dict['error_email_to'] = options.fromaddr
-    if config_dict.get('error_email_to') is None:
+        config_dict['email_from'] = options.fromaddr
+    if config_dict.get('email_from') is None:
         parser.error("From address must be specified as an option "
                      "(--fromaddr) or in the config file "
-                     "(error_email_to)")
+                     "(email_from)")
 
     scriptdir = os.path.dirname(os.path.abspath(__file__))
     template_file = options.template
@@ -237,7 +237,7 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
                                        cutoff=cutoff_days)
         subject = "Galaxy Server Cleanup " \
             "- %d datasets DELETED" % len(dataset_list)
-        fromaddr = config.error_email_to
+        fromaddr = config.email_from
         print ""
         print "From: %s" % fromaddr
         print "To: %s" % email

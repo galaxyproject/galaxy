@@ -339,7 +339,7 @@ class SnpSiftDbNSFP( Text ):
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
-        regenerate_primary_file( self, dataset)
+        self.regenerate_primary_file( dataset )
     def regenerate_primary_file(self,dataset):
         """
         cannot do this until we are setting metadata 

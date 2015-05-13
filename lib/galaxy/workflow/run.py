@@ -4,6 +4,7 @@ from galaxy import model
 from galaxy import util
 
 from galaxy.util.odict import odict
+from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
 from galaxy.workflow.run_request import WorkflowRunConfig
 from galaxy.workflow.run_request import workflow_run_config_to_request
@@ -134,6 +135,7 @@ class WorkflowInvoker( object ):
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
         for step in remaining_steps:
+            step_timer = ExecutionTimer()
             jobs = None
             try:
                 self.__check_implicitly_dependent_steps(step)
@@ -148,6 +150,7 @@ class WorkflowInvoker( object ):
             except modules.DelayedWorkflowEvaluation:
                 delayed_steps = True
                 self.progress.mark_step_outputs_delayed( step )
+            log.debug("Workflow step %s invoked %s" % (step.id, step_timer))
 
         if delayed_steps:
             state = model.WorkflowInvocation.states.READY

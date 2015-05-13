@@ -1,4 +1,4 @@
-<tool id="gtf2bedgraph" name="GTF-to-BEDGraph">
+<tool id="gtf2bedgraph" name="GTF-to-BEDGraph" version="1.0.0">
   <description>converter</description>
   <command interpreter="python">gtf_to_bedgraph_converter.py $input $out_file1 $attribute_name</command>
   <inputs>

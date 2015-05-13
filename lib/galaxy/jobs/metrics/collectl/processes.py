@@ -26,7 +26,7 @@ log = logging.getLogger( __name__ )
 #
 
 # Process data dumped one row per process per interval.
-#http://collectl.sourceforge.net/Data-detail.html
+# http://collectl.sourceforge.net/Data-detail.html
 PROCESS_COLUMNS = [
     "#Date",  # Date of interval - e.g. 20140322
     "Time",  # Time of interval - 12:18:58
@@ -36,7 +36,7 @@ PROCESS_COLUMNS = [
     "PPID",  # Parent PID of process.
     "THRD",  # Thread???
     "S",  # Process state - S - Sleeping, D - Uninterruptable Sleep, R - Running, Z - Zombie or T - Stopped/Traced
-    ## Memory options - http://ewx.livejournal.com/579283.html
+    # Memory options - http://ewx.livejournal.com/579283.html
     "VmSize",
     "VmLck",
     "VmRSS",
@@ -93,7 +93,7 @@ def parse_process_statistics( statistics ):
         statistics = DEFAULT_STATISTICS
 
     statistics = util.listify( statistics )
-    statistics = map( __tuplize_statistic, statistics )
+    statistics = map( _tuplize_statistic, statistics )
     # Check for validity...
     for statistic in statistics:
         if statistic[ 0 ] not in STATISTIC_TYPES:
@@ -109,10 +109,10 @@ def generate_process_statistics( collectl_playback_cli, pid, statistics=DEFAULT_
     with tempfile.NamedTemporaryFile( ) as tmp_tsv:
         collectl_playback_cli.run( stdout=tmp_tsv )
         with open( tmp_tsv.name, "r" ) as tsv_file:
-            return __read_process_statistics( tsv_file, pid, statistics )
+            return _read_process_statistics( tsv_file, pid, statistics )
 
 
-def __read_process_statistics( tsv_file, pid, statistics ):
+def _read_process_statistics( tsv_file, pid, statistics ):
     process_summarizer = CollectlProcessSummarizer( pid, statistics )
     current_interval = None
 
@@ -167,7 +167,7 @@ class CollectlProcessSummarizer( object ):
                     to_num = float
                 else:
                     to_num = long
-                
+
                 interval_stat = sum( to_num( r[ column_index ] ) for r in rows )
                 self.tree_statistics[ column_name ].track( interval_stat )
 
@@ -228,7 +228,7 @@ class CollectlProcessInterval( object ):
     ability to filter out just rows corresponding to the process tree
     corresponding to a given pid.
     """
-    
+
     def __init__( self ):
         self.rows = []
 
@@ -242,11 +242,11 @@ class CollectlProcessInterval( object ):
         self.rows.append( row )
 
 
-def __tuplize_statistic( statistic ):
+def _tuplize_statistic( statistic ):
     if not isinstance( statistic, tuple ):
         statistic_split = statistic.split( "_", 1 )
         statistic = ( statistic_split[ 0 ].lower(), statistic_split[ 1 ] )
     return statistic
 
 
-__all__ = [ generate_process_statistics ]
+__all__ = [ 'generate_process_statistics' ]

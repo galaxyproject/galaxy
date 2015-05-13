@@ -361,7 +361,7 @@ if wf_parms:
       <span class="conditional-start"></span>
       ${row_for_param( input.test_param, group_values[ input.test_param.name ], other_values, group_errors, prefix, step, already_used )}
       ${do_inputs( input.cases[ current_case ].inputs, group_values, group_errors, new_prefix, step, other_values, already_used )}
-    %else:
+    %elif input.type != "section":
       ${row_for_param( input, values[ input.name ], other_values, errors, prefix, step, already_used )}
     %endif
   %endfor
@@ -583,9 +583,10 @@ if wf_parms:
                     <%
                     pja_ss_all = []
                     for pja_ss in [ActionBox.get_short_str(pja) for pja in step.post_job_actions]:
-                        pja_ss = h.escape( pja_ss )
                         for rematch in re.findall('\$\{.+?\}', pja_ss):
-                            pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]], rematch[2:-1], rematch[2:-1]))
+                            pja_ss = pja_ss.replace(rematch, '<span style="background-color:%s" class="wfpspan wf_parm__%s pja_wfp">%s</span>' % (wf_parms[rematch[2:-1]],
+                                                                                                                                                  rematch[2:-1],
+                                                                                                                                                  rematch[2:-1]))
                         pja_ss_all.append(pja_ss)
                     %>
                     ${'<br/>'.join(pja_ss_all)}

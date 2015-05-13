@@ -2,7 +2,7 @@
 
 ## Set vars so that there's no need to change the code below.
 <%
-    history = published_item 
+    history = published_item
     datasets = published_item_data
 %>
 
@@ -50,7 +50,7 @@
 
     require.config({
         baseUrl : "${h.url_for( '/static/scripts' )}",
-        urlArgs: 'v=${int(app.server_starttime)}'
+        urlArgs: 'v=${app.server_starttime}'
     })([ 'mvc/history/history-panel-annotated' ], function( panelMod ){
         // history module is already in the dpn chain from the panel. We can re-scope it here.
         var historyModel = require( 'mvc/history/history-model' ),
@@ -63,7 +63,6 @@
             el              : $( "#history-" + historyJSON.id ),
             model           : history
         }).render();
-        console.debug( historyPanel.$el )
     });
 </script>
 </%def>

@@ -12,6 +12,7 @@ import struct
 import subprocess
 import tempfile
 import re
+import warnings
 import zipfile
 
 from galaxy import eggs
@@ -23,6 +24,12 @@ from galaxy.util import sqlite
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
 import dataproviders
+
+with warnings.catch_warnings():
+    warnings.simplefilter( "ignore" )
+    eggs.require( "pysam" )
+    from pysam import csamtools
+
 
 log = logging.getLogger(__name__)
 
@@ -146,6 +153,12 @@ class Bam( Binary ):
     data_sources = { "data": "bai", "index": "bigwig" }
 
     MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True )
+    MetadataElement( name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None )
+    MetadataElement( name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None )
+    MetadataElement( name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
 
     def _get_samtools_version( self ):
         # Determine the version of samtools being used.  Wouldn't it be nice if
@@ -291,6 +304,17 @@ class Bam( Binary ):
         dataset.metadata.bam_index = index_file
         # Remove temp file
         os.unlink( stderr_name )
+        # Now use pysam with BAI index to determine additional metadata
+        try:
+            bam_file = csamtools.Samfile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
+            dataset.metadata.reference_names = list( bam_file.references )
+            dataset.metadata.reference_lengths = list( bam_file.lengths )
+            dataset.metadata.bam_header = bam_file.header
+            dataset.metadata.read_groups = [ read_group['ID'] for read_group in dataset.metadata.bam_header.get( 'RG', [] ) if 'ID' in read_group ]
+            dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
+            dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
+        except:
+            pass
 
     def sniff( self, filename ):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
@@ -752,4 +776,41 @@ class Xlsx(Binary):
             return False
 
 Binary.register_sniffable_binary_format("xlsx", "xlsx", Xlsx)
+
+
+class Sra( Binary ):
+    """ Sequence Read Archive (SRA) datatype originally from mdshw5/sra-tools-galaxy"""
+    file_ext = 'sra'
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+
+    def sniff( self, filename ):
+        """ The first 8 bytes of any NCBI sra file is 'NCBI.sra', and the file is binary.
+        For details about the format, see http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure
+        """
+        try:
+            header = open(filename).read(8)
+            if binascii.b2a_hex(header) == binascii.hexlify('NCBI.sra'):
+                return True
+            else:
+                return False
+        except:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek  = 'Binary sra file'
+            dataset.blurb = data.nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return 'Binary sra file (%s)' % (data.nice_size(dataset.get_size()))
+
+Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 

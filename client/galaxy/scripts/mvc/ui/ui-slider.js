@@ -5,6 +5,7 @@ define(['utils/utils'], function(Utils) {
 var View = Backbone.View.extend({
     // options
     optionsDefault: {
+        id      : Utils.uid(),
         min     : null,
         max     : null,
         step    : null,
@@ -78,17 +79,19 @@ var View = Backbone.View.extend({
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
-            // check if its a number
-            if (isNaN(new_val)) {
-                new_val = 0;
-            }
+            if (new_val !== null && new_val !== '') {
+                // check if its a number
+                if (isNaN(new_val)) {
+                    new_val = 0;
+                }
 
-            // apply limit
-            if (this.options.max !== null) {
-                new_val = Math.min(new_val, this.options.max);
-            }
-            if (this.options.min !== null) {
-                new_val = Math.max(new_val, this.options.min);
+                // apply limit
+                if (this.options.max !== null) {
+                    new_val = Math.min(new_val, this.options.max);
+                }
+                if (this.options.min !== null) {
+                    new_val = Math.max(new_val, this.options.min);
+                }
             }
 
             // set values

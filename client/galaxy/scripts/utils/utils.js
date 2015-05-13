@@ -39,7 +39,7 @@ function validate (value) {
         return false;
     }
     for (var i in value) {
-        if (['__null__', '__undefined__', 'None', null, undefined].indexOf(value[i]) > -1) {
+        if (['__null__', '__undefined__', null, undefined].indexOf(value[i]) > -1) {
             return false;
         }
     }
@@ -217,8 +217,9 @@ function bytesToString (size, normal_font) {
 /**
  * Create a unique id
  */
-function uuid(){
-    return 'x' + Math.random().toString(36).substring(2, 9);
+function uid(){
+    top.__utils__uid__ = top.__utils__uid__ || 0;
+    return 'uid-' + top.__utils__uid__++;
 };
 
 /**
@@ -247,7 +248,7 @@ return {
     get : get,
     merge : merge,
     bytesToString: bytesToString,
-    uuid: uuid,
+    uid: uid,
     time: time,
     request: request,
     sanitize: sanitize,

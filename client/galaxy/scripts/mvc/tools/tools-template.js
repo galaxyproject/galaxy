@@ -3,14 +3,14 @@ define([], function() {
 
 // tool form templates
 return {
-    help: function(content) {
+    help: function(options) {
         return  '<div class="toolHelp" style="overflow: auto;">' +
                     '<div class="toolHelpBody">' +
-                        content +
+                        options.help +
                     '</div>' +
                 '</div>';
     },
-
+    
     success: function(response) {
         // check
         if (!response.jobs || !response.jobs.length) {
@@ -49,13 +49,6 @@ return {
                     '<textarea class="ui-textarea" disabled style="color: black; height: 300px !important;">' +
                         JSON.stringify(response, undefined, 4) +
                     '</textarea>' +
-                '</div>';
-    },
-
-    batchMode: function() {
-        return  '<div class="ui-table-form-info">' +
-                    '<i class="fa fa-sitemap" style="font-size: 1.2em; padding: 2px 5px;"/>' +
-                    'This is a batch mode input field. A separate job will be triggered for each dataset.' +
                 '</div>';
     },
 

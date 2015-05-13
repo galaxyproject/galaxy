@@ -43,8 +43,8 @@ class Configuration( object ):
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         # Whoosh search
-        self.toolshed_search_on = string_as_bool( kwargs.get( "toolshed_search_on", False ) )
-        self.toolshed_whoosh_index_dir = kwargs.get( "toolshed_whoosh_index_dir", None )
+        self.toolshed_search_on = string_as_bool( kwargs.get( "toolshed_search_on", True ) )
+        self.whoosh_index_dir = kwargs.get( "whoosh_index_dir", 'database/toolshed_whoosh_indexes' )
         # Analytics
         self.ga_code = kwargs.get( "ga_code", None )
         self.session_duration = int(kwargs.get( 'session_duration', 0 ))
@@ -155,6 +155,7 @@ class Configuration( object ):
 
     def __parse_config_file_options( self, kwargs ):
         defaults = dict(
+            auth_config_file=[ 'config/auth_conf.xml', 'config/auth_conf.xml.sample' ],
             datatypes_config_file = [ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
             shed_tool_data_table_config = [ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
         )

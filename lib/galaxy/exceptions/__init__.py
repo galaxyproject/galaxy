@@ -146,6 +146,10 @@ class Conflict( MessageException ):
     err_code = error_codes.CONFLICT
 
 
+class ConfigurationError( Exception ):
+    status_code = 500
+    err_code = error_codes.CONFIG_ERROR
+
 class InconsistentDatabase ( MessageException ):
     status_code = 500
     err_code = error_codes.INCONSISTENT_DATABASE

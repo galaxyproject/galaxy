@@ -21,6 +21,7 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
             job_config_file=os.path.join( self.temp_directory, "job_conf.xml" ),
             use_tasked_jobs=False,
             job_resource_params_file="/tmp/fake_absent_path",
+            config_dict={},
         )
         self.__write_config_from( SIMPLE_JOB_CONF )
         self.app = bunch.Bunch( config=self.config, job_metrics=MockJobMetrics() )

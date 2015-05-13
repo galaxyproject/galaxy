@@ -2,8 +2,8 @@
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
 
- define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/lunr" ],
-         function(_, util, data, lunr) {
+ define( ["libs/underscore", "viz/trackster/util", "mvc/data" ],
+         function(_, util, data) {
 
 /**
  * Mixin for tracking model visibility.
@@ -340,11 +340,6 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * indicates that query was not run; if not null, results are from search using
  * query.
  */
-
-/**
- * TODO: Integrate lunr search here with tools from API instead of making
- * repeated requests.
- */
 var ToolSearch = Backbone.Model.extend({
     defaults: {
         search_hint_string: "search tools",
@@ -358,6 +353,8 @@ var ToolSearch = Backbone.Model.extend({
         // ESC (27) will clear the input field and tool search filters
         clear_key: 27
     },
+
+    urlRoot: galaxy_config.root + 'api/tools',
 
     initialize: function() {
         this.on("change:query", this.do_search);
@@ -386,12 +383,16 @@ var ToolSearch = Backbone.Model.extend({
         $("#search-spinner").show();
         var self = this;
         this.timer = setTimeout(function () {
-            $.get(self.attributes.search_url, { query: q }, function (data) {
+            // log the search to analytics if present
+            if ( typeof ga !== 'undefined' ) {
+                ga( 'send', 'pageview', galaxy_config.root + '?q=' + q );
+            }
+            $.get( self.urlRoot, { q: q }, function (data) {
                 self.set("results", data);
                 $("#search-spinner").hide();
                 $("#search-clear-btn").show();
             }, "json" );
-        }, 200 );
+        }, 400 );
     },
 
     clear_search: function() {
@@ -626,7 +627,7 @@ var ToolSearchView = Backbone.View.extend({
 
     clear: function() {
         this.model.clear_search();
-        this.$el.find(":input").val(this.model.attributes.search_hint_string);
+        this.$el.find(":input").val('');
         this.focus_and_select();
         return false;
     },

@@ -104,8 +104,15 @@ class BaseLoaderTestCase(unittest.TestCase):
 
     @property
     def _tool_source(self):
-        path = os.path.join(self.temp_directory, self.source_file_name)
-        open(path, "w").write(self.source_contents)
+        return self._get_tool_source()
+
+    def _get_tool_source(self, source_file_name=None, source_contents=None):
+        if source_file_name is None:
+            source_file_name = self.source_file_name
+        if source_contents is None:
+            source_contents = self.source_contents
+        path = os.path.join(self.temp_directory, source_file_name)
+        open(path, "w").write(source_contents)
         tool_source = get_tool_source(path)
         return tool_source
 
@@ -211,6 +218,27 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         attributes1 = output2[2]
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
+
+    def test_exit_code(self):
+        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
+            <command detect_errors="exit_code">
+                ls
+            </command>
+        </tool>
+        """)
+        exit, regexes = tool_source.parse_stdio()
+        assert len(exit) == 2, exit
+        assert len(regexes) == 0, regexes
+
+        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
+            <command detect_errors="aggressive">
+                ls
+            </command>
+        </tool>
+        """)
+        exit, regexes = tool_source.parse_stdio()
+        assert len(exit) == 2, exit
+        assert len(regexes) == 2, regexes
 
 
 class YamlLoaderTestCase(BaseLoaderTestCase):

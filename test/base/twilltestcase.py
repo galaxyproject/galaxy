@@ -1513,7 +1513,7 @@ class TwillTestCase( unittest.TestCase ):
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "/user/login?use_panels=False" )
-            self.submit_form( 'login', 'login_button', email=email, redirect=redirect, password=password )
+            self.submit_form( 'login', 'login_button', login=email, redirect=redirect, password=password )
 
     def logout( self ):
         self.visit_url( "%s/user/logout" % self.url )
@@ -2271,6 +2271,14 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg = 'History item %s different than expected\n' % (hid)
                 errmsg += str( err )
                 raise AssertionError( errmsg )
+        if attributes is not None and attributes.get("md5", None) is not None:
+            md5 = attributes.get("md5")
+            try:
+                self._verify_md5(data, md5)
+            except AssertionError, err:
+                errmsg = 'History item %s different than expected\n' % (hid)
+                errmsg += str( err )
+                raise AssertionError( errmsg )
         if filename is not None:
             local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
             temp_name = self.makeTfname(fname=filename)
@@ -2322,6 +2330,18 @@ class TwillTestCase( unittest.TestCase ):
             finally:
                 if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
                     os.remove( temp_name )
+
+    def _verify_md5( self, data, expected_md5 ):
+        import md5
+        m = md5.new()
+        m.update( data )
+        actual_md5 = m.hexdigest()
+        if expected_md5 != actual_md5:
+            template = "Output md5sum [%s] does not match expected [%s]."
+            message = template % (actual_md5, expected_md5)
+            assert False, message
+
+
 
     def view_external_service( self, external_service_id, strings_displayed=[] ):
         self.visit_url( '%s/external_service/view_external_service?id=%s' % ( self.url, external_service_id ) )
@@ -2450,14 +2470,24 @@ class TwillTestCase( unittest.TestCase ):
             errmsg += self.get_job_stderr( dataset.get( 'id' ), format=True )
             raise AssertionError( errmsg )
 
+    def _check_command(self, command, description):
+        # TODO: also collect ``which samtools`` and ``samtools --version``
+        p = subprocess.Popen( args=command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True )
+        (stdout, stderr) = p.communicate()
+        if p.returncode:
+            template = description
+            template += " failed: (cmd=[%s], stdout=[%s], stderr=[%s])"
+            message = template % (command, stdout, stderr)
+            raise AssertionError(message)
+
     def _bam_to_sam( self, local_name, temp_name ):
         temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
         fd, temp_temp = tempfile.mkstemp( suffix='.sam', prefix='history_bam_converted_to_sam_' )
         os.close( fd )
-        p = subprocess.Popen( args='samtools view -h -o "%s" "%s"' % ( temp_local.name, local_name  ), shell=True )
-        assert not p.wait(), 'Converting local (test-data) bam to sam failed'
-        p = subprocess.Popen( args='samtools view -h -o "%s" "%s"' % ( temp_temp, temp_name  ), shell=True )
-        assert not p.wait(), 'Converting history bam to sam failed'
+        command = 'samtools view -h -o "%s" "%s"' % ( temp_local.name, local_name  )
+        self._check_command( command, 'Converting local (test-data) bam to sam' )
+        command = 'samtools view -h -o "%s" "%s"' % ( temp_temp, temp_name  )
+        self._check_command( command, 'Converting history bam to sam ' )
         os.remove( temp_name )
         return temp_local, temp_temp
 

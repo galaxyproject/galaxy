@@ -2,24 +2,24 @@
 Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
-# currently because of dataproviders.dataset importing galaxy.model this doesn't work
-#TODO: fix imports there after dist and retry
-
-#TODO: fix off by ones in FilteredDataProvider counters
 
 import os.path
 import imp
 import unittest
 import StringIO
 
+import logging
+log = logging.getLogger( __name__ )
+
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
 import tempfilecache
 
-utility = imp.load_source( 'utility', os.path.join( os.path.dirname( __file__), '../../util/utility.py' ) )
-log = utility.set_up_filelogger( __name__ + '.log' )
-utility.add_galaxy_lib_to_path( 'test/unit/datatypes/dataproviders' )
-
 from galaxy.datatypes.dataproviders import base, exceptions
-from galaxy import eggs
+
+# TODO: fix imports there after dist and retry
+# TODO: fix off by ones in FilteredDataProvider counters
+# currently because of dataproviders.dataset importing galaxy.model this doesn't work
 
 
 class BaseTestCase( unittest.TestCase ):
@@ -52,7 +52,7 @@ class BaseTestCase( unittest.TestCase ):
 
     def format_tmpfile_contents( self, contents=None ):
         contents = contents or self.default_file_contents
-        contents = utility.clean_multiline_string( contents )
+        contents = test_utils.clean_multiline_string( contents )
         log.debug( 'file contents:\n%s', contents )
         return contents
 
@@ -70,7 +70,7 @@ class Test_BaseDataProvider( BaseTestCase ):
         if not filename:
             contents = self.format_tmpfile_contents( contents )
             filename = self.tmpfiles.create_tmpfile( contents )
-        #TODO: if filename, contents == None
+        # TODO: if filename, contents == None
         if not source:
             source = open( filename )
         provider = self.provider_class( source, *provider_args, **provider_kwargs )
@@ -113,10 +113,12 @@ class Test_BaseDataProvider( BaseTestCase ):
         """
         source = ( str( x ) for x in xrange( 1, 10 ) )
         provider = self.provider_class( source )
+
         # should throw error
         def call_method( provider, method_name, *args ):
             method = getattr( provider, method_name )
             return method( *args )
+
         self.assertRaises( NotImplementedError, call_method, provider, 'truncate', 20 )
         self.assertRaises( NotImplementedError, call_method, provider, 'write', 'bler' )
         self.assertRaises( NotImplementedError, call_method, provider, 'writelines', [ 'one', 'two' ] )
@@ -133,7 +135,7 @@ class Test_BaseDataProvider( BaseTestCase ):
     def test_stringio( self ):
         """should work with StringIO
         """
-        contents = utility.clean_multiline_string( """
+        contents = test_utils.clean_multiline_string( """
             One
             Two
             Three
@@ -234,31 +236,31 @@ class Test_LimitedOffsetDataProvider( Test_FilteredDataProvider ):
         self.assertEqual( data, [] )
         self.assertCounters( provider, 0, 0, 0 )
 
-    def test_limit_zero( self ):
+    def test_limit_none( self ):
         """when limit is None, should return all
         """
         ( contents, provider, data ) = self.contents_provider_and_data( limit=None )
         self.assertEqual( data, self.parses_default_content_as() )
         self.assertCounters( provider, 3, 3, 3 )
 
-    #TODO: somehow re-use tmpfile here
+    # TODO: somehow re-use tmpfile here
     def test_limit_with_offset( self ):
         def limit_offset_combo( limit, offset, data_should_be, read, valid, returned ):
             ( contents, provider, data ) = self.contents_provider_and_data( limit=limit, offset=offset )
             self.assertEqual( data, data_should_be )
-            #self.assertCounters( provider, read, valid, returned )
+            # self.assertCounters( provider, read, valid, returned )
         result_data = self.parses_default_content_as()
         test_data = [
             ( 0, 0, [], 0, 0, 0 ),
-            ( 1, 0, self.parses_default_content_as()[:1], 1, 1, 1 ),
-            ( 2, 0, self.parses_default_content_as()[:2], 2, 2, 2 ),
-            ( 3, 0, self.parses_default_content_as()[:3], 3, 3, 3 ),
-            ( 1, 1, self.parses_default_content_as()[1:2], 1, 1, 1 ),
-            ( 2, 1, self.parses_default_content_as()[1:3], 2, 2, 2 ),
-            ( 3, 1, self.parses_default_content_as()[1:3], 2, 2, 2 ),
-            ( 1, 2, self.parses_default_content_as()[2:3], 1, 1, 1 ),
-            ( 2, 2, self.parses_default_content_as()[2:3], 1, 1, 1 ),
-            ( 3, 2, self.parses_default_content_as()[2:3], 1, 1, 1 ),
+            ( 1, 0, result_data[:1], 1, 1, 1 ),
+            ( 2, 0, result_data[:2], 2, 2, 2 ),
+            ( 3, 0, result_data[:3], 3, 3, 3 ),
+            ( 1, 1, result_data[1:2], 1, 1, 1 ),
+            ( 2, 1, result_data[1:3], 2, 2, 2 ),
+            ( 3, 1, result_data[1:3], 2, 2, 2 ),
+            ( 1, 2, result_data[2:3], 1, 1, 1 ),
+            ( 2, 2, result_data[2:3], 1, 1, 1 ),
+            ( 3, 2, result_data[2:3], 1, 1, 1 ),
         ]
         for test in test_data:
             log.debug( 'limit_offset_combo: %s', ', '.join([ str( e ) for e in test ]) )
@@ -273,7 +275,7 @@ class Test_LimitedOffsetDataProvider( Test_FilteredDataProvider ):
             ( contents, provider, data ) = self.contents_provider_and_data(
                 limit=limit, offset=offset, filter_fn=only_ts )
             self.assertEqual( data, data_should_be )
-            #self.assertCounters( provider, read, valid, returned )
+            # self.assertCounters( provider, read, valid, returned )
         result_data = [ c for c in self.parses_default_content_as() if c.lower().startswith( 't' ) ]
         test_data = [
             ( 0, 0, [], 0, 0, 0 ),
@@ -293,9 +295,9 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
     provider_class = base.MultiSourceDataProvider
 
     def contents_and_tmpfile( self, contents=None ):
-        #TODO: hmmmm...
+        # TODO: hmmmm...
         contents = contents or self.default_file_contents
-        contents = utility.clean_multiline_string( contents )
+        contents = test_utils.clean_multiline_string( contents )
         return ( contents, self.tmpfiles.create_tmpfile( contents ) )
 
     def test_multiple_sources( self ):
@@ -321,7 +323,7 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
                 Twelve! (<-- http://youtu.be/JZshZp-cxKg)
             """
         ]
-        contents = [ utility.clean_multiline_string( c ) for c in contents ]
+        contents = [ test_utils.clean_multiline_string( c ) for c in contents ]
         source_list = [ open( self.tmpfiles.create_tmpfile( c ) ) for c in contents ]
 
         provider = self.provider_class( source_list )
@@ -353,13 +355,15 @@ class Test_MultiSourceDataProvider( BaseTestCase ):
                 Twelve! (<-- http://youtu.be/JZshZp-cxKg)
             """
         ]
-        contents = [ utility.clean_multiline_string( c ) for c in contents ]
+        contents = [ test_utils.clean_multiline_string( c ) for c in contents ]
         source_list = [ open( self.tmpfiles.create_tmpfile( c ) ) for c in contents ]
 
         def no_Fs( string ):
             return None if string.startswith( 'F' ) else string
+
         def no_youtube( string ):
             return None if ( 'youtu.be' in string ) else string
+
         source_list = [
             base.LimitedOffsetDataProvider( source_list[0], filter_fn=no_Fs, limit=2, offset=1 ),
             base.LimitedOffsetDataProvider( source_list[1], limit=1, offset=3 ),

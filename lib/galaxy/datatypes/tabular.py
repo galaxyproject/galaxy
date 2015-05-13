@@ -279,6 +279,7 @@ class Tabular( data.Text ):
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
         elif to_ext or not preview:
+            to_ext = to_ext or dataset.extension
             return self._serve_raw(trans, dataset, to_ext)
         elif dataset.metadata.columns > 50:
             #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
@@ -479,7 +480,7 @@ class Sam( Tabular ):
         if result != 0:
             raise Exception('Result %s from %s' % (result, cmd))
         if len(split_files) > 1:
-            cmd = 'egrep -v "^@" %s >> %s' % ( ' '.join(split_files[1:]), output_file )
+            cmd = 'egrep -v -h "^@" %s >> %s' % ( ' '.join(split_files[1:]), output_file )
         result = os.system(cmd)
         if result != 0:
             raise Exception('Result %s from %s' % (result, cmd))

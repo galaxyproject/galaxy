@@ -38,7 +38,12 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.config.check()
         config.configure_logging( self.config )
         self.configure_fluent_log()
-        self._amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
+
+        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
+        # control_worker *can* be initialized with a queue, but here we don't
+        # want to and we'll allow postfork to bind and start it.
+        self.control_worker = GalaxyQueueWorker(self)
+
         self._configure_tool_shed_registry()
         self._configure_object_store( fsmon=True )
         # Setup the database engine and ORM
@@ -120,6 +125,8 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         else:
             self.openid_providers = OpenIDProviders()
         # Start the heartbeat process if configured and available
+        from galaxy import auth
+        self.auth_manager = auth.AuthManager( self )
         if self.config.use_heartbeat:
             from galaxy.util import heartbeat
             if heartbeat.Heartbeat:
@@ -150,13 +157,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
 
-    def setup_control_queue(self):
-        self.control_worker = GalaxyQueueWorker(self, galaxy.queues.control_queue_from_config(self.config),
-                                                galaxy.queue_worker.control_message_to_task,
-                                                self._amqp_internal_connection_obj)
-        self.control_worker.daemon = True
-        self.control_worker.start()
-
     def shutdown( self ):
         self.workflow_scheduling_manager.shutdown()
         self.job_manager.shutdown()
@@ -164,8 +164,11 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         if self.heartbeat:
             self.heartbeat.shutdown()
         self.update_repository_manager.shutdown()
-        if self.control_worker:
+        try:
             self.control_worker.shutdown()
+        except AttributeError:
+            # There is no control_worker
+            pass
         try:
             # If the datatypes registry was persisted, attempt to
             # remove the temporary file in which it was written.

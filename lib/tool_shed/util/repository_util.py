@@ -170,6 +170,80 @@ def create_repository( app, name, type, description, long_description, user_id, 
     message = "Repository <b>%s</b> has been created." % escape( str( repository.name ) )
     return repository, message
 
+def update_repository( app, trans, id, **kwds ):
+    """Update an existing ToolShed repository"""
+    message = None
+    flush_needed = False
+    sa_session = app.model.context.current
+    repository = sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
+    if repository is None:
+        return None, "Unknown repository ID"
+
+    if not ( trans.user_is_admin() or
+            trans.app.security_agent.user_can_administer_repository( trans.user, repository ) ):
+        message = "You are not the owner of this repository, so you cannot administer it."
+        return None, message
+
+    # Whitelist properties that can be changed via this method
+    for key in ( 'type', 'description', 'long_description', 'remote_repository_url', 'homepage_url' ):
+        # If that key is available, not None and different than what's in the model
+        if key in kwds and kwds[ key ] is not None and kwds[ key ] != getattr( repository, key ):
+            setattr( repository, key, kwds[ key ] )
+            flush_needed = True
+
+    if 'category_ids' in kwds and isinstance( kwds[ 'category_ids' ], list ):
+        # Get existing category associations
+        category_associations  = sa_session.query( app.model.RepositoryCategoryAssociation ) \
+                                .filter( app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id( id ) )
+        # Remove all of them
+        for rca in category_associations:
+            sa_session.delete( rca )
+
+        # Then (re)create category associations
+        for category_id in kwds[ 'category_ids' ]:
+            category = sa_session.query( app.model.Category ) \
+                                 .get( app.security.decode_id( category_id ) )
+            if category:
+                rca = app.model.RepositoryCategoryAssociation( repository, category )
+                sa_session.add( rca )
+            else:
+                pass
+        flush_needed = True
+
+    # However some properties are special, like 'name'
+    if 'name' in kwds and kwds[ 'name' ] is not None and repository.name != kwds[ 'name' ]:
+        if repository.times_downloaded != 0:
+            message = "Repository names cannot be changed if the repository has been cloned."
+        else:
+            message = validate_repository_name( trans.app, kwds[ 'name' ], trans.user )
+        if message:
+            return None, message
+
+        repo_dir = repository.repo_path( app )
+        # Change the entry in the hgweb.config file for the repository.
+        old_lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
+        new_lhs = "repos/%s/%s" % ( repository.user.username, kwds[ 'name' ] )
+        trans.app.hgweb_config_manager.change_entry( old_lhs, new_lhs, repo_dir )
+
+        # Change the entry in the repository's hgrc file.
+        hgrc_file = os.path.join( repo_dir, '.hg', 'hgrc' )
+        change_repository_name_in_hgrc_file( hgrc_file, kwds[ 'name' ] )
+
+        # Rename the repository's admin role to match the new repository name.
+        repository_admin_role = repository.admin_role
+        repository_admin_role.name = get_repository_admin_role_name( str( kwds[ 'name' ] ), str( repository.user.username ) )
+        trans.sa_session.add( repository_admin_role )
+        repository.name = kwds[ 'name' ]
+        flush_needed = True
+
+    if flush_needed:
+        trans.sa_session.add( repository )
+        trans.sa_session.flush()
+        message = "The repository information has been updated."
+    else:
+        message = None
+    return repository, message
+
 def create_repository_admin_role( app, repository ):
     """
     Create a new role with name-spaced name based on the repository name and its owner's public user
@@ -313,8 +387,11 @@ def handle_role_associations( app, role, repository, **kwd ):
     return associations_dict
 
 def validate_repository_name( app, name, user ):
-    # Repository names must be unique for each user, must be at least four characters
-    # in length and must contain only lower-case letters, numbers, and the '_' character.
+    """
+    Validate whether the given name qualifies as a new TS repo name.
+    Repository names must be unique for each user, must be at least two characters
+    in length and must contain only lower-case letters, numbers, and the '_' character.
+    """
     if name in [ 'None', None, '' ]:
         return 'Enter the required repository name.'
     if name in [ 'repos' ]:
@@ -322,13 +399,13 @@ def validate_repository_name( app, name, user ):
     check_existing = suc.get_repository_by_name_and_owner( app, name, user.username )
     if check_existing is not None:
         if check_existing.deleted:
-            return 'You have a deleted repository named <b>%s</b>, so choose a different name.' % name
+            return 'You own a deleted repository named <b>%s</b>, please choose a different name.' % escape( name )
         else:
-            return "You already have a repository named <b>%s</b>, so choose a different name." % name
+            return "You already own a repository named <b>%s</b>, please choose a different name." % escape( name )
     if len( name ) < 2:
         return "Repository names must be at least 2 characters in length."
     if len( name ) > 80:
         return "Repository names cannot be more than 80 characters in length."
     if not( VALID_REPOSITORYNAME_RE.match( name ) ):
-        return "Repository names must contain only lower-case letters, numbers and underscore <b>_</b>."
+        return "Repository names must contain only lower-case letters, numbers and underscore."
     return ''

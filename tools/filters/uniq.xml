@@ -1,6 +1,6 @@
-<tool id="Count1" name="Count">
+<tool id="Count1" name="Count" version="1.0.2">
   <description>occurrences of each record</description>
-  <command interpreter="python">uniq.py -i $input -o $out_file1 -c "$column" -d $delim</command>
+  <command interpreter="python">uniq.py -i $input -o $out_file1 -c "$column" -d $delim -s $sorting</command>
   <inputs>
     <param name="input" type="data" format="tabular" label="from dataset" help="Dataset missing? See TIP below"/>
     <param name="column" type="data_column" data_ref="input" multiple="True" numerical="False" label="Count occurrences of values in column(s)" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
@@ -13,6 +13,11 @@
       <option value="U">Underscore</option>
       <option value="P">Pipe</option>
     </param>
+    <param name="sorting" type="select" label="How should the results be sorted?">
+      <option value="value">By the values being counted</option>
+      <option value="largest">With the most common values first</option>
+      <option value="smallest">With the rarest values first</option>
+    </param>
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" />
@@ -23,6 +28,32 @@
       <output name="out_file1" file="uniq_out.dat"/>
       <param name="column" value="1"/>
       <param name="delim" value="T"/>
+    </test>
+    <test>
+      <param name="input" value="species_assignment.tabular" ftype="tabular"/>
+      <output name="out_file1" file="species_assignment_c2.tabular"/>
+      <param name="column" value="2"/>
+      <param name="delim" value="T"/>
+    </test>
+    <test>
+      <param name="input" value="species_assignment.tabular" ftype="tabular"/>
+      <output name="out_file1" file="species_assignment_c2_c3.tabular"/>
+      <param name="column" value="2,3"/>
+      <param name="delim" value="T"/>
+    </test>
+    <test>
+      <param name="input" value="species_assignment.tabular" ftype="tabular"/>
+      <output name="out_file1" file="species_assignment_c2_c3_largest.tabular"/>
+      <param name="column" value="2,3"/>
+      <param name="delim" value="T"/>
+      <param name="sorting" value="largest"/>
+    </test>
+    <test>
+      <param name="input" value="species_assignment.tabular" ftype="tabular"/>
+      <output name="out_file1" file="species_assignment_c2_c3_smallest.tabular"/>
+      <param name="column" value="2,3"/>
+      <param name="delim" value="T"/>
+      <param name="sorting" value="smallest"/>
     </test>
   </tests>
   <help>

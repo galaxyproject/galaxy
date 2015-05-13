@@ -3,8 +3,6 @@ Provides factory methods to assemble the Galaxy web application
 """
 
 import atexit
-import os
-import os.path
 import sys
 
 from paste import httpexceptions
@@ -101,16 +99,15 @@ def app_factory( global_conf, **kwargs ):
             log.error("Static middleware is enabled in your configuration but this is a uwsgi process.  Refusing to wrap in static middleware.")
         else:
             webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
-    if asbool(kwargs.get('pack_scripts', False)):
-        log.warn( "The 'pack_scripts' option is deprecated" )
-        pack_scripts()
     # Close any pooled database connections before forking
     try:
         galaxy.model.mapping.metadata.bind.dispose()
     except:
         log.exception("Unable to dispose of pooled galaxy model database connections.")
     try:
-        galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
+        # This model may not actually be bound.
+        if galaxy.model.tool_shed_install.mapping.metadata.bind:
+            galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
     except:
         log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
@@ -127,7 +124,7 @@ def postfork_setup():
     if app.config.is_uwsgi:
         import uwsgi
         app.config.server_name += ".%s" % uwsgi.worker_id()
-    app.setup_control_queue()
+    app.control_worker.bind_and_start()
 
 
 def populate_api_routes( webapp, app ):
@@ -208,6 +205,11 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'remote_file', 'remote_files', path_prefix='/api' )
     webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
     webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+
+    # =======================
+    # ====== TOOLS API ======
+    # =======================
+
     webapp.mapper.connect( '/api/tools/{id:.+?}/build', action='build', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/reload', action='reload', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools" )
@@ -215,6 +217,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( '/api/tools/{id:.+?}/download', action='download', controller="tools" )
     webapp.mapper.connect( '/api/tools/{id:.+?}', action='show', controller="tools" )
     webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
+
     webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
     webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
     webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
@@ -529,20 +532,6 @@ def populate_api_routes( webapp, app ):
     #    controller="metrics", action="show", conditions=dict( method=["GET"] ) )
     webapp.mapper.connect( "create", "/api/metrics", controller="metrics",
                            action="create", conditions=dict( method=["POST"] ) )
-
-
-def pack_scripts():
-    from glob import glob
-    from subprocess import call
-    cmd = "java -jar scripts/yuicompressor.jar --type js static/scripts/%(fname)s -o static/scripts/packed/%(fname)s"
-    raw_js = [os.path.basename(g) for g in glob( "static/scripts/*.js" )]
-    for fname in raw_js:
-        if os.path.exists('static/scripts/packed/%s' % fname):
-            if os.path.getmtime('static/scripts/packed/%s' % fname) > os.path.getmtime('static/scripts/%s' % fname):
-                continue  # Skip, packed is newer than source.
-        d = dict( fname=fname )
-        log.info("%(fname)s --> packed/%(fname)s" % d)
-        call( cmd % d, shell=True )
 
 
 def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):

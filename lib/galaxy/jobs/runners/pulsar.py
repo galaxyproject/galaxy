@@ -32,6 +32,8 @@ __all__ = [ 'PulsarLegacyJobRunner', 'PulsarRESTJobRunner', 'PulsarMQJobRunner' 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
 NO_REMOTE_DATATYPES_CONFIG = "Pulsar client is configured to use remote datatypes configuration when setting metadata externally, but Pulsar is not configured with this information. Defaulting to datatypes_conf.xml."
 GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
+FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring this job."
+LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
 
 # Is there a good way to infer some default for this? Can only use
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
@@ -170,8 +172,13 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         if pulsar_status == "complete":
             self.mark_as_finished(job_state)
             return None
-        if pulsar_status == "failed":
-            self.fail_job(job_state)
+        if pulsar_status in ["failed", "lost"]:
+            if pulsar_status == "failed":
+                message = FAILED_REMOTE_ERROR
+            else:
+                message = LOST_REMOTE_ERROR
+            if not job_state.job_wrapper.get_job().finished:
+                self.fail_job(job_state, message)
             return None
         if pulsar_status == "running" and not job_state.running:
             job_state.running = True
@@ -342,7 +349,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
         encoded_job_id = self.app.security.encode_id(job_id)
         job_key = self.app.security.encode_id( job_id, kind="jobs_files" )
-        endpoint_base = "%s/api/jobs/%s?job_key=%s"
+        endpoint_base = "%s/api/jobs/%s/files?job_key=%s"
         if self.app.config.nginx_upload_job_files_path:
             endpoint_base = "%s" + \
                             self.app.config.nginx_upload_job_files_path + \
@@ -403,12 +410,12 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
-    def fail_job( self, job_state ):
+    def fail_job( self, job_state, message=GENERIC_REMOTE_ERROR ):
         """
         Seperated out so we can use the worker threads for it.
         """
         self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
-        job_state.job_wrapper.fail( getattr( job_state, "fail_message", GENERIC_REMOTE_ERROR ) )
+        job_state.job_wrapper.fail( getattr( job_state, "fail_message", message ) )
 
     def check_pid( self, pid ):
         try:

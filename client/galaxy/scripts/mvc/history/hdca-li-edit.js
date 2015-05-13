@@ -1,9 +1,9 @@
 define([
-    "mvc/dataset/states",
     "mvc/history/hdca-li",
+    "mvc/collection/collection-panel-edit",
     "ui/fa-icon-button",
     "utils/localization"
-], function( STATES, HDCA_LI, faIconButton, _l ){
+], function( HDCA_LI, DC_PANEL_EDIT, faIconButton, _l ){
 //==============================================================================
 var _super = HDCA_LI.HDCAListItemView;
 /** @class Editing view for HistoryDatasetCollectionAssociation.
@@ -13,6 +13,19 @@ var HDCAListItemEdit = _super.extend(
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
+
+    /** Override to return editable versions of the collection panels */
+    _getFoldoutPanelClass : function(){
+        switch( this.model.get( 'collection_type' ) ){
+            case 'list':
+                return DC_PANEL_EDIT.ListCollectionPanelEdit;
+            case 'paired':
+                return DC_PANEL_EDIT.PairCollectionPanelEdit;
+            case 'list:paired':
+                return DC_PANEL_EDIT.ListOfPairsCollectionPanelEdit;
+        }
+        throw new TypeError( 'Uknown collection_type: ' + this.model.get( 'collection_type' ) );
+    },
 
     // ......................................................................... delete
     /** In this override, add the delete button. */

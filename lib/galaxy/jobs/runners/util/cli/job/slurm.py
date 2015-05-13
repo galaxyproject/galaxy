@@ -1,6 +1,10 @@
 # A simple CLI runner for slurm that can be used when running Galaxy from a
 # non-submit host and using a Slurm cluster.
 
+from ..job import BaseJobExec
+
+from logging import getLogger
+
 try:
     from galaxy.model import Job
     job_states = Job.states
@@ -9,11 +13,6 @@ except ImportError:
     from galaxy.util import enum
     job_states = enum(RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
 
-from ..job import BaseJobExec
-
-__all__ = ('Slurm',)
-
-from logging import getLogger
 log = getLogger(__name__)
 
 argmap = {
@@ -94,3 +93,6 @@ class Slurm(BaseJobExec):
             }.get(state)
         except KeyError:
             raise KeyError("Failed to map slurm status code [%s] to job state." % state)
+
+
+__all__ = ('Slurm',)

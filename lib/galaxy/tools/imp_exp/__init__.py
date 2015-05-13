@@ -11,6 +11,8 @@ from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.json import dumps, loads
 from galaxy.web.framework.helpers import to_unicode
 
+from sqlalchemy.sql import expression
+
 log = logging.getLogger(__name__)
 
 EXPORT_HISTORY_TEXT = """
@@ -289,8 +291,8 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                     # Connect jobs to output datasets.
                     for output_hid in job_attrs[ 'output_datasets' ]:
                         # print "%s job has output dataset %i" % (imported_job.id, output_hid)
-                        output_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
-                                        .filter_by( history=new_history, hid=output_hid ).first()
+                        output_hda = self.sa_session.query( model.HistoryDatasetAssociation
+                                                            ).filter_by(history=new_history, hid=output_hid ).first()
                         if output_hda:
                             imported_job.add_output_dataset( output_hda.name, output_hda )
 
@@ -334,8 +336,8 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                   .join( "dataset" )
                   .options( eagerload_all( "dataset.actions" ) )
                   .order_by( trans.model.HistoryDatasetAssociation.hid )
-                  .filter( trans.model.HistoryDatasetAssociation.deleted == False ) #noqa
-                  .filter( trans.model.Dataset.purged == False ) )
+                  .filter( trans.model.HistoryDatasetAssociation.deleted == expression.false() )
+                  .filter( trans.model.Dataset.purged == expression.false() ) )
         return query.all()
 
     # TODO: should use db_session rather than trans in this method.
@@ -389,7 +391,7 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                         "deleted": obj.deleted,
                         "visible": obj.visible,
                         "file_name": obj.file_name,
-                        "uuid":  ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
+                        "uuid": ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
                         "annotation": to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags": get_item_tag_dict( obj ),
                     }

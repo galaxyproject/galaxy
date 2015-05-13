@@ -82,4 +82,4 @@ class CorePlugin( InstrumentPlugin ):
             pass
         return value
 
-__all__ = [ CorePlugin ]
+__all__ = [ 'CorePlugin' ]

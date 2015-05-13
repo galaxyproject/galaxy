@@ -19,6 +19,7 @@ import smtplib
 import stat
 import string
 import sys
+import time
 import tempfile
 import threading
 import urlparse
@@ -630,8 +631,8 @@ class Params( object ):
     0
     >>> par.symbols            # replaces unknown symbols with X
     ['alpha', '__lt____gt__', 'XrmX__pd__!']
-    >>> par.flatten()          # flattening to a list
-    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmX__pd__!')]
+    >>> sorted(par.flatten())  # flattening to a list
+    [('status', 'on'), ('symbols', 'XrmX__pd__!'), ('symbols', '__lt____gt__'), ('symbols', 'alpha')]
     """
 
     # is NEVER_SANITIZE required now that sanitizing for tool parameters can be controlled on a per parameter basis and occurs via InputValueWrappers?
@@ -693,11 +694,18 @@ def rst_to_html( s ):
         def write( self, str ):
             if len( str ) > 0 and not str.isspace():
                 log.warn( str )
+
+    settings_overrides = {
+        "embed_stylesheet": False,
+        "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
+        "warning_stream": FakeStream(),
+        "doctitle_xform": False,  # without option, very different rendering depending on
+                                  # number of sections in help content.
+    }
+
     return unicodify( docutils.core.publish_string( s,
                       writer=docutils.writers.html4css1.Writer(),
-                      settings_overrides={ "embed_stylesheet": False,
-                                           "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
-                                           "warning_stream": FakeStream() } ) )
+                      settings_overrides=settings_overrides ) )
 
 
 def xml_text(root, name=None):
@@ -1242,6 +1250,17 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
+
+
+class ExecutionTimer(object):
+
+    def __init__(self):
+        self.begin = time.time()
+
+    def __str__(self):
+        elapsed = (time.time() - self.begin) * 1000.0
+        return "(%0.3f ms)" % elapsed
+
 
 if __name__ == '__main__':
     import doctest

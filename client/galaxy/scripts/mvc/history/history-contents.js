@@ -31,7 +31,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
 
         if( attrs.history_content_type === "dataset" ) {
             return new HDA_MODEL.HistoryDatasetAssociation( attrs, options );
-        
+
         } else if( attrs.history_content_type === "dataset_collection" ) {
             switch( attrs.collection_type ){
                 case 'list':
@@ -41,10 +41,13 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
                 case 'list:paired':
                     return new HDCA_MODEL.HistoryListPairedDatasetCollection( attrs, options );
             }
-            throw new TypeError( 'Unknown collection_type: ' + attrs.collection_type );
+            // This is a hack inside a hack:
+            // Raise a plain object with validationError to fake a model.validationError
+            // (since we don't have a model to use validate with)
+            // (the outer hack being the mixed content/model function in this collection)
+            return { validationError : 'Unknown collection_type: ' + attrs.history_content_type };
         }
-        // TODO: Handle unknown history_content_type...
-        throw new TypeError( 'Unknown history_content_type: ' + attrs.history_content_type );
+        return { validationError : 'Unknown history_content_type: ' + attrs.history_content_type };
     },
 
     /** Set up.
@@ -55,6 +58,11 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
 //TODO: could probably use the contents.history_id instead
         this.historyId = options.historyId;
         //this._setUpListeners();
+
+        // backbonejs uses collection.model.prototype.idAttribute to determine if a model is *already* in a collection
+        //  and either merged or replaced. In this case, our 'model' is a function so we need to add idAttribute
+        //  manually here - if we don't, contents will not merge but be replaced/swapped.
+        this.model.prototype.idAttribute = 'type_id';
 
         this.on( 'all', function(){
             this.debug( this + '.event:', arguments );
@@ -215,12 +223,12 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
                 source  : contentType,
                 type    : type
             })
-            .done( function( json ){
-                collection.add([ json ]);
+            .done( function( response ){
+                collection.add([ response ]);
             })
             .fail( function( error, status, message ){
                 collection.trigger( 'error', collection, xhr, {},
-                                    'Error copying contents', { type: type, id: id, source: contentType });
+                    'Error copying contents', { type: type, id: id, source: contentType });
             });
         return xhr;
     },
@@ -234,98 +242,41 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     },
 
     // ........................................................................ misc
-    /** override to get a correct/smarter merge when incoming data is partial */
+    /** override to ensure type id is set */
     set : function( models, options ){
-        this.debug( 'set:', models );
-        // arrrrrrrrrrrrrrrrrg...
-        //  (e.g. stupid backbone)
-        //  w/o this partial models from the server will fill in missing data with model defaults
-        //  and overwrite existing data on the client
-        // see Backbone.Collection.set and _prepareModel
-        var collection = this;
-        models = _.map( models, function( model ){
-            var attrs = model.attributes || model,
-                typeId = HISTORY_CONTENT.typeIdStr( attrs.history_content_type, attrs.id ),
-                existing = collection.get( typeId );
-            if( !existing ){ return model; }
-
-            // merge the models _BEFORE_ calling the superclass version
-            var merged = _.clone( existing.attributes );
-            _.extend( merged, model );
-            return merged;
+        _.each( models, function( model ){
+            if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
+                model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );
+            }
         });
-        // now call superclass when the data is filled
         Backbone.Collection.prototype.set.call( this, models, options );
     },
 
-    /** Convert this ad-hoc collection of hdas to a formal collection tracked
-        by the server.
-    **/
-    promoteToHistoryDatasetCollection : function _promote( history, collection_type, options ){
-//TODO: seems like this would be better in mvc/collections
-        options = options || {};
-        options.url = this.url();
-        options.type = "POST";
-        var full_collection_type = collection_type;
-        var element_identifiers = [],
-            name = null;
-
-        // This mechanism is rough - no error handling, allows invalid selections, no way
-        // for user to pick/override element identifiers. This is only really meant
-        if( collection_type === "list" ) {
-            this.chain().each( function( hda ) {
-                // TODO: Handle duplicate names.
-                var name = hda.attributes.name;
-                var id = hda.get('id');
-                var content_type = hda.attributes.history_content_type;
-                if( content_type === "dataset" ) {
-                    if( full_collection_type !== "list" ) {
-                        this.log( "Invalid collection type" );
-                    }
-                    element_identifiers.push( { name: name, src: "hda", id: id } );
-                } else {
-                    if( full_collection_type === "list" ) {
-                        full_collection_type = "list:" + hda.attributes.collection_type;
-                    } else {
-                        if( full_collection_type !== "list:" + hda.attributes.collection_type ) {
-                            this.log( "Invalid collection type" );
-                        }
-                    }
-                    element_identifiers.push( { name: name, src: "hdca", id: id } );
-                }
+    /** */
+    createHDCA : function( elementIdentifiers, collectionType, name, options ){
+        //precondition: elementIdentifiers is an array of plain js objects
+        //  in the proper form to create the collectionType
+        var contents = this,
+            typeToModel = {
+                list    : HDCA_MODEL.HistoryListDatasetCollection,
+                paired  : HDCA_MODEL.HistoryPairDatasetCollection
+            },
+            hdca = new (typeToModel[ collectionType ])({
+                history_id          : this.historyId,
+                name                : name,
+                // should probably be able to just send in a bunch of json here and restruct per class
+                element_identifiers : elementIdentifiers
             });
-            name = "New Dataset List";
-        } else if( collection_type === "paired" ) {
-            var ids = this.ids();
-            if( ids.length !== 2 ){
-                // TODO: Do something...
-            }
-            element_identifiers.push( { name: "forward", src: "hda", id: ids[ 0 ] } );
-            element_identifiers.push( { name: "reverse", src: "hda", id: ids[ 1 ] } );
-            name = "New Dataset Pair";
-        }
-        options.data = {
-            type: "dataset_collection",
-            name: name,
-            collection_type: full_collection_type,
-            element_identifiers: JSON.stringify( element_identifiers )
-        };
-
-        var xhr = jQuery.ajax( options );
-        xhr.done( function( message, status, responseObj ){
-            history.refresh( );
-        });
-        xhr.fail( function( xhr, status, message ){
-            if( xhr.responseJSON && xhr.responseJSON.error ){
-                error = xhr.responseJSON.error;
-            } else {
-                error = xhr.responseJSON;
-            }
-            xhr.responseText = error;
-            // Do something?
-        });
-        return xhr;
+        // do I even need to use new above, can I just pass the attrs here
+        return hdca.save()
+            .done( function( response ){
+                contents.add( hdca );
+            })
+            .fail( function( xhr, status, message ){
+                contents.trigger( 'error', xhr, status, message );
+            });
     },
+
 
     /** In this override, copy the historyId to the clone */
     clone : function(){

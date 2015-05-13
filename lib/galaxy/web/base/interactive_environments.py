@@ -11,6 +11,9 @@ eggs.require("PyYAML")
 import yaml
 from galaxy.managers import api_keys
 
+import logging
+log = logging.getLogger(__name__)
+
 
 class InteractiveEnviornmentRequest(object):
 
@@ -18,6 +21,7 @@ class InteractiveEnviornmentRequest(object):
         plugin_config = plugin.config
 
         self.trans = trans
+        self.log = log
 
         self.attr = Bunch()
         self.attr.viz_id = plugin_config["name"].lower()
@@ -39,6 +43,11 @@ class InteractiveEnviornmentRequest(object):
         self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
     def load_deploy_config(self, default_dict={}):
+        # For backwards compat, any new variables added to the base .ini file
+        # will need to be recorded here. The ConfigParser doesn't provide a
+        # .get() that will ignore missing sections, so we must make use of
+        # their defaults dictionary instead.
+        default_dict['command_inject'] = '--sig-proxy=true'
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
         if not os.path.exists( conf_path ):
@@ -82,7 +91,8 @@ class InteractiveEnviornmentRequest(object):
             conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
         else:
             conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
-            conf_file['galaxy_paster_port'] = self.attr.galaxy_config.guess_galaxy_port()
+            web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
+            conf_file['galaxy_paster_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
 
         if self.attr.PASSWORD_AUTH:
             # Generate a random password + salt
@@ -159,7 +169,8 @@ class InteractiveEnviornmentRequest(object):
         """
             Generate and return the docker command to execute
         """
-        return '%s run -d -u %s --sig-proxy=true -p %s:%s -v "%s:/import/" %s' % \
-            (self.attr.viz_config.get("docker", "command"), os.geteuid(),
+        return '%s run -d %s -p %s:%s -v "%s:/import/" %s' % \
+            (self.attr.viz_config.get("docker", "command"),
+            self.attr.viz_config.get("docker", "command_inject"),
             self.attr.PORT, self.attr.docker_port,
             temp_dir, self.attr.viz_config.get("docker", "image"))

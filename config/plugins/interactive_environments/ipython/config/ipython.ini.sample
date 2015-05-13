@@ -7,8 +7,15 @@
 #ssl = False
 
 [docker]
+
+# Command to execute docker. For example `sudo docker` or `docker-lxc`.
 command = docker
-image = bgruening/docker-ipython-notebook
+
+# The docker image name that should be started.
+image = bgruening/docker-ipython-notebook:0.2
+
+# Additional arguments that are passed to the `docker run` command.
+command_inject = --sig-proxy=true
 
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
 # this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the
