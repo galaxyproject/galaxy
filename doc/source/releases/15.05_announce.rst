@@ -2,7 +2,7 @@
 May 2015 Galaxy Release (v 15.05)
 ===========================================================
 
-.. image:: https://wiki.galaxyproject.org/Images/Logos?action=AttachFile&do=get&target=GetGalaxyOrg.png
+.. image:: https://wiki.galaxyproject.org/Images/GalaxyLogo?action=AttachFile&do=get&target=galaxy_logo_25percent.png
    :alt: Get the Galaxy Release Your Way
    :target: http://getgalaxy.org
 
