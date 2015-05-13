@@ -57,10 +57,4 @@ Release Notes
 .. include:: 15.05.rst
    :start-after: enhancements
 
-To stay up to date with Galaxy's progress you can watch `screencasts <https://vimeo.com/galaxyproject>`__, 
-read our `wiki <https://wiki.galaxyproject.org/>`__, and follow `@galaxyproject <https://twitter.com/galaxyproject>`__
-
-*Thanks for using Galaxy!*
-
-`The Galaxy Team <https://wiki.galaxyproject.org/GalaxyTeam>`__
-
+.. include:: _thanks.rst
