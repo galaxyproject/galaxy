@@ -20,6 +20,7 @@ import install_and_test_tool_shed_repositories.functional.test_install_repositor
 import nose
 import platform
 import string
+import subprocess
 import time
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
@@ -579,7 +580,7 @@ def initialize_tool_tests_results_dict( app, tool_test_results_dict ):
     test_environment_dict[ 'system' ] = '%s %s' % ( operating_system, operating_system_version )
     # Add information about the current Galaxy environment.
     test_environment_dict[ 'galaxy_database_version' ] = get_database_version( app )
-    test_environment_dict[ 'galaxy_revision' ] = get_repository_current_revision( os.getcwd() )
+    test_environment_dict[ 'galaxy_revision' ] = subprocess.check_output( [ 'git', 'describe' ] )
     # Initialize and populate the tool_test_results_dict.
     tool_test_results_dict[ 'test_environment' ] = test_environment_dict
     tool_test_results_dict[ 'passed_tests' ] = []

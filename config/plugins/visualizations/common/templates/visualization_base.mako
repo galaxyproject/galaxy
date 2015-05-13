@@ -30,13 +30,9 @@
     </body>
 </html>
 </%def>
-##TODO: late_javascripts
-
-## Default body
-<%def name="get_body()"></%def>
 
 ## Default title
-<%def name="title()">${visualization_name}</%def>
+<%def name="title()">${ visualization_display_name + ' | Galaxy' }</%def>
 
 ## Additional metas can be defined by templates inheriting from this one.
 <%def name="metas()"></%def>
@@ -52,6 +48,7 @@ ${h.js(
     "libs/jquery/jquery",
     "libs/jquery/jquery.migrate"
 )}
+## connect to Galaxy here
 
 <script type="text/javascript">
     // console protection
@@ -64,4 +61,17 @@ ${h.js(
         assert  : function(){}
     };
 </script>
+</%def>
+
+## Default body
+<%def name="get_body()">
+    ${self.late_javascripts()}
+</%def>
+
+## Default javascripts
+<%def name="late_javascripts()">
+${h.js(
+    "libs/jquery/jquery",
+    "libs/jquery/jquery.migrate"
+)}
 </%def>

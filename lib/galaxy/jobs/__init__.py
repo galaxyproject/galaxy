@@ -26,6 +26,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import loads
 from galaxy.util import unicodify
+from galaxy.datatypes import sniff
 
 from .output_checker import check_output
 from .datasets import TaskPathRewriter
@@ -744,17 +745,12 @@ class JobWrapper( object ):
         # Tool versioning variables
         self.write_version_cmd = None
         self.version_string = ""
-        self.galaxy_lib_dir = None
+        self.__galaxy_lib_dir = None
         # With job outputs in the working directory, we need the working
         # directory to be set before prepare is run, or else premature deletion
         # and job recovery fail.
         # Create the working dir if necessary
-        try:
-            self.app.object_store.create(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
-            self.working_directory = self.app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(self.job_id))
-            log.debug('(%s) Working directory for job is: %s' % (self.job_id, self.working_directory))
-        except ObjectInvalid:
-            raise Exception('Unable to create job working directory, job failure')
+        self.create_working_directory()
         self.dataset_path_rewriter = self._job_dataset_path_rewriter( self.working_directory )
         self.output_paths = None
         self.output_hdas_and_paths = None
@@ -792,6 +788,12 @@ class JobWrapper( object ):
     @property
     def commands_in_new_shell(self):
         return self.app.config.commands_in_new_shell
+
+    @property
+    def galaxy_lib_dir(self):
+        if self.__galaxy_lib_dir is None:
+            self.__galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
+        return self.__galaxy_lib_dir
 
     # legacy naming
     get_job_runner = get_job_runner_url
@@ -854,8 +856,8 @@ class JobWrapper( object ):
         self.sa_session.flush()
 
         self.command_line, self.extra_filenames = tool_evaluator.build()
-        # FIXME: for now, tools get Galaxy's lib dir in their path
-        self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
+        # Ensure galaxy_lib_dir is set in case there are any later chdirs
+        self.galaxy_lib_dir
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
@@ -871,6 +873,41 @@ class JobWrapper( object ):
         else:
             self.write_version_cmd = None
         return self.extra_filenames
+
+    def create_working_directory( self ):
+        job = self.get_job()
+        try:
+            self.app.object_store.create(
+                job, base_dir='job_work', dir_only=True, obj_dir=True )
+            self.working_directory = self.app.object_store.get_filename(
+                job, base_dir='job_work', dir_only=True, obj_dir=True )
+            log.debug( '(%s) Working directory for job is: %s',
+                       self.job_id, self.working_directory )
+        except ObjectInvalid:
+            raise Exception( '(%s) Unable to create job working directory',
+                             job.id )
+
+    def clear_working_directory( self ):
+        job = self.get_job()
+        if not os.path.exists( self.working_directory ):
+            log.warning( '(%s): Working directory clear requested but %s does '
+                         'not exist',
+                         self.job_id,
+                         self.working_directory )
+            return
+
+        self.app.object_store.create(
+            job, base_dir='job_work', dir_only=True, obj_dir=True,
+            extra_dir='_cleared_contents', extra_dir_at_root=True )
+        base = self.app.object_store.get_filename(
+            job, base_dir='job_work', dir_only=True, obj_dir=True,
+            extra_dir='_cleared_contents', extra_dir_at_root=True )
+        date_str = datetime.datetime.now().strftime( '%Y%m%d-%H%M%S' )
+        arc_dir = os.path.join( base, date_str )
+        shutil.move( self.working_directory, arc_dir )
+        self.create_working_directory()
+        log.debug( '(%s) Previous working directory moved to %s',
+                   self.job_id, arc_dir )
 
     def default_compute_environment( self, job=None ):
         if not job:
@@ -1153,6 +1190,11 @@ class JobWrapper( object ):
                     # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
                     if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
                          and self.app.config.retry_metadata_internally ):
+                        # If Galaxy was expected to sniff type and didn't - do so.
+                        if dataset.ext == "_sniff_":
+                            extension = sniff.handle_uploaded_dataset_file( dataset.dataset.file_name, self.app.datatypes_registry )
+                            dataset.extension = extension
+
                         # call datatype.set_meta directly for the initial set_meta call during dataset creation
                         dataset.datatype.set_meta( dataset, overwrite=False )
                     elif ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
@@ -1322,7 +1364,7 @@ class JobWrapper( object ):
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
             if delete_files:
-                self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, extra_dir=str(self.job_id))
+                self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
 
@@ -1513,6 +1555,13 @@ class JobWrapper( object ):
                 return ExpressionContext( meta, job_context )
         return job_context
 
+    def invalidate_external_metadata( self ):
+        job = self.get_job()
+        self.external_output_metadata.invalidate_external_metadata( [ output_dataset_assoc.dataset for
+                                                                      output_dataset_assoc in
+                                                                      job.output_datasets + job.output_library_datasets ],
+                                                                    self.sa_session )
+
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None,
                                  dataset_files_path=None, config_root=None,
                                  config_file=None, datatypes_config=None,
@@ -1694,9 +1743,8 @@ class TaskWrapper(JobWrapper):
 
         self.command_line, self.extra_filenames = tool_evaluator.build()
 
-        # FIXME: for now, tools get Galaxy's lib dir in their path
-        if self.command_line and self.command_line.startswith( 'python' ):
-            self.galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
+        # Ensure galaxy_lib_dir is set in case there are any later chdirs
+        self.galaxy_lib_dir
         # Shell fragment to inject dependencies
         self.dependency_shell_commands = self.tool.build_dependency_shell_commands()
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
@@ -1790,7 +1838,7 @@ class TaskWrapper(JobWrapper):
         task.command_line = self.command_line
         self.sa_session.flush()
 
-    def cleanup( self ):
+    def cleanup( self, delete_files=True ):
         # There is no task cleanup.  The job cleans up for all tasks.
         pass
 

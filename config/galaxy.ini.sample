@@ -1,5 +1,5 @@
 #
-# Galaxy is configured by default to be useable in a single-user development
+# Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
 #
@@ -118,9 +118,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #database_query_profiling_proxy = False
 
 # By default, Galaxy will use the same database to track user data and
-# tool shed install data.  There are many situtations in which it is
-# valuable to seperate these - for instance bootstrapping fresh Galaxy
-# instances with pretested installs.  The following optin can be used to
+# tool shed install data.  There are many situations in which it is
+# valuable to separate these - for instance bootstrapping fresh Galaxy
+# instances with pretested installs.  The following option can be used to
 # separate the tool shed install database (all other options listed above
 # but prefixed with install_ are also available).
 #install_database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE

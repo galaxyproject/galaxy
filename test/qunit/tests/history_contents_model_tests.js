@@ -2,6 +2,7 @@
 // (or demonstrating) qunit+backbone interactions.
 define([
     "mvc/history/hda-model",
+
     "jquery",
     "sinon-qunit"
 ], function(

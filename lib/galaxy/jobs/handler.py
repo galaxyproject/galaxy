@@ -680,7 +680,10 @@ class JobHandlerStopQueue( object ):
         except Empty:
             pass
         for job, error_msg in jobs_to_check:
-            if job.state != job.states.DELETED_NEW and job.finished:
+            if ( job.state not in ( job.states.DELETED_NEW,
+                                    job.states.DELETED )
+                 and job.finished ):
+                # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue
             final_state = job.states.DELETED
@@ -695,7 +698,8 @@ class JobHandlerStopQueue( object ):
                 self.dispatcher.stop( job )
 
     def put( self, job_id, error_msg=None ):
-        self.queue.put( ( job_id, error_msg ) )
+        if not self.app.config.track_jobs_in_database:
+            self.queue.put( ( job_id, error_msg ) )
 
     def shutdown( self ):
         """Attempts to gracefully shut down the worker thread"""

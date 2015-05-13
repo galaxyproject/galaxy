@@ -169,6 +169,25 @@ class Bam( Binary ):
                 break
         return version
 
+    @staticmethod
+    def merge(split_files, output_file):
+
+        tmp_dir = tempfile.mkdtemp()
+        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
+        command = ["samtools", "merge", "-f", output_file] + split_files
+        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
+        exit_code = proc.wait()
+        # Did merge succeed?
+        stderr = open(stderr_name).read().strip()
+        if stderr:
+            if exit_code != 0:
+                shutil.rmtree(tmp_dir)  # clean up
+                raise Exception, "Error merging BAM files: %s" % stderr
+            else:
+                print stderr
+        os.unlink(stderr_name)
+        os.rmdir(tmp_dir)
+
     def _is_coordinate_sorted( self, file_name ):
         """See if the input BAM file is sorted from the header information."""
         params = [ "samtools", "view", "-H", file_name ]
@@ -423,10 +442,11 @@ class Bam( Binary ):
 
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
 
-
 class Bcf( Binary):
     """Class describing a BCF file"""
     file_ext = "bcf"
+
+    MetadataElement( name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True )
 
     def sniff( self, filename ):
         # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
@@ -438,6 +458,37 @@ class Bcf( Binary):
             return False
         except:
             return False
+
+    def set_meta( self, dataset, overwrite = True, **kwd ):
+        """ Creates the index for the BCF file. """
+        # These metadata values are not accessible by users, always overwrite
+        index_file = dataset.metadata.bcf_index
+        if not index_file:
+            index_file = dataset.metadata.spec['bcf_index'].param.new_file( dataset = dataset )
+        # Create the bcf index
+        ##$ bcftools index
+        ##Usage: bcftools index <in.bcf>
+
+        dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
+                    '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+        os.symlink( dataset.file_name, dataset_symlink )
+
+        stderr_name = tempfile.NamedTemporaryFile( prefix = "bcf_index_stderr" ).name
+        command = [ 'bcftools', 'index', dataset_symlink ]
+        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
+        exit_code = proc.wait()
+        shutil.move( dataset_symlink + '.csi', index_file.file_name )
+
+        stderr = open( stderr_name ).read().strip()
+        if stderr:
+            if exit_code != 0:
+                os.unlink( stderr_name ) #clean up
+                raise Exception, "Error Setting BCF Metadata: %s" % stderr
+            else:
+                print stderr
+        dataset.metadata.bcf_index = index_file
+        # Remove temp file
+        os.unlink( stderr_name )
 
 Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
 
@@ -702,7 +753,7 @@ class SQlite ( Binary ):
 
 class GeminiSQLite( SQlite ):
     """Class describing a Gemini Sqlite database """
-    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version", 
+    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version",
                      readonly=True, visible=True, no_value='0.10.0' )
     file_ext = "gemini.sqlite"
 
@@ -721,7 +772,7 @@ class GeminiSQLite( SQlite ):
 
     def sniff( self, filename ):
         if super( GeminiSQLite, self ).sniff( filename ):
-            gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples", 
+            gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
                                   "variant_impacts", "variants", "version" ]
             try:
                 conn = sqlite.connect( filename )
@@ -810,3 +861,25 @@ class Sra( Binary ):
 
 Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 
+
+class RData( Binary ):
+    """Generic R Data file datatype implementation"""
+    file_ext = 'rdata'
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+
+    def sniff( self, filename ):
+        rdata_header = binascii.hexlify('RDX2\nX\n')
+        try:
+            header = open(filename).read(7)
+            if binascii.b2a_hex(header) == rdata_header:
+                return True
+
+            header = gzip.open( filename ).read(7)
+            if binascii.b2a_hex(header) == rdata_header:
+                return True
+        except:
+            return False
+
+Binary.register_sniffable_binary_format('rdata', 'rdata', RData)

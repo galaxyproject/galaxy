@@ -1,18 +1,9 @@
 """
 Mock infrastructure for testing ModelManagers.
 """
-import sys
 import os
 import tempfile
 import shutil
-
-
-__GALAXY_ROOT__ = os.getcwd() + '/../../../'
-sys.path.insert( 1, __GALAXY_ROOT__ + 'lib' )
-
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
-import sqlalchemy
 
 from galaxy.web import security
 from galaxy import objectstore
@@ -21,6 +12,7 @@ from galaxy.util.bunch import Bunch
 
 from galaxy.managers import tags
 from galaxy import quota
+
 
 # =============================================================================
 class OpenObject( object ):
@@ -72,8 +64,8 @@ class MockWebapp( object ):
 
 class MockTrans( object ):
 
-    def __init__( self, user=None, history=None, **kwargs ):
-        self.app = MockApp( **kwargs )
+    def __init__( self, app=None, user=None, history=None, **kwargs ):
+        self.app = app or MockApp( **kwargs )
         self.model = self.app.model
         self.webapp = MockWebapp( **kwargs )
         self.sa_session = self.app.model.session
@@ -99,7 +91,7 @@ class MockTrans( object ):
 
     user = property( get_user, set_user )
 
-    def get_history( self ):
+    def get_history( self, **kwargs ):
         return self.history
 
     def set_history( self, history ):
@@ -108,6 +100,7 @@ class MockTrans( object ):
     def fill_template( self, filename, template_lookup=None, **kwargs ):
         template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
+        kwargs.update( h=MockTemplateHelpers() )
         return template.render( **kwargs )
 
 
@@ -148,3 +141,11 @@ class MockDir( object ):
     def remove( self ):
         # print 'removing:', self.root_path
         shutil.rmtree( self.root_path )
+
+
+class MockTemplateHelpers( object ):
+    def js( *js_files ):
+        pass
+
+    def css( *css_files ):
+        pass

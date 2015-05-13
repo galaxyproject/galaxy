@@ -2159,25 +2159,25 @@ div.historyItem .historyItemTitle{font-weight:bold;line-height:16px}
 .historyItemContainer:last-child div.historyItem{border-bottom:solid #bfbfbf 1px}
 div.historyItem div.historyItem{margin-right:-11px}
 div.historyItem-ok,div.historyItem-failed_metadata{background:#aff1af}div.historyItem-ok .state-icon,div.historyItem-failed_metadata .state-icon{display:none}
-div.historyItem-error{background:#f9c7c5}div.historyItem-error .state-icon{background-image:url(sprite-history-states.png);background-position:0px -15px;width:15px;height:15px;height:15px}
-div.historyItem-empty{background:#f9c7c5}div.historyItem-empty .state-icon{background-image:url(sprite-history-states.png);background-position:0px 0px;width:15px;height:15px;height:15px}
+div.historyItem-error{background:#f9c7c5}div.historyItem-error .state-icon{background-image:url(../../../../../static/style/blue/sprite-history-states.png);background-position:0px -15px;width:15px;height:15px;height:15px}
+div.historyItem-empty{background:#f9c7c5}div.historyItem-empty .state-icon{background-image:url(../../../../../static/style/blue/sprite-history-states.png);background-position:0px 0px;width:15px;height:15px;height:15px}
 div.historyItem-running{background:#ffc}div.historyItem-running .state-icon{background-image:url(data_running.gif)}
 div.historyItem-setting_metadata{background:#ffc}div.historyItem-setting_metadata .state-icon{background-image:url(data_running.gif)}
 div.historyItem-upload{background:#a6e4f7}div.historyItem-upload .state-icon{background-image:url(data_upload.gif)}
-div.historyItem-queued{background:#eee}div.historyItem-queued .state-icon{background-image:url(sprite-history-states.png);background-position:0px -45px;width:15px;height:15px;height:15px}
+div.historyItem-queued{background:#eee}div.historyItem-queued .state-icon{background-image:url(../../../../../static/style/blue/sprite-history-states.png);background-position:0px -45px;width:15px;height:15px;height:15px}
 div.historyItem-noPermission{filter:alpha(opacity=60);-moz-opacity:.60;opacity:.60}div.historyItem-noPermission .state-icon{line-height:16px;display:inline-block;font:normal normal normal 14px/1 FontAwesome;font-size:inherit;text-rendering:auto;-moz-osx-font-smoothing:grayscale;font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}div.historyItem-noPermission .state-icon:before{content:"\f05e"}
 div.historyItem-paused{background:#d9edf7}div.historyItem-paused .state-icon{line-height:16px;display:inline-block;font:normal normal normal 14px/1 FontAwesome;font-size:inherit;text-rendering:auto;-moz-osx-font-smoothing:grayscale;font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}div.historyItem-paused .state-icon:before{content:"\f04c"}
 div.historyItem-new .state-icon{line-height:16px;display:inline-block;font:normal normal normal 14px/1 FontAwesome;font-size:inherit;text-rendering:auto;-moz-osx-font-smoothing:grayscale;font-family:FontAwesome;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}div.historyItem-new .state-icon:before{content:"\f071"}
 div.historyItemTitleBar.spinner .state-icon{background:url(data_running.gif) 0 1px no-repeat !important}
-div.historyItemButtons{float:right}div.historyItemButtons .icon-button.display{background-image:url(sprite-history-buttons.png);background-position:0px -48px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.display:hover{background-image:url(sprite-history-buttons.png);background-position:0px -64px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.display_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -80px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.delete{background-image:url(sprite-history-buttons.png);background-position:0px 0px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.delete:hover{background-image:url(sprite-history-buttons.png);background-position:0px -16px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.delete_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -32px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.edit{background-image:url(sprite-history-buttons.png);background-position:0px -96px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.edit:hover{background-image:url(sprite-history-buttons.png);background-position:0px -112px;width:16px;height:16px;height:16px}
-div.historyItemButtons .icon-button.edit_disabled{background-image:url(sprite-history-buttons.png);background-position:0px -128px;width:16px;height:16px;height:16px}
+div.historyItemButtons{float:right}div.historyItemButtons .icon-button.display{background-image:url(../../../../../static/style/blue/sprite-history-buttons.png);background-position:0px -48px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.display:hover{background-image:url(../../../../../static/style/blue/sprite-history-buttons.png);background-position:0px -64px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.display_disabled{background-image:url(../../../../../static/style/blue/sprite-history-buttons.png);background-position:0px -80px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.delete{background-image:url(../../../../../static/style/blue/sprite-history-buttons.png);background-position:0px 0px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.delete:hover{background-image:url(../../../../../static/style/blue/sprite-history-buttons.png);background-position:0px -16px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.delete_disabled{background-image:url(../../../../../static/style/blue/sprite-history-buttons.png);background-position:0px -32px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.edit{background-image:url(../../../../../static/style/blue/sprite-history-buttons.png);background-position:0px -96px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.edit:hover{background-image:url(../../../../../static/style/blue/sprite-history-buttons.png);background-position:0px -112px;width:16px;height:16px;height:16px}
+div.historyItemButtons .icon-button.edit_disabled{background-image:url(../../../../../static/style/blue/sprite-history-buttons.png);background-position:0px -128px;width:16px;height:16px;height:16px}
 div.historyItemBody div{padding-top:2px}
 pre.peek{background:white;color:black;width:100%;font-size:10px;overflow:auto}pre.peek th{color:white;background:#5f6990}
 pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Consolas,"Courier New",monospace;font-size:10px}
@@ -2225,13 +2225,13 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .collection-creator .flex-column.no-flex{-webkit-flex:0 auto;-ms-flex:0 auto;flex:0 0 auto}
 .collection-creator .choose-filters .help{margin-bottom:2px;font-size:90%;color:grey}
 .collection-creator .choose-filters button{width:100%;margin-top:2px}
-.collection-creator .header .alert{display:none}
+.collection-creator .header .alert{display:none}.collection-creator .header .alert li{list-style:circle;margin-left:32px}
 .collection-creator .column{width:30%}
 .collection-creator .column-title{height:22px;line-height:22px;overflow:hidden}.collection-creator .column-title:hover{text-decoration:underline;cursor:pointer}
 .collection-creator .column-title .title{font-weight:bold}
 .collection-creator .column-title .title-info{color:grey}.collection-creator .column-title .title-info:before{content:' - '}
 .collection-creator .paired-column{text-align:center;width:22%}
-.collection-creator .header{padding-bottom:8px}.collection-creator .header .main-help{margin-bottom:17px;overflow:hidden;padding:15px;background:#f8f8f8}.collection-creator .header .main-help:not(.expanded){max-height:49px}.collection-creator .header .main-help:not(.expanded) .help-content p:first-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.collection-creator .header .main-help{margin-bottom:17px;overflow:hidden;padding:15px;background:#f8f8f8}.collection-creator .header .main-help:not(.expanded){max-height:49px}.collection-creator .header .main-help:not(.expanded) .help-content p:first-child{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .collection-creator .header .main-help:not(.expanded) .help-content>*:not(:first-child){display:none}
 .collection-creator .header .main-help.expanded{max-height:none}
 .collection-creator .header .main-help .help-content i{cursor:help;border-bottom:1px dotted grey;font-style:normal}
@@ -2249,7 +2249,7 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .collection-creator .column-datasets .dataset.paired .pair-name-column{text-align:center}.collection-creator .column-datasets .dataset.paired .pair-name-column .pair-name:hover{text-decoration:underline}
 .collection-creator .column-datasets .dataset.paired .reverse-dataset-name{border-left:1px solid grey;padding-left:8px}.collection-creator .column-datasets .dataset.paired .reverse-dataset-name:before{margin-right:8px;font-family:FontAwesome;content:'\f060'}
 .collection-creator .column-datasets .dataset:hover{border-color:black}
-.collection-creator .column-datasets .dataset.selected{border-color:black;background:black;color:white}
+.collection-creator .column-datasets .dataset.selected{border-color:black;background:black;color:white}.collection-creator .column-datasets .dataset.selected a{color:white}
 .collection-creator .unpaired-columns{height:0;border:1px solid lightgrey;border-width:1px 0 1px 0}.collection-creator .unpaired-columns .forward-column .dataset.unpaired{margin-right:32px}
 .collection-creator .unpaired-columns .paired-column .dataset.unpaired{border-color:lightgrey;color:lightgrey}.collection-creator .unpaired-columns .paired-column .dataset.unpaired:hover{border-color:black;color:black}
 .collection-creator .unpaired-columns .reverse-column .dataset.unpaired{text-align:right;margin-left:32px}
@@ -2260,14 +2260,39 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .collection-creator .flexible-partition .column-header .remove-extensions-link{display:none}
 .collection-creator .paired-columns{height:0;border:1px solid lightgrey;border-width:1px 0 1px 0;margin-bottom:8px}.collection-creator .paired-columns .column-datasets{width:100%;overflow:auto}
 .collection-creator .paired-columns .unpair-btn{float:right;margin-top:-32px;width:31px;height:32px;border-color:transparent;background:transparent;font-size:120%}.collection-creator .paired-columns .unpair-btn:hover{border-color:#BFBFBF;background:#DEDEDE}
-.collection-creator .paired-columns .paired-drop-placeholder{width:60px;height:3px;margin:2px 0px 0px 14px;background:black}.collection-creator .paired-columns .paired-drop-placeholder:before{float:left;font-size:120%;margin:-9px 0 0 -8px;font-family:FontAwesome;content:'\f0da'}
-.collection-creator .paired-columns .paired-drop-placeholder:last-child{margin-bottom:8px}
 .collection-creator .paired-columns .empty-message{text-align:center}
+.collection-creator .element-drop-placeholder{width:60px;height:3px;margin:2px 0px 0px 14px;background:black}.collection-creator .element-drop-placeholder:before{float:left;font-size:120%;margin:-9px 0 0 -8px;font-family:FontAwesome;content:'\f0da'}
+.collection-creator .element-drop-placeholder:last-child{margin-bottom:8px}
 .collection-creator .footer{padding-bottom:8px}.collection-creator .footer .attributes .remove-extensions-prompt{line-height:32px}.collection-creator .footer .attributes .remove-extensions-prompt .remove-extensions{display:inline-block;width:24px;height:24px}
 .collection-creator .footer .attributes .collection-name-prompt{margin:5px 4px 0 0}
 .collection-creator .footer .attributes .collection-name-prompt.validation-warning:before{content:'(required)';margin-right:4px;color:red}
 .collection-creator .footer .attributes .collection-name{width:50%}.collection-creator .footer .attributes .collection-name.validation-warning{border-color:red}
 .collection-creator .footer .actions .other-options>*{display:none;margin-left:4px}
+.collection-creator.list-collection-creator .footer{margin-top:8px}
+.collection-creator.list-collection-creator .main-help{cursor:pointer}
+.collection-creator.list-collection-creator .collection-elements-controls{margin-bottom:8px}.collection-creator.list-collection-creator .collection-elements-controls .clear-selected{float:right !important;float:right;display:none}
+.collection-creator.list-collection-creator .collection-elements{max-height:400px;border:0px solid lightgrey;overflow-y:auto;overflow-x:hidden}
+.collection-creator.list-collection-creator .collection-element{height:32px;margin:2px 4px 0px 4px;opacity:1.0;border:1px solid lightgrey;border-radius:3px;padding:0 8px 0 8px;line-height:28px;cursor:pointer;overflow:hidden}.collection-creator.list-collection-creator .collection-element:last-of-type{margin-bottom:2px}
+.collection-creator.list-collection-creator .collection-element:hover{border-color:black}
+.collection-creator.list-collection-creator .collection-element.selected{border-color:black;background:black;color:white}.collection-creator.list-collection-creator .collection-element.selected a{color:white}
+.collection-creator.list-collection-creator .collection-element.dragging{opacity:0.4}.collection-creator.list-collection-creator .collection-element.dragging button{display:none}
+.collection-creator.list-collection-creator .collection-element .name:hover{text-decoration:underline}
+.collection-creator.list-collection-creator .collection-element button{margin-top:3px}
+.collection-creator.list-collection-creator .collection-element .discard{float:right !important;float:right}
+.collection-creator.list-collection-creator .element-drop-placeholder{margin-left:8px}.collection-creator.list-collection-creator .element-drop-placeholder:before{margin:-8.5px 0 0 -8px}
+.collection-creator.list-collection-creator .empty-message{margin:8px;color:grey;font-style:italic;text-align:center}
+.collection-creator.list-collection-creator .no-elements-left-message{text-align:left}
+.collection-creator.pair-collection-creator .footer{margin-top:8px}
+.collection-creator.pair-collection-creator .main-help{cursor:pointer}
+.collection-creator.pair-collection-creator .collection-elements-controls{margin-bottom:8px}.collection-creator.pair-collection-creator .collection-elements-controls .clear-selected{float:right !important;float:right;display:none}
+.collection-creator.pair-collection-creator .collection-elements{max-height:400px;border:0px solid lightgrey;overflow-y:auto;overflow-x:hidden}
+.collection-creator.pair-collection-creator .collection-element{height:32px;margin:2px 4px 0px 4px;opacity:1.0;border:1px solid lightgrey;border-radius:3px;padding:0 8px 0 8px;line-height:28px;cursor:pointer;overflow:hidden}.collection-creator.pair-collection-creator .collection-element:last-of-type{margin-bottom:2px}
+.collection-creator.pair-collection-creator .collection-element:hover{border-color:black}
+.collection-creator.pair-collection-creator .collection-element button{margin-top:3px}
+.collection-creator.pair-collection-creator .collection-element .identifier:after{content:':';margin-right:6px}
+.collection-creator.pair-collection-creator .collection-element .name:hover{text-decoration:none}
+.collection-creator.pair-collection-creator .empty-message{margin:8px;color:grey;font-style:italic;text-align:center}
+.collection-creator.list-of-pairs-collection-creator .column-headers{margin-bottom:8px}
 .search-input .search-query{width:100%;padding-right:24px}
 .search-input .search-clear,.search-input .search-loading{position:relative;display:inline-block;float:right;margin-top:-24px;margin-right:4px;font-size:1.4em;line-height:23px;color:grey}
 .search-input .search-clear:hover{color:#303030}
@@ -2323,30 +2348,30 @@ div.toolTitleNoSection{padding-bottom:5px;font-weight:bold}
 .btn-primary .text-and-autocomplete-select:after,.btn-success .text-and-autocomplete-select:after,.btn-warning .text-and-autocomplete-select:after,.btn-danger .text-and-autocomplete-select:after,.btn-info .text-and-autocomplete-select:after{border-top-color:#fff}
 .icon-button.general-question{background:url(question-octagon-frame.png) no-repeat;float:right;margin-top:3px;margin-right:4px}
 .icon-button.tag-question{background:url(question-balloon.png) no-repeat;float:right;margin-top:3px;margin-right:4px}
-.icon-button.tag{background-image:url(sprite-fugue.png);background-position:0px -912px;width:16px;height:16px;height:16px}
-.icon-button.tags{background-image:url(sprite-fugue.png);background-position:0px -928px;width:16px;height:16px;height:16px}
-.icon-button.tag--plus{background-image:url(sprite-fugue.png);background-position:0px -896px;width:16px;height:16px;height:16px}
-.icon-button.toggle-expand{background-image:url(sprite-fugue.png);background-position:0px -976px;width:16px;height:16px;height:16px}
-.icon-button.toggle{background-image:url(sprite-fugue.png);background-position:0px -944px;width:16px;height:16px;height:16px}
-.icon-button.toggle:hover{background-image:url(sprite-fugue.png);background-position:0px -992px;width:16px;height:16px;height:16px}
-.icon-button.arrow-circle{background-image:url(sprite-fugue.png);background-position:0px -64px;width:16px;height:16px;height:16px}
-.icon-button.chevron{background-image:url(sprite-fugue.png);background-position:0px -352px;width:16px;height:16px;height:16px}
-.icon-button.bug{background-image:url(sprite-fugue.png);background-position:0px -288px;width:16px;height:16px;height:16px}
-.icon-button.disk{background-image:url(sprite-fugue.png);background-position:0px -496px;width:16px;height:16px;height:16px}
-.icon-button.information{background-image:url(sprite-fugue.png);background-position:0px -656px;width:16px;height:16px;height:16px}
-.icon-button.annotate{background-image:url(sprite-fugue.png);background-position:0px -880px;width:16px;height:16px;height:16px}
-.icon-button.go-to-full-screen{background-image:url(sprite-fugue.png);background-position:0px 0px;width:16px;height:16px;height:16px}
-.icon-button.import{background-image:url(sprite-fugue.png);background-position:0px -864px;width:16px;height:16px;height:16px}
-.icon-button.plus-button{background-image:url(sprite-fugue.png);background-position:0px -832px;width:16px;height:16px;height:16px}
-.icon-button.plus-button:hover{background-image:url(sprite-fugue.png);background-position:0px -848px;width:16px;height:16px;height:16px}
-.icon-button.gear{background-image:url(sprite-fugue.png);background-position:0px -576px;width:16px;height:16px;height:16px}
-.icon-button.chart_curve{background-image:url(sprite-fugue.png);background-position:0px -304px;width:16px;height:16px;height:16px}
-.icon-button.disk--arrow{background-image:url(sprite-fugue.png);background-position:0px -464px;width:16px;height:16px;height:16px}
-.icon-button.disk--arrow:hover{background-image:url(sprite-fugue.png);background-position:0px -480px;width:16px;height:16px;height:16px}
-.icon-button.cross-circle{background-image:url(sprite-fugue.png);background-position:0px -400px;width:16px;height:16px;height:16px}
-.icon-button.cross-circle:hover{background-image:url(sprite-fugue.png);background-position:0px -416px;width:16px;height:16px;height:16px}
-.icon-button.arrow-split{background-image:url(sprite-fugue.png);background-position:0px -112px;width:16px;height:16px;height:16px}
-.icon-button.arrow-split:hover{background-image:url(sprite-fugue.png);background-position:0px -128px;width:16px;height:16px;height:16px}
-.icon-button.chevron-expand:hover{background-image:url(sprite-fugue.png);background-position:0px -336px;width:16px;height:16px;height:16px}
-.icon-button.chevron-expand{background-image:url(sprite-fugue.png);background-position:0px -320px;width:16px;height:16px;height:16px}
+.icon-button.tag{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -912px;width:16px;height:16px;height:16px}
+.icon-button.tags{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -928px;width:16px;height:16px;height:16px}
+.icon-button.tag--plus{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -896px;width:16px;height:16px;height:16px}
+.icon-button.toggle-expand{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -976px;width:16px;height:16px;height:16px}
+.icon-button.toggle{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -944px;width:16px;height:16px;height:16px}
+.icon-button.toggle:hover{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -992px;width:16px;height:16px;height:16px}
+.icon-button.arrow-circle{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -64px;width:16px;height:16px;height:16px}
+.icon-button.chevron{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -352px;width:16px;height:16px;height:16px}
+.icon-button.bug{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -288px;width:16px;height:16px;height:16px}
+.icon-button.disk{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -496px;width:16px;height:16px;height:16px}
+.icon-button.information{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -656px;width:16px;height:16px;height:16px}
+.icon-button.annotate{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -880px;width:16px;height:16px;height:16px}
+.icon-button.go-to-full-screen{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px 0px;width:16px;height:16px;height:16px}
+.icon-button.import{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -864px;width:16px;height:16px;height:16px}
+.icon-button.plus-button{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -832px;width:16px;height:16px;height:16px}
+.icon-button.plus-button:hover{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -848px;width:16px;height:16px;height:16px}
+.icon-button.gear{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -576px;width:16px;height:16px;height:16px}
+.icon-button.chart_curve{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -304px;width:16px;height:16px;height:16px}
+.icon-button.disk--arrow{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -464px;width:16px;height:16px;height:16px}
+.icon-button.disk--arrow:hover{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -480px;width:16px;height:16px;height:16px}
+.icon-button.cross-circle{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -400px;width:16px;height:16px;height:16px}
+.icon-button.cross-circle:hover{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -416px;width:16px;height:16px;height:16px}
+.icon-button.arrow-split{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -112px;width:16px;height:16px;height:16px}
+.icon-button.arrow-split:hover{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -128px;width:16px;height:16px;height:16px}
+.icon-button.chevron-expand:hover{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -336px;width:16px;height:16px;height:16px}
+.icon-button.chevron-expand{background-image:url(../../../../../static/style/blue/sprite-fugue.png);background-position:0px -320px;width:16px;height:16px;height:16px}
 #for_bears{display:none}

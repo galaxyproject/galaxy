@@ -696,41 +696,19 @@ class ColorToolParameter( ToolParameter ):
     def get_initial_value( self, trans, context, history=None ):
         return self.value.lower();
 
-## This is clearly a HACK, parameters should only be used for things the user
-## can change, there needs to be a different way to specify this. I'm leaving
-## it for now to avoid breaking any tools.
 
-
-class BaseURLToolParameter( ToolParameter ):
+class BaseURLToolParameter( HiddenToolParameter ):
     """
-    Returns a parameter the contains its value prepended by the
+    Returns a parameter that contains its value prepended by the
     current server base url. Used in all redirects.
     """
-
     def __init__( self, tool, input_source ):
         input_source = ensure_input_source( input_source )
-        ToolParameter.__init__( self, tool, input_source )
+        super( BaseURLToolParameter, self ).__init__( tool, input_source )
         self.value = input_source.get( 'value', '' )
 
-    def get_value( self, trans ):
-        # url = trans.request.base + self.value
-        url = url_for( self.value, qualified=True )
-        return url
-
-    def get_html_field( self, trans=None, value=None, other_values={} ):
-        return form_builder.HiddenField( self.name, self.get_value( trans ) )
-
-    def get_initial_value( self, trans, context, history=None ):
-        return self.value
-
-    def get_label( self ):
-        # BaseURLToolParameters are ultimately "hidden" parameters
-        return None
-
-    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
-        d = super( BaseURLToolParameter, self ).to_dict( trans )
-        d['value'] = self.get_value( trans )
-        return d
+    def from_html( self, value=None, trans=None, context={} ):
+        return url_for( self.value, qualified=True )
 
 
 DEFAULT_VALUE_MAP = lambda x: x
@@ -1423,8 +1401,12 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     <input type="radio" name="some_name" value="option5" >Option 5
     </div>
     </div>
-    >>> print p.options
-    [{'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 1', 'value': 'option1', 'options': []}, {'selected': False, 'name': 'Option 2', 'value': 'option2', 'options': []}, {'selected': False, 'name': 'Heading 1', 'value': 'heading1', 'options': [{'selected': False, 'name': 'Option 3', 'value': 'option3', 'options': []}, {'selected': False, 'name': 'Option 4', 'value': 'option4', 'options': []}]}]}, {'selected': False, 'name': 'Option 5', 'value': 'option5', 'options': []}]
+    >>> print sorted(p.options[1].items())
+    [('name', 'Option 5'), ('options', []), ('selected', False), ('value', 'option5')]
+    >>> p.options[0]["name"]
+    'Heading 1'
+    >>> p.options[0]["selected"]
+    False
     """
     def __init__( self, tool, input_source, context=None ):
         input_source = ensure_input_source( input_source )
@@ -1681,7 +1663,7 @@ class BaseDataToolParameter( ToolParameter ):
         class_name = self.__class__.__name__
         assert trans is not None, "%s requires a trans" % class_name
         if history is None:
-            history = trans.get_history()
+            history = trans.get_history( create=True )
         assert history is not None, "%s requires a history" % class_name
         return history
 

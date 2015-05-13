@@ -21,6 +21,7 @@ import galaxy.webapps.tool_shed.model.mapping
 import galaxy.web.framework.webapp
 from galaxy.webapps.tool_shed.framework.middleware import hg
 from galaxy import util
+from galaxy.config import process_is_uwsgi
 
 log = logging.getLogger( __name__ )
 
@@ -144,20 +145,8 @@ def app_factory( global_conf, **kwargs ):
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
-    # TEST FOR UWSGI -- TODO save this somewhere so we only have to do it once.
-    is_uwsgi = False
-    try:
-        # The uwsgi module is automatically injected by the parent uwsgi
-        # process and only exists that way.  If anything works, this is a
-        # uwsgi-managed process.
-        import uwsgi
-        is_uwsgi = uwsgi.numproc
-        is_uwsgi = True
-    except ImportError:
-        # This is not a uwsgi process, or something went horribly wrong.
-        pass
     if asbool( kwargs.get( 'static_enabled', True) ):
-        if is_uwsgi:
+        if process_is_uwsgi:
             log.error("Static middleware is enabled in your configuration but this is a uwsgi process.  Refusing to wrap in static middleware.")
         else:
             webapp = wrap_in_static( webapp, global_conf, **kwargs )
@@ -216,7 +205,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             from paste.debug import prints
             app = prints.PrintDebugMiddleware( app, conf )
             log.debug( "Enabling 'print debug' middleware" )
-    if debug and asbool( conf.get( 'use_interactive', False ) ):
+    if debug and asbool( conf.get( 'use_interactive', False ) ) and not process_is_uwsgi:
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
@@ -226,6 +215,9 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
                                            templating_formatters=build_template_error_formatters() )
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
+        if debug and asbool( conf.get( 'use_interactive', False ) ) and process_is_uwsgi:
+            log.error("Interactive debugging middleware is enabled in your configuration "
+                      "but this is a uwsgi process.  Refusing to wrap in interactive error middleware.")
         # Not in interactive debug mode, just use the regular error middleware
         import galaxy.web.framework.middleware.error
         app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )

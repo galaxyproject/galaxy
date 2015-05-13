@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Import system subprocess now before twill so we don't get its
+# variant that breaks things.
+import subprocess
+
 import os
 import sys
 import shutil
