@@ -278,6 +278,9 @@
         background: @side-panel-bg;
         border-bottom: solid darken(@side-panel-bg, 10%) 1px;
     }
+    .portlet-highlight {
+        text-decoration: underline;
+    }
 }
 
 .ui-portlet-narrow {
@@ -497,6 +500,30 @@
                     }
                 }
             }
+        }
+    }
+}
+
+.ui-list {
+    .ui-list-select {
+        float: left;
+        width: ~'calc(100% - 27px)';
+    }
+    .ui-list-button {
+        .ui-button-icon {
+            margin-top: 3px;
+            margin-right: 5px;
+        }
+    }
+    .ui-list-message, .ui-list-portlet {
+        clear: both;
+    }
+    .ui-list-id {
+        cursor: pointer;
+        margin-top: 5px;
+        .ui-list-delete {
+            font-size: 1.2em;
+            margin-right: 5px;
         }
     }
 }

@@ -111,6 +111,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 // mark error
                 input_element.error(message || 'Please verify this parameter.');
 
+                // trigger expand event for parent containers
+                this.trigger('expand', input_id);
+
                 // scroll to first input element
                 if (!silent) {
                     $('html, body').animate({

@@ -587,6 +587,14 @@ class FTPFileToolParameter( ToolParameter ):
         """
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__( self, tool, input_source )
+        self.multiple = input_source.get_bool( 'multiple', True )
+        self.user_ftp_dir = ''
+
+    def get_initial_value( self, trans, context, history=None ):
+        if not trans is None:
+            if not trans.user is None:
+                self.user_ftp_dir = "%s/" % trans.user_ftp_dir
+        return None
 
     @property
     def visible( self ):
@@ -601,28 +609,45 @@ class FTPFileToolParameter( ToolParameter ):
             user_ftp_dir = trans.user_ftp_dir
         return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value=value )
 
+    def to_param_dict_string( self, value, other_values={} ):
+        if value is '':
+            return 'None'
+        lst = [ '%s%s' % (self.user_ftp_dir, dataset) for dataset in value ]
+        if self.multiple:
+            return lst
+        else:
+            return lst[ 0 ]
+
     def from_html( self, value, trans=None, other_values={} ):
-        try:
-            assert type( value ) is list
-        except:
-            value = [ value ]
-        return value
+        return self.to_python( value, trans.app, validate=True )
 
     def to_string( self, value, app ):
-        if value in [ None, '' ]:
-            return None
-        elif isinstance( value, unicode ) or isinstance( value, str ) or isinstance( value, list ):
-            return value
+        return self.to_python( value, app )
 
-    def to_python( self, value, app ):
-        if value is None:
-            return None
-        elif isinstance( value, unicode ) or isinstance( value, str ) or isinstance( value, list ):
-            return value
+    def to_python( self, value, app, validate=False ):
+        if validate and self.tool.app.config.ftp_upload_dir is None:
+            raise ValueError( "The FTP directory is not configured." )
+        if not isinstance( value, list ):
+            value = [ value ]
+        lst = []
+        for val in value:
+            if val is None:
+                lst = []
+                break
+            if isinstance( val, dict ):
+                lst.append( val[ 'name' ] )
+            else:
+                lst.append( val )
+        if len( lst ) == 0:
+            if not self.optional and validate:
+                raise ValueError( "Please select a valid FTP file." )
+            return ''
+        return lst
 
-    def get_initial_value( self, trans, context, history=None ):
-        return None
-
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+        d = super( FTPFileToolParameter, self ).to_dict( trans )
+        d['multiple'] = self.multiple
+        return d
 
 class HiddenToolParameter( ToolParameter ):
     """
@@ -2360,8 +2385,10 @@ class LibraryDatasetToolParameter( ToolParameter ):
     Parameter that lets users select a LDDA from a modal window, then use it within the wrapper.
     """
 
-    def __init__( self, tool, elem ):
-        ToolParameter.__init__( self, tool, elem )
+    def __init__( self, tool, input_source, context=None ):
+        input_source = ensure_input_source( input_source )
+        ToolParameter.__init__( self, tool, input_source )
+        self.multiple = input_source.get_bool( 'multiple', True )
 
     def get_html_field( self, trans=None, value=None, other_values={} ):
         return form_builder.LibraryField( self.name, value=value, trans=trans )
@@ -2370,28 +2397,82 @@ class LibraryDatasetToolParameter( ToolParameter ):
         return None
 
     def from_html( self, value, trans, other_values={} ):
-        if not value:
-            return None
-        elif isinstance( value, list ):
-            return value
+        return self.to_python( value, trans.app, other_values=other_values, validate=True )
+
+    def to_param_dict_string( self, value, other_values={} ):
+        if value is None:
+            return 'None'
+        elif self.multiple:
+            return [ dataset.get_file_name() for dataset in value ]
         else:
-            decoded_lst = []
-            for encoded_id in value.split("||"):
-                decoded_lst.append( trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( trans.security.decode_id( encoded_id ) ) )
-            return decoded_lst
+            return value[ 0 ].get_file_name()
 
+    # converts values to json representation:
+    #   { id: LibraryDatasetDatasetAssociation.id, name: LibraryDatasetDatasetAssociation.name, src: 'lda' }
     def to_string( self, value, app ):
-        if not value:
-            return value
-        return [ldda.id for ldda in value]
+        if not isinstance( value, list ):
+            value = [value]
+        lst = []
+        for item in value:
+            encoded_id = encoded_name = None
+            if isinstance (item, app.model.LibraryDatasetDatasetAssociation):
+                encoded_id = app.security.encode_id( item.id )
+                encoded_name = item.name
+            elif isinstance (item, dict):
+                encoded_id = item.get('id')
+                encoded_name = item.get('name')
+            else:
+                lst = []
+                break
+            if encoded_id is not None:
+                lst.append( {
+                    'id'   : encoded_id,
+                    'name' : encoded_name,
+                    'src'  : 'ldda'
+                } )
+        if len( lst ) == 0:
+            return None
+        else:
+            return lst
 
-    def to_python( self, value, app ):
-        if not value:
-            return value
-        lddas = []
-        for ldda_id in value:
-            lddas.append( app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) )
-        return lddas
+    # converts values into python representation:
+    #   LibraryDatasetDatasetAssociation
+    # valid input values (incl. arrays of mixed sets) are:
+    #   1. LibraryDatasetDatasetAssociation
+    #   2. LibraryDatasetDatasetAssociation.id
+    #   3. { id: LibraryDatasetDatasetAssociation.id, ... }
+    def to_python( self, value, app, other_values={}, validate=False ):
+        if not isinstance( value, list ):
+            value = [value]
+        lst = []
+        for item in value:
+            if isinstance (item, app.model.LibraryDatasetDatasetAssociation):
+                lst.append(item)
+            else:
+                encoded_id = None
+                if isinstance (item, dict):
+                    encoded_id = item.get('id')
+                elif isinstance (item, basestring):
+                    encoded_id = item
+                else:
+                    lst = []
+                    break
+                lda = app.model.context.query( app.model.LibraryDatasetDatasetAssociation ).get( app.security.decode_id( encoded_id ) )
+                if lda is not None:
+                    lst.append( lda )
+                elif validate:
+                    raise ValueError( "One of the selected library datasets is invalid or not available anymore." )
+        if len( lst ) == 0:
+            if not self.optional and validate:
+                raise ValueError( "Please select a valid library dataset." )
+            return None
+        else:
+            return lst
+
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
+        d = super( LibraryDatasetToolParameter, self ).to_dict( trans )
+        d['multiple'] = self.multiple
+        return d
 
 # class RawToolParameter( ToolParameter ):
 #     """
