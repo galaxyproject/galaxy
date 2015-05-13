@@ -265,7 +265,7 @@ class HideDatasetAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return "Hide output '%s'." % pja.output_name
+        return "Hide output '%s'." % escape(pja.output_name)
 
 
 class DeleteDatasetAction(DefaultJobAction):
@@ -341,7 +341,7 @@ class ColumnSetAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return "Set the following metadata values:<br/>" + "<br/>".join(['%s : %s' % (k, v) for k, v in pja.action_arguments.iteritems()])
+        return "Set the following metadata values:<br/>" + "<br/>".join(['%s : %s' % (escape(k), escape(v)) for k, v in pja.action_arguments.iteritems()])
 
 
 class SetMetadataAction(DefaultJobAction):
