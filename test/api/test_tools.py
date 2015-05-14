@@ -3,6 +3,7 @@ from base import api
 from operator import itemgetter
 from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
+from .helpers import LibraryPopulator
 from .helpers import skip_without_tool
 
 
@@ -119,6 +120,21 @@ class ToolsTestCase( api.ApiTestCase ):
         output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
         assert output1_content.strip() == "--ex1"
         assert output2_content.strip() == "None", output2_content
+
+    @skip_without_tool( "library_data" )
+    def test_library_data_param( self ):
+        history_id = self.dataset_populator.new_history()
+        ld = LibraryPopulator( self ).new_library_dataset( "lda_test_library" )
+        inputs = {
+            "library_dataset": ld[ "ldda_id" ],
+            "library_dataset_multiple": [ld[ "ldda_id" ], ld[ "ldda_id" ]]
+        }
+        response = self._run( "library_data", history_id, inputs, assert_ok=True )
+        output = response[ "outputs" ]
+        output_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 0 ] )
+        assert output_content == "TestData", output_content
+        output_multiple_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
+        assert output_multiple_content == "TestDataTestData", output_multiple_content
 
     @skip_without_tool( "multi_data_param" )
     def test_multidata_param( self ):
