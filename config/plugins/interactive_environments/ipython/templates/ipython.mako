@@ -3,14 +3,20 @@
 <%
 import os
 import shutil
-import tempfile
-import subprocess
+import hashlib
 
 # Sets ID and sets up a lot of other variables
 ie_request.load_deploy_config()
 ie_request.attr.docker_port = 6789
 # Create tempdir in galaxy
-temp_dir = os.path.abspath( tempfile.mkdtemp() )
+temp_dir = ie_request.temp_dir
+
+if ie_request.attr.PASSWORD_AUTH:
+    m = hashlib.sha1()
+    m.update( ie_request.notebook_pw + ie_request.notebook_pw_salt )
+    PASSWORD = 'sha1:%s:%s' % (ie_request.notebook_pw_salt, m.hexdigest())
+else:
+	PASSWORD = "none"
 
 ## IPython Specific
 # Prepare an empty notebook
@@ -34,9 +40,9 @@ notebook_login_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/login
 
 
 # Add all environment variables collected from Galaxy's IE infrastructure
-docker_cmd = ie_request.docker_cmd(temp_dir)
-ie_request.log.info("Starting IPython docker container with command [%s]" % docker_cmd)
-subprocess.call(docker_cmd, shell=True)
+ie_request.launch(env_override={
+    'notebook_password': PASSWORD,
+})
 
 %>
 <html>
