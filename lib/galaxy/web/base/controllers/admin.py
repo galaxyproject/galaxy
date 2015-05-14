@@ -94,7 +94,7 @@ class Admin( object ):
         tool_id = None
         if params.get( 'reload_tool_button', False ):
             tool_id = params.get('tool_id', None)
-            galaxy.queue_worker.send_control_task(trans, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
+            galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
             message, status = trans.app.toolbox.reload_tool_by_id( tool_id)
         return trans.fill_template( '/admin/reload_tool.mako',
                                     tool_id=tool_id,
@@ -1058,11 +1058,11 @@ class Admin( object ):
             trans.sa_session.flush()
         if ajl_submit:
             if job_lock == 'on':
-                galaxy.queue_worker.send_control_task(trans, 'admin_job_lock',
+                galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock',
                                                       kwargs={'job_lock': True } )
                 job_lock = True
             else:
-                galaxy.queue_worker.send_control_task(trans, 'admin_job_lock',
+                galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock',
                                                       kwargs={'job_lock': False } )
                 job_lock = False
         else:

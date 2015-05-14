@@ -1,14 +1,12 @@
 import ConfigParser
 
-import hashlib
 import os
 import random
+import tempfile
+import subprocess
 
 from galaxy.util.bunch import Bunch
 from galaxy import web
-from galaxy import eggs
-eggs.require("PyYAML")
-import yaml
 from galaxy.managers import api_keys
 
 import logging
@@ -42,6 +40,13 @@ class InteractiveEnviornmentRequest(object):
         self.attr.HOST = trans.request.host.rsplit(':', 1)[0]
         self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
+        # Generate per-request passwords the IE plugin can use to configure
+        # the destination container.
+        self.notebook_pw_salt = self.generate_password(length=12)
+        self.notebook_pw = self.generate_password(length=24)
+
+        self.temp_dir = os.path.abspath( tempfile.mkdtemp() )
+
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
         # will need to be recorded here. The ConfigParser doesn't provide a
@@ -68,9 +73,9 @@ class InteractiveEnviornmentRequest(object):
         self.attr.APACHE_URLS = _boolean_option("apache_urls")
         self.attr.SSL_URLS = _boolean_option("ssl")
 
-    def write_conf_file(self, output_directory, extra={}):
+    def get_conf_dict(self):
         """
-            Build up a configuration file that is standard for ALL IEs.
+            Build up a configuration dictionary that is standard for ALL IEs.
 
             TODO: replace hashed password with plaintext.
         """
@@ -92,27 +97,11 @@ class InteractiveEnviornmentRequest(object):
         else:
             conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
             web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
-            conf_file['galaxy_paster_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+            conf_file['galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+            # Galaxy paster port is deprecated
+            conf_file['galaxy_paster_port'] = conf_file['galaxy_web_port']
 
-        if self.attr.PASSWORD_AUTH:
-            # Generate a random password + salt
-            notebook_pw_salt = self.generate_password(length=12)
-            notebook_pw = self.generate_password(length=24)
-            m = hashlib.sha1()
-            m.update( notebook_pw + notebook_pw_salt )
-            conf_file['notebook_password'] = 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest())
-            # Should we use password based connection or "default" connection style in galaxy
-        else:
-            notebook_pw = "None"
-
-        # Some will need to pass extra data
-        for extra_key in extra:
-            conf_file[extra_key] = extra[extra_key]
-
-        self.attr.notebook_pw = notebook_pw
-        # Write conf
-        with open( os.path.join( output_directory, 'conf.yaml' ), 'wb' ) as handle:
-            handle.write( yaml.dump(conf_file, default_flow_style=False) )
+        return conf_file
 
     def generate_hex(self, length):
         return ''.join(random.choice('0123456789abcdef') for _ in range(length))
@@ -165,12 +154,26 @@ class InteractiveEnviornmentRequest(object):
             .replace('${PORT}', str(self.attr.PORT))
         return url
 
-    def docker_cmd(self, temp_dir):
+    def docker_cmd(self, env_override={}):
         """
             Generate and return the docker command to execute
         """
-        return '%s run -d %s -p %s:%s -v "%s:/import/" %s' % \
+        temp_dir = self.temp_dir
+        conf = self.get_conf_dict()
+        conf.update(env_override)
+        env_str = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
+        return '%s run %s -d %s -p %s:%s -v "%s:/import/" %s' % \
             (self.attr.viz_config.get("docker", "command"),
+            env_str,
             self.attr.viz_config.get("docker", "command_inject"),
             self.attr.PORT, self.attr.docker_port,
             temp_dir, self.attr.viz_config.get("docker", "image"))
+
+    def launch(self, raw_cmd=None, env_override={}):
+        if raw_cmd is None:
+            raw_cmd = self.docker_cmd(env_override=env_override)
+        log.info("Starting docker container for IE {0} with command [{1}]".format(
+            self.viz_id,
+            raw_cmd
+        ))
+        subprocess.call(raw_cmd, shell=True)
