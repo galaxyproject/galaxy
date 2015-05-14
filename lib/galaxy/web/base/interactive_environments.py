@@ -173,3 +173,12 @@ class InteractiveEnviornmentRequest(object):
             self.attr.viz_config.get("docker", "command_inject"),
             self.attr.PORT, self.attr.docker_port,
             temp_dir, self.attr.viz_config.get("docker", "image"))
+
+    def launch(self, temp_dir, raw_cmd=None, env_override={}):
+        if raw_cmd is None:
+            raw_cmd = self.docker_cmd(temp_dir, env_override=env_override)
+        log.info("Starting docker container for IE {0} with command [{1}]".format(
+            self.viz_id,
+            raw_cmd
+        ))
+        subprocess.call(raw_cmd, shell=True)

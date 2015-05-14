@@ -26,18 +26,11 @@ notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth
 if hda.datatype.__class__.__name__ == "RData":
     shutil.copy( hda.file_name, os.path.join(temp_dir, '.RData') )
 
-import re
-docker_cmd = ie_request.docker_cmd(temp_dir, env_override={
+ie_request.launch(temp_dir, env_override={
     'notebook_username': USERNAME,
     'notebook_password': PASSWORD,
-    'cors_origin': ie_request.attr.proxy_url})
-# Hack out the -u galaxy_id statement because the RStudio IE isn't ready to run
-# as root
-docker_cmd = re.sub('-u (\d+) ', '', docker_cmd)
-# Add in ENV parameters
-docker_cmd = docker_cmd.replace('run', 'run %s' % ENV)
-subprocess.call(docker_cmd, shell=True)
-ie_request.log.info("Starting RStudio docker container with command [%s]" % docker_cmd)
+    'cors_origin': ie_request.attr.proxy_url,
+})
 %>
 <html>
 <head>

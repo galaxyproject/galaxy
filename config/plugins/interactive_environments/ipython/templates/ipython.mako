@@ -34,9 +34,7 @@ notebook_login_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/login
 
 
 # Add all environment variables collected from Galaxy's IE infrastructure
-docker_cmd = ie_request.docker_cmd(temp_dir)
-ie_request.log.info("Starting IPython docker container with command [%s]" % docker_cmd)
-subprocess.call(docker_cmd, shell=True)
+ie_request.launch(temp_dir)
 
 %>
 <html>
