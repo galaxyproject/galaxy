@@ -12,7 +12,7 @@
 command = docker
 
 # The docker image name that should be started.
-image = bgruening/docker-ipython-notebook:0.2
+image = bgruening/docker-ipython-notebook:15.05
 
 # Additional arguments that are passed to the `docker run` command.
 command_inject = --sig-proxy=true
