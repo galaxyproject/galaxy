@@ -1,6 +1,5 @@
 import ConfigParser
 
-import hashlib
 import os
 import random
 import tempfile
@@ -41,6 +40,8 @@ class InteractiveEnviornmentRequest(object):
         self.attr.HOST = trans.request.host.rsplit(':', 1)[0]
         self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
+        # Generate per-request passwords the IE plugin can use to configure
+        # the destination container.
         self.notebook_pw_salt = self.generate_password(length=12)
         self.notebook_pw = self.generate_password(length=24)
 
@@ -100,16 +101,6 @@ class InteractiveEnviornmentRequest(object):
             # Galaxy paster port is deprecated
             conf_file['galaxy_paster_port'] = conf_file['galaxy_web_port']
 
-        if self.attr.PASSWORD_AUTH:
-            # Generate a random password + salt
-            m = hashlib.sha1()
-            m.update( self.notebook_pw + self.notebook_pw_salt )
-            conf_file['notebook_password'] = 'sha1:%s:%s' % (self.notebook_pw_salt, m.hexdigest())
-            # Should we use password based connection or "default" connection style in galaxy
-        else:
-            notebook_pw = "None"
-
-        self.attr.notebook_pw = notebook_pw
         return conf_file
 
     def generate_hex(self, length):
