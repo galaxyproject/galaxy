@@ -11,15 +11,7 @@ ie_request.load_deploy_config()
 ie_request.attr.docker_port = 80
 # Create tempdir in galaxy
 temp_dir = os.path.abspath( tempfile.mkdtemp() )
-# We have to do some special things with the password here. Currently there's
-# an unpatched issue in Galaxy-IE which means passwords are automatically hashed
-# according to what IPython expects (sha1+salt). Unfortunately this is also done
-# for RStudio which takes the password as-is. However, we give the IE plugin NO
-# way to access this hashed password, so we have to work around this. Fortunately
-# we placed the additional conf entries at the very end of of the
-# `write_conf_file` function, enabling us to overwrite the correct attributes
-# simply by passing `notebook_password` with a "plaintext", unhashed password.
-PASSWORD = ie_request.generate_password(length=36)
+PASSWORD = ie_request.notebook_pw
 USERNAME = "galaxy"
 
 ## General IE specific
@@ -39,10 +31,6 @@ docker_cmd = ie_request.docker_cmd(temp_dir, env_override={
     'notebook_username': USERNAME,
     'notebook_password': PASSWORD,
     'cors_origin': ie_request.attr.proxy_url})
-# New vesion of docker_cmd calls the get_conf_dict wherein the password is set
-# incorrectly. This is overwritten at the end of the above function call, so we
-# need to re-overwrite it.
-ie_request.attr.notebook_pw = PASSWORD
 # Hack out the -u galaxy_id statement because the RStudio IE isn't ready to run
 # as root
 docker_cmd = re.sub('-u (\d+) ', '', docker_cmd)

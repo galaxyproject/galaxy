@@ -3,6 +3,7 @@ import ConfigParser
 import hashlib
 import os
 import random
+import subprocess
 
 from galaxy.util.bunch import Bunch
 from galaxy import web
@@ -38,6 +39,9 @@ class InteractiveEnviornmentRequest(object):
         self.attr.our_template_dir = os.path.join(plugin_path, "templates")
         self.attr.HOST = trans.request.host.rsplit(':', 1)[0]
         self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
+
+        self.notebook_pw_salt = self.generate_password(length=12)
+        self.notebook_pw = self.generate_password(length=24)
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
@@ -95,11 +99,9 @@ class InteractiveEnviornmentRequest(object):
 
         if self.attr.PASSWORD_AUTH:
             # Generate a random password + salt
-            notebook_pw_salt = self.generate_password(length=12)
-            notebook_pw = self.generate_password(length=24)
             m = hashlib.sha1()
-            m.update( notebook_pw + notebook_pw_salt )
-            conf_file['notebook_password'] = 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest())
+            m.update( self.notebook_pw + self.notebook_pw_salt )
+            conf_file['notebook_password'] = 'sha1:%s:%s' % (self.notebook_pw_salt, m.hexdigest())
             # Should we use password based connection or "default" connection style in galaxy
         else:
             notebook_pw = "None"
