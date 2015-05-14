@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<display id="igv_bed" version="1.0.0" name="display with IGV">
+<display id="igv_interval_as_bed" version="1.0.0" name="display with IGV">
     
     <!-- Load links from file: one line to one link -->
     <dynamic_links site_type="igv" skip_startswith="#" id="0" name="1">
