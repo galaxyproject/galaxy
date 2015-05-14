@@ -39,7 +39,7 @@ function validate (value) {
         return false;
     }
     for (var i in value) {
-        if (['__null__', '__undefined__', 'None', null, undefined].indexOf(value[i]) > -1) {
+        if (['__null__', '__undefined__', null, undefined].indexOf(value[i]) > -1) {
             return false;
         }
     }

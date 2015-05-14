@@ -282,21 +282,21 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         state = states.ERROR
         # TODO: history_state and state_counts are classically calc'd at the same time
         #   so this is rel. ineff. - if we keep this...
-        hda_state_counts = self.serialize_state_counts( history, 'counts', exclude_deleted=False, **context )
+        hda_state_counts = self.serialize_state_counts( history, 'counts', exclude_deleted=True, **context )
         num_hdas = sum( hda_state_counts.values() )
         if num_hdas == 0:
             state = states.NEW
 
         else:
             if ( hda_state_counts[ states.RUNNING ] > 0
-                 or hda_state_counts[ states.SETTING_METADATA ] > 0
-                 or hda_state_counts[ states.UPLOAD ] > 0 ):
+              or hda_state_counts[ states.SETTING_METADATA ] > 0
+              or hda_state_counts[ states.UPLOAD ] > 0 ):
                 state = states.RUNNING
             # TODO: this method may be more useful if we *also* polled the histories jobs here too
             elif hda_state_counts[ states.QUEUED ] > 0:
                 state = states.QUEUED
             elif ( hda_state_counts[ states.ERROR ] > 0
-                   or hda_state_counts[ states.FAILED_METADATA ] > 0 ):
+                or hda_state_counts[ states.FAILED_METADATA ] > 0 ):
                 state = states.ERROR
             elif hda_state_counts[ states.OK ] == num_hdas:
                 state = states.OK
