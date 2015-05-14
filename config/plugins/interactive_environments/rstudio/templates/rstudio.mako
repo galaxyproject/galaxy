@@ -2,15 +2,13 @@
 <%
 import os
 import shutil
-import tempfile
 import time
-import subprocess
 
 # Sets ID and sets up a lot of other variables
 ie_request.load_deploy_config()
 ie_request.attr.docker_port = 80
 # Create tempdir in galaxy
-temp_dir = os.path.abspath( tempfile.mkdtemp() )
+temp_dir = ie_request.temp_dir
 PASSWORD = ie_request.notebook_pw
 USERNAME = "galaxy"
 
@@ -26,7 +24,7 @@ notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth
 if hda.datatype.__class__.__name__ == "RData":
     shutil.copy( hda.file_name, os.path.join(temp_dir, '.RData') )
 
-ie_request.launch(temp_dir, env_override={
+ie_request.launch(env_override={
     'notebook_username': USERNAME,
     'notebook_password': PASSWORD,
     'cors_origin': ie_request.attr.proxy_url,

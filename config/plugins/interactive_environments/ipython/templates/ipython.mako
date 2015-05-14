@@ -3,14 +3,12 @@
 <%
 import os
 import shutil
-import tempfile
-import subprocess
 
 # Sets ID and sets up a lot of other variables
 ie_request.load_deploy_config()
 ie_request.attr.docker_port = 6789
 # Create tempdir in galaxy
-temp_dir = os.path.abspath( tempfile.mkdtemp() )
+temp_dir = ie_request.temp_dir
 
 ## IPython Specific
 # Prepare an empty notebook
@@ -34,7 +32,7 @@ notebook_login_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/login
 
 
 # Add all environment variables collected from Galaxy's IE infrastructure
-ie_request.launch(temp_dir)
+ie_request.launch()
 
 %>
 <html>

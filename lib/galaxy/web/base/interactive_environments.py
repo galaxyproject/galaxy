@@ -3,6 +3,7 @@ import ConfigParser
 import hashlib
 import os
 import random
+import tempfile
 import subprocess
 
 from galaxy.util.bunch import Bunch
@@ -42,6 +43,8 @@ class InteractiveEnviornmentRequest(object):
 
         self.notebook_pw_salt = self.generate_password(length=12)
         self.notebook_pw = self.generate_password(length=24)
+
+        self.temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
@@ -160,10 +163,11 @@ class InteractiveEnviornmentRequest(object):
             .replace('${PORT}', str(self.attr.PORT))
         return url
 
-    def docker_cmd(self, temp_dir, env_override={}):
+    def docker_cmd(self, env_override={}):
         """
             Generate and return the docker command to execute
         """
+        temp_dir = self.temp_dir
         conf = self.get_conf_dict()
         conf.update(env_override)
         env_str = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
@@ -174,9 +178,9 @@ class InteractiveEnviornmentRequest(object):
             self.attr.PORT, self.attr.docker_port,
             temp_dir, self.attr.viz_config.get("docker", "image"))
 
-    def launch(self, temp_dir, raw_cmd=None, env_override={}):
+    def launch(self, raw_cmd=None, env_override={}):
         if raw_cmd is None:
-            raw_cmd = self.docker_cmd(temp_dir, env_override=env_override)
+            raw_cmd = self.docker_cmd(env_override=env_override)
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.viz_id,
             raw_cmd
