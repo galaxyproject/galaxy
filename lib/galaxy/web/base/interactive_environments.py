@@ -173,7 +173,7 @@ class InteractiveEnviornmentRequest(object):
         if raw_cmd is None:
             raw_cmd = self.docker_cmd(env_override=env_override)
         log.info("Starting docker container for IE {0} with command [{1}]".format(
-            self.viz_id,
+            self.attr.viz_id,
             raw_cmd
         ))
         subprocess.call(raw_cmd, shell=True)
