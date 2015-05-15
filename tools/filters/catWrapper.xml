@@ -1,8 +1,8 @@
 <tool id="cat1" name="Concatenate datasets" version="1.0.0">
     <description>tail-to-head</description>
     <command interpreter="python">
-        catWrapper.py 
-        $out_file1 
+        catWrapper.py
+        $out_file1
         $input1
         #for $q in $queries
             ${q.input2}
@@ -37,7 +37,7 @@
 
 .. class:: warningmark
 
-**WARNING:** Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format. 
+**WARNING:** Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format.
 
 -----
 
@@ -59,7 +59,7 @@ with Dataset1::
     chr1  151242630  151242955  X  0  +
     chr1  151271715  151271999  Y  0  +
     chr1  151278832  151279227  Z  0  -
-    
+
 and with Dataset2::
 
     chr2  100000030  200000955  P  0  +

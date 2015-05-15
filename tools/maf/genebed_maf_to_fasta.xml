@@ -41,7 +41,7 @@
             <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
             <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
           </options>
-        </param> 
+        </param>
         <param name="species" type="select" display="checkboxes" multiple="true" label="Choose species" help="Select species to be included in the final alignment">
           <options from_file="maf_index.loc">
             <column name="uid" index="1"/>
@@ -78,9 +78,8 @@
       <param name="overwrite_with_gaps" value="True"/>
       <output name="out_file1" file="gene_bed_maf_to_fasta_user_out.fasta" />
     </test>
-  </tests> 
+  </tests>
   <help>
-
 **What it does**
 
 The coding sequence of genes are usually composed of several coding exons. Each of these coding exons is an individual genomic region, which when concatenated with each other constitutes the coding sequence. A single genomic region can be covered by multiple alignment blocks. In many cases it is desirable to stitch these alignment blocks together. This tool accepts a list of gene-based intervals, in the Gene BED format. For every interval it performs the following:
