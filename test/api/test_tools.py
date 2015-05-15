@@ -302,7 +302,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self._assert_has_keys( output_collection, "id", "name", "elements", "populated" )
         assert not output_collection[ "populated" ]
         assert len( output_collection[ "elements" ] ) == 0
-
+        self.assertEquals( output_collection[ "name" ], "Table split on first column" )
         self.dataset_populator.wait_for_job( create["jobs"][0]["id"], assert_ok=True )
 
         get_collection_response = self._get( "dataset_collections/%s" % output_collection[ "id" ], data={"instance_type": "history"} )
@@ -312,6 +312,8 @@ class ToolsTestCase( api.ApiTestCase ):
         self._assert_has_keys( output_collection, "id", "name", "elements", "populated" )
         assert output_collection[ "populated" ]
         assert len( output_collection[ "elements" ] ) == 2
+        self.assertEquals( output_collection[ "name" ], "Table split on first column" )
+
         # TODO: verify element identifiers
 
     @skip_without_tool( "cat1" )
