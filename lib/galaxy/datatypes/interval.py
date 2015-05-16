@@ -46,6 +46,7 @@ VIEWPORT_MAX_READS_PER_LINE = 10
 @dataproviders.decorators.has_dataproviders
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
+    edam_format = "format_3003"
     file_ext = "interval"
     line_class = "region"
     track_type = "FeatureTrack"
@@ -945,6 +946,7 @@ class Gff3( Gff ):
 
 class Gtf( Gff ):
     """Tab delimited data in Gtf format"""
+    edam_format = "format_2306"
     file_ext = "gtf"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Attributes' ]
     track_type = Interval.track_type
@@ -1016,6 +1018,7 @@ class Gtf( Gff ):
 @dataproviders.decorators.has_dataproviders
 class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""
+    edam_format = "format_3005"
     file_ext = "wig"
     track_type = "LineTrack"
     data_sources = { "data": "bigwig", "index": "bigwig" }

@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 @dataproviders.decorators.has_dataproviders
 class Tabular( data.Text ):
     """Tab delimited data"""
-
+    edam_format = "format_3475"
     # All tabular data is chunkable.
     CHUNKABLE = True
 
@@ -373,6 +373,7 @@ class Taxonomy( Tabular ):
 
 @dataproviders.decorators.has_dataproviders
 class Sam( Tabular ):
+    edam_format = "format_2573"
     file_ext = 'sam'
     track_type = "ReadTrack"
     data_sources = { "data": "bam", "index": "bigwig" }
@@ -554,6 +555,7 @@ class Sam( Tabular ):
 @dataproviders.decorators.has_dataproviders
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
+    edam_format = "format_3015"
     file_ext = "pileup"
     line_class = "genomic coordinate"
     data_sources = { "data": "tabix" }
@@ -626,6 +628,7 @@ class Pileup( Tabular ):
 @dataproviders.decorators.has_dataproviders
 class Vcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
+    edam_format = "format_3016"
     track_type = "VariantTrack"
     data_sources = { "data": "tabix", "index": "bigwig" }
 
