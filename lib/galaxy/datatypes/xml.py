@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 @dataproviders.decorators.has_dataproviders
 class GenericXml( data.Text ):
     """Base format class for any XML file."""
+    edam_format = "format_2332"
     file_ext = "xml"
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -124,6 +125,7 @@ class Owl( GenericXml ):
         Web Ontology Language OWL format description
         http://www.w3.org/TR/owl-ref/
     """
+    edam_format = "format_3262"
     file_ext = "owl"
 
     def set_peek( self, dataset, is_multi_byte=False ):

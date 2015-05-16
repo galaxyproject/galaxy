@@ -817,6 +817,15 @@ class Registry( object ):
         return rval
 
     @property
+    def edam_formats( self ):
+        """
+        """
+        mapping = {}
+        for k, v in self.datatypes_by_extension.iteritems():
+            mapping[k]= v.edam_format
+        return mapping
+
+    @property
     def integrated_datatypes_configs( self ):
         if self.xml_filename and os.path.isfile( self.xml_filename ):
             return self.xml_filename

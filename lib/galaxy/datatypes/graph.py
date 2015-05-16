@@ -99,6 +99,7 @@ class Rdf( xml.GenericXml ):
     """
     Resource Description Framework format (http://www.w3.org/RDF/).
     """
+    edam_format = "format_2376"
     file_ext = "rdf"
 
     def sniff( self, filename ):
