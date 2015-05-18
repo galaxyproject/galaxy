@@ -2260,6 +2260,21 @@ class Tool( object, Dictifiable ):
         dataset_id = kwd.get('__dataset_id__', None)
         history_id = kwd.get('history_id', None)
 
+        # history id
+        history = None
+        try:
+            if not history_id is None:
+                history = self.history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
+            else:
+                history = trans.get_history()
+            if history is None:
+                raise Exception('No current history available. Please specify a valid history id')
+        except Exception, e:
+            trans.response.status = 500
+            error = '[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e))
+            log.exception('tools::to_json - %s.' % error)
+            return { 'error': error }
+
         # load job details if provided
         job = None
         if job_id:
@@ -2294,7 +2309,7 @@ class Tool( object, Dictifiable ):
             try:
                 job_params = job.get_param_values( trans.app, ignore_errors = True )
                 job_messages = self.check_and_update_param_values( job_params, trans, update_values=False )
-                self._map_source_to_history( trans, self.inputs, job_params, history=history )
+                self._map_source_to_history( trans, self.inputs, job_params, history )
                 tool_message = self._compare_tool_version(trans, job)
                 params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
             except Exception, exception:
@@ -2304,11 +2319,6 @@ class Tool( object, Dictifiable ):
 
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize = False )
-
-        # history id
-        history = None
-        if not history_id is None:
-            history = self.history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
 
         # convert value to jsonifiable value
         def jsonify(v):
