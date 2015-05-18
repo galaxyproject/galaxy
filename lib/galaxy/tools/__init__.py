@@ -2268,7 +2268,7 @@ class Tool( object, Dictifiable ):
             else:
                 history = trans.get_history()
             if history is None:
-                raise Exception('No current history available. Please specify a valid history id')
+                raise Exception('History unavailable. Please specify a valid history id')
         except Exception, e:
             trans.response.status = 500
             error = '[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e))
