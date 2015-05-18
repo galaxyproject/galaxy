@@ -1,0 +1,30 @@
+===========================================================
+July 2015 Galaxy Release (v 15.07)
+===========================================================
+
+.. include:: _header.rst
+
+
+Notes
+===========================================================
+ * Dates are subject to change.
+ * The July 2015 Galaxy release will have prolonged freeze period
+which includes the full GCC.
+
+
+ Schedule
+===========================================================
+ * Planned Freeze Date: June 22, 2015
+ * Planned Release Date: July 13, 2015
+
+.. Highlights
+.. ===========================================================
+
+.. Downloads
+.. ===========================================================
+
+.. Release Notes
+.. ===========================================================
+
+
+.. include:: _thanks.rst
