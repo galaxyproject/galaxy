@@ -187,9 +187,7 @@ class MauveXmfa( Text ):
 
     def sniff( self, filename ):
         with open(filename, 'r') as handle:
-            header = handle.read(21)
-            log.debug("Header is %s" % header)
-            return header == '#FormatVersion Mauve1'
+            return handle.read(21) == '#FormatVersion Mauve1'
         return False
 
     def set_meta( self, dataset, **kwd ):
