@@ -2294,7 +2294,7 @@ class Tool( object, Dictifiable ):
             try:
                 job_params = job.get_param_values( trans.app, ignore_errors = True )
                 job_messages = self.check_and_update_param_values( job_params, trans, update_values=False )
-                self._map_source_to_history( trans, self.inputs, job_params )
+                self._map_source_to_history( trans, self.inputs, job_params, history=history )
                 tool_message = self._compare_tool_version(trans, job)
                 params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
             except Exception, exception:
@@ -2385,7 +2385,7 @@ class Tool( object, Dictifiable ):
                 if input.type == 'boolean' and isinstance(default_value, basestring):
                     value, error = [string_as_bool(default_value), None]
                 else:
-                    value, error = check_param(trans, input, default_value, context)
+                    value, error = check_param(trans, input, default_value, context, history=history)
             except Exception, err:
                 log.error('Checking parameter %s failed. %s', input.name, str(err))
                 pass
@@ -2604,11 +2604,10 @@ class Tool( object, Dictifiable ):
                     pass
         return False
 
-    def _map_source_to_history(self, trans, tool_inputs, params):
+    def _map_source_to_history(self, trans, tool_inputs, params, history):
         # Need to remap dataset parameters. Job parameters point to original
         # dataset used; parameter should be the analygous dataset in the
         # current history.
-        history = trans.get_history()
 
         # Create index for hdas.
         hda_source_dict = {}
