@@ -317,6 +317,7 @@ define(['utils/utils',
             // create input field wrapper
             var input_element = new InputElement(this.app, {
                 label           : input_def.label || input_def.name,
+                value           : input_def.value,
                 default_value   : input_def.default_value,
                 collapsible     : input_def.collapsible,
                 help            : input_def.help,

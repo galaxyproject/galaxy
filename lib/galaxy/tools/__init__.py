@@ -2337,6 +2337,8 @@ class Tool( object, Dictifiable ):
                     return 'false'
             elif isinstance(v, basestring) or isnumber:
                 return v
+            elif isinstance(v, dict) and hasattr(v, '__class__'):
+                return v
             else:
                 return None
 
@@ -2364,21 +2366,22 @@ class Tool( object, Dictifiable ):
             dict[key] = value
 
         # check the current state of a value and update it if necessary
-        def check_state(trans, input, default_value, context):
-            value = default_value
+        def check_state(trans, input, value, context):
             error = 'State validation failed.'
 
-            # skip dynamic fields if deactivated
-            if is_workflow and input.is_dynamic:
-                return [value, None]
+            # do not check unvalidated values
+            if isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
+                return [ { '__class__' : 'RuntimeValue' }, None ]
+            if isinstance( value, dict ) and hasattr( value, '__class__' ):
+                return[ value, None ]
 
             # validate value content
             try:
                 # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
-                if input.type == 'boolean' and isinstance(default_value, basestring):
-                    value, error = [string_as_bool(default_value), None]
+                if input.type == 'boolean' and isinstance(value, basestring):
+                    value, error = [string_as_bool(value), None]
                 else:
-                    value, error = check_param(trans, input, default_value, context)
+                    value, error = check_param(trans, input, value, context)
             except Exception, err:
                 log.error('Checking parameter %s failed. %s', input.name, str(err))
                 pass

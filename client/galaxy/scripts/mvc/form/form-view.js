@@ -176,9 +176,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
             // add listener which triggers on checksum change
             var current_check = this.data.checksum();
-            this.on('change', function() {
+            this.on('change', function(changed) {
                 var new_check = self.data.checksum();
-                if (new_check != current_check) {
+                if (new_check != current_check || changed) {
                     current_check = new_check;
                     self.options.onchange && self.options.onchange();
                 }

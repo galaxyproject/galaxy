@@ -37,15 +37,21 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 }
             });
 
-            // declare conditional fields as not optional
+            // mark values which can be determined at runtime
+            Utils.deepeach(options.inputs, function(item) {
+                if (item.type) {
+                    if ((['data', 'data_collection']).indexOf(item.type) == -1) {
+                        item.collapsible = true;
+                        item.collapsible_value = {'__class__': 'RuntimeValue'};
+                    }
+                }
+            });
+
+            // declare conditional and data input fields as not collapsible
             Utils.deepeach(options.inputs, function(item) {
                 if (item.type) {
                     if (item.type == 'conditional') {
                         item.test_param.collapsible = false;
-                    } else {
-                        if ((['data', 'data_collection']).indexOf(item.type) == -1) {
-                            item.collapsible = true;
-                        }
                     }
                 }
             });

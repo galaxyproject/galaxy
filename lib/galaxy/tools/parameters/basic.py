@@ -159,6 +159,8 @@ class ToolParameter( object, Dictifiable ):
     def value_to_basic( self, value, app ):
         if isinstance( value, RuntimeValue ):
             return { "__class__": "RuntimeValue" }
+        elif isinstance( value, dict ) and hasattr( value, '__class__'):
+            return value
         return self.to_string( value, app )
 
     def value_from_basic( self, value, app, ignore_errors=False ):
@@ -631,7 +633,7 @@ class FTPFileToolParameter( ToolParameter ):
             value = [ value ]
         lst = []
         for val in value:
-            if val is None:
+            if val in [ None, '' ]:
                 lst = []
                 break
             if isinstance( val, dict ):

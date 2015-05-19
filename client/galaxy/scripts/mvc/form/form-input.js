@@ -16,6 +16,7 @@ define([], function() {
             // link field
             this.field = options.field;
             this.default_value = options.default_value;
+            this.value = options.value;
 
             // set element
             this.setElement(this._template(options));
@@ -31,13 +32,7 @@ define([], function() {
             this.$field.prepend(this.field.$el);
 
             // decide wether to expand or collapse optional fields
-            this.field.skip = false;
-            var v = this.field.value && this.field.value();
-            this.field.skip = Boolean(options.collapsible &&
-                                        (v === this.default_value ||
-                                         String(v) === String(this.default_value) ||
-                                         Number(v) === Number(this.default_value) ||
-                                         JSON.stringify(v) === JSON.stringify(this.default_value)));
+            this.field.collapsed = options.collapsible && this.value && this.value['__class__'];
 
             // refresh view
             this._refresh();
@@ -46,7 +41,7 @@ define([], function() {
             var self = this;
             this.$optional.on('click', function() {
                 // flip flag
-                self.field.skip = !self.field.skip;
+                self.field.collapsed = !self.field.collapsed;
 
                 // refresh view
                 self._refresh();
@@ -78,18 +73,19 @@ define([], function() {
             this.$optional_icon.removeClass().addClass('icon');
 
             // identify state
-            if (!this.field.skip) {
+            if (!this.field.collapsed) {
                 // enable input field
                 this.$field.fadeIn('fast');
                 this._tooltip(this.text_disable, this.cls_disable);
-            
             } else {
                 // disable input field
                 this.$field.hide();
                 this._tooltip(this.text_enable, this.cls_enable);
-                // reset field value
                 this.field.value && this.field.value(this.default_value);
             }
+
+            // refresh form data
+            this.app.trigger('change', true);
         },
 
         /** Set tooltip text
