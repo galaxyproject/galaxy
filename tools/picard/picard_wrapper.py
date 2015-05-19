@@ -171,7 +171,7 @@ class PicardBase():
         tlog,stdouts,rval = self.runCL(cl,outdir)
         # Renaming the extra .bam extension that sort adds to the outfile
         outfile_bam = outfile + ".bam"
-	os.rename(outfile_bam, outfile)
+        os.rename(outfile_bam, outfile)
         return tlog
 
     def cleanup(self):
