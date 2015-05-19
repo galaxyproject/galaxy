@@ -17,9 +17,10 @@ return Backbone.Model.extend({
             var id = $(this).attr('id');
             var field = self.app.field_list[id];
             if (field) {
-                sum += JSON.stringify(field.value && field.value());
+                sum += id + ':' + JSON.stringify(field.value && field.value()) + ';';
             }
         });
+        console.log(sum);
         return sum;
     },
 
