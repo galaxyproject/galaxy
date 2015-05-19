@@ -166,8 +166,12 @@ class PicardBase():
         """
         """
         print '## sortSam got infile=%s,outfile=%s,outdir=%s' % (infile,outfile,outdir)
-        cl = ['samtools sort -f ',infile,outfile]
+        #Removed the -f option used for passing input file
+        cl = ['samtools sort ',infile,outfile]
         tlog,stdouts,rval = self.runCL(cl,outdir)
+        # Renaming the extra .bam extension that sort adds to the outfile
+        outfile_bam = outfile + ".bam"
+        os.rename(outfile_bam, outfile)
         return tlog
 
     def cleanup(self):
