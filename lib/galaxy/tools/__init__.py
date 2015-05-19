@@ -27,6 +27,7 @@ from mako.template import Template
 from paste import httpexceptions
 
 from galaxy import model
+from galaxy.managers import histories
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
 from galaxy.tools.actions import DefaultToolAction
@@ -61,7 +62,6 @@ from tool_shed.util import shed_util_common as suc
 from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
 import galaxy.jobs
-
 
 log = logging.getLogger( __name__ )
 
@@ -454,6 +454,7 @@ class Tool( object, Dictifiable ):
         # Parse XML element containing configuration
         self.parse( tool_source, guid=guid )
         self.external_runJob_script = app.config.drmaa_external_runjob_script
+        self.history_manager = histories.HistoryManager( app )
 
     @property
     def sa_session( self ):
@@ -2257,6 +2258,22 @@ class Tool( object, Dictifiable ):
         """
         job_id = kwd.get('__job_id__', None)
         dataset_id = kwd.get('__dataset_id__', None)
+        history_id = kwd.get('history_id', None)
+
+        # history id
+        history = None
+        try:
+            if not history_id is None:
+                history = self.history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
+            else:
+                history = trans.get_history()
+            if history is None:
+                raise Exception('History unavailable. Please specify a valid history id')
+        except Exception, e:
+            trans.response.status = 500
+            error = '[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e))
+            log.exception('tools::to_json - %s.' % error)
+            return { 'error': error }
 
         # load job details if provided
         job = None
@@ -2292,7 +2309,7 @@ class Tool( object, Dictifiable ):
             try:
                 job_params = job.get_param_values( trans.app, ignore_errors = True )
                 job_messages = self.check_and_update_param_values( job_params, trans, update_values=False )
-                self._map_source_to_history( trans, self.inputs, job_params )
+                self._map_source_to_history( trans, self.inputs, job_params, history )
                 tool_message = self._compare_tool_version(trans, job)
                 params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
             except Exception, exception:
@@ -2381,7 +2398,7 @@ class Tool( object, Dictifiable ):
                 if input.type == 'boolean' and isinstance(value, basestring):
                     value, error = [string_as_bool(value), None]
                 else:
-                    value, error = check_param(trans, input, value, context)
+                    value, error = check_param(trans, input, value, context, history=history)
             except Exception, err:
                 log.error('Checking parameter %s failed. %s', input.name, str(err))
                 pass
@@ -2391,7 +2408,7 @@ class Tool( object, Dictifiable ):
         def populate_state(trans, inputs, state, errors, incoming, prefix="", context=None ):
             context = ExpressionContext(state, context)
             for input in inputs.itervalues():
-                state[input.name] = input.get_initial_value(trans, context)
+                state[input.name] = input.get_initial_value(trans, context, history=history)
                 key = prefix + input.name
                 if input.type == 'repeat':
                     group_state = state[input.name]
@@ -2457,7 +2474,7 @@ class Tool( object, Dictifiable ):
                 elif input.type == 'conditional':
                     if 'test_param' in tool_dict:
                         test_param = tool_dict['test_param']
-                        test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values))
+                        test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
                         test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
                         for i in range (len ( tool_dict['cases'] ) ):
                             current_state = {}
@@ -2479,7 +2496,7 @@ class Tool( object, Dictifiable ):
 
                     # backup default value
                     try:
-                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                        tool_dict['default_value'] = input.get_initial_value(trans, other_values, history=history)
                     except Exception:
                         log.exception('tools::to_json() - Getting initial value failed %s.' % input_name)
                         # get initial value failed due to improper late validation
@@ -2600,11 +2617,10 @@ class Tool( object, Dictifiable ):
                     pass
         return False
 
-    def _map_source_to_history(self, trans, tool_inputs, params):
+    def _map_source_to_history(self, trans, tool_inputs, params, history):
         # Need to remap dataset parameters. Job parameters point to original
         # dataset used; parameter should be the analygous dataset in the
         # current history.
-        history = trans.get_history()
 
         # Create index for hdas.
         hda_source_dict = {}

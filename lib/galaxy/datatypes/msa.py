@@ -88,7 +88,7 @@ Binary.register_unsniffable_binary_ext("hmmpress")
 class Stockholm_1_0( Text ):
     file_ext = "stockholm"
 
-    MetadataElement( name="number_of_alignments", default=0, desc="Number of multiple alignments", readonly=True, visible=True, optional=True, no_value=0 )
+    MetadataElement( name="number_of_models", default=0, desc="Number of multiple alignments", readonly=True, visible=True, optional=True, no_value=0 )
 
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
@@ -166,3 +166,29 @@ class Stockholm_1_0( Text ):
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)
+
+
+class MauveXmfa( Text ):
+    file_ext = "xmfa"
+
+    MetadataElement( name="number_of_models", default=0, desc="Number of alignmened sequences", readonly=True, visible=True, optional=True, no_value=0 )
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            if (dataset.metadata.number_of_models == 1):
+                dataset.blurb = "1 alignment"
+            else:
+                dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
+            dataset.peek = get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff( self, filename ):
+        with open(filename, 'r') as handle:
+            return handle.read(21) == '#FormatVersion Mauve1'
+        return False
+
+    def set_meta( self, dataset, **kwd ):
+        dataset.metadata.number_of_models = generic_util.count_special_lines('^#Sequence([[:digit:]]+)Entry', dataset.file_name)
