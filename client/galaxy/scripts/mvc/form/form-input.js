@@ -77,15 +77,13 @@ define([], function() {
                 // enable input field
                 this.$field.fadeIn('fast');
                 this._tooltip(this.text_disable, this.cls_disable);
+                this.app.trigger('change');
             } else {
                 // disable input field
                 this.$field.hide();
                 this._tooltip(this.text_enable, this.cls_enable);
                 this.field.value && this.field.value(this.default_value);
             }
-
-            // refresh form data
-            this.app.trigger('change', true);
         },
 
         /** Set tooltip text
