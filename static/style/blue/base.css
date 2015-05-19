@@ -2304,6 +2304,7 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .dataset-choice.multi table th{padding:0px;font-weight:normal;font-size:80%;color:grey}
 .dataset-choice.multi table th:not(:last-child),.dataset-choice.multi table td:not(:last-child){padding-right:8px}
 .dataset-choice.multi table td.cell-name{font-weight:bold}
+.dataset-choice-modal .list-panel .list-item.dataset{border-left-width:1px;border-right-width:1px}
 .dataset-choice-modal .list-panel .controls .title .name{font-size:120%}
 .peek-column-selector{border-radius:3px;border:1px solid #5f6990}
 .peek-column-selector td,.peek-column-selector th{padding:4px 10px 4px 4px}
