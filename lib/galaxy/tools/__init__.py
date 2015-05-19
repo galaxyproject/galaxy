@@ -60,16 +60,6 @@ from galaxy.model.item_attrs import Dictifiable
 from tool_shed.util import shed_util_common as suc
 from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
-from .wrappers import (
-    ToolParameterValueWrapper,
-    RawObjectWrapper,
-    LibraryDatasetValueWrapper,
-    InputValueWrapper,
-    SelectToolParameterWrapper,
-    DatasetFilenameWrapper,
-    DatasetListWrapper,
-    DatasetCollectionWrapper,
-)
 import galaxy.jobs
 
 
@@ -1890,10 +1880,12 @@ class Tool( object, Dictifiable ):
         """
         args = dict()
         for key, param in self.inputs.iteritems():
-            if isinstance( param, HiddenToolParameter ):
+            # BaseURLToolParameter is now a subclass of HiddenToolParameter, so
+            # we must check if param is a BaseURLToolParameter first
+            if isinstance( param, BaseURLToolParameter ):
+                args[key] = param.get_initial_value( trans, None )
+            elif isinstance( param, HiddenToolParameter ):
                 args[key] = model.User.expand_user_properties( trans.user, param.value )
-            elif isinstance( param, BaseURLToolParameter ):
-                args[key] = param.get_value( trans )
             else:
                 raise Exception( "Unexpected parameter type" )
         return args
@@ -2332,6 +2324,12 @@ class Tool( object, Dictifiable ):
                     'id'  : trans.security.encode_id(v.id),
                     'src' : 'hdca'
                 }
+            elif isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
+                return {
+                    'id'  : trans.security.encode_id(v.id),
+                    'name': v.name,
+                    'src' : 'ldda'
+                }
             elif isinstance(v, bool):
                 if v is True:
                     return 'true'
@@ -2550,7 +2548,8 @@ class Tool( object, Dictifiable ):
         tool_versions = []
         tools = self.app.toolbox.get_loaded_tools_by_lineage(self.id)
         for t in tools:
-            tool_versions.append(t.version)
+            if not t.version in tool_versions:
+                tool_versions.append(t.version)
 
         # add information with underlying requirements and their versions
         tool_requirements = []

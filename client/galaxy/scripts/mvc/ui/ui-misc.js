@@ -199,7 +199,7 @@ var ButtonIcon = Backbone.View.extend({
         });
 
         // add tooltip
-        $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
+        this.$button.tooltip({title: options.tooltip, placement: 'bottom'});
     },
 
     // disable
@@ -229,18 +229,16 @@ var ButtonIcon = Backbone.View.extend({
         }
 
         // string
-        var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="' + options.cls + '">';
-
-        // title
+        var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="' + options.cls + '">' +
+                        '<div class="button">';
         if (options.title) {
-            str +=      '<div class="button">' +
-                            '<i class="icon fa ' + options.icon + '"/>&nbsp;' +
-                            '<span class="title">' + options.title + '</span>' +
-                        '</div>';
+            str +=          '<i class="icon fa ' + options.icon + '"/>&nbsp;' +
+                            '<span class="title">' + options.title + '</span>';
         } else {
-            str +=      '<i class="icon fa ' + options.icon + '"/>';
+            str +=          '<i class="icon fa ' + options.icon + '"/>';
         }
-        str +=      '</div>';
+        str +=          '</div>' +
+                    '</div>';
         return str;
     }
 });
@@ -277,6 +275,7 @@ var Message = Backbone.View.extend({
     optionsDefault: {
         message     : null,
         status      : 'info',
+        cls         : '',
         persistent  : false
     },
 
@@ -286,7 +285,7 @@ var Message = Backbone.View.extend({
         this.options = Utils.merge(options, this.optionsDefault);
 
         // create new element
-        this.setElement('<div></div>');
+        this.setElement('<div class="' + this.options.cls + '"/>');
 
         // show initial message
         if (this.options.message) {

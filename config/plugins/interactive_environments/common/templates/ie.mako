@@ -5,7 +5,7 @@
 // does not use these.
 ie_password_auth = ${ ie_request.javascript_boolean(ie_request.attr.PASSWORD_AUTH) };
 ie_apache_urls = ${ ie_request.javascript_boolean(ie_request.attr.APACHE_URLS) };
-ie_password = '${ ie_request.attr.notebook_pw }';
+ie_password = '${ ie_request.notebook_pw }';
 
 
 var galaxy_root = '${ ie_request.attr.root }';

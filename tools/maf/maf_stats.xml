@@ -56,9 +56,6 @@
       </change_format>
     </data>
   </outputs>
-  <requirements>
-    <requirement type="python-module">numpy</requirement>
-  </requirements>
   <tests>
     <test>
       <param name="input1" value="1.bed" dbkey="hg17" format="bed"/>

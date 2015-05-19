@@ -21,10 +21,10 @@
             <filter type="data_meta" ref="input1" key="species" />
           </options>
         </param>
-	    <param name="complete_blocks" type="select" label="Choose to">
-	      <option value="partial_allowed">include blocks with missing species</option>
-	      <option value="partial_disallowed">exclude blocks with missing species</option>
-	    </param>
+        <param name="complete_blocks" type="select" label="Choose to">
+          <option value="partial_allowed">include blocks with missing species</option>
+          <option value="partial_disallowed">exclude blocks with missing species</option>
+        </param>
       </when>
       <when value="concatenated">
         <param name="species" type="select" label="Species to extract" display="checkboxes" multiple="true">
@@ -66,14 +66,14 @@
 
 This tool converts MAF blocks to FASTA format and concatenates them into a single FASTA block or outputs multiple FASTA blocks separated by empty lines.
 
-The interface for this tool contains two pages (steps): 
+The interface for this tool contains two pages (steps):
 
  * **Step 1 of 2**. Choose multiple alignments from history to be converted to FASTA format.
  * **Step 2 of 2**. Choose the type of output as well as the species from the alignment to be included in the output.
- 
+
    Multiple Block output has additional options:
-   
-   *  **Choose species** - the tool reads the alignment provided during Step 1 and generates a list of species contained within that alignment. Using checkboxes you can specify taxa to be included in the output (all species are selected by default). 
+
+   *  **Choose species** - the tool reads the alignment provided during Step 1 and generates a list of species contained within that alignment. Using checkboxes you can specify taxa to be included in the output (all species are selected by default).
    *  **Choose to include/exclude blocks with missing species** - if an alignment block does not contain any one of the species you selected within **Choose species** menu and this option is set to **exclude blocks with missing species**, then such a block **will not** be included in the output (see **Example 2** below).  For example, if you want to extract human, mouse, and rat from a series of alignments and one of the blocks does not contain mouse sequence, then this block will not be converted to FASTA and will not be returned.
 
 
@@ -85,16 +85,16 @@ In the concatenated approach, the following alignment::
 
   ##maf version=1
   a score=68686.000000
-  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA------- 
-  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------- 
-  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C 
+  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA-------
+  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC-------
+  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C
 
   a score=10289.000000
-  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG
 
 will be converted to (**note** that because mm8 (mouse) and canFam2 (dog) are absent from the second block, they are replaced with gaps after concatenation)::
 
@@ -117,16 +117,16 @@ The following alignment::
 
   ##maf version=1
   a score=68686.000000
-  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA------- 
-  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------- 
-  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C 
+  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA-------
+  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC-------
+  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C
 
   a score=10289.000000
-  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG
 
 will be converted to::
 
@@ -156,16 +156,16 @@ The following alignment::
 
   ##maf version=1
   a score=68686.000000
-  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA------- 
-  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------- 
-  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C 
+  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA-------
+  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC-------
+  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C
 
   a score=10289.000000
-  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG
 
 will be converted to (**note** that the second MAF block, which does not have mm8, is not included in the output)::
 
@@ -180,15 +180,15 @@ will be converted to (**note** that the second MAF block, which does not have mm
 
 **About formats**
 
- **MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes. 
+ **MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes.
 
  - The .maf format is line-oriented. Each multiple alignment ends with a blank line.
  - Each sequence in an alignment is on a single line.
  - Lines starting with # are considered to be comments.
  - Each multiple alignment is in a separate paragraph that begins with an "a" line and contains an "s" line for each sequence in the multiple alignment.
- - Some MAF files may contain two optional line types: 
+ - Some MAF files may contain two optional line types:
 
-   - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line; 
+   - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line;
    - An "e" line containing information about the size of the gap between the alignments that span the current block.
 
 @HELP_CITATIONS@

@@ -12,6 +12,7 @@ import struct
 import subprocess
 import tempfile
 import re
+import warnings
 import zipfile
 
 from galaxy import eggs
@@ -24,8 +25,11 @@ from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListPa
 from galaxy.datatypes import metadata
 import dataproviders
 
-eggs.require( "pysam" )
-from pysam import csamtools
+with warnings.catch_warnings():
+    warnings.simplefilter( "ignore" )
+    eggs.require( "pysam" )
+    from pysam import csamtools
+
 
 log = logging.getLogger(__name__)
 
