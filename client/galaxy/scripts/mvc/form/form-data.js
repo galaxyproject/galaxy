@@ -20,7 +20,6 @@ return Backbone.Model.extend({
                 sum += id + ':' + JSON.stringify(field.value && field.value()) + ';';
             }
         });
-        console.log(sum);
         return sum;
     },
 
