@@ -29,7 +29,7 @@ Populates blank uuid fields in datasets with randomly generated values
             
 Going forward, these ids will be generated for all new datasets. This
 script fixes datasets that were generated before the change.
-"""
+    """
 
 def main():
     if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help" :
