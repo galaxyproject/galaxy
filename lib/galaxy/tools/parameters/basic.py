@@ -158,9 +158,10 @@ class ToolParameter( object, Dictifiable ):
 
     def value_to_basic( self, value, app ):
         if isinstance( value, RuntimeValue ):
-            return { "__class__": "RuntimeValue" }
-        elif isinstance( value, dict ) and hasattr( value, '__class__'):
-            return value
+            return { '__class__': 'RuntimeValue' }
+        elif isinstance( value, dict ):
+            if value.get('__class__') == 'RuntimeValue':
+                return value
         return self.to_string( value, app )
 
     def value_from_basic( self, value, app, ignore_errors=False ):

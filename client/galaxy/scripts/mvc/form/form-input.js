@@ -16,7 +16,6 @@ define([], function() {
             // link field
             this.field = options.field;
             this.default_value = options.default_value;
-            this.value = options.value;
 
             // set element
             this.setElement(this._template(options));
@@ -32,7 +31,8 @@ define([], function() {
             this.$field.prepend(this.field.$el);
 
             // decide wether to expand or collapse optional fields
-            this.field.collapsed = options.collapsible && this.value && this.value['__class__'];
+            this.field.collapsed =  options.collapsible && options.value &&
+                                    JSON.stringify(options.value) == JSON.stringify(options.collapsible_value);
 
             // refresh view
             this._refresh();
