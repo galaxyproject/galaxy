@@ -142,6 +142,7 @@ Binary.register_unsniffable_binary_ext("asn1-binary")
 @dataproviders.decorators.has_dataproviders
 class Bam( Binary ):
     """Class describing a BAM binary file"""
+    edam_format = "format_2572"
     file_ext = "bam"
     track_type = "ReadTrack"
     data_sources = { "data": "bai", "index": "bigwig" }
