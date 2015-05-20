@@ -208,6 +208,7 @@ var View = Backbone.View.extend({
         if (this.options.searchable) {
             this.$select.select2('destroy');
             this.$select.select2();
+            this.$( '.select2-container .select2-search input' ).off( 'blur' );
         }
 
         // set previous value
