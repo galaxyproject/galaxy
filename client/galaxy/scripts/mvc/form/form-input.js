@@ -10,8 +10,8 @@ define([], function() {
             // set text labels and icons for optional button
             this.text_enable    = app.options.text_enable || 'Enable';
             this.text_disable   = app.options.text_disable || 'Disable';
-            this.cls_enable     = app.options.cls_enable || 'fa fa-plus-square';
-            this.cls_disable    = app.options.cls_disable || 'fa fa-minus-square';
+            this.cls_enable     = app.options.cls_enable || 'fa fa-caret-square-o-down';
+            this.cls_disable    = app.options.cls_disable || 'fa fa-caret-square-o-up';
 
             // link field
             this.field = options.field;
