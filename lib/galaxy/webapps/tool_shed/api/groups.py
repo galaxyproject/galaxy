@@ -3,12 +3,14 @@ import os
 
 from galaxy import util
 from galaxy import web
-from galaxy import exceptions
+from galaxy.exceptions import RequestParameterMissingException
+from galaxy.exceptions import AdminRequiredException
 from galaxy.web import require_admin as require_admin
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
+from tool_shed.managers import groups
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -17,9 +19,48 @@ log = logging.getLogger( __name__ )
 class GroupsController( BaseAPIController ):
     """RESTful controller for interactions with groups in the Tool Shed."""
 
+    def __init__( self, app ):
+        super( GroupsController, self ).__init__( app )
+        self.group_manager = groups.GroupManager()
+
     def __get_value_mapper( self, trans ):
         value_mapper = { 'id' : trans.security.encode_id }
         return value_mapper
+
+    @expose_api_anonymous_and_sessionless
+    def index( self, trans, deleted=False, **kwd ):
+        """
+        GET /api/groups
+        Return a list of dictionaries that contain information about each Group.
+        
+        :param deleted: flag used to include deleted groups
+
+        Example: GET localhost:9009/api/groups
+        """
+        model = trans.app.model
+        group_dicts = []
+        deleted = util.asbool( deleted )
+        if deleted and not trans.user_is_admin():
+            raise AdminRequiredException( 'Only administrators can query deleted groups.' )
+        for group in self.group_manager.list( trans ):
+            group_dict = group.to_dict( view='collection', value_mapper=self.__get_value_mapper( trans ) )
+            group_members = []
+            for uga in group.users:
+                member = ( trans.sa_session.query( model.User ).filter( model.User.table.c.id == uga.user_id ).one() )
+                member_repositories = []
+                for repo in trans.sa_session.query( model.Repository ) \
+                                   .filter( model.Repository.table.c.user_id == uga.user_id ) \
+                                   .join( model.RepositoryMetadata.table ) \
+                                   .join( model.User.table ) \
+                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                   .outerjoin( model.Category.table ):
+                    member_repositories.append( { 'name': repo.name, 'times_downloaded': repo.times_downloaded } )
+
+                member_dict = { 'username' : member.username, 'repositories': member_repositories }
+                group_members.append( member_dict )
+            group_dict[ 'members' ] = group_members
+            group_dicts.append( group_dict )
+        return group_dicts
 
     @expose_api
     @require_admin
@@ -53,47 +94,8 @@ class GroupsController( BaseAPIController ):
                 group_dict = group.to_dict( view='element',
                                                   value_mapper=self.__get_value_mapper( trans ) )
         else:
-            raise exceptions.RequestParameterMissingException( 'Missing required parameter "name".' )
+            raise RequestParameterMissingException( 'Missing required parameter "name".' )
         return group_dict
-
-    @expose_api_anonymous_and_sessionless
-    def index( self, trans, deleted=False, **kwd ):
-        """
-        GET /api/groups
-        Return a list of dictionaries that contain information about each Group.
-        
-        :param deleted: flag used to include deleted groups
-
-        Example: GET localhost:9009/api/groups
-        """
-        model = trans.app.model
-        group_dicts = []
-        deleted = util.asbool( deleted )
-        if deleted and not trans.user_is_admin():
-            raise exceptions.AdminRequiredException( 'Only administrators can query deleted groups.' )
-        for group in trans.sa_session.query( model.Group ) \
-                                     # .enable_eagerloads( True ) \
-                                     .filter( model.Group.table.c.deleted == deleted ) \
-                                     .order_by( model.Group.table.c.name ):
-            group_dict = group.to_dict( view='collection', value_mapper=self.__get_value_mapper( trans ) )
-
-            group_members = []
-            for uga in group.users:
-                member = ( trans.sa_session.query( model.User ).filter( model.User.table.c.id == uga.user_id ).one() )
-                member_repositories = []
-                for repo in trans.sa_session.query( model.Repository ) \
-                                   .filter( model.Repository.table.c.user_id == uga.user_id ) \
-                                   .join( model.RepositoryMetadata.table ) \
-                                   .join( model.User.table ) \
-                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
-                                   .outerjoin( model.Category.table ):
-                    member_repositories.append( { 'name': repo.name, 'times_downloaded': repo.times_downloaded } )
-
-                member_dict = { 'username' : member.username, 'repositories': member_repositories }
-                group_members.append( member_dict )
-            group_dict[ 'members' ] = group_members
-            group_dicts.append( group_dict )
-        return group_dicts
 
     @expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):
@@ -112,3 +114,5 @@ class GroupsController( BaseAPIController ):
             return group_dict
         group_dict = group.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
         return group_dict
+
+
