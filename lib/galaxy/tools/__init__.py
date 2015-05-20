@@ -2393,6 +2393,10 @@ class Tool( object, Dictifiable ):
                 if value.get('__class__') == 'RuntimeValue':
                     return [ value, None ]
 
+            # skip dynamic fields if deactivated
+            if is_workflow and input.is_dynamic:
+                return [value, None]
+
             # validate value content
             try:
                 # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
