@@ -289,6 +289,35 @@ class Msp( Text ):
 class SPLib( Msp ):
     """SpectraST Spectral Library. Closely related to msp format"""
     file_ext = "splib"
+    composite_type = 'auto_primary_file'
+
+    def __init__(self, **kwd):
+        Msp.__init__(self, **kwd)
+        self.add_composite_file( 'library.splib', 
+            description = 'Spectral Library. Contains actual library spectra', 
+            is_binary = False )
+        self.add_composite_file( 'library.spidx', 
+            description = 'Spectrum index',  is_binary = False )
+        self.add_composite_file( 'library.pepidx',
+            description = 'Peptide index', is_binary = False)
+
+
+    def generate_primary_file( self, dataset = None ):
+        rval = ['<html><head><title>Spectral Library Composite Dataset </title></head><p/>']
+        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
+        for composite_name, composite_file in self.get_composite_files( dataset = dataset ).iteritems():
+            fn = composite_name
+            opt_text = ''
+            if composite_file.optional:
+                opt_text = ' (optional)'
+            if composite_file.get('description'):
+                rval.append( '<li><a href="%s" type="text/plain">%s (%s)</a>%s</li>' % ( fn, fn, composite_file.get('description'), opt_text ) )
+            else:
+                rval.append( '<li><a href="%s" type="text/plain">%s</a>%s</li>' % ( fn, fn, opt_text ) )
+        rval.append( '</ul></div></html>' )
+        return "\n".join( rval )
+
+
 
     def set_peek( self, dataset, is_multi_byte=False ):
         """Set the peek and blurb text"""
@@ -305,7 +334,6 @@ class SPLib( Msp ):
         """
         with open(filename, 'r') as contents:
             return Msp.next_line_starts_with(contents, "Name:") and Msp.next_line_starts_with(contents, "LibID:")
-
 
 
 class Ms2(Text):
