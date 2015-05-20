@@ -2389,8 +2389,9 @@ class Tool( object, Dictifiable ):
             # do not check unvalidated values
             if isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
                 return [ { '__class__' : 'RuntimeValue' }, None ]
-            if isinstance( value, dict ) and hasattr( value, '__class__' ):
-                return[ value, None ]
+            if isinstance( value, dict ):
+                if value.get('__class__') == 'RuntimeValue':
+                    return[ value, None ]
 
             # validate value content
             try:
