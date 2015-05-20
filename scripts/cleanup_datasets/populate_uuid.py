@@ -25,7 +25,7 @@ assert sys.version_info[:2] >= ( 2, 4 )
 def usage(prog) :
     print "usage: %s galaxy.ini" % prog
     print """
-Populates blank uuid fields in datasets with randomly generated values
+Populates blank uuid fields in datasets with randomly generated values.
             
 Going forward, these ids will be generated for all new datasets. This
 script fixes datasets that were generated before the change.
