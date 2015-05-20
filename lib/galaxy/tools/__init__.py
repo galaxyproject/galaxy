@@ -274,6 +274,14 @@ class ToolOutput( ToolOutputBase ):
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
 
+    def to_dict( self, view='collection', value_mapper=None, app=None ):
+        as_dict = super( ToolOutput, self ).to_dict( view=view, value_mapper=value_mapper )
+        format = self.format
+        if format and format != "input" and app:
+            edam_format = app.datatypes_registry.edam_formats.get(self.format)
+            as_dict["edam_format"] = edam_format
+        return as_dict
+
 
 class ToolOutputCollection( ToolOutputBase ):
     """
@@ -2212,7 +2220,7 @@ class Tool( object, Dictifiable ):
         # Add input and output details.
         if io_details:
             tool_dict[ 'inputs' ] = [ input.to_dict( trans ) for input in self.inputs.values() ]
-            tool_dict[ 'outputs' ] = [ output.to_dict() for output in self.outputs.values() ]
+            tool_dict[ 'outputs' ] = [ output.to_dict( app=trans.app ) for output in self.outputs.values() ]
 
         tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
 
