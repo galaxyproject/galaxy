@@ -162,6 +162,7 @@
   <section id="NGS_QC" name="NGS: QC and manipulation">
     
     <label id="fastqcsambam" text="FastQC: fastq/sam/bam" />
+    <tool file="fastqc/fastqc.xml" />
     
     <label id="illumina" text="Illumina fastq" />
     
