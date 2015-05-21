@@ -1,0 +1,26 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use a directory of Picard dict and associated files. You will need
+#to create these data files and then create a picard_index.loc file 
+#similar to this one (store it in this directory) that points to 
+#the directories in which those files are stored. The picard_index.loc 
+#file has this format (longer white space is the TAB character):
+#
+#<unique_build_id>		<dbkey>		<display_name>		<fasta_file_path>
+#
+#So, for example, if you had hg18 indexed and stored in 
+#/depot/data2/galaxy/srma/hg18/, 
+#then the srma_index.loc entry would look like this:
+#
+#hg18	hg18	hg18 Pretty		/depot/data2/galaxy/picard/hg18/hg18.fa
+#
+#and your /depot/data2/galaxy/srma/hg18/ directory
+#would contain the following three files:
+#hg18.fa
+#hg18.dict
+#hg18.fa.fai
+#
+#The dictionary file for each reference (ex. hg18.dict) must be 
+#created via Picard (http://picard.sourceforge.net). Note that
+#the dict file does not have the .fa extension although the
+#path list in the loc file does include it.
+#

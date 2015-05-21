@@ -1,0 +1,51 @@
+<tool id="bic_seq_samtools" name="Custom Samtools" version="0.0.1">
+  <description>Custom Samtools (samtools-0.1.7a_getUnique-0.1.1) for Bic-Seq</description>
+  <!-- Specify Commandline for interpreter -->
+  <command interpreter="python">
+    Bic-Seq_samtools.py
+      --threads="\${GALAXY_SLOTS:-16}"
+      --input1=$source.input1
+      --output1=$output1
+  </command>
+  <!-- Specify Inputs -->
+  <inputs>
+    <conditional name="source">
+      <param name="index_source" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <param name="input1" type="data" format="bam" metadata_name="dbkey" label="BAM file to create tmp file for">
+          <validator type="unspecified_build" />
+        </param>
+      </when>
+      <when value="history">
+        <param name="input1" type="data" format="bam" label="BAM file to create tmp file for" />
+      </when>
+    </conditional>
+  </inputs>
+  <!-- Specify Outputs -->
+  <outputs>
+    <data format="txt" name="output1" label="Temp file created for ${on_string} BAM file">
+      <actions>
+        <conditional name="source.index_source">
+          <when value="cached">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="source.input1" param_attribute="dbkey" />
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="source.input1" param_attribute="dbkey" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
+    </data>
+  </outputs>
+  <!-- HELP MENU -->
+  <help>
+**What it does**
+This tool uses a custom SAMTools toolkit to produce temp files for input Normal/Tumor BAM files.
+  </help>
+</tool>

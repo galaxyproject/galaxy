@@ -1,0 +1,91 @@
+<macros>
+  <token name="@VERSION@">2.2.1</token>
+  <xml name="requirements">
+    <requirements>
+      <requirement type="package" version="2.2.1">cufflinks</requirement>
+      <yield />
+    </requirements>
+  </xml>
+  <xml name="stdio">
+    <stdio>
+        <exit_code range="1:" />
+        <exit_code range=":-1" />
+        <regex match="Error:" />
+        <regex match="Exception:" />
+    </stdio>
+  </xml>
+  <xml name="condition_inputs">
+    <!-- DEFAULT : use BAM/SAM files -->
+    <conditional name="in_type">
+        <param name="set_in_type" type="select" label="Input data type"
+            help="CuffNorm supports either CXB (from cuffquant) or SAM/BAM input files. Mixing is not supported. Default: SAM/BAM">
+            <option value="BAM">SAM/BAM</option>
+            <option value="CXB">Cuffquant (CXB)</option>
+            <option value="CONDITION_LIST">List of single replicate conditions</option>
+            <option value="CONDITION_REPLICATE_LIST">List of multiple replicate conditions</option>
+        </param>
+        <when value="BAM">
+            <repeat name="conditions" title="Condition" min="2">
+                <param name="name" title="Condition name" type="text" label="Name"/>
+                <param name="samples" label="Replicates" type="data" format="sam,bam" multiple="true"/>
+            </repeat>
+        </when>
+        <when value="CXB">
+            <repeat name="conditions" title="Condition" min="2">
+                <param name="name" title="Condition name" type="text" label="Name"/>
+                <param name="samples" label="Replicates" type="data" format="cxb" multiple="true"/>
+            </repeat>
+        </when>
+        <when value="CONDITION_LIST">
+            <param name="conditions" title="List of Conditions" type="data_collection" collection_type="list" />
+        </when>
+        <when value="CONDITION_REPLICATE_LIST">
+            <param name="conditions" title="List of Conditions" type="data_collection" collection_type="list:list" />
+        </when>
+    </conditional>
+  </xml>
+  <token name="@CONDITION_SAMPLES@">
+            #if $in_type.set_in_type in ['BAM', 'CXB']
+                #for $condition in $in_type.conditions:
+                    #set samples = ','.join( [ str( $sample ) for $sample in $condition.samples ] )
+                    $samples
+                #end for
+            #elif $in_type.set_in_type == 'CONDITION_LIST'
+                #for $sample in $in_type.conditions:
+                    $sample
+                #end for
+            #elif $in_type.set_in_type == 'CONDITION_REPLICATE_LIST'
+                #for $condition_list in $in_type.conditions:
+                    #set samples = ','.join( [ str( $sample ) for $sample in $condition_list ] )
+                    $samples
+                #end for
+            #end if
+  </token>
+  <token name="@CONDITION_LABELS@">
+            #import re
+            #if $in_type.set_in_type in ['BAM', 'CXB']
+                #set labels = '\'' + '\',\''.join( [ str( $condition.name ) for $condition in $in_type.conditions ] ) + '\''
+            #elif $in_type.set_in_type in ['CONDITION_LIST', 'CONDITION_REPLICATE_LIST']
+                #set labels = '\'' + '\',\''.join( map(lambda x: re.sub('[^\w\-_]', '_', x), $in_type.conditions.keys() ) ) + '\''
+            #end if
+            --labels $labels
+  </token>
+  <xml name="cufflinks_gtf_inputs">
+    <param format="gtf" name="inputs" type="data" label="GTF file(s) produced by Cufflinks" help="" multiple="true" />
+    <repeat name="additional_inputs" title="Additional GTF Inputs (Lists)">
+      <param format="gtf" name="additional_inputs" type="data_collection" label="GTF file(s) produced by Cufflinks" help="" />
+    </repeat>
+  </xml>
+  <token name="@CUFFLINKS_GTF_INPUTS@">
+            ## Inputs.
+            #for $input_file in $inputs:
+                "${input_file}"
+            #end for
+            #for $additional_input in $additional_inputs:
+                #for $input_file in $additional_input.additional_inputs:
+                  "${input_file}"
+                #end for
+            #end for
+  </token>
+  <token name="@HAS_MULTIPLE_INPUTS@">getattr(inputs, "__len__", [].__len__)() >= 2</token>
+</macros>

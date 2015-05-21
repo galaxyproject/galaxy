@@ -1,0 +1,118 @@
+<tool name="BAM Index Statistics" id="picard_BamIndexStats" version="1.56.0">
+  <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
+  <command interpreter="python">
+    picard_wrapper.py
+      --input "${input_file}"
+      --bai-file "${input_file.metadata.bam_index}"
+      -t "${htmlfile}"
+      -d "${htmlfile.files_path}"
+      -j "\$JAVA_JAR_PATH/BamIndexStats.jar"
+      --tmpdir "${__new_file_path__}" 
+  </command>
+  <inputs>
+    <param format="bam" name="input_file" type="data"  label="BAM dataset to generate statistics for"
+      help="If empty, upload or import a BAM dataset" />
+  </inputs>
+  <outputs>
+    <data format="html" name="htmlfile" label="${tool.name}_on_${on_string}.html" />
+  </outputs>
+  <tests>
+    <test>
+      <!-- Command
+      java -jar BamIndexStats.jar I=test-data/picard_input_tiny_coord.bam > picard_BIS_output1.txt
+      picard_input_tiny_coord.bam can be created from picard_input_tiny_coord.sam
+      -->
+      <param name="input_file" value="picard_input_tiny_coord.bam" ftype="bam" />
+      <output name="htmlfile" file="picard_BIS_output1.txt" ftype="html" compare="contains" lines_diff="12"/>
+    </test>
+    <test>
+      <!-- Command
+      java -jar BamIndexStats.jar I=test-data/picard_BIS_input1.bam > picard_BIS_output2.txt
+      picard_BIS_input1.bam can be created from picard_BIS_input1.sam
+      -->
+      <param name="input_file" value="picard_BIS_input1.bam" ftype="bam" />
+      <output name="htmlfile" file="picard_BIS_output2.txt" ftype="html" compare="contains" lines_diff="12" />
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**Purpose**
+
+Generate Bam Index Stats for a provided BAM file.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for BamIndexStats, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+------
+
+.. class:: infomark
+
+**Inputs and outputs**
+
+The only input is the BAM file you wish to obtain statistics for, which is required.
+Note that it must be coordinate-sorted. Galaxy currently coordinate-sorts all BAM files.
+
+This tool outputs an HTML file that contains links to the actual metrics results, as well
+as a log file with info on the exact command run.
+
+.. class:: warningmark
+
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
+
+------
+
+**Example**
+
+Given a BAM file created from the following::
+
+  @HD    VN:1.0     SO:coordinate
+  @SQ    SN:chr1    LN:101
+  @SQ    SN:chr7    LN:404
+  @SQ    SN:chr8    LN:202
+  @SQ    SN:chr10   LN:303
+  @SQ    SN:chr14   LN:505
+  @RG    ID:0       SM:Hi,Mom!
+  @RG    ID:1       SM:samplesample    DS:ClearDescription
+  @PG    ID:1       PN:Hey!   VN:2.0
+  @CO    Just a generic comment to make the header longer
+  read1     83    chr7      1    255    101M             =       302     201    CAACAGAAGCNGGNATCTGTGTTTGTGTTTCGGATTTCCTGCTGAANNGNTTNTCGNNTCNNNNNNNNATCCCGATTTCNTTCCGCAGCTNACCTCCCAAN    )'.*.+2,))II'I*/)-I*-)I.-)I)I),/-II..)./.,.).*II,I.II-)III0*IIIIIIII/32/,01460II/6/*0*/2/283//36868/I    RG:Z:0
+  read2     89    chr7      1    255    101M             *         0       0    CAACAGAAGCNGGNATCTGTGTTTGTGTTTCGGATTTCCTGCTGAANNGNTTNTCGNNTCNNNNNNNNATCCCGATTTCNTTCCGCAGCTNACCTCCCAAN    )'.*.+2,))II'I*/)-I*-)I.-)I)I),/-II..)./.,.).*II,I.II-)III0*IIIIIIII/32/,01460II/6/*0*/2/283//36868/I    RG:Z:0
+  read3     83    chr7      1    255    101M             =       302     201    CAACAGAAGCNGGNATCTGTGTTTGTGTTTCGGATTTCCTGCTGAANNGNTTNTCGNNTCNNNNNNNNATCCCGATTTCNTTCCGCAGCTNACCTCCCAAN    )'.*.+2,))II'I*/)-I*-)I.-)I)I),/-II..)./.,.).*II,I.II-)III0*IIIIIIII/32/,01460II/6/*0*/2/283//36868/I    RG:Z:0
+  read4    147    chr7     16    255    101M             =        21     -96    CAACAGAAGCNGGNATCTGTGTTTGTGTTTCGGATTTCCTGCTGAANNGNTTNTCGNNTCNNNNNNNNATCCCGATTTCNTTCCGCAGCTNACCTCCCAAN    )'.*.+2,))II'I*/)-I*-)I.-)I)I),/-II..)./.,.).*II,I.II-)III0*IIIIIIII/32/,01460II/6/*0*/2/283//36868/I    RG:Z:0
+  read5     99    chr7     21    255    101M             =        16      96    CAACAGAAGCNGGNATCTGTGTTTGTGTTTCGGATTTCCTGCTGAANNGNTTNTCGNNTCNNNNNNNNATCCCGATTTCNTTCCGCAGCTNACCTCCCAAN    )'.*.+2,))II'I*/)-I*-)I.-)I)I),/-II..)./.,.).*II,I.II-)III0*IIIIIIII/32/,01460II/6/*0*/2/283//36868/I    RG:Z:0
+  read6    163    chr7    302    255    101M             =         1    -201    NCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA    I/15445666651/566666553+2/14/I/555512+3/)-'/-I-'*+))*''13+3)'//++''/'))/3+I*5++)I'2+I+/*I-II*)I-./1'1    RG:Z:0
+  read7    163    chr7    302    255    10M1D10M5I76M    =         1    -201    NCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA    I/15445666651/566666553+2/14/I/555512+3/)-'/-I-'*+))*''13+3)'//++''/'))/3+I*5++)I'2+I+/*I-II*)I-./1'1    RG:Z:0
+  read8    165       *      0      0    *                chr7      1       0    NCGCGGCATCNCGATTTCTTTCCGCAGCTAACCTCCCGACAGATCGGCAGCGCGTCGTGTAGGTTATTATGGTACATCTTGTCGTGCGGCNAGAGCATACA    I/15445666651/566666553+2/14/I/555512+3/)-'/-I-'*+))*''13+3)'//++''/'))/3+I*5++)I'2+I+/*I-II*)I-./1'1    RG:Z:0
+
+The following metrics file will be produced::
+
+  chr1 length=    101    Aligned= 0    Unaligned= 0
+  chr7 length=    404    Aligned= 7    Unaligned= 0
+  chr8 length=    202    Aligned= 0    Unaligned= 0
+  chr10 length=   303    Aligned= 0    Unaligned= 0
+  chr14 length=   505    Aligned= 0    Unaligned= 0
+  NoCoordinateCount= 1
+
+  </help>
+</tool>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,70 @@
+##fileformat=VCFv4.1
+##samtoolsVersion=0.1.18 (r982:295)
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Raw read depth">
+##INFO=<ID=DP4,Number=4,Type=Integer,Description="# high-quality ref-forward bases, ref-reverse, alt-forward and alt-reverse bases">
+##INFO=<ID=MQ,Number=1,Type=Integer,Description="Root-mean-square mapping quality of covering reads">
+##INFO=<ID=FQ,Number=1,Type=Float,Description="Phred probability of all samples being the same">
+##INFO=<ID=AF1,Number=1,Type=Float,Description="Max-likelihood estimate of the first ALT allele frequency (assuming HWE)">
+##INFO=<ID=AC1,Number=1,Type=Float,Description="Max-likelihood estimate of the first ALT allele count (no HWE assumption)">
+##INFO=<ID=G3,Number=3,Type=Float,Description="ML estimate of genotype frequencies">
+##INFO=<ID=HWE,Number=1,Type=Float,Description="Chi^2 based HWE test P-value based on G3">
+##INFO=<ID=CLR,Number=1,Type=Integer,Description="Log ratio of genotype likelihoods with and without the constraint">
+##INFO=<ID=UGT,Number=1,Type=String,Description="The most probable unconstrained genotype configuration in the trio">
+##INFO=<ID=CGT,Number=1,Type=String,Description="The most probable constrained genotype configuration in the trio">
+##INFO=<ID=PV4,Number=4,Type=Float,Description="P-values for strand bias, baseQ bias, mapQ bias and tail distance bias">
+##INFO=<ID=INDEL,Number=0,Type=Flag,Description="Indicates that the variant is an INDEL.">
+##INFO=<ID=PC2,Number=2,Type=Integer,Description="Phred probability of the nonRef allele frequency in group1 samples being larger (,smaller) than in group2.">
+##INFO=<ID=PCHI2,Number=1,Type=Float,Description="Posterior weighted chi^2 P-value for testing the association between group1 and group2 samples.">
+##INFO=<ID=QCHI2,Number=1,Type=Integer,Description="Phred scaled PCHI2.">
+##INFO=<ID=PR,Number=1,Type=Integer,Description="# permutations yielding a smaller PCHI2.">
+##INFO=<ID=VDB,Number=1,Type=Float,Description="Variant Distance Bias">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GL,Number=3,Type=Float,Description="Likelihoods for RR,RA,AA genotypes (R=ref,A=alt)">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="# high-quality bases">
+##FORMAT=<ID=SP,Number=1,Type=Integer,Description="Phred-scaled strand bias P-value">
+##FORMAT=<ID=PL,Number=G,Type=Integer,Description="List of Phred-scaled genotype likelihoods">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	A Fake phiX Sample
+phiX174	1411	.	A	.	28.2	.	DP=1;;AC1=2;FQ=-30	PL	0
+phiX174	1412	.	G	.	28.2	.	DP=3;;AC1=2;FQ=-30	PL	0
+phiX174	1413	.	C	.	28.2	.	DP=5;;AC1=2;FQ=-30	PL	0
+phiX174	1414	.	G	.	28.2	.	DP=6;;AC1=2;FQ=-30	PL	0
+phiX174	1415	.	C	.	28.2	.	DP=7;;AC1=2;FQ=-30	PL	0
+phiX174	1416	.	C	.	28.2	.	DP=8;;AC1=2;FQ=-30	PL	0
+phiX174	1417	.	G	.	28.2	.	DP=9;;AC1=2;FQ=-30	PL	0
+phiX174	1418	.	T	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1419	.	G	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1420	.	G	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1421	.	A	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1422	.	T	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1423	.	G	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1424	.	C	.	28.2	.	DP=10;VDB=0.0005;;AC1=2;FQ=-30	PL	0
+phiX174	1425	.	C	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1426	.	T	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1427	.	G	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1428	.	A	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1429	.	C	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1430	.	C	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1431	.	G	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1432	.	T	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1433	.	A	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1434	.	C	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1435	.	C	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1436	.	G	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1437	.	A	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1438	.	G	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1439	.	G	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1440	.	C	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1441	.	T	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1442	.	A	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1443	.	A	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1444	.	C	.	28.2	.	DP=7;;AC1=2;FQ=-30	PL	0
+phiX174	1445	.	C	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1446	.	C	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1447	.	T	.	28.2	.	DP=10;;AC1=2;FQ=-30	PL	0
+phiX174	1448	.	A	.	28.2	.	DP=8;;AC1=2;FQ=-30	PL	0
+phiX174	1449	.	A	.	28.2	.	DP=6;;AC1=2;FQ=-30	PL	0
+phiX174	1450	.	T	.	28.2	.	DP=4;;AC1=2;FQ=-30	PL	0
+phiX174	1451	.	G	.	28.2	.	DP=3;;AC1=2;FQ=-30	PL	0
+phiX174	1452	.	A	.	28.2	.	DP=2;;AC1=2;FQ=-30	PL	0
+phiX174	1453	.	G	.	28.2	.	DP=1;;AC1=2;FQ=-30	PL	0

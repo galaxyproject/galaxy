@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+
+<tool name="Brenden-Coulson Images" id="brenden_coulson">
+	<description>
+		Provides a query interface to images stored as part of the Brenden-Coulson repository  
+	</description>
+	
+	<command>java -jar $__tool_directory__/labkeyMultiSiteQuery.jar 
+		--username \$LABKEY_USERNAME 
+		--password \$LABKEY_PASSWORD 
+		--xml $__tool_directory__/brenden_coulson_conf.xml 
+		--output ${output} 
+		#if $primarySite 
+			 --filter "specimen_id/project_code/PrimarySite~eq=$primarySite"
+		#end if
+		#if $specimenType 
+			 --filter "specimen_id/specimenType~eq=$specimenType"
+		#end if
+		#if $gender 
+			 --filter "specimen_id/donor_sex~eq=$gender"
+		#end if
+		#if $minAge 
+			 --filter "specimen_id/donor_age_at_diagnosis~gte=$minAge"
+		#end if
+		#if $maxAge 
+			 --filter "specimen_id/donor_age_at_diagnosis~lte=$maxAge"
+		#end if
+		#if $grade
+			 --filter "specimen_id/tumour_grade~eq=$grade"
+		#end if
+		#if $stage
+			 --filter "specimen_id/tumour_stage~eq=$stage"
+		#end if 
+                ;\$BIOBLEND_REPO_DIR/sample_scripts/import_datasets_by_uuid.py -A $script_file -H "${output.creating_job.history.name}" -f ${output}
+
+	</command>
+	
+	<inputs>
+        <param type="select" name="primarySite" label="Primary Site">
+            <option value="">All</option>
+			<option value="Bladder">Bladder</option>
+            <option value="Blood">Brain</option>
+			<option value="Colorectal">Colorectal</option>
+			<option value="Esophagus">Esophagus</option>
+			<option value="Head and Neck">Head and Neck</option>
+			<option value="Kidney">Kidney</option>
+			<option value="Liver">Liver</option>
+			<option value="Pancreas">Pancreas</option>
+			<option value="Prostate">Prostate</option>
+			<option value="Stomach">Stomach</option>
+        </param>
+        <param type="select" name="specimenType" label="Specimen Type">
+            <option value="">All</option>
+			<option value="Cell line - derived from tumour">Cell line - derived from tumour</option>
+            <option value="Normal - blood derived">Normal - blood derived</option>
+			<option value="Normal - other">Normal - other</option>
+			<option value="Normal - solid tissue">Normal - solid tissue</option>
+			<option value="Primary tumour - blood derived (bone marrow)">Primary tumour - blood derived (bone marrow)</option>
+			<option value="Primary tumour - other">Primary tumour - other</option>
+			<option value="Primary tumour - solid tissue">Primary tumour - solid tissue</option>
+        </param>		
+        <param type="select" name="gender" label="Gender">
+			<option value="">All</option>
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+        </param>
+		<!--NOTE: if type="integer", galaxy doesnt allow a null value, so leave it as text -->
+		<param type="text" name="minAge" value="" label="Minimum Age At Diagnosis">
+			<validator type="regex" message="must be a valid integer">^[0-9]*$</validator>
+        </param>
+		<param type="text" name="maxAge" value="" label="Maximum Age At Diagnosis">
+			<validator type="regex" message="must be a valid integer">^[0-9]*$</validator>
+        </param>
+        <param type="select" name="grade" label="Tumour Grade">
+			<option value="">All</option>
+            <option value="Grade 1">Grade 1</option>
+            <option value="Grade 2">Grade 2</option>
+			<option value="Grade 3">Grade 3</option>
+        </param>
+        <param type="select" name="stage" label="Tumour Stage">
+			<option value="">All</option>
+            <option value="T1N0M0">T1N0M0</option>
+            <option value="T2N0M0">T2N0M0</option>
+        </param>		
+	</inputs>	
+	<configfiles>
+		<configfile name="script_file">{
+			"galaxy_key": #from galaxy.managers import api_keys#"${api_keys.ApiKeyManager( $__app__ ).get_or_create_api_key( $__user__ )}",
+			"galaxy_host": "${__app__.config.galaxy_infrastructure_url}/api"
+		}
+		</configfile>
+	</configfiles>
+	<outputs>
+		<data format="tabular" name="output" label="Brenden-Coulson Images" />
+	</outputs>		
+</tool>

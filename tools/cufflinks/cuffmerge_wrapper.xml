@@ -1,0 +1,133 @@
+<tool id="cuffmerge" name="Cuffmerge" version="@VERSION@.0">
+    <description>merge together several Cufflinks assemblies</description>
+    <expand macro="requirements" />
+    <expand macro="stdio" />
+    <macros>
+      <import>cuff_macros.xml</import>
+    </macros>
+    <command interpreter="python">
+        cuffmerge_wrapper.py
+            --num-threads="\${GALAXY_SLOTS:-4}"
+            
+            ## Use annotation reference?
+            #if $annotation.use_ref_annotation == "Yes":
+                -g "${annotation.reference_annotation}"
+            #end if
+            
+            ## Use sequence data?
+            #if $seq_data.use_seq_data == "Yes":
+                -s
+                #if $seq_data.seq_source.index_source == "history":
+                    --ref_file="${seq_data.seq_source.ref_file}"
+                #else:
+                    --index="${seq_data.seq_source.index.fields.path}"
+                #end if
+            #end if
+
+            --min-isoform-fraction="${min_isoform_fraction}"
+
+            ## Outputs.
+            --merged-transcripts="${merged_transcripts}"
+
+            @CUFFLINKS_GTF_INPUTS@
+    </command>
+    <inputs>
+        <expand macro="cufflinks_gtf_inputs" />
+        <conditional name="annotation">
+            <param name="use_ref_annotation" type="select" label="Use Reference Annotation">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="Yes">
+                <param format="gff3,gtf" name="reference_annotation" type="data" label="Reference Annotation" help="Requires an annotation file in GFF3 or GTF format."/>    
+            </when>
+            <when value="No">
+            </when>
+        </conditional>
+        <conditional name="seq_data">
+            <param name="use_seq_data" type="select" label="Use Sequence Data" help="Use sequence data for some optional classification functions, including the addition of the p_id attribute required by Cuffdiff.">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+            </param>
+            <when value="No"></when>
+            <when value="Yes">
+                <conditional name="seq_source">
+                  <param name="index_source" type="select" label="Choose the source for the reference list">
+                    <option value="cached">Locally cached</option>
+                    <option value="history">History</option>
+                  </param>
+                  <when value="cached">
+                    <param name="index" type="select" label="Using reference genome">
+                      <options from_data_table="fasta_indexes">
+                        <filter type="data_meta" ref="inputs" key="dbkey" column="1" />
+                        <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+                      </options>
+                    </param>
+                  </when>
+                  <when value="history">
+                      <param name="ref_file" type="data" format="fasta" label="Using reference file" />
+                  </when>
+                </conditional>
+            </when>
+        </conditional>
+        <param name="min_isoform_fraction" type="float" min="0" max="1" value="0.05" label="Minimum isoform fraction" help="Discard isoforms with abundance below this value" />
+    </inputs>
+
+    <outputs>
+        <data format="gtf" name="merged_transcripts" label="${tool.name} on ${on_string}: merged transcripts"/>
+    </outputs>
+
+    <tests>
+        <!-- 
+            cuffmerge -g cuffcompare_in3.gtf cuffcompare_in1.gtf cuffcompare_in2.gtf
+        -->
+        <test>
+            <param name="inputs" value="cuffcompare_in1.gtf,cuffcompare_in2.gtf" ftype="gtf"/>
+            <param name="use_ref_annotation" value="Yes"/>
+            <param name="reference_annotation" value="cuffcompare_in3.gtf" ftype="gtf"/>
+            <param name="min_isoform_fraction" value="0.08" />
+            <param name="use_seq_data" value="No"/>
+            <!-- oId assignment differ/are non-deterministic -->
+            <output name="merged_transcripts" file="cuffmerge_out1.gtf" lines_diff="50"/>
+        </test>
+    </tests>
+
+    <help>
+**Cuffmerge Overview**
+
+Cuffmerge is part of Cufflinks_. Please cite: Trapnell C, Williams BA, Pertea G, Mortazavi AM, Kwan G, van Baren MJ, Salzberg SL, Wold B, Pachter L. Transcript assembly and abundance estimation from RNA-Seq reveals thousands of new transcripts and switching among isoforms. Nature Biotechnology doi:10.1038/nbt.1621
+
+.. _Cufflinks: http://cole-trapnell-lab.github.io/cufflinks/
+
+------
+
+**Know what you are doing**
+
+.. class:: warningmark
+
+There is no such thing (yet) as an automated gearshift in expression analysis. It is all like stick-shift driving in San Francisco. In other words, running this tool with default parameters will probably not give you meaningful results. A way to deal with this is to **understand** the parameters by carefully reading the `documentation`__ and experimenting. Fortunately, Galaxy makes experimenting easy.
+
+.. __: http://cole-trapnell-lab.github.io/cufflinks/cuffmerge/
+
+------
+
+**Input format**
+
+Cuffmerge takes Cufflinks' GTF output as input, and optionally can take a "reference" annotation (such as from Ensembl_)
+
+.. _Ensembl: http://www.ensembl.org 
+
+------
+
+**Outputs**
+
+Cuffmerge produces the following output files:
+
+Merged transcripts file:
+
+Cuffmerge produces a GTF file that contains an assembly that merges together the input assemblies.
+    </help>
+    <citations>
+        <citation type="doi">10.1038/nbt.1621</citation>
+    </citations>
+</tool>

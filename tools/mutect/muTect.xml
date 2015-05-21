@@ -1,0 +1,117 @@
+<tool id="muTect" name="muTect" version="1.0.0">
+    <description>identify somatic point mutations</description>
+    <requirements>
+        <container type="docker">mutect:1.1.7</container>
+    </requirements>
+    <command interpreter="python">muTect.py
+--reference-sequence $reference
+#if str($cosmic) != "":
+    --cosmic $cosmic
+#end if
+#if str($dbsnp) != "":
+    --dbsnp $dbsnp
+#end if
+#if str($contamination.input) == "value":
+--fraction_contamination $contamination.input_value
+#end if
+#if str($contamination.input) == "value_file":
+--fraction_contamination-file $contamination.input_file
+#end if
+--input_file:normal $normal
+## comment out the index file metadata since Galaxy is getting an error indexing the BAM file
+##--input_file:index:normal $normal.metadata.bam_index
+--input_file:tumor $tumor
+## comment out the index file metadata since Galaxy is getting an error indexing the BAM file
+##--input_file:index:tumor $tumor.metadata.bam_index
+--out call_stats.txt
+--coverage_file coverage.wig.txt
+--vcf mutations.vcf
+--workdir ./
+--ncpus \${GALAXY_SLOTS:-4}
+    </command>
+
+    <inputs>
+        <param name="reference" type="data" format="bed, fasta" label="Select a reference genome"/>
+        <param name="normal" type="data" format="bam" label="Normal BAM file"/>
+        <param name="tumor" type="data" format="bam" label="Tumor BAM file"/>
+        <param name="dbsnp" type="data" format="vcf" label="dbsnp.vcf file" optional="true"/>
+        <param name="cosmic" type="data" format="vcf" label="Cosmic vcf file" optional="true"/>
+        <param name="intervals" type="text" label="Intervals to process" help="In format 'chr1:1500-2500; chr2:2500-3500', separated by semicolons" optional="true"/>
+        <param name="intervalfile" type="data" format="txt" label="Intervals to process (.txt file)" help="'chr1:1500-2500', one entry per line" optional="true"/>
+        <conditional name="contamination">
+            <param name="input" type="select" label="Sample Contamination">
+                <option value="na" selected="True">NA</option>
+                <option value="value">Value</option>
+                <option value="value_file">Value File</option>
+            </param>
+            <when value="value">
+                <param name="input_value" type="float" label="Contamination Value" value="0.1"/>
+            </when>
+            <when value="value_file">
+                <param name="input_file" type="data" format="txt" label="Contamination Value File"/>
+            </when>
+        </conditional>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="callstats" label="CallsDetailed" from_work_dir="call_stats.txt"/>
+        <data format="txt" name="coverage" label="CoverageOutput" from_work_dir="coverage.wig.txt"/>
+        <data format="vcf" name="mutations" label="MutationVCF" from_work_dir="mutations.vcf"/>
+    </outputs>
+    <stdio>
+        <exit_code range="1:" level="fatal" />
+    </stdio>
+    <help>
+
+.. class:: infomark
+
+**License**
+
+Copyright (c) 2012 The Broad Institute
+Please view our documentation at http://www.broadinstitute.org/gsa/wiki
+For support, please view our support site at http://getsatisfaction.com/gsa
+
+**What it does**
+
+MuTect is a method developed at the Broad Institute for the reliable
+and accurate identification of somatic point mutations in next generation
+sequencing data of cancer genomes.
+
+
+
+**Input**
+
+Reference Genome:
+
+	Fasta file of ref gnome
+
+Normal Sample:
+
+	bam normal sample
+
+Tumor Sample:
+
+	bam tumor sample
+
+
+Intervals:
+
+	A list of genomic intervals over which to operate.
+
+
+**Output**
+
+Caller Output:
+
+	Detailed caller output
+
+Coverage Output:
+
+	write out coverage in WIGGLE format to this file
+
+VCF Output:
+
+    VCF output of mutation calls
+
+  </help>
+</tool>

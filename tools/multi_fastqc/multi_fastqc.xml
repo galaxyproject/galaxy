@@ -1,0 +1,23 @@
+<tool id="multi_fastqc" name="Multi FastQC Visualization" version="">
+  <command interpreter="python">multi_fastqc.py
+    -i #for $d, $inputFile in enumerate($inputFiles):
+     ${inputFile.inputFile}
+    #end for
+    -n #for $d, $inputFileName in enumerate($inputFiles):
+      ${inputFileName.inputFileName}
+    #end for
+    -o1 $output1
+  </command>
+  <inputs>
+    <repeat name="inputFiles" title="FastQC Output Files (fastqc_data.txt)" min="1" help="">
+      <param format="txt" name="inputFile" type="data" label="FastQC Output File" help=""/>
+      <param format="txt" name="inputFileName" type="text" label="File Label" help="Label for legend (no spaces)" />
+    </repeat>
+  </inputs>
+
+  <outputs>
+    <data format="pdf" name="output1" label="per_seq_qual.pdf"/>
+  </outputs>
+
+
+</tool>

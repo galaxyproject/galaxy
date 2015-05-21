@@ -1,0 +1,13 @@
+GenomeAnalysisEngine - Strictness is SILENT
+CountCovariatesWalker - The covariates being used here:
+CountCovariatesWalker - 	ReadGroupCovariate
+CountCovariatesWalker - 	QualityScoreCovariate
+CountCovariatesWalker - 	CycleCovariate
+CountCovariatesWalker - 	DinucCovariate
+CountCovariatesWalker - 	HomopolymerCovariate
+CountCovariatesWalker - 	MinimumNQSCovariate
+CountCovariatesWalker - 	PositionCovariate
+TraversalEngine - [INITIALIZATION COMPLETE; TRAVERSAL STARTING] 
+CountCovariatesWalker - Writing raw recalibration data...
+CountCovariatesWalker - ...done!
+TraversalEngine - Total runtime

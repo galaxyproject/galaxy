@@ -1,0 +1,156 @@
+<tool name="SAM/BAM Hybrid Selection Metrics" id="PicardHsMetrics" version="1.56.0">
+  <description>for targeted resequencing data</description>
+  <command interpreter="python">
+
+    picard_wrapper.py -i "${input_file}" -d "${html_file.files_path}" -t "${html_file}" --datatype "${input_file.ext}"
+    --baitbed "${bait_bed}" --targetbed "${target_bed}" -n "${out_prefix}" --tmpdir "${__new_file_path__}"
+    -j "\$JAVA_JAR_PATH/CalculateHsMetrics.jar"
+
+  </command>
+  <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
+  <inputs>
+    <param format="sam,bam" name="input_file" type="data" label="SAM/BAM dataset to generate statistics for" />
+    <param name="out_prefix" value="Picard HS Metrics" type="text" label="Title for the output file" help="Use to remind you what the job was for." size="80" />
+    <param name="bait_bed" type="data" format="bed,interval" label="Bait intervals: Sequences for bait in the design" help="Note specific format requirements below!" size="80" />
+    <param name="target_bed" type="data" format="bed,interval" label="Target intervals: Sequences for targets in the design" help="Note specific format requirements below!" size="80" />
+    <!--
+    
+    Users can be enabled to set Java heap size by uncommenting this option and adding '-x "$maxheap"' to the <command> tag.
+    If commented out the heapsize defaults to the value specified within picard_wrapper.py
+    
+    <param name="maxheap" type="select" 
+       help="If in doubt, try the default. If it fails with a complaint about java heap size, try increasing it please - larger jobs will require your own hardware."
+     label="Java heap size">
+    <option value="4G" selected = "true">4GB default </option>
+    <option value="8G" >8GB use if 4GB fails</option>
+    <option value="16G">16GB - try this if 8GB fails</option>
+    </param>
+    
+    -->
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file" label="${out_prefix}.html" />
+  </outputs>
+  <tests>
+    <test>
+      <!-- Uncomment this if maxheap parameter is enabled
+      <param name="maxheap" value="8G"  />
+      -->
+      <param name="out_prefix" value="HSMetrics" />
+      <param name="input_file" value="picard_input_summary_alignment_stats.sam" ftype="sam" />
+      <param name="bait_bed" value="picard_input_bait.bed" />
+      <param name="target_bed" value="picard_input_bait.bed"  />
+      <output name="html_file" file="picard_output_hs_transposed_summary_alignment_stats.html" ftype="html" lines_diff="212"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**Summary**
+
+Calculates a set of Hybrid Selection specific metrics from an aligned SAM or BAM file.
+
+.. class:: warnmark
+
+**WARNING about bait and target files**
+
+Picard is very fussy about the bait and target file format. If these are not exactly right, it will fail with an error something like:
+
+Exception in thread "main" net.sf.picard.PicardException: Invalid interval record contains 6 fields: chr1       45787123        45787316      CASO_22G_25063  1000    +
+
+If you see an error like that from this tool, please do NOT report it to any of the Galaxy mailing lists as it is not a bug! 
+It means you must reformat your bait and target files. Galaxy cannot do that for you automatically unfortunately.
+
+The required definition is described in the documentation at http://www.broadinstitute.org/gsa/wiki/index.php/Built-in_command-line_arguments
+and the sample provided looks like this:
+
+chr1    1104841 1104940 +       target_1
+chr1    1105283 1105599 +       target_2
+chr1    1105712 1105860 +       target_3
+chr1    1105960 1106119 +       target_4
+
+So your bait and target files MUST have 5 columns with chr, start, end, strand and name tab delimited and in exactly that order.
+Note that the Picard mandated sam header described in the documentation linked above is automagically added by the tool in Galaxy.
+
+.. class:: infomark
+
+**Picard documentation**
+
+This is a Galaxy wrapper for CalculateHsMetrics.jar, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+-----
+
+.. class:: infomark
+
+**Inputs, outputs, and parameters**
+
+Picard documentation says (reformatted for Galaxy):
+
+Calculates a set of Hybrid Selection specific metrics from an aligned SAM or BAM file.
+
+.. csv-table::
+   :header-rows: 1
+
+   "Option", "Description"
+   "BAIT_INTERVALS=File","An interval list file that contains the locations of the baits used. Required."
+   "TARGET_INTERVALS=File","An interval list file that contains the locations of the targets. Required."
+   "INPUT=File","An aligned SAM or BAM file. Required."
+   "OUTPUT=File","The output file to write the metrics to. Required. Cannot be used in conjuction with option(s) METRICS_FILE (M)"
+   "METRICS_FILE=File","Legacy synonym for OUTPUT, should not be used. Required. Cannot be used in conjuction with option(s) OUTPUT (O)"
+   "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false"
+
+HsMetrics
+
+ The set of metrics captured that are specific to a hybrid selection analysis.
+
+Output Column Definitions::
+
+  1. BAIT_SET: The name of the bait set used in the hybrid selection.
+  2. GENOME_SIZE: The number of bases in the reference genome used for alignment.
+  3. BAIT_TERRITORY: The number of bases which have one or more baits on top of them.
+  4. TARGET_TERRITORY: The unique number of target bases in the experiment where target is usually exons etc.
+  5. BAIT_DESIGN_EFFICIENCY: Target terrirtoy / bait territory. 1 == perfectly efficient, 0.5 = half of baited bases are not target.
+  6. TOTAL_READS: The total number of reads in the SAM or BAM file examine.
+  7. PF_READS: The number of reads that pass the vendor's filter.
+  8. PF_UNIQUE_READS: The number of PF reads that are not marked as duplicates.
+  9. PCT_PF_READS: PF reads / total reads. The percent of reads passing filter.
+ 10. PCT_PF_UQ_READS: PF Unique Reads / Total Reads.
+ 11. PF_UQ_READS_ALIGNED: The number of PF unique reads that are aligned with mapping score > 0 to the reference genome.
+ 12. PCT_PF_UQ_READS_ALIGNED: PF Reads Aligned / PF Reads.
+ 13. PF_UQ_BASES_ALIGNED: The number of bases in the PF aligned reads that are mapped to a reference base. Accounts for clipping and gaps.
+ 14. ON_BAIT_BASES: The number of PF aligned bases that mapped to a baited region of the genome.
+ 15. NEAR_BAIT_BASES: The number of PF aligned bases that mapped to within a fixed interval of a baited region, but not on a baited region.
+ 16. OFF_BAIT_BASES: The number of PF aligned bases that mapped to neither on or near a bait.
+ 17. ON_TARGET_BASES: The number of PF aligned bases that mapped to a targetted region of the genome.
+ 18. PCT_SELECTED_BASES: On+Near Bait Bases / PF Bases Aligned.
+ 19. PCT_OFF_BAIT: The percentage of aligned PF bases that mapped neither on or near a bait.
+ 20. ON_BAIT_VS_SELECTED: The percentage of on+near bait bases that are on as opposed to near.
+ 21. MEAN_BAIT_COVERAGE: The mean coverage of all baits in the experiment.
+ 22. MEAN_TARGET_COVERAGE: The mean coverage of targets that recieved at least coverage depth = 2 at one base.
+ 23. PCT_USABLE_BASES_ON_BAIT: The number of aligned, de-duped, on-bait bases out of the PF bases available.
+ 24. PCT_USABLE_BASES_ON_TARGET: The number of aligned, de-duped, on-target bases out of the PF bases available.
+ 25. FOLD_ENRICHMENT: The fold by which the baited region has been amplified above genomic background.
+ 26. ZERO_CVG_TARGETS_PCT: The number of targets that did not reach coverage=2 over any base.
+ 27. FOLD_80_BASE_PENALTY: The fold over-coverage necessary to raise 80% of bases in "non-zero-cvg" targets to the mean coverage level in those targets.
+ 28. PCT_TARGET_BASES_2X: The percentage of ALL target bases acheiving 2X or greater coverage.
+ 29. PCT_TARGET_BASES_10X: The percentage of ALL target bases acheiving 10X or greater coverage.
+ 30. PCT_TARGET_BASES_20X: The percentage of ALL target bases acheiving 20X or greater coverage.
+ 31. PCT_TARGET_BASES_30X: The percentage of ALL target bases acheiving 30X or greater coverage.
+ 32. HS_LIBRARY_SIZE: The estimated number of unique molecules in the selected part of the library.
+ 33. HS_PENALTY_10X: The "hybrid selection penalty" incurred to get 80% of target bases to 10X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 10X coverage I need to sequence until PF_ALIGNED_BASES = 10^6 * 10 * HS_PENALTY_10X.
+ 34. HS_PENALTY_20X: The "hybrid selection penalty" incurred to get 80% of target bases to 20X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 20X coverage I need to sequence until PF_ALIGNED_BASES = 10^6 * 20 * HS_PENALTY_20X.
+ 35. HS_PENALTY_30X: The "hybrid selection penalty" incurred to get 80% of target bases to 10X. This metric should be interpreted as: if I have a design with 10 megabases of target, and want to get 30X coverage I need to sequence until PF_ALIGNED_BASES = 10^6 * 30 * HS_PENALTY_30X.
+
+.. class:: warningmark
+
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears to be the only way to deal with SAM/BAM that cannot be parsed.
+
+
+  </help>
+</tool>

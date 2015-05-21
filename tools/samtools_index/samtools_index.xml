@@ -1,0 +1,37 @@
+<tool id="samtools_index" name="Samtools Index" version="1.0.1">
+  <requirements>
+    <requirement type="package" version="0.1.19">samtools</requirement>
+  </requirements>
+  <description>Creates an index file for the BAM file</description>
+  <command>samtools index "$input1" "$output1"
+  </command>
+  <inputs>
+    <param name="input1" type="data" format="bam" label="BAM File to Index" />
+  </inputs>
+  <outputs>
+    <data name="output1" format="txt" type="data" label="${tool.name} on ${on_string}: .bai" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="3unsorted.bam" ftype="bam" />
+      <output name="output1" file="samtools_flagstat_out1.txt" />
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool uses the SAMTools_ toolkit to produce index file for a BAM file.
+
+.. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `Li H, Handsaker B, Wysoker A, Fennell T, Ruan J, Homer N, Marth G, Abecasis G, Durbin R; 1000 Genome Project Data Processing Subgroup. The Sequence Alignment/Map format and SAMtools. Bioinformatics. 2009 Aug 15;25(16):2078-9. &lt;http://www.ncbi.nlm.nih.gov/pubmed/19505943&gt;`_
+
+If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
+
+  </help>
+</tool>
