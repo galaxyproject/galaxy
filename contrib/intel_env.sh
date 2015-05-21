@@ -26,3 +26,4 @@ export PATH=$TOPHAT_EXE_PATH:$CUFFLINKS_TOOLS_EXE_PATH:$BOWTIE_TOOLS_EXE_PATH:$G
 export NSLOTS=16
 export PYTHON_EGG_CACHE=.eggs_cache
 export BIOBLEND_REPO_DIR=/cluster_share/Galaxy/api/bioblend
+export FASTQC_PERL_SCRIPT=/opt/Genomics/ohsu/dnapipeline/FastQC/fastqc

@@ -17,7 +17,7 @@
         -t "$text_file"
         -f "$input_file.ext"
         -j "$input_file.name"
-        -e "${path_to_fastqc_exec}/fastqc"
+        -e "\${FASTQC_PERL_SCRIPT}"
         #if $contaminants.dataset and str($contaminants) > ''
             -c "$contaminants"
         #end if
