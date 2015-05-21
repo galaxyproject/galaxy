@@ -8,8 +8,9 @@
 	<command>java -jar $__tool_directory__/labkeyMultiSiteQuery.jar 
 		--username \$LABKEY_USERNAME 
 		--password \$LABKEY_PASSWORD 
-		--xml $__tool_directory__/icgc_genomes_conf.xml 
-		--output ${output} 
+		--xml $__tool_directory__/genomes_conf.xml
+		--output ${output}
+        --filter "application~eq=WGS"
 		#if $primarySite 
 			 --filter "specimen_id/project_code/PrimarySite~eq=$primarySite"
 		#end if
@@ -20,10 +21,10 @@
 			 --filter "specimen_id/donor_sex~eq=$gender"
 		#end if
 		#if $minAge 
-			 --filter "age~gte=$minAge"
+			 --filter "specimen_id/donor_age_at_diagnosis~gte=$minAge"
 		#end if
 		#if $maxAge 
-			 --filter "age~lte=$maxAge"
+			 --filter "specimen_id/donor_age_at_diagnosis~lte=$maxAge"
 		#end if
 		#if $grade
 			 --filter "specimen_id/tumour_grade~eq=$grade"
@@ -31,7 +32,7 @@
 		#if $stage
 			 --filter "specimen_id/tumour_stage~eq=$stage"
 		#end if
-                ;\$BIOBLEND_REPO_DIR/sample_scripts/import_datasets_by_uuid.py -A $script_file -H "${output.creating_job.history.name}" -f ${output}
+		;$__tool_directory__/import_datasets_by_uuid.py -A $script_file -H "${output.creating_job.history.name}" -f ${output}
 
 	</command>
 	
