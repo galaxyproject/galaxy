@@ -274,6 +274,11 @@
     <tool file="SueRichards_lab_tools/getAnnotation.xml"/>
     <tool file="SueRichards_lab_tools/seattleseq_filter.xml"/>
   </section>
+  <section id="civic" name="CIViC for Decision Support">
+    <tool file="civic/civic_qrt.xml" />
+    <tool file="snpeff/snpEff.xml" />
+    <tool file="oncotator/oncotator.xml" />
+  </section>  
   <section id="custom_tools" name="Custom tools">
   </section>
 </toolbox>
