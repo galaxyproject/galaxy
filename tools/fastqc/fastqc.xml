@@ -1,0 +1,134 @@
+<tool id="fastqc" name="FastQC" version="0.63">
+    <description>Read Quality Reporting</description>
+    <requirements>
+        <requirement type="package" version="0.11.2">FastQC</requirement>
+    </requirements>
+    <stdio>
+        <exit_code range="1:" />
+        <exit_code range=":-1" />
+        <regex match="Error:" />
+        <regex match="Exception:" />
+    </stdio>
+    <command interpreter="python">
+    fastqc.py
+        -i "$input_file"
+        -d "$html_file.files_path"
+        -o "$html_file"
+        -t "$text_file"
+        -f "$input_file.ext"
+        -j "$input_file.name"
+        -e "${path_to_fastqc_exec}/fastqc"
+        #if $contaminants.dataset and str($contaminants) > ''
+            -c "$contaminants"
+        #end if
+        #if $limits.dataset and str($limits) > ''
+            -l "$limits"
+        #end if
+    </command>
+    <inputs>
+        <param format="fastqsanger,fastq,bam,sam" name="input_file" type="data" label="Short read data from your current history" />
+        <param name="contaminants" type="data" format="tabular" optional="true" label="Contaminant list" 
+            help="tab delimited file with 2 columns: name and sequence.  For example: Illumina Small RNA RT Primer CAAGCAGAAGACGGCATACGA"/>
+        <param name="limits" type="data" format="txt" optional="true" label="Submodule and Limit specifing file"
+            help="a file that specifies which submodules are to be executed (default=all) and also specifies the thresholds for the each submodules warning parameter" />
+    </inputs>
+    <outputs>
+        <data format="html" name="html_file" label="${tool.name} on ${on_string}: Webpage" />
+        <data format="txt" name="text_file"  label="${tool.name} on ${on_string}: RawData" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_file" value="1000gsample.fastq" />
+            <param name="contaminants" value="fastqc_contaminants.txt" ftype="tabular" />
+            <output name="html_file" file="fastqc_report.html" ftype="html" lines_diff="100"/>
+            <output name="text_file" file="fastqc_data.txt" ftype="txt" lines_diff="100"/>
+        </test>
+        <test>
+            <param name="input_file" value="1000gsample.fastq" />
+            <param name="limits" value="fastqc_customlimits.txt" ftype="txt" />
+            <output name="html_file" file="fastqc_report2.html" ftype="html" lines_diff="100"/>
+            <output name="text_file" file="fastqc_data2.txt" ftype="txt" lines_diff="100"/>
+        </test>
+    </tests>
+    <help>
+
+.. class:: infomark
+
+**Purpose**
+
+FastQC aims to provide a simple way to do some quality control checks on raw
+sequence data coming from high throughput sequencing pipelines. 
+It provides a modular set of analyses which you can use to give a quick
+impression of whether your data has any problems of 
+which you should be aware before doing any further analysis.
+
+The main functions of FastQC are:
+
+- Import of data from BAM, SAM or FastQ files (any variant)
+- Providing a quick overview to tell you in which areas there may be problems
+- Summary graphs and tables to quickly assess your data
+- Export of results to an HTML based permanent report
+- Offline operation to allow automated generation of reports without running the interactive application
+
+
+-----
+
+
+.. class:: infomark
+
+**FastQC**
+
+This is a Galaxy wrapper. It merely exposes the external package FastQC_ which is documented at FastQC_
+Kindly acknowledge it as well as this tool if you use it.
+FastQC incorporates the Picard-tools_ libraries for sam/bam processing.
+
+The contaminants file parameter was borrowed from the independently developed
+fastqcwrapper contributed to the Galaxy Community Tool Shed by J. Johnson.
+Adaption to version 0.11.2 by T. McGowan.
+
+-----
+
+.. class:: infomark
+
+**Inputs and outputs**
+
+FastQC_ is the best place to look for documentation - it's very good. 
+A summary follows below for those in a tearing hurry.
+
+This wrapper will accept a Galaxy fastq, sam or bam as the input read file to check.
+It will also take an optional file containing a list of contaminants information, in the form of
+a tab-delimited file with 2 columns, name and sequence. As another option the tool takes a custom
+limits.txt file that allows setting the warning thresholds for the different modules and also specifies
+which modules to include in the output.
+
+The tool produces a basic text and a HTML output file that contain all of the results, including the following:
+
+- Basic Statistics
+- Per base sequence quality
+- Per sequence quality scores
+- Per base sequence content
+- Per base GC content
+- Per sequence GC content
+- Per base N content
+- Sequence Length Distribution
+- Sequence Duplication Levels
+- Overrepresented sequences
+- Kmer Content
+
+All except Basic Statistics and Overrepresented sequences are plots.
+ .. _FastQC: http://www.bioinformatics.bbsrc.ac.uk/projects/fastqc/
+ .. _Picard-tools: http://picard.sourceforge.net/index.shtml
+
+    </help>
+    <citations>
+        <citation type="bibtex">
+        @ARTICLE{andrews_s,
+            author = {Andrews, S.},
+            keywords = {bioinformatics, ngs, qc},
+            priority = {2},
+            title = {{FastQC A Quality Control tool for High Throughput Sequence Data}},
+            url = {http://www.bioinformatics.babraham.ac.uk/projects/fastqc/}
+        }
+        </citation>
+    </citations>
+</tool>
