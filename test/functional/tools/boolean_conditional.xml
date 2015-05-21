@@ -1,0 +1,53 @@
+<tool id="boolean_conditional" name="boolean_conditional" version="1.0.0">
+    <command>
+        echo "$p1.p1val" >> $out_file1;
+    </command>
+    <inputs>
+        <conditional name="p1">
+            <param type="boolean" name="p1use" truevalue="booltrue" falsevalue="boolfalse" />
+            <when value="booltrue">
+                <param name="p1val" value="p1used" type="text" />
+            </when>
+            <when value="boolfalse">
+                <param name="p1val" value="p1notused" type="text" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="p1use" value="true" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="p1used" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="p1use" value="booltrue" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="p1used" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="p1use" value="false" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="p1notused" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="p1use" value="boolfalse" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="p1notused" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

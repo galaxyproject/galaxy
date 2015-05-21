@@ -152,7 +152,7 @@ def inherit(context):
                     </div>
                 %endif
             </div>
-            %if trans.app.config.smtp_server:
+            %if trans.app.config.smtp_server and trans.app.config.mailing_join_addr:
                 <div class="form-row">
                     <label>Subscribe to mailing list:</label>
                     %if subscribe_checked:

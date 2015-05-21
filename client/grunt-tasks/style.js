@@ -32,16 +32,19 @@ module.exports = function( grunt ){
         'history-buttons': {
             src: fmt( '%s/history-buttons/*.png', imagesPath ),
             destImg: fmt( '%s/sprite-history-buttons.png', styleDistPath ),
+            imgPath: fmt( 'sprite-history-buttons.png' ),
             destCSS: fmt( '%s/sprite-history-buttons.less', lessPath )
         },
         'history-states': {
             src: fmt( '%s/history-states/*.png', imagesPath ),
             destImg: fmt( '%s/sprite-history-states.png', styleDistPath ),
+            imgPath: fmt( 'sprite-history-states.png' ),
             destCSS: fmt( '%s/sprite-history-states.less', lessPath )
         },
         'fugue': {
             src: fmt( '%s/fugue/*.png', imagesPath ),
             destImg: fmt( '%s/sprite-fugue.png', styleDistPath ),
+            imgPath: fmt( 'sprite-fugue.png' ),
             destCSS: fmt( '%s/sprite-fugue.less', lessPath )
         }
     });
