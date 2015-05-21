@@ -1,0 +1,6 @@
+## Downloaded Databases for SnpEff 
+## These are from the list on: http://snpeff.sourceforge.net/download.html
+## the Description field in this sample is "Genome : Version" 
+#Key	snpeff_version	Version	Description	data_dir	path
+#SnpEff4.0_GRCh37.74	SnpEff4.0	GRCh37.74	Homo sapiens : GRCh37.74	/home/galaxy/snpEff/v4_0/data
+#SnpEff4.1_GRCh38.76	SnpEff4.1	GRCh38.76	Homo sapiens : GRCh38.76	/home/galaxy/snpEff/v4_1/data

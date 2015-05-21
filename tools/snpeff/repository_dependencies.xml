@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<repositories description="This requires the SnpEff datatype definitions.">
+    <repository name="snpeff_datatypes" owner="iuc" changeset_revision="d78b2b2a3388" toolshed="http://toolshed.g2.bx.psu.edu" />
+</repositories>
