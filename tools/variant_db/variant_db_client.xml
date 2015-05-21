@@ -5,7 +5,7 @@
     <requirement type="package">json</requirement>
   </requirements>
   <command interpreter="python">variant_db_client.py
-    http://localhost:5000
+    $url
     $output
       --variantSetIds $variant_select.variantSetId
       --referenceName $referenceName
@@ -27,26 +27,27 @@
     #end if
   </command>
   <inputs>
+    <param name="url" type="text" label="DB URL: " />
     <conditional name="variant_select">
       <param name="variantSetId" type="select" label="Variant Sets to Query: ">
-	<option value='cervix'>Cervix</option>
-	<option value='stomach'>Stomach</option>
-	<option value='liver'>Liver</option>
-	<option value='bone'>Bone</option>
-	<option value='bladder'>Bladder</option>
-	<option value='brain'>Brain</option>
-	<option value='head and neck'>Head and Neck</option>
-	<option value='lung'>Lung</option>
-	<option value='blood'>Blood</option>
-	<option value='colorectal'>Colorectal</option>
-	<option value='skin'>Skin</option>
-	<option value='uterus'>Uterus</option>
-	<option value='esophagus'>Esophagus</option>
-	<option value='pancreas'>Pancreas</option>
-	<option value='prostate'>Prostate</option>
-	<option value='ovary'>Ovary</option>
-	<option value='kidney'>Kidney</option>
-	<option value='breast'>Breast</option>
+      	<option value='cervix'>Cervix</option>
+      	<option value='stomach'>Stomach</option>
+      	<option value='liver'>Liver</option>
+      	<option value='bone'>Bone</option>
+      	<option value='bladder'>Bladder</option>
+      	<option value='brain'>Brain</option>
+      	<option value='head and neck'>Head and Neck</option>
+      	<option value='lung'>Lung</option>
+      	<option value='blood'>Blood</option>
+      	<option value='colorectal'>Colorectal</option>
+      	<option value='skin'>Skin</option>
+      	<option value='uterus'>Uterus</option>
+      	<option value='esophagus'>Esophagus</option>
+      	<option value='pancreas'>Pancreas</option>
+      	<option value='prostate'>Prostate</option>
+      	<option value='ovary'>Ovary</option>
+      	<option value='kidney'>Kidney</option>
+      	<option value='breast'>Breast</option>
       </param>
     </conditional>
     <param name="referenceName" type="text" label="Reference: "/>
