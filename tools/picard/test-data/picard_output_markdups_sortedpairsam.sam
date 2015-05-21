@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="generator" content="Galaxy rgPicardMarkDups.py tool output - see http://g2.trac.bx.psu.edu/" />
+    <link rel="stylesheet" href="/static/style/base.css" type="text/css" />
+  </head>
+  <body>
+    <div class="document">
+      <h3><a href="http://rgenetics.org">Rgenetics</a> tool rgPicardMarkDups.py run at 19/11/2010 18:25:23</h3>
+      <b>Your job produced the following outputs - check here for a record of what was done and any unexpected events</b>
+      <hr />
+      <div>
+	<b>Output files.</b>
+	<table>
+	  <tr><td><a href="rgPicardMarkDups.txt">rgPicardMarkDups.txt  (1.8 KB)</a></td></tr>
+	</table>
+      </div>
+      <hr />
+      <div>
+	<b>Log of activity</b>
+	<hr/>
+	## executing java -Xmx2g -jar /share/shared/relul.galaxy/tool-data/shared/jars/MarkDuplicates.jar I= /share/shared/relul.galaxy/database/files/000/dataset_57.dat O= /share/shared/relul.galaxy/database/files/000/dataset_99.dat M= rgPicardMarkDupsMetrics.txt READ_NAME_REGEX="[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*" OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 returned status 1 and log (stdout/stderr) records: 
+<BR />
+[Fri Nov 19 18:25:23 EST 2010] net.sf.picard.sam.MarkDuplicates INPUT=/share/shared/relul.galaxy/database/files/000/dataset_57.dat OUTPUT=/share/shared/relul.galaxy/database/files/000/dataset_99.dat METRICS_FILE=rgPicardMarkDupsMetrics.txt READ_NAME_REGEX=[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).* OPTICAL_DUPLICATE_PIXEL_DISTANCE=100    REMOVE_DUPLICATES=false ASSUME_SORTED=false MAX_SEQUENCES_FOR_DISK_READ_ENDS_MAP=50000 TMP_DIR=/tmp/relul VERBOSITY=INFO QUIET=false VALIDATION_STRINGENCY=STRICT COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+<BR />
+INFO	2010-11-19 18:25:23	MarkDuplicates	Start of doWork freeMemory: 8645600; totalMemory: 9109504; maxMemory: 1908932608
+<BR />
+INFO	2010-11-19 18:25:23	MarkDuplicates	Reading input file and constructing read end information.
+<BR />
+INFO	2010-11-19 18:25:23	MarkDuplicates	Will retain up to 7575129 data points before spilling to disk.
+<BR />
+[Fri Nov 19 18:25:23 EST 2010] net.sf.picard.sam.MarkDuplicates done.
+<BR />
+Runtime.totalMemory()=130351104
+<BR />
+Exception in thread "main" net.sf.picard.PicardException: /share/shared/relul.galaxy/database/files/000/dataset_57.dat is not coordinate sorted.
+<BR />
+	at net.sf.picard.sam.MarkDuplicates.buildSortedReadEndLists(MarkDuplicates.java:248)
+<BR />
+	at net.sf.picard.sam.MarkDuplicates.doWork(MarkDuplicates.java:109)
+<BR />
+	at net.sf.picard.cmdline.CommandLineProgram.instanceMain(CommandLineProgram.java:165)
+<BR />
+	at net.sf.picard.sam.MarkDuplicates.main(MarkDuplicates.java:93)
+<BR />
+
+<BR />
+
+      </div>
+
+      <div>
+	<p>Note: The freely available 
+	  <a href="http://picard.sourceforge.net/command-line-overview.shtml">Picard software</a>
+	  generated all outputs reported here. These third party tools were orchestrated by the Galaxy 
+	  rgPicardMarkDups.py wrapper and this command line from the Galaxy form:
+	</p>
+	<hr />
+	<div>/share/shared/relul.galaxy/tools/development/rgPicardMarkDups.py -i /share/shared/relul.galaxy/database/files/000/dataset_57.dat -n Dupes Marked --tmp_dir /export/tmp/relul -o /share/shared/relul.galaxy/database/files/000/dataset_99.dat --remdups false --assumesorted true --readregex [a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).* --optdupedist 100 -j /share/shared/relul.galaxy/tool-data/shared/jars/MarkDuplicates.jar -d /share/shared/relul.galaxy/database/job_working_directory/81/dataset_98_files -t /share/shared/relul.galaxy/database/files/000/dataset_98.dat</div>
+      </div>
+  </body>
+</html>

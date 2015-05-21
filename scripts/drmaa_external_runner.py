@@ -132,6 +132,8 @@ def main():
     jt = s.createJobTemplate()
     load_job_template_from_file(jt, json_filename)
     # runJob will raise if there's a submittion error
+    #KG: set PATH to condor in Rocks - non standard location
+    os.environ["PATH"] = "/opt/condor/bin/:/opt/condor/sbin:"+os.environ["PATH"];
     jobId = s.runJob(jt)
     s.deleteJobTemplate(jt)
     s.exit()

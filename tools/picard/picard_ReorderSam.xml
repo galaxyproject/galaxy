@@ -1,0 +1,166 @@
+<tool name="Reorder SAM/BAM" id="picard_ReorderSam" version="1.56.0">
+  <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
+  <command interpreter="python">
+    picard_wrapper.py
+      --input="${inputFile}"
+      #if $source.indexSource == "built-in"
+        --ref="${source.ref.fields.path}"
+      #else
+        --ref-file="${refFile}"
+        --species-name="${source.speciesName}"
+        --build-name="${source.buildName}"
+        --trunc-names="${source.truncateSeqNames}"
+      #end if
+      --allow-inc-dict-concord="${allowIncDictConcord}"
+      --allow-contig-len-discord="${allowContigLenDiscord}"
+      --output-format="${outputFormat}"
+      --output="${outFile}"
+      --tmpdir "${__new_file_path__}" 
+      -j "\$JAVA_JAR_PATH/ReorderSam.jar"
+  </command>
+  <inputs>
+    <param format="bam,sam" name="inputFile" type="data" label="SAM/BAM dataset to be reordered"
+           help="If empty, upload or import a SAM/BAM dataset." />
+    <conditional name="source">
+      <param name="indexSource" type="select" label="Select Reference Genome" help="This tool will re-order SAM/BAM in the same order as reference selected below.">
+        <option value="built-in">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="built-in">
+        <param name="ref" type="select" label="Select a reference genome">
+          <options from_data_table="picard_indexes" />
+        </param>
+      </when>
+      <when value="history">
+        <param name="refFile" type="data" format="fasta" metadata_name="dbkey" label="Using reference file" />
+        <param name="speciesName" type="text" value="" label="Species name" />
+        <param name="buildName" type="text" value="" label="Build name" />
+        <param name="truncateSeqNames" type="boolean" checked="False" truevalue="true" falsevalue="false" label="Truncate sequence names after first whitespace" />
+      </when>
+    </conditional>
+    <param name="allowIncDictConcord" type="boolean" checked="False" truevalue="true" falsevalue="false" label="Allow incomplete dict concordance?" help="Allows a partial overlap of the BAM contigs with the new reference sequence contigs." />
+    <param name="allowContigLenDiscord" type="boolean" checked="False" truevalue="true" falsevalue="false" label="Allow contig length discordance?" help="This is dangerous--don't check it unless you know exactly what you're doing!" />
+    <param name="outputFormat" type="boolean" checked="True" truevalue="bam" falsevalue="sam" label="Output BAM instead of SAM" help="Uncheck for SAM output" />
+  </inputs>
+  <outputs>
+    <data name="outFile" format="bam" label="${tool.name} on ${on_string}: reordered ${outputFormat}">
+      <change_format>
+        <when input="outputFormat" value="sam" format="sam" />
+      </change_format>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <!-- Commands:
+      cp test-data/phiX.fasta .
+      samtools faidx phiX.fasta
+      java -jar CreateSequenceDictionary.jar R=phiX.fasta O=phiX.dict URI=phiX.fasta TRUNCATE_NAMES_AT_WHITESPACE=false SPECIES=phiX174
+      java -jar ReorderSam.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_RS_input1.bam O=picard_RS_output1.bam REFERENCE=phiX.fasta ALLOW_INCOMPLETE_DICT_CONCORDANCE=false ALLOW_CONTIG_LENGTH_DISCORDANCE=false
+    -->
+      <param name="inputFile" value="picard_RS_input1.bam" />
+      <param name="indexSource" value="history" />
+      <param name="refFile" value="phiX.fasta" />
+      <param name="speciesName" value="phiX174" />
+      <param name="buildName" value="" />
+      <param name="truncateSeqNames" value="false" />
+      <param name="allowIncDictConcord" value="false" />
+      <param name="allowContigLenDiscord" value="false" />
+      <param name="outputFormat" value="True" />
+      <output name="outFile" file="picard_RS_output1.bam" ftype="bam" lines_diff="4" compare="contains" />
+    </test>
+    <test>
+      <!-- Command:
+      java -jar ReorderSam.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_RS_input2.sam O=picard_RS_output2.sam REFERENCE=/path/to/phiX/picard_index/phiX.fa ALLOW_INCOMPLETE_DICT_CONCORDANCE=false ALLOW_CONTIG_LENGTH_DISCORDANCE=false
+      /path/to/phiX/srma_index/phiX.fa is path to phiX.fa, phiX.fa.fai, and phiX.dict
+      -->
+      <param name="inputFile" value="picard_RS_input2.sam" />
+      <param name="indexSource" value="built-in" />
+      <param name="ref" value="phiX" />
+      <param name="allowIncDictConcord" value="false" />
+      <param name="allowContigLenDiscord" value="false" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_RS_output2.sam" ftype="sam" lines_diff="4" sort="True" />
+    </test>
+    <test>
+      <!-- Commands:
+      cp test-data/picard_RS_input4.fasta .
+      samtools faidx picard_RS_input4.fasta
+      java -jar CreateSequenceDictionary.jar R=picard_RS_input4.fasta O=picard_RS_input4.dict URI=picard_RS_input4.fasta TRUNCATE_NAMES_AT_WHITESPACE=true SPECIES=phiX174 GENOME_ASSEMBLY=phiX_buildBlah1.1
+      java -jar ReorderSam.jar VALIDATION_STRINGENCY=LENIENT I=test-data/picard_RS_input3.bam O=picard_RS_output3.sam REFERENCE=picard_RS_input4.fasta ALLOW_INCOMPLETE_DICT_CONCORDANCE=true ALLOW_CONTIG_LENGTH_DISCORDANCE=false
+      picard_RS_input3.bam can be made from picard_RS_input3.sam
+      -->
+      <param name="inputFile" value="picard_RS_input3.bam" />
+      <param name="indexSource" value="history" />
+      <param name="refFile" value="picard_RS_input4.fasta" />
+      <param name="speciesName" value="phiX174" />
+      <param name="buildName" value="phiX_buildBlah1.1" />
+      <param name="truncateSeqNames" value="true" />
+      <param name="allowIncDictConcord" value="true" />
+      <param name="allowContigLenDiscord" value="false" />
+      <param name="outputFormat" value="False" />
+      <output name="outFile" file="picard_RS_output3.sam" ftype="sam" lines_diff="12" sort="True" />
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**Purpose**
+
+Reorder SAM/BAM to match contig ordering in a particular reference file. Note that this is
+not the same as sorting as done by the SortSam tool, which sorts by either coordinate
+values or query name. The ordering in ReorderSam is based on exact name matching of
+contigs/chromosomes. Reads that are mapped to a contig that is not in the new reference file are
+not included in the output.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for ReorderSam, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+------
+
+.. class:: infomark 
+
+**Inputs, outputs, and parameters**
+
+For the file that needs to be reordered, either a sam file or a bam file must be supplied.
+If a bam file is used, it must be coordinate-sorted. A reference file is also required,
+so either a fasta file should be supplied or a built-in reference can be selected.
+
+The output contains the same reads as the input file but the reads have been rearranged so
+they appear in the same order as the provided reference file. The tool will output either
+bam (the default) or sam, according to user selection. Bam is recommended since it is smaller.
+
+The only extra parameters that can be set are flags for allowing incomplete dict concordance
+and allowing contig length discordance. If incomplete dict concordance is allowed, only a
+partial overlap of the bam contigs with the new reference sequence contigs is required. By
+default it is off, requiring a corresponding contig in the new reference for each read contig.
+If contig length discordance is allowed, contig names that are the same between a read and the
+new reference contig are allowed even if they have different lengths. This is usually not a
+good idea, unless you know exactly what you're doing. It's off by default.
+
+.. class:: warningmark
+
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
+
+
+  </help>
+</tool>
+
+
+
+
+
+
+
+
+
+
+
+

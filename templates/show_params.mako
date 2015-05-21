@@ -133,10 +133,10 @@
         %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
             <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
         %endif
-        %if job and job.command_line and trans.user_is_admin():
+        %if job and job.command_line:
             <tr><td>Job Command-Line:</td><td>${ job.command_line | h }</td></tr>
         %endif
-        %if job and trans.user_is_admin():
+        %if job:
             <% job_metrics = trans.app.job_metrics %>
             %for metric in job.metrics:
                 <% metric_title, metric_value = job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) %>

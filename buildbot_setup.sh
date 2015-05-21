@@ -40,6 +40,11 @@ LINKS="
 /galaxy/data/taxonomy
 /galaxy/data/location/twobit.loc
 /galaxy/software/tool-data/gatk
+/galaxy/data/location/cbioportal_cancer_studies.loc
+/galaxy/data/location/cbioportal_type_of_cancer.loc
+/galaxy/data/location/fasta_indexes.loc
+/galaxy/data/location/gatk_sorted_picard_index.loc
+/galaxy/data/location/gatk_annotations.txt
 "
 
 DIRS="

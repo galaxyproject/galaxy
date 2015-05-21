@@ -1,0 +1,19 @@
+<dataSource xmlns="http://edu.ohsu.ccc/dataSource/xml">
+    <columns>
+        <column>CCC_DID</column>
+    </columns>
+    <labkeyInstances>
+        <labkeyInstance>
+            <baseUrl>http://g1.spark0.intel.com:9090/labkey</baseUrl>
+            <containerPath>ccc</containerPath>
+            <schemaName>lists</schemaName>
+            <queryName>images</queryName>
+        </labkeyInstance>
+        <labkeyInstance>
+            <baseUrl>http://g2.spark0.intel.com:9090/labkey</baseUrl>
+            <containerPath>ccc</containerPath>
+            <schemaName>lists</schemaName>
+            <queryName>images</queryName>
+        </labkeyInstance>
+    </labkeyInstances>
+</dataSource>

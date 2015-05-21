@@ -1,0 +1,38 @@
+<style type="text/css">
+        tr.d0 td {background-color: oldlace; color: black;}
+        tr.d1 td {background-color: aliceblue; color: black;}
+        </style><?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Galaxy rgEstLibComplexity.py tool output - see http://g2.trac.bx.psu.edu/" />
+<title></title>
+<link rel="stylesheet" href="/static/style/base.css" type="text/css" />
+</head>
+<body>
+<div class="document">
+<b><a href="http://rgenetics.org">Galaxy Rgenetics</a> tool output rgEstLibComplexity.py run at 10/04/2011 14:52:24</b><b>Your job produced the following output files.</b><hr/>
+<table>
+<tr><td><a href="estlibcompout.txt">estlibcompout.txt</a></td></tr>
+</table><p/>
+<b>Picard on line resources</b><ul>
+<li><a href="http://picard.sourceforge.net/index.shtml">Click here for Picard Documentation</a></li>
+<li><a href="http://picard.sourceforge.net/picard-metric-definitions.shtml">Click here for Picard Metrics definitions</a></li></ul><hr/>
+<b>Picard output (transposed to make it easier to see)</b><hr/>
+<table cellpadding="3" >
+<tr class="d0"><td>## net.sf.picard.metrics.StringHeader</td></tr><tr class="d1"><td># net.sf.picard.sam.EstimateLibraryComplexity INPUT=[/export/tmp/tmpBfU1Um/database/files/000/dataset_111.dat] OUTPUT=estlibcompout.txt MIN_IDENTICAL_BASES=5 MAX_DIFF_RATE=0.03 MIN_MEAN_QUALITY=20 READ_NAME_REGEX=[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).* OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 VALIDATION_STRINGENCY=LENIENT    TMP_DIR=/tmp/rerla VERBOSITY=INFO QUIET=false COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false</td></tr><tr class="d0"><td>## net.sf.picard.metrics.StringHeader</td></tr><tr class="d1"><td># Started on: Sun Apr 10 14:52:24 EDT 2011</td></tr></table>
+<b>Picard log</b><hr/>
+<pre>## executing java -Xmx2g  -jar /udd/rerla/rgalaxy/tool-data/shared/jars/EstimateLibraryComplexity.jar MIN_IDENTICAL_BASES=5 O=estlibcompout.txt VALIDATION_STRINGENCY=LENIENT MIN_MEAN_QUALITY=20 READ_NAME_REGEX="[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*" OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 I=/export/tmp/tmpBfU1Um/database/files/000/dataset_111.dat MAX_DIFF_RATE=0.03 returned status 0 and log (stdout/stderr) records: 
+[Sun Apr 10 14:52:24 EDT 2011] net.sf.picard.sam.EstimateLibraryComplexity INPUT=[/export/tmp/tmpBfU1Um/database/files/000/dataset_111.dat] OUTPUT=estlibcompout.txt MIN_IDENTICAL_BASES=5 MAX_DIFF_RATE=0.03 MIN_MEAN_QUALITY=20 READ_NAME_REGEX=[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).* OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 VALIDATION_STRINGENCY=LENIENT    TMP_DIR=/tmp/rerla VERBOSITY=INFO QUIET=false COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+INFO	2011-04-10 14:52:24	EstimateLibraryComplexity	Will store 3098916 read pairs in memory before sorting.
+INFO	2011-04-10 14:52:24	EstimateLibraryComplexity	Finished reading - moving on to scanning for duplicates.
+[Sun Apr 10 14:52:24 EDT 2011] net.sf.picard.sam.EstimateLibraryComplexity done.
+Runtime.totalMemory()=33947648
+
+
+</pre><hr/>The freely available <a href="http://picard.sourceforge.net/command-line-overview.shtml">Picard software</a> 
+generated all outputs reported here, using this command line:<br/>
+<pre>java -Xmx2g  -jar /udd/rerla/rgalaxy/tool-data/shared/jars/EstimateLibraryComplexity.jar MIN_IDENTICAL_BASES=5 O=estlibcompout.txt VALIDATION_STRINGENCY=LENIENT MIN_MEAN_QUALITY=20 READ_NAME_REGEX="[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+).*" OPTICAL_DUPLICATE_PIXEL_DISTANCE=100 I=/export/tmp/tmpBfU1Um/database/files/000/dataset_111.dat MAX_DIFF_RATE=0.03</pre>
+</div></body></html>
+

@@ -1,0 +1,53 @@
+<style type="text/css">
+        tr.d0 td {background-color: oldlace; color: black;}
+        tr.d1 td {background-color: aliceblue; color: black;}
+        </style><?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Galaxy picard_wrapper tool output - see http://getgalaxy.org/" />
+<title></title>
+<link rel="stylesheet" href="/static/style/base.css" type="text/css" />
+</head>
+<body>
+<div class="document">
+Galaxy tool CollectInsertSizeMetrics run at 13/05/2011 15:20:46</b><br/><table cellpadding="10"><tr><td>
+<a href="InsertSizeHist.pdf"><img src="InsertSizeHist.jpg" title="Click image preview for a print quality PDF version" hspace="10" align="middle"></a>
+</tr></td></table>
+<b>The following output files were created (click the filename to view/download a copy):</b><hr/><table>
+<tr><td><a href="CollectInsertSizeMetrics.metrics.txt">CollectInsertSizeMetrics.metrics.txt</a></td></tr>
+<tr><td><a href="CollectInsertSizeMetrics.log">CollectInsertSizeMetrics.log</a></td></tr>
+<tr><td><a href="InsertSizeHist.pdf">InsertSizeHist.pdf</a></td></tr>
+<tr><td><a href="InsertSizeHist.jpg">InsertSizeHist.jpg</a></td></tr>
+</table><p/>
+<b>Picard on line resources</b><ul>
+<li><a href="http://picard.sourceforge.net/index.shtml">Click here for Picard Documentation</a></li>
+<li><a href="http://picard.sourceforge.net/picard-metric-definitions.shtml">Click here for Picard Metrics definitions</a></li></ul><hr/>
+<b>Picard output (transposed to make it easier to see)</b><hr/>
+<table cellpadding="3" >
+<tr class="d0"><td colspan="2">## net.sf.picard.metrics.StringHeader</td></tr><tr class="d1"><td colspan="2"># net.sf.picard.analysis.CollectInsertSizeMetrics HISTOGRAM_FILE=InsertSizeHist.pdf TAIL_LIMIT=10000 MINIMUM_PCT=0.01 INPUT=/dev/shm/tmpHpwBHW/database/files/000/dataset_1.dat OUTPUT=/udd/rerla/rgalaxy/database/job_working_directory/2/dataset_2_files/CollectInsertSizeMetrics.metrics.txt VALIDATION_STRINGENCY=LENIENT    ASSUME_SORTED=true STOP_AFTER=0 TMP_DIR=/tmp/rerla VERBOSITY=INFO QUIET=false COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false</td></tr><tr class="d0"><td colspan="2">## net.sf.picard.metrics.StringHeader</td></tr><tr class="d1"><td colspan="2"># Started on: Fri May 13 15:20:45 EDT 2011</td></tr><tr class="d0"><td colspan="2">## METRICS CLASS	net.sf.picard.analysis.InsertSizeMetrics</td></tr><tr class="d1"><td colspan="2">## HISTOGRAM	java.lang.Integer</td></tr><tr class="d0"><td colspan="2">MEDIAN_INSERT_SIZE	MIN_INSERT_SIZE	MAX_INSERT_SIZE	MEAN_INSERT_SIZE	STANDARD_DEVIATION	READ_PAIRS	PAIR_ORIENTATION	WIDTH_OF_10_PERCENT	WIDTH_OF_20_PERCENT	WIDTH_OF_30_PERCENT	WIDTH_OF_40_PERCENT	WIDTH_OF_50_PERCENT	WIDTH_OF_60_PERCENT	WIDTH_OF_70_PERCENT	WIDTH_OF_80_PERCENT	WIDTH_OF_90_PERCENT	WIDTH_OF_99_PERCENT</td></tr>
+<tr class="d1"><td colspan="2">96	96	96	96	?	1	FR	1	1	1	1	1	1	1	1	1	1</td></tr>
+<tr class="d0"><td colspan="2">201	201	201	201	?	1	RF	1	1	1	1	1	1	1	1	1	1</td></tr>
+<tr class="d1"><td colspan="2">insert_size	fr_count	rf_count</td></tr>
+<tr class="d0"><td colspan="2">96	1	0</td></tr>
+<tr class="d1"><td colspan="2">201	0	1</td></tr>
+</table>
+<b>Picard Tool Run Log</b><hr/>
+<pre>INFO:root:## executing java -Xmx2g -jar /udd/rerla/rgalaxy/tool-data/shared/jars/CollectInsertSizeMetrics.jar VALIDATION_STRINGENCY=LENIENT I=/dev/shm/tmpHpwBHW/database/files/000/dataset_1.dat O=/udd/rerla/rgalaxy/database/job_working_directory/2/dataset_2_files/CollectInsertSizeMetrics.metrics.txt HISTOGRAM_FILE=InsertSizeHist.pdf TAIL_LIMIT=10000 MINIMUM_PCT=0.01 returned status 0 and stderr: 
+[Fri May 13 15:20:45 EDT 2011] net.sf.picard.analysis.CollectInsertSizeMetrics HISTOGRAM_FILE=InsertSizeHist.pdf TAIL_LIMIT=10000 MINIMUM_PCT=0.01 INPUT=/dev/shm/tmpHpwBHW/database/files/000/dataset_1.dat OUTPUT=/udd/rerla/rgalaxy/database/job_working_directory/2/dataset_2_files/CollectInsertSizeMetrics.metrics.txt VALIDATION_STRINGENCY=LENIENT    ASSUME_SORTED=true STOP_AFTER=0 TMP_DIR=/tmp/rerla VERBOSITY=INFO QUIET=false COMPRESSION_LEVEL=5 MAX_RECORDS_IN_RAM=500000 CREATE_INDEX=false CREATE_MD5_FILE=false
+WARNING	2011-05-13 15:20:45	SinglePassSamProgram	File reports sort order 'queryname', assuming it's coordinate sorted anyway.
+INFO	2011-05-13 15:20:46	ProcessExecutor	[1] "FR = red"  "RF = blue"
+INFO	2011-05-13 15:20:46	ProcessExecutor	null device 
+INFO	2011-05-13 15:20:46	ProcessExecutor	          1 
+[Fri May 13 15:20:46 EDT 2011] net.sf.picard.analysis.CollectInsertSizeMetrics done.
+Runtime.totalMemory()=9109504
+
+
+INFO:root:## executing mogrify -format jpg -resize x400 /udd/rerla/rgalaxy/database/job_working_directory/2/dataset_2_files/InsertSizeHist.pdf returned status 0 and nothing on stderr
+
+INFO:root:## executing mogrify -format jpg -resize x400 /udd/rerla/rgalaxy/database/job_working_directory/2/dataset_2_files/InsertSizeHist.pdf returned status 0 and nothing on stderr
+
+</pre><hr/>The freely available <a href="http://picard.sourceforge.net/command-line-overview.shtml">Picard software</a> 
+generated all outputs reported here running as a <a href="http://getgalaxy.org">Galaxy</a> tool</div></body></html>
+

@@ -1,0 +1,103 @@
+<tool id="sam_to_bam" name="Samtools" version="0.1.19">
+  <description>converts SAM format to BAM format</description>
+  <requirements>
+    <requirement type="package" version="0.1.19">samtools</requirement>
+  </requirements>
+  <command interpreter="python">
+    sam_to_bam.py
+      --threads="\${GALAXY_SLOTS:-16}"
+      --input1=$source.input1
+      #if $source.index_source == "history":
+        --ref_file=$source.ref_file
+      #else
+        --index=${source.index.fields.path}
+      #end if
+      --output1=$output1
+  </command>
+  <inputs>
+    <conditional name="source">
+      <param name="index_source" type="select" label="Choose the source for the reference list">
+        <option value="cached">Locally cached</option>
+        <option value="history">History</option>
+      </param>
+      <when value="cached">
+        <param name="input1" type="data" format="sam" metadata_name="dbkey" label="SAM file to convert">
+          <validator type="unspecified_build" />
+          <validator type="dataset_metadata_in_data_table" table_name="fasta_indexes" metadata_name="dbkey" metadata_column="1" message="Sequences are not currently available for the specified build." />
+        </param>
+        <param name="index" type="select" label="Using reference genome">
+          <options from_data_table="fasta_indexes">
+            <filter type="data_meta" ref="input1" key="dbkey" column="1" />
+            <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+          </options>
+        </param>
+      </when>
+      <when value="history">
+        <param name="input1" type="data" format="sam" label="SAM file to convert" />
+        <param name="ref_file" type="data" format="fasta" metadata_name="dbkey" label="Using reference file" />
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data format="bam" name="output1" label="${tool.name} on ${on_string}: converted BAM">
+      <actions>
+        <conditional name="source.index_source">
+          <when value="cached">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="source.input1" param_attribute="dbkey" />
+            </action>
+          </when>
+          <when value="history">
+            <action type="metadata" name="dbkey">
+              <option type="from_param" name="source.ref_file" param_attribute="dbkey" />
+            </action>
+          </when>
+        </conditional>
+      </actions>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <!--
+      Sam-to-Bam command:
+      cp test-data/chr_m.fasta .
+      samtools faidx chr_m.fasta
+      samtools view -hbt chr_m.fasta.fai -o unsorted.bam test-data/sam_to_bam_in1.sam
+      samtools sort unsorted.bam sam_to_bam_out1
+      chr_m.fasta is the reference file (chrM from equCab2)
+      -->
+      <param name="index_source" value="history" /> 
+      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" />
+      <param name="ref_file" value="chr_m.fasta" ftype="fasta" dbkey="equCab2" />
+      <output name="output1" file="sam_to_bam_out1.bam" ftype="bam" />
+    </test>
+    <test>
+      <!--
+      Sam-to-Bam command:
+      samtools view -hbt chr_m.fasta.fai -o unsorted.bam test-data/sam_to_bam_in1.sam
+      samtools sort unsorted.bam sam_to_bam_out2
+      chr_m.fasta is the reference file and the index chr_m.fasta.fai 
+      these should be in the same directory, and chrM is from equCab2
+      -->
+      <param name="index_source" value="cached" />
+      <param name="input1" value="sam_to_bam_in1.sam" ftype="sam" dbkey="chrM" />
+      <param name="index" value="chr_m" />
+      <output name="output1" file="sam_to_bam_out2.bam" ftype="bam" />
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool uses the SAMTools_ toolkit to produce an indexed BAM file based on a sorted input SAM file.
+
+.. _SAMTools: http://samtools.sourceforge.net/samtools.shtml
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `Li H, Handsaker B, Wysoker A, Fennell T, Ruan J, Homer N, Marth G, Abecasis G, Durbin R; 1000 Genome Project Data Processing Subgroup. The Sequence Alignment/Map format and SAMtools. Bioinformatics. 2009 Aug 15;25(16):2078-9. &lt;http://www.ncbi.nlm.nih.gov/pubmed/19505943&gt;`_
+
+  </help>
+</tool>

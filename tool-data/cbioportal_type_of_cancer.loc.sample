@@ -1,0 +1,72 @@
+acc	Adrenocortical Carcinoma
+acyc	Adenoid Cystic Carcinoma
+aeca	Sweat Gland Carcinoma (Apocrine Eccrine Carcinoma)
+afx	Atypical Fibroxanthoma
+all	Pediatric Acute Lymphoid Leukemia
+aml	Acute Monocytic Leukemia
+blad	Bladder Urothelial Adenocarcinoma
+blca	Bladder Urothelial Carcinoma
+bpdcn	Blastic Plasmacytoid Dendritic Cell Neoplasm
+brca	Breast Invasive Carcinoma
+cellline	Cell Line
+cesc	Cervical Squamous Cell Carcinoma and Endocervical Adenocarcinoma
+coadread	Colorectal Adenocarcinoma
+cup	Cancer of Unknown Primary
+dlbc	Lymphoid Neoplasm Diffuse Large B-cell Lymphoma
+esca	Esophageal Carcinoma
+escc	Esophageal Squamous Cell Carcinoma
+fl	Follicular Lymphoma
+gbm	Glioblastoma Multiforme
+gct	Germ Cell Tumor
+gist	Gastrointestinal stromal tumor (GIST)
+glioma	Glioma
+hnsc	Head and Neck Squamous Cell Carcinoma
+kich	Kidney Chromophobe
+kirc	Kidney Renal Clear Cell Carcinoma
+kirp	Kidney Renal Papillary Cell Carcinoma
+laml	Acute Myeloid Leukemia
+lcarc	Lung carcinoids
+lcll	Chronic Lymphocytic Leukemia
+lcml	Chronic Myelogenous Leukemia
+lcnec	Large cell neuroendocrine carcinoma
+lgg	Brain Lower Grade Glioma
+lihc	Liver Hepatocellular Carcinoma
+luad	Lung Adenocarcinoma
+lune	Lung Neuroendocrine
+lusc	Lung Squamous Cell Carcinoma
+mbl	Medulloblastoma
+mcc	Merkel Cell Carcinoma
+mcl	Mantle Cell Lymphoma
+mds	Myelodysplasia
+meoc	Mucinous Epithelial Ovarian Cancer
+meso	Mesothelioma
+misc	Miscellaneous
+mixed	Mixed cancer types
+mm	Multiple Myeloma
+mmmt	Malignant mixed Müllerian tumor (MMMT)
+mpnst	Malignant Peripheral Nerve Sheath Tumor
+mrt	Rhabdoid Cancer
+mum	Mucosal Melanoma
+nbl	Neuroblastoma
+os	Osteosarcoma
+ov	Ovarian Serous Cystadenocarcinoma
+paad	Pancreatic Adenocarcinoma
+pcpg	Pheochromocytoma and Paraganglioma
+pec	Perivascular epithelioid cell tumour
+prad	Prostate Adenocarcinoma
+rcc	Renal Cell Carcinoma
+sarc	Sarcoma
+scbc	Small Cell Bladder Cancer
+scco	Small Cell Carcinoma of the Ovary
+sclc	Small Cell Lung Cancer
+skcm	Skin Cutaneous Melanoma
+stad	Stomach Adenocarcinoma
+tc	Testicular Cancer
+test	Test
+thca	Thyroid Carcinoma
+ucec	Uterine Corpus Endometrial Carcinoma
+ucs	Uterine Carcinosarcoma
+uncl	Unclassified
+urcc	Unclassified Renal Cell Carcinoma
+utca	Upper Tract Urothelial Carcinoma
+wt	Wilms' Tumor

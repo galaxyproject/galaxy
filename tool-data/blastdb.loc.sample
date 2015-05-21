@@ -1,0 +1,38 @@
+#This is a sample file distributed with Galaxy that is used to define a
+#list of nucleotide BLAST databases, using three columns tab separated
+#(longer whitespace are TAB characters):
+#
+#<unique_id>	<database_caption>	<base_name_path>
+#
+#The captions typically contain spaces and might end with the build date.
+#It is important that the actual database name does not have a space in it,
+#and that the first tab that appears in the line is right before the path.
+#
+#So, for example, if your database is nt and the path to your base name 
+#is /depot/data2/galaxy/blastdb/nt/nt.chunk, then the blastdb.loc entry 
+#would look like this:
+#
+#nt_02_Dec_2009      nt 02 Dec 2009      /depot/data2/galaxy/blastdb/nt/nt.chunk
+#
+#and your /depot/data2/galaxy/blastdb/nt directory would contain all of 
+#your "base names" (e.g.):
+#
+#-rw-r--r--  1 wychung galaxy  23437408 2008-04-09 11:26 nt.chunk.00.nhr
+#-rw-r--r--  1 wychung galaxy   3689920 2008-04-09 11:26 nt.chunk.00.nin
+#-rw-r--r--  1 wychung galaxy 251215198 2008-04-09 11:26 nt.chunk.00.nsq
+#...etc...
+#
+#Your blastdb.loc file should include an entry per line for each "base name" 
+#you have stored.  For example:
+#
+#nt_02_Dec_2009		nt 02 Dec 2009		/depot/data2/galaxy/blastdb/nt/nt.chunk
+#wgs_30_Nov_2009	wgs 30 Nov 2009	/depot/data2/galaxy/blastdb/wgs/wgs.chunk
+#test_20_Sep_2008	test 20 Sep 2008	/depot/data2/galaxy/blastdb/test/test
+#...etc...
+#
+#See also blastdb_p.loc which is for any protein BLAST database.
+#
+#Note that for backwards compatibility with workflows, the unique ID of
+#an entry must be the path that was in the original loc file, because that
+#is the value stored in the workflow for that parameter.
+#

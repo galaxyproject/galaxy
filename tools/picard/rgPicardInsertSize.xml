@@ -1,0 +1,97 @@
+<tool name="Insertion size metrics" id="PicardInsertSize" version="1.56.0">
+  <description>for PAIRED data</description>
+  <requirements><requirement type="package" version="1.56.0">picard</requirement></requirements>
+  <command interpreter="python">
+   picard_wrapper.py -i "${input_file}" -n "${out_prefix}" --tmpdir "${__new_file_path__}" --deviations "${deviations}"
+   --histwidth "${histWidth}" --minpct "${minPct}" --malevel "${malevel}"
+   -j "\$JAVA_JAR_PATH/CollectInsertSizeMetrics.jar" -d "${html_file.files_path}" -t "${html_file}"
+  </command>
+  <inputs>
+    <param format="bam,sam" name="input_file" type="data" label="SAM/BAM dataset to generate statistics for"
+      help="If empty, upload or import a SAM/BAM dataset."/>
+    <param name="out_prefix" value="Insertion size metrics" type="text"
+      label="Title for the output file" help="Use this remind you what the job was for" size="120" />
+    <param name="deviations" value="10.0" type="float"
+      label="Deviations" size="5" 
+      help="See Picard documentation: Generate mean, sd and plots by trimming the data down to MEDIAN + DEVIATIONS*MEDIAN_ABSOLUTE_DEVIATION" />
+     <param name="histWidth" value="0" type="integer"
+      label="Histogram width" size="5" 
+      help="Explicitly sets the histogram width option - leave 0 to ignore" />
+     <param name="minPct" value="0.05" type="float"
+      label="Minimum percentage" size="5" 
+      help="Discard any data categories (out of FR, TANDEM, RF) that have fewer than this percentage of overall reads" />
+     <param name="malevel" value="0" type="select" multiple="true"  label="Metric Accumulation Level"
+      help="Level(s) at which metrics will be accumulated">
+      <option value="ALL_READS" selected="true">All reads (default)</option>
+      <option value="SAMPLE" default="true">Sample</option>
+      <option value="LIBRARY" default="true">Library</option>
+      <option value="READ_GROUP" default="true">Read group</option>
+     </param>
+  </inputs>
+  <outputs>
+    <data format="html" name="html_file" label="InsertSize_${out_prefix}.html"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_file" value="picard_input_tiny.sam" />
+      <param name="out_prefix" value="Insertion size metrics" />
+      <param name="deviations" value="10.0" />
+      <param name="histWidth" value="0" />
+      <param name="minPct" value="0.01" />
+      <param name="malevel" value="ALL_READS" />
+      <output name="html_file" file="picard_output_insertsize_tinysam.html" ftype="html" compare="contains" lines_diff="40" />
+    </test>
+  </tests>
+  <help>
+
+
+.. class:: infomark
+
+**Purpose**
+
+Reads a SAM or BAM file and describes the distribution 
+of insert size (excluding duplicates) with metrics and a histogram plot.
+
+**Picard documentation**
+
+This is a Galaxy wrapper for CollectInsertSizeMetrics, a part of the external package Picard-tools_.
+
+ .. _Picard-tools: http://www.google.com/search?q=picard+samtools
+
+.. class:: warningmark
+
+**Useful for paired data only**
+
+This tool works for paired data only and can be expected to fail for single end data.
+
+-----
+
+.. class:: infomark
+
+**Inputs, outputs, and parameters**
+
+Picard documentation says (reformatted for Galaxy):
+
+.. csv-table::
+   :header-rows: 1
+
+    Option,Description
+    "INPUT=File","SAM or BAM file Required."
+    "OUTPUT=File","File to write insert size metrics to Required."
+    "HISTOGRAM_FILE=File","File to write insert size histogram chart to Required."
+    "TAIL_LIMIT=Integer","When calculating mean and stdev stop when the bins in the tail of the distribution contain fewer than mode/TAIL_LIMIT items. This also limits how much data goes into each data category of the histogram."
+    "HISTOGRAM_WIDTH=Integer","Explicitly sets the histogram width, overriding the TAIL_LIMIT option. Also, when calculating mean and stdev, only bins LE HISTOGRAM_WIDTH will be included. "
+    "MINIMUM_PCT=Float","When generating the histogram, discard any data categories (out of FR, TANDEM, RF) that have fewer than this percentage of overall reads. (Range: 0 to 1) Default value: 0.01."
+    "STOP_AFTER=Integer","Stop after processing N reads, mainly for debugging. Default value: 0."
+    "CREATE_MD5_FILE=Boolean","Whether to create an MD5 digest for any BAM files created. Default value: false."
+
+.. class:: warningmark
+
+**Warning on SAM/BAM quality**
+
+Many SAM/BAM files produced externally and uploaded to Galaxy do not fully conform to SAM/BAM specifications. Galaxy deals with this by using the **LENIENT**
+flag when it runs Picard, which allows reads to be discarded if they're empty or don't map. This appears
+to be the only way to deal with SAM/BAM that cannot be parsed.
+
+  </help>
+</tool>
