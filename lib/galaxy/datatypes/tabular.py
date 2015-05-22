@@ -7,6 +7,10 @@ pkg_resources.require( "bx-python" )
 import gzip
 import logging
 import os
+import tempfile
+import subprocess
+import shutil
+
 from cgi import escape
 from galaxy import util
 from galaxy.datatypes import data
@@ -661,6 +665,25 @@ class Vcf( Tabular ):
         if line and line.startswith( '#' ):
             # Found header line, get sample names.
             dataset.metadata.sample_names = line.split()[ 9: ]
+    @staticmethod
+    def merge(split_files, output_file):
+
+        tmp_dir = tempfile.mkdtemp()
+        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
+        command = ["bcftools", "concat"] + split_files + ["-o", output_file]
+        print command
+        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
+        exit_code = proc.wait()
+        # Did merge succeed?
+        stderr = open(stderr_name).read().strip()
+        if stderr:
+            if exit_code != 0:
+                shutil.rmtree(tmp_dir)  # clean up
+                raise Exception, "Error merging VCF files: %s" % stderr
+            else:
+                print stderr
+        os.unlink(stderr_name)
+        os.rmdir(tmp_dir)
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
