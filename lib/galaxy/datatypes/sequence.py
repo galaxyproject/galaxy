@@ -494,6 +494,7 @@ class Fasta( Sequence ):
 
 class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
+    edam_format = "format_1929"
     file_ext = "csfasta"
 
     def sniff( self, filename ):
@@ -910,6 +911,7 @@ class Lav( data.Text ):
 
 
 class RNADotPlotMatrix( data.Data ):
+    edam_format = "format_3466"
     file_ext = "rna_eps"
 
     def set_peek( self, dataset, is_multi_byte=False ):

@@ -46,7 +46,7 @@ VIEWPORT_MAX_READS_PER_LINE = 10
 @dataproviders.decorators.has_dataproviders
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
-    edam_format = "format_3003"
+    edam_format = "format_3475"
     file_ext = "interval"
     line_class = "region"
     track_type = "FeatureTrack"
@@ -380,6 +380,7 @@ class BedGraph( Interval ):
 
 class Bed( Interval ):
     """Tab delimited data in BED format"""
+    edam_format = "format_3003"
     file_ext = "bed"
     data_sources = { "data": "tabix", "index": "bigwig", "feature_search": "fli" }
     track_type = Interval.track_type
@@ -596,6 +597,7 @@ class _RemoteCallMixin:
 @dataproviders.decorators.has_dataproviders
 class Gff( Tabular, _RemoteCallMixin ):
     """Tab delimited data in Gff format"""
+    edam_format = "format_2305"
     file_ext = "gff"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
     data_sources = { "data": "interval_index", "index": "bigwig", "feature_search": "fli" }
@@ -839,6 +841,7 @@ class Gff( Tabular, _RemoteCallMixin ):
 
 class Gff3( Gff ):
     """Tab delimited data in Gff3 format"""
+    edam_format = "format_1975"
     file_ext = "gff3"
     valid_gff3_strand = ['+', '-', '.', '?']
     valid_gff3_phase = ['.', '0', '1', '2']
