@@ -2117,7 +2117,12 @@ class DataToolParameter( BaseDataToolParameter ):
     def to_dict( self, trans, view='collection', value_mapper=None, other_values=None ):
         # create dictionary and fill default parameters
         d = super( DataToolParameter, self ).to_dict( trans )
-        d['extensions'] = self.extensions
+        extensions = self.extensions
+        all_edam_formats = self._datatypes_registery( trans, self.tool ).edam_formats
+        edam_formats = map(lambda ext: all_edam_formats.get(ext, None),
+                           extensions)
+        d['extensions'] = extensions
+        d['edam_formats'] = edam_formats
         d['multiple'] = self.multiple
         d['options'] = {'hda': [], 'hdca': []}
 

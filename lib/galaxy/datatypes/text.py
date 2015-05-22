@@ -19,6 +19,7 @@ import logging
 log = logging.getLogger(__name__)
 
 class Json( Text ):
+    edam_format = "format_3464"
     file_ext = "json"
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -127,6 +128,7 @@ class Obo( Text ):
         OBO file format description
         http://www.geneontology.org/GO.format.obo-1_2.shtml
     """
+    edam_format = "format_2549"
     file_ext = "obo"
 
     def set_peek( self, dataset, is_multi_byte=False ):
