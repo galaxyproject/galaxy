@@ -378,3 +378,13 @@ class XHunterAslFormat( Binary ):
 
 if hasattr(Binary, 'register_unsniffable_binary_ext'):
     Binary.register_unsniffable_binary_ext('hlf')
+
+
+class Sf3(Binary):
+    """Class describing a Scaffold SF3 files"""
+    file_ext = "sf3"
+
+if hasattr(Binary, 'register_unsniffable_binary_ext'):
+    Binary.register_unsniffable_binary_ext('sf3')
+
+
