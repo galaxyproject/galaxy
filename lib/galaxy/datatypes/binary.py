@@ -37,6 +37,7 @@ log = logging.getLogger(__name__)
 
 class Binary( data.Data ):
     """Binary data"""
+    edam_format = "format_2333"
     sniffable_binary_formats = []
     unsniffable_binary_formats = []
 
@@ -148,6 +149,7 @@ Binary.register_unsniffable_binary_ext("asn1-binary")
 @dataproviders.decorators.has_dataproviders
 class Bam( Binary ):
     """Class describing a BAM binary file"""
+    edam_format = "format_2572"
     file_ext = "bam"
     track_type = "ReadTrack"
     data_sources = { "data": "bai", "index": "bigwig" }
@@ -448,6 +450,7 @@ Binary.register_sniffable_binary_format("bam", "bam", Bam)
 
 class Bcf( Binary):
     """Class describing a BCF file"""
+    edam_format = "format_3020"
     file_ext = "bcf"
 
     MetadataElement( name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True )
@@ -520,6 +523,7 @@ Binary.register_unsniffable_binary_ext("h5")
 
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
+    edam_format = "format_1632"
     file_ext = "scf"
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -541,6 +545,7 @@ Binary.register_unsniffable_binary_ext("scf")
 
 class Sff( Binary ):
     """ Standard Flowgram Format (SFF) """
+    edam_format = "format_3284"
     file_ext = "sff"
 
     def __init__( self, **kwd ):
@@ -580,6 +585,7 @@ class BigWig(Binary):
     The supplemental info in the paper has the binary details:
     http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btq351v1
     """
+    edam_format = "format_3006"
     track_type = "LineTrack"
     data_sources = { "data_standalone": "bigwig" }
 
@@ -617,7 +623,7 @@ Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 
 class BigBed(BigWig):
     """BigBed support from UCSC."""
-
+    edam_format = "format_3004"
     data_sources = { "data_standalone": "bigbed" }
 
     def __init__( self, **kwd ):
@@ -630,7 +636,7 @@ Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
 class TwoBit (Binary):
     """Class describing a TwoBit format nucleotide file"""
-
+    edam_format = "format_3009"
     file_ext = "twobit"
 
     def sniff(self, filename):
