@@ -1,7 +1,5 @@
 ## TEMPORARY SWITCH FOR THE NEW TOOL FORM
 %if util.string_as_bool(trans.app.config.get('workflow_toolform_upgrade',  True)):
-    ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
-    ${h.css('jquery-ui/smoothness/jquery-ui')}
     <%
         ## TEMPORARY: create tool dictionary in mako while both tool forms are in use.
         ## This avoids making two separate requests since the classic form requires the mako anyway.
@@ -16,13 +14,7 @@
             'container'         : '#right-content'
         })
     %>
-    <script>
-        require(['mvc/tools/tools-form-workflow'], function(ToolsForm){
-           $(function(){
-                var form = new ToolsForm.View(${ h.dumps(self.form_config) });
-            });
-        });
-    </script>
+    ${ h.dumps(self.form_config) }
 %else:
     <%
     from galaxy.tools.parameters import DataToolParameter, RuntimeValue
