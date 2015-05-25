@@ -24,6 +24,14 @@
             <auto-register-username>{sAMAccountName}</auto-register-username>
             <auto-register-email>{mail}</auto-register-email>
 -->
+            <!-- If your need to pass additional options to your LDAP connection, set them here
+                 The syntax is: option1=value1,option2=value2,...
+                 Options and values should match those from the python-ldap documentation.
+
+                 The following example allows connecting to ldaps:// (SSL/TLS)
+                 when self-signed certificates are used -->
+<!--        <ldap-options>OPT_X_TLS_REQUIRE_CERT=OPT_X_TLS_ALLOW</ldap-options>
+-->
             <!-- To allow login with username instead of email, default is False -->
 <!--        <login-use-username>True</login-use-username>
         </options>
