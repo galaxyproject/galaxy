@@ -62,7 +62,7 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     use_remote_datasets = kwds.get('use_remote_datasets', None);
     if(use_remote_datasets):
         del kwds['use_remote_datasets'];
-        kwds['copy_from_staging_dir_to_working_directory'] = 'echo ${staging_dir};mkdir -p '+working_directory+';rsync -a ${staging_dir}'+os.sep+' '+working_directory+os.sep;
+        kwds['copy_from_staging_dir_to_working_directory'] = 'echo ${staging_dir};hostname;whoami;mkdir -p '+working_directory+';rsync -a ${staging_dir}'+os.sep+' '+working_directory+os.sep;
         kwds['copy_to_staging_dir_from_working_directory'] = 'rsync -a --exclude=metadata_temp* --exclude=.job.ad --exclude=.machine.ad ' + working_directory+os.sep + ' ${staging_dir}'+os.sep;
 
     template_params = OPTIONAL_TEMPLATE_PARAMS.copy()

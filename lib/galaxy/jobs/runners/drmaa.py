@@ -195,10 +195,18 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         if(self.app.config.use_CCC_DRMAA):
             jt.nativeSpecification += '\noutput_aggregated=False\noutput_aggregation_type=merge';
             #FIXME: CCC DRMAA code assumes all UUIDs are bounded by [], fix
-            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'input_CCC_DID_list=' + ','.join(map(lambda x:'[' + x + ']', 
-                job_wrapper.get_input_string_uuids()));
-            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'output_CCC_DID_list=' + ','.join(map(lambda x:'[' + x + ']',
-                    job_wrapper.get_output_string_uuids()));
+	    input_string_uuid_list = job_wrapper.get_input_string_uuids();
+	    if(len(input_string_uuid_list) == 0):
+	      jt.nativeSpecification += '\n' + 'input_CCC_DID_list=' + '[]'; 
+	    else:
+	      jt.nativeSpecification = jt.nativeSpecification + '\n' + 'input_CCC_DID_list=' + ','.join(map(lambda x:'[' + x + ']', 
+		input_string_uuid_list));
+	    output_string_uuid_list = job_wrapper.get_output_string_uuids();
+	    if(len(output_string_uuid_list) == 0 or job_wrapper.get_tool_id() == 'upload1'):
+	      jt.nativeSpecification += '\n' + 'output_CCC_DID_list=' + '[]';
+	    else:
+	      jt.nativeSpecification = jt.nativeSpecification + '\n' + 'output_CCC_DID_list=' + ','.join(map(lambda x:'[' + x + ']',
+		output_string_uuid_list));
             jt.nativeSpecification = jt.nativeSpecification + '\n' + 'tool_id=' + job_wrapper.get_tool_id();
             workflow_tuple = job_wrapper.get_workflow_invocation_info();
             if(workflow_tuple):
