@@ -44,7 +44,8 @@ class CondorJobRunner( AsynchronousJobRunner ):
         """Create job script and submit it to the DRM"""
 
         # prepare the job
-        if not self.prepare_job( job_wrapper, include_metadata=True ):
+        include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", True ) )
+        if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
             return
 
         # command line has been added to the wrapper by prepare_job()
@@ -178,6 +179,9 @@ class CondorJobRunner( AsynchronousJobRunner ):
                 #cjs.job_wrapper.change_state( model.Job.states.QUEUED )
             if job_complete:
                 if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
+                    external_metadata = not asbool( cjs.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
+                    if external_metadata:
+                        self._handle_metadata_externally( cjs.job_wrapper, resolve_requirements=True )
                     log.debug( "(%s/%s) job has completed" % ( galaxy_id_tag, job_id ) )
                     self.work_queue.put( ( self.finish_job, cjs ) )
                 continue
