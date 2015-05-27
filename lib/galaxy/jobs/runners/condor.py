@@ -10,6 +10,7 @@ from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.jobs.runners.util.condor import submission_params, build_submit_description
 from galaxy.jobs.runners.util.condor import condor_submit, condor_stop
 from galaxy.jobs.runners.util.condor import summarize_condor_log
+from galaxy.util import asbool
 
 log = logging.getLogger( __name__ )
 
