@@ -163,6 +163,7 @@
     
     <label id="fastqcsambam" text="FastQC: fastq/sam/bam" />
     <tool file="fastqc/fastqc.xml" />
+    <tool file="multi_fastqc/multi_fastqc.xml"/>
     
     <label id="illumina" text="Illumina fastq" />
     
@@ -278,7 +279,10 @@
     <tool file="civic/civic_qrt.xml" />
     <tool file="snpeff/snpEff.xml" />
     <tool file="oncotator/oncotator.xml" />
-  </section>  
+  </section>
+  <section id="variant_db_tools" name="Variant DB tools">
+    <tool file="variant_db/variant_db_client.xml"/>
+  </section>
   <section id="custom_tools" name="Custom tools">
   </section>
 </toolbox>
