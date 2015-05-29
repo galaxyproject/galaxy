@@ -5,7 +5,7 @@
     <param name="input" type="data" label="input"/>
   </inputs>
   <outputs>
-    <data name="fetched_copy" label="fetched_copy" format="input"/>
+    <data name="fetched_copy" label="Fetched copy of ${on_string}" format="input"/>
   </outputs>
   <help>
     Fetch dataset to central site
