@@ -64,10 +64,10 @@ subsequently voted in new members.
 Any member of the `committers` group may nominate an individual for membership
 to the `committers` group. Such individuals must have demonstrated:
 
-- a good grasp of the design of Galaxy core project
-- a solid track record of being constructive and helpful
-- significant contributions to the project
-- willingness to dedicate some time to improving Galaxy
+- Good grasp of the design of Galaxy core project.
+- Solid track record of being constructive and helpful.
+- Significant contributions to the project.
+- Willingness to dedicate some time to improving Galaxy.
 
 The above list of `committers` is the canonical source used to determine
 membership to the `committers` group - as such new members may be added to
