@@ -3,13 +3,13 @@ Galaxy Core Governance
 ==================================
 
 This is not a legal document and the Galaxy Project is not a legal
-entity. Pennsylvania State University owns copyright to the Galaxy Project and
+entity. Pennsylvania State Universirty owns copyright to the Galaxy Project and
 licenses the project under the terms of the Academic Free License version 3.0
 (see the LICENSE_ for full details).
 
 This document informally outlines the organizational structure governing the
 Galaxy core code base hosted at https://github.com/galaxyproject/galaxy. This
-governance extends to code related activities of this repository such as
+governance extends to code-related activities of this repository such as
 releases and packaging. This governance does not include infrastructure such
 as Galaxy's Trello board, the Galaxy mailing lists, etc... or other Galaxy-
 related projects belonging to the ``galaxyproject`` organization on GitHub.
