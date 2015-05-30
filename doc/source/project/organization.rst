@@ -5,7 +5,7 @@ Galaxy Core Governance
 This is not a legal document and the Galaxy Project is not a legal
 entity. Pennsylvania State University owns copyright to the Galaxy Project and
 licenses the project under the terms of the Academic Free License version 3.0
-(see the LICNESE_ for full details).
+(see the LICENSE_ for full details).
 
 This document informally outlines the organizational structure governing the
 Galaxy core code base hosted at https://github.com/galaxyproject/galaxy. This
@@ -29,7 +29,7 @@ pull requests issued by others.
 
 Committers may participate in formal votes - these votes typically include
 votes to modify team membership, merge pull requests, and modify or clarify
-the procedures outined in this document and CONTRIBUTING_.
+the procedures outlined in this document and CONTRIBUTING_.
 
 Members
 ----------
@@ -61,7 +61,7 @@ The `committers` group was seeded with the group of active developers and
 advocates with commit access to the repository as of May 2015. This group
 subsequently voted in new members.
 
-Any member of the `committers` group may nominate an individul for membership
+Any member of the `committers` group may nominate an individual for membership
 to the `committers` group. Such individuals must have demonstrated:
 
 - a good grasp of the design of Galaxy core project
@@ -77,15 +77,15 @@ rules for pull requests that modify governance procedures outlined in Galaxy's
 CONTRIBUTING_ document - with one exception - a `commmitter` may not vote
 against their own removal from the group (for obvious reasons).
 
-Given the responsiblities and power invested in this group - it is important
+Given the responsibilities and power invested in this group - it is important
 that individuals not actively working on Galaxy in some fashion are removed
 the group. If individuals in this group intend to change jobs or reallocate
 volunteer activities and will no longer be active in the Galaxy community,
 they should withdraw from membership of this group. Periodically, active
 members may review this group and request inactive members are removed - this
-should not be interpreted as a condomination of these inactive members but
+should not be interpreted as a condemnation of these inactive members but
 merely as a reflection of a desire to keep this group focused enough to remain
 effective.
 
-.. _LICNESE: https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt
+.. _LICENSE: https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt
 .. _CONTRIBUTING: https://github.com/galaxyproject/galaxy/blob/dev/CONTRIBUTING.md
