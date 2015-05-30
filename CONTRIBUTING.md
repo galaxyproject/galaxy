@@ -111,7 +111,7 @@ on pull requests. Information on the *committers* group can be found in the
 [organization document](https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst)
 describing governance of the core Galaxy code base.
 
-Votes should on pull requests should take the form of
+Votes on pull requests should take the form of
 [+1, 0, -1, and fractions](http://www.apache.org/foundation/voting.html)
 as outlined by the Apache Foundation.
 
