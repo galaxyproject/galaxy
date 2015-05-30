@@ -3,7 +3,7 @@ Galaxy Core Governance
 ==================================
 
 This is not a legal document and the Galaxy Project is not a legal
-entity. Pennsylvania State Universirty owns copyright to the Galaxy Project and
+entity. Pennsylvania State University owns copyright to the Galaxy Project and
 licenses the project under the terms of the Academic Free License version 3.0
 (see the LICENSE_ for full details).
 
