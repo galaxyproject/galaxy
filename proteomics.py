@@ -285,6 +285,19 @@ class Msp( Text ):
         with open(filename, 'r') as contents:
             return Msp.next_line_starts_with(contents, "Name:") and Msp.next_line_starts_with(contents, "MW:")
 
+class SPLibNoIndex( Text ):
+    """SPlib without index file """
+    file_ext = "splib"
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.blurb = 'Spectral Library without index files'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
 
 class SPLib( Msp ):
     """SpectraST Spectral Library. Closely related to msp format"""
