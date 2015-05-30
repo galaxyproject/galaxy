@@ -105,34 +105,34 @@ developers.
 
 ## Handling Pull Requests
 
-Everyone is encouraged express opinions and issue non-binding votes on pull
+Everyone is encouraged to express opinions and issue non-binding votes on pull
 requests, but only members of the *committers* group may issue binding votes
 on pull requests. Information on the *committers* group can be found in the
 [organization document](https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst)
-describing goverance of the core Galaxy code base.
+describing governance of the core Galaxy code base.
 
 Votes should on pull requests should take the form of
 [+1, 0, -1, and fractions](http://www.apache.org/foundation/voting.html)
 as outlined by the Apache Foundation.
 
-Pull requests modifying pre-existing releases should be restricted to bug 
-fixes and require at least 2 *+1* binding votes from someone other than the 
-author of the pull request with no *-1* binding votes.
+Pull requests modifying pre-existing releases should be restricted to bug fixes
+and require at least 2 *+1* binding votes from someone other than the author of
+the pull request with no *-1* binding votes.
 
-Any pull request changing or clarifing the procedures governing this
+Any pull request changing or clarifying the procedures governing this
 repository must remain open for at least 4 days and require at least 3 *+1*
 votes with no *-1* votes from qualified *committers*.
 
-Any other pull request requires at least 1 binding *+1* vote from someone 
-other than the author of the pull request.
+Any other pull request requires at least 1 binding *+1* vote from someone other
+than the author of the pull request.
 
 ### Timelines
 
-Except in the case of pull requests modifying goverance procedures, there are
+Except in the case of pull requests modifying governance procedures, there are
 generally no objective guidelines defining how long pull requests must remain
 open for comment. Subjectively speaking though - larger and more potentially
-controversial pull requests containing enhancements should remain open for a
-at least a few days to give everyone the oppertunity to weigh in.
+controversial pull requests containing enhancements should remain open for a at
+least a few days to give everyone the opportunity to weigh in.
 
 ### Vetos
 
@@ -150,11 +150,11 @@ justification is invalid and has no weight."
 
 ### Direct Commit Access
 
-The Galaxy *committers* group may only commit directly to Galaxy (i.e. 
-outside of a pull request and not following the procedures described here) 
-the following two categories of patches:
+The Galaxy *committers* group may only commit directly to Galaxy (i.e.  outside
+of a pull request and not following the procedures described here) the
+following two categories of patches:
 
-* Serious security vulnerabilities must simulatenously be made to multiple
+* Serious security vulnerabilities must simultaneously be made to multiple
 previously released versions of Galaxy.
 * Cherry-picking and/or merging of existing approved commits to other 
 branches.
