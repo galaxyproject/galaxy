@@ -407,6 +407,20 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        
+        sort_id = kwd.get('sort')
+        order = kwd.get('order')
+        
+        if sort_id == "default":
+            sort_id = "tool_id"
+
+        if order == "default":
+            order = "asc"
+            _order = sa.asc( sort_id )
+        elif order == "asc":
+            _order = sa.asc( sort_id )
+        elif order == "desc":
+            _order = sa.desc( sort_id )
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -417,15 +431,16 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                        whereclause=model.Job.table.c.user_id != monitor_user_id,
                        from_obj=[ model.Job.table ],
                        group_by=[ 'tool_id' ],
-                       order_by=[ 'tool_id' ] )
+                       order_by=[ _order ] )
         for row in q.execute():
             jobs.append( ( row.tool_id,
                            row.total_jobs ) )
         return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
+                                    sort=sort_id,
+                                    order=order,
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
-
     @web.expose
     def tool_per_month( self, trans, **kwd ):
         message = ''
