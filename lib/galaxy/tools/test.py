@@ -252,7 +252,9 @@ def _process_simple_value( param, param_value ):
 
 def _process_bool_param_value( param, param_value ):
     assert isinstance( param, galaxy.tools.parameters.basic.BooleanToolParameter )
+    was_list = False
     if isinstance( param_value, list ):
+        was_list = True
         param_value = param_value[0]
     if param.truevalue == param_value:
         processed_value = True
@@ -260,7 +262,7 @@ def _process_bool_param_value( param, param_value ):
         processed_value = False
     else:
         processed_value = string_as_bool( param_value )
-    return processed_value
+    return [ processed_value ] if was_list else processed_value
 
 
 @nottest
