@@ -11,10 +11,16 @@ down_arrow = "&#x2193;"
    
 id_order = order
 total_order = order
+   
+id_class = "Unselected"
+total_class = "Unselected"
+
 id_arrow = " "
 total_arrow = " "
 
 if sort == "tool_id":
+    id_class = "Selected"
+   
     if id_order == "asc":
         id_arrow += down_arrow
         id_order = "desc"
@@ -23,6 +29,8 @@ if sort == "tool_id":
         id_order = "asc"
     pass
 elif sort == "total_jobs":
+    total_class = "Selected"
+   
     if total_order == "asc":
         total_arrow += down_arrow
         total_order = "desc"
@@ -32,6 +40,15 @@ elif sort == "total_jobs":
     pass
 %>
 
+<style>
+.Unselected {
+    text-decoration: none;
+}
+.Unselected:hover {
+    text-decoration: underline;
+}
+</style>
+    
 <!--jobs_per_tool.mako-->
 <div class="toolForm">
     <div class="toolFormBody">
@@ -42,11 +59,11 @@ elif sort == "total_jobs":
                 <tr><td colspan="2">There are no jobs.</td></tr>
             %else:
                 <tr class="header">
-                    <td><a href="${h.url_for( controller='jobs', action='per_tool', sort='tool_id', order=id_order )}">Tool id</a><span>${id_arrow}</span><td>
+                    <td><a class=${id_class} href="${h.url_for( controller='jobs', action='per_tool', sort='tool_id', order=id_order )}">Tool id</a><span>${id_arrow}</span><td>
                     %if is_user_jobs_only:
-                    <td><a href="${h.url_for( controller='jobs', action='per_tool', sort='total_jobs', order=total_order )}">User Jobs</a><span>${total_arrow}</span></td>
+                    <td><a class=${total_class} href="${h.url_for( controller='jobs', action='per_tool', sort='total_jobs', order=total_order )}">User Jobs</a><span>${total_arrow}</span></td>
 					%else:
-                    <td><a href="${h.url_for( controller='jobs', action='per_tool', sort='total_jobs', order=total_order )}">User + Monitor Jobs</a><span>${total_arrow}</span></td>
+                    <td><a class=${total_class} href="${h.url_for( controller='jobs', action='per_tool', sort='total_jobs', order=total_order )}">User + Monitor Jobs</a><span>${total_arrow}</span></td>
 	                %endif
                 </tr>
                 <% ctr = 0 %>
@@ -66,3 +83,4 @@ elif sort == "total_jobs":
     </div>
 </div>
 <!--End jobs_per_tool.mako-->
+        
