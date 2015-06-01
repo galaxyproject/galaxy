@@ -1,0 +1,2 @@
+define([],function(){var a=Backbone.View.extend({events:{},initialize:function(a){this.render(a)},render:function(a){var b=this.templateRow();return this.setElement(b({group:a})),this.$el.show(),this},templateRow:function(){return _.template(["<div>TEST GROUP PAGE</div>"].join(""))}});return{GroupDetailView:a}});
+//# sourceMappingURL=../../../maps/mvc/groups/group-groupdetail-view.js.map

@@ -80,6 +80,9 @@
                 ## Repositories tab.
                 ${tab( "repositories", "Repositories", h.url_for( controller='/repository', action='index' ) )}
                 
+                ## Groups tab.
+                ${tab( "groups", "Groups", h.url_for( controller='/groups', action='index' ) )}
+
                 ## Admin tab.
                 ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
 
