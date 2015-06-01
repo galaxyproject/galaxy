@@ -11,16 +11,16 @@
         <h4>Repositories</h4>
             <ul>
                 <li>
-                    <strong>Search Tool Shed</strong> - Search and install new tools and other Galaxy utilities from the Tool Shed.
+                    <strong>Search Tool Shed</strong> - Search and install new tools and other Galaxy utilities from the Tool Shed. See <a href="https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial">the tutorial</a>.
                 </li>
                 <li>
-                    <strong>Monitor installing repositories</strong> - View the status of tools that are being currently installed <i>(Appears only if something from Tool Shed is installed)</i>
+                    <strong>Monitor installing repositories</strong> - View the status of tools that are being currently installed <i>(Appears only if something from Tool Shed is installed.)</i>
                 </li>
                 <li>
-                    <strong>Manage installed</strong> - View and administer installed tools and utilities on this Galaxy. <i>(Appears only if something from Tool Shed is installed)</i>
+                    <strong>Manage installed</strong> - View and administer installed tools and utilities on this Galaxy. <i>(Appears only if something from Tool Shed is installed.)</i>
                 </li>
                 <li>
-                    <strong>Reset metadata</strong> - Select on which repositories you want to reset metadata. <i>(Appears only if something from Tool Shed is installed)</i>
+                    <strong>Reset metadata</strong> - Select on which repositories you want to reset metadata. <i>(Appears only if something from Tool Shed is installed.)</i>
                 </li>
                 <li>
                     <strong>Download local tool</strong> - Download a tarball with a tool from this Galaxy.
