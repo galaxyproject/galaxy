@@ -4,14 +4,14 @@
 <%def name="title()">Galaxy Administration</%def>
 
 <h2>Administration</h2>
-
+Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the Galaxy administration hub</a> to learn how to keep your Galaxy in best shape.
 %if message:
     ${render_msg( message, status )}
 %else:
         <h4>Repositories</h4>
             <ul>
                 <li>
-                    <strong>Search Tool Shed</strong> - Search and install new tools and other Galaxy utilities from the Tool Shed. See <a href="https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial">the tutorial</a>.
+                    <strong>Search Tool Shed</strong> - Search and install new tools and other Galaxy utilities from the Tool Shed. See <a href="https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial" target="_blank">the tutorial</a>.
                 </li>
                 <li>
                     <strong>Monitor installing repositories</strong> - View the status of tools that are being currently installed <i>(Appears only if something from Tool Shed is installed.)</i>
@@ -50,10 +50,10 @@
         <h4>Data</h4>
             <ul>
                 <li>
-                    <strong>Data libraries</strong> - Data libraries enable authorized Galaxy users to share datasets through with other groups or users. Only administrators can create data libraries. See <a href="https://wiki.galaxyproject.org/DataLibraries">wiki</a> for details and <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity">this page</a> for security description.
+                    <strong>Data libraries</strong> - Data libraries enable authorized Galaxy users to share datasets through with other groups or users. Only administrators can create data libraries. See <a href="https://wiki.galaxyproject.org/DataLibraries" target="_blank">wiki</a> for details and <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">this page</a> for security description.
                 </li>
                 <li>
-                    <strong>Local data</strong> - Manage the reference (and other) data that is stored within Tool Data Tables. See <a href="https://wiki.galaxyproject.org/Admin/Tools/DataManagers">wiki</a> for details.
+                    <strong>Local data</strong> - Manage the reference (and other) data that is stored within Tool Data Tables. See <a href="https://wiki.galaxyproject.org/Admin/Tools/DataManagers" target="_blank">wiki</a> for details.
                 </li>
             </ul>
 
