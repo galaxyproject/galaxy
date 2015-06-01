@@ -154,7 +154,6 @@ The Galaxy *committers* group may only commit directly to Galaxy (i.e.  outside
 of a pull request and not following the procedures described here) the
 following two categories of patches:
 
-* Serious security vulnerabilities must simultaneously be made to multiple
-previously released versions of Galaxy.
+* Patches for serious security vulnerabilities.
 * Cherry-picking and/or merging of existing approved commits to other 
 branches.
