@@ -46,8 +46,7 @@
   <code file="codingSnps_filter.py"></code>
 
   <requirements>
-    <requirement type="binary">cat</requirement>
-    <requirement type="binary">sort</requirement>
+    <requirement type="package">gnu_coreutils</requirement>
     <requirement type="package">ucsc_tools</requirement>
   </requirements>
 

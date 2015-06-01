@@ -17,7 +17,7 @@
         </when>
         <when value="No">
         </when>
-    </conditional>           
+    </conditional>
     <param name="colList" label="Numerical columns" type="data_column" numerical="True" multiple="True" data_ref="input" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
     <param name="title" type="text" size="30" value="Bar Chart" label="Plot title"/>
     <param name="ylabel" type="text" size="30" value="V1" label="Label for Y axis"/>
@@ -40,7 +40,6 @@
     <requirement type="python-module">Numeric</requirement>
   </requirements>
   <help>
-
 **What it does**
 
 This tool builds a bar chart on one or more columns. Suppose you have dataset like this one::
@@ -52,9 +51,8 @@ This tool builds a bar chart on one or more columns. Suppose you have dataset li
 
 Graphing columns 2 and 3 while using column 1 for X Tick Labels will produce the following plot:
 
-.. image:: ${static_path}/images/bar_chart.png 
-   :height: 324 
-   :width: 540 
-    
+.. image:: ${static_path}/images/bar_chart.png
+   :height: 324
+   :width: 540
 </help>
 </tool>
