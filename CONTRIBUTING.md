@@ -123,7 +123,7 @@ Any pull request changing or clarifying the procedures governing this
 repository must remain open for at least 4 days and require at least 3 *+1*
 votes with no *-1* votes from qualified *committers*.
 
-Any other pull request requires at least 1 binding *+1* vote from someone other
+Any other pull request requires at least 1 *+1* binding vote from someone other
 than the author of the pull request.
 
 ### Timelines
