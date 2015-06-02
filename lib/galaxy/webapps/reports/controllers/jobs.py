@@ -441,6 +441,35 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     is_user_jobs_only=monitor_user_id )
 
     @web.expose
+    def errors_per_tool( self, trans, **kwd ):
+        """
+        Queries the DB for user jobs in error. Filters out monitor jobs.
+        """
+
+        message = ''
+        params = util.Params( kwd )
+        monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+
+        # In case we don't know which is the monitor user we will query for all jobs
+        monitor_user_id = get_monitor_id( trans, monitor_email )
+
+        jobs_in_error_per_tool = sa.select( ( model.Job.table.c.tool_id.label( 'tool_id' ),
+                                              sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                                            whereclause=sa.and_( model.Job.table.c.state == 'error',
+                                                                 model.Job.table.c.user_id != monitor_user_id ),
+                                            from_obj=[ model.Job.table ],
+                                            group_by=[ 'tool_id' ],
+                                            order_by=[ sa.desc( 'total_jobs' ) ] )
+        jobs = []
+        for row in jobs_in_error_per_tool.execute():
+            jobs.append( ( row.total_jobs,
+                           row.tool_id ) )
+        return trans.fill_template( '/webapps/reports/jobs_errors_per_tool.mako',
+                                    jobs=jobs,
+                                    message=message,
+                                    is_user_jobs_only=monitor_user_id )
+
+    @web.expose
     def tool_per_month( self, trans, **kwd ):
         message = ''
 

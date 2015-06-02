@@ -53,6 +53,7 @@
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_in_error' )}">Jobs in error per month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_user' )}">Jobs per user</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_tool', sort='default', order='default' )}">Jobs per tool</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='errors_per_tool' )}">Errors per tool</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
