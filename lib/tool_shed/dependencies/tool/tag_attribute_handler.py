@@ -98,7 +98,7 @@ class TagAttributeHandler( object ):
                 altered, new_sub_elem, error_message = \
                     self.process_actions_tag_set( elem=sub_elem,
                                                   message=message )
-            if error_message and error_message not in messag:
+            if error_message and error_message not in message:
                 message += error_message
             if altered:
                 if not self.altered:
