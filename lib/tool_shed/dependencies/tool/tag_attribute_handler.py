@@ -30,7 +30,7 @@ class TagAttributeHandler( object ):
                                                      elem_index=sub_index,
                                                      elem=sub_elem,
                                                      message=message )
-            if error_message:
+            if error_message and error_message not in message:
                 message += error_message
             if altered:
                 if not self.altered:
@@ -68,7 +68,7 @@ class TagAttributeHandler( object ):
                 altered, new_sub_elem, error_message = self.rdd.handle_sub_elem( parent_elem=elem,
                                                                                  elem_index=sub_index,
                                                                                  elem=sub_elem )
-            if error_message:
+            if error_message and error_message not in message:
                 message += error_message
             if altered:
                 if not self.altered:
@@ -98,7 +98,7 @@ class TagAttributeHandler( object ):
                 altered, new_sub_elem, error_message = \
                     self.process_actions_tag_set( elem=sub_elem,
                                                   message=message )
-            if error_message:
+            if error_message and error_message not in messag:
                 message += error_message
             if altered:
                 if not self.altered:
@@ -150,7 +150,7 @@ class TagAttributeHandler( object ):
                     ( str( package_version ), str( package_name ) )
                 error_message += 'the recipe for installing the package is missing either an '
                 error_message += '&lt;actions&gt; tag set or an &lt;actions_group&gt; tag set.'
-            if error_message:
+            if error_message and error_message not in message:
                 message += error_message
             if altered:
                 if not self.altered:
@@ -176,7 +176,7 @@ class TagAttributeHandler( object ):
                                                      elem_index=sub_index,
                                                      elem=sub_elem,
                                                      message=message )
-            if error_message:
+            if error_message and error_message not in message:
                 message += error_message
             if altered:
                 if not self.altered:
@@ -191,7 +191,7 @@ class TagAttributeHandler( object ):
         altered, new_elem, error_message = self.rdd.handle_complex_dependency_elem( parent_elem=parent_elem,
                                                                                     elem_index=elem_index,
                                                                                     elem=elem )
-        if error_message:
+        if error_message and error_message not in message:
             message += error_message
         if altered:
             if not self.altered:
