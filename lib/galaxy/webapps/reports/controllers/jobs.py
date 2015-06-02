@@ -439,7 +439,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
-    
+
     @web.expose
     def tool_per_month( self, trans, **kwd ):
         message = ''
