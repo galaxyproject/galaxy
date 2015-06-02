@@ -323,7 +323,7 @@ var BaseInputTerminal = Terminal.extend( {
             if( ! firstOutput ){
                 return false;
             } else {
-                if( firstOutput.isDataCollectionInput || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
+                if( firstOutput.isCollection || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
                     return true;
                 } else {
                     return false;
@@ -378,7 +378,7 @@ var BaseInputTerminal = Terminal.extend( {
     },
     _otherCollectionType: function( other ) {
         var otherCollectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
-        if( other.isDataCollectionInput ) {
+        if( other.isCollection ) {
             otherCollectionType = other.collectionType;
         } else {
             var otherMapOver = other.mapOver();
@@ -518,7 +518,7 @@ var OutputCollectionTerminal = Terminal.extend( {
         Terminal.prototype.initialize.call( this, attr );
         this.datatypes = attr.datatypes;
         this.collectionType = new CollectionTypeDescription( attr.collection_type );
-        this.isDataCollectionInput = true;
+        this.isCollection = true;
     },
     update: function( output ) {
         var newCollectionType = new CollectionTypeDescription( output.collection_type );
