@@ -407,10 +407,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        
         sort_id = kwd.get('sort')
         order = kwd.get('order')
-        
         if sort_id == "default":
             sort_id = "tool_id"
 
@@ -441,6 +439,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
+    
     @web.expose
     def tool_per_month( self, trans, **kwd ):
         message = ''
