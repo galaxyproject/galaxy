@@ -17,7 +17,7 @@ return Backbone.Model.extend({
             var id = $(this).attr('id');
             var field = self.app.field_list[id];
             if (field) {
-                sum += id + ':' + JSON.stringify(field.value && field.value()) + ';';
+                sum += id + ':' + JSON.stringify(field.value && field.value()) + ':' + field.collapsed + ';';
             }
         });
         return sum;
@@ -113,6 +113,11 @@ return Backbone.Model.extend({
 
                                 // ignore certain values
                                 if (input.ignore === undefined || input.ignore != value) {
+                                    // replace value by collapsible value
+                                    if (field.collapsed && input.collapsible_value) {
+                                        value = input.collapsible_value;
+                                    }
+
                                     // add value to submission
                                     add (job_input_id, input.id, value);
 
