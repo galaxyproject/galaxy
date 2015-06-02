@@ -899,7 +899,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         for history_id in ids:
             history_id = self.decode_id( history_id )
             history = self.history_manager.get_owned( history_id, trans.user, current_history=trans.history )
-            histories.append(  )
+            histories.append( history )
         return histories
 
     def _get_users( self, trans, user, emails_or_ids ):
