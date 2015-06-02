@@ -65,7 +65,7 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
                 append_notebook(notebook_access_url);
             },
             error: function(jqxhr, status, error){
-                if(ie_password_auth && !ie_apache_urls){
+                if(ie_password_auth){
                     // Failure happens due to CORS
                     message_failed_auth(password);
                     append_notebook(notebook_access_url);
