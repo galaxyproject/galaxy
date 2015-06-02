@@ -316,11 +316,13 @@ define(['utils/utils',
 
             // create input field wrapper
             var input_element = new InputElement(this.app, {
-                label           : input_def.label || input_def.name,
-                default_value   : input_def.default_value,
-                collapsible     : input_def.collapsible,
-                help            : input_def.help,
-                field           : field
+                label               : input_def.label || input_def.name,
+                value               : input_def.value,
+                default_value       : input_def.default_value,
+                collapsible         : input_def.collapsible,
+                collapsible_value   : input_def.collapsible_value,
+                help                : input_def.help,
+                field               : field
             });
 
             // add to element list
