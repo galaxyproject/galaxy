@@ -13,7 +13,18 @@ import galaxy.datatypes.tabular
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+def usage(prog) :
+    print "usage: %s galaxy.ini" % prog
+    print """
+Updates the metadata in the database to match rev 1981.
+
+Remember to backup your database before running.
+    """
+
 def main():
+    if len(sys.argv) != 1 or sys.argv[1] == "-h" or sys.argv[1] == "--help" :
+        usage(sys.argv[0])
+        sys.exit()
     ini_file = sys.argv.pop(1)
     conf_parser = ConfigParser.ConfigParser({'here':os.getcwd()})
     conf_parser.read(ini_file)
