@@ -695,6 +695,7 @@ class Registry( object ):
                 'scf'         : binary.Scf(),
                 'sff'         : binary.Sff(),
                 'tabular'     : tabular.Tabular(),
+                'csv'         : tabular.CSV(),
                 'taxonomy'    : tabular.Taxonomy(),
                 'txt'         : data.Text(),
                 'wig'         : interval.Wiggle(),
@@ -727,6 +728,7 @@ class Registry( object ):
                 'scf'         : 'application/octet-stream',
                 'sff'         : 'application/octet-stream',
                 'tabular'     : 'text/plain',
+                'csv'         : 'text/plain',
                 'taxonomy'    : 'text/plain',
                 'txt'         : 'text/plain',
                 'wig'         : 'text/plain',
@@ -761,7 +763,8 @@ class Registry( object ):
                 tabular.Pileup(),
                 interval.Interval(),
                 tabular.Sam(),
-                tabular.Eland()
+                tabular.Eland(),
+                tabular.CSV()
             ]
 
     def get_converters_by_datatype( self, ext ):
