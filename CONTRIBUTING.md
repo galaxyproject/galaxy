@@ -119,9 +119,18 @@ Pull requests modifying pre-existing releases should be restricted to bug fixes
 and require at least 2 *+1* binding votes from someone other than the author of
 the pull request with no *-1* binding votes.
 
-Any pull request changing or clarifying the procedures governing this
-repository must remain open for at least 4 days and require at least 3 *+1*
-votes with no *-1* votes from qualified *committers*.
+Pull request changing or clarifying the procedures governing this repository
+must be:
+
+- Made to the ``dev`` branch of this repository.
+- Must remain open for at least 192 hours (unless every qualified committer has
+  voted).
+- Require binding *+1* votes from at least 25% of qualified *committers* with no
+  *-1* binding votes.
+- Should be titled with the prefix *[PROCEDURES]* and tagged with
+  the *procedures* tag in Github.
+- Should not be modified once open. If changes are needed, the pull request
+  should be closed, re-opened with modifications, and votes reset.
 
 Any other pull request requires at least 1 *+1* binding vote from someone other
 than the author of the pull request.
@@ -147,6 +156,10 @@ overridden by anyone. Vetos stand until and unless withdrawn by their casters.
 technical justification showing why the change is bad (opens a security
 exposure, negatively affects performance, etc. ). A veto without a
 justification is invalid and has no weight."
+
+For votes regarding non-coding issues such as procedure changes, the requirement
+that a veto is accompanied by a *technical* justification is relaxed somewhat,
+though a well reasoned justification must still be included.
 
 ### Direct Commit Access
 
