@@ -1236,6 +1236,17 @@ $.extend( Workflow.prototype, {
         return  { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
     },
     fit_canvas_to_nodes: function() {
+        // Math utils
+        function round_up( x, n ) {
+            return Math.ceil( x / n ) * n;
+        }
+        function fix_delta( x, n ) {
+            if ( x < n|| x > 3*n ) {
+                new_pos = ( Math.ceil( ( ( x % n ) ) / n ) + 1 ) * n;
+                return ( - ( x - new_pos ) );
+            }
+            return 0;
+        }
         // Span of all elements
         var bounds = this.bounds_for_all_nodes();
         var position = this.canvas_container.position();
@@ -1268,18 +1279,6 @@ $.extend( Workflow.prototype, {
         });
     }
 });
-
-function fix_delta( x, n ) {
-    if ( x < n|| x > 3*n ) {
-        new_pos = ( Math.ceil( ( ( x % n ) ) / n ) + 1 ) * n;
-        return ( - ( x - new_pos ) );
-    }
-    return 0;
-}
-    
-function round_up( x, n ) {
-    return Math.ceil( x / n ) * n;
-}
      
 function prebuild_node( type, title_text, tool_id ) {
     var f = $("<div class='toolForm toolFormInCanvas'></div>");

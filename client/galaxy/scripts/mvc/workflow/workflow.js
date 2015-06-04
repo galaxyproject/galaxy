@@ -542,45 +542,6 @@ define(['mvc/workflow/workflow-manager'], function(Manager){
                 wf_parm_container.html(new_parameter_content);
                 wf_parm_box.hide();
             }
-        },
-
-        show_tool_form: function ( text, node, callback ) {
-            // initialize tags and identifiers
-            var cls = 'right-content';
-            var id  = cls + '-' + node.id;
-
-            // grab panel container
-            var $container = $('#' + cls);
-
-            // remove previous notifications
-            var $current = $container.find('#' + id);
-            if ($current.length > 0 && $current.find('.section-row').length == 0) {
-                $current.remove();
-            }
-
-            // check if tool form already exists
-            if ($container.find('#' + id).length == 0) {
-                var $el = $('<div id="' + id + '" class="' + cls + '"/>');
-                if (Utils.isJSON(text)) {
-                    var options = JSON.parse(text);
-                    options.datatypes = datatypes;
-                    $el.append((new ToolsForm.View(options)).$el);
-                } else {
-                    $el.append(text);
-                }
-                $container.append($el);
-            }
-
-            // hide everything
-            $('.' + cls).hide();
-
-            // show current form
-            $container.find('#' + id).show();
-            $container.show();
-            $container.scrollTop();
-
-            // temporary fix for async require callback
-            callback && callback();
         }
     });
 });
