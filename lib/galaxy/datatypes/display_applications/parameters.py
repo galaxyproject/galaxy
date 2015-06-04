@@ -51,8 +51,10 @@ class DisplayApplicationDataParameter( DisplayApplicationParameter ):
         if self.extensions:
             self.extensions = self.extensions.split( "," )
         self.metadata = elem.get( 'metadata', None )
+        self.allow_extra_files_access = string_as_bool( elem.get( 'allow_extra_files_access', 'False' ) )
         self.dataset = elem.get( 'dataset', DEFAULT_DATASET_NAME ) # 'dataset' is default name assigned to dataset to be displayed
         assert not ( self.extensions and self.metadata ), 'A format or a metadata can be defined for a DisplayApplicationParameter, but not both.'
+        assert not ( self.allow_extra_files_access and self.metadata ), 'allow_extra_files_access or metadata can be defined for a DisplayApplicationParameter, but not both.'
         self.viewable = string_as_bool( elem.get( 'viewable', 'True' ) ) #data params should be viewable
         self.force_url_param = string_as_bool( elem.get( 'force_url_param', 'False' ) )
         self.force_conversion = string_as_bool( elem.get( 'force_conversion', 'False' ) )
@@ -148,7 +150,7 @@ class DisplayParameterValueWrapper( object ):
         self._url = self.parameter.build_url( self.other_values )
     def __str__( self ):
         return str( self.value )
-    def mime_type( self ):
+    def mime_type( self, action_param_extra=None ):
         if self.parameter.mime_type is not None:
             return self.parameter.mime_type
         if self.parameter.guess_mime_type:
@@ -187,13 +189,19 @@ class DisplayDataValueWrapper( DisplayParameterValueWrapper ):
     def __str__( self ):
         #string of data param is filename
         return str( self.value.file_name )
-    def mime_type( self ):
+    def mime_type( self, action_param_extra=None ):
         if self.parameter.mime_type is not None:
             return self.parameter.mime_type
         if self.parameter.guess_mime_type:
-            mime, encoding = mimetypes.guess_type( self._url )
+            if action_param_extra:
+                mime, encoding = mimetypes.guess_type( action_param_extra )
+            else:
+                mime, encoding = mimetypes.guess_type( self._url )
             if not mime:
-                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None )
+                if action_param_extra:
+                    mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( action_param_extra )[ -1 ], None )
+                if not mime:
+                    mime = self.trans.app.datatypes_registry.get_mimetype_by_extension( ".".split( self._url )[ -1 ], None )
             if mime:
                 return mime
         if hasattr( self.value, 'get_mime' ):

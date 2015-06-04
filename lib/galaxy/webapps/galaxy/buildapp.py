@@ -3,14 +3,13 @@ Provides factory methods to assemble the Galaxy web application
 """
 
 import atexit
-import os
-import os.path
 import sys
 
 from paste import httpexceptions
 import pkg_resources
 
 import galaxy.app
+from galaxy.config import process_is_uwsgi
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
@@ -74,9 +73,9 @@ def app_factory( global_conf, **kwargs ):
     # allow for subdirectories in extra_files_path
     webapp.add_route( '/datasets/:dataset_id/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
-    webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param',
+    webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param/{action_param_extra:.+?}',
                       controller='dataset', action='display_application', dataset_id=None, user_id=None,
-                      app_name=None, link_name=None, app_action=None, action_param=None )
+                      app_name=None, link_name=None, app_action=None, action_param=None, action_param_extra=None )
     webapp.add_route( '/u/:username/d/:slug/:filename', controller='dataset', action='display_by_username_and_slug', filename=None )
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
@@ -97,7 +96,7 @@ def app_factory( global_conf, **kwargs ):
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
     if asbool( kwargs.get( 'static_enabled', True) ):
-        if app.config.is_uwsgi:
+        if process_is_uwsgi:
             log.error("Static middleware is enabled in your configuration but this is a uwsgi process.  Refusing to wrap in static middleware.")
         else:
             webapp = wrap_in_static( webapp, global_conf, plugin_frameworks=[ app.visualizations_registry ], **kwargs )
@@ -113,7 +112,7 @@ def app_factory( global_conf, **kwargs ):
     except:
         log.exception("Unable to dispose of pooled toolshed install model database connections.")
 
-    if not app.config.is_uwsgi:
+    if not process_is_uwsgi:
         postfork_setup()
 
     # Return
@@ -123,10 +122,10 @@ def app_factory( global_conf, **kwargs ):
 @postfork
 def postfork_setup():
     from galaxy.app import app
-    if app.config.is_uwsgi:
+    if process_is_uwsgi:
         import uwsgi
         app.config.server_name += ".%s" % uwsgi.worker_id()
-    app.setup_control_queue()
+    app.control_worker.bind_and_start()
 
 
 def populate_api_routes( webapp, app ):
@@ -246,7 +245,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_formats': 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
     webapp.mapper.resource( 'page', 'pages', path_prefix="/api")
@@ -535,6 +534,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.connect( "create", "/api/metrics", controller="metrics",
                            action="create", conditions=dict( method=["POST"] ) )
 
+
 def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
     # Not just using map.resources because actions should be based on name not id
     controller = "%stags" % name_prefix
@@ -631,7 +631,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             from paste.debug import profile
             app = profile.ProfileMiddleware( app, conf )
             log.debug( "Enabling 'profile' middleware" )
-    if debug and asbool( conf.get( 'use_interactive', False ) ):
+    if debug and asbool( conf.get( 'use_interactive', False ) ) and not process_is_uwsgi:
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
@@ -641,6 +641,9 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
                                            templating_formatters=build_template_error_formatters() )
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
+        if debug and asbool( conf.get( 'use_interactive', False ) ) and process_is_uwsgi:
+            log.error("Interactive debugging middleware is enabled in your configuration "
+                      "but this is a uwsgi process.  Refusing to wrap in interactive error middleware.")
         # Not in interactive debug mode, just use the regular error middleware
         import galaxy.web.framework.middleware.error
         app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )

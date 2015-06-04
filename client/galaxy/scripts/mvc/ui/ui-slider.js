@@ -63,6 +63,7 @@ var View = Backbone.View.extend({
         var pressed = [];
         this.$text.on('keyup', function(e) {
             pressed[e.which] = false;
+            self.options.onchange && self.options.onchange($(this).val());
         });
         this.$text.on('keydown', function (e) {
             var v = e.which;
@@ -79,17 +80,19 @@ var View = Backbone.View.extend({
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
-            // check if its a number
-            if (isNaN(new_val)) {
-                new_val = 0;
-            }
+            if (new_val !== null && new_val !== '') {
+                // check if its a number
+                if (isNaN(new_val)) {
+                    new_val = 0;
+                }
 
-            // apply limit
-            if (this.options.max !== null) {
-                new_val = Math.min(new_val, this.options.max);
-            }
-            if (this.options.min !== null) {
-                new_val = Math.max(new_val, this.options.min);
+                // apply limit
+                if (this.options.max !== null) {
+                    new_val = Math.min(new_val, this.options.max);
+                }
+                if (this.options.min !== null) {
+                    new_val = Math.max(new_val, this.options.min);
+                }
             }
 
             // set values
@@ -97,9 +100,7 @@ var View = Backbone.View.extend({
             this.$text.val(new_val);
 
             // trigger on change event
-            if (this.options.onchange) {
-                this.options.onchange(new_val);
-            }
+            this.options.onchange && this.options.onchange(new_val);
         }
 
         // return current value

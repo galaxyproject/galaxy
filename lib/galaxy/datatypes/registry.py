@@ -23,6 +23,7 @@ import assembly
 import ngsindex
 import graph
 import text
+import msa
 import galaxy.util
 from galaxy.util.odict import odict
 from display_applications.application import DisplayApplication
@@ -818,6 +819,15 @@ class Registry( object ):
         if 'auto' not in rval and 'txt' in rval: #need to manually add 'auto' datatype
             rval[ 'auto' ] = rval[ 'txt' ]
         return rval
+
+    @property
+    def edam_formats( self ):
+        """
+        """
+        mapping = {}
+        for k, v in self.datatypes_by_extension.iteritems():
+            mapping[k]= v.edam_format
+        return mapping
 
     @property
     def integrated_datatypes_configs( self ):

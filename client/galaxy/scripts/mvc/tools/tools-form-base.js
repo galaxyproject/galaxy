@@ -24,10 +24,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             // set element
             this.setElement('<div/>');
 
-            // append to body
-            this.container = options.container || 'body';
-            $(this.container).append(this.$el);
-
             // create form
             this._buildForm(options);
         },

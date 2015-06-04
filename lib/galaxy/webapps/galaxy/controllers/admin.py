@@ -846,7 +846,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def reload_display_application( self, trans, **kwd ):
-        galaxy.queue_worker.send_control_task(trans,
+        galaxy.queue_worker.send_control_task(trans.app,
                                               'reload_display_application',
                                               noop_self=True,
                                               kwargs={'display_application_ids': kwd.get( 'id' )} )
@@ -892,7 +892,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         if new in ( current, None ):
             message = 'Usage is unchanged at %s.' % nice_size( current )
         else:
-            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( current )  )
+            message = 'Usage has changed by %s to %s.' % ( nice_size( new - current ), nice_size( new )  )
         return trans.response.send_redirect( web.url_for( controller='admin',
                                                           action='users',
                                                           message=sanitize_text( message ),

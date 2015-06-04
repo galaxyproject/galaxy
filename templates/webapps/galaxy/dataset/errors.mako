@@ -80,9 +80,9 @@
             else:
                 user_email = ''
         %>
-        <h2>Report this error to the Galaxy Team</h2>
+        <h2>Report this error to the local Galaxy administrators</h2>
         <p>
-            The Galaxy team regularly reviews errors that occur in the application.
+            Usually the local Galaxy administrators regularly review errors that occur on the server.
             However, if you would like to provide additional information (such as
             what you were trying to do when the error occurred) and a contact e-mail
             address, we will be better able to investigate your problem and get back

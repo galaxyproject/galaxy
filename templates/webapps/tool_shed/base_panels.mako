@@ -140,7 +140,7 @@
     ## Logo, layered over tabs to be clickable
     <div class="navbar-brand">
         <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
-        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
+        <img style="margin-left: 0.35em;" border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
         Galaxy Tool Shed
         %if app.config.brand:
             <span>/ ${app.config.brand}</span>

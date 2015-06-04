@@ -8,7 +8,22 @@ import sys, os
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+def usage(prog) :
+    print "usage: %s file" % prog
+    print """
+Marks a set of files as purged and renames them. The input file should contain a
+list of files to be purged, one per line. The full path must be specified and
+must begin with /var/opt/galaxy.
+A log of files marked as purged is created in a file with the same name as that
+input but with _purged appended. The resulting files can finally be removed from
+disk with remove_renamed_datasets_from_disk.py, by supplying it with a list of
+them.
+    """
+
 def main():
+    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help" :
+        usage(sys.argv[0])
+        sys.exit()
     infile = sys.argv[1]
     outfile = infile + ".renamed.log"
     out = open( outfile, 'w' )

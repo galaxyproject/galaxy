@@ -1,5 +1,8 @@
 #!/bin/sh
 
+pwd_dir=$(pwd)
+cd `dirname $0`
+
 ./scripts/common_startup.sh
 
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
@@ -39,6 +42,7 @@ Extra options:
 
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
+ --debug               On python test error or failure invoke a pdb shell for interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
  --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
@@ -217,6 +221,12 @@ do
           NOSE_WITH_COVERAGE=true
           shift
           ;;
+      --debug)
+          #TODO ipdb would be nicer.
+          NOSE_PDB=True
+          export NOSE_PDB
+          shift
+          ;;
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           test_script="./scripts/nosetests.py"
@@ -224,7 +234,7 @@ do
               unit_extra=$2
               shift 2
           else 
-              unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners lib test/unit'
+              unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners --exclude dictobj --exclude=jstree lib test/unit'
               shift 1
           fi
           ;;
@@ -336,3 +346,4 @@ else
     # functional tests.
     grunt --gruntfile=$gruntfile $grunt_task $grunt_args
 fi
+

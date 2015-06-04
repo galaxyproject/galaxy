@@ -307,6 +307,7 @@ class Alignment( data.Text ):
 
 class Fasta( Sequence ):
     """Class representing a FASTA sequence"""
+    edam_format = "format_1929"
     file_ext = "fasta"
 
     def sniff( self, filename ):
@@ -493,6 +494,7 @@ class Fasta( Sequence ):
 
 class csFasta( Sequence ):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
+    edam_format = "format_1929"
     file_ext = "csfasta"
 
     def sniff( self, filename ):
@@ -542,6 +544,7 @@ class csFasta( Sequence ):
 
 class Fastq ( Sequence ):
     """Class representing a generic FASTQ sequence"""
+    edam_format = "format_1930"
     file_ext = "fastq"
 
     def set_meta( self, dataset, **kwd ):
@@ -654,14 +657,17 @@ class Fastq ( Sequence ):
 
 class FastqSanger( Fastq ):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
+    edam_format = "format_1932"
     file_ext = "fastqsanger"
 
 class FastqSolexa( Fastq ):
     """Class representing a FASTQ sequence ( the Solexa variant )"""
+    edam_format = "format_1933"
     file_ext = "fastqsolexa"
 
 class FastqIllumina( Fastq ):
     """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )"""
+    edam_format = "format_1931"
     file_ext = "fastqillumina"
 
 class FastqCSSanger( Fastq ):
@@ -670,6 +676,7 @@ class FastqCSSanger( Fastq ):
 
 class Maf( Alignment ):
     """Class describing a Maf alignment"""
+    edam_format = "format_3008"
     file_ext = "maf"
 
     #Readonly and optional, users can't unset it, but if it is not set, we are generally ok; if required use a metadata validator in the tool definition
@@ -870,7 +877,7 @@ class Axt( data.Text ):
 
 class Lav( data.Text ):
     """Class describing a LAV alignment"""
-
+    edam_format = "format_3014"
     file_ext = "lav"
 
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
@@ -904,6 +911,7 @@ class Lav( data.Text ):
 
 
 class RNADotPlotMatrix( data.Data ):
+    edam_format = "format_3466"
     file_ext = "rna_eps"
 
     def set_peek( self, dataset, is_multi_byte=False ):

@@ -46,6 +46,8 @@ Contents
 
    Application Documentation <lib/modules>
 
+   Releases <releases/index>
+
 Indices and tables
 ==================
 

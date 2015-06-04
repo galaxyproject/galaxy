@@ -1,6 +1,12 @@
 <!-- each visualization must have a template (all other elements are optional) -->
-<!ELEMENT visualization (description*,data_sources*,params*,template_root*,template,render_target*)>
-<!ELEMENT interactive_environment (description*,data_sources*,params*,template_root*,template,render_target*)>
+<!ELEMENT visualization (
+  description*,
+  data_sources*,
+  params*,
+  template_root*,
+  entry_point,
+  render_target*
+)>
 <!-- visualization
         name: the title/display name of the visualization (e.g. 'Trackster', 'Fastq Stats', etc.) REQUIRED
         disabled: if included (value does not matter), this attribute will prevent the visualization being loaded
@@ -13,6 +19,21 @@
     disabled    CDATA #IMPLIED
     embeddable  CDATA #IMPLIED
 >
+
+<!ELEMENT interactive_environment (
+  description*,
+  data_sources*,
+  params*,
+  template_root*,
+  entry_point,
+  render_target*
+)>
+<!ATTLIST interactive_environment
+    name        CDATA #REQUIRED
+    disabled    CDATA #IMPLIED
+    embeddable  CDATA #IMPLIED
+>
+
 
 <!ELEMENT description (#PCDATA)>
 <!-- a text description of what the visualization does -->
@@ -128,8 +149,13 @@
       var_name_in_template  CDATA #IMPLIED
   >
 
-<!-- template: the template used to render the visualization. REQUIRED -->
-<!ELEMENT template (#PCDATA)>
+<!-- template: the template used to render the visualization. DEPRECATED -->
+<!-- <!ELEMENT template (#PCDATA)> -->
+<!-- entry_point: the method the registry will use to begin rendering the visualization - a loading point. REQUIRED -->
+<!ELEMENT entry_point (#PCDATA)>
+<!ATTLIST entry_point
+    entry_point_type  CDATA #REQUIRED
+>
 <!-- render_target: used as the target attribute of the link to the visualization.
       Can be 'galaxy_main', '_top', '_blank'. DEFAULT: 'galaxy_main'
 -->

@@ -1,4 +1,10 @@
-import os, gzip, re, gzip, zipfile, binascii, bz2, imghdr
+import os
+import re
+import bz2
+import gzip
+import zipfile
+import binascii
+import imghdr
 from galaxy import util
 from StringIO import StringIO
 
