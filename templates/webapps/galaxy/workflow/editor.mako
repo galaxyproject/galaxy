@@ -34,6 +34,7 @@
         // Globals
         workflow = null;
         canvas_manager = null;
+        workflow_view = null;
 
         // URLs used by galaxy.workflows.js
         var config = {
@@ -53,7 +54,7 @@
 
         $( function() {
             require(['mvc/workflow/workflow'], function(Workflow){
-                new Workflow(config);
+                workflow_view = new Workflow(config);
             });
         });
     <%
@@ -237,11 +238,11 @@
                 <div class="toolTitleNoSection">
             %endif
                 %if "[[" in tool.description and "]]" in tool.description:
-                    ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="javascript:add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
+                    ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_view.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                 %elif tool.name:
-                    <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
+                    <a id="link-${tool.id}" href="#" onclick="workflow_view.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
                 %else:
-                    <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                    <a id="link-${tool.id}" href="#" onclick="workflow_view.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
                 %endif
             </div>
         %else:
@@ -356,7 +357,7 @@
                 <div class="toolSectionBg">
                 %for module in module_section["modules"]:
                     <div class="toolTitle">
-                        <a href="#" onclick="add_node_for_module( '${module['name']}', '${module['title']}' )">${module['description']}</a>
+                        <a href="#" onclick="workflow_view.add_node_for_module( '${module['name']}', '${module['title']}' )">${module['description']}</a>
                     </div><!-- end toolTitle -->
                 %endfor
                 </div>

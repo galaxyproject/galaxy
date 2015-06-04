@@ -418,7 +418,7 @@ define(['mvc/workflow/workflow-manager'], function(Manager){
 
         // Add a new step to the workflow by tool id
         add_node_for_tool: function ( id, title ) {
-            node = add_node( 'tool', title, id );
+            node = workflow.create_node( 'tool', title, id );
             $.ajax( {
                 url: this.urls.get_new_module_info,
                 data: { type: "tool", tool_id: id, "_": "true" },
@@ -438,7 +438,7 @@ define(['mvc/workflow/workflow-manager'], function(Manager){
         },
 
         add_node_for_module: function ( type, title ) {
-            node = add_node( type, title );
+            node = workflow.create_node( type, title );
             $.ajax( {
                 url: this.urls.get_new_module_info,
                 data: { type: type, "_": "true" },

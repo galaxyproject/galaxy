@@ -863,6 +863,14 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow'], function(Utils, ToolsFo
         this.active_form_has_changes = false;
     }
     $.extend( Workflow.prototype, {
+        create_node: function ( type, title_text, tool_id ) {
+            var node = prebuild_node( type, title_text, tool_id );
+            this.add_node( node );
+            this.fit_canvas_to_nodes();
+            canvas_manager.draw_overview();
+            this.activate_node( node );
+            return node;
+        },
         add_node : function( node ) {
             node.id = this.id_counter;
             node.element.attr( 'id', 'wf-node-step-' + node.id );
@@ -1324,18 +1332,6 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow'], function(Utils, ToolsFo
                 this.terminal.redraw();
             });
         });
-        return node;
-    }
-
-    function add_node( type, title_text, tool_id ) {
-        // Abstraction for use by galaxy.workflow.js to hide
-        // some editor details from workflow code and reduce duplication
-        // between add_node_for_tool and add_node_for_module.
-        var node = prebuild_node( type, title_text, tool_id );
-        workflow.add_node( node );
-        workflow.fit_canvas_to_nodes();
-        canvas_manager.draw_overview();
-        workflow.activate_node( node );    
         return node;
     }
 
