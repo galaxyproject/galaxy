@@ -20,10 +20,8 @@
             "libs/jquery/jquery.form",
             "libs/jquery/jstorage",
             "libs/jquery/jquery-ui",
-            "galaxy.workflow_editor.canvas",
             "libs/jquery/jquery.autocomplete",
             "galaxy.autocom_tagging",
-            "galaxy.workflows",
             "libs/bibtex" )}
 
     <!--[if lt IE 7]>
@@ -33,29 +31,31 @@
     <![endif]-->
 
     <script type='text/javascript'>
-        // Switch for new tool form
-        %if util.string_as_bool(trans.app.config.get('workflow_toolform_upgrade',  True)):
-        __NEWTOOLFORM__ = true;
-        %endif
-        
         // Globals
         workflow = null;
         canvas_manager = null;
-        active_ajax_call = false;
-
-        var workflow_id = "${trans.security.encode_id( stored.id ) }";
 
         // URLs used by galaxy.workflows.js
-        var tool_search_url = "${h.url_for( controller='root', action='tool_search' )}",
-            get_datatypes_url = "${h.url_for( '/api/datatypes/mapping' )}",
-            load_workflow_url = "${h.url_for( controller='workflow', action='load_workflow' )}",
-            run_workflow_url = "${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id))}",
-            rename_async_url = "${h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) )}",
-            annotate_async_url = "${h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) )}",
-            get_new_module_info_url = "${h.url_for(controller='workflow', action='get_new_module_info' )}",
-            workflow_index_url = "${h.url_for( controller='workflow', action='index' )}",
-            save_workflow_url = "${h.url_for(controller='workflow', action='save_workflow' )}";
+        var config = {
+            id      : "${trans.security.encode_id( stored.id ) }",
+            urls    : {
+                tool_search         : "${h.url_for( '/api/tools' )}",
+                get_datatypes       : "${h.url_for( '/api/datatypes/mapping' )}",
+                load_workflow       : "${h.url_for( controller='workflow', action='load_workflow' )}",
+                run_workflow        : "${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id))}",
+                rename_async        : "${h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) )}",
+                annotate_async      : "${h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) )}",
+                get_new_module_info : "${h.url_for(controller='workflow', action='get_new_module_info' )}",
+                workflow_index      : "${h.url_for( controller='workflow', action='index' )}",
+                save_workflow       : "${h.url_for(controller='workflow', action='save_workflow' )}"
+            }
+        };
 
+        $( function() {
+            require(['mvc/workflow/workflow'], function(Workflow){
+                new Workflow(config);
+            });
+        });
     <%
         from galaxy.jobs.actions.post import ActionBox
     %>
@@ -121,7 +121,7 @@
     }
 
     .right-content {
-        margin: 5px;
+        margin: 3px;
     }
 
     canvas { position: absolute; z-index: 10; }
