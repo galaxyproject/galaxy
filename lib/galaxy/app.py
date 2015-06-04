@@ -38,7 +38,12 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
         self.config.check()
         config.configure_logging( self.config )
         self.configure_fluent_log()
-        self._amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
+
+        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
+        # control_worker *can* be initialized with a queue, but here we don't
+        # want to and we'll allow postfork to bind and start it.
+        self.control_worker = GalaxyQueueWorker(self)
+
         self._configure_tool_shed_registry()
         self._configure_object_store( fsmon=True )
         # Setup the database engine and ORM
@@ -151,13 +156,6 @@ class UniverseApplication( object, config.ConfiguresGalaxyMixin ):
 
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
-
-    def setup_control_queue(self):
-        self.control_worker = GalaxyQueueWorker(self, galaxy.queues.control_queue_from_config(self.config),
-                                                galaxy.queue_worker.control_message_to_task,
-                                                self._amqp_internal_connection_obj)
-        self.control_worker.daemon = True
-        self.control_worker.start()
 
     def shutdown( self ):
         self.workflow_scheduling_manager.shutdown()

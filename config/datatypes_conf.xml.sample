@@ -51,14 +51,14 @@
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <!-- MSI added Datatypes -->
-    <datatype extension="csv" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="true" /> <!-- FIXME: csv is 'tabular'ized data, but not 'tab-delimited'; the class used here is intended for 'tab-delimited' -->
+    <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true" />
     <!-- End MSI added Datatypes -->
     <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
     <datatype extension="bowtie_color_index" type="galaxy.datatypes.ngsindex:BowtieColorIndex" mimetype="text/html" display_in_upload="False"/>
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="False"/>
     <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
-    <datatype extension="data_manager_json" type="galaxy.datatypes.data:Text" mimetype="application/json" subclass="True" display_in_upload="False"/>
+    <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="True" display_in_upload="False"/>
     <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true" description="A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. The first character of the description line is a greater-than ('>') symbol in the first column. All lines should be shorter than 80 characters." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fasta">
       <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
       <converter file="fasta_to_bowtie_base_index_converter.xml" target_datatype="bowtie_base_index"/>
@@ -119,6 +119,7 @@
       <display file="ensembl/ensembl_interval_as_bed.xml" inherit="True"/>
       <display file="gbrowse/gbrowse_interval_as_bed.xml" inherit="True"/>
       <display file="rviewer/bed.xml" inherit="True"/>
+      <display file="igv/interval_as_bed.xml" inherit="True"/>
     </datatype>
     <datatype extension="picard_interval_list" type="galaxy.datatypes.tabular:Tabular" subclass="True" display_in_upload="True">
       <converter file="picard_interval_list_to_bed6_converter.xml" target_datatype="bed6"/>
@@ -271,6 +272,13 @@
     <datatype extension="rdf" type="galaxy.datatypes.graph:Rdf" display_in_upload="true"/>
     <!-- Excel datatypes -->
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true" />
+    <!-- MSA Datatypes -->
+    <datatype extension="hmm2" type="galaxy.datatypes.msa:Hmmer2" display_in_upload="true" />
+    <datatype extension="hmm3" type="galaxy.datatypes.msa:Hmmer3" display_in_upload="true" />
+    <datatype extension="stockholm" type="galaxy.datatypes.msa:Stockholm_1_0" display_in_upload="True" />
+    <datatype extension="xmfa" type="galaxy.datatypes.msa:MauveXmfa" display_in_upload="True" />
+
+    <datatype extension="RData" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
   </registration>
   <sniffers>
     <!--
@@ -307,6 +315,7 @@
     <sniffer type="galaxy.datatypes.interval:Gff"/>
     <sniffer type="galaxy.datatypes.interval:Gff3"/>
     <sniffer type="galaxy.datatypes.tabular:Pileup"/>
+    <sniffer type="galaxy.datatypes.tabular:CSV"/>
     <sniffer type="galaxy.datatypes.interval:Interval"/>
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>
@@ -316,6 +325,11 @@
     <sniffer type="galaxy.datatypes.text:Ipynb"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
     <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
+    <sniffer type="galaxy.datatypes.msa:Hmmer2" />
+    <sniffer type="galaxy.datatypes.msa:Hmmer3" />
+    <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
+    <sniffer type="galaxy.datatypes.msa:MauveXmfa" />
+    <sniffer type="galaxy.datatypes.binary:RData" />
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>

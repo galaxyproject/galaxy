@@ -13,7 +13,6 @@ define([
 ){
     /*globals equal test module expect deepEqual strictEqual */
     "use strict";
-
     module( "HDA base backbone view tests" );
 
     test( "Base HDA view default construction, initialize", function() {

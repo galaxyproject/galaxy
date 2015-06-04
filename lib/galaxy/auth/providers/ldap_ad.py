@@ -19,6 +19,47 @@ def _get_subs(d, k, params):
     return str(d[k]).format(**params)
 
 
+def _parse_ldap_options(ldap, options_unparsed):
+    # Tag is defined in the XML but is empty
+    if not options_unparsed:
+        return []
+
+    if "=" not in options_unparsed:
+        log.error("LDAP authenticate: Invalid syntax in <ldap-options>. Syntax should be option1=value1,option2=value2")
+        return []
+
+    ldap_options = []
+
+    # Valid options must start with this prefix. See help(ldap)
+    prefix = "OPT_"
+
+    for opt in options_unparsed.split(","):
+        key, value = opt.split("=")
+
+        try:
+            pair = []
+            for n in (key, value):
+                if not n.startswith(prefix):
+                    raise ValueError
+
+                name = getattr(ldap, n)
+                pair.append(name)
+
+        except ValueError:
+            log.warning("LDAP authenticate: Invalid parameter pair %s=%s. '%s' doesn't start with prefix %s", key, value, n, prefix)
+            continue
+
+        except AttributeError:
+            log.warning("LDAP authenticate: Invalid parameter pair %s=%s. '%s' is not available in module ldap", key, value, n)
+            continue
+
+        else:
+            log.debug("LDAP authenticate: Valid LDAP option pair %s=%s -> %s=%s", key, value, *pair)
+            ldap_options.append(pair)
+
+    return ldap_options
+
+
 class LDAP(AuthProvider):
 
     """
@@ -30,30 +71,51 @@ class LDAP(AuthProvider):
     """
     plugin_type = 'ldap'
 
-    def authenticate(self, login, password, options):
+    def authenticate(self, email, username, password, options):
         """
         See abstract method documentation.
         """
-        log.debug("Login: %s" % login)
-        log.debug("Options: %s" % options)
+        log.debug("LDAP authenticate: email is %s" % email)
+        log.debug("LDAP authenticate: username is %s" % username)
+        log.debug("LDAP authenticate: options are %s" % options)
 
         failure_mode = False  # reject but continue
         if options.get('continue-on-failure', 'False') == 'False':
             failure_mode = None  # reject and do not continue
 
+        if _get_bool(options, 'login-use-username', False):
+            if username is None:
+                log.debug('LDAP authenticate: username must be used to login, cannot be None')
+                return (failure_mode, '', '')
+        else:
+            if email is None:
+                log.debug('LDAP authenticate: email must be used to login, cannot be None')
+                return (failure_mode, '', '')
+
         try:
             import ldap
         except:
-            log.debug(
-                "Login: %s, LDAP: False (could not load ldap module)" % (login))
-            return (failure_mode, '')
+            log.debug('LDAP authenticate: could not load ldap module')
+            return (failure_mode, '', '')
 
         # do LDAP search (if required)
-        params = {'login': login, 'password': password}
+        params = {'email': email, 'username': username, 'password': password}
+
+        try:
+            ldap_options_raw = _get_subs(options, 'ldap-options', params)
+        except ConfigurationError:
+            ldap_options = ()
+        else:
+            ldap_options = _parse_ldap_options(ldap, ldap_options_raw)
+
         if 'search-fields' in options:
             try:
                 # setup connection
                 ldap.set_option(ldap.OPT_REFERRALS, 0)
+
+                for opt in ldap_options:
+                    ldap.set_option(*opt)
+
                 l = ldap.initialize(_get_subs(options, 'server', params))
                 l.protocol_version = 3
 
@@ -74,8 +136,8 @@ class LDAP(AuthProvider):
                 # parse results
                 _, suser = l.result(result, 60)
                 dn, attrs = suser[0]
-                log.debug(("LDAP dn: %s" % dn))
-                log.debug(("LDAP Search attributes: %s" % attrs))
+                log.debug(("LDAP authenticate: dn is %s" % dn))
+                log.debug(("LDAP authenticate: search attributes are %s" % attrs))
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
                         if attr in attrs:
@@ -84,7 +146,7 @@ class LDAP(AuthProvider):
                             params[attr] = ""
                 params['dn'] = dn
             except Exception:
-                log.exception('LDAP Search Exception for login: %s' % login)
+                log.exception('LDAP authenticate: search exception')
                 return (failure_mode, '', '')
         # end search
 
@@ -92,15 +154,19 @@ class LDAP(AuthProvider):
         try:
             # setup connection
             ldap.set_option(ldap.OPT_REFERRALS, 0)
+
+            for opt in ldap_options:
+                ldap.set_option(*opt)
+
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
             l.simple_bind_s(_get_subs(
                 options, 'bind-user', params), _get_subs(options, 'bind-password', params))
         except Exception:
-            log.exception('LDAP Authentication Exception for login %s' % login)
+            log.exception('LDAP authenticate: bind exception')
             return (failure_mode, '', '')
 
-        log.debug("Login: %s, LDAP: True" % (login))
+        log.debug('LDAP authentication successful')
         return (True,
                 _get_subs(options, 'auto-register-email', params),
                 _get_subs(options, 'auto-register-username', params))
@@ -109,11 +175,7 @@ class LDAP(AuthProvider):
         """
         See abstract method documentation.
         """
-
-        if _get_bool(options, 'login-use-username', False):
-            return self.authenticate(user.username, password, options)[0]
-        else:
-            return self.authenticate(user.email, password, options)[0]
+        return self.authenticate(user.email, user.username, password, options)[0]
 
 
 class ActiveDirectory(LDAP):

@@ -96,6 +96,12 @@ var AnnotatedHistoryPanel = _super.extend(
         // prevent propagation on icon btns so they won't bubble up to tr and toggleBodyVisibility
         'click .icon-btn' : function( ev ){
             ev.stopPropagation();
+            // stopProp will prevent bootstrap from getting the click needed to open a dropdown
+            //  in the case of metafile download buttons - workaround here
+            var $currTarget = $( ev.currentTarget );
+            if( $currTarget.size() && $currTarget.attr( 'data-toggle' ) === 'dropdown' ){
+                $currTarget.dropdown( 'toggle' );
+            }
         }
     }),
 

@@ -1,5 +1,5 @@
 define([
-    "mvc/collection/paired-collection-creator",
+    "mvc/collection/list-of-pairs-collection-creator",
     "test-data/paired-collection-creator.data",
     "jquery",
     "sinon-qunit"
@@ -19,11 +19,10 @@ define([
     test( "Creator base/empty construction/initializiation defaults", function() {
         var pcc = new PCC([]);
         ok( pcc instanceof PCC );
-        ok( pcc.hasOwnProperty( 'options' ) && typeof pcc.options === 'object' );
-        deepEqual( pcc.options.filters, pcc.DEFAULT_FILTERS );
-        ok( pcc.options.automaticallyPair );
-        equal( pcc.options.matchPercentage, 0.9 );
-        equal( pcc.options.strategy, 'lcs' );
+        deepEqual( pcc.filters, pcc.commonFilters[ pcc.DEFAULT_FILTERS ] );
+        ok( pcc.automaticallyPair );
+        equal( pcc.matchPercentage, 0.9 );
+        equal( pcc.strategy, 'autopairLCS' );
     });
 
     test( "Creator construction/initializiation with datasets", function() {

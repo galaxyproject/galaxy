@@ -22,7 +22,19 @@ from sqlalchemy import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+def usage(prog) :
+    print "usage: %s galaxy.ini" % prog
+    print """
+Populates blank uuid fields in datasets with randomly generated values.
+            
+Going forward, these ids will be generated for all new datasets. This
+script fixes datasets that were generated before the change.
+    """
+
 def main():
+    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help" :
+        usage(sys.argv[0])
+        sys.exit()
     ini_file = sys.argv.pop(1)
     config = get_config(ini_file)
 

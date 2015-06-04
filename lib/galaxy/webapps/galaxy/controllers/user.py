@@ -36,7 +36,6 @@ REQUIRE_LOGIN_TEMPLATE = """
 <p>
     This %s has been configured such that only users who are logged in may use it.%s
 </p>
-<p/>
 """
 
 PASSWORD_RESET_TEMPLATE = """
@@ -678,7 +677,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             status = 'error'
         else:
             # check user is allowed to register
-            message, status = trans.app.auth_manager.check_registration_allowed(email, password)
+            message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
             if message == '':
                 if not refresh_frames:
                     if trans.webapp.name == 'galaxy':

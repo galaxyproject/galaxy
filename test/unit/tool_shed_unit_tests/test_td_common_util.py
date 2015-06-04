@@ -38,6 +38,9 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
         <repository name="package_r_3_0_1" owner="bgruening" toolshed="toolshed.g2.bx.psu.edu" changeset_revision="1234567">
             <package name="R" version="3.0.1" />
         </repository>
+        <repository name="package_zlib_1_2_8" owner="iuc" toolshed="toolshed.g2.bx.psu.edu" changeset_revision="7654321">
+            <package name="zlib" version="1.2.8" />
+        </repository>
     </action>
     """
     mock_app = MockApp()
@@ -50,7 +53,7 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
     r_env_sh = '/path/to/go/env.sh'
 
     def mock_get_env_shell_file_paths( elem ):
-        assert elem.get( 'name' ) == "package_r_3_0_1"
+        assert elem.get( 'name' ) in ["package_r_3_0_1","package_zlib_1_2_8"]
         return [ r_env_sh ]
 
     with __mock_common_util_method( env_manager, "get_env_shell_file_paths", mock_get_env_shell_file_paths ):
@@ -61,10 +64,13 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
         assert r_env_sh in all_env_paths
         ## env_shell_file_paths includes everything
         assert all( [ env in action_dict[ 'env_shell_file_paths' ] for env in all_env_paths ] )
+        ## for every given repository there should be one env 
+        ## file + the required_for_install_env_sh file
+        assert len( action_dict[ 'env_shell_file_paths' ] ) == 3
 
-        ## action_shell_file_paths includes only env files defined in
+        ## action_shell_file_paths includes only env files defined
         ## inside the setup_ action element.
-        assert required_for_install_env_sh not in action_dict[ 'action_shell_file_paths' ]
+        assert required_for_install_env_sh in action_dict[ 'action_shell_file_paths' ]
         assert r_env_sh in action_dict[ 'action_shell_file_paths' ]
 
 ## Poor man's mocking. Need to get a real mocking library as real Galaxy development

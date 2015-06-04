@@ -113,7 +113,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         Reload specified tool.
         """
         toolbox = trans.app.toolbox
-        galaxy.queue_worker.send_control_task( trans, 'reload_tool', noop_self=True, kwargs={ 'tool_id': tool_id } )
+        galaxy.queue_worker.send_control_task( trans.app, 'reload_tool', noop_self=True, kwargs={ 'tool_id': tool_id } )
         message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
         return { status: message }
 

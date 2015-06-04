@@ -57,32 +57,6 @@ class RawObjectWrapper( ToolParameterValueWrapper ):
         return getattr( self.obj, key )
 
 
-class LibraryDatasetValueWrapper( ToolParameterValueWrapper ):
-    """
-    Wraps an input so that __str__ gives the "param_dict" representation.
-    """
-    def __init__( self, input, value, other_values={} ):
-        self.input = input
-        self.value = value
-        self._other_values = other_values
-        self.counter = 0
-
-    def __str__( self ):
-        return self.value
-
-    def __iter__( self ):
-        return self
-
-    def next( self ):
-        if self.counter >= len(self.value):
-            raise StopIteration
-        self.counter += 1
-        return self.value[ self.counter - 1 ]
-
-    def __getattr__( self, key ):
-        return getattr( self.value, key )
-
-
 class InputValueWrapper( ToolParameterValueWrapper ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
@@ -93,7 +67,18 @@ class InputValueWrapper( ToolParameterValueWrapper ):
         self._other_values = other_values
 
     def __str__( self ):
-        return self.input.to_param_dict_string( self.value, self._other_values )
+        to_param_dict_string = self.input.to_param_dict_string( self.value, self._other_values )
+        if isinstance( to_param_dict_string, list ):
+            return ','.join( to_param_dict_string )
+        else:
+            return to_param_dict_string
+
+    def __iter__( self ):
+        to_param_dict_string = self.input.to_param_dict_string( self.value, self._other_values )
+        if not isinstance( to_param_dict_string, list ):
+            return iter( [ to_param_dict_string ] )
+        else:
+            return iter( to_param_dict_string )
 
     def __getattr__( self, key ):
         return getattr( self.value, key )

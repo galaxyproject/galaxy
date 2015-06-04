@@ -349,7 +349,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
         encoded_job_id = self.app.security.encode_id(job_id)
         job_key = self.app.security.encode_id( job_id, kind="jobs_files" )
-        endpoint_base = "%s/api/jobs/%s?job_key=%s"
+        endpoint_base = "%s/api/jobs/%s/files?job_key=%s"
         if self.app.config.nginx_upload_job_files_path:
             endpoint_base = "%s" + \
                             self.app.config.nginx_upload_job_files_path + \

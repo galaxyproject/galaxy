@@ -316,8 +316,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         tool_id         = payload.get( 'tool_id', None )
         tool_version    = payload.get( 'tool_version', None )
-        tool_inputs     = payload.get( 'inputs', None )
-        annotation      = payload.get( 'annotation', '' )
+        tool_inputs     = payload.get( 'inputs', {} )
+        annotation      = payload.get( 'annotation', tool_inputs.get('annotation', '') )
 
         # load tool
         tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )

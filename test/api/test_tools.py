@@ -3,6 +3,7 @@ from base import api
 from operator import itemgetter
 from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
+from .helpers import LibraryPopulator
 from .helpers import skip_without_tool
 
 
@@ -119,6 +120,21 @@ class ToolsTestCase( api.ApiTestCase ):
         output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
         assert output1_content.strip() == "--ex1"
         assert output2_content.strip() == "None", output2_content
+
+    @skip_without_tool( "library_data" )
+    def test_library_data_param( self ):
+        history_id = self.dataset_populator.new_history()
+        ld = LibraryPopulator( self ).new_library_dataset( "lda_test_library" )
+        inputs = {
+            "library_dataset": ld[ "ldda_id" ],
+            "library_dataset_multiple": [ld[ "ldda_id" ], ld[ "ldda_id" ]]
+        }
+        response = self._run( "library_data", history_id, inputs, assert_ok=True )
+        output = response[ "outputs" ]
+        output_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 0 ] )
+        assert output_content == "TestData", output_content
+        output_multiple_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
+        assert output_multiple_content == "TestDataTestData", output_multiple_content
 
     @skip_without_tool( "multi_data_param" )
     def test_multidata_param( self ):
@@ -302,7 +318,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self._assert_has_keys( output_collection, "id", "name", "elements", "populated" )
         assert not output_collection[ "populated" ]
         assert len( output_collection[ "elements" ] ) == 0
-
+        self.assertEquals( output_collection[ "name" ], "Table split on first column" )
         self.dataset_populator.wait_for_job( create["jobs"][0]["id"], assert_ok=True )
 
         get_collection_response = self._get( "dataset_collections/%s" % output_collection[ "id" ], data={"instance_type": "history"} )
@@ -312,6 +328,8 @@ class ToolsTestCase( api.ApiTestCase ):
         self._assert_has_keys( output_collection, "id", "name", "elements", "populated" )
         assert output_collection[ "populated" ]
         assert len( output_collection[ "elements" ] ) == 2
+        self.assertEquals( output_collection[ "name" ], "Table split on first column" )
+
         # TODO: verify element identifiers
 
     @skip_without_tool( "cat1" )

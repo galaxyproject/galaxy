@@ -113,12 +113,13 @@ class ToolExecutionTracker( object ):
                 outputs=outputs
             )
             try:
-                output_collection_name = self.tool_action.get_output_name(
+                output_collection_name = self.tool.tool_action.get_output_name(
                     output,
                     dataset=None,
                     tool=self.tool,
                     on_text=on_text,
                     trans=trans,
+                    history=history,
                     params=params,
                     incoming=None,
                     job_params=None,
