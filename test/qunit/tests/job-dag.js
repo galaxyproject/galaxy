@@ -4,8 +4,6 @@ define([
     "sinon-qunit",
     'test-data/job-dag-1'
 ], function( JobDAG, $, sinon, testData ){
-    console.debug( '' );
-    
     /*globals equal ok, test module expect deepEqual strictEqual */
     "use strict";
 

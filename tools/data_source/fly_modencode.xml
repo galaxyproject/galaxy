@@ -1,21 +1,21 @@
 <?xml version="1.0"?>
-<tool name="modENCODE fly" id="modENCODEfly" tool_type="data_source" version="1.0.0">
+<tool name="modENCODE fly" id="modENCODEfly" tool_type="data_source" version="1.0.1">
     <description>server</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-    <inputs action="http://modencode.oicr.on.ca/fgb2/gbrowse/fly" check_values="false" target="_top"> 
+    <inputs action="http://gbrowse.modencode.org/fgb2/gbrowse/fly" check_values="false" target="_top"> 
         <display>go to modENCODE fly server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=modENCODEfly" />
     </inputs>
     <request_param_translation>
-        <request_param galaxy_name="dbkey" remote_name="dbkey" missing="dm2" >
+        <request_param galaxy_name="dbkey" remote_name="dbkey" missing="dm3" >
             <value_translation>
-                <value galaxy_value="dm2" remote_value="fly" />
+                <value galaxy_value="dm3" remote_value="fly" />
             </value_translation>
         </request_param>
         <request_param galaxy_name="URL" remote_name="URL" missing="">
             <append_param separator="&amp;" first_separator="?" join="=">
                 <value name="d" missing="" />
-                <value name="dbkey" missing="dm2" />
+                <value name="dbkey" missing="dm3" />
                 <value name="q" missing="" />
                 <value name="s" missing="" />
                 <value name="t" missing="" />

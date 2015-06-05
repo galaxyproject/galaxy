@@ -1078,19 +1078,23 @@ $.extend( Workflow.prototype, {
             this.activate_node(node);
         }
     },
-    clear_active_node : function() {
+    clear_active_node : function(callback) {
         if ( this.active_node ) {
             this.active_node.make_inactive();
             this.active_node = null;
         }
-        parent.show_form_for_tool( "<div>No node selected</div>" );
+        if (parent.__NEWTOOLFORM__) {
+            parent.show_tool_form( "<div>No node selected</div>", {id: 'no-node'}, callback );
+        } else {
+            parent.show_form_for_tool( "<div>No node selected</div>" );
+        }
     },
     activate_node : function( node ) {
         if ( this.active_node != node ) {
             this.check_changes_in_active_form();
             this.clear_active_node();
             if (parent.__NEWTOOLFORM__) {
-                parent.show_form_for_tool( node.form_html, node );
+                parent.show_tool_form( node.form_html, node );
             } else {
                 parent.show_form_for_tool( node.form_html + node.tooltip, node );
             }
@@ -1104,7 +1108,7 @@ $.extend( Workflow.prototype, {
             // Reactive with new form_html
             this.check_changes_in_active_form(); //Force changes to be saved even on new connection (previously dumped)
             if (parent.__NEWTOOLFORM__) {
-                parent.show_form_for_tool( node.form_html, node );
+                parent.show_tool_form( node.form_html, node );
             } else {
                 parent.show_form_for_tool( node.form_html + node.tooltip, node );
             }

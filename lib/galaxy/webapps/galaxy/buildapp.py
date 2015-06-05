@@ -73,9 +73,9 @@ def app_factory( global_conf, **kwargs ):
     # allow for subdirectories in extra_files_path
     webapp.add_route( '/datasets/:dataset_id/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
     webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
-    webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param',
+    webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param/{action_param_extra:.+?}',
                       controller='dataset', action='display_application', dataset_id=None, user_id=None,
-                      app_name=None, link_name=None, app_action=None, action_param=None )
+                      app_name=None, link_name=None, app_action=None, action_param=None, action_param_extra=None )
     webapp.add_route( '/u/:username/d/:slug/:filename', controller='dataset', action='display_by_username_and_slug', filename=None )
     webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
@@ -125,7 +125,7 @@ def postfork_setup():
     if process_is_uwsgi:
         import uwsgi
         app.config.server_name += ".%s" % uwsgi.worker_id()
-    app.setup_control_queue()
+    app.control_worker.bind_and_start()
 
 
 def populate_api_routes( webapp, app ):
@@ -245,7 +245,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'datatype',
                             'datatypes',
                             path_prefix='/api',
-                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET' },
+                            collection={ 'sniffers': 'GET', 'mapping': 'GET', 'converters': 'GET', 'edam_formats': 'GET' },
                             parent_resources=dict( member_name='datatype', collection_name='datatypes' ) )
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
     webapp.mapper.resource( 'page', 'pages', path_prefix="/api")

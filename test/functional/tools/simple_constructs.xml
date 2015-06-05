@@ -61,5 +61,17 @@
                 </assert_contents>
             </output>
         </test>
+        <test>
+            <!-- Again but using boolean's truevalue -->
+            <param name="p1use" value="true" />
+            <param name="booltest" value="booltrue" />
+            <param name="file" value="simple_line.txt" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="p1used" />
+                    <has_line line="booltrue" />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
 </tool>

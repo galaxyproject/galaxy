@@ -18,7 +18,7 @@
             <column name="value" index="0"/>
             <filter type="unique_value" name="unique" column="0"/>
           </options>
-        </param> 
+        </param>
       </when>
       <when value="1">
         <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
@@ -27,7 +27,7 @@
             <column name="value" index="1"/>
             <filter type="unique_value" name="unique" column="1"/>
           </options>
-        </param>        	
+        </param>
       </when>
       <when value="2">
         <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
@@ -36,7 +36,7 @@
             <column name="value" index="2"/>
             <filter type="unique_value" name="unique" column="2"/>
           </options>
-        </param> 
+        </param>
       </when>
       <when value="6">
         <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
@@ -45,7 +45,7 @@
             <column name="value" index="6"/>
             <filter type="unique_value" name="unique" column="6"/>
           </options>
-        </param>         	
+        </param>
       </when>
       <when value="7">
         <param name="feature" type="select" multiple="true" label="Extract features" help="Multi-select list - hold the appropriate key while clicking to select multiple columns">
@@ -54,7 +54,7 @@
             <column name="value" index="7"/>
             <filter type="unique_value" name="unique" column="7"/>
           </options>
-        </param>            	
+        </param>
       </when>
     </conditional>
   </inputs>
@@ -85,7 +85,7 @@ Selecting **promoter** from the following GFF data::
     chr22  GeneA  promoter  10010000  10010100  900  +  .  TGA
     chr22  GeneB  promoter  10020000  10025000  400  -  .  TGB
     chr22  GeneB  CCDS2220  10030000  10065000  800  -  .  TGB
-    
+
 will produce the following output::
 
     chr22  GeneA  promoter  10010000  10010100  900  +  .  TGA

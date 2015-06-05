@@ -23,6 +23,6 @@
         <param type="genome_region">genome_region</param>
         <param type="dbkey">dbkey</param>
     </params>
-    <template>browser.mako</template>
+    <entry_point entry_point_type="mako">browser.mako</entry_point>
     <render_target>_top</render_target>
 </visualization>

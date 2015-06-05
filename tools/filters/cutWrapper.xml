@@ -23,41 +23,41 @@
               <when datatype_isinstance="interval">
                 <action type="format" default="tabular">
                   <option type="from_param" name="columnList" column="0" offset="0"> <!-- chromCol is 1-->
-                    
+
                     <filter type="insert_column" column="0" value="interval"/>
-                    
+
                     <filter type="insert_column" ref="columnList" /> <!-- startCol -->
-                    
+
                     <filter type="insert_column" ref="columnList" /> <!-- endCol -->
-                    
+
                     <filter type="multiple_splitter" column="1" separator=","/>
                     <filter type="column_strip" column="1"/> <!-- get rid of all external whitespace -->
                     <filter type="string_function" column="1" name="lower" />
                     <filter type="param_value" column="1" value="^c\d{1,}$" compare="re_search" keep="True"/>
                     <filter type="column_strip" column="1" strip="c"/> <!-- get rid of c's  -->
                     <filter type="boolean" column="1" cast="int" />
-                    
+
                     <filter type="multiple_splitter" column="2" separator=","/>
                     <filter type="column_strip" column="2"/> <!-- get rid of all external whitespace -->
                     <filter type="string_function" column="2" name="lower" />
                     <filter type="param_value" column="2" value="^c\d{1,}$" compare="re_search" keep="True"/>
                     <filter type="column_strip" column="2" strip="c"/> <!-- get rid of c's  -->
                     <filter type="boolean" column="2" cast="int" />
-                    
+
                     <filter type="multiple_splitter" column="3" separator=","/>
                     <filter type="column_strip" column="3"/> <!-- get rid of all external whitespace -->
                     <filter type="string_function" column="3" name="lower" />
                     <filter type="param_value" column="3" value="^c\d{1,}$" compare="re_search" keep="True"/>
                     <filter type="column_strip" column="3" strip="c"/> <!-- get rid of c's  -->
                     <filter type="boolean" column="3" cast="int" />
-                    
+
                     <filter type="metadata_value" ref="input" name="chromCol" column="1" />
                     <filter type="metadata_value" ref="input" name="startCol" column="2" />
                     <filter type="metadata_value" ref="input" name="endCol" column="3" />
-                    
+
                   </option>
                 </action>
-                
+
                 <conditional name="out_file1">
                   <when datatype_isinstance="interval">
                     <action type="metadata" name="chromCol">
@@ -68,11 +68,11 @@
                         <filter type="param_value" column="0" value="^c\d{1,}$" compare="re_search" keep="True"/>
                         <filter type="column_strip" column="0" strip="c"/> <!-- get rid of c's  -->
                         <filter type="insert_column" value="1" iterate="True" column="0"/>
-                        <filter type="boolean" column="1" cast="int" /> 
+                        <filter type="boolean" column="1" cast="int" />
                         <filter type="metadata_value" ref="input" name="chromCol" column="1" />
                       </option>
                     </action>
-                    
+
                     <action type="metadata" name="startCol">
                       <option type="from_param" name="columnList" column="0" offset="0"> <!-- startCol is 0-->
                         <filter type="multiple_splitter" column="0" separator=","/>
@@ -85,7 +85,7 @@
                         <filter type="metadata_value" ref="input" name="startCol" column="1" />
                       </option>
                     </action>
-                    
+
                     <action type="metadata" name="endCol">
                       <option type="from_param" name="columnList" column="0" offset="0"> <!-- endCol is 0-->
                         <filter type="multiple_splitter" column="0" separator=","/>
@@ -98,7 +98,7 @@
                         <filter type="metadata_value" ref="input" name="endCol" column="1" />
                       </option>
                     </action>
-                  
+
                     <action type="metadata" name="nameCol" default="0">
                       <option type="from_param" name="columnList" column="0" offset="0"> <!-- nameCol is 0-->
                         <filter type="multiple_splitter" column="0" separator=","/>
@@ -111,7 +111,7 @@
                         <filter type="metadata_value" ref="input" name="nameCol" column="1" />
                       </option>
                     </action>
-                  
+
                     <action type="metadata" name="strandCol" default="0">
                       <option type="from_param" name="columnList" column="0" offset="0"> <!-- strandCol is 0-->
                         <filter type="multiple_splitter" column="0" separator=","/>
@@ -123,10 +123,10 @@
                         <filter type="boolean" column="1" cast="int" />
                         <filter type="metadata_value" ref="input" name="strandCol" column="1" />
                       </option>
-                    </action>  
+                    </action>
                   </when>
                 </conditional>
-                
+
               </when>
             </conditional>
           </when>
@@ -194,20 +194,18 @@ Input dataset (six columns: c1, c2, c3, c4, c5, and c6)::
 
 **cut** on columns "**c6,c5,c4,c1**" will return::
 
-   + 0 gene1 chr1 
+   + 0 gene1 chr1
    + 0 gene2 chr2
 
 **cut** on columns "**c1-c3**" will return::
 
-   chr1 10   1000 
+   chr1 10   1000
    chr2 100  1500
 
 
 **cut** on columns "**c8,c7,c4**" will return::
 
-   . . gene1 
+   . . gene1
    . . gene2
-   
-
 </help>
 </tool>
