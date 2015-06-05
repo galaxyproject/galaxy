@@ -25,11 +25,11 @@ Need Help?
 
 * `Galaxy documentation`__
 * `Galaxy wiki`__
-* Report bugs and problems to Galaxy mailing list: `galaxy-dev@bx.psu.edu`__
+* Report bugs and problems to Galaxy mailing list: `galaxy-dev@lists.galaxyproject.org`__
 
 .. __: /static/help.html
 .. __: http://wiki.galaxyproject.org/
-.. __: mailto:galaxy-dev@bx.psu.edu
+.. __: mailto:galaxy-dev@lists.galaxyproject.org
 
 Version: <b>2.1</b> Revision: <b>$Rev$</b>
 
