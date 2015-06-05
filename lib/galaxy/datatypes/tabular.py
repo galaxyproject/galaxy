@@ -74,17 +74,17 @@ class TabularData( data.Text ):
             to_ext = to_ext or dataset.extension
             return self._serve_raw(trans, dataset, to_ext)
         elif dataset.metadata.columns > 50:
-            #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
-            #We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
-            #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
-            max_peek_size = 1000000 # 1 MB
+            # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
+            # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
+            # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
+            max_peek_size = 1000000  # 1 MB
             if os.stat( dataset.file_name ).st_size < max_peek_size:
                 return open( dataset.file_name )
             else:
                 trans.response.set_content_type( "text/html" )
                 return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
-                                            data = dataset)
+                                            truncated_data=open( dataset.file_name ).read(max_peek_size),
+                                            data=dataset)
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -98,11 +98,11 @@ class TabularData( data.Text ):
             if column_number is None:
                 column_number = 'null'
             return trans.fill_template( "/dataset/tabular_chunked.mako",
-                        dataset = dataset,
-                        chunk = self.get_chunk(trans, dataset, 0),
-                        column_number = column_number,
-                        column_names = column_names,
-                        column_types = column_types )
+                        dataset=dataset,
+                        chunk=self.get_chunk(trans, dataset, 0),
+                        column_number=column_number,
+                        column_names=column_names,
+                        column_types=column_types )
 
     def make_html_table( self, dataset, **kwargs ):
         """Create HTML table, used for displaying peek"""
@@ -159,7 +159,7 @@ class TabularData( data.Text ):
             out.append( '</tr>' )
         except Exception, exc:
             log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
-            raise Exception, "Can't create peek header %s" % str( exc )
+            raise Exception( "Can't create peek header %s" % str( exc ) )
         return "".join( out )
 
     def make_html_peek_rows( self, dataset, skipchars=None, **kwargs ):
@@ -187,7 +187,7 @@ class TabularData( data.Text ):
                         out.append( '</tr>' )
         except Exception, exc:
             log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
-            raise Exception, "Can't create peek rows %s" % str( exc )
+            raise Exception( "Can't create peek rows %s" % str( exc ) )
         return "".join( out )
 
     def display_peek( self, dataset ):
@@ -200,33 +200,34 @@ class TabularData( data.Text ):
         """Uses column settings that are passed in"""
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         delimiter = dataset.metadata.delimiter
-        return dataproviders.column.ColumnarDataProvider( dataset_source, deliminator = delimiter, **settings )
+        return dataproviders.column.ColumnarDataProvider( dataset_source, deliminator=delimiter, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dataset-column',
                                                     dataproviders.column.ColumnarDataProvider.settings )
     def dataset_column_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return dataproviders.dataset.DatasetColumnarDataProvider( dataset, deliminator = delimiter, **settings )
+        return dataproviders.dataset.DatasetColumnarDataProvider( dataset, deliminator=delimiter, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
     def dict_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         delimiter = dataset.metadata.delimiter
-        return dataproviders.column.DictDataProvider( dataset_source, deliminator = delimiter, **settings )
+        return dataproviders.column.DictDataProvider( dataset_source, deliminator=delimiter, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
     def dataset_dict_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return dataproviders.dataset.DatasetDictDataProvider( dataset, deliminator = delimiter, **settings )
+        return dataproviders.dataset.DatasetDictDataProvider( dataset, deliminator=delimiter, **settings )
+
 
 @dataproviders.decorators.has_dataproviders
 class Tabular( TabularData ):
     """Tab delimited data"""
 
-    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 100000, max_guess_type_data_lines = None, **kwd ):
+    def set_meta( self, dataset, overwrite=True, skip=None, max_data_lines=100000, max_guess_type_data_lines=None, **kwd ):
         """
         Tries to determine the number of columns as well as those columns that
         contain numerical values in the dataset.  A skip parameter is used
@@ -255,10 +256,11 @@ class Tabular( TabularData ):
         requested_skip = skip
         if skip is None:
             skip = 0
-        column_type_set_order = [ 'int', 'float', 'list', 'str'  ] #Order to set column types in
-        default_column_type = column_type_set_order[-1] # Default column type is lowest in list
-        column_type_compare_order = list( column_type_set_order ) #Order to compare column types
+        column_type_set_order = [ 'int', 'float', 'list', 'str'  ]  # Order to set column types in
+        default_column_type = column_type_set_order[-1]  # Default column type is lowest in list
+        column_type_compare_order = list( column_type_set_order )  # Order to compare column types
         column_type_compare_order.reverse()
+
         def type_overrules_type( column_type1, column_type2 ):
             if column_type1 is None or column_type1 == column_type2:
                 return False
@@ -269,32 +271,37 @@ class Tabular( TabularData ):
                     return True
                 if column_type2 == column_type:
                     return False
-            #neither column type was found in our ordered list, this cannot happen
+            # neither column type was found in our ordered list, this cannot happen
             raise "Tried to compare unknown column types"
+
         def is_int( column_text ):
             try:
                 int( column_text )
                 return True
             except:
                 return False
+
         def is_float( column_text ):
             try:
                 float( column_text )
                 return True
             except:
                 if column_text.strip().lower() == 'na':
-                    return True #na is special cased to be a float
+                    return True  # na is special cased to be a float
                 return False
+
         def is_list( column_text ):
             return "," in column_text
+
         def is_str( column_text ):
-            #anything, except an empty string, is True
+            # anything, except an empty string, is True
             if column_text == "":
                 return False
             return True
-        is_column_type = {} #Dict to store column type string to checking function
+        is_column_type = {}  # Dict to store column type string to checking function
         for column_type in column_type_set_order:
             is_column_type[column_type] = locals()[ "is_%s" % ( column_type ) ]
+
         def guess_column_type( column_text ):
             for column_type in column_type_set_order:
                 if is_column_type[column_type]( column_text ):
@@ -303,14 +310,15 @@ class Tabular( TabularData ):
         data_lines = 0
         comment_lines = 0
         column_types = []
-        first_line_column_types = [default_column_type] # default value is one column of type str
+        first_line_column_types = [default_column_type]  # default value is one column of type str
         if dataset.has_data():
-            #NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
+            # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             dataset_fh = open( dataset.file_name )
             i = 0
             while True:
                 line = dataset_fh.readline()
-                if not line: break
+                if not line:
+                    break
                 line = line.rstrip( '\r\n' )
                 if i < skip or not line or line.startswith( '#' ):
                     # We'll call blank lines comments
@@ -320,7 +328,7 @@ class Tabular( TabularData ):
                     if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
                         fields = line.split( '\t' )
                         for field_count, field in enumerate( fields ):
-                            if field_count >= len( column_types ): #found a previously unknown column, we append None
+                            if field_count >= len( column_types ):  # found a previously unknown column, we append None
                                 column_types.append( None )
                             column_type = guess_column_type( field )
                             if type_overrules_type( column_type, column_types[field_count] ):
@@ -343,18 +351,18 @@ class Tabular( TabularData ):
                         column_types = [ None for col in first_line_column_types ]
                 if max_data_lines is not None and data_lines >= max_data_lines:
                     if dataset_fh.tell() != dataset.get_size():
-                        data_lines = None #Clear optional data_lines metadata value
-                        comment_lines = None #Clear optional comment_lines metadata value; additional comment lines could appear below this point
+                        data_lines = None  # Clear optional data_lines metadata value
+                        comment_lines = None  # Clear optional comment_lines metadata value; additional comment lines could appear below this point
                     break
                 i += 1
             dataset_fh.close()
 
-        #we error on the larger number of columns
-        #first we pad our column_types by using data from first line
+        # we error on the larger number of columns
+        # first we pad our column_types by using data from first line
         if len( first_line_column_types ) > len( column_types ):
             for column_type in first_line_column_types[len( column_types ):]:
                 column_types.append( column_type )
-        #Now we fill any unknown (None) column_types with data from first line
+        # Now we fill any unknown (None) column_types with data from first line
         for i in range( len( column_types ) ):
             if column_types[i] is None:
                 if len( first_line_column_types ) <= i or first_line_column_types[i] is None:
@@ -370,8 +378,10 @@ class Tabular( TabularData ):
 
     def as_gbrowse_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
+
     def as_ucsc_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
+
 
 class Taxonomy( Tabular ):
     def __init__(self, **kwd):
@@ -382,6 +392,7 @@ class Taxonomy( Tabular ):
                              'Superorder', 'Order', 'Suborder', 'Superfamily', 'Family', 'Subfamily',
                              'Tribe', 'Subtribe', 'Genus', 'Subgenus', 'Species', 'Subspecies'
                              ]
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
@@ -400,6 +411,7 @@ class Sam( Tabular ):
         self.column_names = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
                              'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'
                              ]
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
@@ -439,7 +451,7 @@ class Sam( Tabular ):
                 line = fh.readline()
                 line = line.strip()
                 if not line:
-                    break #EOF
+                    break  # EOF
                 if line:
                     if line[0] != '@':
                         linePieces = line.split('\t')
@@ -463,7 +475,7 @@ class Sam( Tabular ):
             pass
         return False
 
-    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 5, **kwd ):
+    def set_meta( self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd ):
         if dataset.has_data():
             dataset_fh = open( dataset.file_name )
             comment_lines = 0
@@ -503,9 +515,9 @@ class Sam( Tabular ):
             raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
 
-    # ------------- Dataproviders
+    # Dataproviders
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
-    #TODO:?? seems like there should be an easier way to do this - metadata.comment_char?
+    # TODO:?? seems like there should be an easier way to do this - metadata.comment_char?
     @dataproviders.decorators.dataprovider_factory( 'line', dataproviders.line.FilteredLineDataProvider.settings )
     def line_dataprovider( self, dataset, **settings ):
         settings[ 'comment_char' ] = '@'
@@ -562,10 +574,10 @@ class Sam( Tabular ):
         settings[ 'comment_char' ] = '@'
         return dataproviders.dataset.GenomicRegionDataProvider( dataset, 2, 3, 3, True, **settings )
 
-    #@dataproviders.decorators.dataprovider_factory( 'samtools' )
-    #def samtools_dataprovider( self, dataset, **settings ):
-    #    dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
-    #    return dataproviders.dataset.SamtoolsDataProvider( dataset_source, **settings )
+    # @dataproviders.decorators.dataprovider_factory( 'samtools' )
+    # def samtools_dataprovider( self, dataset, **settings ):
+    #     dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+    #     return dataproviders.dataset.SamtoolsDataProvider( dataset_source, **settings )
 
 
 @dataproviders.decorators.has_dataproviders
@@ -587,7 +599,7 @@ class Pileup( Tabular ):
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return Tabular.make_html_table( self, dataset, column_parameter_alias={'chromCol':'Chrom', 'startCol':'Start', 'baseCol':'Base'} )
+        return Tabular.make_html_table( self, dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'baseCol': 'Base'} )
 
     def repair_methods( self, dataset ):
         """Return options for removing errors along with a description"""
@@ -628,7 +640,7 @@ class Pileup( Tabular ):
         except:
             return False
 
-    # ------------- Dataproviders
+    # Dataproviders
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
     def genomic_region_dataprovider( self, dataset, **settings ):
@@ -652,7 +664,7 @@ class Vcf( Tabular ):
     column_names = [ 'Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data' ]
 
     MetadataElement( name="columns", default=10, desc="Number of columns", readonly=True, visible=False )
-    MetadataElement( name="column_types", default=['str','int','str','str','str','int','str','list','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str', 'int', 'str', 'str', 'str', 'int', 'str', 'list', 'str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
     MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, optional=True, multiple=True, visible=False )
     MetadataElement( name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[] )
 
@@ -678,7 +690,7 @@ class Vcf( Tabular ):
             # Found header line, get sample names.
             dataset.metadata.sample_names = line.split()[ 9: ]
 
-    # ------------- Dataproviders
+    # Dataproviders
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
                                                     dataproviders.dataset.GenomicRegionDataProvider.settings )
     def genomic_region_dataprovider( self, dataset, **settings ):
@@ -701,6 +713,7 @@ class Eland( Tabular ):
     MetadataElement( name="reads", default=[], param=metadata.ListParameter, desc="Set of reads", readonly=True, visible=False, no_value=[] )
     MetadataElement( name="lanes", default=[], param=metadata.ListParameter, desc="Set of lanes", readonly=True, visible=False, no_value=[] )
     MetadataElement( name="barcodes", default=[], param=metadata.ListParameter, desc="Set of barcodes", readonly=True, visible=False, no_value=[] )
+
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
         Tabular.__init__( self, **kwd )
@@ -709,6 +722,7 @@ class Eland( Tabular ):
                              'POSITION', 'STRAND', 'DESC', 'SRAS', 'PRAS', 'PART_CHROM'
                              'PART_CONTIG', 'PART_OFFSET', 'PART_STRAND', 'FILT'
                              ]
+
     def make_html_table( self, dataset, skipchars=None ):
         """Create HTML table, used for displaying peek"""
         if skipchars is None:
@@ -718,11 +732,11 @@ class Eland( Tabular ):
             # Generate column header
             out.append( '<tr>' )
             for i, name in enumerate( self.column_names ):
-                out.append( '<th>%s.%s</th>' % ( str( i+1 ), name ) )
+                out.append( '<th>%s.%s</th>' % ( str( i + 1 ), name ) )
             # This data type requires at least 11 columns in the data
             if dataset.metadata.columns - len( self.column_names ) > 0:
                 for i in range( len( self.column_names ), dataset.metadata.columns ):
-                    out.append( '<th>%s</th>' % str( i+1 ) )
+                    out.append( '<th>%s</th>' % str( i + 1 ) )
                 out.append( '</tr>' )
             out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
             out.append( '</table>' )
@@ -730,6 +744,7 @@ class Eland( Tabular ):
         except Exception, exc:
             out = "Can't create peek %s" % exc
         return out
+
     def sniff( self, filename ):
         """
         Determines whether the file is in ELAND export format
@@ -746,15 +761,15 @@ class Eland( Tabular ):
         try:
             compress = is_gzip(filename)
             if compress:
-               fh = gzip.GzipFile(filename, 'r')
+                fh = gzip.GzipFile(filename, 'r')
             else:
-               fh = open( filename )
+                fh = open( filename )
             count = 0
             while True:
                 line = fh.readline()
                 line = line.strip()
                 if not line:
-                    break #EOF
+                    break  # EOF
                 if line:
                     linePieces = line.split('\t')
                     if len(linePieces) != 22:
@@ -783,32 +798,32 @@ class Eland( Tabular ):
         fh.close()
         return False
 
-    def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 5, **kwd ):
+    def set_meta( self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd ):
         if dataset.has_data():
             compress = is_gzip(dataset.file_name)
             if compress:
-               dataset_fh = gzip.GzipFile(dataset.file_name, 'r')
+                dataset_fh = gzip.GzipFile(dataset.file_name, 'r')
             else:
-               dataset_fh = open( dataset.file_name )
+                dataset_fh = open( dataset.file_name )
             lanes = {}
             tiles = {}
             barcodes = {}
             reads = {}
-            #    # Should always read the entire file (until we devise a more clever way to pass metadata on)
-            #if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            #    # If the dataset is larger than optional_metadata, just count comment lines.
-            #    dataset.metadata.data_lines = None
-            #else:
-            #    # Otherwise, read the whole thing and set num data lines.
+            #     # Should always read the entire file (until we devise a more clever way to pass metadata on)
+            # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+            #     # If the dataset is larger than optional_metadata, just count comment lines.
+            #     dataset.metadata.data_lines = None
+            # else:
+            #     # Otherwise, read the whole thing and set num data lines.
             for i, line in enumerate(dataset_fh):
                 if line:
                     linePieces = line.split('\t')
                     if len(linePieces) != 22:
-                        raise Exception('%s:%d:Corrupt line!' % (dataset.file_name,i))
-                    lanes[linePieces[2]]=1
-                    tiles[linePieces[3]]=1
-                    barcodes[linePieces[6]]=1
-                    reads[linePieces[7]]=1
+                        raise Exception('%s:%d:Corrupt line!' % (dataset.file_name, i))
+                    lanes[linePieces[2]] = 1
+                    tiles[linePieces[3]] = 1
+                    barcodes[linePieces[6]] = 1
+                    reads[linePieces[7]] = 1
                 pass
             dataset.metadata.data_lines = i + 1
             dataset_fh.close()
@@ -832,9 +847,10 @@ class FeatureLocationIndex( Tabular ):
     """
     An index that stores feature locations in tabular format.
     """
-    file_ext='fli'
+    file_ext = 'fli'
     MetadataElement( name="columns", default=2, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[] )
+
 
 @dataproviders.decorators.has_dataproviders
 class CSV( TabularData ):
@@ -844,8 +860,8 @@ class CSV( TabularData ):
     Python 'csv' module https://docs.python.org/2/library/csv.html
     """
     delimiter = ','
-    file_ext = 'csv' # File extension
-    peek_size = 1024 # File chunk used for sniffing CSV dialect
+    file_ext = 'csv'  # File extension
+    peek_size = 1024  # File chunk used for sniffing CSV dialect
 
     def is_int( self, column_text ):
         try:
@@ -860,13 +876,16 @@ class CSV( TabularData ):
             return True
         except:
             if column_text.strip().lower() == 'na':
-                return True #na is special cased to be a float
+                return True  # na is special cased to be a float
             return False
 
     def guess_type( self, text ):
-        if self.is_int(text):   return 'int'
-        if self.is_float(text): return 'float'
-        else:                   return 'str'
+        if self.is_int(text):
+            return 'int'
+        if self.is_float(text):
+            return 'float'
+        else:
+            return 'str'
 
     def sniff( self, filename ):
         """ Return True if if recognizes dialect and header. """
@@ -890,7 +909,7 @@ class CSV( TabularData ):
                 for row in reader:
                     pass
             except csv.Error as e:
-                  raise ('line %d: %s' % (reader.line_num, e))
+                raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
 
             # Guess column types
             if len(header_row) != len(data_row):
