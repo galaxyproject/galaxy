@@ -6,7 +6,7 @@ return {
     help: function(options) {
         var $tmpl = $('<div class="toolHelp" style="overflow: auto;"/>')
                         .append( $('<div class="toolHelpBody"/>').append(options.help) );
-        $tmpl.find('a').prop('target', '_blank');
+        $tmpl.find('a').attr('target', '_blank');
         return $tmpl;
     },
 
