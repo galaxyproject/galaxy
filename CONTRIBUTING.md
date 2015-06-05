@@ -119,10 +119,9 @@ Pull requests modifying pre-existing releases should be restricted to bug fixes
 and require at least 2 *+1* binding votes from someone other than the author of
 the pull request with no *-1* binding votes.
 
-Pull request changing or clarifying the procedures governing this repository
-must be:
+Pull requests changing or clarifying the procedures governing this repository:
 
-- Made to the ``dev`` branch of this repository.
+- Must be made to the ``dev`` branch of this repository.
 - Must remain open for at least 192 hours (unless every qualified committer has
   voted).
 - Require binding *+1* votes from at least 25% of qualified *committers* with no
@@ -131,6 +130,10 @@ must be:
   the *procedures* tag in Github.
 - Should not be modified once open. If changes are needed, the pull request
   should be closed, re-opened with modifications, and votes reset.
+- Should be restricted to just modifying the procedures and generally should not
+  contain code modifications.
+- If the pull request adds or removes committers, there must be a separate
+  pull request for each person added or removed.
 
 Any other pull request requires at least 1 *+1* binding vote from someone other
 than the author of the pull request.
