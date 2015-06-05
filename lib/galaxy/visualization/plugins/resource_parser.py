@@ -23,7 +23,7 @@ class ResourceParser( object ):
     in a new dictionary.
 
     The keys used to store the new values can optionally be re-mapped to
-    new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAsscoation>).
+    new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAssociation>).
     """
     primitive_parsers = {
         'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html( param, 'utf-8' ),
