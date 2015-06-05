@@ -107,8 +107,12 @@ class LDAP(AuthProvider):
             l.protocol_version = 3
             l.simple_bind_s(_get_subs(
                 options, 'bind-user', params), _get_subs(options, 'bind-password', params))
+            whoami = l.whoami_s()
+            log.debug("LDAP authenticate: whoami is %s", whoami)
+            if whoami is None:
+                raise RuntimeError('LDAP authenticate: anonymous bind')
         except Exception:
-            log.exception('LDAP authenticate: bind exception')
+            log.warn('LDAP authenticate: bind exception', exc_info=True)
             return (failure_mode, '', '')
 
         log.debug('LDAP authentication successful')
