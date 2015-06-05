@@ -74,17 +74,17 @@ class TabularData( data.Text ):
             to_ext = to_ext or dataset.extension
             return self._serve_raw(trans, dataset, to_ext)
         elif dataset.metadata.columns > 50:
-            #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
-            #We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
-            #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
-            max_peek_size = 1000000 # 1 MB
+            # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
+            # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
+            # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
+            max_peek_size = 1000000  # 1 MB
             if os.stat( dataset.file_name ).st_size < max_peek_size:
                 return open( dataset.file_name )
             else:
                 trans.response.set_content_type( "text/html" )
                 return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
-                                            data = dataset)
+                                            truncated_data=open( dataset.file_name ).read(max_peek_size),
+                                            data=dataset)
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -98,11 +98,11 @@ class TabularData( data.Text ):
             if column_number is None:
                 column_number = 'null'
             return trans.fill_template( "/dataset/tabular_chunked.mako",
-                        dataset = dataset,
-                        chunk = self.get_chunk(trans, dataset, 0),
-                        column_number = column_number,
-                        column_names = column_names,
-                        column_types = column_types )
+                        dataset=dataset,
+                        chunk=self.get_chunk(trans, dataset, 0),
+                        column_number=column_number,
+                        column_names=column_names,
+                        column_types=column_types )
 
     def make_html_table( self, dataset, **kwargs ):
         """Create HTML table, used for displaying peek"""
@@ -159,7 +159,7 @@ class TabularData( data.Text ):
             out.append( '</tr>' )
         except Exception, exc:
             log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
-            raise Exception, "Can't create peek header %s" % str( exc )
+            raise Exception( "Can't create peek header %s" % str( exc ) )
         return "".join( out )
 
     def make_html_peek_rows( self, dataset, skipchars=None, **kwargs ):
@@ -187,7 +187,7 @@ class TabularData( data.Text ):
                         out.append( '</tr>' )
         except Exception, exc:
             log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
-            raise Exception, "Can't create peek rows %s" % str( exc )
+            raise Exception( "Can't create peek rows %s" % str( exc ) )
         return "".join( out )
 
     def display_peek( self, dataset ):
@@ -200,27 +200,28 @@ class TabularData( data.Text ):
         """Uses column settings that are passed in"""
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         delimiter = dataset.metadata.delimiter
-        return dataproviders.column.ColumnarDataProvider( dataset_source, deliminator = delimiter, **settings )
+        return dataproviders.column.ColumnarDataProvider( dataset_source, deliminator=delimiter, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dataset-column',
                                                     dataproviders.column.ColumnarDataProvider.settings )
     def dataset_column_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return dataproviders.dataset.DatasetColumnarDataProvider( dataset, deliminator = delimiter, **settings )
+        return dataproviders.dataset.DatasetColumnarDataProvider( dataset, deliminator=delimiter, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dict', dataproviders.column.DictDataProvider.settings )
     def dict_dataprovider( self, dataset, **settings ):
         """Uses column settings that are passed in"""
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         delimiter = dataset.metadata.delimiter
-        return dataproviders.column.DictDataProvider( dataset_source, deliminator = delimiter, **settings )
+        return dataproviders.column.DictDataProvider( dataset_source, deliminator=delimiter, **settings )
 
     @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
     def dataset_dict_dataprovider( self, dataset, **settings ):
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return dataproviders.dataset.DatasetDictDataProvider( dataset, deliminator = delimiter, **settings )
+        return dataproviders.dataset.DatasetDictDataProvider( dataset, deliminator=delimiter, **settings )
+
 
 @dataproviders.decorators.has_dataproviders
 class Tabular( TabularData ):
@@ -380,6 +381,7 @@ class Tabular( TabularData ):
 
     def as_ucsc_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
+
 
 class Taxonomy( Tabular ):
     def __init__(self, **kwd):
@@ -849,6 +851,7 @@ class FeatureLocationIndex( Tabular ):
     MetadataElement( name="columns", default=2, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str', 'str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[] )
 
+
 @dataproviders.decorators.has_dataproviders
 class CSV( TabularData ):
     """
@@ -857,8 +860,8 @@ class CSV( TabularData ):
     Python 'csv' module https://docs.python.org/2/library/csv.html
     """
     delimiter = ','
-    file_ext = 'csv' # File extension
-    peek_size = 1024 # File chunk used for sniffing CSV dialect
+    file_ext = 'csv'  # File extension
+    peek_size = 1024  # File chunk used for sniffing CSV dialect
 
     def is_int( self, column_text ):
         try:
@@ -873,13 +876,16 @@ class CSV( TabularData ):
             return True
         except:
             if column_text.strip().lower() == 'na':
-                return True #na is special cased to be a float
+                return True  # na is special cased to be a float
             return False
 
     def guess_type( self, text ):
-        if self.is_int(text):   return 'int'
-        if self.is_float(text): return 'float'
-        else:                   return 'str'
+        if self.is_int(text):
+            return 'int'
+        if self.is_float(text):
+            return 'float'
+        else:
+            return 'str'
 
     def sniff( self, filename ):
         """ Return True if if recognizes dialect and header. """
@@ -903,7 +909,7 @@ class CSV( TabularData ):
                 for row in reader:
                     pass
             except csv.Error as e:
-                  raise ('line %d: %s' % (reader.line_num, e))
+                raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
 
             # Guess column types
             if len(header_row) != len(data_row):
