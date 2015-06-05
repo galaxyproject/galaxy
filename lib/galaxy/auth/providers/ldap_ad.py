@@ -72,16 +72,18 @@ class LDAP(AuthProvider):
                 else:
                     l.simple_bind_s()
 
-                scope = ldap.SCOPE_SUBTREE
-
                 # setup search
                 attributes = [_.strip().format(**params)
                               for _ in options['search-fields'].split(',')]
-                result = l.search(_get_subs(options, 'search-base', params), scope,
-                                  _get_subs(options, 'search-filter', params), attributes)
+                suser = l.search_ext_s(_get_subs(options, 'search-base', params),
+                    ldap.SCOPE_SUBTREE,
+                    _get_subs(options, 'search-filter', params), attributes,
+                    timeout=60, sizelimit=1)
 
                 # parse results
-                _, suser = l.result(result, 60)
+                if suser is None or len(suser) == 0:
+                    log.warn('LDAP authenticate: search returned no results')
+                    return (failure_mode, '', '')
                 dn, attrs = suser[0]
                 log.debug(("LDAP authenticate: dn is %s" % dn))
                 log.debug(("LDAP authenticate: search attributes are %s" % attrs))
