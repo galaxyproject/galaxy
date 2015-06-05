@@ -9,24 +9,24 @@ import sys, argparse, os, subprocess, shutil, tempfile
 # replace the .dat suffix of a file created by Galaxy so it can be recognized
 # by a tool such as Tophat
 def replace_filename_suffix( work_dir, input_filename ):
-    print input_filename
+    print 'input filename:' + input_filename
     output_filename = input_filename 
     # get the Galaxy filename without the path
     galaxy_filename_basename = os.path.basename(input_filename)
     # get the Galaxy filename suffix
     galaxy_filename_suffix = os.path.splitext(galaxy_filename_basename)[1]
-    print '[' + galaxy_filename_suffix + ']'
+    print 'file name suffix' + '[' + galaxy_filename_suffix + ']'
     # if the suffix is not .dat then assume the file has been directly supplied to Tophat
     # and Tophat can work with it as it normally would 
-    if galaxy_filename_suffix == ".dat":
+    if galaxy_filename_suffix != ".gz" and galaxy_filename_suffix != ".fq":
         # see if the input file has ben gzipped
-        gunzip_test_cmd = "gunzip -t --suffix \".dat\" " + input_filename 
-        print gunzip_test_cmd      
+        gunzip_test_cmd = "gunzip -t --suffix \"" + galaxy_filename_suffix + "\" " + input_filename 
+        print 'gunzip cmd:' + gunzip_test_cmd      
         status =subprocess.call(args = gunzip_test_cmd, stderr=subprocess.STDOUT, shell=True)
         # if the file is a gzipped file then replace the .dat suffix with .fq.gz
         # use .fq as part of the suffix becuase we assume that only fasta files are provided
         # to Tophat
-        print work_dir
+        print 'work dir:' + work_dir
         if status == 0:
            filename_suffix = ".fq.gz"       
         else:
