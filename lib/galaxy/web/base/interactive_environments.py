@@ -8,6 +8,7 @@ import subprocess
 from galaxy.util.bunch import Bunch
 from galaxy import web
 from galaxy.managers import api_keys
+from galaxy.tools.deps.docker_util import DockerVolume
 
 import logging
 log = logging.getLogger(__name__)
@@ -153,6 +154,9 @@ class InteractiveEnviornmentRequest(object):
         url = url_template.replace('${PROXY_URL}', str(self.attr.proxy_url)) \
             .replace('${PORT}', str(self.attr.PORT))
         return url
+
+    def volume(self, host_path, container_path, **kwds):
+        return DockerVolume(host_path, container_path, **kwds)
 
     def docker_cmd(self, env_override={}, volumes=[]):
         """
