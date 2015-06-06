@@ -1,4 +1,4 @@
-define(['utils/utils', 'mvc/tools/tools-form-workflow'], function(Utils, ToolsForm){
+define(['utils/utils', 'mvc/tools/tools-form-workflow', 'mvc/workflow/workflow-objects'], function(Utils, ToolsForm, Shared){
 function CollectionTypeDescription( collectionType ) {
     this.collectionType = collectionType;
     this.isCollection = true;
@@ -754,7 +754,7 @@ var Node = Backbone.Model.extend({
         $.each( this.output_terminals, function( k, t ) {
             t.destroy();
         });
-        workflow.remove_node( this );
+        Shared.workflow.remove_node( this );
         $(this.element).remove();
     },
     make_active : function () {
@@ -800,7 +800,7 @@ var Node = Backbone.Model.extend({
             nodeView.addDataOutput( output );
         } );
         nodeView.render();
-        workflow.node_changed( this, true);
+        Shared.workflow.node_changed( this, true);
     },
     update_field_data : function( data ) {
         var node = this;
@@ -847,10 +847,10 @@ var Node = Backbone.Model.extend({
         var tmp = "<div style='color: red; text-style: italic;'>" + text + "</div>";
         this.form_html = tmp;
         b.html( tmp );
-        workflow.node_changed( this );
+        Shared.workflow.node_changed( this );
     },
     markChanged: function() {
-        workflow.node_changed( this );
+        Shared.workflow.node_changed( this );
     }
 } );
 
@@ -867,7 +867,7 @@ $.extend( Workflow.prototype, {
         var node = prebuild_node( type, title_text, tool_id );
         this.add_node( node );
         this.fit_canvas_to_nodes();
-        canvas_manager.draw_overview();
+        Shared.canvas_manager.draw_overview();
         this.activate_node( node );
         return node;
     },
@@ -949,8 +949,8 @@ $.extend( Workflow.prototype, {
                         });
                     }
                     // lastly, if this is the active node, and we made changes, reload the display at right.
-                    if (workflow.active_node == node && node_changed === true) {
-                        workflow.reload_active_node();
+                    if (Shared.workflow.active_node == node && node_changed === true) {
+                        Shared.workflow.reload_active_node();
                     }
                 }
             });
@@ -1059,7 +1059,7 @@ $.extend( Workflow.prototype, {
                         node.workflow_outputs.push(ot.name);
                         callout = $(node.element).find('.callout.'+ot.name);
                         callout.find('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
-                        workflow.has_changes = true;
+                        Shared.workflow.has_changes = true;
                     }
                 });
             }
@@ -1313,13 +1313,13 @@ function prebuild_node( type, title_text, tool_id ) {
     width += ( buttons.width() + 10 );
     f.css( "width", width );
     $(f).bind( "dragstart", function() {
-        workflow.activate_node( node );
+        Shared.workflow.activate_node( node );
     }).bind( "dragend", function() {
-        workflow.node_changed( this );
-        workflow.fit_canvas_to_nodes();
-        canvas_manager.draw_overview();
+        Shared.workflow.node_changed( this );
+        Shared.workflow.fit_canvas_to_nodes();
+        Shared.canvas_manager.draw_overview();
     }).bind( "dragclickonly", function() {
-       workflow.activate_node( node ); 
+       Shared.workflow.activate_node( node ); 
     }).bind( "drag", function( e, d ) {
         // Move
         var po = $(this).offsetParent().offset(),
@@ -1499,8 +1499,8 @@ var OutputCalloutView = Backbone.View.extend( {
                             view.node.workflow_outputs.push(view.output.name);
                             view.$('img').attr('src', galaxy_config.root + 'static/images/fugue/asterisk-small.png');
                         }
-                        workflow.has_changes = true;
-                        canvas_manager.draw_overview();
+                        Shared.workflow.has_changes = true;
+                        Shared.canvas_manager.draw_overview();
                     })))
             .tooltip({delay:500, title: "Mark dataset as a workflow output. All unmarked datasets will be hidden." });
         
@@ -1716,7 +1716,7 @@ var BaseOutputTerminalView = TerminalView.extend( {
             $(d.proxy).css( { left: x, top: y } );
             d.proxy.terminal.redraw();
             // FIXME: global
-            canvas_manager.update_viewport_overlay();
+            Shared.canvas_manager.update_viewport_overlay();
         };
         onmove();
         $("#canvas-container").get(0).scroll_panel.test( e, onmove );
@@ -1725,7 +1725,7 @@ var BaseOutputTerminalView = TerminalView.extend( {
     onDragStart: function( e, d ) { 
         $( d.available ).addClass( "input-terminal-active" );
         // Save PJAs in the case of change datatype actions.
-        workflow.check_changes_in_active_form(); 
+        Shared.workflow.check_changes_in_active_form(); 
         // Drag proxy div
         var h = $( '<div class="drag-terminal" style="position: absolute;"></div>' )
             .appendTo( "#canvas-container" ).get(0);
@@ -1890,7 +1890,7 @@ $.extend( CanvasManager.prototype, {
         }).bind( "drag", function( e, d ) {
             move( d.offsetX + x_adjust, d.offsetY + y_adjust );
         }).bind( "dragend", function() {
-            workflow.fit_canvas_to_nodes();
+            Shared.workflow.fit_canvas_to_nodes();
             self.draw_overview();
         });
         // Dragging for overview pane
@@ -1905,7 +1905,7 @@ $.extend( CanvasManager.prototype, {
             move( - ( new_x_offset / o_w * in_w ),
                   - ( new_y_offset / o_h * in_h ) );
         }).bind( "dragend", function() {
-            workflow.fit_canvas_to_nodes();
+            Shared.workflow.fit_canvas_to_nodes();
             self.draw_overview();
         });
         // Dragging for overview border (resize)
@@ -1982,7 +1982,7 @@ $.extend( CanvasManager.prototype, {
         canvas_el.attr( "width", o_w );
         canvas_el.attr( "height", o_h );
         // Draw overview
-        $.each( workflow.nodes, function( id, node ) {
+        $.each( Shared.workflow.nodes, function( id, node ) {
             c.fillStyle = "#D2C099";
             c.strokeStyle = "#D8B365";
             c.lineWidth = 1;

@@ -14,6 +14,12 @@
     <!--[if lt IE 9]>
       <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
     <![endif]-->
+    <!--[if lt IE 7]>
+      <script type='text/javascript'>
+        window.lt_ie_7 = true;
+      </script>
+    <![endif]-->
+
     ${h.js( "libs/jquery/jquery.event.drag",
             "libs/jquery/jquery.event.drop",
             "libs/jquery/jquery.event.hover",
@@ -24,16 +30,7 @@
             "galaxy.autocom_tagging",
             "libs/bibtex" )}
 
-    <!--[if lt IE 7]>
     <script type='text/javascript'>
-    window.lt_ie_7 = true;
-    </script>
-    <![endif]-->
-
-    <script type='text/javascript'>
-        // Globals
-        workflow = null;
-        canvas_manager = null;
         workflow_view = null;
 
         // URLs used by galaxy.workflows.js
@@ -57,19 +54,6 @@
                 workflow_view = new Workflow(config);
             });
         });
-    <%
-        from galaxy.jobs.actions.post import ActionBox
-    %>
-        // Post-job action vars.
-        var pja_list = "${ActionBox.get_add_list()}",
-            get_pja_form = function(pja, node) {
-                var p_str = '';
-                // FIXME: this writes JS code; this logic should be codified in galaxy.workflows.js
-                ${ActionBox.get_forms(trans)}
-                return p_str;
-            };
-
-        // NOTE: code to initialize and edit workflows is in galaxy.workflows.js
     </script>
 </%def>
 
