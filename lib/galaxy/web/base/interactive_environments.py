@@ -8,6 +8,7 @@ import subprocess
 from galaxy.util.bunch import Bunch
 from galaxy import web
 from galaxy.managers import api_keys
+from galaxy.tools.deps.docker_util import DockerVolume
 
 import logging
 log = logging.getLogger(__name__)
@@ -154,7 +155,10 @@ class InteractiveEnviornmentRequest(object):
             .replace('${PORT}', str(self.attr.PORT))
         return url
 
-    def docker_cmd(self, env_override={}):
+    def volume(self, host_path, container_path, **kwds):
+        return DockerVolume(host_path, container_path, **kwds)
+
+    def docker_cmd(self, env_override={}, volumes=[]):
         """
             Generate and return the docker command to execute
         """
@@ -162,16 +166,19 @@ class InteractiveEnviornmentRequest(object):
         conf = self.get_conf_dict()
         conf.update(env_override)
         env_str = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
-        return '%s run %s -d %s -p %s:%s -v "%s:/import/" %s' % \
+        volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
+        return '%s run %s -d %s -p %s:%s -v "%s:/import/" %s %s' % \
             (self.attr.viz_config.get("docker", "command"),
             env_str,
             self.attr.viz_config.get("docker", "command_inject"),
             self.attr.PORT, self.attr.docker_port,
-            temp_dir, self.attr.viz_config.get("docker", "image"))
+            temp_dir,
+            volume_str,
+            self.attr.viz_config.get("docker", "image"))
 
-    def launch(self, raw_cmd=None, env_override={}):
+    def launch(self, raw_cmd=None, env_override={}, volumes=[]):
         if raw_cmd is None:
-            raw_cmd = self.docker_cmd(env_override=env_override)
+            raw_cmd = self.docker_cmd(env_override=env_override, volumes=volumes)
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
             raw_cmd
