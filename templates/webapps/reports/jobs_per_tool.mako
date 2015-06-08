@@ -5,6 +5,35 @@
     ${render_msg( message, 'done' )}
 %endif
 
+<%
+up_arrow = "&#x2191;"
+down_arrow = "&#x2193;"
+   
+id_order = order
+total_order = order
+
+id_arrow = " "
+total_arrow = " "
+
+if sort == "tool_id":   
+    if id_order == "asc":
+        id_arrow += down_arrow
+        id_order = "desc"
+    else:
+        id_arrow += up_arrow
+        id_order = "asc"
+    pass
+elif sort == "total_jobs":   
+    if total_order == "asc":
+        total_arrow += down_arrow
+        total_order = "desc"
+    else:
+        total_arrow += up_arrow
+        total_order = "asc"
+    pass
+%>
+    
+<!--jobs_per_tool.mako-->
 <div class="toolForm">
     <div class="toolFormBody">
         <h4 align="center">Jobs Per Tool</h4>
@@ -14,11 +43,11 @@
                 <tr><td colspan="2">There are no jobs.</td></tr>
             %else:
                 <tr class="header">
-                    <td>Tool id</td>
+                    <td><a href="${h.url_for( controller='jobs', action='per_tool', sort='tool_id', order=id_order )}">Tool id</a>${id_arrow}</td>
                     %if is_user_jobs_only:
-    					<td>User Jobs</td>
+                    <td><a href="${h.url_for( controller='jobs', action='per_tool', sort='total_jobs', order=total_order )}">User Jobs</a>${total_arrow}</td>
 					%else:
-	                    <td>User + Monitor Jobs</td>
+                    <td><a href="${h.url_for( controller='jobs', action='per_tool', sort='total_jobs', order=total_order )}">User + Monitor Jobs</a>${total_arrow}</td>
 	                %endif
                 </tr>
                 <% ctr = 0 %>
@@ -37,3 +66,5 @@
         </table>
     </div>
 </div>
+<!--End jobs_per_tool.mako-->
+        
