@@ -50,13 +50,12 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   * Most bug fixes to previously release components (things in galaxy-dist)
     should be made against the recent `release_XX.XX` branch (`git checkout release_XX.XX`).
 
-  * Serious security problems should not be fixed via pull request -
-    please responsibly disclose these by e-mailing them (with or
-    without patches) to galaxy-lab@bx.psu.edu. The Galaxy core
-    development team will issue patches to public servers before
-    announcing the issue to ensure there is time to patch and
-    highlight these fixes widely. We will provide you credit for the
-    discovery when publicly disclosing the issue.
+  * Serious security problems should not be fixed via pull request - please
+    responsibly disclose these by e-mailing them (with or without patches) to
+    galaxy-lab@lists.galaxyproject.org. The Galaxy core development team will
+    issue patches to public servers before announcing the issue to ensure there
+    is time to patch and highlight these fixes widely. We will provide you
+    credit for the discovery when publicly disclosing the issue.
 
 * If your changes modify code - please ensure the resulting files
   conform to Galaxy [style

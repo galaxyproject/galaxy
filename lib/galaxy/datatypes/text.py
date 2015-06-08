@@ -48,12 +48,12 @@ class Json( Text ):
         else:
             with open(filename, "r") as fh:
                 while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if line:
+                    # Grab first chunk of file and see if it looks like json.
+                    start = fh.read(100).strip()
+                    if start:
                         # simple types are valid JSON as well - but would such a file
                         # be interesting as JSON in Galaxy?
-                        return line.startswith("[") or line.startswith("{")
+                        return start.startswith("[") or start.startswith("{")
             return False
 
     def display_peek( self, dataset ):
