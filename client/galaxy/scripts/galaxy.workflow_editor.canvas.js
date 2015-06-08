@@ -323,7 +323,7 @@ var BaseInputTerminal = Terminal.extend( {
             if( ! firstOutput ){
                 return false;
             } else {
-                if( firstOutput.isDataCollectionInput || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
+                if( firstOutput.isCollection || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
                     return true;
                 } else {
                     return false;
@@ -377,14 +377,15 @@ var BaseInputTerminal = Terminal.extend( {
         return false;
     },
     _otherCollectionType: function( other ) {
+        // Effective collection type for other - base collection type
+        // with map over appended.
         var otherCollectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
-        if( other.isDataCollectionInput ) {
+        if( other.isCollection ) {
             otherCollectionType = other.collectionType;
-        } else {
-            var otherMapOver = other.mapOver();
-            if( otherMapOver.isCollection ) {
-                otherCollectionType = otherMapOver;
-            }
+        }
+        var otherMapOver = other.mapOver();
+        if( otherMapOver.isCollection ) {
+            otherCollectionType = otherMapOver.append(otherCollectionType);
         }
         return otherCollectionType;
     },
@@ -513,12 +514,12 @@ var InputCollectionTerminal = BaseInputTerminal.extend( {
     }
 });
 
-var OutputCollectionTerminal = Terminal.extend( {
+var OutputCollectionTerminal = OutputTerminal.extend( {
     initialize: function( attr ) {
         Terminal.prototype.initialize.call( this, attr );
         this.datatypes = attr.datatypes;
         this.collectionType = new CollectionTypeDescription( attr.collection_type );
-        this.isDataCollectionInput = true;
+        this.isCollection = true;
     },
     update: function( output ) {
         var newCollectionType = new CollectionTypeDescription( output.collection_type );
@@ -1413,7 +1414,7 @@ var NodeView = Backbone.View.extend( {
     },
 
     addDataOutput: function( output ) {
-        var terminalViewClass = ( output.collection_type ) ? OutputCollectionTerminalView : OutputTerminalView;
+        var terminalViewClass = ( output.collection ) ? OutputCollectionTerminalView : OutputTerminalView;
         var terminalView = new terminalViewClass( {
             node: this.node,
             output: output

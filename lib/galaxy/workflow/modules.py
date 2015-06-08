@@ -403,7 +403,14 @@ class InputDataCollectionModule( InputModule ):
         return form
 
     def get_data_outputs( self ):
-        return [ dict( name='output', extensions=['input_collection'], collection_type=self.state[ 'collection_type' ] ) ]
+        return [
+            dict(
+                name='output',
+                extensions=['input_collection'],
+                collection=True,
+                collection_type=self.state[ 'collection_type' ]
+            )
+        ]
 
 
 class PauseModule( SimpleWorkflowModule ):
@@ -655,9 +662,12 @@ class ToolModule( WorkflowModule ):
         data_outputs = []
         data_inputs = None
         for name, tool_output in self.tool.outputs.iteritems():
+            extra_kwds = {}
             if tool_output.collection:
-                formats = [ 'input' ]
-            elif tool_output.format_source != None:
+                extra_kwds["collection"] = True
+                extra_kwds["collection_type"] = tool_output.structure.collection_type
+                formats = [ 'input' ]  # TODO: fix
+            elif tool_output.format_source is not None:
                 formats = [ 'input' ]  # default to special name "input" which remove restrictions on connections
                 if data_inputs == None:
                     data_inputs = self.get_data_inputs()
@@ -674,7 +684,13 @@ class ToolModule( WorkflowModule ):
                     format = when_elem.get( 'format', None )
                     if format and format not in formats:
                         formats.append( format )
-            data_outputs.append( dict( name=name, extensions=formats ) )
+            data_outputs.append(
+                dict(
+                    name=name,
+                    extensions=formats,
+                    **extra_kwds
+                )
+            )
         return data_outputs
 
     def get_runtime_input_dicts( self, step_annotation ):
