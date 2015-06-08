@@ -144,6 +144,9 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         `None` if it's not.
         """
         # log.debug( 'VisReg.get_visualization: %s, %s', visualization_name, target_object )
+        print
+        print visualization_name, getattr( target_object, 'name', '(no name)' )
+
         visualization = self.plugins.get( visualization_name, None )
         if not visualization:
             return None
@@ -170,6 +173,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             render_target = visualization.config.get( 'render_target', 'galaxy_main' )
             embeddable = visualization.config.get( 'embeddable', False )
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
+            print 'IS_APPLICABLE', '\n'
             return {
                 'href'      : url,
                 'html'      : display_name,
@@ -177,6 +181,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
                 'embeddable': embeddable
             }
 
+        print
         return None
 
     def is_object_applicable( self, trans, target_object, data_source_tests ):
@@ -191,7 +196,8 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             test_result = test[ 'result' ]
             test_fn = test[ 'fn' ]
             # log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
-            #           test_type, result_type, test_result, test_fn )
+            #            test_type, result_type, test_result, test_fn )
+            print test_type, result_type, test_result
 
             if test_type == 'isinstance':
                 # parse test_result based on result_type (curr: only datatype has to do this)
@@ -199,17 +205,22 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
                     # convert datatypes to their actual classes (for use with isinstance)
                     datatype_class_name = test_result
                     test_result = trans.app.datatypes_registry.get_datatype_class_by_name( datatype_class_name )
+                    print 'datatype_class_name:', datatype_class_name
+                    print 'datatype_class:', test_result
                     if not test_result:
-                        # but continue (with other tests) if can't find class by that name
                         # if self.debug:
-                        #    log.warn( 'visualizations_registry cannot find class (%s)' +
+                        #     log.debug( 'visualizations_registry cannot find class (%s)' +
                         #              ' for applicability test on: %s, id: %s', datatype_class_name,
                         #              target_object, getattr( target_object, 'id', '' ) )
+                        # but continue (with other tests) if can't find class by that name
                         continue
 
+                print 'isinstance:', target_object.datatype, test_result, isinstance( target_object.datatype, test_result )
+
             # NOTE: tests are OR'd, if any test passes - the visualization can be applied
-            if test_fn( target_object, test_result ):
-                # log.debug( '\t test passed' )
+            test_passed = test_fn( target_object, test_result )
+            print 'test_passed:', test_passed
+            if test_passed:
                 return True
 
         return False

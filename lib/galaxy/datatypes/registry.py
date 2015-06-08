@@ -429,12 +429,14 @@ class Registry( object ):
         (as defined in the datatype_conf.xml file) contains `name`.
         """
         #TODO: too roundabout - would be better to generate this once as a map and store in this object
-        found_class = None
         for ext, datatype_obj in self.datatypes_by_extension.items():
             datatype_obj_class = datatype_obj.__class__
-            datatype_obj_class_str = str( datatype_obj_class )
-            #print datatype_obj_class_str
-            if name in datatype_obj_class_str:
+            # use the stringified class name to allow inclusion of module in name 'interval.Bed'
+            # remove the "'>" from the end of the stringified class name and use endswith for comparison
+            # (using 'in' will confuse e.g. BedStrict with Bed)
+            # the horror ...the horror
+            datatype_obj_class_str = str( datatype_obj_class )[:-2]
+            if datatype_obj_class_str.endswith( name ):
                 return datatype_obj_class
         return None
         # these seem to be connected to the dynamic classes being generated in this file, lines 157-158

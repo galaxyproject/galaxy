@@ -254,6 +254,7 @@ class DataSourceParser( object ):
         Recursively builds a compound lambda function of getattr's
         from the attribute names given in `attr_name_list`.
         """
+        print '_build_getattr_lambda:', attr_name_list
         if len( attr_name_list ) == 0:
             # identity - if list is empty, return object itself
             return lambda o: o
@@ -287,49 +288,64 @@ class DataSourceParser( object ):
                         + '%s, %s' % ( test_type, test_elem.text ) )
                 continue
             test_result = test_result.strip()
-
-            # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
-            # TODO: too dangerous - constrain these to some allowed list
-            # TODO: does this err if no test_attr - it should...
-            test_attr = test_elem.get( 'test_attr' )
-            test_attr = test_attr.split( self.ATTRIBUTE_SPLIT_CHAR ) if isinstance( test_attr, str ) else []
-            # log.debug( 'test_type: %s, test_attr: %s, test_result: %s', test_type, test_attr, test_result )
-
-            # build a lambda function that gets the desired attribute to test
-            getter = self._build_getattr_lambda( test_attr )
             # result type should tell the registry how to convert the result before the test
             test_result_type = test_elem.get( 'result_type', 'string' )
-
-            # test functions should be sent an object to test, and the parsed result expected from the test
-            if test_type == 'isinstance':
-                # is test_attr attribute an instance of result
-                # TODO: wish we could take this further but it would mean passing in the datatypes_registry
-                test_fn = lambda o, result: isinstance( getter( o ), result )
-
-            elif test_type == 'has_dataprovider':
-                # does the object itself have a datatype attr and does that datatype have the given dataprovider
-                test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
-                                              and getter( o ).has_dataprovider( result ) )
-
-            elif test_type == 'has_attribute':
-                # does the object itself have attr in 'result' (no equivalence checking)
-                test_fn = lambda o, result: hasattr( getter( o ), result )
-
-            elif test_type == 'not_eq':
-                test_fn = lambda o, result: str( getter( o ) ) != result
-
-            else:
-                # default to simple (string) equilavance (coercing the test_attr to a string)
-                test_fn = lambda o, result: str( getter( o ) ) == result
+            # log.debug( 'test_type: %s, test_result: %s', test_type, test_result )
+            test_attr = test_elem.get( 'test_attr' )
 
             tests.append({
                 'type'          : test_type,
                 'result'        : test_result,
                 'result_type'   : test_result_type,
-                'fn'            : test_fn
+                'fn'            : self.build_test_fn( test_type, test_attr, test_result_type, test_result )
             })
 
         return tests
+
+    def build_test_fn( self, test_type, attr_to_test, result_type, result_should_be ):
+        # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
+        # TODO: too dangerous - constrain these to some allowed list
+        # TODO: does this err if no test_attr - it should...
+        print 'attr_to_test:', attr_to_test
+        test_attr = attr_to_test.split( self.ATTRIBUTE_SPLIT_CHAR ) if isinstance( attr_to_test, str ) else []
+        print '(then)   :', test_attr
+
+        # build a lambda function that gets the desired attribute to test
+        getter = self._build_getattr_lambda( test_attr )
+        print 'getter:', getter
+
+        # test functions should be sent an object to test, and the parsed result expected from the test
+        if test_type == 'isinstance':
+            def instance_test( obj, result ):
+                print 'getter:', getter
+                test_passed = isinstance( getter( obj ), result )
+                print 'instance_test', obj, getter( obj ), result, test_passed
+                return test_passed
+            # is test_attr attribute an instance of result
+            # TODO: wish we could take this further but it would mean passing in the datatypes_registry
+            test_fn = instance_test
+            # test_fn = lambda o, result: isinstance( getter( o ), result )
+
+        elif test_type == 'has_dataprovider':
+            # does the object itself have a datatype attr and does that datatype have the given dataprovider
+            test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
+                                          and getter( o ).has_dataprovider( result ) )
+
+        elif test_type == 'has_attribute':
+            # does the object itself have attr in 'result' (no equivalence checking)
+            test_fn = lambda o, result: hasattr( getter( o ), result )
+
+        elif test_type == 'not_eq':
+            test_fn = lambda o, result: str( getter( o ) ) != result
+
+        elif test_type == 'contains':
+            test_fn = lambda o, result: result in getter( o )
+
+        else:
+            # default to simple (string) equilavance (coercing the test_attr to a string)
+            test_fn = lambda o, result: str( getter( o ) ) == result
+
+        return test_fn
 
     def parse_to_params( self, xml_tree_list ):
         """
