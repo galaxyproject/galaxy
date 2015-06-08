@@ -256,7 +256,6 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow', 'mvc/workflow/workflow-o
 
     } );
 
-
     var BaseInputTerminal = Terminal.extend( {
         initialize: function( attr ) {
             Terminal.prototype.initialize.call( this, attr );
@@ -443,7 +442,6 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow', 'mvc/workflow/workflow-o
             }
             return this._producesAcceptableDatatype( other );
         }
-
     });
 
     var InputCollectionTerminal = BaseInputTerminal.extend( {
@@ -659,7 +657,7 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow', 'mvc/workflow/workflow-o
             c.bezierCurveTo( start_x + cp_shift, start_y + offset_start, end_x - cp_shift, end_y + offset_end, end_x, end_y + offset_end );
             c.stroke();
         }
-    } );
+    });
 
     var Node = Backbone.Model.extend({
         initialize: function( attr ) {
@@ -852,7 +850,7 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow', 'mvc/workflow/workflow-o
         markChanged: function() {
             Shared.workflow.node_changed( this );
         }
-    } );
+    });
 
     function Workflow( canvas_container ) {
         this.canvas_container = canvas_container;
@@ -1279,7 +1277,7 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow', 'mvc/workflow/workflow-o
             });
         }
     });
-         
+
     function prebuild_node( type, title_text, tool_id ) {
         var f = $("<div class='toolForm toolFormInCanvas'></div>");
         var node = new Node( { element: f } );
@@ -1473,9 +1471,8 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow', 'mvc/workflow/workflow-o
                                display:'' });
                 this.$el.remove();
             }
-        },
-
-    } );
+        }
+    });
 
     var OutputCalloutView = Backbone.View.extend( {
         tagName: "div",
@@ -1565,8 +1562,7 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow', 'mvc/workflow/workflow-o
                            display:'' })
                     .detach();
         }
-
-    } );
+    });
 
     var TerminalView = Backbone.View.extend( {
 
@@ -2005,7 +2001,7 @@ define(['utils/utils', 'mvc/tools/tools-form-workflow', 'mvc/workflow/workflow-o
             this.update_viewport_overlay();
         }
     });
-    
+
     return {
         CanvasManager           : CanvasManager,
         Workflow                : Workflow,
