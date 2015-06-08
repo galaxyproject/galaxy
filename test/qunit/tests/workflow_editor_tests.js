@@ -301,6 +301,37 @@ define([
         } );
     } );
 
+    module( "Input collection terminal model test", {
+        setup: function( ) {
+            this.node = new Node( {  } );
+            this.input = { extensions: [ "txt" ], collection_type: "list" };
+            this.input_terminal = new InputCollectionTerminal( { input: this.input } );
+            this.input_terminal.node = this.node;
+        }
+    } );
+
+    test( "Collection output can connect to same collection input type", function() {
+        var self = this;
+        var inputTerminal = self.input_terminal;
+        var outputTerminal = new OutputCollectionTerminal( {
+            datatypes: 'txt',
+            collection_type: 'list'
+        } );
+        outputTerminal.node = {};
+        ok( this.input_terminal.canAccept( outputTerminal ) );
+    } );
+
+    test( "Collection output cannot connect to different collection input type", function() {
+        var self = this;
+        var inputTerminal = self.input_terminal;
+        var outputTerminal = new OutputCollectionTerminal( {
+            datatypes: 'txt',
+            collection_type: 'paired'
+        } );
+        outputTerminal.node = {};
+        ok( ! this.input_terminal.canAccept( outputTerminal ) );
+    } );
+
     module( "Node unit test", {
         setup: function() {
             this.input_terminal = { destroy: sinon.spy(), redraw: sinon.spy() };
@@ -797,26 +828,53 @@ define([
             }
             return outputTerminal;
         },
+        newOutputCollectionTerminal: function( collectionType, output, node, mapOver ) {
+            collectionType = collectionType || "list";
+            output = output || {};
+            node = node || this.newNode();
+            if( ! ( 'extensions' in output ) ) {
+                output[ 'extensions'] = [ 'data' ];
+            }
+            var outputEl = $("<div>")[ 0 ];
+            var outputTerminal = new OutputCollectionTerminal( { element: outputEl, datatypes: output.extensions, collection_type: collectionType } );
+            var outputTerminalMapping = new OutputCollectionTerminalMapping( { terminal: outputTerminal } );
+            outputTerminal.node = node;
+            if( mapOver ) {
+                outputTerminal.setMapOver( new CollectionTypeDescription( mapOver ) );
+            }
+            return outputTerminal;
+        },
         newNode: function( ) {
             var nodeEl = $("<div>")[ 0 ];
             var node = new Node( { element: nodeEl } );
             return node;
         },
-        addOutput: function( terminal, connected ) {
+        _addExistingOutput: function( terminal, output, connected ) {
             var self = this;
-            var connectedOutput = this.newOutputTerminal();
             var node = terminal.node;
             if( connected ) {
                 with_workflow_global( function() {
                     var inputTerminal = self.newInputTerminal();
-                    new Connector( inputTerminal, connectedOutput );
+                    new Connector( inputTerminal, output );
                 } );
             }
-            this._addTerminalTo( connectedOutput, node.output_terminals );
-            return connectedOutput;
+            this._addTerminalTo( output, node.output_terminals );
+            return output;
+        },
+        addOutput: function( terminal, connected ) {
+            var connectedOutput = this.newOutputTerminal();
+            return this._addExistingOutput( terminal, connectedOutput, connected );
+        },
+        addCollectionOutput: function( terminal, connected ) {
+            var collectionOutput = this.newOutputCollectionTerminal();
+            return this._addExistingOutput( terminal, collectionOutput, connected );
         },
         addConnectedOutput: function( terminal ) {
             return this.addOutput( terminal, true );
+        },
+        addConnectedCollectionOutput: function( terminal ) {
+            var connectedOutput = this.newOutputCollectionTerminal();
+            return this._addExistingOutput( terminal, connectedOutput, true );
         },
         addConnectedInput: function( terminal ) {
             var self = this;
@@ -890,6 +948,54 @@ define([
         var connectedInput = this.addConnectedInput( inputTerminal1 );
         connectedInput.setMapOver( new CollectionTypeDescription( "paired" ) );
         this.verifyNotAttachable( inputTerminal1, "list" );
+    } );
+
+    test( "unmapped input can be attached to by output collection if matching connected input terminals map type", function() {
+        var inputTerminal1 = this.newInputTerminal();
+        var connectedInput1 = this.addConnectedInput( inputTerminal1 );
+        var connectedInput2 = this.addConnectedInput( inputTerminal1 );
+        connectedInput2.setMapOver( new CollectionTypeDescription( "list") );
+        var outputTerminal = this.newOutputCollectionTerminal( "list" );
+        this.verifyAttachable( inputTerminal1, outputTerminal );
+    } );
+
+    test( "unmapped input cannot be attached to by output collection if matching connected input terminals don't match map type", function() {
+        var inputTerminal1 = this.newInputTerminal();
+        var connectedInput1 = this.addConnectedInput( inputTerminal1 );
+        var connectedInput2 = this.addConnectedInput( inputTerminal1 );
+        connectedInput2.setMapOver( new CollectionTypeDescription( "list") );
+        var outputTerminal = this.newOutputCollectionTerminal( "paired" );
+        this.verifyNotAttachable( inputTerminal1, outputTerminal );
+    } );
+
+    test( "unmapped input can be attached to by output collection if effective output type (output+mapover) is same as mapped over input", function() {
+        var inputTerminal1 = this.newInputTerminal();
+        var connectedInput1 = this.addConnectedInput( inputTerminal1 );
+        var connectedInput2 = this.addConnectedInput( inputTerminal1 );
+        connectedInput2.setMapOver( new CollectionTypeDescription( "list:paired") );
+        var outputTerminal = this.newOutputCollectionTerminal( "paired" );
+        outputTerminal.setMapOver( new CollectionTypeDescription( "list" ) );
+        this.verifyAttachable( inputTerminal1, outputTerminal );
+    } );
+
+    test( "unmapped input cannot be attached to by output collection if effective output type (output+mapover) is not same as mapped over input (1)", function() {
+        var inputTerminal1 = this.newInputTerminal();
+        var connectedInput1 = this.addConnectedInput( inputTerminal1 );
+        var connectedInput2 = this.addConnectedInput( inputTerminal1 );
+        connectedInput2.setMapOver( new CollectionTypeDescription( "list:paired") );
+        var outputTerminal = this.newOutputCollectionTerminal( "list" );
+        outputTerminal.setMapOver( new CollectionTypeDescription( "list" ) );
+        this.verifyNotAttachable( inputTerminal1, outputTerminal );
+    } );
+
+    test( "unmapped input cannot be attached to by output collection if effective output type (output+mapover) is not same as mapped over input (2)", function() {
+        var inputTerminal1 = this.newInputTerminal();
+        var connectedInput1 = this.addConnectedInput( inputTerminal1 );
+        var connectedInput2 = this.addConnectedInput( inputTerminal1 );
+        connectedInput2.setMapOver( new CollectionTypeDescription( "list:paired") );
+        var outputTerminal = this.newOutputCollectionTerminal( "list" );
+        outputTerminal.setMapOver( new CollectionTypeDescription( "paired" ) );
+        this.verifyNotAttachable( inputTerminal1, outputTerminal );
     } );
 
     test( "unmapped input with unmapped, connected outputs cannot be mapped over", function() {
@@ -1010,6 +1116,14 @@ define([
         this.verifyNotMappedOver( output );
     } );
 
+    test( "resetMappingIfNeeded an input resets node collection outputs if they not connected to anything", function() {
+        var inputTerminal1 = this.newInputTerminal( "list" );
+        var output = this.addCollectionOutput( inputTerminal1 );
+        output.setMapOver( new CollectionTypeDescription( "list" ) );
+        inputTerminal1.resetMappingIfNeeded();
+        this.verifyNotMappedOver( output );
+    } );
+
     test( "resetMappingIfNeeded resets if not last mapped over input", function() {
         // Idea here is that other nodes are forcing output to still be mapped
         // over so don't need to disconnect output nodes.
@@ -1026,6 +1140,21 @@ define([
         this.verifyNotMappedOver( inputTerminal1 );
         this.verifyMappedOver( connectedInput1 );
         this.verifyMappedOver( connectedOutput );
+    } );
+
+    test( "simple mapping over collection outputs works correctly", function() {
+        var inputTerminal1 = this.newInputTerminal();
+        var connectedOutput = this.addConnectedCollectionOutput( inputTerminal1 );
+        inputTerminal1.setMapOver( new CollectionTypeDescription( "list" ) );
+
+        // Can attach list output of collection type list that is being mapped
+        // over another list to a list:list (because this is what it is) but not
+        // to a list:list:list.
+        var testTerminal2 = this.newInputTerminal( "list:list" );
+        this.verifyAttachable( testTerminal2, connectedOutput );
+
+        var testTerminal1 = this.newInputTerminal( "list:list:list" );
+        this.verifyNotAttachable( testTerminal1, connectedOutput );
     } );
 
 });

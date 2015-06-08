@@ -258,7 +258,6 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
             # remapped
             'genome_build', 'misc_info', 'misc_blurb',
             'file_ext', 'file_size',
-            'file_path',
 
             'create_time', 'update_time',
             'resubmitted',
@@ -267,6 +266,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
 
             'uuid',
             'permissions',
+            'file_name',
 
             'display_apps',
             'display_types',

@@ -436,6 +436,36 @@ class HDASerializerTestCase( HDATestCase ):
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )
 
+    def test_file_name_serializers( self ):
+        hda = self._create_vanilla_hda()
+        owner = hda.history.user
+        keys = [ 'file_name' ]
+
+        self.log( 'file_name should be included if app configured to do so' )
+        # this is on by default in galaxy_mock
+        self.assertTrue( self.app.config.expose_dataset_path )
+        # ... so non-admin user CAN get file_name
+        serialized = self.hda_serializer.serialize( hda, keys, user=None )
+        self.assertTrue( 'file_name' in serialized )
+        serialized = self.hda_serializer.serialize( hda, keys, user=owner )
+        self.assertTrue( 'file_name' in serialized )
+
+        self.log( 'file_name should be skipped for non-admin when not exposed by config' )
+        self.app.config.expose_dataset_path = False
+        serialized = self.hda_serializer.serialize( hda, keys, user=None )
+        self.assertFalse( 'file_name' in serialized )
+        serialized = self.hda_serializer.serialize( hda, keys, user=owner )
+        self.assertFalse( 'file_name' in serialized )
+
+        self.log( 'file_name should be sent for admin in either case' )
+        serialized = self.hda_serializer.serialize( hda, keys, user=self.admin_user )
+        self.assertTrue( 'file_name' in serialized )
+        self.app.config.expose_dataset_path = True
+        serialized = self.hda_serializer.serialize( hda, keys, user=self.admin_user )
+        self.assertTrue( 'file_name' in serialized )
+
+        # TODO: test extra_files_path as well
+
 
 # =============================================================================
 class HDADeserializerTestCase( HDATestCase ):

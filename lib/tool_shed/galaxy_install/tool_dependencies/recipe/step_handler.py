@@ -75,6 +75,17 @@ class CompressedFile( object ):
                 if not os.path.exists( extraction_path ):
                     os.makedirs( extraction_path )
                 self.archive.extractall( os.path.join( extraction_path ) )
+        # Since .zip files store unix permissions separately, we need to iterate through the zip file
+        # and set permissions on extracted members.
+        if self.file_type == 'zip':
+            for zipped_file in self.getmembers():
+                filename = self.getname( zipped_file )
+                absolute_filepath = os.path.join( path, filename )
+                external_attributes = self.archive.getinfo( filename ).external_attr
+                # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
+                unix_permissions = external_attributes >> 16
+                if unix_permissions != 0:
+                    os.chmod( absolute_filepath, unix_permissions )
         return os.path.abspath( extraction_path )
 
     def getmembers_tar( self ):
