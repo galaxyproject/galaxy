@@ -1,3 +1,5 @@
+import weakref
+
 import galaxy.model
 from galaxy import util
 
@@ -30,9 +32,10 @@ class VisualizationsConfigParser( object ):
     #: what are the allowed href targets when clicking on a visualization anchor
     VALID_RENDER_TARGETS = [ 'galaxy_main', '_top', '_blank' ]
 
-    def __init__( self ):
+    def __init__( self, app ):
+        self.app = weakref.ref( app )
         # what parsers should be used for sub-components
-        self.data_source_parser = DataSourceParser()
+        self.data_source_parser = DataSourceParser( app )
         self.param_parser = ParamParser()
         self.param_modifier_parser = ParamModifierParser()
 
@@ -60,6 +63,7 @@ class VisualizationsConfigParser( object ):
         returned[ 'name' ] = xml_tree.attrib.get( 'name', None )
         if not returned[ 'name' ]:
             raise ParsingException( 'visualization needs a name attribute' )
+        print returned[ 'name' ]
 
         # allow manually turning off a vis by checking for a disabled property
         if 'disabled' in xml_tree.attrib:
@@ -82,10 +86,16 @@ class VisualizationsConfigParser( object ):
         #   e.g. views on HDAs can use this to find out what visualizations are applicable to them
         data_sources = []
         data_sources_confs = xml_tree.find( 'data_sources' )
+        print 'dsconfs:', len( data_sources_confs.findall( 'data_source' ) )
         for data_source_conf in data_sources_confs.findall( 'data_source' ):
             data_source = self.data_source_parser.parse( data_source_conf )
-            if data_source:
-                data_sources.append( data_source )
+            data_sources.append( data_source )
+
+        for data_source_group in data_sources_confs.findall( 'data_source_group' ):
+            print 'data_source_group:', data_source_group
+            data_source = self.parse_data_source_group( data_source_group )
+            data_sources.append( data_source )
+
         # data_sources are not required
         if not data_sources:
             raise ParsingException( 'No valid data_sources for visualization' )
@@ -147,6 +157,12 @@ class VisualizationsConfigParser( object ):
 
         return returned
 
+    def parse_data_source_group( self, data_source_group ):
+        sources = []
+        for source in data_source_group.findall( 'data_source' ):
+            sources.append( self.data_source_parser.parse( source ) )
+        return DataSourceGroup( sources=sources )
+
     def parse_entry_point( self, xml_tree ):
         """
         Parse the config file for an appropriate entry point: a mako template, a script tag,
@@ -181,6 +197,55 @@ class VisualizationsConfigParser( object ):
 
 
 # -------------------------------------------------------------------
+class DataSource( object ):
+    """
+    """
+    def __init__( self, model_class=None, tests=None, to_params=None ):
+        self.model_class = model_class
+        self.tests = tests or []
+        self.to_params = to_params or {}
+
+    # public interface
+    def is_applicable( self, target ):
+        # bail early if not matching model_class
+        if self.model_class and not isinstance( target, self.model_class ):
+            return False
+
+        for test in self.tests:
+            test_type = test[ 'type' ]
+            result_type = test[ 'result_type' ]
+            test_result = test[ 'result' ]
+            test_fn = test[ 'fn' ]
+            print test_type, result_type, test_result
+
+            # NOTE: tests are OR'd, if any test passes - the visualization can be applied
+            test_passed = test_fn( target, test_result )
+            print 'test_passed:', test_passed
+            if test_passed:
+                return True
+
+        return False
+
+    def params( self, target ):
+        return self.to_params
+
+# -------------------------------------------------------------------
+class DataSourceGroup( DataSource ):
+    """
+    """
+    def __init__( self, sources=None ):
+        self.sources = sources or []
+
+    def is_applicable( self, target ):
+        return all([ source.is_applicable( target ) for source in self.sources ])
+
+    def params( self, target ):
+        params = {}
+        for source in self.sources:
+            params.update( source.params( target ) )
+        return params
+
+# -------------------------------------------------------------------
 class DataSourceParser( object ):
     """
     Component class of VisualizationsConfigParser that parses data_source elements
@@ -200,9 +265,12 @@ class DataSourceParser( object ):
     ATTRIBUTE_SPLIT_CHAR = '.'
     # these are the allowed object attributes to use in data source tests
     #   any attribute element not in this list will throw a parsing ParsingExcepion
-    ALLOWED_DATA_SOURCE_ATTRIBUTES = [
-        'datatype'
-    ]
+    # ALLOWED_DATA_SOURCE_ATTRIBUTES = [
+    #     'datatype'
+    # ]
+
+    def __init__( self, app ):
+        self.app = weakref.ref( app )
 
     def parse( self, xml_tree ):
         """
@@ -228,7 +296,8 @@ class DataSourceParser( object ):
         if to_params:
             returned[ 'to_params' ] = to_params
 
-        return returned
+        data_source = DataSource( model_class=model_class, tests=tests, to_params=to_params )
+        return data_source
 
     def parse_model_class( self, xml_tree ):
         """
@@ -249,12 +318,96 @@ class DataSourceParser( object ):
         model_class = getattr( galaxy.model, xml_tree.text, None )
         return model_class
 
+    def parse_tests( self, test_element_list ):
+        """
+        Returns a list of test dictionaries that the registry can use
+        against a given object to determine if the visualization can be
+        used with the object.
+        """
+        # tests should NOT include expensive operations: reading file data, running jobs, etc.
+        # do as much here as possible to reduce the overhead of seeing if a visualization is applicable
+        tests = []
+        if not test_element_list:
+            return tests
+
+        for test_elem in test_element_list:
+            test_type = test_elem.get( 'type', 'eq' )
+            if test_type == 'and':
+                tests.append( self.parse_anded_test( test_elem ) )
+                continue
+            # log.debug( 'test_type: %s, test_result: %s', test_type, test_result )
+            test_attr = test_elem.get( 'test_attr', None )
+            # result type should tell the registry how to convert the result before the test
+            test_result_type, test_result = self.parse_expected_test_result( test_elem, test_type )
+            if not test_result:
+                log.warn( 'Skipping test. Needs text node to parse for test result: %s', test_elem.text )
+                continue
+            test_fn = self.build_test_fn( test_type, test_attr, test_result_type, test_result )
+            tests.append({
+                'type'          : test_type,
+                'result'        : test_result,
+                'result_type'   : test_result_type,
+                'fn'            : test_fn
+            })
+
+        return tests
+
+    def parse_expected_test_result( self, test_element, test_type ):
+        """
+        """
+        # result type should tell the registry how to convert the result before the test
+        result_type = test_element.get( 'result_type', 'string' )
+        expected_result = test_element.text.strip() if test_element.text else None
+
+        if test_type == 'isinstance' and result_type == 'datatype':
+            # convert datatypes to their actual classes (for use with isinstance)
+            datatype_class_name = expected_result
+            expected_result = self.app().datatypes_registry.get_datatype_class_by_name( datatype_class_name )
+            if not expected_result:
+                log.debug( 'config_parser cannot find datatype class:', datatype_class_name )
+
+        return result_type, expected_result
+
+    def build_test_fn( self, test_type, attr_to_test, result_type, result_should_be ):
+        # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
+        # TODO: too dangerous - constrain these to some allowed list
+        # TODO: does this err if no test_attr - it should...
+        test_attr = attr_to_test.split( self.ATTRIBUTE_SPLIT_CHAR ) if isinstance( attr_to_test, str ) else []
+        # build a lambda function that gets the desired attribute to test
+        getter = self._build_getattr_lambda( test_attr )
+
+        # test functions should be sent an object to test, and the parsed result expected from the test
+        if test_type == 'isinstance':
+            # is test_attr attribute an instance of result
+            test_fn = lambda o, result: isinstance( getter( o ), result )
+
+        elif test_type == 'has_dataprovider':
+            # does the object itself have a datatype attr and does that datatype have the given dataprovider
+            test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
+                                          and getter( o ).has_dataprovider( result ) )
+
+        elif test_type == 'has_attribute':
+            # does the object itself have the attribute in result
+            test_fn = lambda o, result: hasattr( getter( o ), result )
+
+        elif test_type == 'not_eq':
+            test_fn = lambda o, result: str( getter( o ) ) != result
+
+        elif test_type == 'contains':
+            # does the object attr contain 'result'
+            test_fn = lambda o, result: result in getter( o )
+
+        else:
+            # default to simple (string) equilavance (coercing the test_attr to a string)
+            test_fn = lambda o, result: str( getter( o ) ) == result
+
+        return test_fn
+
     def _build_getattr_lambda( self, attr_name_list ):
         """
         Recursively builds a compound lambda function of getattr's
         from the attribute names given in `attr_name_list`.
         """
-        print '_build_getattr_lambda:', attr_name_list
         if len( attr_name_list ) == 0:
             # identity - if list is empty, return object itself
             return lambda o: o
@@ -267,85 +420,35 @@ class DataSourceParser( object ):
         # recursive case
         return lambda o: getattr( self._build_getattr_lambda( attr_name_list[:-1] )( o ), next_attr_name )
 
-    def parse_tests( self, xml_tree_list ):
+    def parse_anded_test( self, and_element ):
         """
-        Returns a list of test dictionaries that the registry can use
-        against a given object to determine if the visualization can be
-        used with the object.
         """
-        # tests should NOT include expensive operations: reading file data, running jobs, etc.
-        # do as much here as possible to reduce the overhead of seeing if a visualization is applicable
-        # currently tests are or'd only (could be and'd or made into compound boolean tests)
-        tests = []
-        if not xml_tree_list:
-            return tests
+        print '-' * 40
+        print 'parse_anded_test'
+        # cycle through sub-tests using parse_tests recursively
+        tests = and_element.findall( 'test' )
+        print tests
+        tests = self.parse_tests( tests )
+        print tests
 
-        for test_elem in xml_tree_list:
-            test_type = test_elem.get( 'type', 'eq' )
-            test_result = test_elem.text.strip() if test_elem.text else None
-            if not test_type or not test_result:
-                log.warn( 'Skipping test. Needs both type attribute and text node to be parsed: '
-                        + '%s, %s' % ( test_type, test_elem.text ) )
-                continue
-            test_result = test_result.strip()
-            # result type should tell the registry how to convert the result before the test
-            test_result_type = test_elem.get( 'result_type', 'string' )
-            # log.debug( 'test_type: %s, test_result: %s', test_type, test_result )
-            test_attr = test_elem.get( 'test_attr' )
+        # build anded_test_fn by calling all sub-tests within 'all'
+        def _anded_test_fn( target, result ):
+            subtest_results = []
+            for test in tests:
+                fn = test[ 'fn' ]
+                expected = test[ 'result' ]
+                result = fn( target, expected )
+                print ':::', fn, expected, result
+                subtest_results.append( result )
+            return all( subtest_results )
 
-            tests.append({
-                'type'          : test_type,
-                'result'        : test_result,
-                'result_type'   : test_result_type,
-                'fn'            : self.build_test_fn( test_type, test_attr, test_result_type, test_result )
-            })
-
-        return tests
-
-    def build_test_fn( self, test_type, attr_to_test, result_type, result_should_be ):
-        # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
-        # TODO: too dangerous - constrain these to some allowed list
-        # TODO: does this err if no test_attr - it should...
-        print 'attr_to_test:', attr_to_test
-        test_attr = attr_to_test.split( self.ATTRIBUTE_SPLIT_CHAR ) if isinstance( attr_to_test, str ) else []
-        print '(then)   :', test_attr
-
-        # build a lambda function that gets the desired attribute to test
-        getter = self._build_getattr_lambda( test_attr )
-        print 'getter:', getter
-
-        # test functions should be sent an object to test, and the parsed result expected from the test
-        if test_type == 'isinstance':
-            def instance_test( obj, result ):
-                print 'getter:', getter
-                test_passed = isinstance( getter( obj ), result )
-                print 'instance_test', obj, getter( obj ), result, test_passed
-                return test_passed
-            # is test_attr attribute an instance of result
-            # TODO: wish we could take this further but it would mean passing in the datatypes_registry
-            test_fn = instance_test
-            # test_fn = lambda o, result: isinstance( getter( o ), result )
-
-        elif test_type == 'has_dataprovider':
-            # does the object itself have a datatype attr and does that datatype have the given dataprovider
-            test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
-                                          and getter( o ).has_dataprovider( result ) )
-
-        elif test_type == 'has_attribute':
-            # does the object itself have attr in 'result' (no equivalence checking)
-            test_fn = lambda o, result: hasattr( getter( o ), result )
-
-        elif test_type == 'not_eq':
-            test_fn = lambda o, result: str( getter( o ) ) != result
-
-        elif test_type == 'contains':
-            test_fn = lambda o, result: result in getter( o )
-
-        else:
-            # default to simple (string) equilavance (coercing the test_attr to a string)
-            test_fn = lambda o, result: str( getter( o ) ) == result
-
-        return test_fn
+        return {
+            'type'          : 'and',
+            'fn'            : _anded_test_fn,
+            # TODO: these aren't really needed
+            'result'        : True,
+            'result_type'   : 'bool'
+        }
 
     def parse_to_params( self, xml_tree_list ):
         """
@@ -453,6 +556,7 @@ class ParamParser( object ):
         return param_type
 
 
+# -------------------------------------------------------------------
 class ParamModifierParser( ParamParser ):
     """
     Component class of VisualizationsConfigParser that parses param_modifier

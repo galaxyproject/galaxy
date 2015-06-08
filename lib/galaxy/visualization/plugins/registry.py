@@ -46,7 +46,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
     def __init__( self, app, skip_bad_plugins=True, **kwargs ):
         self.app = weakref.ref( app )
-        self.config_parser = config_parser.VisualizationsConfigParser()
+        self.config_parser = config_parser.VisualizationsConfigParser( app )
         super( VisualizationsRegistry, self ).__init__( app, 'visualizations',
             skip_bad_plugins=skip_bad_plugins, **kwargs )
 
@@ -152,28 +152,21 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             return None
 
         data_sources = visualization.config[ 'data_sources' ]
+        print 'data_sources:', data_sources
+
+        # build a link using the first applicable datasource
+        # NOTE: this implies more specific datasources should be listed first
         for data_source in data_sources:
-            # log.debug( 'data_source: %s', data_source )
-            # currently a model class is required
-            model_class = data_source[ 'model_class' ]
-            # log.debug( '\t model_class: %s', model_class )
-            if not isinstance( target_object, model_class ):
+            if not data_source.is_applicable( target_object ):
                 continue
-            # log.debug( '\t passed model_class' )
+            print 'IS_APPLICABLE', '\n'
 
-            # TODO: not true: must have test currently
-            tests = data_source[ 'tests' ]
-            if tests and not self.is_object_applicable( trans, target_object, tests ):
-                continue
-            # log.debug( '\t passed tests' )
-
-            param_data = data_source[ 'to_params' ]
+            param_data = data_source.params( target_object )
             url = self.get_visualization_url( trans, target_object, visualization_name, param_data )
             display_name = visualization.config.get( 'name', None )
             render_target = visualization.config.get( 'render_target', 'galaxy_main' )
             embeddable = visualization.config.get( 'embeddable', False )
-            # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
-            print 'IS_APPLICABLE', '\n'
+
             return {
                 'href'      : url,
                 'html'      : display_name,
@@ -183,47 +176,6 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
         print
         return None
-
-    def is_object_applicable( self, trans, target_object, data_source_tests ):
-        """
-        Run a visualization's data_source tests to find out if
-        it can be applied to the target_object.
-        """
-        # log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
-        for test in data_source_tests:
-            test_type = test[ 'type' ]
-            result_type = test[ 'result_type' ]
-            test_result = test[ 'result' ]
-            test_fn = test[ 'fn' ]
-            # log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
-            #            test_type, result_type, test_result, test_fn )
-            print test_type, result_type, test_result
-
-            if test_type == 'isinstance':
-                # parse test_result based on result_type (curr: only datatype has to do this)
-                if result_type == 'datatype':
-                    # convert datatypes to their actual classes (for use with isinstance)
-                    datatype_class_name = test_result
-                    test_result = trans.app.datatypes_registry.get_datatype_class_by_name( datatype_class_name )
-                    print 'datatype_class_name:', datatype_class_name
-                    print 'datatype_class:', test_result
-                    if not test_result:
-                        # if self.debug:
-                        #     log.debug( 'visualizations_registry cannot find class (%s)' +
-                        #              ' for applicability test on: %s, id: %s', datatype_class_name,
-                        #              target_object, getattr( target_object, 'id', '' ) )
-                        # but continue (with other tests) if can't find class by that name
-                        continue
-
-                print 'isinstance:', target_object.datatype, test_result, isinstance( target_object.datatype, test_result )
-
-            # NOTE: tests are OR'd, if any test passes - the visualization can be applied
-            test_passed = test_fn( target_object, test_result )
-            print 'test_passed:', test_passed
-            if test_passed:
-                return True
-
-        return False
 
     def get_visualization_url( self, trans, target_object, visualization_name, param_data ):
         """
