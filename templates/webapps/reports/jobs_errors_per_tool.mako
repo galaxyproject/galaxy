@@ -1,24 +1,37 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
 
+${get_css()}
+
+<!--jobs_errors_per_tool.mako-->
 <div class="toolForm">
     <div class="toolFormBody">
-        <h4 align="center">Jobs In Error Per Month</h4>
-        <h5 align="center">Click Month to view details.</h5>
+        <h4 align="center">Jobs In Error Per Tool</h4>
+        <h5 align="center">Click Tool ID to view details.</h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="2">There are no jobs in the error state.</td></tr>
             %else:
                 <tr class="header">
-                    <td>Tool ID</td>
+                    <td>
+                        ${get_sort_url(sort_id, order, 'tool_id', 'Tool ID')}
+                        <span class='dir_arrow tool_id'>${arrow}</span>
+                    </td>
                     %if is_user_jobs_only:
-    					<td>User Jobs in Error</td>
+    					<td>
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'User Jobs in Error')}
+                            <span class='dir_arrow total_jobs'>${arrow}</span>
+                        </td>
 					%else:
-	                    <td>User + Monitor Jobs in Error</td>
+	                    <td>
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'User and Monitor Jobs in Error')}
+                            <span class='dir_arrow total_jobs'>${arrow}</span>
+                        </td>
 	                %endif
                 </tr>
                 <% ctr = 0 %>
@@ -28,7 +41,7 @@
                     %else:
                         <tr class="tr">
                     %endif
-                        <td>${job[1]}</td>
+                        <td><a href="${h.url_for( controller='jobs', action='tool_per_month', tool_id=job[1] )}">${job[1]}</a></td>
                         <td>${job[0]}</td>
                     </tr>
                     <% ctr += 1 %>
@@ -37,3 +50,4 @@
         </table>
     </div>
 </div>
+<!--End jobs_errors_per_tool.mako-->

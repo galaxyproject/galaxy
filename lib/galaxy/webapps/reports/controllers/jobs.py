@@ -12,6 +12,35 @@ from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 import logging
 log = logging.getLogger( __name__ )
 
+def sorter(defaultSortID, kwd):
+    sort_id = kwd.get('sort_id')
+    order = kwd.get('order')
+    
+    #Parse the default value
+    if sort_id == "default":
+        sort_id = defaultSortID
+
+    #Create the sort
+    if order == "asc":
+        _order = sa.asc( sort_id )
+    elif order == "desc":
+        _order = sa.desc( sort_id )
+    else:
+        #In case of default
+        order = "asc"
+        _order = sa.asc( sort_id )
+    
+    #Create an arrow icon to put beside the ordered column
+    up_arrow = "&#x2191;"
+    down_arrow = "&#x2193;"
+    arrow = " "
+    
+    if order == "asc":
+        arrow += down_arrow
+    else:
+        arrow += up_arrow
+        
+    return [sort_id, order, arrow, _order]
 
 class SpecifiedDateListGrid( grids.Grid ):
 
@@ -135,7 +164,6 @@ class SpecifiedDateListGrid( grids.Grid ):
                                .join( model.User ) \
                                .filter( model.Job.table.c.user_id != monitor_user_id )\
                                .enable_eagerloads( False )
-
 
 class Jobs( BaseUIController, ReportQueryBuilder ):
 
@@ -407,18 +435,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        sort_id = kwd.get('sort')
-        order = kwd.get('order')
-        if sort_id == "default":
-            sort_id = "tool_id"
-
-        if order == "default":
-            order = "asc"
-            _order = sa.asc( sort_id )
-        elif order == "asc":
-            _order = sa.asc( sort_id )
-        elif order == "desc":
-            _order = sa.desc( sort_id )
+        specs = sorter( 'tool_id', kwd )
+        sort_id = specs[0]
+        order = specs[1]
+        arrow = specs[2]
+        _order = specs[3]
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -434,11 +455,12 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             jobs.append( ( row.tool_id,
                            row.total_jobs ) )
         return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
-                                    sort=sort_id,
-                                    order=order,
-                                    jobs=jobs,
-                                    message=message,
-                                    is_user_jobs_only=monitor_user_id )
+                                    order = order,
+                                    arrow = arrow,
+                                    sort_id = sort_id,
+                                    jobs = jobs,
+                                    message = message,
+                                    is_user_jobs_only = monitor_user_id)
 
     @web.expose
     def errors_per_tool( self, trans, **kwd ):
@@ -449,6 +471,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'tool_id', kwd )
+        sort_id = specs[0]
+        order = specs[1]
+        arrow = specs[2]
+        _order = specs[3]
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -459,15 +486,17 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                                  model.Job.table.c.user_id != monitor_user_id ),
                                             from_obj=[ model.Job.table ],
                                             group_by=[ 'tool_id' ],
-                                            order_by=[ sa.desc( 'total_jobs' ) ] )
+                                            order_by=[ _order ] )
         jobs = []
         for row in jobs_in_error_per_tool.execute():
-            jobs.append( ( row.total_jobs,
-                           row.tool_id ) )
+            jobs.append( ( row.total_jobs, row.tool_id ) )
         return trans.fill_template( '/webapps/reports/jobs_errors_per_tool.mako',
-                                    jobs=jobs,
-                                    message=message,
-                                    is_user_jobs_only=monitor_user_id )
+                                    order = order,
+                                    arrow = arrow,
+                                    sort_id = sort_id,
+                                    jobs = jobs,
+                                    message = message,
+                                    is_user_jobs_only = monitor_user_id )
 
     @web.expose
     def tool_per_month( self, trans, **kwd ):
@@ -508,6 +537,15 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                               .get( trans.security.decode_id( kwd.get( 'id', '' ) ) )
         return trans.fill_template( '/webapps/reports/job_info.mako',
                                     job=job,
+                                    message=message )
+    
+    @web.expose
+    def test( self, trans, **kwd ):
+        message = ''
+        order = "asc"
+        
+        return trans.fill_template( '/webapps/reports/test.mako',
+                                    order = order,
                                     message=message )
 
 # ---- Utility methods -------------------------------------------------------

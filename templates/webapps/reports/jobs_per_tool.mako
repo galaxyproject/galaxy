@@ -1,53 +1,37 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
 
-<%
-up_arrow = "&#x2191;"
-down_arrow = "&#x2193;"
-   
-id_order = order
-total_order = order
-
-id_arrow = " "
-total_arrow = " "
-
-if sort == "tool_id":   
-    if id_order == "asc":
-        id_arrow += down_arrow
-        id_order = "desc"
-    else:
-        id_arrow += up_arrow
-        id_order = "asc"
-    pass
-elif sort == "total_jobs":   
-    if total_order == "asc":
-        total_arrow += down_arrow
-        total_order = "desc"
-    else:
-        total_arrow += up_arrow
-        total_order = "asc"
-    pass
-%>
+${get_css()}
     
 <!--jobs_per_tool.mako-->
 <div class="toolForm">
     <div class="toolFormBody">
         <h4 align="center">Jobs Per Tool</h4>
-        <h5 align="center">Click Tool Id to view details</h5>
+        <h5 align="center">Click Tool ID to view details</h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="2">There are no jobs.</td></tr>
             %else:
                 <tr class="header">
-                    <td><a href="${h.url_for( controller='jobs', action='per_tool', sort='tool_id', order=id_order )}">Tool id</a>${id_arrow}</td>
+                    <td>
+                        ${get_sort_url(sort_id, order, 'tool_id', 'Tool ID')}
+                        <span class='dir_arrow tool_id'>${arrow}</span>
+                    </td>
                     %if is_user_jobs_only:
-                    <td><a href="${h.url_for( controller='jobs', action='per_tool', sort='total_jobs', order=total_order )}">User Jobs</a>${total_arrow}</td>
+                        <td>
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'User Jobs')}
+                            <span class='dir_arrow total_jobs'>${arrow}</span>
+                        </td>
 					%else:
-                    <td><a href="${h.url_for( controller='jobs', action='per_tool', sort='total_jobs', order=total_order )}">User + Monitor Jobs</a>${total_arrow}</td>
+                        <td>
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'User and Monitor Jobs')}
+                            <span class='dir_arrow total_jobs'>${arrow}</span>
+                        </td>
 	                %endif
                 </tr>
                 <% ctr = 0 %>
