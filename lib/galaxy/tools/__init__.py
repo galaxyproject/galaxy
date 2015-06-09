@@ -13,6 +13,8 @@ import threading
 import types
 import urllib
 import copy
+import traceback
+from datetime import datetime
 
 from galaxy import eggs, util
 
@@ -80,6 +82,24 @@ JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
 HELP_UNINITIALIZED = threading.Lock()
 
 
+class ToolErrorLog:
+    def __init__(self):
+        self.error_stack = []
+        self.max_errors = 100
+    
+    def add_error(self, file, section, exception):
+        self.error_stack.insert(0, {
+            "file" : file,
+            "time" : str(datetime.now()),
+            "section" : section,
+            "error" :  str(exception)
+        } )
+        if len(self.error_stack) > self.max_errors:
+            self.error_stack.pop()
+        
+
+global_tool_errors = ToolErrorLog()
+
 class ToolNotFoundException( Exception ):
     pass
 
@@ -103,7 +123,12 @@ class ToolBox( AbstractToolBox ):
         return self._tools_by_id
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
-        tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
+        try:
+            tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
+        except Exception, e:
+            #capture and log parsing errors
+            global_tool_errors.add_error(config_file, "Tool XML parsing", e)
+            raise e
         # Allow specifying a different tool subclass to instantiate
         tool_module = tool_source.parse_tool_module()
         if tool_module is not None:
@@ -460,7 +485,11 @@ class Tool( object, Dictifiable ):
         #populate toolshed repository info, if available
         self.populate_tool_shed_info()
         # Parse XML element containing configuration
-        self.parse( tool_source, guid=guid )
+        try:
+            self.parse( tool_source, guid=guid )
+        except Exception, e:
+            global_tool_errors.add_error(config_file, "Tool Loading", e)
+            raise e
         self.external_runJob_script = app.config.drmaa_external_runjob_script
         self.history_manager = histories.HistoryManager( app )
 
