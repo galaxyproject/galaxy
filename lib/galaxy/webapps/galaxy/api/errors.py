@@ -15,6 +15,7 @@ class ErrorController( BaseAPIController ):
 
         return ['tools']
 
+    @web.require_admin
     @web.expose_api
     def tools( self, trans, **kwd ):
         """
