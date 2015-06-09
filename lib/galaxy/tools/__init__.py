@@ -87,11 +87,11 @@ class ToolErrorLog:
         self.error_stack = []
         self.max_errors = 100
     
-    def add_error(self, file, section, exception):
+    def add_error(self, file, phase, exception):
         self.error_stack.insert(0, {
             "file" : file,
             "time" : str(datetime.now()),
-            "section" : section,
+            "phase" : phase,
             "error" :  str(exception)
         } )
         if len(self.error_stack) > self.max_errors:
