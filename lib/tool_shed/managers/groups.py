@@ -3,8 +3,10 @@ Manager and Serializer for TS groups.
 """
 from galaxy.exceptions import InconsistentDatabase
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import ObjectNotFound
 from galaxy.exceptions import InternalServerError
 from galaxy.exceptions import ItemAccessibilityException
+from galaxy.exceptions import Conflict
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -21,9 +23,9 @@ class GroupManager( object ):
     def __init__( self, *args, **kwargs ):
         super( GroupManager, self ).__init__( *args, **kwargs )
 
-    def get( self, trans, decoded_group_id ):
+    def get( self, trans, decoded_group_id=None, name=None ):
         """
-        Get the group from the DB.
+        Get the group from the DB based on its ID or name.
 
         :param  decoded_group_id:       decoded group id
         :type   decoded_group_id:       int
@@ -31,13 +33,19 @@ class GroupManager( object ):
         :returns:   the requested group
         :rtype:     Group
         """
+        if decoded_group_id is None and name is None:
+            raise RequestParameterInvalidException( 'You must supply either ID or a name of the group.' )
+
+        name_query = trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name )
+        id_query = trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.id == decoded_group_id )
+
         try:
-            group = trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.id == decoded_group_id ).one()
+            group = id_query.one() if decoded_group_id else name_query.one()
         except MultipleResultsFound:
             raise InconsistentDatabase( 'Multiple groups found with the same id.' )
         except NoResultFound:
-            raise RequestParameterInvalidException( 'No group found with the id provided.' )
-        except Exception, e:
+            raise ObjectNotFound( 'No group found with the id provided.' )
+        except Exception:
             raise InternalServerError( 'Error loading from the database.' )
         return group
 
@@ -48,7 +56,10 @@ class GroupManager( object ):
         if not trans.user_is_admin:
             raise ItemAccessibilityException( 'Only administrators can create groups.' )
         else:
-            group = trans.app.model.Group( name=name, description=description )
+            if self.get( trans, name=name ):
+                raise Conflict( 'Group with the given name already exists. Name: ' + str( name ) )
+            # TODO add description field to the model
+            group = trans.app.model.Group( name=name )
             trans.sa_session.add( group )
             trans.sa_session.flush()
             return group
@@ -101,10 +112,9 @@ class GroupManager( object ):
                 #  Flag is not specified, do not filter on it.
                 pass
             elif deleted:
-                query = query.filter( trans.app.model.Group.table.c.deleted == True ) 
+                query = query.filter( trans.app.model.Group.table.c.deleted == True )
             else:
                 query = query.filter( trans.app.model.Group.table.c.deleted == False )
         else:
             query = query.filter( trans.app.model.Group.table.c.deleted == False )
         return query
-

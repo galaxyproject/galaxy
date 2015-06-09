@@ -64,14 +64,9 @@ class GroupsController( BaseAPIController ):
             description = payload.get( 'description', '' )
             if not description:
                 description = ''
-            # TODO check group existence
-                # raise exceptions.Conflict( 'A category with that name already exists.' )
             else:
-                # Create the group
-                group = trans.app.model.Group( name=name, description=description )
-                trans.sa_session.add( group )
-                trans.sa_session.flush()
-                group_dict = group.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
+                # TODO add description field to the model
+                group_dict = self.group_manager.create( trans, name=name ).to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
         else:
             raise RequestParameterMissingException( 'Missing required parameter "name".' )
         return group_dict

@@ -92,6 +92,11 @@ def app_factory( global_conf, **kwargs ):
                            action='index',
                            conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( 'group',
+                           '/api/groups/',
+                           controller='groups',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
+    webapp.mapper.connect( 'group',
                            '/api/groups/:encoded_id',
                            controller='groups',
                            action='show',
