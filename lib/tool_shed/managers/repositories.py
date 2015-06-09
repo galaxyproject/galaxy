@@ -4,7 +4,6 @@ Manager and Serializer for TS repositories.
 from galaxy.exceptions import InconsistentDatabase
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.exceptions import InternalServerError
-from galaxy.exceptions import ItemAccessibilityException
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -34,11 +33,11 @@ class RepoManager( object ):
         try:
             repo = trans.sa_session.query( trans.app.model.Repository ).filter( trans.app.model.Repository.table.c.id == decoded_repo_id ).one()
         except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase( 'Multiple repositories found with the same id.' )
+            raise InconsistentDatabase( 'Multiple repositories found with the same id.' )
         except NoResultFound:
-            raise exceptions.RequestParameterInvalidException( 'No repository found with the id provided.' )
-        except Exception, e:
-            raise exceptions.InternalServerError( 'Error loading from the database.' )
+            raise RequestParameterInvalidException( 'No repository found with the id provided.' )
+        except Exception:
+            raise InternalServerError( 'Error loading from the database.' )
         return repo
 
     def list_by_owner( self, trans, user_id ):
@@ -65,4 +64,3 @@ class RepoManager( object ):
         """
         Mark given group deleted/undeleted based on the flag.
         """
-

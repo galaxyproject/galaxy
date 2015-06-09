@@ -1,6 +1,4 @@
 import logging
-import os
-
 from galaxy import util
 from galaxy import web
 from galaxy.util import pretty_print_time_interval
@@ -9,11 +7,9 @@ from galaxy.exceptions import AdminRequiredException
 from galaxy.exceptions import ObjectNotFound
 from galaxy.web import require_admin as require_admin
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from tool_shed.managers import groups
-import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -34,7 +30,7 @@ class GroupsController( BaseAPIController ):
         """
         GET /api/groups
         Return a list of dictionaries that contain information about each Group.
-        
+
         :param deleted: flag used to include deleted groups
 
         Example: GET localhost:9009/api/groups
@@ -62,7 +58,7 @@ class GroupsController( BaseAPIController ):
         Content-Disposition: form-data; name="name" Group_Name
         Content-Disposition: form-data; name="description" Group_Description
         """
-        group_dict = dict( message = '', status = 'ok' )
+        group_dict = dict( message='', status='ok' )
         name = payload.get( 'name', '' )
         if name:
             description = payload.get( 'description', '' )
@@ -73,10 +69,9 @@ class GroupsController( BaseAPIController ):
             else:
                 # Create the group
                 group = trans.app.model.Group( name=name, description=description )
-                trans.sa_session.add( category )
+                trans.sa_session.add( group )
                 trans.sa_session.flush()
-                group_dict = group.to_dict( view='element',
-                                                  value_mapper=self.__get_value_mapper( trans ) )
+                group_dict = group.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
         else:
             raise RequestParameterMissingException( 'Missing required parameter "name".' )
         return group_dict
@@ -88,7 +83,7 @@ class GroupsController( BaseAPIController ):
         Return a dictionary of information about a group.
 
         :param id: the encoded id of the Group object
-        
+
         Example: GET localhost:9009/api/groups/f9cad7b01a472135
         """
         decoded_id = trans.security.decode_id( encoded_id )
@@ -111,11 +106,11 @@ class GroupsController( BaseAPIController ):
             user = trans.sa_session.query( model.User ).filter( model.User.table.c.id == uga.user_id ).one()
             user_repos_count = 0
             for repo in trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.user_id == uga.user_id ) \
-                               .join( model.RepositoryMetadata.table ) \
-                               .join( model.User.table ) \
-                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
-                               .outerjoin( model.Category.table ):
+                    .filter( model.Repository.table.c.user_id == uga.user_id ) \
+                    .join( model.RepositoryMetadata.table ) \
+                    .join( model.User.table ) \
+                    .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                    .outerjoin( model.Category.table ):
                 time_repo_created = pretty_print_time_interval( repo.create_time, True )
                 approved = ''
                 ratings = []
