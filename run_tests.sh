@@ -17,6 +17,7 @@ cat <<EOF
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/tool_shed/functional directory
 '${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
+'${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
