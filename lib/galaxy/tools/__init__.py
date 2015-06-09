@@ -496,8 +496,16 @@ class Tool( object, Dictifiable ):
         return None
 
     @property
-    def produces_collections( self ):
-        return any( o.collection for o in self.outputs.values() )
+    def produces_collections_of_unknown_type( self ):
+
+        def output_is_dynamic_collection(output):
+            if not output.collection:
+                return False
+            if output.structure.collection_type:
+                return False
+            return True
+
+        return any( map( output_is_dynamic_collection,  self.outputs.values() ) )
 
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
@@ -1118,8 +1126,8 @@ class Tool( object, Dictifiable ):
         if self.tool_type.startswith( 'data_source' ):
             return False
 
-        if self.produces_collections:
-            # Someday we will get there!
+        if self.produces_collections_of_unknown_type:
+            # Getting there...
             return False
 
         if hasattr( tool_source, "root"):
@@ -2362,6 +2370,8 @@ class Tool( object, Dictifiable ):
                     return 'false'
             elif isinstance(v, basestring) or isnumber:
                 return v
+            elif isinstance(v, dict) and hasattr(v, '__class__'):
+                return v
             else:
                 return None
 
@@ -2389,9 +2399,15 @@ class Tool( object, Dictifiable ):
             dict[key] = value
 
         # check the current state of a value and update it if necessary
-        def check_state(trans, input, default_value, context):
-            value = default_value
+        def check_state(trans, input, value, context):
             error = 'State validation failed.'
+
+            # do not check unvalidated values
+            if isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
+                return [ { '__class__' : 'RuntimeValue' }, None ]
+            elif isinstance( value, dict ):
+                if value.get('__class__') == 'RuntimeValue':
+                    return [ value, None ]
 
             # skip dynamic fields if deactivated
             if is_workflow and input.is_dynamic:
@@ -2400,10 +2416,10 @@ class Tool( object, Dictifiable ):
             # validate value content
             try:
                 # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
-                if input.type == 'boolean' and isinstance(default_value, basestring):
-                    value, error = [string_as_bool(default_value), None]
+                if input.type == 'boolean' and isinstance(value, basestring):
+                    value, error = [string_as_bool(value), None]
                 else:
-                    value, error = check_param(trans, input, default_value, context, history=history)
+                    value, error = check_param(trans, input, value, context, history=history)
             except Exception, err:
                 log.error('Checking parameter %s failed. %s', input.name, str(err))
                 pass

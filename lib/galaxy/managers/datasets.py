@@ -27,7 +27,7 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
     def __init__( self, app ):
         super( DatasetManager, self ).__init__( app )
         self.permissions = DatasetRBACPermissions( app )
-        # need for admin test
+        # needed for admin test
         self.user_manager = users.UserManager( app )
 
     def create( self, manage_roles=None, access_roles=None, flush=True, **kwargs ):
@@ -137,6 +137,8 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
     def __init__( self, app ):
         super( DatasetSerializer, self ).__init__( app )
         self.dataset_manager = DatasetManager( app )
+        # needed for admin test
+        self.user_manager = users.UserManager( app )
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
@@ -173,26 +175,26 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
             'file_size'     : lambda i, k, **c: int( i.get_size() )
         })
 
-    def serialize_file_name( self, dataset, key, **context ):
+    def serialize_file_name( self, dataset, key, user=None, **context ):
         """
         If the config allows or the user is admin, return the file name
         of the file that contains this dataset's data.
         """
-        # TODO: allow admin
-        # conifg due to cost of operation
-        if not self.app.config.expose_dataset_path:
-            self.skip()
-        return dataset.file_name
+        is_admin = self.user_manager.is_admin( user )
+        # expensive: allow conifg option due to cost of operation
+        if is_admin or self.app.config.expose_dataset_path:
+            return dataset.file_name
+        self.skip()
 
-    def serialize_extra_files_path( self, dataset, key, **context ):
+    def serialize_extra_files_path( self, dataset, key, user=None, **context ):
         """
         If the config allows or the user is admin, return the file path.
         """
-        # TODO: allow admin
-        # conifg due to cost of operation
-        if not self.app.config.expose_dataset_path:
-            self.skip()
-        return dataset.extra_files_path
+        is_admin = self.user_manager.is_admin( user )
+        # expensive: allow conifg option due to cost of operation
+        if is_admin or self.app.config.expose_dataset_path:
+            return dataset.extra_files_path
+        self.skip()
 
     def serialize_permissions( self, dataset, key, **context ):
         """

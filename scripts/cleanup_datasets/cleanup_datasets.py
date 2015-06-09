@@ -66,7 +66,8 @@ def main():
     Another way of stating it is: LibraryDatasetDatasetAssociation objects map LibraryDataset objects to Dataset objects,
     and Dataset objects may be mapped to History objects via HistoryDatasetAssociation objects.  
     """
-    parser = OptionParser()
+    usage = "usage: %prog [options] galaxy.ini"
+    parser = OptionParser(usage=usage)
     parser.add_option( "-d", "--days", dest="days", action="store", type="int", help="number of days (60)", default=60 )
     parser.add_option( "-r", "--remove_from_disk", action="store_true", dest="remove_from_disk", help="remove datasets from disk when purged", default=False )
     parser.add_option( "-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False )
@@ -79,6 +80,9 @@ def main():
     parser.add_option( "-6", "--delete_datasets", action="store_true", dest="delete_datasets", default=False, help="mark deletable datasets as deleted and purge associated dataset instances" )
 
     ( options, args ) = parser.parse_args()
+    if len(args) != 1 :
+        parser.print_help()
+        sys.exit()
     ini_file = args[0]
     
     if not ( options.purge_folders ^ options.delete_userless_histories ^ \
@@ -460,8 +464,10 @@ def _purge_dataset( app, dataset, remove_from_disk, info_only = False ):
                             shutil.rmtree( dataset.extra_files_path ) #we need to delete the directory and its contents; os.unlink would always fail on a directory
                         usage_users = []
                         for hda in dataset.history_associations:
-                            if not hda.purged and hda.history.user is not None and hda.history.user not in usage_users:
-                                usage_users.append( hda.history.user )
+                            if not hda.purged:
+                                hda.purged = True
+                                if hda.history.user is not None and hda.history.user not in usage_users:
+                                    usage_users.append( hda.history.user )
                         for user in usage_users:
                             user.total_disk_usage -= dataset.total_size
                             app.sa_session.add( user )

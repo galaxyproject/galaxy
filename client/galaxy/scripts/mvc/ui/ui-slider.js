@@ -63,6 +63,7 @@ var View = Backbone.View.extend({
         var pressed = [];
         this.$text.on('keyup', function(e) {
             pressed[e.which] = false;
+            self.options.onchange && self.options.onchange($(this).val());
         });
         this.$text.on('keydown', function (e) {
             var v = e.which;
@@ -99,9 +100,7 @@ var View = Backbone.View.extend({
             this.$text.val(new_val);
 
             // trigger on change event
-            if (this.options.onchange) {
-                this.options.onchange(new_val);
-            }
+            this.options.onchange && this.options.onchange(new_val);
         }
 
         // return current value

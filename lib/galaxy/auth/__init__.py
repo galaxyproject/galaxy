@@ -139,14 +139,14 @@ class AuthManager(object):
             if provider is None:
                 log.debug( "Unable to find module: %s" % options )
             else:
-                if _get_bool(options, "allow-password-change", False):
-                    auth_result = provider.authenticate_user(user, current_password, options)
-                    if auth_result is True:
+                auth_result = provider.authenticate_user(user, current_password, options)
+                if auth_result is True:
+                    if _get_bool(options, "allow-password-change", False):
                         return (True, '')  # accept user
-                    elif auth_result is None:
-                        break  # end authentication (skip rest)
-                else:
-                    return (False, 'Password change not supported')
+                    else:
+                        return (False, 'Password change not supported')
+                elif auth_result is None:
+                    break  # end authentication (skip rest)
         return (False, 'Invalid current password')
 
     def active_authenticators(self, email, username, password):

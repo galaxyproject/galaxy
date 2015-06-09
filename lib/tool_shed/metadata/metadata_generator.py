@@ -630,10 +630,10 @@ class MetadataGenerator( object ):
         tool_requirements = []
         for tool_requirement in tool.requirements:
             name = str( tool_requirement.name )
-            type = str( tool_requirement.type )
+            tool_type = str( tool_requirement.type )
             version = str( tool_requirement.version ) if tool_requirement.version else None
             requirement_dict = dict( name=name,
-                                     type=type,
+                                     type=tool_type,
                                      version=version )
             tool_requirements.append( requirement_dict )
         # Handle tool.tests.
@@ -665,9 +665,13 @@ class MetadataGenerator( object ):
                                 collection_type = values.collection_type
                                 metadata_display_value = "%s collection" % collection_type
                                 inputs.append( ( param_name, metadata_display_value ) )
-                            elif len( values ) == 1:
-                                inputs.append( ( param_name, values[ 0 ] ) )
                             else:
+                                try:
+                                    if len( values ) == 1:
+                                        inputs.append( ( param_name, values[ 0 ] ) )
+                                        continue
+                                except TypeError:
+                                    log.exception( 'Expected a list of values for tool "%s" parameter "%s", got %s: %s', tool.id, param_name, type( values ), values )
                                 inputs.append( ( param_name, values ) )
                 outputs = []
                 for output in ttb.outputs:

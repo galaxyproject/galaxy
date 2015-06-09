@@ -323,7 +323,7 @@ var BaseInputTerminal = Terminal.extend( {
             if( ! firstOutput ){
                 return false;
             } else {
-                if( firstOutput.isDataCollectionInput || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
+                if( firstOutput.isCollection || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf( "input_collection" ) > 0 ) {
                     return true;
                 } else {
                     return false;
@@ -377,14 +377,15 @@ var BaseInputTerminal = Terminal.extend( {
         return false;
     },
     _otherCollectionType: function( other ) {
+        // Effective collection type for other - base collection type
+        // with map over appended.
         var otherCollectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
-        if( other.isDataCollectionInput ) {
+        if( other.isCollection ) {
             otherCollectionType = other.collectionType;
-        } else {
-            var otherMapOver = other.mapOver();
-            if( otherMapOver.isCollection ) {
-                otherCollectionType = otherMapOver;
-            }
+        }
+        var otherMapOver = other.mapOver();
+        if( otherMapOver.isCollection ) {
+            otherCollectionType = otherMapOver.append(otherCollectionType);
         }
         return otherCollectionType;
     },
@@ -513,12 +514,12 @@ var InputCollectionTerminal = BaseInputTerminal.extend( {
     }
 });
 
-var OutputCollectionTerminal = Terminal.extend( {
+var OutputCollectionTerminal = OutputTerminal.extend( {
     initialize: function( attr ) {
         Terminal.prototype.initialize.call( this, attr );
         this.datatypes = attr.datatypes;
         this.collectionType = new CollectionTypeDescription( attr.collection_type );
-        this.isDataCollectionInput = true;
+        this.isCollection = true;
     },
     update: function( output ) {
         var newCollectionType = new CollectionTypeDescription( output.collection_type );
@@ -1078,19 +1079,23 @@ $.extend( Workflow.prototype, {
             this.activate_node(node);
         }
     },
-    clear_active_node : function() {
+    clear_active_node : function(callback) {
         if ( this.active_node ) {
             this.active_node.make_inactive();
             this.active_node = null;
         }
-        parent.show_form_for_tool( "<div>No node selected</div>" );
+        if (parent.__NEWTOOLFORM__) {
+            parent.show_tool_form( "<div>No node selected</div>", {id: 'no-node'}, callback );
+        } else {
+            parent.show_form_for_tool( "<div>No node selected</div>" );
+        }
     },
     activate_node : function( node ) {
         if ( this.active_node != node ) {
             this.check_changes_in_active_form();
             this.clear_active_node();
             if (parent.__NEWTOOLFORM__) {
-                parent.show_form_for_tool( node.form_html, node );
+                parent.show_tool_form( node.form_html, node );
             } else {
                 parent.show_form_for_tool( node.form_html + node.tooltip, node );
             }
@@ -1104,7 +1109,7 @@ $.extend( Workflow.prototype, {
             // Reactive with new form_html
             this.check_changes_in_active_form(); //Force changes to be saved even on new connection (previously dumped)
             if (parent.__NEWTOOLFORM__) {
-                parent.show_form_for_tool( node.form_html, node );
+                parent.show_tool_form( node.form_html, node );
             } else {
                 parent.show_form_for_tool( node.form_html + node.tooltip, node );
             }
@@ -1409,7 +1414,7 @@ var NodeView = Backbone.View.extend( {
     },
 
     addDataOutput: function( output ) {
-        var terminalViewClass = ( output.collection_type ) ? OutputCollectionTerminalView : OutputTerminalView;
+        var terminalViewClass = ( output.collection ) ? OutputCollectionTerminalView : OutputTerminalView;
         var terminalView = new terminalViewClass( {
             node: this.node,
             output: output

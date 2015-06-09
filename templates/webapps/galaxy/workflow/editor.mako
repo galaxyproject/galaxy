@@ -14,16 +14,17 @@
     <!--[if lt IE 9]>
       <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
     <![endif]-->
-
     ${h.js( "libs/jquery/jquery.event.drag",
             "libs/jquery/jquery.event.drop",
             "libs/jquery/jquery.event.hover",
             "libs/jquery/jquery.form",
             "libs/jquery/jstorage",
+            "libs/jquery/jquery-ui",
             "galaxy.workflow_editor.canvas",
             "libs/jquery/jquery.autocomplete",
             "galaxy.autocom_tagging",
-            "galaxy.workflows" )}
+            "galaxy.workflows",
+            "libs/bibtex" )}
 
     <!--[if lt IE 7]>
     <script type='text/javascript'>
@@ -33,7 +34,7 @@
 
     <script type='text/javascript'>
         // Switch for new tool form
-        %if util.string_as_bool(trans.app.config.get('workflow_toolform_upgrade',  False)):
+        %if util.string_as_bool(trans.app.config.get('workflow_toolform_upgrade',  True)):
         __NEWTOOLFORM__ = true;
         %endif
         
@@ -74,7 +75,7 @@
 <%def name="stylesheets()">
 
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base", "autocomplete_tagging", "tool_menu" )}
+    ${h.css( "base", "autocomplete_tagging", "tool_menu", "jquery-ui/smoothness/jquery-ui" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
