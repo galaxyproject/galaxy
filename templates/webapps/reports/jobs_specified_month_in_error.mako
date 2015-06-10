@@ -1,9 +1,12 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
+
+${get_css()}
 
 <div class="toolForm">
     <div class="toolFormBody">
@@ -15,11 +18,20 @@
             %else:
                 <tr class="header">
                     <td>Day</td>
-                    <td>Date</td>
+                    <td>
+                        ${get_sort_url(sort_id, order, 'date', 'specified_month_in_error', 'Date')}
+                        <span class='dir_arrow date'>${arrow}</span>
+                    </td>
                     %if is_user_jobs_only:
-    					<td>User Jobs in Error</td>
+    					<td>
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'specified_month_in_error', 'User Jobs in Error')}
+                            <span class='dir_arrow total_jobs'>${arrow}</span>
+                        </td>
 					%else:
-	                    <td>User + Monitor Jobs in Error</td>
+	                    <td>
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'specified_month_in_error', 'User and Monitor Jobs in Error')}
+                            <span class='dir_arrow total_jobs'>${arrow}</span>
+                        </td>
 	                %endif
                 </tr>
                 <% ctr = 0 %>

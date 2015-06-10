@@ -19,17 +19,17 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td>
-                        ${get_sort_url(sort_id, order, 'tool_id', 'Tool ID')}
+                        ${get_sort_url(sort_id, order, 'tool_id', 'per_tool', 'Tool ID')}
                         <span class='dir_arrow tool_id'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
                         <td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'User Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'per_tool', 'User Jobs')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
                         <td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'User and Monitor Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'per_tool', 'User and Monitor Jobs')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
@@ -41,7 +41,7 @@ ${get_css()}
                     %else:
                         <tr class="tr">
                     %endif
-                        <td><a href="${h.url_for( controller='jobs', action='tool_per_month', tool_id=job[0] )}">${job[0]}</a></td>
+                        <td><a href="${h.url_for( controller='jobs', action='tool_per_month', tool_id=job[0], sort_id='default', order='default' )}">${job[0]}</a></td>
                         <td>${job[1]}</td>
                     </tr>
                     <% ctr += 1 %>
@@ -51,4 +51,3 @@ ${get_css()}
     </div>
 </div>
 <!--End jobs_per_tool.mako-->
-        

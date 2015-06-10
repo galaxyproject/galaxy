@@ -12,35 +12,37 @@ from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 import logging
 log = logging.getLogger( __name__ )
 
+
 def sorter(defaultSortID, kwd):
     sort_id = kwd.get('sort_id')
     order = kwd.get('order')
-    
-    #Parse the default value
+
+    # Parse the default value
     if sort_id == "default":
         sort_id = defaultSortID
 
-    #Create the sort
+    # Create the sort
     if order == "asc":
         _order = sa.asc( sort_id )
     elif order == "desc":
         _order = sa.desc( sort_id )
     else:
-        #In case of default
-        order = "asc"
-        _order = sa.asc( sort_id )
-    
-    #Create an arrow icon to put beside the ordered column
+        # In case of default
+        order = "desc"
+        _order = sa.desc( sort_id )
+
+    # Create an arrow icon to put beside the ordered column
     up_arrow = "&#x2191;"
     down_arrow = "&#x2193;"
     arrow = " "
-    
+
     if order == "asc":
         arrow += down_arrow
     else:
         arrow += up_arrow
-        
+
     return [sort_id, order, arrow, _order]
+
 
 class SpecifiedDateListGrid( grids.Grid ):
 
@@ -165,6 +167,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                                .filter( model.Job.table.c.user_id != monitor_user_id )\
                                .enable_eagerloads( False )
 
+                
 class Jobs( BaseUIController, ReportQueryBuilder ):
 
     """
@@ -232,6 +235,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'date', kwd )
+        sort_id = specs[0]
+        order = specs[1]
+        arrow = specs[2]
+        _order = specs[3]
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -252,7 +260,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                      model.Job.table.c.create_time < end_date ),
                                 from_obj=[ model.Job.table ],
                                 group_by=[ 'date' ],
-                                order_by=[ sa.desc( 'date' ) ] )
+                                order_by=[ _order ] )
 
         jobs = []
         for row in month_jobs.execute():
@@ -262,6 +270,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date
                            ) )
         return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
+                                    order = order,
+                                    arrow = arrow,
+                                    sort_id = sort_id,
                                     month_label=month_label,
                                     year_label=year_label,
                                     month=month,
@@ -277,6 +288,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'date', kwd )
+        sort_id = specs[0]
+        order = specs[1]
+        arrow = specs[2]
+        _order = specs[3]
 
         # In case we don't know which is the monitor user we will query for all jobs instead
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -298,7 +314,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                               model.Job.table.c.create_time < end_date ),
                                          from_obj=[ model.Job.table ],
                                          group_by=[ 'date' ],
-                                         order_by=[ sa.desc( 'date' ) ] )
+                                         order_by=[ _order ] )
 
         jobs = []
         for row in month_jobs_in_error.execute():
@@ -307,6 +323,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.total_jobs,
                            row.date.strftime( "%d" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_specified_month_in_error.mako',
+                                    order = order,
+                                    arrow = arrow,
+                                    sort_id = sort_id,
                                     month_label=month_label,
                                     year_label=year_label,
                                     month=month,
@@ -323,6 +342,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'date', kwd )
+        sort_id = specs[0]
+        order = specs[1]
+        arrow = specs[2]
+        _order = specs[3]
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -332,7 +356,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                    whereclause=model.Job.table.c.user_id != monitor_user_id,
                                    from_obj=[ model.Job.table ],
                                    group_by=self.group_by_month( model.Job.table.c.create_time ),
-                                   order_by=[ sa.desc( 'date' ) ] )
+                                   order_by=[ _order ] )
 
         jobs = []
         for row in jobs_by_month.execute():
@@ -344,6 +368,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             ) )
 
         return trans.fill_template( '/webapps/reports/jobs_per_month_all.mako',
+                                    order = order,
+                                    arrow = arrow,
+                                    sort_id = sort_id,
                                     jobs=jobs,
                                     is_user_jobs_only=monitor_user_id,
                                     message=message )
@@ -357,6 +384,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'date', kwd )
+        sort_id = specs[0]
+        order = specs[1]
+        arrow = specs[2]
+        _order = specs[3]
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -367,7 +399,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                                  model.Job.table.c.user_id != monitor_user_id ),
                                             from_obj=[ model.Job.table ],
                                             group_by=self.group_by_month( model.Job.table.c.create_time ),
-                                            order_by=[ sa.desc( 'date' ) ] )
+                                            order_by=[ _order ] )
 
         jobs = []
         for row in jobs_in_error_by_month.execute():
@@ -376,6 +408,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_per_month_in_error.mako',
+                                    order = order,
+                                    arrow = arrow,
+                                    sort_id = sort_id,
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
@@ -385,13 +420,18 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         message = ''
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'user_email', kwd )
+        sort_id = specs[0]
+        order = specs[1]
+        arrow = specs[2]
+        _order = specs[3]
 
         jobs = []
         jobs_per_user = sa.select( ( model.User.table.c.email.label( 'user_email' ),
                                      sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                                    from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ],
                                    group_by=[ 'user_email' ],
-                                   order_by=[ sa.desc( 'total_jobs' ), 'user_email' ] )
+                                   order_by=[ _order ] )
         for row in jobs_per_user.execute():
             if ( row.user_email is None ):
                 jobs.append( ( 'Anonymous',
@@ -402,23 +442,31 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 jobs.append( ( row.user_email,
                                row.total_jobs ) )
         return trans.fill_template( '/webapps/reports/jobs_per_user.mako',
-                                    jobs=jobs,
-                                    message=message )
+                                    order = order,
+                                    arrow = arrow,
+                                    sort_id = sort_id,
+                                    jobs = jobs,
+                                    message = message )
 
     @web.expose
     def user_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
+        
         email = util.restore_text( params.get( 'email', '' ) )
+        specs = sorter( 'date', kwd )
+        sort_id = specs[0]
+        order = specs[1]
+        arrow = specs[2]
+        _order = specs[3]
         q = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause=sa.and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
                                             model.GalaxySession.table.c.user_id == model.User.table.c.id,
-                                            model.User.table.c.email == email
-                                            ),
+                                            model.User.table.c.email == email ),
                        from_obj=[ sa.join( model.Job.table, model.User.table ) ],
                        group_by=self.group_by_month( model.Job.table.c.create_time ),
-                       order_by=[ sa.desc( 'date' ) ] )
+                       order_by=[ _order ] )
         jobs = []
         for row in q.execute():
             jobs.append( ( row.date.strftime( "%Y-%m" ),
@@ -426,6 +474,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_user_per_month.mako',
+                                    order = order,
+                                    arrow = arrow,
+                                    sort_id = sort_id,
                                     email=util.sanitize_text( email ),
                                     jobs=jobs, message=message )
 
@@ -440,7 +491,6 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs[1]
         arrow = specs[2]
         _order = specs[3]
-
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
@@ -476,7 +526,6 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs[1]
         arrow = specs[2]
         _order = specs[3]
-
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
@@ -504,7 +553,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-
+        specs = sorter( 'date', kwd )
+        sort_id = specs[0]
+        order = specs[1]
+        arrow = specs[2]
+        _order = specs[3]
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
@@ -516,7 +569,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                             model.Job.table.c.user_id != monitor_user_id ),
                        from_obj=[ model.Job.table ],
                        group_by=self.group_by_month( model.Job.table.c.create_time ),
-                       order_by=[ sa.desc( 'date' ) ] )
+                       order_by=[ _order ] )
         jobs = []
         for row in q.execute():
             jobs.append( ( row.date.strftime( "%Y-%m" ),
@@ -524,6 +577,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_tool_per_month.mako',
+                                    order = order,
+                                    arrow = arrow,
+                                    sort_id = sort_id,
                                     specified_date=specified_date,
                                     tool_id=tool_id,
                                     jobs=jobs,

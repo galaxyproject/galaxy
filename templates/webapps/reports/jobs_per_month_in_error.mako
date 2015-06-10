@@ -1,10 +1,14 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
 
+${get_css()}
+
+<!--jobs_per_month_in_error.mako-->
 <div class="toolForm">
     <div class="toolFormBody">
         <h4 align="center">Jobs In Error Per Month</h4>
@@ -14,11 +18,20 @@
                 <tr><td colspan="2">There are no jobs in the error state.</td></tr>
             %else:
                 <tr class="header">
-                    <td>Month</td>
+                    <td>
+                        ${get_sort_url(sort_id, order, 'date', 'per_month_in_error', 'Month')}
+                        <span class='dir_arrow date'>${arrow}</span>
+                    </td>
                     %if is_user_jobs_only:
-    					<td>User Jobs in Error</td>
+    					<td>
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'per_month_in_error', 'User Jobs')}
+                            <span class='dir_arrow total_jobs'>${arrow}</span>
+                        </td>
 					%else:
-	                    <td>User + Monitor Jobs in Error</td>
+	                    <td>
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'per_month_in_error', 'User and Monitor Jobs')}
+                            <span class='dir_arrow total_jobs'>${arrow}</span>
+                        </td>
 	                %endif
                 </tr>
                 <% ctr = 0 %>
@@ -37,3 +50,4 @@
         </table>
     </div>
 </div>
+<!--End jobs_per_month_in_error.mako-->
