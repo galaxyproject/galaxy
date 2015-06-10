@@ -167,7 +167,7 @@ class SpecifiedDateListGrid( grids.Grid ):
                                .filter( model.Job.table.c.user_id != monitor_user_id )\
                                .enable_eagerloads( False )
 
-                
+
 class Jobs( BaseUIController, ReportQueryBuilder ):
 
     """
@@ -270,9 +270,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date
                            ) )
         return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
-                                    order = order,
-                                    arrow = arrow,
-                                    sort_id = sort_id,
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     month_label=month_label,
                                     year_label=year_label,
                                     month=month,
@@ -323,9 +323,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.total_jobs,
                            row.date.strftime( "%d" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_specified_month_in_error.mako',
-                                    order = order,
-                                    arrow = arrow,
-                                    sort_id = sort_id,
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     month_label=month_label,
                                     year_label=year_label,
                                     month=month,
@@ -368,9 +368,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             ) )
 
         return trans.fill_template( '/webapps/reports/jobs_per_month_all.mako',
-                                    order = order,
-                                    arrow = arrow,
-                                    sort_id = sort_id,
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     jobs=jobs,
                                     is_user_jobs_only=monitor_user_id,
                                     message=message )
@@ -408,9 +408,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_per_month_in_error.mako',
-                                    order = order,
-                                    arrow = arrow,
-                                    sort_id = sort_id,
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
@@ -442,17 +442,17 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 jobs.append( ( row.user_email,
                                row.total_jobs ) )
         return trans.fill_template( '/webapps/reports/jobs_per_user.mako',
-                                    order = order,
-                                    arrow = arrow,
-                                    sort_id = sort_id,
-                                    jobs = jobs,
-                                    message = message )
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    jobs=jobs,
+                                    message=message )
 
     @web.expose
     def user_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
-        
+
         email = util.restore_text( params.get( 'email', '' ) )
         specs = sorter( 'date', kwd )
         sort_id = specs[0]
@@ -474,9 +474,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_user_per_month.mako',
-                                    order = order,
-                                    arrow = arrow,
-                                    sort_id = sort_id,
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     email=util.sanitize_text( email ),
                                     jobs=jobs, message=message )
 
@@ -505,12 +505,12 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             jobs.append( ( row.tool_id,
                            row.total_jobs ) )
         return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
-                                    order = order,
-                                    arrow = arrow,
-                                    sort_id = sort_id,
-                                    jobs = jobs,
-                                    message = message,
-                                    is_user_jobs_only = monitor_user_id)
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    jobs=jobs,
+                                    message=message,
+                                    is_user_jobs_only=monitor_user_id)
 
     @web.expose
     def errors_per_tool( self, trans, **kwd ):
@@ -540,12 +540,12 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         for row in jobs_in_error_per_tool.execute():
             jobs.append( ( row.total_jobs, row.tool_id ) )
         return trans.fill_template( '/webapps/reports/jobs_errors_per_tool.mako',
-                                    order = order,
-                                    arrow = arrow,
-                                    sort_id = sort_id,
-                                    jobs = jobs,
-                                    message = message,
-                                    is_user_jobs_only = monitor_user_id )
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    jobs=jobs,
+                                    message=message,
+                                    is_user_jobs_only=monitor_user_id )
 
     @web.expose
     def tool_per_month( self, trans, **kwd ):
@@ -577,9 +577,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_tool_per_month.mako',
-                                    order = order,
-                                    arrow = arrow,
-                                    sort_id = sort_id,
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     specified_date=specified_date,
                                     tool_id=tool_id,
                                     jobs=jobs,
@@ -594,12 +594,12 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         return trans.fill_template( '/webapps/reports/job_info.mako',
                                     job=job,
                                     message=message )
-    
+
     @web.expose
     def test( self, trans, **kwd ):
         message = ''
         order = "asc"
-        
+
         return trans.fill_template( '/webapps/reports/test.mako',
                                     order = order,
                                     message=message )
