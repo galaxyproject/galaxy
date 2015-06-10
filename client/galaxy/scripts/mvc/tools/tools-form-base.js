@@ -208,7 +208,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 title   : (!options.narrow && 'Versions') || null,
                 tooltip : 'Select another tool version'
             });
-            if (options.versions && options.versions.length > 1) {
+            if (!options.is_workflow && options.versions && options.versions.length > 1) {
                 for (var i in options.versions) {
                     var version = options.versions[i];
                     if (version != options.version) {

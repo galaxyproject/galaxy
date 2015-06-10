@@ -13,8 +13,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.optionsDefault = {
                 // uses workflow editor mode i.e. text instead of select fields
                 is_workflow     : false,
-                // shows form in narrow view mode
-                narrow          : false,
                 // shows errors on start
                 initial_errors  : false,
                 // portlet style
