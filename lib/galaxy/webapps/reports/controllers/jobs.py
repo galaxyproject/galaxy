@@ -601,7 +601,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = "asc"
 
         return trans.fill_template( '/webapps/reports/test.mako',
-                                    order = order,
+                                    order=order,
                                     message=message )
 
 # ---- Utility methods -------------------------------------------------------
