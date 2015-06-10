@@ -473,12 +473,12 @@ function show_tool_form( text, node, callback ) {
         // check if tool form already exists
         if ($container.find('#' + id).length == 0) {
             var $el = $('<div id="' + id + '" class="' + cls + '"/>');
-            if (Utils.isJSON(text)) {
+            if (node.type == 'tool') {
                 var options = JSON.parse(text);
                 options.datatypes = datatypes;
                 $el.append((new ToolsForm.View(options)).$el);
             } else {
-                $el.append(text);
+                $el.append(generic_form_template( text, node ));
             }
             $container.append($el);
         }
@@ -494,6 +494,50 @@ function show_tool_form( text, node, callback ) {
         // temporary fix for async require callback
         callback && callback();
     });
+}
+
+function generic_form_template( text, node ) {
+    var $el = $('<div/>').html( text );
+    // Add metadata form to tool.
+    if (node && node.id != 'no-node') {
+        $el.find(".toolForm:first").after( "<p><div class='metadataForm'> \
+            <div class='metadataFormTitle'>Edit Step Attributes</div> \
+            <div class='form-row'> \
+            <label>Annotation / Notes:</label> \
+                    <div style='margin-right: 10px;'> \
+                    <textarea name='annotation' rows='3' style='width: 100%'>" + node.annotation + "</textarea> \
+                        <div class='toolParamHelp'>Add an annotation or notes to this step; annotations are available when a workflow is viewed.</div> \
+                    </div> \
+            </div> \
+            </div>" );
+        $el.find( "form" ).ajaxForm( {
+            type: 'POST',
+            dataType: 'json',
+            success: function( data ) {
+                workflow.active_form_has_changes = false;
+                node.update_field_data( data );
+                show_workflow_parameters();
+            },
+            beforeSubmit: function( data ) {
+                data.push( { name: 'tool_state', value: node.tool_state } );
+                data.push( { name: '_', value: "true" } );
+            }
+        }).each( function() {
+            var form = this;
+            $(this).find( "select[refresh_on_change='true']").change( function() {
+                $(form).submit();
+            });
+            $(this).find( "input[refresh_on_change='true']").change( function() {
+                $(form).submit();
+            });
+            $(this).find("input,textarea,select").each( function() {
+                $(this).bind("focus click", function() {
+                    workflow.active_form_has_changes = true;
+                });
+            });
+        });
+    }
+    return $el;
 }
 
 function show_form_for_tool( text, node ) {
