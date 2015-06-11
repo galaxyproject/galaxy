@@ -2144,7 +2144,7 @@ class Library( object, Dictifiable, HasName ):
         """
         rval = super( Library, self ).to_dict( view=view, value_mapper=value_mapper )
         if 'root_folder_id' in rval:
-            rval[ 'root_folder_id' ] = 'F' + rval[ 'root_folder_id' ]
+            rval[ 'root_folder_id' ] = 'F' + str(rval[ 'root_folder_id' ])
         return rval
     def get_active_folders( self, folder, folders=None ):
         # TODO: should we make sure the library is not deleted?
