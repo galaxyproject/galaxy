@@ -72,7 +72,7 @@ class SpecifiedDateListGrid( grids.Grid ):
             return job.tool_id
 
         def filter( self, trans, user, query, column_filter ):
-            if column_filter != None:
+            if column_filter is not None:
                 query = query.filter( model.Job.table.c.tool_id == column_filter )
 
             return query
