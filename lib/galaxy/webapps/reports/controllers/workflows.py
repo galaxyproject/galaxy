@@ -190,7 +190,7 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
-                                    workflows=workflows, 
+                                    workflows=workflows,
                                     message=message )
 
     @web.expose

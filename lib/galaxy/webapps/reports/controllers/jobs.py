@@ -70,13 +70,13 @@ class SpecifiedDateListGrid( grids.Grid ):
 
         def get_value( self, trans, grid, job ):
             return job.tool_id
-        
+
         def filter( self, trans, user, query, column_filter ):
             if column_filter != None:
                 query = query.filter( model.Job.table.c.tool_id == column_filter )
-                
+
             return query
-        
+
     class CreateTimeColumn( grids.DateTimeColumn ):
 
         def get_value( self, trans, grid, job ):
@@ -193,7 +193,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         # to take this approach because the "-" character is illegal in HTTP requests.
         kwd[ 'sort_id' ] = 'default'
         kwd[ 'order' ] = 'default'
-        
+
         if 'f-specified_date' in kwd and 'specified_date' not in kwd:
             # The user clicked a State link in the Advanced Search box, so 'specified_date'
             # will have been eliminated.
