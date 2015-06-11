@@ -8,16 +8,13 @@
         else:
             tool_order = "default"
     %>
-    %if "tool_id" in kwargs.keys():
-        <a href="${h.url_for( controller='jobs', action=args[0], sort_id=test_id, order=tool_order, tool_id=kwargs.get('tool_id') )}">${" ".join(args[1:])}</a>
-    %elif "email" in kwargs.keys():
-        <a href="${h.url_for( controller='jobs', action=args[0], sort_id=test_id, order=tool_order, email=kwargs.get('email') )}">${" ".join(args[1:])}</a>
+        
+    %if len(kwargs.keys()) > 0:
+        <a href="${h.url_for( controller=args[0], action=args[1], sort_id=test_id, order=tool_order, **kwargs )}">${" ".join(args[2:])}</a>
     %else:
-        <a href="${h.url_for( controller='jobs', action=args[0], sort_id=test_id, order=tool_order )}">${" ".join(args[1:])}</a>
+        <a href="${h.url_for( controller=args[0], action=args[1], sort_id=test_id, order=tool_order )}">${" ".join(args[2:])}</a>
     %endif
 </%def>
-    
-
 
 <%def name="get_css()">
     <style>

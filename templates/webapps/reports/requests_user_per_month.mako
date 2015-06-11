@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
 <%
     from galaxy import util
@@ -8,6 +9,8 @@
 %if message:
     ${render_msg( message, 'done' )}
 %endif
+    
+${get_css()}
 
 <div class="toolForm">
     <div class="toolFormBody">
@@ -17,8 +20,14 @@
                 <tr><td colspan="2">There are no requests for user "${util.restore_text( email )}"</td></tr>
             %else:
                 <tr class="header">
-                    <td>Month</td>
-                    <td>Total</td>
+                    <td>
+                        ${get_sort_url(sort_id, order, 'date', 'users' 'requests_users_per_month', 'Month')}
+                        <span class='dir_arrow date'>${arrow}</span>
+                    </td>
+                    <td>Total
+                        ${get_sort_url(sort_id, order, 'num_users', 'users' 'requests_users_per_month', 'Month')}
+                        <span class='dir_arrow num_users'>${arrow}</span>
+                    </td>
                 </tr>
                 <% ctr = 0 %>
                 %for request in requests:

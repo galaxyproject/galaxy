@@ -74,8 +74,8 @@
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_month_all' )}">Workflows per month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_user' )}">Workflows per user</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_month_all', sort_id='default', order='default' )}">Workflows per month</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_user', sort_id='default', order='default' )}">Workflows per user</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -86,8 +86,8 @@
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='registered_users' )}">Registered users</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='last_access_date' )}">Date of last login</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='user_disk_usage' )}">User disk usage</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='last_access_date', sort_id='default', order='default' )}">Date of last login</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='user_disk_usage', sort_id='default', order='default' )}">User disk usage</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>

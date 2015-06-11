@@ -19,11 +19,11 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td>
-                        ${get_sort_url(sort_id, order, 'user_email', 'per_user', 'User')}
+                        ${get_sort_url(sort_id, order, 'user_email', 'jobs', 'per_user', 'User')}
                         <span class='dir_arrow user_email'>${arrow}</span>
                     </td>
                     <td>
-                        ${get_sort_url(sort_id, order, 'total_jobs', 'per_user', 'Total Jobs')}
+                        ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_user', 'Total Jobs')}
                         <span class='dir_arrow total_jobs'>${arrow}</span>
                     </td>
                 </tr>

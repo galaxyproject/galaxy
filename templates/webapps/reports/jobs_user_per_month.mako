@@ -25,11 +25,11 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td>
-                        ${get_sort_url(sort_id, order, 'date', 'user_per_month', 'Month', email=_email )}
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'user_per_month', 'Month', email=email )}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     <td>
-                        ${get_sort_url(sort_id, order, 'total_jobs', 'user_per_month', 'Total Jobs', email=email)}
+                        ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'user_per_month', 'Total Jobs', email=email)}
                         <span class='dir_arrow total_jobs'>${arrow}</span>
                     </td>
                 </tr>
@@ -41,7 +41,7 @@ ${get_css()}
                         <tr class="tr">
                     %endif
                         <td>${job[2]}&nbsp;${job[3]}</td>
-                        <td><a href="${h.url_for( controller='jobs', action='specified_date_handler', operation='user_for_month', email=email, specified_date=job[0] )}">${job[1]}</a></td>
+                        <td><a href="${h.url_for( controller='jobs', action='specified_date_handler', operation='user_for_month', email=email, specified_date=job[0], sort_id='default', order='default')}"> ${job[1]}</a></td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor

@@ -12,7 +12,7 @@ ${get_css()}
 <div class="toolForm">
     <div class="toolFormBody">
         <h4 align="center">Jobs for ${month_label}&nbsp;${year_label}</h4>
-        <h5 align="center">Click Jobs to see their details</h5>
+        <h5 align="center">Click job count to see the day's details</h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="5">There are no jobs for ${month_label}&nbsp;${year_label}</td></tr>
@@ -20,17 +20,17 @@ ${get_css()}
                 <tr class="header">
                     <td>Day</td>
                     <td>
-                        ${get_sort_url(sort_id, order, 'date', 'specified_month_all', 'Date')}
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'specified_month_all', 'Date')}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'specified_month_all', 'User Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User Jobs')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'specified_month_all', 'User and Monitor Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User and Monitor Jobs')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif

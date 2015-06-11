@@ -1,9 +1,12 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
+
+${get_css()}
 
 <div class="toolForm">
     <div class="toolFormBody">
@@ -14,8 +17,14 @@
                 <tr><td colspan="2">There are no registered users</td></tr>
             %else:
                 <tr class="header">
-                    <td>Month</td>
-                    <td>Number of Registrations</td>
+                    <td>
+                        ${get_sort_url(sort_id, order, 'date', 'users', 'registered_users_per_month', 'Month')}
+                        <span class='dir_arrow date'>${arrow}</span>
+                    </td>
+                    <td>
+                        ${get_sort_url(sort_id, order, 'num_users', 'users', 'registered_users_per_month', 'Number of Registrations')}
+                        <span class='dir_arrow num_users'>${arrow}</span>
+                    </td>
                 </tr>
                 <% ctr = 0 %>
                 %for user in users:

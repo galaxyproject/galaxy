@@ -20,17 +20,17 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td>
-                        ${get_sort_url(sort_id, order, 'date', 'tool_per_month', 'Month', tool_id=tool_id)}
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'tool_per_month', 'Month', tool_id=tool_id)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'tool_per_month', 'User Jobs', tool_id=tool_id)}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'tool_per_month', 'User Jobs', tool_id=tool_id)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'tool_per_month', 'User and Monitor Jobs', tool_id=tool_id)}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'tool_per_month', 'User and Monitor Jobs', tool_id=tool_id)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif

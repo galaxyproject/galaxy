@@ -12,24 +12,24 @@ ${get_css()}
 <div class="toolForm">
     <div class="toolFormBody">
         <h4 align="center">Jobs In Error Per Tool</h4>
-        <h5 align="center">Click Tool ID to view details.</h5>
+        <h5 align="center">Click Tool ID to view details. Click error number to view job details.</h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="2">There are no jobs in the error state.</td></tr>
             %else:
                 <tr class="header">
                     <td>
-                        ${get_sort_url(sort_id, order, 'tool_id', 'errors_per_tool', 'Tool ID')}
+                        ${get_sort_url(sort_id, order, 'tool_id', 'jobs', 'errors_per_tool', 'Tool ID')}
                         <span class='dir_arrow tool_id'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'errors_per_tool', 'User Jobs in Error')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'errors_per_tool', 'User Jobs in Error')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'errors_per_tool', 'User and Monitor Jobs in Error')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'errors_per_tool', 'User and Monitor Jobs in Error')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
@@ -41,8 +41,8 @@ ${get_css()}
                     %else:
                         <tr class="tr">
                     %endif
-                        <td><a href="${h.url_for( controller='jobs', action='tool_per_month', tool_id=job[1] )}">${job[1]}</a></td>
-                        <td>${job[0]}</td>
+                        <td><a href="${h.url_for( controller='jobs', action='tool_per_month', tool_id=job[1], sort_id='default', order='default' )}">${job[1]}</a></td>
+                        <td><a href="${h.url_for( controller='jobs', action='specified_date_handler', operation='specified_tool_in_error', tool_id= job[1] )}">${job[0]}</a></td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor

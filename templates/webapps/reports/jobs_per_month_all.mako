@@ -19,17 +19,17 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td>
-                        ${get_sort_url(sort_id, order, 'date', 'per_month_all', 'Month')}
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'per_month_all', 'Month')}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'per_month_all', 'User Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_all', 'User Jobs')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'per_month_all', 'User and Monitor Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_all', 'User and Monitor Jobs')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
@@ -41,7 +41,7 @@ ${get_css()}
                     %else:
                         <tr class="tr">
                     %endif
-                        <td><a href="${h.url_for( controller='jobs', action='specified_month_all', specified_date=job[0]+'-01' )}">${job[2]} ${job[3]}</a></td>
+                        <td><a href="${h.url_for( controller='jobs', action='specified_month_all', specified_date=job[0]+'-01', sort_id='default', order='default' )}">${job[2]} ${job[3]}</a></td>
                         <td>${job[1]}</td>
                     </tr>
                     <% ctr += 1 %>

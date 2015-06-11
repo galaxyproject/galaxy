@@ -14,7 +14,7 @@
                 <tr><td>There are no registered users</td></tr>
             %else:
                 <tr class="header"><td align="center">Number of Registered Users</td></tr>
-                <tr class="tr"><td align="center"><a href="${h.url_for( controller='users', action='registered_users_per_month' )}">${num_users}</a></td></tr>
+                <tr class="tr"><td align="center"><a href="${h.url_for( controller='users', action='registered_users_per_month', sort_id='default', order='default' )}">${num_users}</a></td></tr>
             %endif
         </table>
     </div>

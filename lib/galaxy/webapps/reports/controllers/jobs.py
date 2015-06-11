@@ -14,6 +14,9 @@ log = logging.getLogger( __name__ )
 
 
 def sorter(defaultSortID, kwd):
+    """
+    Initialize sorting variables
+    """
     sort_id = kwd.get('sort_id')
     order = kwd.get('order')
 
@@ -67,7 +70,13 @@ class SpecifiedDateListGrid( grids.Grid ):
 
         def get_value( self, trans, grid, job ):
             return job.tool_id
-
+        
+        def filter( self, trans, user, query, column_filter ):
+            if column_filter != None:
+                query = query.filter( model.Job.table.c.tool_id == column_filter )
+                
+            return query
+        
     class CreateTimeColumn( grids.DateTimeColumn ):
 
         def get_value( self, trans, grid, job ):
@@ -182,6 +191,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
         # to take this approach because the "-" character is illegal in HTTP requests.
+        kwd[ 'sort_id' ] = 'default'
+        kwd[ 'order' ] = 'default'
+        
         if 'f-specified_date' in kwd and 'specified_date' not in kwd:
             # The user clicked a State link in the Advanced Search box, so 'specified_date'
             # will have been eliminated.
@@ -224,6 +236,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 kwd[ 'f-state' ] = 'error'
             elif operation == "unfinished":
                 kwd[ 'f-state' ] = 'Unfinished'
+            elif operation == "specified_tool_in_error":
+                kwd[ 'f-state' ] = 'error'
+                kwd[ 'f-tool_id' ] = kwd[ 'tool_id' ]
         return self.specified_date_list_grid( trans, **kwd )
 
     @web.expose
@@ -477,6 +492,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
+                                    id=kwd.get('id'),
                                     email=util.sanitize_text( email ),
                                     jobs=jobs, message=message )
 
