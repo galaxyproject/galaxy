@@ -22,5 +22,5 @@ module.exports = function(grunt) {
 
     // see the sub directory grunt-tasks/ for individual task definitions
     grunt.loadTasks( 'grunt-tasks' );
-    grunt.registerTask( 'default', [ 'uglify:galaxy' ] );
+    grunt.registerTask( 'default', [ 'uglify' ] );
 };
