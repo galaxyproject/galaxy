@@ -21,12 +21,6 @@
 		#if $gender 
 			 --filter "specimen_id/donor_gender~eq=$gender"
 		#end if
-		#if $grade
-			 --filter "specimen_id/tumour_grade~eq=$grade"
-		#end if
-		#if $stage
-			 --filter "specimen_id/tumour_stage~eq=$stage"
-		#end if
         #if $specimenId
             --filter "specimen_id~in=$specimenId"
         #end if
