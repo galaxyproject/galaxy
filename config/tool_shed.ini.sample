@@ -103,6 +103,9 @@ require_login = False
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
 
+# Enables displaying of test run results on repo pages.
+#display_legacy_test_results = True
+
 # Number of saved tool test results produced by the install and test
 # framework for each repository.
 #num_tool_test_results_saved = 5
