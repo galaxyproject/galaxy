@@ -324,6 +324,37 @@ class MetadataInDataTableColumnValidator( Validator ):
         raise ValueError( self.message )
 
 
+class GreaterThanZeroValidator( Validator ):
+    """
+    Validator that ensures a number is greater than zero.
+
+    >>> from galaxy.tools.parameters import ToolParameter
+    >>> p = ToolParameter.build( None, XML( '''
+    ... <param name="blah" type="integer" size="10" value="10">
+    ...     <validator type="greater_than_zero" />
+    ... </param>
+    ... ''' ) )
+    >>> t = p.validate( 1 )
+    >>> t = p.validate( 0.5 )
+    >>> t = p.validate( 0.0 )
+    Traceback (most recent call last):
+        ...
+    ValueError: Value must be greater than zero
+    """
+
+    def __init__( self, message=None ):
+        self.message = message
+
+    @classmethod
+    def from_element( cls, param, elem ):
+        return cls( elem.get( 'message', None ) )
+
+    def validate( self, value, history=None ):
+        if value <= 0:
+            if self.message is None:
+                self.message = "Value must be greater than zero"
+            raise ValueError( self.message )
+
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,
                         in_range=InRangeValidator,
@@ -334,10 +365,10 @@ validator_types = dict( expression=ExpressionValidator,
                         empty_field=EmptyTextfieldValidator,
                         dataset_metadata_in_file=MetadataInFileColumnValidator,
                         dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
-                        dataset_ok_validator=DatasetOkValidator )
+                        dataset_ok_validator=DatasetOkValidator,
+                        greater_than_zero=GreaterThanZeroValidator )
 
 def get_suite():
     """Get unittest suite for this module"""
     import doctest, sys
     return doctest.DocTestSuite( sys.modules[__name__] )
-
