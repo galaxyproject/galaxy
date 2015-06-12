@@ -1,5 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <toolbox>
+  <section id="getext" name="Get CCC Data"> 
+    <tool file="data_source/clinical_pathology_images.xml" />    
+    <tool file="data_source/genomes.xml" /> 
+	<tool file="data_source/rnaseq.xml" />    
+  </section>
   <section id="getext" name="Get Data">
     <tool file="data_source/upload.xml" />
     <tool file="data_source/ucsc_tablebrowser.xml" />
@@ -17,9 +22,6 @@
     <tool file="data_source/wormbase_test.xml" />
     <tool file="data_source/eupathdb.xml" />
     <tool file="data_source/hbvar.xml" />
-    <tool file="data_source/beat_aml_rnaseq.xml" />
-    <tool file="data_source/brenden_coulson.xml" />
-    <tool file="data_source/icgc_genomes.xml" /> 
     <tool file="genomespace/genomespace_file_browser_prod.xml" />
     <tool file="genomespace/genomespace_importer.xml" />
     <tool file="validation/fix_errors.xml" />
@@ -126,6 +128,9 @@
     <label id="gff" text="GFF" />
     <!--<tool file="stats/count_gff_features.xml" />-->
   </section>
+  <section id="labkey" name="LabKey">
+    <tool file="labkey/labkey_store.xml" />
+  </section>  
   <section id="plots" name="Graph/Display Data">
     <!--<tool file="plotting/histogram2.xml" />-->
     <!--<tool file="plotting/scatterplot.xml" />-->
