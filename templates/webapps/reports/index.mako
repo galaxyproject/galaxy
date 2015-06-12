@@ -36,7 +36,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Reports</div>
     </div>
-    <div class="page-container reports-page-container" style="padding: 10px;">
+    <div class="page-container reports-panel-container">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionPad"></div>
