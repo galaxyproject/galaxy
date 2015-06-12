@@ -1761,6 +1761,7 @@ body{background:#fff;color:#000;margin:10px}body.full-content{overflow:hidden;ma
 #left,#left-border,#center,#right-border,#right{position:absolute;top:34px;bottom:0px;overflow:hidden;background:#fff}
 #left{left:0px;width:250px;z-index:200;border-right:solid #999 1px}
 #left-border{left:250px}
+.reports-panel-container{position:absolute;top:30px;bottom:10px;overflow:scroll;width:100%;padding:10px}
 #center{left:250px;right:250px;overflow:hidden;z-index:1}
 #right-border{right:250px}
 #right{width:250px;right:0px;z-index:200;border-left:solid #999 1px}
