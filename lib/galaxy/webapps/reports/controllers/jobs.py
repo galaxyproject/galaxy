@@ -1,4 +1,5 @@
 import calendar
+from collections import namedtuple
 from datetime import datetime, date, timedelta
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model, util
@@ -17,6 +18,8 @@ def sorter(default_sort_id, kwd):
     """
     Initialize sorting variables
     """
+    SortSpec = namedtuple('SortSpec', ['sort_id', 'order', 'arrow', 'exc_order'])
+    
     sort_id = kwd.get('sort_id')
     order = kwd.get('order')
 
@@ -44,7 +47,7 @@ def sorter(default_sort_id, kwd):
     else:
         arrow += up_arrow
 
-    return [sort_id, order, arrow, _order]
+    return SortSpec(sort_id, order, arrow, _order)
 
 
 class SpecifiedDateListGrid( grids.Grid ):
@@ -251,10 +254,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
         specs = sorter( 'date', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -304,10 +307,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
         specs = sorter( 'date', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
 
         # In case we don't know which is the monitor user we will query for all jobs instead
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -358,10 +361,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
         specs = sorter( 'date', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -400,10 +403,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
         specs = sorter( 'date', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -436,10 +439,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
         specs = sorter( 'user_email', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
 
         jobs = []
         jobs_per_user = sa.select( ( model.User.table.c.email.label( 'user_email' ),
@@ -470,10 +473,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         email = util.restore_text( params.get( 'email', '' ) )
         specs = sorter( 'date', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
         q = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause=sa.and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
@@ -503,10 +506,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
         specs = sorter( 'tool_id', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
@@ -538,10 +541,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
         specs = sorter( 'tool_id', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
@@ -570,10 +573,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
         specs = sorter( 'date', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
