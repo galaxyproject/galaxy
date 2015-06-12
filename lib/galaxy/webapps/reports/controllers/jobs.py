@@ -13,7 +13,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-def default_sort_id(defaultSortID, kwd):
+def sorter(default_sort_id, kwd):
     """
     Initialize sorting variables
     """
@@ -22,7 +22,7 @@ def default_sort_id(defaultSortID, kwd):
 
     # Parse the default value
     if sort_id == "default":
-        sort_id = defaultSortID
+        sort_id = default_sort_id
 
     # Create the sort
     if order == "asc":
@@ -250,7 +250,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        specs = default_sort_id( 'date', kwd )
+        specs = sorter( 'date', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -303,7 +303,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        specs = default_sort_id( 'date', kwd )
+        specs = sorter( 'date', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -357,7 +357,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        specs = default_sort_id( 'date', kwd )
+        specs = sorter( 'date', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -399,7 +399,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        specs = default_sort_id( 'date', kwd )
+        specs = sorter( 'date', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -435,7 +435,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         message = ''
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        specs = default_sort_id( 'user_email', kwd )
+        specs = sorter( 'user_email', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -469,7 +469,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
 
         email = util.restore_text( params.get( 'email', '' ) )
-        specs = default_sort_id( 'date', kwd )
+        specs = sorter( 'date', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -502,7 +502,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        specs = default_sort_id( 'tool_id', kwd )
+        specs = sorter( 'tool_id', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -537,7 +537,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        specs = default_sort_id( 'tool_id', kwd )
+        specs = sorter( 'tool_id', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -569,7 +569,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-        specs = default_sort_id( 'date', kwd )
+        specs = sorter( 'date', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]

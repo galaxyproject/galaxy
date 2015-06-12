@@ -8,7 +8,7 @@ from galaxy.web.framework.helpers import grids
 eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-from galaxy.webapps.reports.controllers.jobs import default_sort_id
+from galaxy.webapps.reports.controllers.jobs import sorter
 
 import logging
 log = logging.getLogger( __name__ )
@@ -147,7 +147,7 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def per_month_all( self, trans, **kwd ):
         message = ''
-        specs = default_sort_id( 'date', kwd )
+        specs = sorter( 'date', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -172,7 +172,7 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def per_user( self, trans, **kwd ):
         message = ''
-        specs = default_sort_id( 'user_email', kwd )
+        specs = sorter( 'user_email', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -197,7 +197,7 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
     def user_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
-        specs = default_sort_id( 'date', kwd )
+        specs = sorter( 'date', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]

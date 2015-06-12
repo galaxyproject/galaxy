@@ -8,7 +8,7 @@ import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-from galaxy.webapps.reports.controllers.jobs import default_sort_id
+from galaxy.webapps.reports.controllers.jobs import sorter
 import logging
 from markupsafe import escape
 
@@ -26,7 +26,7 @@ class Users( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def registered_users_per_month( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
-        specs = default_sort_id( 'date', kwd )
+        specs = sorter( 'date', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -114,7 +114,7 @@ class Users( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def last_access_date( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
-        specs = default_sort_id( 'one', kwd )
+        specs = sorter( 'one', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
@@ -161,7 +161,7 @@ class Users( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def user_disk_usage( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
-        specs = default_sort_id( 'disk_usage', kwd )
+        specs = sorter( 'disk_usage', kwd )
         sort_id = specs[0]
         order = specs[1]
         arrow = specs[2]
