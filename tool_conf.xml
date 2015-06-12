@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <toolbox>
-  <section id="getext" name="Get CCC Data"> 
+  <section id="getextccc" name="Get CCC Data"> 
     <tool file="data_source/clinical_pathology_images.xml" />    
     <tool file="data_source/genomes.xml" /> 
 	<tool file="data_source/rnaseq.xml" />    
