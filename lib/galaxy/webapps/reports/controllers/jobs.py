@@ -19,7 +19,7 @@ def sorter(default_sort_id, kwd):
     Initialize sorting variables
     """
     SortSpec = namedtuple('SortSpec', ['sort_id', 'order', 'arrow', 'exc_order'])
-    
+
     sort_id = kwd.get('sort_id')
     order = kwd.get('order')
 
