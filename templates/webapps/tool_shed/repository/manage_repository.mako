@@ -212,7 +212,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
             %if can_download or can_push:
                 <div class="form-row">
                     <b>Clone this repository:</b>
-                    <code>hg clone ${ repository.clone_url }</code>
+                    <code>hg clone <a href="${ repository.clone_url }">${ repository.clone_url }</a></code>
                     <button title="to clipboard" class="btn btn-default btn-xs" id="clone_clipboard"><span class="fa fa-clipboard"></span></button>
                 </div>
             %endif
