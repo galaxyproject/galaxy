@@ -27,10 +27,10 @@ class Users( BaseUIController, ReportQueryBuilder ):
     def registered_users_per_month( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         specs = sorter( 'date', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
-        _order = specs[3]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
 
         q = sa.select( ( self.select_month( galaxy.model.User.table.c.create_time ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
@@ -115,9 +115,9 @@ class Users( BaseUIController, ReportQueryBuilder ):
     def last_access_date( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         specs = sorter( 'one', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
 
         def name_to_num(name):
             num = None
@@ -162,9 +162,9 @@ class Users( BaseUIController, ReportQueryBuilder ):
     def user_disk_usage( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
         specs = sorter( 'disk_usage', kwd )
-        sort_id = specs[0]
-        order = specs[1]
-        arrow = specs[2]
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
         
         if order == "desc":
             _order = True
