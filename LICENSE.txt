@@ -1,6 +1,7 @@
-Copyright (c) 2005-2013 Pennsylvania State University
+Copyright (c) 2005-2015 Pennsylvania State University
 
 Licensed under the Academic Free License version 3.0
+See http://opensource.org/licenses/AFL-3.0
 
  1) Grant of Copyright License. Licensor grants You a worldwide, royalty-free, 
     non-exclusive, sublicensable license, for the duration of the copyright, to 
@@ -175,12 +176,5 @@ Licensed under the Academic Free License version 3.0
     certification process.
 
 
-Some icons found in Galaxy are from the Silk Icons set, available under
-the Creative Commons Attribution 2.5 License, from:
-
-http://www.famfamfam.com/lab/icons/silk/
-
-
-Other images and documentation are licensed under the Creative Commons Attribution 3.0 (CC BY 3.0) License.   See 
-
-http://creativecommons.org/licenses/by/3.0/
+Images and documentation are licensed under the Creative Commons Attribution 3.0 (CC BY 3.0) License.
+See http://creativecommons.org/licenses/by/3.0/
