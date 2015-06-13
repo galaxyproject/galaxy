@@ -1,0 +1,36 @@
+<tool id="labkey_store" name="Store" version="4.1">
+  <description>a dataset in LabKey</description>
+
+  <command>curl --config $configfile --request POST $hostname/galaxyintegration/${containerPath}/importDataset.view? -s -S -u \${LABKEY_USERNAME}:\${LABKEY_PASSWORD}
+  </command>
+
+  <inputs>
+	<param name="data" type="data" label="Data" multiple="false"/>
+	<param name="hostname" type="select" label="Choose target server">
+		<options from_file="labkeyServers.loc">
+			<column name="name" index="0"/>
+			<column name="value" index="1"/>
+		</options>
+	</param>
+    <param name="containerPath" type="text" label="Folder Path"/>
+	<param name="name" type="text" label="Name"/>
+	<param name="description" type="text" area="True" size="5x60" label="Description">
+      <sanitizer>
+        <valid initial="string.printable"/>
+      </sanitizer>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="html" name="html_outfile"/>
+  </outputs>
+  <configfiles>
+      <configfile name="configfile">
+data-urlencode = "datasetId=$__app__.security.encode_id($data.id)"
+data-urlencode "runName=${name}"
+data-urlencode "runDescription=${description}"
+data-urlencode "historyId=$__app__.security.encode_id($data.creating_job.history.id)"
+data-urlencode "hostName=${__app__.config.galaxy_infrastructure_url}"
+data-urlencode "apiKey=#from galaxy.managers import api_keys#${api_keys.ApiKeyManager( $__app__ ).get_or_create_api_key( $__user__ )}"
+      </configfile>
+  </configfiles>
+</tool>
