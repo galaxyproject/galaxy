@@ -9,6 +9,8 @@ import string
 import subprocess
 import sys
 import time
+import pwd
+import uuid
 
 from galaxy import eggs
 from galaxy import model
@@ -61,7 +63,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # We foolishly named this file the same as the name exported by the drmaa
         # library... 'import drmaa' imports itself.
         drmaa = __import__( "drmaa" )
-
+        
         # Subclasses may need access to state constants
         self.drmaa_job_states = drmaa.JobState
 
@@ -79,7 +81,17 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             drmaa.JobState.FAILED: 'job finished, but failed',
         }
 
-        self.ds = drmaa.Session()
+        if(self.app.config.use_CCC_DRMAA):
+            import CCCsession;
+            self.ds = CCCsession.Session();
+            self.CCC_environment_variables = [];
+            try:
+                with open(self.app.config.CCC_env_vars_list_file, 'r') as fptr:
+                    self.CCC_environment_variables = fptr.read().splitlines();
+            except:
+                log.error('Could not open file listing the environment variables to pass to the CCC WFM : '+self.app.config.CCC_env_vars_list_file);
+        else:
+            self.ds = drmaa.Session()
         self.ds.initialize()
 
         # external_runJob_script can be None, in which case it's not used.
@@ -167,6 +179,49 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         log.debug( "(%s) submitting file %s", galaxy_id_tag, ajs.job_file )
         if native_spec:
             log.debug( "(%s) native specification is: %s", galaxy_id_tag, native_spec )
+
+        if(jt.nativeSpecification == None):
+            jt.nativeSpecification = '';
+        #Should transfer whole working directory when job is run on remote datasets
+        if(self.app.config.use_remote_datasets):
+            if(self.app.config.use_CCC_DRMAA):
+                jt.nativeSpecification += '\n' + 'TransferInput = '+job_wrapper.working_directory + os.sep;
+                jt.nativeSpecification += '\n' + 'ShouldTransferFiles = IF_NEEDED';
+            else:
+                jt.nativeSpecification += '\n' + 'transfer_input_files = '+job_wrapper.working_directory + os.sep;
+                jt.nativeSpecification += '\n' + 'should_transfer_files = YES';
+
+        #For CCC
+        if(self.app.config.use_CCC_DRMAA):
+            jt.nativeSpecification += '\noutput_aggregated=False\noutput_aggregation_type=merge';
+            #FIXME: CCC DRMAA code assumes all UUIDs are bounded by [], fix
+	    input_string_uuid_list = job_wrapper.get_input_string_uuids();
+	    if(len(input_string_uuid_list) == 0):
+	      jt.nativeSpecification += '\n' + 'input_CCC_DID_list=' + '[]'; 
+	    else:
+	      jt.nativeSpecification = jt.nativeSpecification + '\n' + 'input_CCC_DID_list=' + ','.join(map(lambda x:'[' + x + ']', 
+		input_string_uuid_list));
+	    output_string_uuid_list = job_wrapper.get_output_string_uuids();
+	    if(len(output_string_uuid_list) == 0 or job_wrapper.get_tool_id() == 'upload1'):
+	      jt.nativeSpecification += '\n' + 'output_CCC_DID_list=' + '[]';
+	    else:
+	      jt.nativeSpecification = jt.nativeSpecification + '\n' + 'output_CCC_DID_list=' + ','.join(map(lambda x:'[' + x + ']',
+		output_string_uuid_list));
+            jt.nativeSpecification = jt.nativeSpecification + '\n' + 'tool_id=' + job_wrapper.get_tool_id();
+            workflow_tuple = job_wrapper.get_workflow_invocation_info();
+            if(workflow_tuple):
+                (workflow_name, workflow_id, workflow_invocation_id) = workflow_tuple;
+                jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_name=' + workflow_name;
+                jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_id=' + str(workflow_id);
+                jt.nativeSpecification = jt.nativeSpecification + '\n' + 'workflow_invocation_id=' + str(workflow_invocation_id);
+            #Environment variables to pass to CCC
+            jt.nativeSpecification += '\nenvironment_vars=' + ','.join(self.CCC_environment_variables);
+            jt.nativeSpecification = jt.nativeSpecification.replace('\n', '|');        #CCC DRMAA does not like newline separators
+            jt.outputPath = "%s" % ajs.output_file      #CCC DRMAA does not like : at the beginning, non-compliant with standard
+            jt.errorPath = "%s" % ajs.error_file
+
+        jt.nativeSpecification = jt.nativeSpecification + '\n';
+        log.debug('nativeSpecification :\n'+jt.nativeSpecification);
 
         # runJob will raise if there's a submit problem
         if self.external_runJob_script is None:

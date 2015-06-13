@@ -141,6 +141,8 @@ class MetadataCollection( object ):
         return rval
 
     def from_JSON_dict( self, filename=None, path_rewriter=None, json_dict=None ):
+        #Karthik: filename == metadata_out : JSON file describing the metadata for this dataset
+        #dataset == HDA or LDA associated with this metadata
         dataset = self.parent
         if filename is not None:
             log.debug( 'loading metadata from file for: %s %s' % ( dataset.__class__.__name__, dataset.id ) )
@@ -159,6 +161,7 @@ class MetadataCollection( object ):
             if name in JSONified_dict:
                 from_ext_kwds = {}
                 external_value = JSONified_dict[ name ]
+                #MetadataParameter - different objects for FileParameter etc
                 param = spec.param
                 if isinstance( param, FileParameter ):
                     from_ext_kwds[ 'path_rewriter' ] = path_rewriter
@@ -579,6 +582,8 @@ class FileParameter( MetadataParameter ):
         return value
 
     def from_external_value( self, value, parent, path_rewriter=None ):
+        #parent == LDA/HDA
+        #value is the JSON describing the metadata file, becomes MetadataTempFile object
         """
         Turns a value read from a external dict into its value to be pushed directly into the metadata dict.
         """
@@ -594,6 +599,7 @@ class FileParameter( MetadataParameter ):
                 # Job may have run with a different (non-local) tmp/working
                 # directory. Correct.
                 file_name = path_rewriter( file_name )
+            #Karthik: tries to copy file, disable for remote datasets
             parent.dataset.object_store.update_from_file( mf,
                                                           file_name=file_name,
                                                           extra_dir='_metadata_files',
@@ -720,7 +726,9 @@ class JobExternalOutputMetadataWrapper( object ):
                                  output_fnames=None, config_root=None,
                                  config_file=None, datatypes_config=None,
                                  job_metadata=None, compute_tmp_dir=None,
-                                 include_command=True, kwds=None ):
+                                 include_command=True, kwds=None,
+                                 input_metadata_files_list=None, output_metadata_files_list=None):
+        #Karthik: generally: tmp dir == working_dir, exec_dir = galaxy directory, datatypes_config - tmp file with datatypes
         kwds = kwds or {}
         if tmp_dir is None:
             tmp_dir = MetadataTempFile.tmp_dir
@@ -818,6 +826,13 @@ class JobExternalOutputMetadataWrapper( object ):
                 # add to session and flush
                 sa_session.add( metadata_files )
                 sa_session.flush()
+                if(input_metadata_files_list):
+                    input_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_in));
+                    input_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_kwds));
+                    input_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_override_metadata));
+                if(output_metadata_files_list):
+                    output_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_out));
+                    output_metadata_files_list.append(metadata_path_on_compute(metadata_files.filename_results_code));
             metadata_files_list.append( metadata_files )
         args = "%s %s %s" % ( datatypes_config,
                               job_metadata,

@@ -1,0 +1,21 @@
+<tool id="local_summer" name="local_summer">
+    <description>Adds all elements over all input files</description>
+    <command interpreter="python">summer.py
+        #for $input in $vectors
+            ${input}
+        #end for
+        $sum_value
+    </command>
+    <inputs>
+        <param name="vectors" type="data" multiple="True" label="input_vectors" />
+        <!--<repeat name="vectors" title="Vectors">-->
+            <!--<param name="input" type="data" label="input"/>-->
+            <!--</repeat>-->
+    </inputs>
+    <outputs>
+        <data name="sum_value" label="sum_value" format="txt"/>
+    </outputs>
+</tool>
+        <!--#for $i, $s in enumerate( $vectors )-->
+        <!--${s.input}-->
+        <!--#end for-->

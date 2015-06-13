@@ -592,12 +592,13 @@ class ServeCommand(Command):
 
         # Ensure the log file is writeable
         if self.options.log_file:
-            try:
-                writeable_log_file = open(self.options.log_file, 'a')
-            except IOError, ioe:
-                msg = 'Error: Unable to write to log file: %s' % ioe
-                raise BadCommand(msg)
-            writeable_log_file.close()
+            if(self.options.log_file != 'stdout'):
+                try:
+                    writeable_log_file = open(self.options.log_file, 'a')
+                except IOError, ioe:
+                    msg = 'Error: Unable to write to log file: %s' % ioe
+                    raise BadCommand(msg)
+                writeable_log_file.close()
 
         # Ensure the pid file is writeable
         if self.options.pid_file:
@@ -624,9 +625,12 @@ class ServeCommand(Command):
             self.record_pid(self.options.pid_file)
 
         if self.options.log_file:
-            stdout_log = LazyWriter(self.options.log_file, 'a')
-            sys.stdout = stdout_log
-            sys.stderr = stdout_log
+            if(self.options.log_file != 'stdout'):
+                stdout_log = LazyWriter(self.options.log_file, 'a')
+                sys.stdout = stdout_log
+                sys.stderr = stdout_log
+            else:
+                stdout_log = sys.stdout;
             logging.basicConfig(stream=stdout_log)
 
         log_fn = app_spec

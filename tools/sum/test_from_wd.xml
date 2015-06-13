@@ -1,0 +1,10 @@
+<tool id="test_from_wd" name="test_from_wd">
+  <description>Hello World from_work_dir test tool</description>
+  <command interpreter="bash">test_from_wd.sh </command>
+  <outputs>
+    <data format="txt" name="hello_world" label="hello_world" from_work_dir="hello_world.txt"/>
+  </outputs>
+  <help>
+      Hello World from_work_dir test tool
+  </help>
+</tool>
