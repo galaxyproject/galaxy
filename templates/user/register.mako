@@ -1,7 +1,6 @@
 <%!
 #This is a hack, we should restructure templates to avoid this.
 def inherit(context):
-    print 'context:', context
     if context.get('trans').webapp.name == 'galaxy' and context.get( 'use_panels', True ):
         return '/webapps/galaxy/base_panels.mako'
     else:
@@ -153,7 +152,7 @@ def inherit(context):
                     </div>
                 %endif
             </div>
-            %if trans.app.config.smtp_server:
+            %if trans.app.config.smtp_server and trans.app.config.mailing_join_addr:
                 <div class="form-row">
                     <label>Subscribe to mailing list:</label>
                     %if subscribe_checked:

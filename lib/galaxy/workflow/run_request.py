@@ -304,7 +304,7 @@ def workflow_run_config_to_request( trans, run_config, workflow ):
         state = step.state
         serializable_runtime_state = step.module.normalize_runtime_state( state )
         step_state = model.WorkflowRequestStepState()
-        step_state.workflow_step_id = step.id
+        step_state.workflow_step = step
         step_state.value = serializable_runtime_state
         workflow_invocation.step_states.append( step_state )
 

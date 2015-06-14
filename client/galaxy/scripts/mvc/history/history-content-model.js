@@ -92,7 +92,7 @@ var HistoryContentMixin = {
 //TODO: global
 //TODO: these are probably better done on the leaf classes
     /** history content goes through the 'api/histories' API */
-    urlRoot: Galaxy.options.root + 'api/histories/',
+    urlRoot: ( window.Galaxy? Galaxy.options.root : '/' ) + 'api/histories/',
 
     /** full url spec. for this content */
     url : function(){

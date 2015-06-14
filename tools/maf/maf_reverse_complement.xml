@@ -30,7 +30,7 @@
 This tool takes a MAF file and creates a new MAF file, where each block has been reversed complemented.
 
 **Example**
-  
+
 This MAF Block::
 
   a score=8157.000000

@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 # files of this type may still exist
 
 class GeneTrack( binary.Binary ):
+    edam_format = "format_2919"
     file_ext = "genetrack"
 
     def __init__(self, **kwargs):

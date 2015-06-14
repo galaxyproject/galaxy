@@ -1023,9 +1023,10 @@ def fetch_tool_versions( app, tool_shed_repository ):
         if text:
             return json.loads( text )
         else:
+            log.error("No content returned from tool shed repository version request to %s", url)
             failed_to_fetch = True
     except Exception:
         failed_to_fetch = True
+        log.exception("Failed to fetch tool shed repository version information.")
     if failed_to_fetch:
-        log.exception("Failed to fetch tool shed repository verion information.")
         return FAILED_TO_FETCH_VERSIONS

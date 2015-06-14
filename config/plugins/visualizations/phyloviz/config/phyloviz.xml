@@ -14,6 +14,6 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
         <param type="integer" default="0">tree_index</param>
     </params>
-    <template>phyloviz.mako</template>
+    <entry_point entry_point_type="mako">phyloviz.mako</entry_point>
     <render_target>_top</render_target>
 </visualization>

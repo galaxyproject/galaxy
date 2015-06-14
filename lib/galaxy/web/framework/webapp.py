@@ -818,8 +818,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
 
-        data = dict( caller=self, t=self, trans=self, h=helpers, util=util,
-                     request=self.request, response=self.response, app=self.app )
+        data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )

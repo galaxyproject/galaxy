@@ -82,17 +82,17 @@ spaceghost.test.begin( 'Testing registration of new users', 0, function suite( t
         });
     });
 
-    // usernames must be >=4 chars...
+    // usernames must be >=3 chars...
     //NOTE: that short username errors only show AFTER checking for existing/valid emails
     //  so: we need to generate new emails for each one
     spaceghost.then( function(){
         var newEmail = spaceghost.user.getRandomEmail(),
-            badUsername = 'bob';
+            badUsername = 'bp';
         this.test.comment( 'attempting short username: ' + badUsername );
         this.user._submitRegistration( newEmail, password, badUsername, confirm );
     });
     spaceghost.then(function(){
-        this.assertErrorMessage( 'Public name must be at least 4 characters in length' );
+        this.assertErrorMessage( 'It also has to be shorter than 255 characters but longer than 2' );
     });
 
     // ...and be lower-case letters, numbers and '-'...

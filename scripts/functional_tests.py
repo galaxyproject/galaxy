@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Import system subprocess now before twill so we don't get its
+# variant that breaks things.
+import subprocess
+
 import os
 import sys
 import shutil
@@ -70,7 +74,10 @@ default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
-installed_tool_panel_configs = [ 'config/shed_tool_conf.xml' ]
+installed_tool_panel_configs = [
+    os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
+]
+
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True

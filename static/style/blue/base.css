@@ -1443,6 +1443,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close{left:auto;
 .ui-portlet-repeat,.ui-portlet-section,.ui-portlet-section{border:none;border-left:solid 3px #ebd9b2;border-radius:5px;margin-bottom:5px}.ui-portlet-repeat .portlet-header,.ui-portlet-section .portlet-header{background:#ebd9b2;border-radius:5px;border-bottom-left-radius:0px;border-top-left-radius:0px;padding:0px 2px}.ui-portlet-repeat .portlet-header .portlet-title-text,.ui-portlet-section .portlet-header .portlet-title-text{vertical-align:middle;line-height:20px !important}
 .ui-portlet-repeat .portlet-content,.ui-portlet-section .portlet-content{padding-right:0px}
 .ui-portlet-section{margin-top:5px;border-left:solid 3px #dfe5f9}.ui-portlet-section .portlet-header{background:#dfe5f9;border-bottom:solid #b4c2f1 1px}
+.ui-portlet-section .portlet-highlight{text-decoration:underline}
 .ui-portlet-narrow{border:none}.ui-portlet-narrow .portlet-header{border-radius:3px}.ui-portlet-narrow .portlet-header .portlet-operations .ui-button-icon{margin-left:3px}
 .ui-portlet-narrow .ui-portlet-repeat .portlet-header,.ui-portlet-narrow .ui-portlet-section .portlet-header{border-radius:5px;border-bottom-left-radius:0px;border-top-left-radius:0px}
 .ui-portlet-narrow .portlet-content{padding:0px}
@@ -1470,6 +1471,10 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close{left:auto;
 .ui-color-picker .ui-color-picker-label{float:left;line-height:1.2em}
 .ui-color-picker .ui-color-picker-view{height:100%;overflow:auto;display:none;float:left;margin-top:5px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel{width:210px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content{margin-bottom:15px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .label{padding-bottom:2px}
 .ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box{cursor:pointer;float:left;margin-right:5px;border:solid 1px #c0c0c0;width:15px;height:15px;border-radius:2px}.ui-color-picker .ui-color-picker-view .ui-color-picker-panel .ui-color-picker-content .line .ui-color-picker-box .ui-color-picker-check{color:black;font-size:1.2em;position:relative;left:1px}
+.ui-list .ui-list-select{float:left;width:calc(100% - 27px)}
+.ui-list .ui-list-button .ui-button-icon{margin-top:3px;margin-right:5px}
+.ui-list .ui-list-message,.ui-list .ui-list-portlet{clear:both}
+.ui-list .ui-list-id{cursor:pointer;margin-top:5px}.ui-list .ui-list-id .ui-list-delete{font-size:1.2em;margin-right:5px}
 .ui-select{position:relative}.ui-select .button{position:absolute;top:5px;right:5px}
 .ui-select select{position:relative;top:0px;height:27px;width:100%;padding-right:20px;cursor:pointer;padding-left:5px}
 .ui-select .select2-container{width:100%}.ui-select .select2-container .select2-choice{height:27px;padding-left:5px}.ui-select .select2-container .select2-choice .select2-arrow{display:none}
@@ -1756,6 +1761,7 @@ body{background:#fff;color:#000;margin:10px}body.full-content{overflow:hidden;ma
 #left,#left-border,#center,#right-border,#right{position:absolute;top:34px;bottom:0px;overflow:hidden;background:#fff}
 #left{left:0px;width:250px;z-index:200;border-right:solid #999 1px}
 #left-border{left:250px}
+.reports-panel-container{position:absolute;top:30px;bottom:10px;overflow:scroll;width:100%;padding:10px}
 #center{left:250px;right:250px;overflow:hidden;z-index:1}
 #right-border{right:250px}
 #right{width:250px;right:0px;z-index:200;border-left:solid #999 1px}
@@ -2304,6 +2310,7 @@ pre.peek table,pre.peek th,pre.peek tr,pre.peek td{font-family:Monaco,Menlo,Cons
 .dataset-choice.multi table th{padding:0px;font-weight:normal;font-size:80%;color:grey}
 .dataset-choice.multi table th:not(:last-child),.dataset-choice.multi table td:not(:last-child){padding-right:8px}
 .dataset-choice.multi table td.cell-name{font-weight:bold}
+.dataset-choice-modal .list-panel .list-item.dataset{border-left-width:1px;border-right-width:1px}
 .dataset-choice-modal .list-panel .controls .title .name{font-size:120%}
 .peek-column-selector{border-radius:3px;border:1px solid #5f6990}
 .peek-column-selector td,.peek-column-selector th{padding:4px 10px 4px 4px}

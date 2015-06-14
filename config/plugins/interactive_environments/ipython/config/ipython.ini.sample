@@ -12,10 +12,10 @@
 command = docker
 
 # The docker image name that should be started.
-image = bgruening/docker-ipython-notebook
+image = bgruening/docker-ipython-notebook:dev
 
 # Additional arguments that are passed to the `docker run` command.
-command_inject = --sig-proxy=true
+command_inject = --sig-proxy=true -e DEBUG=false
 
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
 # this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the

@@ -2,16 +2,23 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
+    <title>Homepage</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" href="style/base.css" type="text/css" />
 </head>
 <body>
     <div class="document">
         <div class="donemessagelarge">
-            <strong>Hello world! It's running...</strong>
+            <p><strong>Your Galaxy is running!</strong></p>
             <hr>
-            To customize this page edit <code>static/welcome.html</code>
+            <ul>
+                <li>To learn how to use Galaxy please see the <a href="https://wiki.galaxyproject.org/Learn">wiki</a></li>
+                <li>To install new tools to your Galaxy follow the <a href="https://wiki.galaxyproject.org/Admin/Tools/AddToolFromToolShedTutorial">tutorial</a></li>
+                <li>To set up your Galaxy for others to use please read <a href="https://wiki.galaxyproject.org/Admin/Config/Performance/ProductionServer">this</a></li>
+            </ul>
+            <p><h5>Thank you for trying Galaxy.</h5></p>
         </div>
+        <p>To customize this page edit <code>static/welcome.html</code></p>
         <br/>
         <hr/>
         <a target="_blank" class="reference" href="http://galaxyproject.org/">Galaxy</a> is an open, web-based platform for data intensive biomedical research.  The <a target="_blank" class="reference" href="http://wiki.galaxyproject.org/GalaxyTeam">Galaxy team</a> is a part of <a target="_blank" class="reference" href="http://www.bx.psu.edu">BX</a> at <a target="_blank" class="reference" href="http://www.psu.edu">Penn State</a>, and the <a target="_blank" class="reference" href="http://www.bio.jhu.edu/">Biology</a> department at <a target="_blank" class="reference" href="http://www.jhu.edu/">Johns Hopkins University</a>.  The <a target="_blank" class="reference" href="http://galaxyproject.org/">Galaxy Project</a> is supported in part by <a target="_blank" class="reference" href="http://www.genome.gov">NHGRI</a>, <a target="_blank" class="reference" href="http://www.nsf.gov">NSF</a>, <a target="_blank" class="reference" href="http://www.huck.psu.edu">The Huck Institutes of the Life Sciences</a>, <a target="_blank" class="reference" href="http://www.ics.psu.edu">The Institute for CyberScience at Penn State</a>, and <a target="_blank" class="reference" href="http://www.jhu.edu/">Johns Hopkins</a>.</p>

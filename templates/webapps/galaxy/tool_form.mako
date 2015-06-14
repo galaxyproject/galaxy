@@ -22,6 +22,7 @@ ${h.css('base', 'jquery-ui/smoothness/jquery-ui')}
         require(['mvc/tools/tools-form'], function(ToolsForm){
             $(function(){
                 var form = new ToolsForm.View(${ h.dumps(self.form_config) });
+                $('body').append(form.$el);
             });
         });
     </script>

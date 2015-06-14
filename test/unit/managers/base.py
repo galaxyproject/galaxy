@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import os
 import imp
-import unittest
+
 import json
 
 test_utils = imp.load_source( 'test_utils',
@@ -24,7 +24,7 @@ default_password = '123456'
 
 
 # =============================================================================
-class BaseTestCase( unittest.TestCase ):
+class BaseTestCase( test_utils.unittest.TestCase ):
 
     @classmethod
     def setUpClass( cls ):
@@ -35,7 +35,7 @@ class BaseTestCase( unittest.TestCase ):
         print( '\n', '-' * 20, 'end class', cls )
 
     def __init__( self, *args ):
-        unittest.TestCase.__init__( self, *args )
+        test_utils.unittest.TestCase.__init__( self, *args )
 
     def setUp( self ):
         self.log( '.' * 20, 'begin test', self )
@@ -123,4 +123,4 @@ class BaseTestCase( unittest.TestCase ):
 # =============================================================================
 if __name__ == '__main__':
     # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()
+    test_utils.unittest.main()

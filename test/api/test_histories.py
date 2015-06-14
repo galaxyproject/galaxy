@@ -69,6 +69,14 @@ class HistoriesApiTestCase( api.ApiTestCase ):
         )
         assert imported_content == "1 2 3\n"
 
+    def test_create_tag( self ):
+        post_data = dict( name="TestHistoryForTag" )
+        history_id = self._post( "histories", data=post_data ).json()["id"]
+        tag_data = dict( value="awesometagvalue" )
+        tag_url = "histories/%s/tags/awesometagname" % history_id
+        tag_create_response = self._post( tag_url, data=tag_data )
+        self._assert_status_code_is( tag_create_response, 200 )
+
     def _export(self, history_id):
         export_url = self._api_url( "histories/%s/exports" % history_id, use_key=True )
         put_response = put( export_url )
