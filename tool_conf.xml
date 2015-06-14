@@ -249,6 +249,7 @@
 	    <tool file="gatk/unified_genotyper.xml"/>
 	    <tool file="gatk/depth_of_coverage.xml"/>
 	    <tool file="gatk/variant_filtration.xml"/>
+	    <tool file="gatk/variant_select.xml" />
     <label id="Picard" text="Picard version 1.110"/>
 	    <tool file="picard/rgPicardMarkDups.xml" />
 	    <tool file="picard/picard_SamToFastq.xml" />
@@ -257,8 +258,14 @@
     <label id="BICSeq" text="BICSeq" />
 	    <tool file="Suzi_pipeline/Bic-Seq_samtools.xml" />
 	    <tool file="Suzi_pipeline/Bic-Seq.xml" /> 
-    <label id="mutect" text="MuTect version 1.1.7" />
+    <label id="Mutect" text="MuTect version 1.1.7" />
 	    <tool file="mutect/muTect.xml" />
+    <label id="Breakdancer" text="Breakdancer version 1.4.5" />
+            <tool file="breakdancer/breakdancer.xml" />
+    <label id="Pindel" text="Pindel 0.2.5a8" />
+            <tool file="pindel/pindel.xml" />
+    <label id="VcfSorter" text="VCF Sorter" />
+            <tool file="vcf_sorter/vcfsorter.xml" />
   </section>  
   <section id="RNA_sequencing" name="RNA sequencing tools">
      <label id="tophat2" text="Tophat2 version 2.0.14" />
