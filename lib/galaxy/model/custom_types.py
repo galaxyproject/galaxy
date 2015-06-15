@@ -12,6 +12,7 @@ from galaxy import eggs
 eggs.require("SQLAlchemy")
 import sqlalchemy
 
+from galaxy import app
 from galaxy.util.aliaspickler import AliasPickleModule
 from sqlalchemy.types import CHAR, LargeBinary, String, TypeDecorator
 from sqlalchemy.ext.mutable import Mutable
@@ -21,8 +22,6 @@ log = logging.getLogger( __name__ )
 # Default JSON encoder and decoder
 json_encoder = json.JSONEncoder( sort_keys=True )
 json_decoder = json.JSONDecoder( )
-
-MAX_METADATA_SIZE = 5000000  # 5MB in memory max.  No required metadata should be larger than this.
 
 
 def _sniffnfix_pg9_hex(value):
@@ -269,9 +268,10 @@ class MetadataType( JSONType ):
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            for k, v in value.items():
-                if total_size(v) > MAX_METADATA_SIZE:
-                    del value[k]
+            if app.app and app.app.config.max_metadata_value_size:
+                for k, v in value.items():
+                    if total_size(v) > app.app.config.max_metadata_value_size:
+                        del value[k]
             value = json_encoder.encode(value)
         return value
 
