@@ -1,9 +1,12 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
+
+${jqs_style()}
 
 <div class="toolForm">
     <div class="toolFormBody">
@@ -24,6 +27,7 @@
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:
+                    <% key = job[1] %>
                     %if ctr % 2 == 1:
                         <tr class="odd_row">
                     %else:
@@ -32,6 +36,8 @@
                         <td>${job[0]}</td>
                         <td>${month_label}&nbsp;${job[1]},&nbsp;${year_label}</td>
                         <td><a href="${h.url_for( controller='jobs', action='specified_date_handler', specified_date=job[3], webapp='reports' )}">${job[2]}</a></td>
+                        ${make_sparkline(key, job[4], "bar", "/ hour")}
+                        <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor
