@@ -651,7 +651,7 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
         prebuildNode: function ( type, title_text, tool_id ) {
             var self = this;
             var f = $("<div class='toolForm toolFormInCanvas'></div>");
-            var node = new Node( { element: f } );
+            var node = new Node( this, { element: f } );
             node.type = type;
             if ( type == 'tool' ) {
                 node.tool_id = tool_id;

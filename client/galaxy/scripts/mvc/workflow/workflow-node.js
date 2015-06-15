@@ -1,6 +1,7 @@
-define(['mvc/workflow/workflow-globals', 'mvc/workflow/workflow-view-node'], function( Globals, NodeView ) {
+define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
     var Node = Backbone.Model.extend({
-        initialize: function( attr ) {
+        initialize: function( app, attr ) {
+            this.app = app;
             this.element = attr.element;
             this.input_terminals = {};
             this.output_terminals = {};
@@ -92,7 +93,7 @@ define(['mvc/workflow/workflow-globals', 'mvc/workflow/workflow-view-node'], fun
             $.each( this.output_terminals, function( k, t ) {
                 t.destroy();
             });
-            Globals.workflow.remove_node( this );
+            this.app.workflow.remove_node( this );
             $(this.element).remove();
         },
         make_active : function () {
@@ -138,7 +139,7 @@ define(['mvc/workflow/workflow-globals', 'mvc/workflow/workflow-view-node'], fun
                 nodeView.addDataOutput( output );
             } );
             nodeView.render();
-            Globals.workflow.node_changed( this, true);
+            this.app.workflow.node_changed( this, true);
         },
         update_field_data : function( data ) {
             var node = this;
@@ -184,10 +185,10 @@ define(['mvc/workflow/workflow-globals', 'mvc/workflow/workflow-view-node'], fun
             var tmp = "<div style='color: red; text-style: italic;'>" + text + "</div>";
             this.form_html = tmp;
             b.html( tmp );
-            Globals.workflow.node_changed( this );
+            this.app.workflow.node_changed( this );
         },
         markChanged: function() {
-            Globals.workflow.node_changed( this );
+            this.app.workflow.node_changed( this );
         }
     });
     return Node;
