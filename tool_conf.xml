@@ -1,5 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
 <toolbox>
+  <section id="getext" name="Get CCC Data"> 
+    <tool file="data_source/clinical_pathology_images.xml" />    
+    <tool file="data_source/genomes.xml" /> 
+	<tool file="data_source/rnaseq.xml" />    
+  </section>
   <section id="getext" name="Get Data">
     <tool file="data_source/upload.xml" />
     <tool file="data_source/ucsc_tablebrowser.xml" />
@@ -17,9 +22,6 @@
     <tool file="data_source/wormbase_test.xml" />
     <tool file="data_source/eupathdb.xml" />
     <tool file="data_source/hbvar.xml" />
-    <tool file="data_source/beat_aml_rnaseq.xml" />
-    <tool file="data_source/brenden_coulson.xml" />
-    <tool file="data_source/icgc_genomes.xml" /> 
     <tool file="genomespace/genomespace_file_browser_prod.xml" />
     <tool file="genomespace/genomespace_importer.xml" />
     <tool file="validation/fix_errors.xml" />
@@ -126,6 +128,9 @@
     <label id="gff" text="GFF" />
     <!--<tool file="stats/count_gff_features.xml" />-->
   </section>
+  <section id="labkey" name="LabKey">
+    <tool file="labkey/labkey_store.xml" />
+  </section>  
   <section id="plots" name="Graph/Display Data">
     <!--<tool file="plotting/histogram2.xml" />-->
     <!--<tool file="plotting/scatterplot.xml" />-->
@@ -135,6 +140,7 @@
     <!--<tool file="visualization/build_ucsc_custom_track.xml" />-->
     <tool file="maf/vcf_to_maf_customtrack.xml" />
     <!--<tool file="mutation/visualize.xml" />-->
+    <tool file="mutsig_viz/mutsig_viz.xml" />
   </section>
   <section id="multVar" name="Multivariate Analysis">
     <!--<tool file="multivariate_stats/pca.xml" />-->
@@ -244,6 +250,7 @@
 	    <tool file="gatk/unified_genotyper.xml"/>
 	    <tool file="gatk/depth_of_coverage.xml"/>
 	    <tool file="gatk/variant_filtration.xml"/>
+	    <tool file="gatk/variant_select.xml" />
     <label id="Picard" text="Picard version 1.110"/>
 	    <tool file="picard/rgPicardMarkDups.xml" />
 	    <tool file="picard/picard_SamToFastq.xml" />
@@ -252,8 +259,14 @@
     <label id="BICSeq" text="BICSeq" />
 	    <tool file="Suzi_pipeline/Bic-Seq_samtools.xml" />
 	    <tool file="Suzi_pipeline/Bic-Seq.xml" /> 
-    <label id="mutect" text="MuTect version 1.1.7" />
+    <label id="Mutect" text="MuTect version 1.1.7" />
 	    <tool file="mutect/muTect.xml" />
+    <label id="Breakdancer" text="Breakdancer version 1.4.5" />
+            <tool file="breakdancer/breakdancer.xml" />
+    <label id="Pindel" text="Pindel 0.2.5a8" />
+            <tool file="pindel/pindel.xml" />
+    <label id="VcfSorter" text="VCF Sorter" />
+            <tool file="vcf_sorter/vcfsorter.xml" />
   </section>  
   <section id="RNA_sequencing" name="RNA sequencing tools">
      <label id="tophat2" text="Tophat2 version 2.0.14" />

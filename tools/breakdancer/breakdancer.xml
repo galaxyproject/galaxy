@@ -1,0 +1,77 @@
+<tool id="breakdancer" name="BreakDancer" version="1.4.5-unstable">
+  <command interpreter="python">breakdancer.py
+    --input_tumor $tumor
+    --input_normal $normal
+    --output_file $outputBreakpoints
+    #if $defineChrom.single_chrom == "yes":
+    -o $defineChrom.chrom
+    #end if
+    #if $advanced.extra_opts == "yes":
+    -s $min_length
+    -c $cutoff
+    -m $max_sv
+    -q $min_qual
+    -r $min_pairs
+    -x $min_thresh
+    -b $buffer
+    -y $score_filt
+    #end if
+    #if $output_opts.more_output == "yes":
+    -t $transchrom
+    -l $long_insert
+    -a $per_lib
+    -h $alle_freq
+    -g $gbrowse
+    -d $prefix
+    #end if
+  </command>
+  <inputs>
+    <param format="bam" name="tumor" type="data" label="Tumor BAM" help="" />
+    <param format="bam" name="normal" type="data" label="Normal BAM" help="" />
+    <conditional name="defineChrom">
+      <param name="single_chrom" type="select" label="Operate on a single chromosome.">
+	<option value="yes">Yes</option>
+	<option value="no" selected="True">No</option>
+      </param>
+      <when value="yes">
+	<param name="chrom" type="integer" label="Chromsome" help="Only find breakpoints on this chromosome." value="" />
+      </when>
+    </conditional>
+    <conditional name="advanced">
+      <param name="extra_opts" type="select" label="Advanced options.">
+	<option value="yes">Yes</option>
+	<option value="no" selected="True">No</option>
+      </param>
+      <when value="yes">
+	<param name="min_length" type="integer" label="Minimum length of a region." help="" value="7" />
+	<param name="cutoff" type="integer" label="Cutoff in unit of standard deviation" help="" value="3" />
+	<param name="max_sv" type="integer" label="Maximum SV Size" help="" value="1000000000" />
+	<param name="min_qual" type="integer" label="Minimum alternative mapping quality" help="" value="35" />
+	<param name="min_pairs" type="integer" label="Minimum read pairs required to establish a connection" help="" value="2" />
+	<param name="max_thresh" type="integer" label="Maximum threshold of haploid sequence coverage for regions to be ignored" help="" value="1000" />
+	<param name="buffer" type="integer" label="Buffer size for building connection" help="" value="100" />
+	<param name="score_filt" type="integer" label="Output score filter" help="" value="30" />
+      </when>
+    </conditional>
+    <conditional name="output_opts">
+      <param name="more_output" type="select" label="Output affecting options.">
+	<option value="yes">Yes</option>
+	<option value="no" selected="True">No</option>
+      </param>
+      <when value="yes">
+	<param name="transchrom" type="boolean" label="Only detect transchromosomal rearrangement" help="" checked="false" />
+	<param name="long_insert" type="boolean" label="Analyze Illumina long insert library" help="Otherwise known as mate-pair library" checked="false" />
+	<param name="per_lib" type="boolean" label="Print out copy number and support reads per library" help="As opposed to per BAM" checked="false" />
+	<param name="alle_freq" type="boolean" label="Print out allele frequency column" help="" checked="false" />
+	<param name="gbrowse" type="boolean" label="Dump SVs and supporting reads in BED format for GBrowse" help="" checked="false" />
+	<param name="prefix" type="text" label="Prefix of FASTQ files that SV supporting reads will be saved by library" help="" value="" />
+      </when>
+    </conditional>
+  </inputs>
+
+  <outputs>
+    <data format="tabular" name="outputBreakpoints" label="outputBreakpoints" from_work_dir="bd_out"/>
+  </outputs>
+
+
+</tool>

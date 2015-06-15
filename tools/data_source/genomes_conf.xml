@@ -7,13 +7,22 @@
     </columns>
     <labkeyInstances>
         <labkeyInstance>
-            <baseUrl>http://g1.spark0.intel.com:9090/labkey</baseUrl>
+			<name>Austin</name>
+            <baseUrl>http://g0.spark0.intel.com:8080/labkey</baseUrl>
             <containerPath>ccc</containerPath>
             <schemaName>lists</schemaName>
             <queryName>genomes_export</queryName>
         </labkeyInstance>
         <labkeyInstance>
-            <baseUrl>http://g2.spark0.intel.com:9090/labkey</baseUrl>
+			<name>Boston</name>
+            <baseUrl>http://g1.spark0.intel.com:8080/labkey</baseUrl>
+            <containerPath>ccc</containerPath>
+            <schemaName>lists</schemaName>
+            <queryName>genomes_export</queryName>
+        </labkeyInstance>
+        <labkeyInstance>
+			<name>Portland</name>
+            <baseUrl>http://g2.spark0.intel.com:8080/labkey</baseUrl>
             <containerPath>ccc</containerPath>
             <schemaName>lists</schemaName>
             <queryName>genomes_export</queryName>
