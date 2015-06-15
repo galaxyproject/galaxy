@@ -27,6 +27,47 @@ define(['mvc/workflow/workflow-globals'], function( Globals ){
         }
     });
 
+    var DataOutputView = Backbone.View.extend( {
+        className: "form-row dataRow",
+
+        initialize: function( options ) {
+            this.output = options.output;
+            this.terminalElement = options.terminalElement;
+            this.nodeView = options.nodeView;
+
+            var output = this.output;
+            var label = output.name;
+            var node = this.nodeView.node;
+
+            var isInput = output.extensions.indexOf( 'input' ) >= 0 || output.extensions.indexOf( 'input_collection' ) >= 0;
+            if ( ! isInput ) {
+                label = label + " (" + output.extensions.join(", ") + ")";
+            }
+            this.$el.html( label )
+
+            if (node.type == 'tool'){
+                var calloutView = new OutputCalloutView( {
+                    "label": label,
+                    "output": output,
+                    "node": node,
+                });
+                this.$el.append( calloutView.el );
+                this.$el.hover( function() { calloutView.hoverImage() }, function() { calloutView.resetImage() } );
+            }
+            this.$el.css({  position:'absolute',
+                            left: -1000,
+                            top: -1000,
+                            display:'none'});
+            $('body').append( this.el );
+            this.nodeView.updateMaxWidth( this.$el.outerWidth() + 17 );
+            this.$el.css({ position:'',
+                           left:'',
+                           top:'',
+                           display:'' })
+                    .detach();
+        }
+    });
+
     var OutputCalloutView = Backbone.View.extend( {
         tagName: "div",
 
@@ -76,50 +117,8 @@ define(['mvc/workflow/workflow-globals'], function( Globals ){
         }
     });
 
-    var DataOutputView = Backbone.View.extend( {
-        className: "form-row dataRow",
-
-        initialize: function( options ) {
-            this.output = options.output;
-            this.terminalElement = options.terminalElement;
-            this.nodeView = options.nodeView;
-
-            var output = this.output;
-            var label = output.name;
-            var node = this.nodeView.node;
-
-            var isInput = output.extensions.indexOf( 'input' ) >= 0 || output.extensions.indexOf( 'input_collection' ) >= 0;
-            if ( ! isInput ) {
-                label = label + " (" + output.extensions.join(", ") + ")";
-            }
-            this.$el.html( label )
-
-            if (node.type == 'tool'){
-                var calloutView = new OutputCalloutView( {
-                    "label": label,
-                    "output": output,
-                    "node": node,
-                });
-                this.$el.append( calloutView.el );
-                this.$el.hover( function() { calloutView.hoverImage() }, function() { calloutView.resetImage() } );
-            }
-            this.$el.css({  position:'absolute',
-                            left: -1000,
-                            top: -1000,
-                            display:'none'});
-            $('body').append( this.el );
-            this.nodeView.updateMaxWidth( this.$el.outerWidth() + 17 );
-            this.$el.css({ position:'',
-                           left:'',
-                           top:'',
-                           display:'' })
-                    .detach();
-        }
-    });
-
     return {
         DataInputView       : DataInputView,
-        DataOutputView      : DataOutputView,
-        OutputCalloutView   : OutputCalloutView
+        DataOutputView      : DataOutputView
     }
 });
