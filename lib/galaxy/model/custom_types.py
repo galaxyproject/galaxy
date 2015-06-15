@@ -270,8 +270,10 @@ class MetadataType( JSONType ):
         if value is not None:
             if app.app and app.app.config.max_metadata_value_size:
                 for k, v in value.items():
-                    if total_size(v) > app.app.config.max_metadata_value_size:
+                    sz = total_size(v)
+                    if sz > app.app.config.max_metadata_value_size:
                         del value[k]
+                        log.error('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
             value = json_encoder.encode(value)
         return value
 
