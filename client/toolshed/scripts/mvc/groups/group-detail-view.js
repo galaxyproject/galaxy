@@ -1,6 +1,6 @@
 define([
     "libs/toastr",
-    "group_model"
+    "toolshed/scripts/mvc/groups/group-model"
     ],
 function(
     mod_toastr,

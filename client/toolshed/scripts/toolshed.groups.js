@@ -3,9 +3,9 @@
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 define([
-        'group_list',
-        'group_detail',
-        'group_model'
+        'toolshed/scripts/mvc/groups/group-list-view',
+        'toolshed/scripts/mvc/groups/group-detail-view',
+        'toolshed/scripts/mvc/groups/group-model'
     ],
     function(
         mod_group_list,

@@ -43,10 +43,7 @@
         $( function(){
             require.config({
                 paths: {
-                group_model: '../toolshed/scripts/mvc/groups/group-model',
-                group_row: '../toolshed/scripts/mvc/groups/group-listrow-view',
-                group_detail: '../toolshed/scripts/mvc/groups/group-detail-view',
-                group_list: '../toolshed/scripts/mvc/groups/group-list-view'
+                    'toolshed': '../toolshed'
             }
             });
             require([ '${config.get( "app" ).get( "jscript" )}' ], function( groups ){

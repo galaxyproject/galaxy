@@ -1,7 +1,7 @@
 define([
     "libs/toastr",
-    "group_model",
-    "group_row"
+    "toolshed/scripts/mvc/groups/group-model",
+    "toolshed/scripts/mvc/groups/group-listrow-view"
 
 ], function(
     mod_toastr,
