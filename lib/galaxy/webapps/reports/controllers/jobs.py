@@ -1,3 +1,4 @@
+from __future__ import print_function
 import calendar
 from datetime import datetime, date, timedelta
 from galaxy.web.base.controller import BaseUIController, web
@@ -8,6 +9,7 @@ import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+import sys
 
 import logging
 log = logging.getLogger( __name__ )
@@ -285,7 +287,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
-
+    
     @web.expose
     def per_month_all( self, trans, **kwd ):
         """
@@ -295,27 +297,60 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         message = ''
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'date', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
+        #Use to make the page table
         jobs_by_month = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                                      sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                                   whereclause=model.Job.table.c.user_id != monitor_user_id,
-                                   from_obj=[ model.Job.table ],
-                                   group_by=self.group_by_month( model.Job.table.c.create_time ),
-                                   order_by=[ sa.desc( 'date' ) ] )
+                                     whereclause=model.Job.table.c.user_id != monitor_user_id,
+                                     from_obj=[ model.Job.table ],
+                                     group_by=self.group_by_month( model.Job.table.c.create_time ),
+                                     order_by=[ _order ] )
 
+        #Use to make trendline
+        all_jobs = sa.select([ model.Job.table.c.create_time.label('date')],
+                             from_obj=[ model.Job.table ])
+        
+
+        trends = dict()
         jobs = []
         for row in jobs_by_month.execute():
+            month = int(row.date.strftime("%-m"))
+            month_name = row.date.strftime("%B")
+            year = int(row.date.strftime("%Y"))
+            wday, day_range = calendar.monthrange(year, month)
+
+            trend = [0] * day_range
+
+            for job in all_jobs.execute():
+                job_month = int(job.date.strftime("%-M"))
+                job_year = int(job.date.strftime("%Y"))
+
+                if job_month == month and job_year == year:
+                    day = int(job.date.strftime("%-d")) - 1
+                    trend[day] += 1
+            
+            key = str(month_name) + " " + str(year)
+            trends[key] = trend
+
             jobs.append( (
                 row.date.strftime( "%Y-%m" ),
                 row.total_jobs,
-                row.date.strftime( "%B" ),
-                row.date.strftime( "%y" )
+                key
             ) )
 
         return trans.fill_template( '/webapps/reports/jobs_per_month_all.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    trends=trends,
                                     jobs=jobs,
                                     is_user_jobs_only=monitor_user_id,
                                     message=message )
