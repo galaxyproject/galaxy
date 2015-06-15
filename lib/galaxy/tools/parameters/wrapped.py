@@ -1,5 +1,3 @@
-import galaxy.tools
-
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
     DataCollectionToolParameter,
@@ -59,15 +57,15 @@ class WrappedParameters( object ):
             elif isinstance( input, DataToolParameter ) and input.multiple:
                 input_values[ input.name ] = \
                     DatasetListWrapper( input_values[ input.name ],
-                                                     datatypes_registry=trans.app.datatypes_registry,
-                                                     tool=tool,
-                                                     name=input.name )
+                                        datatypes_registry=trans.app.datatypes_registry,
+                                        tool=tool,
+                                        name=input.name )
             elif isinstance( input, DataToolParameter ):
                 input_values[ input.name ] = \
                     DatasetFilenameWrapper( input_values[ input.name ],
-                                                         datatypes_registry=trans.app.datatypes_registry,
-                                                         tool=tool,
-                                                         name=input.name )
+                                            datatypes_registry=trans.app.datatypes_registry,
+                                            tool=tool,
+                                            name=input.name )
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
             elif isinstance( input, DataCollectionToolParameter ):
@@ -111,4 +109,4 @@ def make_list_copy( from_list ):
     return new_list
 
 
-__all__ = [ WrappedParameters, make_dict_copy ]
+__all__ = [ 'WrappedParameters', 'make_dict_copy' ]

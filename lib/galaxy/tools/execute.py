@@ -88,9 +88,7 @@ class ToolExecutionTracker( object ):
         # collection replaced with a specific dataset. Need to replace this
         # with the collection and wrap everything up so can evaluate output
         # label.
-        params.update( self.collection_info.collections )  # Replace datasets
-                                                           # with source collections
-                                                           # for labelling outputs.
+        params.update( self.collection_info.collections )  # Replace datasets with source collections for labelling outputs.
 
         collection_names = map( lambda c: "collection %d" % c.hid, collections )
         on_text = on_text_for_names( collection_names )

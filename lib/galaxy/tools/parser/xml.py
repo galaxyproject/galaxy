@@ -236,7 +236,7 @@ class XmlToolSource(ToolSource):
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
         output.hidden = string_as_bool( data_elem.get("hidden", "") )
-        output.actions = galaxy.tools.ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
+        output.actions = galaxy.tools.parameters.output.ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
         output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
         return output
 

@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-import os, sys, logging, string, textwrap
+import logging
+import os
+import string
+import sys
+import textwrap
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )
@@ -10,27 +14,28 @@ log = logging.getLogger()
 log.setLevel( 10 )
 log.addHandler( logging.StreamHandler( sys.stdout ) )
 
-from galaxy import eggs
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 
-import time, ConfigParser, shutil
+import time
+import ConfigParser
 from datetime import datetime, timedelta
 from time import strftime
 from optparse import OptionParser
 
-from galaxy.tools import parameters
 from tool_shed.util.common_util import url_join
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping
 import sqlalchemy as sa
-from galaxy.model.orm import and_, not_, distinct
+from sqlalchemy import and_, distinct, not_
 from galaxy.util import send_mail as galaxy_send_mail
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+
 def build_citable_url( host, repository ):
     return url_join( host, 'view', repository.user.username, repository.name )
+
 
 def main():
     '''
@@ -42,7 +47,7 @@ def main():
     parser.add_option( "-v", "--verbose", action="store_true", dest="verbose", help="verbose mode, print the name of each repository", default=False )
     ( options, args ) = parser.parse_args()
     ini_file = args[0]
-    config_parser = ConfigParser.ConfigParser( {'here':os.getcwd()} )
+    config_parser = ConfigParser.ConfigParser( {'here': os.getcwd()} )
     config_parser.read( ini_file )
     config_dict = {}
     for key, value in config_parser.items( "app:main" ):
@@ -59,6 +64,7 @@ def main():
         print "# Displaying info only ( --info_only )"
 
     deprecate_repositories( app, cutoff_time, days=options.days, info_only=options.info_only, verbose=options.verbose )
+
 
 def send_mail_to_owner( app, name, owner, email, repositories_deprecated, days=14 ):
     '''
@@ -77,8 +83,8 @@ def send_mail_to_owner( app, name, owner, email, repositories_deprecated, days=1
         return
     subject = "Regarding your tool shed repositories at %s" % url
     message_body_template = 'The tool shed automated repository checker has discovered that one or more of your repositories hosted ' + \
-    'at this tool shed url ${url} have remained empty for over ${days} days, so they have been marked as deprecated. If you have plans ' + \
-    'for these repositories, you can mark them as un-deprecated at any time.'
+        'at this tool shed url ${url} have remained empty for over ${days} days, so they have been marked as deprecated. If you have plans ' + \
+        'for these repositories, you can mark them as un-deprecated at any time.'
     message_template = string.Template( message_body_template )
     body = '\n'.join( textwrap.wrap( message_template.safe_substitute( days=days, url=url ), width=95 ) )
     body += '\n\n'
@@ -92,12 +98,11 @@ def send_mail_to_owner( app, name, owner, email, repositories_deprecated, days=1
         print "# An error occurred attempting to send email: %s" % str( e )
         return False
 
+
 def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=False ):
     # This method will get a list of repositories that were created on or before cutoff_time, but have never
     # had any metadata records associated with them. Then it will iterate through that list and deprecate the
     # repositories, sending an email to each repository owner.
-    dataset_count = 0
-    disk_space = 0
     start = time.time()
     repository_ids_to_not_check = []
     # Get a unique list of repository ids from the repository_metadata table. Any repository ID found in this table is not
@@ -110,11 +115,11 @@ def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=
     # Get the repositories that are A) not present in the above list, and b) older than the specified time.
     # This will yield a list of repositories that have been created more than n days ago, but never populated.
     repository_query = sa.select( [ app.model.Repository.table.c.id ],
-                                  whereclause = and_( app.model.Repository.table.c.create_time < cutoff_time,
-                                                      app.model.Repository.table.c.deprecated == False,
-                                                      app.model.Repository.table.c.deleted == False,
-                                                      not_( app.model.Repository.table.c.id.in_( repository_ids_to_not_check ) ) ),
-                                  from_obj = [ app.model.Repository.table ] )
+                                  whereclause=and_( app.model.Repository.table.c.create_time < cutoff_time,
+                                                    app.model.Repository.table.c.deprecated == False,
+                                                    app.model.Repository.table.c.deleted == False,
+                                                    not_( app.model.Repository.table.c.id.in_( repository_ids_to_not_check ) ) ),
+                                  from_obj=[ app.model.Repository.table ] )
     query_result = repository_query.execute()
     repositories = []
     repositories_by_owner = {}
@@ -122,8 +127,7 @@ def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=
     # Iterate through the list of repository ids for empty repositories and deprecate them unless info_only is set.
     for repository_id in repository_ids:
         repository = app.sa_session.query( app.model.Repository ) \
-                               .filter( app.model.Repository.table.c.id == repository_id ) \
-                               .one()
+            .filter( app.model.Repository.table.c.id == repository_id ).one()
         owner = repository.user
         if info_only:
             print '# Repository %s owned by %s would have been deprecated, but info_only was set.' % ( repository.name, repository.user.username )
@@ -147,6 +151,7 @@ def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=
     print "# Elapsed time: ", stop - start
     print "####################################################################################"
 
+
 class DeprecateRepositoriesApplication( object ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, config ):
@@ -155,6 +160,7 @@ class DeprecateRepositoriesApplication( object ):
         # Setup the database engine and ORM
         self.model = galaxy.webapps.tool_shed.model.mapping.init( config.file_path, config.database_connection, engine_options={}, create_tables=False )
         self.config = config
+
     @property
     def sa_session( self ):
         """
@@ -163,7 +169,9 @@ class DeprecateRepositoriesApplication( object ):
         to allow migration toward a more SQLAlchemy 0.4 style of use.
         """
         return self.model.context.current
+
     def shutdown( self ):
         pass
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

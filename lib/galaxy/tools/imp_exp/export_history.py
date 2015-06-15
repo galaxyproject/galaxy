@@ -11,7 +11,6 @@ import os
 import sys
 import tarfile
 
-from galaxy import eggs
 from galaxy.util.json import dumps, loads
 
 
