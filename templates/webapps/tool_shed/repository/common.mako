@@ -1231,7 +1231,7 @@
             </div>
         </div>
     %endif
-    %if tool_test_results_root_folder:
+    %if tool_test_results_root_folder and trans.app.config.display_legacy_test_results:
         ${render_table_wrap_style( "test_environment" )}
         <p/>
         <div class="toolForm">
