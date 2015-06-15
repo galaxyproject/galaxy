@@ -1,6 +1,6 @@
 define([
     "libs/toastr",
-    "mvc/groups/group-model"
+    "group_model"
     ],
 function(
     mod_toastr,

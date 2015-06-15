@@ -3,9 +3,9 @@
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
 define([
-        "mvc/groups/group-list-view",
-        "mvc/groups/group-detail-view",
-        "mvc/groups/group-model"
+        'group_list',
+        'group_detail',
+        'group_model'
     ],
     function(
         mod_group_list,
