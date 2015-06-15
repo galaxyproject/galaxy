@@ -21,6 +21,7 @@ from galaxy.tools.parameters.basic import (
     SelectToolParameter,
 )
 from galaxy.tools.parameters.grouping import Conditional, Repeat, Section
+from galaxy.tools import global_tool_errors
 from galaxy.jobs.datasets import dataset_path_rewrites
 
 import logging
@@ -400,10 +401,25 @@ class ToolEvaluator( object ):
         self.extra_filenames = []
         self.command_line = None
 
-        self.__build_config_files( )
-        self.__build_param_file( )
-        self.__build_command_line( )
-
+        try:
+            self.__build_config_files( )
+        except Exception, e:
+            #capture and log parsing errors
+            global_tool_errors.add_error(self.tool.config_file, "Building Config Files", e)
+            raise e        
+        try:
+            self.__build_param_file( )
+        except Exception, e:
+            #capture and log parsing errors
+            global_tool_errors.add_error(self.tool.config_file, "Building Param File", e)
+            raise e
+        try:
+            self.__build_command_line( )
+        except Exception, e:
+            #capture and log parsing errors
+            global_tool_errors.add_error(self.tool.config_file, "Building Command Line", e)
+            raise e
+            
         return self.command_line, self.extra_filenames
 
     def __build_command_line( self ):

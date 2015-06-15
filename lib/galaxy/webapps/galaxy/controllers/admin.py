@@ -18,6 +18,7 @@ from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
+from galaxy.tools import global_tool_errors
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util.web_util import escape
@@ -823,6 +824,11 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                                     migration_stages_dict=migration_stages_dict,
                                     message=message,
                                     status=status )
+
+    @web.expose
+    @web.require_admin
+    def tool_errors( self, trans, **kwd ):
+        return trans.fill_template('admin/tool_errors.mako', tool_errors=global_tool_errors.error_stack)
 
     @web.expose
     @web.require_admin

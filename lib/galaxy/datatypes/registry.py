@@ -208,7 +208,7 @@ class Registry( object ):
                                         for mod in fields:
                                             module = getattr( module, mod )
                                         datatype_class = getattr( module, datatype_class_name )
-                                        self.log.debug( 'Retrieved datatype module %s from the datatype registry.' % str( datatype_module ) )
+                                        self.log.debug( 'Retrieved datatype module %s:%s from the datatype registry.' % ( str( datatype_module ), datatype_class_name ) )
                                     except Exception, e:
                                         self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
                                         ok = False

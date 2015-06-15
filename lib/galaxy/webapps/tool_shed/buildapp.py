@@ -86,6 +86,21 @@ def app_factory( global_conf, **kwargs ):
                            controller='authenticate',
                            action='get_tool_shed_api_key',
                            conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( 'group',
+                           '/api/groups/',
+                           controller='groups',
+                           action='index',
+                           conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( 'group',
+                           '/api/groups/',
+                           controller='groups',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
+    webapp.mapper.connect( 'group',
+                           '/api/groups/:encoded_id',
+                           controller='groups',
+                           action='show',
+                           conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( 'repo_search',
                            '/api/search/',
                            controller='search',

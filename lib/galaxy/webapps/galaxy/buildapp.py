@@ -2,11 +2,15 @@
 Provides factory methods to assemble the Galaxy web application
 """
 
-import atexit
+import os
 import sys
+import atexit
 
-from paste import httpexceptions
-import pkg_resources
+try:
+    import configparser
+except:
+    import ConfigParser as configparser
+
 
 import galaxy.app
 from galaxy.config import process_is_uwsgi
@@ -18,6 +22,10 @@ import galaxy.web.framework.webapp
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+
+from galaxy import eggs
+eggs.require('Paste')
+from paste import httpexceptions
 
 import logging
 log = logging.getLogger( __name__ )
@@ -37,6 +45,10 @@ class GalaxyWebApplication( galaxy.web.framework.webapp.WebApplication ):
 
 
 def app_factory( global_conf, **kwargs ):
+    return paste_app_factory( global_conf, **kwargs )
+
+
+def paste_app_factory( global_conf, **kwargs ):
     """
     Return a wsgi application serving the root object
     """
@@ -117,6 +129,22 @@ def app_factory( global_conf, **kwargs ):
 
     # Return
     return webapp
+
+
+def uwsgi_app_factory():
+    import uwsgi
+    root = os.path.abspath(uwsgi.opt.get('galaxy_root', os.getcwd()))
+    config_file = uwsgi.opt.get('galaxy_config_file', os.path.join(root, 'config', 'galaxy.ini'))
+    global_conf = {
+        '__file__' : config_file if os.path.exists(__file__) else None,
+        'here' : root }
+    parser = configparser.ConfigParser()
+    parser.read(config_file)
+    try:
+        kwargs = dict(parser.items('app:main'))
+    except configparser.NoSectionError:
+        kwargs = {}
+    return app_factory(global_conf, **kwargs)
 
 
 @postfork
@@ -635,7 +663,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        pkg_resources.require( "WebError" )
+        eggs.require( "WebError" )
         from weberror import evalexception
         app = evalexception.EvalException( app, conf,
                                            templating_formatters=build_template_error_formatters() )

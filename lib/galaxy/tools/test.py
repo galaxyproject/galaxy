@@ -48,7 +48,7 @@ class ToolTestBuilder( object ):
         self.name = name
         self.maxseconds = maxseconds
         self.required_files = []
-        self.inputs = []
+        self.inputs = {}
         self.outputs = []
         # By default do not making assertions on number of outputs - but to
         # test filtering allow explicitly state number of outputs.
@@ -134,6 +134,7 @@ class ToolTestBuilder( object ):
             self.expect_failure = test_dict.get("expect_failure", False)
             self.md5 = test_dict.get("md5", None)
         except Exception, e:
+            self.inputs = {}
             self.error = True
             self.exception = e
 
