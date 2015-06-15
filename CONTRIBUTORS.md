@@ -21,7 +21,7 @@ The following individuals have contributed code to Galaxy:
 * Anthony Bretaudeau <anthony.bretaudeau@rennes.inra.fr> <abretaud@irisa.fr>
 * Richard Burhans <burhans@bx.psu.edu>
 * Jennifer Cabral <jencabral@gmail.com>
-* Martin Cech <cech.marten@gmail.com> <emulatorer@gmail.com>
+* Martin Čech <marten@bx.psu.edu>
 * Ramkrishna Chakrabarty <rc@bx.psu.edu>
 * Brad Chapman <chapmanb@50mail.com>
 * John Chilton <jmchilton@gmail.com>
