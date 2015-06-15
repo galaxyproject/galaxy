@@ -5,7 +5,7 @@ The following individuals have contributed code to Galaxy:
 * Enis Afgan <afgane@gmail.com>
 * Istvan Albert <istvan.albert@gmail.com>
 * Renato Alves <alves.rjc@gmail.com> <rjalves@igc.gulbenkian.pt>
-* Guruprasad Anada <gua110@bx.psu.edu>
+* Guruprasad Ananda <gua110@bx.psu.edu>
 * Florent Angly <florent.angly@gmail.com>
 * Raj Ayyampalayam <raj76@uga.edu>
 * Finn Bacall <finn.bacall@cs.man.ac.uk>
