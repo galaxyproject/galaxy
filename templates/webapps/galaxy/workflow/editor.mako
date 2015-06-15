@@ -50,7 +50,7 @@
         };
 
         $( function() {
-            require(['mvc/workflow/workflow'], function(Workflow){
+            require(['mvc/workflow/workflow-view'], function(Workflow){
                 workflow_view = new Workflow(config);
             });
         });
