@@ -133,6 +133,10 @@ class Registry( object ):
                 # If make_subclass is True, it does not necessarily imply that we are subclassing a datatype that is contained
                 # in the distribution.
                 make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
+                edam_format = elem.get( 'edam_format', None )
+                if edam_format and not make_subclass:
+                    self.log.warn("Cannot specify edam_format without setting subclass to True, skipping datatype.")
+                    continue
                 # Proprietary datatypes included in installed tool shed repositories will include two special attributes
                 # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
                 # The value of proprietary_path is the path to the cloned location of the tool shed repository's contained
@@ -230,6 +234,8 @@ class Registry( object ):
                                                       ( str( extension ), str( config ) ) )
                                 if make_subclass:
                                     datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
+                                    if edam_format:
+                                        datatype_class.edam_format = edam_format
                                 self.datatypes_by_extension[ extension ] = datatype_class()
                                 if mimetype is None:
                                     # Use default mimetype per datatype specification.
