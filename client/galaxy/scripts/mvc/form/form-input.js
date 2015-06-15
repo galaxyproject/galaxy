@@ -124,6 +124,9 @@ define([], function() {
             tmp +=              '<div class="ui-table-form-info">';
             if (options.help) {
                 tmp +=              options.help;
+                if (options.argument) {
+                    tmp += ' (' + options.argument + ')';
+                }
             }
             tmp +=              '</div>';
             
