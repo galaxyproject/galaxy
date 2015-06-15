@@ -1,14 +1,15 @@
-define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], function(Manager, Shared){
+define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-manager', 'mvc/workflow/workflow-canvas', 'mvc/workflow/workflow-node', 'mvc/tools/tools-form-workflow'],
+    function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm ){
     // create form view
     return Backbone.View.extend({
         initialize: function(options) {
-            var self = this;
+            var self = Globals.app = this;
             this.options = options;
             this.urls = options && options.urls || {};
             this.active_ajax_call = false;
             var close_editor = function() {
-                Shared.workflow.check_changes_in_active_form();
-                if ( workflow && Shared.workflow.has_changes ) {
+                self.workflow.check_changes_in_active_form();
+                if ( workflow && self.workflow.has_changes ) {
                     do_close = function() {
                         window.onbeforeunload = undefined;
                         window.document.location = self.urls.workflow_index;
@@ -29,22 +30,22 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
             };
             var save_current_workflow = function ( eventObj, success_callback ) {
                 show_message( "Saving workflow", "progress" );
-                Shared.workflow.check_changes_in_active_form();
-                if (!Shared.workflow.has_changes) {
+                self.workflow.check_changes_in_active_form();
+                if (!self.workflow.has_changes) {
                     hide_modal();
                     if ( success_callback ) {
                         success_callback();
                     }
                     return;
                 }
-                Shared.workflow.rectify_workflow_outputs();
+                self.workflow.rectify_workflow_outputs();
                 var savefn = function(callback) {
                     $.ajax( {
                         url: self.urls.save_workflow,
                         type: "POST",
                         data: {
                             id: self.options.id,
-                            workflow_data: function() { return JSON.stringify( Shared.workflow.to_simple() ); },
+                            workflow_data: function() { return JSON.stringify( self.workflow.to_simple() ); },
                             "_": "true"
                         },
                         dataType: 'json',
@@ -60,10 +61,10 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
                             } else {
                                 body.addClass( "donemark" );
                             }
-                            Shared.workflow.name = data.name;
-                            Shared.workflow.has_changes = false;
-                            Shared.workflow.stored = true;
-                            self.show_workflow_parameters();
+                            self.workflow.name = data.name;
+                            self.workflow.has_changes = false;
+                            self.workflow.stored = true;
+                            self.showWorkflowParameters();
                             if ( data.errors ) {
                                 show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
                             } else {
@@ -168,7 +169,7 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
             });
 
             // Canvas overview management
-            Shared.canvas_manager = new Manager.CanvasManager( $("#canvas-viewport"), $("#overview") );
+            this.canvas_manager = Globals.canvas_manager = new WorkflowCanvas( this, $("#canvas-viewport"), $("#overview") );
 
             // Initialize workflow state
             this.reset();
@@ -186,7 +187,10 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
                 dataType: "json",
                 cache: false,
                 success: function( data ) {
-                    Manager.populate_datatype_info( data );
+                    // populate datatypes
+                    self.ext_to_type = data.ext_to_class_name;
+                    self.type_to_type = data.class_to_classes;
+
                     // Load workflow definition
                     $.ajax( {
                         url: self.urls.load_workflow,
@@ -195,15 +199,15 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
                         cache: false,
                         success: function( data ) {
                              self.reset();
-                             Shared.workflow.from_simple( data );
-                             Shared.workflow.has_changes = false;
-                             Shared.workflow.fit_canvas_to_nodes();
+                             self.workflow.from_simple( data );
+                             self.workflow.has_changes = false;
+                             self.workflow.fit_canvas_to_nodes();
                              self.scroll_to_nodes();
-                             Shared.canvas_manager.draw_overview();
+                             self.canvas_manager.draw_overview();
                              // Determine if any parameters were 'upgraded' and provide message
                              upgrade_message = "";
                              $.each( data.upgrade_messages, function( k, v ) {
-                                upgrade_message += ( "<li>Step " + ( parseInt(k, 10) + 1 ) + ": " + Shared.workflow.nodes[k].name + "<ul>");
+                                upgrade_message += ( "<li>Step " + ( parseInt(k, 10) + 1 ) + ": " + self.workflow.nodes[k].name + "<ul>");
                                 $.each( v, function( i, vv ) {
                                     upgrade_message += "<li>" + vv +"</li>";
                                 });
@@ -216,7 +220,7 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
                              } else {
                                 hide_modal();
                              }
-                             self.show_workflow_parameters();
+                             self.showWorkflowParameters();
                          },
                          beforeSubmit: function( data ) {
                              show_message( "Loading workflow", "progress" );
@@ -254,11 +258,11 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
             });
 
             function edit_workflow_outputs(){
-                Shared.workflow.clear_active_node();
+                self.workflow.clear_active_node();
                 $('.right-content').hide();
                 var new_content = "";
-                for (var node_key in Shared.workflow.nodes){
-                    var node = Shared.workflow.nodes[node_key];
+                for (var node_key in self.workflow.nodes){
+                    var node = self.workflow.nodes[node_key];
                     if(node.type == 'tool'){
                         new_content += "<div class='toolForm' style='margin-bottom:5px;'><div class='toolFormTitle'>Step " + node.id + " - " + node.name + "</div>";
                         for (var ot_key in node.output_terminals){
@@ -279,32 +283,31 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
                     var node_id = this.name.split('|')[0];
                     var output_name = this.name.split('|')[1];
                     if (this.checked){
-                        if($.inArray(output_name, Shared.workflow.nodes[node_id].workflow_outputs) == -1){
-                            Shared.workflow.nodes[node_id].workflow_outputs.push(output_name);
+                        if($.inArray(output_name, self.workflow.nodes[node_id].workflow_outputs) == -1){
+                            self.workflow.nodes[node_id].workflow_outputs.push(output_name);
                         }//else it's already in the array.  Shouldn't happen, but forget it.
                     }else{
-                        while ($.inArray(output_name, Shared.workflow.nodes[node_id].workflow_outputs) != -1){
-                            var ia = $.inArray(output_name, Shared.workflow.nodes[node_id].workflow_outputs);
-                            Shared.workflow.nodes[node_id].workflow_outputs = Shared.workflow.nodes[node_id].workflow_outputs.slice(0,ia).concat( Shared.workflow.nodes[node_id].workflow_outputs.slice(ia+1) );
+                        while ($.inArray(output_name, self.workflow.nodes[node_id].workflow_outputs) != -1){
+                            var ia = $.inArray(output_name, self.workflow.nodes[node_id].workflow_outputs);
+                            self.workflow.nodes[node_id].workflow_outputs = self.workflow.nodes[node_id].workflow_outputs.slice(0,ia).concat( self.workflow.nodes[node_id].workflow_outputs.slice(ia+1) );
                         }
                     }
-                    Shared.workflow.has_changes = true;
+                    self.workflow.has_changes = true;
                 });
                 $('#workflow-output-area').show();
             }
 
             function layout_editor() {
-                Shared.workflow.layout();
-                Shared.workflow.fit_canvas_to_nodes();
+                self.workflow.layout();
+                self.workflow.fit_canvas_to_nodes();
                 self.scroll_to_nodes();
-                Shared.canvas_manager.draw_overview();
+                self.canvas_manager.draw_overview();
             }
 
             function edit_workflow_attributes() {
-                Shared.workflow.clear_active_node(function() {
-                    $('.right-content').hide();
-                    $('#edit-attributes').show();
-                });
+                self.workflow.clear_active_node();
+                $('.right-content').hide();
+                $('#edit-attributes').show();
             }
 
             // On load, set the size to the pref stored in local storage if it exists
@@ -355,7 +358,7 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
 
             // Unload handler
             window.onbeforeunload = function() {
-                if ( workflow && Shared.workflow.has_changes ) {
+                if ( workflow && self.workflow.has_changes ) {
                     return "There are unsaved changes to your workflow which will be lost.";
                 }
             };
@@ -393,10 +396,10 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
 
         // Global state for the whole workflow
         reset: function() {
-            if ( Shared.workflow ) {
-                Shared.workflow.remove_all();
+            if ( this.workflow ) {
+                this.workflow.remove_all();
             }
-            Shared.workflow = new Manager.Workflow( $("#canvas-container") );
+            this.workflow = Globals.workflow = new Workflow( this, $("#canvas-container") );
         },
 
         scroll_to_nodes: function () {
@@ -418,7 +421,7 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
 
         // Add a new step to the workflow by tool id
         add_node_for_tool: function ( id, title ) {
-            node = Shared.workflow.create_node( 'tool', title, id );
+            node = this.workflow.create_node( 'tool', title, id );
             $.ajax( {
                 url: this.urls.get_new_module_info,
                 data: { type: "tool", tool_id: id, "_": "true" },
@@ -438,7 +441,7 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
         },
 
         add_node_for_module: function ( type, title ) {
-            node = Shared.workflow.create_node( type, title );
+            node = this.workflow.create_node( type, title );
             $.ajax( {
                 url: this.urls.get_new_module_info,
                 data: { type: type, "_": "true" },
@@ -459,12 +462,13 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
         // This function preloads how to display known pja's.
         display_pja: function (pja, node) {
             // DBTODO SANITIZE INPUTS.
+            var self = this;
             $("#pja_container").append( get_pja_form(pja, node) );
             $("#pja_container>.toolForm:last>.toolFormTitle>.buttons").click(function (){
                 action_to_rem = $(this).closest(".toolForm", ".action_tag").children(".action_tag:first").text();
                 $(this).closest(".toolForm").remove();
-                delete Shared.workflow.active_node.post_job_actions[action_to_rem];
-                Shared.workflow.active_form_has_changes = true;
+                delete self.workflow.active_node.post_job_actions[action_to_rem];
+                self.workflow.active_form_has_changes = true;
             });
         },
 
@@ -486,28 +490,28 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
                 //New tool node, set up dict.
                 node.post_job_actions = {};
             }
-            if (node.post_job_actions[action_type+target] === undefined){
+            if (node.post_job_actions[action_type+target] === undefined) {
                 var new_pja = {};
                 new_pja.action_type = action_type;
                 new_pja.output_name = target;
                 node.post_job_actions[action_type+target] = null;
                 node.post_job_actions[action_type+target] =  new_pja;
                 display_pja(new_pja, node);
-                Shared.workflow.active_form_has_changes = true;
+                this.workflow.active_form_has_changes = true;
                 return true;
             } else {
                 return false;
             }
         },
 
-        show_workflow_parameters: function (){
+        showWorkflowParameters: function () {
             var parameter_re = /\$\{.+?\}/g;
             var workflow_parameters = [];
             var wf_parm_container = $("#workflow-parameters-container");
             var wf_parm_box = $("#workflow-parameters-box");
             var new_parameter_content = "";
             var matches = [];
-            $.each(Shared.workflow.nodes, function (k, node){
+            $.each(this.workflow.nodes, function (k, node){
                 var form_matches = node.form_html.match(parameter_re);
                 if (form_matches){
                     matches = matches.concat(form_matches);
@@ -542,6 +546,160 @@ define(['mvc/workflow/workflow-manager', 'mvc/workflow/workflow-objects'], funct
                 wf_parm_container.html(new_parameter_content);
                 wf_parm_box.hide();
             }
+        },
+
+        showToolForm: function ( text, node ) {
+            // initialize tags and identifiers
+            var cls = 'right-content';
+            var id  = cls + '-' + node.id;
+
+            // grab panel container
+            var $container = $('#' + cls);
+
+            // remove previous notifications
+            var $current = $container.find('#' + id);
+            if ($current.length > 0 && $current.find('.section-row').length == 0) {
+                $current.remove();
+            }
+
+            // check if tool form already exists
+            if ($container.find('#' + id).length == 0) {
+                var $el = $('<div id="' + id + '" class="' + cls + '"/>');
+                if (node.type == 'tool' && Utils.isJSON(text)) {
+                    var options = JSON.parse(text);
+                    options.node = node;
+                    options.datatypes = datatypes;
+                    $el.append((new ToolsForm.View(options)).$el);
+                } else {
+                    $el.append(this._genericFormTemplate( text, node ));
+                }
+                $container.append($el);
+            }
+
+            // hide everything
+            $('.' + cls).hide();
+
+            // show current form
+            $container.find('#' + id).show();
+            $container.show();
+            $container.scrollTop();
+        },
+
+        _genericFormTemplate: function ( text, node ) {
+            var $el = $('<div/>').html( text );
+            if (node && node.id != 'no-node') {
+                $el.find('.toolForm:first').after(this._genericStepAttributesTemplate( node ));
+                var self = this;
+                $el.find( 'form' ).ajaxForm( {
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function( data ) {
+                        self.workflow.active_form_has_changes = false;
+                        node.update_field_data( data );
+                        self.showWorkflowParameters();
+                    },
+                    beforeSubmit: function( data ) {
+                        data.push( { name: 'tool_state', value: node.tool_state } );
+                        data.push( { name: '_', value: 'true' } );
+                    }
+                }).each( function() {
+                    var form = this;
+                    $(this).find('select[refresh_on_change="true"]').change( function() {
+                        $(form).submit();
+                    });
+                    $(this).find('input[refresh_on_change="true"]').change( function() {
+                        $(form).submit();
+                    });
+                    $(this).find('input, textarea, select').each( function() {
+                        $(this).bind('focus click', function() {
+                            self.workflow.active_form_has_changes = true;
+                        });
+                    });
+                });
+            }
+            return $el;
+        },
+
+        _genericStepAttributesTemplate: function( node ) {
+            return  '<p>' +
+                        '<div class="metadataForm">' +
+                            '<div class="metadataFormTitle">' +
+                                'Edit Step Attributes' +
+                            '</div>' +
+                            '<div class="form-row">' +
+                                '<label>Annotation / Notes:</label>' +
+                                '<div style="margin-right: 10px;">' +
+                                    '<textarea name="annotation" rows="3" style="width: 100%">' +
+                                        node.annotation +
+                                    '</textarea>' +
+                                    '<div class="toolParamHelp">' +
+                                        'Add an annotation or notes to this step; annotations are available when a workflow is viewed.' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</p>';
+        },
+
+        isSubType: function ( child, parent ) {
+            child = this.ext_to_type[child];
+            parent = this.ext_to_type[parent];
+            return ( this.type_to_type[child] ) && ( parent in this.type_to_type[child] );
+        },
+
+        prebuildNode: function ( type, title_text, tool_id ) {
+            var self = this;
+            var f = $("<div class='toolForm toolFormInCanvas'></div>");
+            var node = new Node( { element: f } );
+            node.type = type;
+            if ( type == 'tool' ) {
+                node.tool_id = tool_id;
+            }
+            var title = $("<div class='toolFormTitle unselectable'>" + title_text + "</div>" );
+            f.append( title );
+            f.css( "left", $(window).scrollLeft() + 20 ); f.css( "top", $(window).scrollTop() + 20 );    
+            var b = $("<div class='toolFormBody'></div>");
+            var tmp = "<div><img height='16' align='middle' src='" + galaxy_config.root + "static/images/loading_small_white_bg.gif'/> loading tool info...</div>";
+            b.append( tmp );
+            node.form_html = tmp;
+            f.append( b );
+            // Fix width to computed width
+            // Now add floats
+            var buttons = $("<div class='buttons' style='float: right;'></div>");
+            buttons.append( $("<div>").addClass("fa-icon-button fa fa-times").click( function( e ) {
+                node.destroy();
+            }));
+            // Place inside container
+            f.appendTo( "#canvas-container" );
+            // Position in container
+            var o = $("#canvas-container").position();
+            var p = $("#canvas-container").parent();
+            var width = f.width();
+            var height = f.height();
+            f.css( { left: ( - o.left ) + ( p.width() / 2 ) - ( width / 2 ), top: ( - o.top ) + ( p.height() / 2 ) - ( height / 2 ) } );
+            buttons.prependTo( title );
+            width += ( buttons.width() + 10 );
+            f.css( "width", width );
+            $(f).bind( "dragstart", function() {
+                self.workflow.activate_node( node );
+            }).bind( "dragend", function() {
+                self.workflow.node_changed( this );
+                self.workflow.fit_canvas_to_nodes();
+                self.canvas_manager.draw_overview();
+            }).bind( "dragclickonly", function() {
+                self.workflow.activate_node( node );
+            }).bind( "drag", function( e, d ) {
+                // Move
+                var po = $(this).offsetParent().offset(),
+                    x = d.offsetX - po.left,
+                    y = d.offsetY - po.top;
+                $(this).css( { left: x, top: y } );
+                // Redraw
+                $(this).find( ".terminal" ).each( function() {
+                    this.terminal.redraw();
+                });
+            });
+            return node;
         }
     });
 });
