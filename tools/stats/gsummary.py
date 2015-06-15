@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
 import sys, re, tempfile
-from rpy import *
+try:
+    from rpy2.rpy_classic import *
+except:
+    # RPy isn't maintained, and doesn't work with R>3.0, use it as a fallback
+    from rpy import *
+
 # Older py compatibility
 try:
     set()
@@ -87,11 +92,11 @@ def main():
         stop_err( "Invalid column or column data values invalid for computation.  See tool tips and syntax for data requirements." )
     else:
         # summary function and return labels
+        set_default_mode( NO_CONVERSION )
         summary_func = r( "function( x ) { c( sum=sum( as.numeric( x ), na.rm=T ), mean=mean( as.numeric( x ), na.rm=T ), stdev=sd( as.numeric( x ), na.rm=T ), quantile( as.numeric( x ), na.rm=TRUE ) ) }" )
         headings = [ 'sum', 'mean', 'stdev', '0%', '25%', '50%', '75%', '100%' ]
         headings_str = "\t".join( headings )
         
-        set_default_mode( NO_CONVERSION )
         r_data_frame = r.read_table( tmp_file.name, header=True, sep="\t" )
         
         outfile = open( outfile_name, 'w' )
@@ -105,7 +110,7 @@ def main():
             stop_err( "Computation resulted in the following error: %s" % str( s ) )
         summary = summary.as_py( BASIC_CONVERSION )
         outfile.write( "#%s\n" % headings_str )
-        outfile.write( "%s\n" % "\t".join( [ "%g" % ( summary[ k ] ) for k in headings ] ) )
+        outfile.write( "%s\n" % "\t".join( [ "%g" % k for k in summary ] ) )
         outfile.close()
 
         if skipped_lines:

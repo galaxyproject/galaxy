@@ -58,9 +58,9 @@ This tool converts a LAV formatted file to the BED format.
 
     chr19	3001011	3001075	hg16_0	0	+
     chr19	3008278	3008357	hg16_1	0	+
-    
+
  **and**::
-    
+
     chr11	70568379	70568443	mm5_0	0	+
     chr11	70573975	70574054	mm5_1	0	+
   </help>

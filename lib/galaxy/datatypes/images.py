@@ -36,6 +36,8 @@ log = logging.getLogger(__name__)
 
 class Image( data.Data ):
     """Class describing an image"""
+    edam_format = "format_3547"
+
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = 'Image in %s format' % dataset.extension
@@ -92,6 +94,7 @@ class Bmp( Image ):
 
 
 class Gif( Image ):
+    edam_format = "format_3467"
     file_ext = "gif"
 
     def sniff(self, filename, image=None):
@@ -180,6 +183,7 @@ class Pgm( Image ):
 
 
 class Eps( Image ):
+    edam_format = "format_3466"
     file_ext = "eps"
 
     def sniff(self, filename, image=None):
@@ -196,6 +200,7 @@ class Rast( Image ):
 
 
 class Pdf( Image ):
+    edam_format = "format_3508"
     file_ext = "pdf"
 
     def sniff(self, filename):
@@ -233,6 +238,7 @@ def create_applet_tag_peek( class_name, archive, params ):
 
 class Gmaj( data.Data ):
     """Class describing a GMAJ Applet"""
+    edam_format = "format_3547"
     file_ext = "gmaj.zip"
     copy_safe_peek = False
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -285,6 +291,7 @@ class Gmaj( data.Data ):
 
 class Html( data.Text ):
     """Class describing an html file"""
+    edam_format = "format_2331"
     file_ext = "html"
 
     def set_peek( self, dataset, is_multi_byte=False ):

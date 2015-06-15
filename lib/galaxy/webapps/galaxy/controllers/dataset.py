@@ -674,7 +674,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
             return trans.show_error_message( "You are not allowed to view this dataset at external sites.  Please contact your Galaxy administrator to acquire management permissions for this dataset." )
 
     @web.expose
-    def display_application( self, trans, dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None, **kwds ):
+    def display_application( self, trans, dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None, action_param_extra = None, **kwds ):
         """Access to external display applications"""
         # Build list of parameters to pass in to display application logic (app_kwds)
         app_kwds = {}
@@ -743,15 +743,20 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, Uses
                         assert value.parameter.viewable, "This parameter is not viewable."
                         if value.parameter.type == 'data':
                             try:
-                                content_length = os.path.getsize( value.file_name )
-                                rval = open( value.file_name )
+                                if action_param_extra:
+                                    assert value.parameter.allow_extra_files_access, "Extra file content requested (%s), but allow_extra_files_access is False." % ( action_param_extra )
+                                    file_name = os.path.join( value.extra_files_path, action_param_extra )
+                                else:
+                                    file_name = value.file_name
+                                content_length = os.path.getsize( file_name )
+                                rval = open( file_name )
                             except OSError, e:
                                 log.debug( "Unable to access requested file in display application: %s", e )
                                 return paste.httpexceptions.HTTPNotFound( "This file is no longer available." )
                         else:
                             rval = str( value )
                             content_length = len( rval )
-                        trans.response.set_content_type( value.mime_type() )
+                        trans.response.set_content_type( value.mime_type( action_param_extra = action_param_extra ) )
                         trans.response.headers[ 'Content-Length' ] = content_length
                         return rval
                     elif app_action == None:

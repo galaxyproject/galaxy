@@ -585,8 +585,8 @@ class WorkflowContentsManager(UsesAnnotations):
             yield step_dict
 
     def __module_from_dict( self, trans, step_dict, secure ):
-        """ Create a WorkflowStep model object and corrsponding module representing
-        type-specific functionality from the incoming dicitionary.
+        """ Create a WorkflowStep model object and corresponding module
+        representing type-specific functionality from the incoming dictionary.
         """
         step = model.WorkflowStep()
         # TODO: Consider handling position inside module.

@@ -73,7 +73,9 @@ class DatasetCollectionManager( object ):
                 for input_name, input_collection in implicit_collection_info[ "implicit_inputs" ]:
                     dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
                 for output_dataset in implicit_collection_info.get( "outputs" ):
-                    if isinstance( output_dataset, model.HistoryDatasetCollectionAssociation ):
+                    if isinstance( output_dataset, model.HistoryDatasetAssociation ):
+                        output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
+                    elif isinstance( output_dataset, model.HistoryDatasetCollectionAssociation ):
                         dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
                     else:
                         # dataset collection, don't need to do anything...

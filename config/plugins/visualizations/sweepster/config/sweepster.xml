@@ -20,6 +20,6 @@
         <param type="hda_or_ldda" var_name_in_template="dataset">dataset_id</param>
         <param_modifier type="string" modifies="dataset_id">hda_ldda</param_modifier>
     </params>
-    <template>sweepster.mako</template>
+    <entry_point entry_point_type="mako">sweepster.mako</entry_point>
     <render_target>_top</render_target>
 </visualization>

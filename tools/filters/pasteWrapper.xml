@@ -47,7 +47,7 @@ This tool merges two datasets side by side. If the first (left) dataset contains
 **Example**
 
 First dataset::
-  
+
     a 1
     a 2
     a 3

@@ -3,12 +3,14 @@
   <tool file="upload.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="inheritance_simple.xml" />
+  <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
   <tool file="compare_bam_as_sam.xml" />
   <tool file="code_file.xml" />
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
   <tool file="multi_page.xml"/>
+  <tool file="library_data.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />

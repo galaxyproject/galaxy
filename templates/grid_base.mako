@@ -6,13 +6,14 @@
         if kwargs.get( 'embedded', False ):
             # No inheritance - using only embeddable content (self.body)
             return None
-
         if context.get('use_panels'):
             if context.get('webapp'):
-                webapp = context.get('webapp')
+                app_name = context.get('webapp')
+            elif context.get('app'):
+                app_name = context.get('app').name
             else:
-                webapp = 'galaxy'
-            return '/webapps/%s/base_panels.mako' % webapp
+                app_name = 'galaxy'
+            return '/webapps/%s/base_panels.mako' % app_name
         else:
             return '/base.mako'
 %>

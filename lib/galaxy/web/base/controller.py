@@ -2040,7 +2040,7 @@ class UsesTagsMixin( SharableItemSecurityMixin ):
     def _apply_item_tag( self, trans, item_class_name, id, tag_name, tag_value=None ):
         user = trans.user
         tagged_item = self._get_tagged_item( trans, item_class_name, id )
-        tag_assoc = self.get_tag_handler( trans ).apply_item_tag( trans, user, tagged_item, tag_name, tag_value )
+        tag_assoc = self.get_tag_handler( trans ).apply_item_tag( user, tagged_item, tag_name, tag_value )
         trans.sa_session.flush()
         return tag_assoc
 

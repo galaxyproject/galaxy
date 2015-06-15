@@ -485,6 +485,7 @@ model.JobExternalOutputMetadata.table = Table( "job_external_output_metadata", m
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
+    Column( "is_valid", Boolean, default=True ),
     Column( "filename_in", String( 255 ) ),
     Column( "filename_out", String( 255 ) ),
     Column( "filename_results_code", String( 255 ) ),

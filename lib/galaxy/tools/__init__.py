@@ -13,6 +13,8 @@ import threading
 import types
 import urllib
 import copy
+import traceback
+from datetime import datetime
 
 from galaxy import eggs, util
 
@@ -27,6 +29,7 @@ from mako.template import Template
 from paste import httpexceptions
 
 from galaxy import model
+from galaxy.managers import histories
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
 from galaxy.tools.actions import DefaultToolAction
@@ -60,18 +63,7 @@ from galaxy.model.item_attrs import Dictifiable
 from tool_shed.util import shed_util_common as suc
 from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
-from .wrappers import (
-    ToolParameterValueWrapper,
-    RawObjectWrapper,
-    LibraryDatasetValueWrapper,
-    InputValueWrapper,
-    SelectToolParameterWrapper,
-    DatasetFilenameWrapper,
-    DatasetListWrapper,
-    DatasetCollectionWrapper,
-)
 import galaxy.jobs
-
 
 log = logging.getLogger( __name__ )
 
@@ -89,6 +81,24 @@ JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
 
 HELP_UNINITIALIZED = threading.Lock()
 
+
+class ToolErrorLog:
+    def __init__(self):
+        self.error_stack = []
+        self.max_errors = 100
+    
+    def add_error(self, file, phase, exception):
+        self.error_stack.insert(0, {
+            "file" : file,
+            "time" : str(datetime.now()),
+            "phase" : phase,
+            "error" :  str(exception)
+        } )
+        if len(self.error_stack) > self.max_errors:
+            self.error_stack.pop()
+        
+
+global_tool_errors = ToolErrorLog()
 
 class ToolNotFoundException( Exception ):
     pass
@@ -113,7 +123,12 @@ class ToolBox( AbstractToolBox ):
         return self._tools_by_id
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
-        tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
+        try:
+            tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
+        except Exception, e:
+            #capture and log parsing errors
+            global_tool_errors.add_error(config_file, "Tool XML parsing", e)
+            raise e
         # Allow specifying a different tool subclass to instantiate
         tool_module = tool_source.parse_tool_module()
         if tool_module is not None:
@@ -273,6 +288,14 @@ class ToolOutput( ToolOutputBase ):
 
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
+
+    def to_dict( self, view='collection', value_mapper=None, app=None ):
+        as_dict = super( ToolOutput, self ).to_dict( view=view, value_mapper=value_mapper )
+        format = self.format
+        if format and format != "input" and app:
+            edam_format = app.datatypes_registry.edam_formats.get(self.format)
+            as_dict["edam_format"] = edam_format
+        return as_dict
 
 
 class ToolOutputCollection( ToolOutputBase ):
@@ -462,8 +485,13 @@ class Tool( object, Dictifiable ):
         #populate toolshed repository info, if available
         self.populate_tool_shed_info()
         # Parse XML element containing configuration
-        self.parse( tool_source, guid=guid )
+        try:
+            self.parse( tool_source, guid=guid )
+        except Exception, e:
+            global_tool_errors.add_error(config_file, "Tool Loading", e)
+            raise e
         self.external_runJob_script = app.config.drmaa_external_runjob_script
+        self.history_manager = histories.HistoryManager( app )
 
     @property
     def sa_session( self ):
@@ -497,8 +525,16 @@ class Tool( object, Dictifiable ):
         return None
 
     @property
-    def produces_collections( self ):
-        return any( o.collection for o in self.outputs.values() )
+    def produces_collections_of_unknown_type( self ):
+
+        def output_is_dynamic_collection(output):
+            if not output.collection:
+                return False
+            if output.structure.collection_type:
+                return False
+            return True
+
+        return any( map( output_is_dynamic_collection,  self.outputs.values() ) )
 
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
@@ -1119,8 +1155,8 @@ class Tool( object, Dictifiable ):
         if self.tool_type.startswith( 'data_source' ):
             return False
 
-        if self.produces_collections:
-            # Someday we will get there!
+        if self.produces_collections_of_unknown_type:
+            # Getting there...
             return False
 
         if hasattr( tool_source, "root"):
@@ -1890,10 +1926,12 @@ class Tool( object, Dictifiable ):
         """
         args = dict()
         for key, param in self.inputs.iteritems():
-            if isinstance( param, HiddenToolParameter ):
+            # BaseURLToolParameter is now a subclass of HiddenToolParameter, so
+            # we must check if param is a BaseURLToolParameter first
+            if isinstance( param, BaseURLToolParameter ):
+                args[key] = param.get_initial_value( trans, None )
+            elif isinstance( param, HiddenToolParameter ):
                 args[key] = model.User.expand_user_properties( trans.user, param.value )
-            elif isinstance( param, BaseURLToolParameter ):
-                args[key] = param.get_value( trans )
             else:
                 raise Exception( "Unexpected parameter type" )
         return args
@@ -2253,7 +2291,7 @@ class Tool( object, Dictifiable ):
         # Add input and output details.
         if io_details:
             tool_dict[ 'inputs' ] = [ input.to_dict( trans ) for input in self.inputs.values() ]
-            tool_dict[ 'outputs' ] = [ output.to_dict() for output in self.outputs.values() ]
+            tool_dict[ 'outputs' ] = [ output.to_dict( app=trans.app ) for output in self.outputs.values() ]
 
         tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
 
@@ -2265,6 +2303,22 @@ class Tool( object, Dictifiable ):
         """
         job_id = kwd.get('__job_id__', None)
         dataset_id = kwd.get('__dataset_id__', None)
+        history_id = kwd.get('history_id', None)
+
+        # history id
+        history = None
+        try:
+            if not history_id is None:
+                history = self.history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
+            else:
+                history = trans.get_history()
+            if history is None:
+                raise Exception('History unavailable. Please specify a valid history id')
+        except Exception, e:
+            trans.response.status = 500
+            error = '[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e))
+            log.exception('tools::to_json - %s.' % error)
+            return { 'error': error }
 
         # load job details if provided
         job = None
@@ -2300,7 +2354,7 @@ class Tool( object, Dictifiable ):
             try:
                 job_params = job.get_param_values( trans.app, ignore_errors = True )
                 job_messages = self.check_and_update_param_values( job_params, trans, update_values=False )
-                self._map_source_to_history( trans, self.inputs, job_params )
+                self._map_source_to_history( trans, self.inputs, job_params, history )
                 tool_message = self._compare_tool_version(trans, job)
                 params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
             except Exception, exception:
@@ -2332,12 +2386,20 @@ class Tool( object, Dictifiable ):
                     'id'  : trans.security.encode_id(v.id),
                     'src' : 'hdca'
                 }
+            elif isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
+                return {
+                    'id'  : trans.security.encode_id(v.id),
+                    'name': v.name,
+                    'src' : 'ldda'
+                }
             elif isinstance(v, bool):
                 if v is True:
                     return 'true'
                 else:
                     return 'false'
             elif isinstance(v, basestring) or isnumber:
+                return v
+            elif isinstance(v, dict) and hasattr(v, '__class__'):
                 return v
             else:
                 return None
@@ -2366,9 +2428,15 @@ class Tool( object, Dictifiable ):
             dict[key] = value
 
         # check the current state of a value and update it if necessary
-        def check_state(trans, input, default_value, context):
-            value = default_value
+        def check_state(trans, input, value, context):
             error = 'State validation failed.'
+
+            # do not check unvalidated values
+            if isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
+                return [ { '__class__' : 'RuntimeValue' }, None ]
+            elif isinstance( value, dict ):
+                if value.get('__class__') == 'RuntimeValue':
+                    return [ value, None ]
 
             # skip dynamic fields if deactivated
             if is_workflow and input.is_dynamic:
@@ -2377,10 +2445,10 @@ class Tool( object, Dictifiable ):
             # validate value content
             try:
                 # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
-                if input.type == 'boolean' and isinstance(default_value, basestring):
-                    value, error = [string_as_bool(default_value), None]
+                if input.type == 'boolean' and isinstance(value, basestring):
+                    value, error = [string_as_bool(value), None]
                 else:
-                    value, error = check_param(trans, input, default_value, context)
+                    value, error = check_param(trans, input, value, context, history=history)
             except Exception, err:
                 log.error('Checking parameter %s failed. %s', input.name, str(err))
                 pass
@@ -2390,7 +2458,7 @@ class Tool( object, Dictifiable ):
         def populate_state(trans, inputs, state, errors, incoming, prefix="", context=None ):
             context = ExpressionContext(state, context)
             for input in inputs.itervalues():
-                state[input.name] = input.get_initial_value(trans, context)
+                state[input.name] = input.get_initial_value(trans, context, history=history)
                 key = prefix + input.name
                 if input.type == 'repeat':
                     group_state = state[input.name]
@@ -2456,7 +2524,7 @@ class Tool( object, Dictifiable ):
                 elif input.type == 'conditional':
                     if 'test_param' in tool_dict:
                         test_param = tool_dict['test_param']
-                        test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values))
+                        test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
                         test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
                         for i in range (len ( tool_dict['cases'] ) ):
                             current_state = {}
@@ -2478,7 +2546,7 @@ class Tool( object, Dictifiable ):
 
                     # backup default value
                     try:
-                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                        tool_dict['default_value'] = input.get_initial_value(trans, other_values, history=history)
                     except Exception:
                         log.exception('tools::to_json() - Getting initial value failed %s.' % input_name)
                         # get initial value failed due to improper late validation
@@ -2550,7 +2618,8 @@ class Tool( object, Dictifiable ):
         tool_versions = []
         tools = self.app.toolbox.get_loaded_tools_by_lineage(self.id)
         for t in tools:
-            tool_versions.append(t.version)
+            if not t.version in tool_versions:
+                tool_versions.append(t.version)
 
         # add information with underlying requirements and their versions
         tool_requirements = []
@@ -2598,11 +2667,10 @@ class Tool( object, Dictifiable ):
                     pass
         return False
 
-    def _map_source_to_history(self, trans, tool_inputs, params):
+    def _map_source_to_history(self, trans, tool_inputs, params, history):
         # Need to remap dataset parameters. Job parameters point to original
         # dataset used; parameter should be the analygous dataset in the
         # current history.
-        history = trans.get_history()
 
         # Create index for hdas.
         hda_source_dict = {}

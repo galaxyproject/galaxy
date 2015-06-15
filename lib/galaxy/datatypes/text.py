@@ -19,6 +19,7 @@ import logging
 log = logging.getLogger(__name__)
 
 class Json( Text ):
+    edam_format = "format_3464"
     file_ext = "json"
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -47,12 +48,12 @@ class Json( Text ):
         else:
             with open(filename, "r") as fh:
                 while True:
-                    line = fh.readline()
-                    line = line.strip()
-                    if line:
+                    # Grab first chunk of file and see if it looks like json.
+                    start = fh.read(100).strip()
+                    if start:
                         # simple types are valid JSON as well - but would such a file
                         # be interesting as JSON in Galaxy?
-                        return line.startswith("[") or line.startswith("{")
+                        return start.startswith("[") or start.startswith("{")
             return False
 
     def display_peek( self, dataset ):
@@ -127,6 +128,7 @@ class Obo( Text ):
         OBO file format description
         http://www.geneontology.org/GO.format.obo-1_2.shtml
     """
+    edam_format = "format_2549"
     file_ext = "obo"
 
     def set_peek( self, dataset, is_multi_byte=False ):
