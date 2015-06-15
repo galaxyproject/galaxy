@@ -1,3 +1,4 @@
+define('mvc/workflow/workflow-globals', {});
 define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-manager', 'mvc/workflow/workflow-canvas', 'mvc/workflow/workflow-node', 'mvc/tools/tools-form-workflow'],
     function( Utils, Globals, Workflow, WorkflowCanvas, Node, ToolsForm ){
     // create form view
