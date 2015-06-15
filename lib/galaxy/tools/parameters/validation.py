@@ -149,9 +149,9 @@ class InRangeValidator( Validator ):
         if self.strict_min and self.strict_max:
             op1 = '>'
             op2 = '<'
-        if self.strict_min and not self.strict_max:
+        if self.strict_min:
             op1 = '>'
-        elif not self.strict_min and self.strict_max:
+        elif self.strict_max:
             op2 = '<'
         self.message = message or "Value must be %s %s and %s %s" % ( op1, self_min_str, op2, self_max_str )
 
