@@ -156,17 +156,17 @@ class InRangeValidator( Validator ):
         self.message = message or "Value must be %s %s and %s %s" % ( op1, self_min_str, op2, self_max_str )
 
     def validate( self, value, history=None ):
-        if self.strict_min and self.strict_max:
-            if not( self.min < float( value ) < self.max ):
+        if self.strict_min:
+            if not self.min < float( value ):
                 raise ValueError( self.message )
-        elif self.strict_min and not self.strict_max:
-            if not( self.min < float( value ) <= self.max ):
+        else:
+            if not self.min <= float( value ):
                 raise ValueError( self.message )
-        elif not self.strict_min and self.strict_max:
-            if not( self.min <= float( value ) < self.max ):
+        if self.strict_max:
+            if not float( value ) < self.max:
                 raise ValueError( self.message )
-        elif not self.strict_min and not self.strict_max:
-            if not( self.min <= float( value ) <= self.max ):
+        else:
+            if not float( value ) <= self.max:
                 raise ValueError( self.message )
 
 
