@@ -1,0 +1,19 @@
+<tool id="mutsig_viz" name="MutSig Visualization" version="">
+  <description>Visualize output from MutSig</description>
+  <command interpreter="python">mutsig_viz.py
+    -i $input
+    -q $q_val
+    -n $n_genes
+    -o $output
+  </command>
+  <inputs>
+    <param format="txt" name="input" type="data" label="Mutsig Significant Genes File: " help="MutSig 1.4 Output File: .sig_genes.txt" />
+    <param format="txt" name="q_val" type="float" value="0.1" label="FDR cut-off: " help="Report genes with FDR less than or equal to this value." optional="true"/>
+    <param format="txt" name="n_genes" type="integer" value="20" label="Number of genes to report: " help="Report genes with FDR less than or equal to this value." optional="true"/>
+  </inputs>
+
+  <outputs>
+    <data format="pdf" name="output" label="sig_genes.pdf"/>
+  </outputs>
+
+</tool>
