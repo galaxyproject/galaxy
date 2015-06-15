@@ -1,4 +1,4 @@
-Copyright (c) 2005-2013 Pennsylvania State University
+Copyright (c) 2005-2015 Galaxy Contributors (see CONTRIBUTORS.md)
 
 Licensed under the Academic Free License version 3.0
 
@@ -13,7 +13,7 @@ Licensed under the Academic Free License version 3.0
        Work, thereby creating derivative works ("Derivative Works") based upon 
        the Original Work;
 
-    c) to distribute or communicate copies of the Original Work and Derivative 
+    c) to distribute or communicate copies of the Original Work aGnd Derivative 
        Works to the public, under any license of your choice that does not 
        contradict the terms and conditions, including Licensor's reserved 
        rights and remedies, in this Academic Free License;
