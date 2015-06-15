@@ -92,6 +92,14 @@ class S3ObjectStore(ObjectStore):
             self.conn_path = cn_xml.get('conn_path', '/')
             c_xml = config_xml.findall('cache')[0]
             self.cache_size = float(c_xml.get('size', -1))
+            self.staging_path = c_xml.get('path', self.config.object_store_cache_path)
+            
+            for d_xml in config_xml.findall('extra_dir'):
+                self.extra_dirs[d_xml.get('type')] = d_xml.get('path')
+                
+            log.debug("Object cache dir:    %s", self.staging_path)
+            log.debug("       job work dir: %s", self.extra_dirs['job_work'])
+
             # for multipart upload
             self.s3server = {'access_key': self.access_key,
                              'secret_key': self.secret_key,
