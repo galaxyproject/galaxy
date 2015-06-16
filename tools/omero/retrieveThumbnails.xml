@@ -18,7 +18,7 @@
         </configfile>
     </configfiles>
     <outputs>
-        <data format="html" name="html_file" label="myToolOutput_${tool_name}.html"/>
+        <data format="html" name="html_file" label="myToolOutput_${tool.name}.html"/>
     </outputs>
     <help>
 .. class:: infomark
