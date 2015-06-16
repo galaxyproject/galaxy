@@ -863,10 +863,13 @@ class ToolModule( WorkflowModule ):
         # Create new PJA associations with the created job, to be run on completion.
         # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
         # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
-        post_job_actions = step.post_job_actions
+
+        # Combine workflow and runtime post job actions into the effective post
+        # job actions for this execution.
+        effective_post_job_actions = step.post_job_actions[:]
         for key, value in self.runtime_post_job_actions.iteritems():
-            post_job_actions.append( self.__to_pja( key, value, step ) )
-        for pja in post_job_actions:
+            effective_post_job_actions.append( self.__to_pja( key, value, None ) )
+        for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.immediate_actions:
                 ActionBox.execute( self.trans.app, self.trans.sa_session, pja, job, replacement_dict )
             else:
