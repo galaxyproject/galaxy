@@ -8,12 +8,19 @@
     </style>
 </%def>
 
-<%def name="make_sparkline(id, data, sparktype, length)">    
+<%def name="make_sparkline(id, data, sparktype, length)">
+    <%
+        color = '<span style="color: {{color}}">&#9679;</span>'
+        if sparktype == "bar":
+            tooltip = color + '{{value}} ' + length + '</span>'
+        else:
+            tooltip = color + '{{prefix}}{{y}} ' + length + '{{suffix}}</span>'
+    %>
     <script>
         $(document).ready(function(e) {
             $("#${id}").sparkline(${data}, {
                 type: '${sparktype}',
-                tooltipFormat: '<span style="color: {{color}}">&#9679;</span> {{value}} ${length}</span>'
+                tooltipFormat: '${tooltip}'
             }).css("width", "1%");
         })
     </script>

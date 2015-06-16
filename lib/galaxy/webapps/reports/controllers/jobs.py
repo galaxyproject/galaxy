@@ -8,9 +8,9 @@ from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_, not_, or_
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
+import re
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-import sys
 
 import logging
 log = logging.getLogger( __name__ )
@@ -273,7 +273,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         month_label = start_date.strftime( "%B" )
         year_label = start_date.strftime( "%Y" )
 
-        #Use to make the page table
+        # Use to make the page table
         month_jobs = sa.select( ( sa.func.date( model.Job.table.c.create_time ).label( 'date' ),
                                   sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                                 whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
@@ -283,23 +283,23 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                 group_by=[ 'date' ],
                                 order_by=[ _order ] )
 
-        #Use to make trendline
+        # Use to make trendline
         all_jobs = sa.select( ( model.Job.table.c.create_time.label('date'), model.Job.table.c.id.label('id') ),
-                                whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
-                                                     model.Job.table.c.create_time >= start_date,
-                                                     model.Job.table.c.create_time < end_date ) )
+                             whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
+                                                  model.Job.table.c.create_time >= start_date,
+                                                  model.Job.table.c.create_time < end_date ) )
 
         trend = [0] * 24
         jobs = []
         for row in month_jobs.execute():
             trend = [0] * 24
-            
+
             row_dayname = row.date.strftime( "%A" )
             row_day = row.date.strftime( "%d" )
 
             for job in all_jobs.execute():
                 if row_day == job.date.strftime( "%d" ):
-                    hour = int(job.date.strftime( "%-H" )) -1
+                    hour = int( job.date.strftime( "%-H" ) ) - 1
                     trend[hour] += 1
 
             jobs.append( ( row_dayname,
@@ -308,7 +308,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date,
                            trend
                            ) )
-            
+
         return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
                                     order=order,
                                     arrow=arrow,
@@ -355,7 +355,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                          from_obj=[ model.Job.table ],
                                          group_by=[ 'date' ],
                                          order_by=[ _order ] )
-        #Use to make trendline
+
+        # Use to make trendline
         all_jobs_in_error = sa.select( ( model.Job.table.c.create_time.label('date'), model.Job.table.c.id.label('id') ),
                                       whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
                                                            model.Job.table.c.state == 'error',
@@ -366,13 +367,13 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         jobs = []
         for row in month_jobs_in_error.execute():
             trend = [0] * 24
-            
+
             row_dayname = row.date.strftime( "%A" )
             row_day = row.date.strftime( "%d" )
 
             for job in all_jobs_in_error.execute():
                 if row_day == job.date.strftime( "%d" ):
-                    hour = int(job.date.strftime( "%-H" )) -1
+                    hour = int( job.date.strftime( "%-H" ) ) - 1
                     trend[hour] += 1
 
             jobs.append( ( row_dayname,
@@ -392,7 +393,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
-    
+
     @web.expose
     def per_month_all( self, trans, **kwd ):
         """
@@ -413,12 +414,12 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         # Use to make the page table
         jobs_by_month = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
-                                     sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                                     whereclause=model.Job.table.c.user_id != monitor_user_id,
-                                     from_obj=[ model.Job.table ],
-                                     group_by=self.group_by_month( model.Job.table.c.create_time ),
-                                     order_by=[ _order ] )
-        
+                                   sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                                   whereclause=model.Job.table.c.user_id != monitor_user_id,
+                                   from_obj=[ model.Job.table ],
+                                   group_by=self.group_by_month( model.Job.table.c.create_time ),
+                                   order_by=[ _order ] )
+
         # Use to make sparkline
         all_jobs = sa.select( ( self.select_month(model.Job.table.c.create_time).label('date'), model.Job.table.c.id.label('id') ) )
 
@@ -473,7 +474,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
-        #Use to make the page table
+        # Use to make the page table
         jobs_in_error_by_month = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                                               sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                                             whereclause=sa.and_( model.Job.table.c.state == 'error',
@@ -482,10 +483,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                             group_by=self.group_by_month( model.Job.table.c.create_time ),
                                             order_by=[ _order ] )
 
-        #Use to make trendline
+        # Use to make trendline
         all_jobs = sa.select( ( self.select_month(model.Job.table.c.create_time).label('date'), model.Job.table.c.id.label('id') ),
-                                whereclause=sa.and_( model.Job.table.c.state == 'error',
-                                                     model.Job.table.c.user_id != monitor_user_id ))
+                             whereclause=sa.and_( model.Job.table.c.state == 'error',
+                                                 model.Job.table.c.user_id != monitor_user_id ))
 
         jobs = []
         for row in jobs_in_error_by_month.execute():
@@ -529,6 +530,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
+        day_limit = 50
 
         jobs = []
         jobs_per_user = sa.select( ( model.User.table.c.email.label( 'user_email' ),
@@ -536,6 +538,28 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                    from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ],
                                    group_by=[ 'user_email' ],
                                    order_by=[ _order ] )
+
+        all_jobs_per_user = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
+                                      model.Job.table.c.id.label( 'id' ),
+                                      model.User.table.c.email.label( 'user_email' ) ),
+                                      from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ] )
+
+        currday = datetime.today().date()
+        trends = dict()
+        for job in all_jobs_per_user.execute():
+            curr_user = re.sub(r'\W+', '', job.user_email)
+            try:
+                day = currday - job.date
+                day = day.days
+                if day < day_limit:
+                    trends[curr_user][day] += 1
+            except KeyError:
+                trends[curr_user] = [0] * day_limit
+                day = currday - job.date
+                day = day.days
+                if day < day_limit:
+                    trends[curr_user][day] += 1
+
         for row in jobs_per_user.execute():
             if ( row.user_email is None ):
                 jobs.append( ( 'Anonymous',
@@ -545,10 +569,13 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             else:
                 jobs.append( ( row.user_email,
                                row.total_jobs ) )
+
         return trans.fill_template( '/webapps/reports/jobs_per_user.mako',
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
+                                    day_limit=day_limit,
+                                    trends=trends,
                                     jobs=jobs,
                                     message=message )
 
@@ -563,6 +590,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
+
         q = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                        whereclause=sa.and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
@@ -571,6 +599,30 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                        from_obj=[ sa.join( model.Job.table, model.User.table ) ],
                        group_by=self.group_by_month( model.Job.table.c.create_time ),
                        order_by=[ _order ] )
+
+        all_jobs_per_user = sa.select( ( model.Job.table.c.create_time.label( 'date' ),
+                                       model.Job.table.c.id.label( 'job_id' ) ),
+                                       whereclause=sa.and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
+                                                            model.GalaxySession.table.c.user_id == model.User.table.c.id,
+                                                            model.User.table.c.email == email),
+                                       from_obj=[ sa.join( model.Job.table, model.User.table ) ] )
+
+        trends = dict()
+        for job in all_jobs_per_user.execute():
+            job_day = int(job.date.strftime("%-d")) - 1
+            job_month = int(job.date.strftime("%-m"))
+            job_month_name = job.date.strftime("%B")
+            job_year = job.date.strftime("%Y")
+            key = str( job_month_name + job_year)
+
+            try:
+                trends[key][job_day] += 1
+            except KeyError:
+                job_year = int(job_year)
+                wday, day_range = calendar.monthrange(job_year, job_month)
+                trends[key] = [0] * day_range
+                trends[key][job_day] += 1
+
         jobs = []
         for row in q.execute():
             jobs.append( ( row.date.strftime( "%Y-%m" ),
@@ -582,6 +634,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     arrow=arrow,
                                     sort_id=sort_id,
                                     id=kwd.get('id'),
+                                    trends=trends,
                                     email=util.sanitize_text( email ),
                                     jobs=jobs, message=message )
 
@@ -596,6 +649,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
+        day_limit = 50
+
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
@@ -606,13 +661,38 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                        from_obj=[ model.Job.table ],
                        group_by=[ 'tool_id' ],
                        order_by=[ _order ] )
+
+        all_jobs_per_tool = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
+                                      model.Job.table.c.id.label( 'id' ),
+                                      model.Job.table.c.tool_id.label( 'tool_id' ) ),
+                                      from_obj=[ model.Job.table ] )
+
+        currday = datetime.today().date()
+        trends = dict()
+        for job in all_jobs_per_tool.execute():
+            curr_tool = re.sub(r'\W+', '', job.tool_id)
+            try:
+                day = currday - job.date
+                day = day.days
+                if day < day_limit:
+                    trends[curr_tool][day] += 1
+            except KeyError:
+                trends[curr_tool] = [0] * day_limit
+                day = currday - job.date
+                day = day.days
+                if day < day_limit:
+                    trends[curr_tool][day] += 1
+
         for row in q.execute():
             jobs.append( ( row.tool_id,
                            row.total_jobs ) )
+
         return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
+                                    day_limit=day_limit,
+                                    trends=trends,
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id)
@@ -631,6 +711,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
+        day_limit = 50
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
@@ -641,6 +722,31 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                             from_obj=[ model.Job.table ],
                                             group_by=[ 'tool_id' ],
                                             order_by=[ _order ] )
+
+        all_jobs_per_tool_errors = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
+                                              model.Job.table.c.id.label( 'id' ),
+                                              model.Job.table.c.tool_id.label( 'tool_id' ) ),
+                                              whereclause=sa.and_( model.Job.table.c.state == 'error',
+                                                                   model.Job.table.c.user_id != monitor_user_id ),
+                                              from_obj=[ model.Job.table ]
+                                              )
+
+        currday = datetime.today().date()
+        trends = dict()
+        for job in all_jobs_per_tool_errors.execute():
+            curr_tool = re.sub(r'\W+', '', job.tool_id)
+            try:
+                day = currday - job.date
+                day = day.days
+                if day < day_limit:
+                    trends[curr_tool][day] += 1
+            except KeyError:
+                trends[curr_tool] = [0] * day_limit
+                day = currday - job.date
+                day = day.days
+                if day < day_limit:
+                    trends[curr_tool][day] += 1
+
         jobs = []
         for row in jobs_in_error_per_tool.execute():
             jobs.append( ( row.total_jobs, row.tool_id ) )
@@ -648,6 +754,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
+                                    day_limit=day_limit,
+                                    trends=trends,
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
@@ -675,6 +783,28 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                        from_obj=[ model.Job.table ],
                        group_by=self.group_by_month( model.Job.table.c.create_time ),
                        order_by=[ _order ] )
+
+        # Use to make sparkline
+        all_jobs_for_tool = sa.select( ( self.select_month(model.Job.table.c.create_time).label('date'), model.Job.table.c.id.label('id') ),
+                             whereclause=sa.and_( model.Job.table.c.tool_id == tool_id,
+                                                  model.Job.table.c.user_id != monitor_user_id ),
+                             from_obj=[ model.Job.table ] )
+        trends = dict()
+        for job in all_jobs_for_tool.execute():
+            job_day = int(job.date.strftime("%-d")) - 1
+            job_month = int(job.date.strftime("%-m"))
+            job_month_name = job.date.strftime("%B")
+            job_year = job.date.strftime("%Y")
+            key = str( job_month_name + job_year)
+
+            try:
+                trends[key][job_day] += 1
+            except KeyError:
+                job_year = int(job_year)
+                wday, day_range = calendar.monthrange(job_year, job_month)
+                trends[key] = [0] * day_range
+                trends[key][job_day] += 1
+
         jobs = []
         for row in q.execute():
             jobs.append( ( row.date.strftime( "%Y-%m" ),
@@ -687,6 +817,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     sort_id=sort_id,
                                     specified_date=specified_date,
                                     tool_id=tool_id,
+                                    trends=trends,
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
