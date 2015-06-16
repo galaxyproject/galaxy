@@ -107,7 +107,7 @@ class InRangeValidator( Validator ):
     >>> from galaxy.tools.parameters import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
     ... <param name="blah" type="integer" size="10" value="10">
-    ...     <validator type="in_range" message="Not gonna happen" min="10" strict_min="true" max="20"/>
+    ...     <validator type="in_range" message="Not gonna happen" min="10" exclude_min="true" max="20"/>
     ... </param>
     ... ''' ) )
     >>> t = p.validate( 10 )
@@ -125,41 +125,41 @@ class InRangeValidator( Validator ):
     @classmethod
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ), elem.get( 'min' ),
-                    elem.get( 'max' ), elem.get( 'strict_min', 'false' ), 
-                    elem.get( 'strict_max', 'false' ) )
+                    elem.get( 'max' ), elem.get( 'exclude_min', 'false' ), 
+                    elem.get( 'exclude_max', 'false' ) )
 
-    def __init__( self, message, range_min, range_max, strict_min=False, strict_max=False ):
+    def __init__( self, message, range_min, range_max, exclude_min=False, exclude_max=False ):
         """
-        When the optional strict_min and strict_max attributes are set
+        When the optional exclude_min and exclude_max attributes are set
         to true, the range excludes the end points (i.e., min < value < max),
         while if set to False ( the default), then range includes the end points
-        (1.e., min <= value <= max).  Combinations of strict_min and strict_max
+        (1.e., min <= value <= max).  Combinations of exclude_min and exclude_max
         values are allowed.
         """
         self.min = float( range_min if range_min is not None else '-inf' )
-        self.strict_min = util.asbool( strict_min )
+        self.exclude_min = util.asbool( exclude_min )
         self.max = float( range_max if range_max is not None else 'inf' )
-        self.strict_max = util.asbool( strict_max )
+        self.exclude_max = util.asbool( exclude_max )
         assert self.min <= self.max, 'min must be less than or equal to max'
         # Remove unneeded 0s and decimal from floats to make message pretty.
         self_min_str = str( self.min ).rstrip( '0' ).rstrip( '.' )
         self_max_str = str( self.max ).rstrip( '0' ).rstrip( '.' )
         op1 = '>='
         op2 = '<='
-        if self.strict_min:
+        if self.exclude_min:
             op1 = '>'
-        if self.strict_max:
+        if self.exclude_max:
             op2 = '<'
         self.message = message or "Value must be %s %s and %s %s" % ( op1, self_min_str, op2, self_max_str )
 
     def validate( self, value, history=None ):
-        if self.strict_min:
+        if self.exclude_min:
             if not self.min < float( value ):
                 raise ValueError( self.message )
         else:
             if not self.min <= float( value ):
                 raise ValueError( self.message )
-        if self.strict_max:
+        if self.exclude_max:
             if not float( value ) < self.max:
                 raise ValueError( self.message )
         else:
