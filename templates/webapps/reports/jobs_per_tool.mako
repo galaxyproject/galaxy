@@ -1,18 +1,25 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
+<%!
+    import re
+%>
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
 
+${jqs_style()}
 ${get_css()}
-    
+
 <!--jobs_per_tool.mako-->
 <div class="toolForm">
     <div class="toolFormBody">
         <h4 align="center">Jobs Per Tool</h4>
-        <h5 align="center">Click Tool ID to view details</h5>
+        <h5 align="center">
+            Click Tool ID to view details. Graph goes from present to past(${day_limit} days).
+        </h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="2">There are no jobs.</td></tr>
@@ -36,6 +43,7 @@ ${get_css()}
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:
+                    <% key = re.sub(r'\W+', '', job[0]) %>
                     %if ctr % 2 == 1:
                         <tr class="odd_row">
                     %else:
@@ -43,6 +51,8 @@ ${get_css()}
                     %endif
                         <td><a href="${h.url_for( controller='jobs', action='tool_per_month', tool_id=job[0], sort_id='default', order='default' )}">${job[0]}</a></td>
                         <td>${job[1]}</td>
+                        ${make_sparkline(key, trends[key], "line", "/ day")}
+                        <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor
