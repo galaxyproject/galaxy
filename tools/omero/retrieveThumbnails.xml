@@ -1,0 +1,29 @@
+<tool id="retrieveThumbnails" name="Retrieve Thumbnails" version="1.0.0">
+    <description>Retrieve Thumbnails from OMERO for Visualization</description>
+    <command>
+	mkdir ${html_file.files_path};
+	mkdir ${html_file.files_path}/data; 
+	mkdir ${html_file.files_path}/data/images; 
+	python2.7 $__tool_directory__/thumbs.py $input ${html_file.files_path} $script_file ${html_file.dataset.dataset.id}
+    
+    </command>
+    <inputs>
+      <param name="input" type="data" label="input"/>
+    </inputs>
+    <configfiles>
+        <configfile name="script_file">{
+              "galaxy_key": #from galaxy.managers import api_keys#"${api_keys.ApiKeyManager( $__app__ ).get_or_create_api_key( $__user__ )}",
+              "galaxy_host": "${__app__.config.galaxy_infrastructure_url}/api"
+      }
+        </configfile>
+    </configfiles>
+    <outputs>
+        <data format="html" name="html_file" label="myToolOutput_${tool_name}.html"/>
+    </outputs>
+    <help>
+.. class:: infomark
+        
+**Retrieve Thumbnails from OMERO Servers**
+
+    </help>
+</tool>
