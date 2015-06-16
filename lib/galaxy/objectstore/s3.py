@@ -93,10 +93,10 @@ class S3ObjectStore(ObjectStore):
             c_xml = config_xml.findall('cache')[0]
             self.cache_size = float(c_xml.get('size', -1))
             self.staging_path = c_xml.get('path', self.config.object_store_cache_path)
-            
+
             for d_xml in config_xml.findall('extra_dir'):
                 self.extra_dirs[d_xml.get('type')] = d_xml.get('path')
-                
+
             log.debug("Object cache dir:    %s", self.staging_path)
             log.debug("       job work dir: %s", self.extra_dirs['job_work'])
 
@@ -222,10 +222,10 @@ class S3ObjectStore(ObjectStore):
         if base_dir:
             base = self.extra_dirs.get(base_dir)
             return os.path.join(base, rel_path)
-        
+
         # S3 folders are marked by having trailing '/' so add it now
         rel_path = '%s/' % rel_path
-        
+
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
         return rel_path
@@ -423,7 +423,7 @@ class S3ObjectStore(ObjectStore):
 
     def create(self, obj, **kwargs):
         if not self.exists(obj, **kwargs):
-            
+
             # Pull out locally used fields
             extra_dir = kwargs.get('extra_dir', None)
             extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
@@ -439,12 +439,12 @@ class S3ObjectStore(ObjectStore):
                     rel_path = os.path.join(extra_dir, rel_path)
                 else:
                     rel_path = os.path.join(rel_path, extra_dir)
-           
+
             # Create given directory in cache
             cache_dir = os.path.join(self.staging_path, rel_path)
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir)
-            
+
             # Although not really necessary to create S3 folders (because S3 has
             # flat namespace), do so for consistency with the regular file system
             # S3 folders are marked by having trailing '/' so add it now
@@ -525,12 +525,12 @@ class S3ObjectStore(ObjectStore):
         data_file.close()
         return content
 
-    def get_filename(self, obj,  **kwargs):
+    def get_filename(self, obj, **kwargs):
         base_dir = kwargs.get('base_dir', None)
         dir_only = kwargs.get('dir_only', False)
         obj_dir = kwargs.get('obj_dir', False)
         rel_path = self._construct_path(obj, **kwargs)
-        
+
         # for JOB_WORK directory
         if base_dir and dir_only and obj_dir:
             return os.path.abspath(rel_path)
