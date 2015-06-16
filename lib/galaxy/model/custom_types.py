@@ -4,10 +4,15 @@ import json
 import logging
 import uuid
 
+from sys import getsizeof
+from itertools import chain
+from collections import deque
+
 from galaxy import eggs
 eggs.require("SQLAlchemy")
 import sqlalchemy
 
+from galaxy import app
 from galaxy.util.aliaspickler import AliasPickleModule
 from sqlalchemy.types import CHAR, LargeBinary, String, TypeDecorator
 from sqlalchemy.ext.mutable import Mutable
@@ -217,11 +222,61 @@ metadata_pickler = AliasPickleModule( {
 } )
 
 
+def total_size(o, handlers={}, verbose=False):
+    """ Returns the approximate memory footprint an object and all of its contents.
+
+    Automatically finds the contents of the following builtin containers and
+    their subclasses:  tuple, list, deque, dict, set and frozenset.
+    To search other containers, add handlers to iterate over their contents:
+
+        handlers = {SomeContainerClass: iter,
+                    OtherContainerClass: OtherContainerClass.get_elements}
+
+    Recipe from:  https://code.activestate.com/recipes/577504-compute-memory-footprint-of-an-object-and-its-cont/
+    """
+    dict_handler = lambda d: chain.from_iterable(d.items())
+    all_handlers = { tuple: iter,
+                     list: iter,
+                     deque: iter,
+                     dict: dict_handler,
+                     set: iter,
+                     frozenset: iter }
+    all_handlers.update(handlers)     # user handlers take precedence
+    seen = set()                      # track which object id's have already been seen
+    default_size = getsizeof(0)       # estimate sizeof object without __sizeof__
+
+    def sizeof(o):
+        if id(o) in seen:       # do not double count the same object
+            return 0
+        seen.add(id(o))
+        s = getsizeof(o, default_size)
+
+        for typ, handler in all_handlers.items():
+            if isinstance(o, typ):
+                s += sum(map(sizeof, handler(o)))
+                break
+        return s
+
+    return sizeof(o)
+
+
 class MetadataType( JSONType ):
     """
     Backward compatible metadata type. Can read pickles or JSON, but always
     writes in JSON.
     """
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            if app.app and app.app.config.max_metadata_value_size:
+                for k, v in value.items():
+                    sz = total_size(v)
+                    if sz > app.app.config.max_metadata_value_size:
+                        del value[k]
+                        log.error('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
+            value = json_encoder.encode(value)
+        return value
+
     def process_result_value( self, value, dialect ):
         if value is None:
             return None
