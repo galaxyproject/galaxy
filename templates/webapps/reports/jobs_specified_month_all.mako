@@ -1,11 +1,13 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
 
+${jqs_style()}
 ${get_css()}
 
 <!--jobs_specified_month_all.mako-->
@@ -37,6 +39,7 @@ ${get_css()}
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:
+                    <% key = job[1] %>
                     %if ctr % 2 == 1:
                         <tr class="odd_row">
                     %else:
@@ -45,6 +48,8 @@ ${get_css()}
                         <td>${job[0]}</td>
                         <td>${month_label}&nbsp;${job[1]},&nbsp;${year_label}</td>
                         <td><a href="${h.url_for( controller='jobs', action='specified_date_handler', specified_date=job[3], webapp='reports', sort_id='default', order='default' )}">${job[2]}</a></td>
+                        ${make_sparkline(key, job[4], "bar", "/ hour")}
+                        <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor
