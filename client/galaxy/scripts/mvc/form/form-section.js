@@ -322,6 +322,7 @@ define(['utils/utils',
                 collapsible         : input_def.collapsible,
                 collapsible_value   : input_def.collapsible_value,
                 help                : input_def.help,
+                argument            : input_def.argument,
                 field               : field
             });
 

@@ -6,7 +6,6 @@
         if kwargs.get( 'embedded', False ):
             # No inheritance - using only embeddable content (self.body)
             return None
-
         if context.get('use_panels'):
             if context.get('webapp'):
                 app_name = context.get('webapp')
