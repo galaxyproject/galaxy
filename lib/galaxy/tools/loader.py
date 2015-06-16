@@ -13,13 +13,12 @@ def load_tool(path):
 
     _import_macros(root, path)
 
+    # Collect tokens
+    tokens = _macros_of_type(root, 'token', lambda el: el.text)
+
     # Expand xml macros
     macro_dict = _macros_of_type(root, 'xml', lambda el: list(el))
-    _expand_macros([root], macro_dict)
-
-    # Expand tokens
-    macro_dict = _macros_of_type(root, 'token', lambda el: el.text)
-    _expand_tokens([root], macro_dict)
+    _expand_macros([root], macro_dict, tokens)
 
     return tree
 
@@ -66,9 +65,10 @@ def _macros_of_type(root, type, el_func):
     macro_dict = {}
     if macros_el is not None:
         macro_els = macros_el.findall('macro')
-        macro_dict = dict([(macro_el.get("name"), el_func(macro_el))
-            for macro_el in macro_els
-            if macro_el.get('type') == type])
+        filtered_els = [(macro_el.get("name"), el_func(macro_el))
+                        for macro_el in macro_els
+                        if macro_el.get('type') == type]
+        macro_dict = dict(filtered_els)
     return macro_dict
 
 
@@ -77,16 +77,20 @@ def _expand_tokens(elements, tokens):
         return
 
     for element in elements:
-        value = element.text
-        if value:
-            new_value = _expand_tokens_str(element.text, tokens)
-            if new_value is not value:
-                element.text = new_value
-        for key, value in element.attrib.iteritems():
-            new_value = _expand_tokens_str(value, tokens)
-            if new_value is not value:
-                element.attrib[key] = new_value
-        _expand_tokens(list(element), tokens)
+        _expand_tokens_for_el(element, tokens)
+
+
+def _expand_tokens_for_el(element, tokens):
+    value = element.text
+    if value:
+        new_value = _expand_tokens_str(element.text, tokens)
+        if not (new_value is value):
+            element.text = new_value
+    for key, value in element.attrib.iteritems():
+        new_value = _expand_tokens_str(value, tokens)
+        if not (new_value is value):
+            element.attrib[key] = new_value
+    _expand_tokens(list(element), tokens)
 
 
 def _expand_tokens_str(str, tokens):
@@ -96,8 +100,8 @@ def _expand_tokens_str(str, tokens):
     return str
 
 
-def _expand_macros(elements, macros):
-    if not macros:
+def _expand_macros(elements, macros, tokens):
+    if not macros and not tokens:
         return
 
     for element in elements:
@@ -105,17 +109,19 @@ def _expand_macros(elements, macros):
             expand_el = element.find('.//expand')
             if expand_el is None:
                 break
-            _expand_macro(element, expand_el, macros)
+            _expand_macro(element, expand_el, macros, tokens)
+
+        _expand_tokens_for_el(element, tokens)
 
 
-def _expand_macro(element, expand_el, macros):
+def _expand_macro(element, expand_el, macros, tokens):
     macro_name = expand_el.get('macro')
     macro_def = deepcopy(macros[macro_name])
 
     _expand_yield_statements(macro_def, expand_el)
 
     # Recursively expand contained macros.
-    _expand_macros(macro_def, macros)
+    _expand_macros(macro_def, macros, tokens)
 
     # HACK for elementtree, newer implementations (etree/lxml) won't
     # require this parent_map data structure but elementtree does not
