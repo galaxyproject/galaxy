@@ -424,7 +424,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         all_jobs = sa.select( ( self.select_month(model.Job.table.c.create_time).label('date'), model.Job.table.c.id.label('id') ) )
 
         trends = dict()
-        for job in all_jobs():
+        for job in all_jobs.execute():
             job_day = int(job.date.strftime("%-d")) - 1
             job_month = int(job.date.strftime("%-m"))
             job_month_name = job.date.strftime("%B")
@@ -495,7 +495,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                  model.Job.table.c.user_id != monitor_user_id ))
 
         trends = dict()
-        for job in all_jobs():
+        for job in all_jobs.execute():
             job_day = int(job.date.strftime("%-d")) - 1
             job_month = int(job.date.strftime("%-m"))
             job_month_name = job.date.strftime("%B")
