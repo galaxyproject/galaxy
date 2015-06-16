@@ -527,6 +527,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
+                                    trends=trends,
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
