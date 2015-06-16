@@ -46,7 +46,7 @@ ${get_css()}
                     %endif
                         <td><a href="${h.url_for( controller='jobs', action='specified_month_all', specified_date=job[0]+'-01', sort_id='default', order='default' )}">${job[2]} ${job[3]}</a></td>
                         <td>${job[1]}</td>
-                        ${make_sparkline(key, job[4], "bar", "/ day")}
+                        ${make_sparkline(key, trends[key], "bar", "/ day")}
                         <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>

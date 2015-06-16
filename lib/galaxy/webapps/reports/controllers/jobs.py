@@ -423,6 +423,22 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         # Use to make sparkline
         all_jobs = sa.select( ( self.select_month(model.Job.table.c.create_time).label('date'), model.Job.table.c.id.label('id') ) )
 
+        trends = dict()
+        for job in all_jobs():
+            job_day = int(job.date.strftime("%-d")) - 1
+            job_month = int(job.date.strftime("%-m"))
+            job_month_name = job.date.strftime("%B")
+            job_year = job.date.strftime("%Y")
+            key = str( job_month_name + job_year)
+
+            try:
+                trends[key][job_day] += 1
+            except KeyError:
+                job_year = int(job_year)
+                wday, day_range = calendar.monthrange(job_year, job_month)
+                trends[key] = [0] * day_range
+                trends[key][job_day] += 1
+
         jobs = []
         for row in jobs_by_month.execute():
             month = int(row.date.strftime("%-m"))
@@ -430,28 +446,18 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             year = int(row.date.strftime("%Y"))
             wday, day_range = calendar.monthrange(year, month)
 
-            trend = [0] * day_range
-
-            for job in all_jobs.execute():
-                job_month = int(job.date.strftime("%-m"))
-                job_year = int(job.date.strftime("%Y"))
-
-                if job_month == month and job_year == year:
-                    day = int(job.date.strftime("%-d")) - 1
-                    trend[day] += 1
-
             jobs.append( (
                 row.date.strftime( "%Y-%m" ),
                 row.total_jobs,
                 month_name,
-                year,
-                trend
+                year
             ) )
 
         return trans.fill_template( '/webapps/reports/jobs_per_month_all.mako',
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
+                                    trends=trends,
                                     jobs=jobs,
                                     is_user_jobs_only=monitor_user_id,
                                     message=message )
@@ -488,6 +494,22 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                              whereclause=sa.and_( model.Job.table.c.state == 'error',
                                                  model.Job.table.c.user_id != monitor_user_id ))
 
+        trends = dict()
+        for job in all_jobs():
+            job_day = int(job.date.strftime("%-d")) - 1
+            job_month = int(job.date.strftime("%-m"))
+            job_month_name = job.date.strftime("%B")
+            job_year = job.date.strftime("%Y")
+            key = str( job_month_name + job_year)
+
+            try:
+                trends[key][job_day] += 1
+            except KeyError:
+                job_year = int(job_year)
+                wday, day_range = calendar.monthrange(job_year, job_month)
+                trends[key] = [0] * day_range
+                trends[key][job_day] += 1
+
         jobs = []
         for row in jobs_in_error_by_month.execute():
             month = int(row.date.strftime("%-m"))
@@ -495,22 +517,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             year = int(row.date.strftime("%Y"))
             wday, day_range = calendar.monthrange(year, month)
 
-            trend = [0] * day_range
-
-            for job in all_jobs.execute():
-                job_month = int(job.date.strftime("%-m"))
-                job_year = int(job.date.strftime("%Y"))
-
-                if job_month == month and job_year == year:
-                    day = int(job.date.strftime("%-d")) - 1
-                    trend[day] += 1
-
             jobs.append( (
                 row.date.strftime( "%Y-%m" ),
                 row.total_jobs,
                 month_name,
-                year,
-                trend
+                year
             ) )
         return trans.fill_template( '/webapps/reports/jobs_per_month_in_error.mako',
                                     order=order,
