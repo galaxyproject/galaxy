@@ -107,12 +107,13 @@ The following individuals have contributed code to Galaxy:
 # Institutional sponsors
 
 Galaxy development began at The Pennsylvania State University in 2006.
-In 2009 all contributions to that point were licensed by Penn State
-under the terms of the Academic Free License 3.0 (see LICENSE.txt). This
-license applies to all subsequent contributions as well.  Significant
-portions of Galaxy development have continued at Penn State, Emory
-University, Johns Hopkins University, and George Washington University
-with support from the following NIH and NSF grants:
+In 2009 all contributions to that point were licensed by The
+Pennsylvania State University under the terms of the Academic Free
+License 3.0 (see LICENSE.txt). This license applies to all subsequent
+contributions - including but not limited to development at The
+Pennsylvania State University, Emory University, Johns Hopkins
+University, and George Washington University as part of the following
+NIH and NSF grants:
 
 * NSF DBI 0543285, “Tailoring genomic data to the needs of experimental
   biologists and educators”
