@@ -1,26 +1,21 @@
 <tool id="hgv_pass" name="PASS" version="1.0.0">
   <description>significant transcription factor binding sites from ChIP data</description>
-
-  <command interpreter="bash">
+  <requirements>
+    <requirement type="package">pass</requirement>
+    <requirement type="binary">sed</requirement>
+  </requirements>
+  <command interpreter="bash" detect_errors="exit_code">
     pass_wrapper.sh "$input" "$min_window" "$max_window" "$false_num" "$output"
   </command>
-
   <inputs>
     <param format="gff" name="input" type="data" label="Dataset"/>
     <param name="min_window" label="Smallest window size (by # of probes)" type="integer" value="2" />
     <param name="max_window" label="Largest window size (by # of probes)" type="integer" value="6" />
     <param name="false_num" label="Expected total number of false positive intervals to be called" type="float" value="5.0" help="N.B.: this is a &lt;em&gt;count&lt;/em&gt;, not a rate." />
   </inputs>
-
   <outputs>
     <data format="tabular" name="output" />
   </outputs>
-
-  <requirements>
-    <requirement type="package">pass</requirement>
-    <requirement type="binary">sed</requirement>
-  </requirements>
-
   <!-- we need to be able to set the seed for the random number generator
   <tests>
     <test>
@@ -32,7 +27,6 @@
     </test>
   </tests>
   -->
-
   <help>
 **Dataset formats**
 

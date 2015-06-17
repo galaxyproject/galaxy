@@ -1,10 +1,8 @@
 <tool id="hgv_linkToGProfile" name="g:Profiler" version="1.0.0">
   <description>tools for functional profiling of gene lists</description>
-
-  <command interpreter="perl">
+  <command interpreter="perl" detect_errors="exit_code">
     linkToGProfile.pl $input $type $out_file1 -region=$region -gene=$genes -chr=${input.metadata.chromCol} -start=${input.metadata.startCol} -end=${input.metadata.endCol}
   </command>
-
   <inputs>
     <param name="input" type="data" format="tabular" label="Dataset" />
     <param name="genes" type="data_column" data_ref="input" label="Column with identifiers" />
@@ -27,11 +25,9 @@
       <option value="DBASS3_ACC">DBASS3_ACC</option>
     </param>
   </inputs>
-
   <outputs>
     <data format="html" name="out_file1" />
   </outputs>
-
   <tests>
     <test>
       <param name="input" ftype="tabular" value="linkToGProfile.tabular" />
@@ -40,7 +36,6 @@
       <output name="out_file1" file="linkToGProfile_1.out" />
     </test>
   </tests>
-
   <help>
 **Dataset formats**
 

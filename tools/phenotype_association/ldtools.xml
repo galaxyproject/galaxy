@@ -1,10 +1,8 @@
 <tool id="hgv_ldtools" name="LD" version="1.0.0">
   <description>linkage disequilibrium and tag SNPs</description>
-
-  <command interpreter="bash">
+  <command interpreter="bash" detect_errors="exit_code">
     ldtools_wrapper.sh rsquare=$rsquare freq=$freq input=$input output=$output
   </command>
-
   <inputs>
     <param format="tabular" name="input" type="data" label="Dataset"/>
     <param name="rsquare" label="r&lt;sup&gt;2&lt;/sup&gt; threshold" type="float" value="0.64">
@@ -14,11 +12,9 @@
       <validator type="in_range" message="freq must be in range (0.00, 0.50]" min="0.00" max="0.50" />
     </param>
   </inputs>
-
   <outputs>
     <data format="tabular" name="output" />
   </outputs>
-
   <tests>
     <test>
       <param name="input" value="ldInput1.txt" />
@@ -27,7 +23,6 @@
       <output name="output" file="ldOutput1.txt" />
     </test>
   </tests>
-
   <help>
 **Dataset formats**
 

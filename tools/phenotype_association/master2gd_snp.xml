@@ -1,8 +1,8 @@
 <tool id="master2gd_snp" name="MasterVar to gd_snp" hidden="false" version="1.0.0">
   <description>Convert from MasterVar to gd_snp table</description>
-  <command interpreter="perl">
-    #if $snptab.tab2 == "yes" 
-      #if $snptab.colsOnly == "addColsOnly" #master2gd_snp.pl $input1 -tab=$snptab.input2 -name=$indName -build=${input1.metadata.dbkey} -addColsOnly > $out_file1 
+  <command interpreter="perl" detect_errors="exit_code">
+    #if $snptab.tab2 == "yes"
+      #if $snptab.colsOnly == "addColsOnly" #master2gd_snp.pl $input1 -tab=$snptab.input2 -name=$indName -build=${input1.metadata.dbkey} -addColsOnly > $out_file1
       #else #master2gd_snp.pl $input1 -tab=$snptab.input2 -name=$indName -build=${input1.metadata.dbkey} > $out_file1
       #end if
     #else #master2gd_snp.pl $input1 -name=$indName -build=${input1.metadata.dbkey} > $out_file1
@@ -38,7 +38,6 @@
       <output name="output" file="master2snp_output.txt" />
     </test>
   </tests>
-
   <help>
 **Dataset formats**
 
@@ -58,10 +57,10 @@ The output dataset is a gd_snp_ table.  (`Dataset missing?`_)
 
 This converts a Complete Genomics MasterVar file to gd_snp format,
 so it can be used with the genome diversity tools.
-It can either 
-start a new dataset or append to an old one. When appending, if any new SNPs 
-appear only in the MasterVar file they can either be skipped or backfilled with 
-"-1" (unknown) for previous individuals/groups in the gd_snp dataset. 
+It can either
+start a new dataset or append to an old one. When appending, if any new SNPs
+appear only in the MasterVar file they can either be skipped or backfilled with
+"-1" (unknown) for previous individuals/groups in the gd_snp dataset.
 Positions homozygous for the reference are skipped.
 
 
@@ -81,6 +80,6 @@ Positions homozygous for the reference are skipped.
    chr1    41980   A       G       -1      0       1       0       76
    chr1    53205   G       C       -1      30      7       1       93
    etc.
-
-</help>
+  </help>
+  <citations />
 </tool>

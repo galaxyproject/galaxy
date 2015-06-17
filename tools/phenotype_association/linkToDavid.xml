@@ -1,10 +1,8 @@
 <tool id="hgv_david" name="DAVID" version="1.0.0">
   <description>functional annotation for a list of genes</description>
-
-  <command interpreter="perl">
+  <command interpreter="perl" detect_errors="exit_code">
     linkToDavid.pl $input $numerical_column $type $out_file1
   </command>
-
   <inputs>
     <param name="input" type="data" format="tabular" label="Dataset" />
     <param name="numerical_column" type="data_column" data_ref="input" label="Column with identifiers" />
@@ -49,11 +47,9 @@
       <option value="ZFIN_ID">ZFIN_ID</option>
     </param>
   </inputs>
-
   <outputs>
     <data format="html" name="out_file1" />
   </outputs>
-
   <tests>
     <test>
       <param name="input" ftype="tabular" value="linkToDavid.tabular" />
@@ -62,7 +58,6 @@
       <output name="out_file1" file="linkToDavid_1.out" />
     </test>
   </tests>
-
   <help>
  .. class:: infomark
 

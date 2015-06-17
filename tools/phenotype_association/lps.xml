@@ -1,7 +1,9 @@
 <tool id="hgv_lps" name="LPS" version="1.0.0">
   <description>LASSO-Patternsearch algorithm</description>
-
-  <command interpreter="bash">
+  <requirements>
+    <requirement type="package">lps_tool</requirement>
+  </requirements>
+  <command interpreter="bash" detect_errors="exit_code">
     lps_tool_wrapper.sh $lambda_fac $input_file $label_column $output_file $log_file
     Initialization 0
     #if $advanced.options == "true":
@@ -35,7 +37,6 @@
       FinalOnly $advanced.finalOnly
     #end if
   </command>
-
   <inputs>
     <param name="input_file" type="data" format="tabular" label="Dataset"/>
     <param name="label_column" type="data_column" data_ref="input_file" numerical="true" label="Label column" help="Column containing outcome labels: +1 or -1."/>
@@ -130,16 +131,10 @@
       </when> <!-- value="advanced" -->
     </conditional> <!-- name="advanced" -->
   </inputs>
-
   <outputs>
     <data name="output_file" format="tabular" label="${tool.name} on ${on_string}: results"/>
     <data name="log_file" format="txt" label="${tool.name} on ${on_string}: log"/>
   </outputs>
-
-  <requirements>
-    <requirement type="package">lps_tool</requirement>
-  </requirements>
-
   <tests>
     <test>
       <param name="input_file" value="lps_arrhythmia.tabular"/>
@@ -262,7 +257,7 @@ Website: http://pages.cs.wisc.edu/~swright/LPS/
     Data set has 100 vectors with 50 features.
       calculateLambdaMax: n=50, m=100, m+=50, m-=50
       computed value of lambda_max: 5.0000e-01
-     
+
     lambda=2.96e-02 solution:
       optimal log-likelihood function value: 6.46e-01
       optimal *regularized* log-likelihood function value: 6.79e-01

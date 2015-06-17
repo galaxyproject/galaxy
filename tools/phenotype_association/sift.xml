@@ -1,10 +1,24 @@
 <tool id="hgv_sift" name="SIFT" version="1.0.0">
   <description>predictions of functional sites</description>
-
-  <command interpreter="bash">
-    sift_variants_wrapper.sh "$input" "$output" "${input.metadata.dbkey}" "${GALAXY_DATA_INDEX_DIR}/sift_db.loc" "$chrom_col" "$pos_col" "$base" "$allele_col" "$strand_source.strand_col" "$comment_source.comment_col" "$output_opts"
+  <requirements>
+    <requirement type="binary">awk</requirement>
+    <requirement type="binary">rm</requirement>
+    <requirement type="binary">sed</requirement>
+  </requirements>
+  <command interpreter="bash" detect_errors="exit_code">
+sift_variants_wrapper.sh
+"$input"
+"$output"
+"${input.metadata.dbkey}"
+"${GALAXY_DATA_INDEX_DIR}/sift_db.loc"
+"$chrom_col"
+"$pos_col"
+"$base"
+"$allele_col"
+"$strand_source.strand_col"
+"$comment_source.comment_col"
+"$output_opts"
   </command>
-
   <inputs>
     <param name="input" type="data" format="tabular" label="Dataset">
       <validator type="unspecified_build"/>
@@ -60,17 +74,9 @@
       <option value="L">Allele Frequencies (CEU Hapmap population)</option>
     </param>
   </inputs>
-
   <outputs>
     <data format="tabular" name="output" />
   </outputs>
-
-  <requirements>
-    <requirement type="binary">awk</requirement>
-    <requirement type="binary">rm</requirement>
-    <requirement type="binary">sed</requirement>
-  </requirements>
-
   <tests>
     <test>
       <param name="input" value="sift_variants.tab" ftype="tabular" dbkey="hg18"/>
@@ -84,7 +90,6 @@
       <output name="output" file="sift_variants_result.tab"/>
     </test>
   </tests>
-
   <help>
 .. class:: warningmark
 
@@ -94,7 +99,7 @@ This currently works only for builds hg18 or hg19.
 
 **Dataset formats**
 
-The input and output datasets are tabular_. 
+The input and output datasets are tabular_.
 (`Dataset missing?`_)
 
 .. _tabular: ${static_path}/formatHelp.html#tab
@@ -110,7 +115,7 @@ SIFT can be applied to naturally occurring non-synonymous polymorphisms
 and laboratory-induced missense mutations.  This tool uses SQLite databases
 containing pre-computed SIFT scores and annotations for all possible nucleotide
 substitutions at each position in the human exome.  Allele frequency data
-are from the HapMap frequency database, and additional transcript and 
+are from the HapMap frequency database, and additional transcript and
 gene-level data are from Ensembl BioMart.
 
 The input dataset must contain columns for the chromosome, position, and

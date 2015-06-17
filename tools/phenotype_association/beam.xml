@@ -1,29 +1,31 @@
 <tool id="hgv_beam" name="BEAM" version="1.0.0">
   <description>significant single- and multi-locus SNP associations in case-control studies</description>
-
-  <command interpreter="bash">
-    BEAM2_wrapper.sh map=${input.extra_files_path}/${input.metadata.base_name}.map ped=${input.extra_files_path}/${input.metadata.base_name}.ped $burnin $mcmc $pvalue significance=$significance posterior=$posterior
+  <requirements>
+    <requirement type="package">beam</requirement>
+    <requirement type="binary">mv</requirement>
+    <requirement type="binary">rm</requirement>
+  </requirements>
+  <command interpreter="bash" detect_errors="exit_code">
+    BEAM2_wrapper.sh
+    map=${input.extra_files_path}/${input.metadata.base_name}.map
+    ped=${input.extra_files_path}/${input.metadata.base_name}.ped
+    $burnin
+    $mcmc
+    $pvalue
+    significance=$significance
+    posterior=$posterior
   </command>
-
   <inputs>
     <param format="lped" name="input" type="data" label="Dataset"/>
     <param name="burnin" label="Number of MCMC burn-in steps" type="integer" value="200" />
     <param name="mcmc" label="Number of MCMC sampling steps" type="integer" value="200" />
     <param name="pvalue" label="Significance cutoff (after Bonferroni adjustment)" type="float" value="0.05" />
   </inputs>
-
   <outputs>
     <data format="tabular" name="significance" />
     <data format="tabular" name="posterior" />
   </outputs>
-
-  <requirements>
-    <requirement type="package">beam</requirement>
-    <requirement type="binary">mv</requirement>
-    <requirement type="binary">rm</requirement>
-  </requirements>
-
-  <!-- broken.  will be fixed soon.
+  <!-- broken. Will be fixed soon.
   <tests>
     <test>
       <param name='input' value='gpass_and_beam_input' ftype='lped' >
@@ -40,7 +42,6 @@
     </test>
   </tests>
   -->
-
   <help>
 .. class:: infomark
 
@@ -108,15 +109,15 @@ This tool also partitions SNPs into blocks based on linkage disequilibrium (LD).
     etc.
 
     id:  chr position block_boundary  | allele counts in cases and controls
-    0:   1 738547      1.000          | 156 93 251 | 169 83 248 
-    1:   1 5597094     1.000          | 323 19 158 | 328 16 156 
-    2:   1 9424115     1.000          | 366 6 128 | 369 11 120 
-    3:   1 13879818    1.000          | 252 31 217 | 278 32 190 
-    4:   1 13934751    1.000          | 246 64 190 | 224 58 218 
-    5:   1 16803491    1.000          | 91 160 249 | 91 174 235 
-    6:   1 17236854    1.000          | 252 43 205 | 249 44 207 
-    7:   1 18445387    1.000          | 205 66 229 | 217 56 227 
-    8:   1 21222571    1.000          | 353 9 138 | 352 8 140 
+    0:   1 738547      1.000          | 156 93 251 | 169 83 248
+    1:   1 5597094     1.000          | 323 19 158 | 328 16 156
+    2:   1 9424115     1.000          | 366 6 128 | 369 11 120
+    3:   1 13879818    1.000          | 252 31 217 | 278 32 190
+    4:   1 13934751    1.000          | 246 64 190 | 224 58 218
+    5:   1 16803491    1.000          | 91 160 249 | 91 174 235
+    6:   1 17236854    1.000          | 252 43 205 | 249 44 207
+    7:   1 18445387    1.000          | 205 66 229 | 217 56 227
+    8:   1 21222571    1.000          | 353 9 138 | 352 8 140
     etc.
 
   The "id" field is an internally used index.
