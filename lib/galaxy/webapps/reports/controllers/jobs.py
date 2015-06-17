@@ -256,6 +256,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
         specs = sorter( 'date', kwd )
+        offset = 0
+        limit = 10
         sort_id = specs.sort_id
         order = specs.order
         arrow = specs.arrow
@@ -267,6 +269,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         # If specified_date is not received, we'll default to the current month
         specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
         specified_month = specified_date[ :7 ]
+
         year, month = map( int, specified_month.split( "-" ) )
         start_date = date( year, month, 1 )
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
@@ -281,7 +284,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                      model.Job.table.c.create_time < end_date ),
                                 from_obj=[ model.Job.table ],
                                 group_by=[ 'date' ],
-                                order_by=[ _order ] )
+                                order_by=[ _order ],
+                                offset=offset,
+                                limit=limit)
 
         # Use to make trendline
         all_jobs = sa.select( ( model.Job.table.c.create_time.label('date'), model.Job.table.c.id.label('id') ),
@@ -289,24 +294,26 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                   model.Job.table.c.create_time >= start_date,
                                                   model.Job.table.c.create_time < end_date ) )
 
-        trend = [0] * 24
+        trends = dict()
+        for job in all_jobs.execute():
+            job_hour = int(job.date.strftime("%-H"))
+            job_day = job.date.strftime("%d")
+
+            try:
+                trends[job_day][job_hour] += 1
+            except KeyError:
+                trends[job_day] = [0] * 24
+                trends[job_day][job_hour] += 1
+
         jobs = []
         for row in month_jobs.execute():
-            trend = [0] * 24
-
-            row_dayname = row.date.strftime( "%A" )
-            row_day = row.date.strftime( "%d" )
-
-            for job in all_jobs.execute():
-                if row_day == job.date.strftime( "%d" ):
-                    hour = int( job.date.strftime( "%-H" ) ) - 1
-                    trend[hour] += 1
+            row_dayname = row.date.strftime("%A")
+            row_day = row.date.strftime("%d")
 
             jobs.append( ( row_dayname,
                            row_day,
                            row.total_jobs,
-                           row.date,
-                           trend
+                           row.date
                            ) )
 
         return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
@@ -317,6 +324,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     year_label=year_label,
                                     month=month,
                                     jobs=jobs,
+                                    trends=trends,
                                     is_user_jobs_only=monitor_user_id,
                                     message=message )
 
@@ -363,24 +371,26 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                            model.Job.table.c.create_time >= start_date,
                                                            model.Job.table.c.create_time < end_date ) )
 
-        trend = [0] * 24
+        trends = dict()
+        for job in all_jobs_in_error.execute():
+            job_hour = int(job.date.strftime("%-H"))
+            job_day = job.date.strftime("%d")
+
+            try:
+                trends[job_day][job_hour] += 1
+            except KeyError:
+                trends[job_day] = [0] * 24
+                trends[job_day][job_hour] += 1
+
         jobs = []
         for row in month_jobs_in_error.execute():
-            trend = [0] * 24
-
-            row_dayname = row.date.strftime( "%A" )
-            row_day = row.date.strftime( "%d" )
-
-            for job in all_jobs_in_error.execute():
-                if row_day == job.date.strftime( "%d" ):
-                    hour = int( job.date.strftime( "%-H" ) ) - 1
-                    trend[hour] += 1
+            row_dayname = row.date.strftime("%A")
+            row_day = row.date.strftime("%d")
 
             jobs.append( ( row_dayname,
                            row_day,
                            row.total_jobs,
-                           row.date,
-                           trend
+                           row.date
                            ) )
 
         return trans.fill_template( '/webapps/reports/jobs_specified_month_in_error.mako',
@@ -391,6 +401,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     year_label=year_label,
                                     month=month,
                                     jobs=jobs,
+                                    trends=trends,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )
 
