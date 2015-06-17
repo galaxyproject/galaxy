@@ -38,8 +38,9 @@ class InteractiveEnviornmentRequest(object):
         self.attr.HOST = trans.request.host.rsplit(':', 1)[0]
 
         self.load_deploy_config()
+        self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
         self.attr.proxy_request = trans.app.proxy_manager.setup_proxy(
-            trans, host=self.attr.viz_config.get("docker", "docker_host")
+            trans, host=self.attr.docker_hostname
         )
         self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
         self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
@@ -57,7 +58,7 @@ class InteractiveEnviornmentRequest(object):
         # .get() that will ignore missing sections, so we must make use of
         # their defaults dictionary instead.
         default_dict['command_inject'] = '--sig-proxy=true'
-        default_dict['docker_host'] = 'localhost'
+        default_dict['docker_hostname'] = 'localhost'
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
         if not os.path.exists( conf_path ):
