@@ -1,12 +1,12 @@
 define([
     "libs/toastr",
-    "mvc/groups/group-model",
-    "mvc/groups/group-listrow-view"
+    "toolshed/scripts/mvc/groups/group-model",
+    "toolshed/scripts/mvc/groups/group-listrow-view"
 
 ], function(
     mod_toastr,
     mod_group_model,
-    mod_group_listrow_view
+    mod_group_row
 ){
 
 var GroupListView = Backbone.View.extend({
@@ -71,7 +71,7 @@ var GroupListView = Backbone.View.extend({
      * @param {Group} model of the view that will be rendered
      */
     renderOne: function( options ){
-        var rowView = new mod_group_listrow_view.GroupListRowView( options );
+        var rowView = new mod_group_row.GroupListRowView( options );
         this.$el.find( '#group_list_body' ).append( rowView.el );
     },
 

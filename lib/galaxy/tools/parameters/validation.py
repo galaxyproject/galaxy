@@ -5,11 +5,13 @@ Classes related to parameter validation.
 import logging
 import re
 from galaxy import model
+from galaxy import util
 
 log = logging.getLogger( __name__ )
 
 
 class LateValidationError( Exception ):
+
     def __init__( self, message ):
         self.message = message
 
@@ -18,6 +20,7 @@ class Validator( object ):
     """
     A validator checks that a value meets some conditions OR raises ValueError
     """
+
     @classmethod
     def from_element( cls, param, elem ):
         type = elem.get( 'type', None )
@@ -46,6 +49,7 @@ class RegexValidator( Validator ):
         ...
     ValueError: Not gonna happen
     """
+
     @classmethod
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message' ), elem.text )
@@ -79,6 +83,7 @@ class ExpressionValidator( Validator ):
         ...
     ValueError: Not gonna happen
     """
+
     @classmethod
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message' ), elem.text, elem.get( 'substitute_value_in_message' ) )
@@ -105,10 +110,13 @@ class InRangeValidator( Validator ):
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
     ... <param name="blah" type="integer" size="10" value="10">
-    ...     <validator type="in_range" message="Not gonna happen" min="10" max="20"/>
+    ...     <validator type="in_range" message="Not gonna happen" min="10" exclude_min="true" max="20"/>
     ... </param>
     ... ''' ) )
     >>> t = p.validate( 10 )
+    Traceback (most recent call last):
+        ...
+    ValueError: Not gonna happen
     >>> t = p.validate( 15 )
     >>> t = p.validate( 20 )
     >>> t = p.validate( 21 )
@@ -116,22 +124,50 @@ class InRangeValidator( Validator ):
         ...
     ValueError: Not gonna happen
     """
+
     @classmethod
     def from_element( cls, param, elem ):
-        return cls( elem.get( 'message', None ), elem.get( 'min' ), elem.get( 'max' ) )
+        return cls( elem.get( 'message', None ), elem.get( 'min' ),
+                    elem.get( 'max' ), elem.get( 'exclude_min', 'false' ),
+                    elem.get( 'exclude_max', 'false' ) )
 
-    def __init__( self, message, range_min, range_max ):
+    def __init__( self, message, range_min, range_max, exclude_min=False, exclude_max=False ):
+        """
+        When the optional exclude_min and exclude_max attributes are set
+        to true, the range excludes the end points (i.e., min < value < max),
+        while if set to False ( the default), then range includes the end points
+        (1.e., min <= value <= max).  Combinations of exclude_min and exclude_max
+        values are allowed.
+        """
         self.min = float( range_min if range_min is not None else '-inf' )
+        self.exclude_min = util.asbool( exclude_min )
         self.max = float( range_max if range_max is not None else 'inf' )
+        self.exclude_max = util.asbool( exclude_max )
         assert self.min <= self.max, 'min must be less than or equal to max'
         # Remove unneeded 0s and decimal from floats to make message pretty.
         self_min_str = str( self.min ).rstrip( '0' ).rstrip( '.' )
         self_max_str = str( self.max ).rstrip( '0' ).rstrip( '.' )
-        self.message = message or "Value must be between %s and %s" % ( self_min_str, self_max_str )
+        op1 = '>='
+        op2 = '<='
+        if self.exclude_min:
+            op1 = '>'
+        if self.exclude_max:
+            op2 = '<'
+        self.message = message or "Value must be %s %s and %s %s" % ( op1, self_min_str, op2, self_max_str )
 
     def validate( self, value, history=None ):
-        if not( self.min <= float( value ) <= self.max ):
-            raise ValueError( self.message )
+        if self.exclude_min:
+            if not self.min < float( value ):
+                raise ValueError( self.message )
+        else:
+            if not self.min <= float( value ):
+                raise ValueError( self.message )
+        if self.exclude_max:
+            if not float( value ) < self.max:
+                raise ValueError( self.message )
+        else:
+            if not float( value ) <= self.max:
+                raise ValueError( self.message )
 
 
 class LengthValidator( Validator ):
@@ -156,6 +192,7 @@ class LengthValidator( Validator ):
         ...
     ValueError: Must have length no more than 8
     """
+
     @classmethod
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ), elem.get( 'min', None ), elem.get( 'max', None ) )
@@ -180,6 +217,7 @@ class DatasetOkValidator( Validator ):
     """
     Validator that checks if a dataset is in an 'ok' state
     """
+
     def __init__( self, message=None ):
         self.message = message
 
@@ -198,6 +236,7 @@ class MetadataValidator( Validator ):
     """
     Validator that checks for missing metadata
     """
+
     def __init__( self, message=None, check="", skip="" ):
         self.message = message
         self.check = check.split( "," )
@@ -221,6 +260,7 @@ class UnspecifiedBuildValidator( Validator ):
     """
     Validator that checks for dbkey not equal to '?'
     """
+
     def __init__( self, message=None ):
         if message is None:
             self.message = "Unspecified genome build, click the pencil icon in the history item to set the genome build"
@@ -243,6 +283,7 @@ class UnspecifiedBuildValidator( Validator ):
 
 class NoOptionsValidator( Validator ):
     """Validator that checks for empty select list"""
+
     def __init__( self, message=None ):
         self.message = message
 
@@ -259,6 +300,7 @@ class NoOptionsValidator( Validator ):
 
 class EmptyTextfieldValidator( Validator ):
     """Validator that checks for empty text field"""
+
     def __init__( self, message=None ):
         self.message = message
 
@@ -277,6 +319,7 @@ class MetadataInFileColumnValidator( Validator ):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
     """
+
     @classmethod
     def from_element( cls, param, elem ):
         filename = elem.get( "filename", None )
@@ -315,6 +358,7 @@ class MetadataInDataTableColumnValidator( Validator ):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
     """
+
     @classmethod
     def from_element( cls, param, elem ):
         table_name = elem.get( "table_name", None )
@@ -362,7 +406,6 @@ class MetadataInDataTableColumnValidator( Validator ):
             if value.metadata.spec[self.metadata_name].param.to_string( value.metadata.get( self.metadata_name ) ) in self.valid_values:
                 return
         raise ValueError( self.message )
-
 
 validator_types = dict( expression=ExpressionValidator,
                         regex=RegexValidator,
