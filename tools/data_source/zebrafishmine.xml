@@ -2,7 +2,7 @@
 <tool name="ZebrafishMine" id="zebrafishmine" tool_type="data_source" version="1.0.0">
     <description>server</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-    <inputs action="http://zebrafishmine.org/begin.do" check_values="false" method="get"> 
+    <inputs action="http://zebrafishmine.org/begin.do" check_values="false" method="get">
         <display>go to ZebrafishMine server $GALAXY_URL</display>
     </inputs>
     <request_param_translation>
@@ -17,4 +17,7 @@
         <data name="output" format="txt" />
     </outputs>
     <options sanitize="False"/>
+    <help>Obtain data from ZebrafishMine
+    </help>
+    <citations />
 </tool>

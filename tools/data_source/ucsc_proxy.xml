@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <tool name="UCSC Main" id="ucsc_proxy" version="1.0.0">
     <description>table browser proxy</description>
+    <code file="ucsc_filter.py"/>
     <command interpreter="python">
         ucsc_proxy.py $param_file $output
     </command>
@@ -9,7 +10,6 @@
         <param type="hidden" name="init" value="1"/>
         <param type="hidden" name="hgta_outputType" value="bed"/>
     </inputs>
-    <code file="ucsc_filter.py"/>
     <outputs>
         <data name="output" format="bed" />
     </outputs>

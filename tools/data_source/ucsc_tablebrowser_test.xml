@@ -39,4 +39,7 @@
         <data name="output" format="tabular" label="${tool.name} on ${organism}: ${table} (#if $description == 'range' then $getVar( 'position', 'unknown position' ) else $description#)"/>
     </outputs>
     <options sanitize="False" refresh="True"/>
+    <help>Obtain data from UCSC Test
+    </help>
+    <citations />
 </tool>

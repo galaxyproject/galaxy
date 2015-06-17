@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <tool name="Wormbase" id="wormbase_test" tool_type="data_source" version="1.0.0">
-	<description>test server</description>
-	<command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-	<inputs action="http://dev.wormbase.org/db/seq/gbrowse/c_elegans/" check_values="false" target="_top"> 
-		<display>go to Wormbase test server $GALAXY_URL</display>
-		<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=wormbase_test" />
-	</inputs>
+    <description>test server</description>
+    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <inputs action="http://dev.wormbase.org/db/seq/gbrowse/c_elegans/" check_values="false" target="_top">
+        <display>go to Wormbase test server $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=wormbase_test" />
+    </inputs>
     <request_param_translation>
         <request_param galaxy_name="URL" remote_name="URL" missing="">
             <append_param separator="&amp;" first_separator="?" join="=">
@@ -22,6 +22,9 @@
     <uihints minwidth="800"/>
     <outputs>
         <data name="output" format="txt" label="${tool.name} on $getVar( 'q', 'unknown position' )"/>
-	</outputs>
-	<options sanitize="False" refresh="True"/>
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+    <help>Obtain data from Wormbase Test
+    </help>
+    <citations />
 </tool>
