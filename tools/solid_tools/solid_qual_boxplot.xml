@@ -1,16 +1,15 @@
 <tool id="solid_qual_boxplot" name="Draw quality score boxplot" version="1.0.0">
-	<description>for SOLiD data</description>
-	
-	<command interpreter="bash">qualsolid_boxplot_graph.sh -t '$input.name' -i $input -o $output</command>
-	
-	<inputs>
-		<param format="txt" name="input" type="data" label="Statistics report file (output of 'Quality Statistics for SOLiD data' tool)" />
-	</inputs>
-
-	<outputs>
-		<data format="png" name="output" metadata_source="input" />
-	</outputs>
-<help>
+    <description>for SOLiD data</description>
+    <command interpreter="bash" detect_errors="exit_code">
+        qualsolid_boxplot_graph.sh -t '$input.name' -i $input -o $output
+    </command>
+    <inputs>
+        <param format="txt" name="input" type="data" label="Statistics report file (output of 'Quality Statistics for SOLiD data' tool)" />
+    </inputs>
+    <outputs>
+        <data format="png" name="output" metadata_source="input" />
+    </outputs>
+    <help>
 
 **What it does**
 
@@ -36,5 +35,6 @@ Creates a boxplot graph for the quality scores in the library.
 This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
 
  .. __: http://hannonlab.cshl.edu/fastx_toolkit/
-</help>
+    </help>
+    <citations />
 </tool>
