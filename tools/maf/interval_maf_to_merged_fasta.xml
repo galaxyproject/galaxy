@@ -3,7 +3,7 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">
+  <command interpreter="python" detect_errors="exit_code">
 interval_maf_to_merged_fasta.py
 --dbkey=$dbkey
 --species=$maf_source_type.species

@@ -1,6 +1,6 @@
 <tool id="gff_filter_by_feature_count" name="Filter GFF data by feature count" version="0.1">
   <description>using simple expressions</description>
-  <command interpreter="python">
+  <command interpreter="python" detect_errors="exit_code">
     gff_filter_by_feature_count.py $input_file1 $out_file1 "$feature_name" "$cond"
   </command>
   <inputs>
@@ -35,10 +35,7 @@
           <output name="out_file1" file="gff_filter_by_feature_count_out2.gff"/>
       </test>
   </tests>
-
   <help>
-
-
 .. class:: infomark
 
 Valid comparison operators are: &gt; &lt; &gt;=, &lt;=, !=, and ==
@@ -49,5 +46,6 @@ Valid comparison operators are: &gt; &lt; &gt;=, &lt;=, !=, and ==
 
 The filter tool allows you to restrict the dataset based on transcripts' feature counts.
 
-</help>
+  </help>
+  <citations />
 </tool>

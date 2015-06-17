@@ -1,6 +1,6 @@
 <tool id="gff_filter_by_attribute" name="Filter GFF data by attribute" version="0.1">
   <description>using simple expressions</description>
-  <command interpreter="python">
+  <command interpreter="python" detect_errors="exit_code">
     gff_filter_by_attribute.py $input $out_file1 "$cond" '${input.metadata.attribute_types}'
   </command>
   <inputs>
@@ -24,7 +24,6 @@
         <output name="out_file1" file="gff_filter_by_attribute_out2.gff"/>
     </test>
   </tests>
-
   <help>
 
 .. class:: warningmark
@@ -49,5 +48,6 @@ The filter tool allows you to restrict the dataset using simple conditional stat
 - When using 'equal-to' operator **double equal sign '==' must be used** ( e.g., **attribute_name=='chr1'** )
 - Non-numerical values must be included in single or double quotes ( e.g., **attribute_name=='XX22'** )
 
-</help>
+  </help>
+  <citations />
 </tool>

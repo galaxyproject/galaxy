@@ -1,6 +1,6 @@
 <tool id="gtf_filter_by_attribute_values_list" name="Filter GTF data by attribute values_list" version="0.1">
     <description></description>
-    <command interpreter="python">
+    <command interpreter="python" detect_errors="exit_code">
       gtf_filter_by_attribute_values_list.py $input $attribute_name $ids $output
     </command>
     <inputs>
@@ -39,4 +39,5 @@ taken from the first column in the file; additional columns in the file are igno
 use of this tool is to filter a GTF file using a list of transcript_ids or gene_ids obtained from Cuffdiff.
 
     </help>
+    <citations />
 </tool>
