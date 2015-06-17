@@ -21,6 +21,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         'min_resolution' : 'long',
         'max_resolution' : 'long',
         'header'         : 'bool',
+        'trans'          : 'bool',
         'transpose'      : 'bool',
     }
 
