@@ -358,9 +358,9 @@ class Fasta( Sequence ):
                         if line == '' or line.startswith( '>' ):
                             break
                         
-                        # The third line may not contain chars like '()[].' otherwise it's most likely a DotBracket file                        
+                        # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file                        
                         line = fh.readline()
-                        if line and re.search("[\(\)\[\]\.]",line):
+                        if not line.startswith('>') and re.search("[\(\)\[\]\.]",line):
                             break
                         
                         return True
