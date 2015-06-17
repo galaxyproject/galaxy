@@ -1,7 +1,7 @@
 define([], function() {
 
 // ============================================================================
-// LIBRARY RELATED MODELS
+// TS GROUP RELATED MODELS
 
     var Group = Backbone.Model.extend({
       urlRoot: '/api/groups',
