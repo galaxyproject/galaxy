@@ -24,7 +24,7 @@
         <request_param galaxy_name="data_type" remote_name="exportView_outputformat" missing="tabular">
             <value_translation>
                 <value galaxy_value="tabular" remote_value="TSV" />
-            </value_translation> 
+            </value_translation>
         </request_param>
         <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
         <request_param galaxy_name="dbkey" remote_name="dbkey" missing="?" />
@@ -39,4 +39,7 @@
         <data name="output" format="tabular" />
     </outputs>
     <options sanitize="False" refresh="True"/>
+    <help>Obtain data from GrameneMart Central
+    </help>
+    <citations />
 </tool>
