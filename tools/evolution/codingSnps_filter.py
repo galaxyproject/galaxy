@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # runs after the job (and after the default post-filter)
-from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters import DataToolParameter
 # Older py compatibility
 try:
     set()
@@ -28,8 +28,8 @@ def validate_input( trans, error_map, param_values, page_param_map ):
                     if param.metadata.strandCol is not None:
                         int( param.metadata.strandCol )
                 except:
-                    error_msg = "The attributes of this dataset are not properly set. " + \
-                        "Click the pencil icon in the history item to set the chrom, start, end and strand columns."
+                    error_msg = ("The attributes of this dataset are not properly set. "
+                        "Click the pencil icon in the history item to set the chrom, start, end and strand columns.")
                     error_map[name] = error_msg
             data_param_names.add( name )
     if len( dbkeys ) > 1:
