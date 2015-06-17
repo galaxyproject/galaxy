@@ -5,7 +5,7 @@
     <requirement type="package">ucsc_tools</requirement>
   </requirements>
   <code file="codingSnps_filter.py"></code>
-  <command interpreter="perl">
+  <command interpreter="perl" detect_errors="exit_code">
     codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 keepColumns=$keep strand=${strand_source.strand_col} unique=$uniqpos > $out_file1
   </command>
   <inputs>
