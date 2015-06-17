@@ -460,8 +460,10 @@ def _purge_dataset( app, dataset, remove_from_disk, info_only = False ):
                             shutil.rmtree( dataset.extra_files_path ) #we need to delete the directory and its contents; os.unlink would always fail on a directory
                         usage_users = []
                         for hda in dataset.history_associations:
-                            if not hda.purged and hda.history.user is not None and hda.history.user not in usage_users:
-                                usage_users.append( hda.history.user )
+                            if not hda.purged:
+                                hda.purged = True
+                                if hda.history.user is not None and hda.history.user not in usage_users:
+                                    usage_users.append( hda.history.user )
                         for user in usage_users:
                             user.total_disk_usage -= dataset.total_size
                             app.sa_session.add( user )
