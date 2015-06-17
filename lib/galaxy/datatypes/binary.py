@@ -894,6 +894,8 @@ class RData( Binary ):
 
 Binary.register_sniffable_binary_format('rdata', 'rdata', RData)
 
+
+@dataproviders.decorators.has_dataproviders
 class Mrh( Binary ):
     """Class describing a MRH file"""
     file_ext = "mrh"
@@ -925,5 +927,11 @@ class Mrh( Binary ):
             return dataset.peek
         except:
             return 'Binary mrh file (%s)' % (data.nice_size(dataset.get_size()))
+
+    @dataproviders.decorators.dataprovider_factory( 'json', dataproviders.mrh.MrhSquareDataProvider.settings )
+    def json_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        print settings
+        return dataproviders.mrh.MrhSquareDataProvider( dataset_source, **settings )
 
 Binary.register_sniffable_binary_format("mrh", "mrh", Mrh)
