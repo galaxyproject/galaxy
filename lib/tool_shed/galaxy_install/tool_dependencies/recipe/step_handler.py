@@ -80,7 +80,7 @@ class CompressedFile( object ):
         if self.file_type == 'zip':
             for zipped_file in self.getmembers():
                 filename = self.getname( zipped_file )
-                absolute_filepath = os.path.join( path, filename )
+                absolute_filepath = os.path.join( extraction_path, filename )
                 external_attributes = self.archive.getinfo( filename ).external_attr
                 # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
                 unix_permissions = external_attributes >> 16

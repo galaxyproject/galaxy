@@ -971,6 +971,12 @@ use_interactive = True
 # option to retry externally, or set metadata manually (when possible).
 #retry_metadata_internally = True
 
+# Very large metadata values can cause Galaxy crashes.  This will allow
+# limiting the maximum metadata key size (in bytes used in memory, not the end
+# result database value size) Galaxy will attempt to save with a dataset.  0 to
+# disable this feature.  5000000 seems to be a reasonable size.
+#max_metadata_value_size = 0
+
 # If (for example) you run on a cluster and your datasets (by default,
 # database/files/) are mounted read-only, this option will override tool output
 # paths to write outputs to the working directory instead, and the job manager
