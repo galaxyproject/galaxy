@@ -124,8 +124,14 @@ define([], function() {
             tmp +=              '<div class="ui-table-form-info">';
             if (options.help) {
                 tmp +=              options.help;
-                if (options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
-                    tmp += ' (' + options.argument + ')';
+
+                // detect argument in help text
+                if (options.argument) {
+                    var start = options.help.indexOf(options.argument);
+                    function _check (source, pos) { return source[pos] && /\w/.test(source[pos]); }
+                    if (start == -1 || _check(options.help, start - 1) || _check(options.help, start + options.argument.length)) {
+                        tmp += ' (' + options.argument + ')';
+                    }
                 }
             }
             tmp +=              '</div>';
