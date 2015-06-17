@@ -1,6 +1,8 @@
 <tool id="Cut1" name="Cut" version="1.0.2">
   <description>columns from a table</description>
-  <command interpreter="perl">cutWrapper.pl $input "$columnList" $delimiter $out_file1</command>
+  <command interpreter="perl" detect_errors="exit_code">
+      cutWrapper.pl $input "$columnList" $delimiter $out_file1
+  </command>
   <inputs>
     <param name="columnList" size="10" type="text" value="c1,c2" label="Cut columns"/>
     <param name="delimiter" type="select" label="Delimited by">
@@ -207,5 +209,6 @@ Input dataset (six columns: c1, c2, c3, c4, c5, and c6)::
 
    . . gene1
    . . gene2
-</help>
+  </help>
+  <citations />
 </tool>

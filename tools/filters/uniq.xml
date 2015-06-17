@@ -1,6 +1,8 @@
 <tool id="Count1" name="Count" version="1.0.2">
   <description>occurrences of each record</description>
-  <command interpreter="python">uniq.py -i $input -o $out_file1 -c "$column" -d $delim -s $sorting</command>
+  <command interpreter="python" detect_errors="exit_code">
+      uniq.py -i $input -o $out_file1 -c "$column" -d $delim -s $sorting
+  </command>
   <inputs>
     <param name="input" type="data" format="tabular" label="from dataset" help="Dataset missing? See TIP below"/>
     <param name="column" type="data_column" data_ref="input" multiple="True" numerical="False" label="Count occurrences of values in column(s)" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
@@ -75,7 +77,7 @@ This tool counts occurrences of unique values in selected column(s).
 **Example**
 
 - Input file::
-     
+
        chr1   10  100  gene1
        chr1  105  200  gene2
        chr1  205  300  gene3
@@ -90,7 +92,7 @@ This tool counts occurrences of unique values in selected column(s).
        3 chr1
        2 chr2
        1 chr3
-       2 chr4   
+       2 chr4
 
 - Counting unique values in the grouping of columns c2 and c3 will result in::
 
@@ -101,5 +103,6 @@ This tool counts occurrences of unique values in selected column(s).
        1    15    1656
        1    205   300
 
-</help>
+  </help>
+  <citations />
 </tool>

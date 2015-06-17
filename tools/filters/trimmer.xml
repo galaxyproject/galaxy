@@ -1,7 +1,7 @@
 <tool id="trimmer" name="Trim" version="0.0.1">
     <description>leading or trailing characters</description>
-    <command interpreter="python">
-    trimmer.py -a -f $input1 -c $col -s $start -e $end -i $ignore $fastq > $out_file1
+    <command interpreter="python" detect_errors="exit_code">
+        trimmer.py -a -f $input1 -c $col -s $start -e $end -i $ignore $fastq > $out_file1
     </command>
     <inputs>
         <param format="tabular,txt" name="input1" type="data" label="this dataset"/>
@@ -29,10 +29,10 @@
             <option value="37">%</option>
             <option value="94">^</option>
             <option value="35">&#35;</option>
-         </param>   
+         </param>
     </inputs>
     <outputs>
-        <data name="out_file1" format="input" metadata_source="input1"/>
+        <data name="out_file1" format_source="input1" metadata_source="input1"/>
     </outputs>
     <tests>
         <test>
@@ -61,7 +61,7 @@
            <param name="ignore" value="62"/>
            <param name="fastq" value="No"/>
            <output name="out_file1" file="trimmer_a_f_c2_s2_e-2_i62.dat"/>
-        </test>	
+        </test>
     </tests>
 
     <help>
@@ -123,14 +123,14 @@ This tool can be used to trim sequences and quality strings in fastq datasets. T
   GGACTCAGATAGTAATCCACGCTCCTTTAAAATATC
   +
   II#IIIIIII$5+.(9IIIIIII$%*$G$A31I&amp;&amp;B
-  
+
 cab done by setting **Remove everything from this position to the end** to 31::
 
   @081017-and-081020:1:1:1715:1759
   GGACTCAGATAGTAATCCACGCTCCTTTAAA
   +
-  II#IIIIIII$5+.(9IIIIIII$%*$G$A3 
-  
+  II#IIIIIII$5+.(9IIIIIII$%*$G$A3
+
 **Note** that headers are skipped.
 
 .. class:: warningmark
@@ -139,4 +139,5 @@ cab done by setting **Remove everything from this position to the end** to 31::
 
 
     </help>
+    <citations />
 </tool>

@@ -1,16 +1,18 @@
 <tool id="addValue" name="Add column" version="1.0.0">
   <description>to an existing dataset</description>
-  <command interpreter="perl">fixedValueColumn.pl $input $out_file1 "$exp" $iterate</command>
+  <command interpreter="perl" detect_errors="exit_code">
+      fixedValueColumn.pl $input $out_file1 "$exp" $iterate
+  </command>
   <inputs>
      <param name="exp" size="20" type="text" value="1" label="Add this value"/>
     <param format="tabular" name="input" type="data" label="to Dataset" help="Dataset missing? See TIP below" />
     <param name="iterate" type="select" label="Iterate?">
       <option value="no">NO</option>
       <option value="yes">YES</option>
-    </param>    
+    </param>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data format="tabular" name="out_file1" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -47,7 +49,7 @@ Typing **+** in the text box will generate::
     chr1 10  100 geneA +
     chr2 200 300 geneB +
     chr2 400 500 geneC +
-     
+
 
 You can also add line numbers by selecting **Iterate: YES**. In this case if you enter **1** in the text box you will get::
 
@@ -57,5 +59,6 @@ You can also add line numbers by selecting **Iterate: YES**. In this case if you
 
 
 
-</help>
+  </help>
+  <citations />
 </tool>

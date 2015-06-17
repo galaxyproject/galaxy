@@ -1,6 +1,8 @@
 <tool id="gff2bed1" name="GFF-to-BED" version="1.0.1">
   <description>converter</description>
-  <command interpreter="python">gff_to_bed_converter.py $input $out_file1</command>
+  <command interpreter="python" detect_errors="exit_code">
+      gff_to_bed_converter.py $input $out_file1
+  </command>
   <inputs>
     <param format="gff" name="input" type="data" label="Convert this dataset"/>
   </inputs>
@@ -83,5 +85,6 @@ The additional BED fields (optional) are::
     8. frame - If the feature is a coding exon, frame should be a number between 0-2 that represents the reading frame of the first base. If the feature is not a coding exon, the value should be '.'.
     9. group - All lines with the same group are linked together into a single item.
 
-</help>
+  </help>
+  <citations />
 </tool>

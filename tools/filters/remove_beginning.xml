@@ -1,12 +1,14 @@
 <tool id="Remove beginning1" name="Remove beginning" version="1.0.0">
   <description>of a file</description>
-  <command interpreter="perl">remove_beginning.pl $input $num_lines $out_file1</command>
+  <command interpreter="perl" detect_errors="exit_code">
+      remove_beginning.pl $input $num_lines $out_file1
+  </command>
   <inputs>
     <param name="num_lines" size="5" type="integer" value="1" label="Remove first" help="lines"/>
     <param format="txt" name="input" type="data" label="from"/>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data format="txt" name="out_file1" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -38,5 +40,6 @@ After removing the first 3 lines the dataset will look like this::
     chr7  56772  56792   D17003_CTCF_R7  372  +
     chr7  56775  56795   D17003_CTCF_R4  207  +
 
-</help>
+  </help>
+  <citations />
 </tool>

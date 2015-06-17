@@ -1,6 +1,6 @@
 <tool id="Convert characters1" name="Convert" version="1.0.0">
   <description>delimiters to TAB</description>
-  <command interpreter="python">
+  <command interpreter="python" detect_errors="exit_code">
 convert_characters.py
 #if $strip
   --strip
@@ -30,9 +30,6 @@ $input $convert_from $out_file1
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
-  <stdio>
-    <exit_code range="1:" level="fatal" />
-  </stdio>
   <tests>
     <test>
       <param name="convert_from" value="s"/>
@@ -74,4 +71,5 @@ Converts all delimiters of a specified type into TABs. Consecutive delimiters ca
     chrX  151564643  151564711  NM_018558_exon_2_0_chrX_151564644_f  0  +
 
   </help>
+  <citations />
 </tool>

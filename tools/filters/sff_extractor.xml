@@ -1,9 +1,11 @@
 <tool id="Sff_extractor" name="SFF converter" version="1.0.1">
     <description></description>
-    <command interpreter="python">
-        #if   str($fastq_output) == "fastq_false"  #sff_extract.py $clip --seq_file=$out_file3 --qual_file=$out_file4 --xml_file=$out_file2 $input
-        #elif str($fastq_output) == "fastq_true"   #sff_extract.py $clip --fastq --seq_file=$out_file1 --xml_file=$out_file2 $input
-        #end if#
+    <command interpreter="python" detect_errors="exit_code">
+#if   str($fastq_output) == "fastq_false":
+    sff_extract.py $clip --seq_file=$out_file3 --qual_file=$out_file4 --xml_file=$out_file2 $input
+#elif str($fastq_output) == "fastq_true"
+    sff_extract.py $clip --fastq --seq_file=$out_file1 --xml_file=$out_file2 $input
+#end if
     </command>
     <inputs>
         <param format="sff" name="input" type="data" label="Extract from this dataset"/>
@@ -18,7 +20,7 @@
             <filter>fastq_output is True</filter>
         </data>
         <data format="xml" name="out_file2">
-        </data>  
+        </data>
         <data format="fasta" name="out_file3">
             <filter>fastq_output is False</filter>
         </data>
@@ -47,12 +49,11 @@
 
 **What it does**
 
-This tool extracts data from the 454 Sequencer SFF format and creates three files containing the: 
+This tool extracts data from the 454 Sequencer SFF format and creates three files containing the:
 Sequences (FASTA),
-Qualities (QUAL) and 
+Qualities (QUAL) and
 Clippings (XML)
 
-    </help>
+  </help>
+  <citations />
 </tool>
-
-

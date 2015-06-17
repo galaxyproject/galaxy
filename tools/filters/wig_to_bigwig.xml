@@ -1,15 +1,18 @@
 <tool id="wig_to_bigWig" name="Wig/BedGraph-to-bigWig" version="1.1.0">
   <description>converter</description>
-  <command>grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1 
+  <requirements>
+    <requirement type="package">ucsc_tools</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+    grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1
     #if $settings.settingsType == "full":
       -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.clip} ${settings.unc}
     #else:
       -clip
     #end if
-    2&gt;&amp;1 || echo "Error running wigToBigWig." >&amp;2</command>
-  <requirements>
-    <requirement type="package">ucsc_tools</requirement>
-  </requirements>
+    2>&1 || echo "Error running wigToBigWig." >&2
+    ]]>
+  </command>
   <inputs>
     <param format="wig,bedgraph" name="input1" type="data" label="Convert">
       <validator type="unspecified_build" />
@@ -80,5 +83,6 @@ This tool converts bedgraph or wiggle data into bigWig type.
 
 .. _UCSC Bioinformatics website: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
 
-</help>
+  </help>
+  <citations />
 </tool>

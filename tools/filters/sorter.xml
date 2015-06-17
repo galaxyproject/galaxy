@@ -1,11 +1,11 @@
 <tool id="sort1" name="Sort" version="1.0.3">
     <description>data in ascending or descending order</description>
-    <command interpreter="python">
+    <command interpreter="python" detect_errors="exit_code">
         sorter.py
-        
+
         --input=${input}
         --output=${out_file1}
-        
+
         #if (str($style) == 'num'):
             #set $style = 'n'
         #elif (str($style) == 'gennum'):
@@ -15,13 +15,13 @@
         #end if
 
         #set $order = '' if (str($order) == 'ASC') else 'r'
-        
+
         --key=${column},${column}${style}${order}
-        
-        
+
+
         #for $col in $column_set:
             #set $other_column = str($col.other_column)
-            
+
             #if (str($col.other_style) == 'num'):
                 #set $other_style = 'n'
             #elif (str($col.other_style) == 'gennum'):
@@ -29,7 +29,7 @@
             #else:
                 #set $other_style = ''
             #end if
-            
+
             #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
             --key=${other_column},${other_column}${other_style}${other_order}
         #end for
@@ -60,7 +60,7 @@
         </repeat>
     </inputs>
     <outputs>
-        <data format="input" name="out_file1" metadata_source="input"/>
+        <data format="tabular" name="out_file1" metadata_source="input"/>
     </outputs>
     <tests>
         <test>
@@ -93,9 +93,9 @@
     </tests>
     <help>
 .. class:: infomark
-        
+
 **TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
-        
+
 -----
 
 **Syntax**
@@ -105,7 +105,7 @@ This tool sorts the dataset on any number of columns in either ascending or desc
 * **Numerical sort** orders numbers by their magnitude, ignores all characters besides numbers, and evaluates a string of numbers to the value they signify.
 * **General numeric sort** orders numbers by their general numerical value. Unlike the numerical sort option, it can handle numbers in scientific notation too.
 * **Alphabetical sort** is a phonebook type sort based on the conventional order of letters in an alphabet. Each nth letter is compared with the nth letter of other words in the list, starting at the first letter of each word and advancing to the second, third, fourth, and so on, until the order is established. Therefore, in an alphabetical sort, 2 comes after 100 (1 &lt; 2).
-        
+
 -----
 
 **Examples**
@@ -185,4 +185,5 @@ on column 5 (general numeric) in ascending order will yield::
     chr15  700  800  feature6  1.1e4    +
 
     </help>
+    <citations />
 </tool>

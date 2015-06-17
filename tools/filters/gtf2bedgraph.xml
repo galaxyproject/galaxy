@@ -1,10 +1,12 @@
 <tool id="gtf2bedgraph" name="GTF-to-BEDGraph" version="1.0.0">
   <description>converter</description>
-  <command interpreter="python">gtf_to_bedgraph_converter.py $input $out_file1 $attribute_name</command>
+  <command interpreter="python" detect_errors="exit_code">
+      gtf_to_bedgraph_converter.py $input $out_file1 $attribute_name
+  </command>
   <inputs>
     <param format="gtf" name="input" type="data" label="Convert this query"/>
     <param name="attribute_name" type="text" label="Attribute to Use for Value">
-        <validator type="empty_field" /> 
+        <validator type="empty_field" />
     </param>
   </inputs>
   <outputs>
@@ -36,7 +38,7 @@ using the attribute name 'FPKM' will be converted to BEDGraph (**note** that 1 i
 
 
     chr22   9999999  10001000   2.75
-    chr22  10009999  10010100   2.25   
+    chr22  10009999  10010100   2.25
 
 ------
 
@@ -55,7 +57,7 @@ using the attribute name 'FPKM' will be converted to BEDGraph (**note** that 1 i
     7. strand - Valid entries include '+', '-', or '.' (for don't know/care).
     8. frame - If the feature is a coding exon, frame should be a number between 0-2 that represents the reading frame of the first base. If the feature is not a coding exon, the value should be '.'.
     9. group - The group field is a list of attributes. Each attribute consists of a type/value pair. Attributes must end in a semi-colon, and be separated from any following attribute by exactly one space. The attribute list must begin with the two mandatory attributes: (i) gene_id value - A globally unique identifier for the genomic source of the sequence and (ii) transcript_id value - A globally unique identifier for the predicted transcript.
-    
+
 **BEDGraph format**
 
 The bedGraph format is line-oriented. Bedgraph data are preceeded by a track definition line, which adds a number of options for controlling the default display of this track.
@@ -77,5 +79,6 @@ Following the track definition line are the track data in four column BED format
   chromA  chromStartA  chromEndA  dataValueA
   chromB  chromStartB  chromEndB  dataValueB
 
-</help>
+  </help>
+  <citations />
 </tool>
