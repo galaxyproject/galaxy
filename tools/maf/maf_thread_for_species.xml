@@ -3,7 +3,9 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_thread_for_species.py $input1 $out_file1 $species</command>
+  <command interpreter="python" detect_errors="exit_code">
+      maf_thread_for_species.py $input1 $out_file1 $species
+  </command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file"/>
     <param name="species" type="select" label="Species to keep" display="checkboxes" multiple="true">
@@ -48,12 +50,10 @@ results in::
 
   ##maf version=1
   a score=0.0
-  s hg17.chr7    127471195 389 + 158628139 gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTAAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCATTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG 
-  s panTro1.chr6 129885076 389 + 161576975 gtttgccatcttttgctgctcttgggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTGAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCGTTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG 
+  s hg17.chr7    127471195 389 + 158628139 gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTAAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCATTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG
+  s panTro1.chr6 129885076 389 + 161576975 gtttgccatcttttgctgctcttgggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTGAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCGTTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG
 
 @HELP_CITATIONS@
     </help>
     <expand macro="citations" />
-
 </tool>
-

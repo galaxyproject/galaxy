@@ -3,7 +3,9 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_limit_to_species.py $species $input1 $out_file1 $allow_partial $min_species</command>
+  <command interpreter="python" detect_errors="exit_code">
+      maf_limit_to_species.py $species $input1 $out_file1 $allow_partial $min_species
+  </command>
   <inputs>
     <param name="input1" type="data" format="maf" label="MAF file"/>
     <param name="allow_partial" type="select" label="Exclude blocks which have missing species" >
@@ -46,4 +48,3 @@ This tool allows the user to remove any undesired species from a MAF file. Colum
     </help>
     <expand macro="citations" />
 </tool>
-
