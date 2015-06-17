@@ -6,7 +6,7 @@
     <requirement type="package" version="0.1.18">samtools</requirement>
   </requirements>
   <version_command>MosaikAligner | sed -e 's/\x1b\[[[:digit:]]\{1,2\}\(;[[:digit:]]\{1,2\}\)\{0,1\}m//g' | grep -o 'MosaikAligner [[:digit:].]\{1,\}'</version_command>
-  <command>
+  <command detect_errors="exit_code">
     #set $processors = '-p ${GALAXY_SLOTS:-4}'
     MosaikBuild -fr
     #if $genomeSource.refGenomeSource == 'indexed':
@@ -123,4 +123,5 @@
   <help>
 This tool uses Mosaik to align reads to a reference sequence.
   </help>
+  <citations />
 </tool>

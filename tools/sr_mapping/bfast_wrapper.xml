@@ -1,6 +1,10 @@
 <tool id="bfast_wrapper" name="Map with BFAST" version="0.1.3">
   <description></description>
-  <command interpreter="python">bfast_wrapper.py
+  <requirements>
+    <requirement type="package">bfast</requirement>
+  </requirements>
+  <command interpreter="python" detect_errors="exit_code">
+bfast_wrapper.py
     --numThreads="\${GALAXY_SLOTS:-4}"
     --fastq="$input1"
     #if $input1.extension.startswith( "fastqcs" ):
@@ -11,7 +15,7 @@
     #end if
     --output="$output"
     $suppressHeader
-    
+
     #if $refGenomeSource.refGenomeSource_type == "history":
       ##build indexes on the fly
       --buildIndex
@@ -27,14 +31,14 @@
       ##use precomputed indexes
       --ref="${ refGenomeSource.indices.fields.path }"
     #end if
-    
+
     #if $params.source_select == "full":
       --offsets="$params.offsets"
       --keySize="$params.keySize"
       --maxKeyMatches="$params.maxKeyMatches"
       --maxNumMatches="$params.maxNumMatches"
       --whichStrand="$params.whichStrand"
-      
+
       #if str( $params.scoringMatrixFileName ) != 'None':
         --scoringMatrixFileName="$params.scoringMatrixFileName"
       #end if
@@ -42,7 +46,7 @@
       ${params.unconstrained}
       --offset="${params.offset}"
       --avgMismatchQuality="${params.avgMismatchQuality}"
-      
+
       --algorithm="${params.localalign_params.algorithm}"
       ${params.unpaired}
       ${params.reverseStrand}
@@ -117,13 +121,13 @@
           <option value="1">Forward strand only</option>
           <option value="2">Reverse strand only</option>
         </param>
-        
+
         <param name="scoringMatrixFileName" type="data" format="text" optional="True" label="Scoring Matrix file used to score the alignments" help="See BFAST manual for file format requirements. (advanced users only)"/>
         <param name="ungapped" type="boolean" truevalue="--ungapped" falsevalue="" checked="no" label="Perform ungapped local alignment" help="Performing ungapped local alignment will not consider indels while providing a significant speed increase" />
         <param name="unconstrained" type="boolean" truevalue="--unconstrained" falsevalue="" checked="no" label="Perform unconstrained local alignment" help="Performing unconstrained local alignment will not use mask constraints at the cost of speed" />
         <param name="offset" type="integer" value="20" label="The number of bases before and after each hit to consider in local alignment" help="Larger values will allow for larger insertions and deletions to be detected at the cost of speed" />
         <param name="avgMismatchQuality" type="integer" value="10" label="The average mismatch quality" help="This can be used as a scaling factor for mapping quality (advanced users only)" />
-        
+
         <conditional name="localalign_params">
           <param name="algorithm" type="select" label="The post processing algorithm" help="This determines how reads with multiple candidate alignments are returned.  Unique alignments will return an alignment if the read has only one candidate alignment.  Uniquely best scoring alignments will return one alignment for a read if that alignment has a better alignment score than the rest of the candidate alignments.  All best scoring alignments will return all alignments that have the best alignment score for a read.">
               <option value="0" selected="True">No filtering</option>
@@ -151,7 +155,7 @@
         </conditional>
         <param name="unpaired" type="boolean" truevalue="--unpaired" falsevalue="" checked="no" label="Disallow pairing" help="do not choose alignments based on pairing" />
         <param name="reverseStrand" type="boolean" truevalue="--reverseStrand" falsevalue="" checked="no" label="Reverse paired ends" help="paired end reads are given on reverse strands" />
-        
+
       </when>
     </conditional>
     <param name="suppressHeader" type="boolean" truevalue="--suppressHeader" falsevalue="" checked="False" label="Suppress the header in the output SAM file" help="BFAST produces SAM with several lines of header information" />
@@ -176,32 +180,79 @@
       </actions>
     </data>
   </outputs>
+  <tests>
+    <test>
+      <param name="input1" ftype="fastqsanger" value="random_phiX_1.fastqsanger" />
+      <param name="refGenomeSource_type" value="history" />
+      <param name="ownFile" ftype="fasta" value="phiX.fasta" />
+      <param name="mask" value="111111111111111111" />
+      <param name="hash_width" value="14" />
+      <param name="source_select" value="pre_set" />
+      <param name="indexing_repeatmasker" value="False" />
+      <param name="indexing_option_selector" value="default" />
+      <param name="suppressHeader" value="" />
+      <output name="output" ftype="sam" file="bfast_out1.sam" />
+    </test>
+    <test>
+      <param name="input1" ftype="fastqsanger" value="random_phiX_1.fastqsanger"/>
+      <param name="refGenomeSource_type" value="history" />
+      <param name="ownFile" ftype="fasta" value="phiX.fasta" />
+      <param name="mask" value="111111111111111111" />
+      <param name="hash_width" value="14" />
+      <param name="source_select" value="pre_set" />
+      <param name="indexing_repeatmasker" value="False" />
+      <param name="indexing_option_selector" value="default" />
+      <param name="suppressHeader" value="--suppressHeader" />
+      <output name="output" ftype="sam" file="bfast_out1.sam" lines_diff="3" /><!--  3 headers exist in compare file, but headers are suppressed -->
+    </test>
+    <test>
+      <param name="input1" ftype="fastqcssanger" value="random_phiX_1.fastqcssanger" />
+      <param name="refGenomeSource_type" value="history" />
+      <param name="ownFile" ftype="fasta" value="phiX.fasta" />
+      <param name="mask" value="111111111111111111" />
+      <param name="hash_width" value="14" />
+      <param name="source_select" value="pre_set" />
+      <param name="indexing_repeatmasker" value="False" />
+      <param name="indexing_option_selector" value="default" />
+      <param name="suppressHeader" value="" />
+      <output name="output" ftype="sam" file="bfast_out2.sam" />
+    </test>
+    <!-- test of pre-indexed data now -->
+    <test>
+      <param name="input1" ftype="fastqsanger" value="random_phiX_1.fastqsanger" />
+      <param name="refGenomeSource_type" value="indexed" />
+      <param name="indices" value="phiX_nt_50" />
+      <param name="source_select" value="pre_set" />
+      <param name="suppressHeader" value="" />
+      <output name="output" ftype="sam" file="bfast_out3.sam" lines_diff="2" /><!-- MD:Z:11T38 instead of MD:Z:50 on one line-->
+    </test>
+  </tests>
   <help>
 **What it does**
 
 BFAST facilitates the fast and accurate mapping of short reads to reference sequences. Some advantages of BFAST include:
 * Speed: enables billions of short reads to be mapped quickly.
 * Accuracy: A priori probabilities for mapping reads with defined set of variants
-* An easy way to measurably tune accuracy at the expense of speed. 
+* An easy way to measurably tune accuracy at the expense of speed.
 Specifically, BFAST was designed to facilitate whole-genome resequencing, where mapping billions of short reads with variants is of utmost importance.
 
-BFAST supports both Illumina and ABI SOLiD data, as well as any other Next-Generation Sequencing Technology (454, Helicos), with particular emphasis on sensitivity towards errors, SNPs and especially indels. Other algorithms take short-cuts by ignoring errors, certain types of variants (indels), and even require further alignment, all to be the "fastest" (but still not complete). BFAST is able to be tuned to find variants regardless of the error-rate, polymorphism rate, or other factors. 
+BFAST supports both Illumina and ABI SOLiD data, as well as any other Next-Generation Sequencing Technology (454, Helicos), with particular emphasis on sensitivity towards errors, SNPs and especially indels. Other algorithms take short-cuts by ignoring errors, certain types of variants (indels), and even require further alignment, all to be the "fastest" (but still not complete). BFAST is able to be tuned to find variants regardless of the error-rate, polymorphism rate, or other factors.
 
 ------
 
-Please cite the website "http://bfast.sourceforge.net" as well as the accompanying 
+Please cite the website "http://bfast.sourceforge.net" as well as the accompanying
 papers:
 
 Homer N, Merriman B, Nelson SF.
 BFAST: An alignment tool for large scale genome resequencing.
 PMID: 19907642
-PLoS ONE. 2009 4(11): e7767.  
-http://dx.doi.org/10.1371/journal.pone.0007767  
+PLoS ONE. 2009 4(11): e7767.
+http://dx.doi.org/10.1371/journal.pone.0007767
 
 Homer N, Merriman B, Nelson SF.
 Local alignment of two-base encoded DNA sequence.
 BMC Bioinformatics. 2009 Jun 9;10(1):175.
-PMID: 19508732 
+PMID: 19508732
 http://dx.doi.org/10.1186/1471-2105-10-175
 
 ------
@@ -286,7 +337,7 @@ For **match**::
   before the read is discarded [384]
   -w  INT    0: consider both strands 1: forward strand only 2: reverse
   strand only [0]
-  -n  INT   Specifies the number of threads to use [1] 
+  -n  INT   Specifies the number of threads to use [1]
   -t         Specifies to output timing information
 
 For **localalign**::
@@ -300,7 +351,7 @@ For **localalign**::
   -M  INT    Specifies the maximum total number of matches to consider
   before the read is discarded [384]
   -q  INT    Specifies the average mismatch quality
-  -n  INT   Specifies the number of threads to use [1] 
+  -n  INT   Specifies the number of threads to use [1]
   -t         Specifies to output timing information
 
 For **postprocess**::
@@ -312,7 +363,7 @@ For **postprocess**::
     2: Only consider reads that have been aligned uniquely
     3: Choose uniquely the alignment with the best score
     4: Choose all alignments with the best score
-  
+
   -A  INT    0: NT space 1: Color space [0]
   -U      Specifies that pairing should not be performed
   -R          Specifies that paired reads are on opposite strands
@@ -322,58 +373,9 @@ For **postprocess**::
   -r   FILE  Specifies to add the RG in the specified file to the SAM
   header and updates the RG tag (and LB/PU tags if present) in
   the reads (SAM only)
-  -n  INT   Specifies the number of threads to use [1] 
+  -n  INT   Specifies the number of threads to use [1]
   -t         Specifies to output timing information
 
   </help>
-  <requirements>
-    <requirement type="package">bfast</requirement>
-  </requirements>
-  <tests>
-    <test>
-      <param name="input1" ftype="fastqsanger" value="random_phiX_1.fastqsanger" />
-      <param name="refGenomeSource_type" value="history" />
-      <param name="ownFile" ftype="fasta" value="phiX.fasta" />
-      <param name="mask" value="111111111111111111" />
-      <param name="hash_width" value="14" />
-      <param name="source_select" value="pre_set" />
-      <param name="indexing_repeatmasker" value="False" />
-      <param name="indexing_option_selector" value="default" />
-      <param name="suppressHeader" value="" />
-      <output name="output" ftype="sam" file="bfast_out1.sam" />
-    </test>
-    <test>
-      <param name="input1" ftype="fastqsanger" value="random_phiX_1.fastqsanger"/>
-      <param name="refGenomeSource_type" value="history" />
-      <param name="ownFile" ftype="fasta" value="phiX.fasta" />
-      <param name="mask" value="111111111111111111" />
-      <param name="hash_width" value="14" />
-      <param name="source_select" value="pre_set" />
-      <param name="indexing_repeatmasker" value="False" />
-      <param name="indexing_option_selector" value="default" />
-      <param name="suppressHeader" value="--suppressHeader" />
-      <output name="output" ftype="sam" file="bfast_out1.sam" lines_diff="3" /><!--  3 headers exist in compare file, but headers are suppressed -->
-    </test>
-    <test>
-      <param name="input1" ftype="fastqcssanger" value="random_phiX_1.fastqcssanger" />
-      <param name="refGenomeSource_type" value="history" />
-      <param name="ownFile" ftype="fasta" value="phiX.fasta" />
-      <param name="mask" value="111111111111111111" />
-      <param name="hash_width" value="14" />
-      <param name="source_select" value="pre_set" />
-      <param name="indexing_repeatmasker" value="False" />
-      <param name="indexing_option_selector" value="default" />
-      <param name="suppressHeader" value="" />
-      <output name="output" ftype="sam" file="bfast_out2.sam" />
-    </test>
-    <!-- test of pre-indexed data now -->
-    <test>
-      <param name="input1" ftype="fastqsanger" value="random_phiX_1.fastqsanger" />
-      <param name="refGenomeSource_type" value="indexed" />
-      <param name="indices" value="phiX_nt_50" />
-      <param name="source_select" value="pre_set" />
-      <param name="suppressHeader" value="" />
-      <output name="output" ftype="sam" file="bfast_out3.sam" lines_diff="2" /><!-- MD:Z:11T38 instead of MD:Z:50 on one line-->
-    </test>
-  </tests>
+  <citations/>
 </tool>
