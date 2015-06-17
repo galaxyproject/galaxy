@@ -102,9 +102,8 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
             raise TypeError( 'File does not appear to be a multi-resolution heatmap file' )
 
         # get the first half of recorded header/meta fields
-        header_field_names = [ 'offset', 'lres', 'hres', 'zoom', 'minscore', 'maxscore', 'trans']
-        ['minobs', 'start', 'n_bins', 'd_bins', 't_bins' ]
-        header_field_types = 'iiiiffi'
+        header_field_names = [ 'offset', 'lres', 'hres', 'minobs', 'zoom', 'minscore', 'maxscore', 'trans']
+        header_field_types = 'iiiiiffi'
         num_header_fields = len( header_field_names )
         int32_size = 4
         header_fields = struct.unpack( header_field_types, infile.read( int32_size * num_header_fields ) )
@@ -129,6 +128,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         n_levels = int( round( n_levels ) ) + 1
         self.header[ 'n_levels' ] = n_levels
         self.header[ 'zoom2' ] = zoom ** 2
+        self.header['zoom_d'] = (zoom * (zoom + 1)) / 2
         d_bins, t_bins = self.header['d_bins'], self.header['t_bins']
         self.header[ 'i_bins' ] = t_bins - d_bins
 
@@ -244,7 +244,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
                             outdata.append( [start1b, start2b, resolution, data[i]] )
                             if self.overlap and start2b + resolution > self.start1 and start1b < self.stop2:
                                 outdata.append( [start2b, start1b, resolution, data[i]] )
-                        if valid > 0:
+                        if new_valid > 0:
                             outdata += new_outdata
                         valid += 1
         return valid, outdata
@@ -272,13 +272,13 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
                     start1 = i * resolution + self.header['start']
                     start2 = j * resolution + self.header['start2']
                     if indices[k] != -1:
-                        valid, new_outdata = self.paint_trans_lower_level( infile, indices[k],
+                        new_valid, new_outdata = self.paint_trans_lower_level( infile, indices[k],
                                                                resolution / self.header['zoom'], start1, start2 )
                     else:
-                        valid = 0
+                        new_valid = 0
                     if resolution <= self.minres and valid < self.header['zoom2']:
                         outdata.append( [start1, start2, resolution, data[k]] )
-                    if valid > 0:
+                    if new_valid > 0:
                         outdata += new_outdata
         return outdata
 
@@ -319,14 +319,14 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
     def interpolate_square( self, square ):
         """
         """
-        if width == 0:
+        if self.width == 0:
             return
 
         square_dict = {
             'x1' : min( max( square[0], self.start1 ), self.stop1 ),
             'y1' : min( max( square[1], self.start2 ), self.stop2 ),
-            'x2' : min( max( ( square[0] + square[2], self.start1 ), self.stop1 ),
-            'y2' : min( max( ( square[1] + square[2], self.start2 ), self.stop2 ),
+            'x2' : min( max( square[0] + square[2], self.start1 ), self.stop1 ),
+            'y2' : min( max( square[1] + square[2], self.start2 ), self.stop2 ),
             'value' : square[3]
         }
         if self.transpose:
