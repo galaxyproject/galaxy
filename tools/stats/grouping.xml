@@ -1,7 +1,10 @@
 <tool id="Grouping1" name="Group" version="2.1.0">
   <description>data by a column and perform aggregate operation on other columns.</description>
-  <command interpreter="python">
-    grouping.py 
+  <requirements>
+    <requirement type="python-module">numpy</requirement>
+  </requirements>
+  <command interpreter="python" detect_errors="exit_code">
+    grouping.py
       $out_file1
       $input1
       $groupcol
@@ -62,9 +65,6 @@
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
-  <requirements>
-    <requirement type="python-module">numpy</requirement>
-  </requirements>
   <tests>
     <!-- Test valid data -->
     <test>
@@ -131,7 +131,7 @@ Count and Count Unique are equivalent to Concatenate and Concatenate Unique, but
 
    AAA    2
    TTT    3
-   
+
 - **Grouping on column 4** while not ignoring case, and performing operation **Count on column 1** will return::
 
    aaa    1
@@ -139,4 +139,5 @@ Count and Count Unique are equivalent to Concatenate and Concatenate Unique, but
    ttt    1
    TTT    2
   </help>
+  <citations />
 </tool>

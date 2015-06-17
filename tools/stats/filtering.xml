@@ -1,6 +1,6 @@
 <tool id="Filter1" name="Filter" version="1.1.0">
   <description>data on any column using simple expressions</description>
-  <command interpreter="python">
+  <command interpreter="python" detect_errors="exit_code">
     filtering.py $input $out_file1 "$cond" ${input.metadata.columns} "${input.metadata.column_types}" $header_lines
   </command>
   <inputs>
@@ -11,7 +11,7 @@
     <param name="header_lines" type="integer" value="0" label="Number of header lines to skip"/>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data format="tabular" name="out_file1" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -83,5 +83,6 @@ The filter tool allows you to restrict the dataset using simple conditional stat
 - Numbers should not contain commas - **c2&lt;=44,554,350** will not work, but **c2&lt;=44554350** will
 - Some words in the data can be used, but must be single or double quoted ( e.g., **c3=='exon'** )
 
-</help>
+  </help>
+  <citations />
 </tool>
