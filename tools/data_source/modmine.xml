@@ -6,15 +6,20 @@
 -->
 <tool name="modENCODE modMine" id="modmine" tool_type="data_source" version="1.0.0">
     <description>server</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command interpreter="python" detect_errors="exit_code">
+        data_source.py $output $__app__.config.output_size_limit
+    </command>
     <inputs action="http://intermine.modencode.org/" check_values="false" method="get">
         <display>go to modENCODE modMine server $GALAXY_URL</display>
     </inputs>
-    <uihints minwidth="800"/>
+    <expand macro="uihints" />
     <outputs>
         <data name="output" format="txt" />
     </outputs>
-    <options sanitize="False" refresh="True"/>
+    <expand macro="nosanitize" />
     <help>Obtain data from modENCODE modMine
     </help>
     <citations />

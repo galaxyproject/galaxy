@@ -1,6 +1,11 @@
 <tool id="Featured datasets4" name="Featured datasets" version="1.0.0">
   <description>(PSU prepared queries)</description>
-  <command interpreter="python">import.py $data $output</command>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
+  <command interpreter="python" detect_errors="exit_code">
+      import.py $data $output
+  </command>
   <inputs>
     <display>$data</display>
     <param name="data" type="select" display="radio">

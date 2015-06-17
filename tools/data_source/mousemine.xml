@@ -6,7 +6,12 @@
 -->
 <tool name="MouseMine" id="mousemine" tool_type="data_source" version="1.0.0">
     <description>server</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command interpreter="python" detect_errors="exit_code">
+        data_source.py $output $__app__.config.output_size_limit
+    </command>
     <inputs action="http://www.mousemine.org/mousemine/begin.do" check_values="false" method="get">
         <display>go to MouseMine server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=mousemine" />
@@ -26,13 +31,12 @@
             </value_translation>
         </request_param>
     </request_param_translation>
-    <uihints minwidth="800"/>
+    <expand macro="uihints" />
     <outputs>
         <data name="output" format="txt" />
     </outputs>
-    <options sanitize="False" refresh="True"/>
+    <expand macro="nosanitize" />
     <help>Obtain data from MouseMine server
     </help>
     <citations />
 </tool>
-

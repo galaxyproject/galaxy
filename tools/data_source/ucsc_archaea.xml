@@ -2,7 +2,10 @@
 <tool name="UCSC Archaea" id="ucsc_proxy" version="1.0.0">
     <description>table browser</description>
     <code file="ucsc_filter.py"/>
-    <command interpreter="python">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command interpreter="python" detect_errors="exit_code">
         ucsc_proxy.py $param_file $output
     </command>
     <inputs action="/ucsc_proxy/index" check_values="false">

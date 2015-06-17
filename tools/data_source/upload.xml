@@ -7,7 +7,10 @@
   <requirements>
       <requirement type="package">samtools</requirement>
   </requirements>
-  <command interpreter="python">
+  <macros>
+      <import>macros.xml</import>
+  </macros>
+  <command interpreter="python" detect_errors="exit_code">
       upload.py $GALAXY_ROOT_DIR $GALAXY_DATATYPES_CONF_FILE $paramfile
     #set $outnum = 0
     #while $varExists('output%i' % $outnum):

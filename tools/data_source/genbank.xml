@@ -1,6 +1,11 @@
 <tool id="genbank" name="Connect to Genbank" version="1.0.0">
-<!--  <description>queries genbank</description> -->
-  <command interpreter="python">genbank.py $mode "$text" $output</command>
+  <description>queries genbank</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
+  <command interpreter="python" detect_errors="exit_code">
+      genbank.py $mode "$text" $output
+  </command>
   <inputs>
     <param name="mode" type="select">
       <option value="nucleotide">nucleotide database</option>
@@ -21,5 +26,5 @@ At the moment this tool allows the following simple searches:
 - by accession: **CF622840**
 - using text: **human hbb1** (this feature is experimental)
   </help>
-    <citations />
+  <citations />
 </tool>

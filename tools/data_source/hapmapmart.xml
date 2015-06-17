@@ -13,7 +13,12 @@
 -->
 <tool name="HapMapMart" id="hapmapmart" tool_type="data_source" version="0.0.01">
     <description>HapMap Biomart</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command interpreter="python" detect_errors="exit_code">
+        data_source.py $output $__app__.config.output_size_limit
+    </command>
     <inputs action="http://hapmap.ncbi.nlm.nih.gov/biomart/martview" check_values="false" method="get" target="_top">
         <display>go to HapMap BioMart $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner/hapmapmart" />
@@ -38,11 +43,9 @@
         <request_param galaxy_name="name" remote_name="name" missing="HapMap query" />
         <request_param galaxy_name="info" remote_name="info" missing="" />
     </request_param_translation>
-    <uihints minwidth="800"/>
-    <outputs>
-        <data name="output" format="tabular" />
-    </outputs>
-    <options sanitize="False" refresh="True"/>
+    <expand macro="uihints" />
+    <expand macro="tabular_output" />
+    <expand macro="nosanitize" />
     <help>Obtain data from HapMapMart
     </help>
     <citations />

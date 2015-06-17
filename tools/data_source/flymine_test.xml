@@ -6,7 +6,12 @@
 -->
 <tool name="Flymine test" id="flymine_test" tool_type="data_source" version="1.0.0">
     <description>server</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command interpreter="python" detect_errors="exit_code">
+        data_source.py $output $__app__.config.output_size_limit
+    </command>
     <inputs action="http://preview.flymine.org/preview/begin.do" check_values="false" method="get">
         <display>go to Flymine server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=flymine" />
@@ -22,11 +27,9 @@
         <request_param galaxy_name="info" remote_name="info" missing="" />
         <request_param galaxy_name="data_type" remote_name="data_type" missing="txt" />
     </request_param_translation>
-    <uihints minwidth="800"/>
-    <outputs>
-        <data name="output" format="txt" />
-    </outputs>
-    <options sanitize="False" refresh="True"/>
+    <expand macro="uihints" />
+    <expand macro="tabular_output" />
+    <expand macro="nosanitize" />
     <help>Obtain data from Flymine test server
     </help>
     <citations />
