@@ -1,12 +1,16 @@
 <tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.3">
   <description>using coordinates from assembled/unassembled genomes</description>
-  <command interpreter="python">
-      extract_genomic_dna.py "${input}" "${out_file1}" -o "${out_format}" -d "${dbkey}" 
-      
+  <requirements>
+      <requirement type="package">ucsc_tools</requirement>
+      <requirement type="binary">faToTwoBit</requirement>
+  </requirements>
+  <command interpreter="python" detect_errors="exit_code">
+      extract_genomic_dna.py "${input}" "${out_file1}" -o "${out_format}" -d "${dbkey}"
+
       #if str( $interpret_features ) == "yes":
         -I
       #end if
-      
+
       ## Columns to use in input file.
       #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__):
         -1 "1,4,5,7" --gff
@@ -39,10 +43,10 @@
               <param name="ref_file" type="data" format="fasta" label="Using reference file" />
           </when>
       </conditional>
-	  <param name="out_format" type="select" label="Output data type">
-    	  <option value="fasta">FASTA</option>
-    	  <option value="interval">Interval</option>
-	  </param>
+      <param name="out_format" type="select" label="Output data type">
+          <option value="fasta">FASTA</option>
+          <option value="interval">Interval</option>
+      </param>
   </inputs>
   <outputs>
       <data format="input" name="out_file1" metadata_source="input">
@@ -51,10 +55,6 @@
           </change_format>
       </data>
   </outputs>
-  <requirements>
-      <requirement type="package">ucsc_tools</requirement>
-      <requirement type="binary">faToTwoBit</requirement>
-  </requirements>
   <tests>
     <test>
       <param name="input" value="1.bed" dbkey="hg17" ftype="bed" />
@@ -62,19 +62,19 @@
       <param name="index_source" value="cached"/>
       <param name="out_format" value="fasta"/>
       <output name="out_file1">
-	<assert_contents>
-	  <!-- First few lines... -->
-	  <has_text text=">hg17_chr1_147962192_147962580_- CCDS989.1_cds_0_0_chr1_147962193_r" />
-	  <has_text text="ACTTGATCCTGCTCCCTCGGTGTCTGCATTGACTCCTCATGCTGGGACTG" />
-	  <has_text text="GACCCGTCAACCCCCCTGCTCGCTGCTCACGTACCTTCATCACTTTTAGT" />
-	  <has_text text="GATGATGCAACTTTCGAGGAATGGTTCCCCCAAGGGCGGCCCCCAAAAGT" />
-	  <!-- Last few lines... -->
-	  <has_text text="GCTGTGGCACAGAACATGGACTCTGTGTTTAAGGAGCTCTTGGGAAAGAC" />
-	  <has_text text="CTCTGTCCGCCAGGGCCTTGGGCCAGCATCTACCACCTCTCCCAGTCCTG" />
-	  <has_text text="GGCCCCGAAGCCCAAAGGCCCCGCCCAGCAGCCGCCTGGGCAGGAACAAA" />
-	  <has_text text="GGCTTCTCCCGGGGCCCTGGGGCCCCAGCCTCACCCTCAGCTTCCCACCC" />
-	  <has_text text="CCAGGGCCTAGACACGACCCCCAAGCCACACTGA" />
-	</assert_contents>
+        <assert_contents>
+          <!-- First few lines... -->
+          <has_text text=">hg17_chr1_147962192_147962580_- CCDS989.1_cds_0_0_chr1_147962193_r" />
+          <has_text text="ACTTGATCCTGCTCCCTCGGTGTCTGCATTGACTCCTCATGCTGGGACTG" />
+          <has_text text="GACCCGTCAACCCCCCTGCTCGCTGCTCACGTACCTTCATCACTTTTAGT" />
+          <has_text text="GATGATGCAACTTTCGAGGAATGGTTCCCCCAAGGGCGGCCCCCAAAAGT" />
+          <!-- Last few lines... -->
+          <has_text text="GCTGTGGCACAGAACATGGACTCTGTGTTTAAGGAGCTCTTGGGAAAGAC" />
+          <has_text text="CTCTGTCCGCCAGGGCCTTGGGCCAGCATCTACCACCTCTCCCAGTCCTG" />
+          <has_text text="GGCCCCGAAGCCCAAAGGCCCCGCCCAGCAGCCGCCTGGGCAGGAACAAA" />
+          <has_text text="GGCTTCTCCCGGGGCCCTGGGGCCCCAGCCTCACCCTCAGCTTCCCACCC" />
+          <has_text text="CCAGGGCCTAGACACGACCCCCAAGCCACACTGA" />
+        </assert_contents>
       </output>
     </test>
     <test>
@@ -132,19 +132,19 @@ This tool requires interval or gff (special tabular formatted data).  If your da
 
 .. class:: warningmark
 
-Make sure that the genome build is specified for the dataset from which you are extracting sequences (click the pencil icon in the history item if it is not specified). 
+Make sure that the genome build is specified for the dataset from which you are extracting sequences (click the pencil icon in the history item if it is not specified).
 
 .. class:: warningmark
 
 All of the following will cause a line from the input dataset to be skipped and a warning generated.  The number of warnings and skipped lines is documented in the resulting history item.
  - Any lines that do not contain at least 3 columns, a chromosome and numerical start and end coordinates.
- - Sequences that fall outside of the range of a line's start and end coordinates. 
+ - Sequences that fall outside of the range of a line's start and end coordinates.
  - Chromosome, start or end coordinates that are invalid for the specified build.
  - Any lines whose data columns are not separated by a **TAB** character ( other white-space characters are invalid ).
 
 .. class:: infomark
 
- **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** previously were achieved by two separate tools. 
+ **Extract genomic DNA using coordinates from ASSEMBLED genomes and UNassembled genomes** previously were achieved by two separate tools.
 
 -----
 
@@ -185,5 +185,6 @@ Extracting sequences with **Interval** output data type returns::
     chr7    127485994       127486166       NM_000230       0       +       GCCCAAGAAGCCCATCCTGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
     chr7    127486011       127486166       D49487  0       +       TGGGAAGGAAAATGCATTGGGGAACCCTGTGCGGATTCTTGTGGCTTTGGCCCTATCTTTTCTATGTCCAAGCTGTGCCCATCCAAAAAGTCCAAGATGACACCAAAACCCTCATCAAGACAATTGTCACCAGGATCAATGACATTTCACACACG
 
-</help>
+  </help>
+  <citations />
 </tool>

@@ -1,6 +1,9 @@
 <tool id="liftOver1" name="Convert genome coordinates" version="1.0.3">
   <description> between assemblies and genomes</description>
-  <command interpreter="python">
+  <requirements>
+    <requirement type="package">ucsc_tools</requirement>
+  </requirements>
+  <command interpreter="python" detect_errors="exit_code">
   liftOver_wrapper.py
   $input
   "$out_file1"
@@ -58,9 +61,6 @@
     </data>
     <data format="input" name="out_file2" label="${tool.name} on ${on_string} [ UNMAPPED COORDINATES ]" />
   </outputs>
-  <requirements>
-    <requirement type="package">ucsc_tools</requirement>
-  </requirements>
   <tests>
     <!--
     <test>
@@ -144,4 +144,5 @@ will produce the following hg18 intervals::
     chrX  160024  169033  AK074528  0  -
 
   </help>
+  <citations />
 </tool>
