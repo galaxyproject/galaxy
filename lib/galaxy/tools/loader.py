@@ -3,6 +3,8 @@ from xml.etree import ElementTree, ElementInclude
 from copy import deepcopy
 import os
 
+REQUIRED_PARAMETER = object()
+
 
 def load_tool(path):
     """
@@ -17,7 +19,7 @@ def load_tool(path):
     tokens = _macros_of_type(root, 'token', lambda el: el.text)
 
     # Expand xml macros
-    macro_dict = _macros_of_type(root, 'xml', lambda el: list(el))
+    macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
     _expand_macros([root], macro_dict, tokens)
 
     return tree
@@ -116,19 +118,24 @@ def _expand_macros(elements, macros, tokens):
 
 def _expand_macro(element, expand_el, macros, tokens):
     macro_name = expand_el.get('macro')
-    macro_def = deepcopy(macros[macro_name])
+    macro_def = macros[macro_name]
+    expanded_elements = deepcopy(macro_def.elements)
 
-    _expand_yield_statements(macro_def, expand_el)
+    _expand_yield_statements(expanded_elements, expand_el)
 
     # Recursively expand contained macros.
-    _expand_macros(macro_def, macros, tokens)
+    _expand_macros(expanded_elements, macros, tokens)
+    macro_tokens = macro_def.macro_tokens(expand_el)
+    if macro_tokens:
+        print macro_tokens
+        _expand_tokens(expanded_elements, macro_tokens)
 
     # HACK for elementtree, newer implementations (etree/lxml) won't
     # require this parent_map data structure but elementtree does not
     # track parents or recongnize .find('..').
     # TODO fix this now that we're not using elementtree
     parent_map = dict((c, p) for p in element.getiterator() for c in p)
-    _xml_replace(expand_el, macro_def, parent_map)
+    _xml_replace(expand_el, expanded_elements, parent_map)
 
 
 def _expand_yield_statements(macro_def, expand_el):
@@ -231,6 +238,34 @@ def _xml_replace(query, targets, parent_map):
         current_index += 1
         parent_el.insert(current_index, deepcopy(target))
     parent_el.remove(query)
+
+
+class XmlMacroDef(object):
+
+    def __init__(self, el):
+        self.elements = list(el)
+        parameters = {}
+        for key, value in el.attrib.items():
+            for char, char_descript in [("@", "at"), ("$", "dollar")]:
+                if key == "%s_tokens" % char_descript:
+                    for at_token in value.split(","):
+                        parameter_name = at_token
+                        parameters[parameter_name] = (char, REQUIRED_PARAMETER)
+                elif key.startswith("%s_token_" % char_descript):
+                    parameter_name = key[len("%s_token_" % char_descript):]
+                    parameters[parameter_name] = (char, value)
+        self.parameters = parameters
+
+    def macro_tokens(self, expand_el):
+        tokens = {}
+        for key, (wrap_char, default_val) in self.parameters.items():
+            token_value = expand_el.attrib.get(key, default_val)
+            if token_value is REQUIRED_PARAMETER:
+                message = "Failed to expand macro - missing required parameter [%s]."
+                raise ValueError(message % key)
+            token_name = "%s%s%s" % (wrap_char, key.upper(), wrap_char)
+            tokens[token_name] = token_value
+        return tokens
 
 
 def _parse_xml(fname):
