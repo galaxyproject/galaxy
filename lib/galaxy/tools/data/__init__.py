@@ -185,6 +185,7 @@ class ToolDataTable( object ):
         self.comment_char = config_element.get( 'comment_char' )
         self.empty_field_value = config_element.get( 'empty_field_value', '' )
         self.empty_field_values = {}
+        self.allow_duplicate_entries = util.asbool( config_element.get( 'allow_duplicate_entries', True ) )
         self.here = filename and os.path.dirname(filename)
         self.filenames = odict()
         self.tool_data_path = tool_data_path
@@ -354,6 +355,11 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 self.filenames[ filename ] = info
         #save info about table
         self._merged_load_info.append( ( other_table.__class__, other_table._load_info ) )
+        # If we are merging in a data table that does not allow duplicates, enforce that upon the data table
+        if self.allow_duplicate_entries and not other_table.allow_duplicate_entries:
+            log.debug( 'While attempting to merge tool data table "%s", the other instance of the table specified that duplicate entries are not allowed, now deduplicating all previous entries.', self.name )
+            self.allow_duplicate_entries = False
+            self._deduplicate_data()
         #add data entries and return current data table version
         return self.add_entries( other_table.data, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
 
@@ -426,6 +432,8 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
     def extend_data_with( self, filename, errors=None ):
         here = os.path.dirname(os.path.abspath(filename))
         self.data.extend( self.parse_file_fields( open( filename ), errors=errors, here=here ) )
+        if not self.allow_duplicate_entries:
+            self._deduplicate_data()
 
     def parse_file_fields( self, reader, errors=None, here="__HERE__" ):
         """
@@ -536,7 +544,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
         is_error = False
         if self.largest_index < len( fields ):
             fields = self._replace_field_separators( fields )
-            if fields not in self.get_fields() or allow_duplicates:
+            if fields not in self.get_fields() or ( allow_duplicates and self.allow_duplicate_entries ):
                 self.data.append( fields )
             else:
                 log.debug( "Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.", fields, self.name )
@@ -623,6 +631,20 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 else:
                     replace = " "
         return map( lambda x: x.replace( separator, replace ), fields )
+
+    def _deduplicate_data( self ):
+        # Remove duplicate entries, without recreating self.data object
+        dup_lines = []
+        hash_list = []
+        for i, fields in enumerate( self.data ):
+            fields_hash = hash( self.separator.join( fields ) )
+            if fields_hash in hash_list:
+                dup_lines.append( i )
+                log.debug( 'Found duplicate entry in tool data table "%s", but duplicates are not allowed, removing additional entry for: "%s"', self.name, fields )
+            else:
+                hash_list.append( fields_hash )
+        for i in reversed( dup_lines ):
+            self.data.pop( i )
 
     @property
     def xml_string( self ):

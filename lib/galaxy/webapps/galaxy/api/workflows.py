@@ -152,7 +152,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if 'from_history_id' in payload:
             from_history_id = payload.get( 'from_history_id' )
             from_history_id = self.decode_id( from_history_id )
-            history = self.history_manager.get_accessible( trans, from_history_id, trans.user )
+            history = self.history_manager.get_accessible( from_history_id, trans.user, current_history=trans.history )
 
             job_ids = map( self.decode_id, payload.get( 'job_ids', [] ) )
             dataset_ids = payload.get( 'dataset_ids', [] )
@@ -213,7 +213,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Newer version of this API just returns the invocation as a dict, to
         # facilitate migration - produce the newer style response and blend in
         # the older information.
-        invocation_response = self.__encode_invocation( trans, invocation )
+        invocation_response = self.__encode_invocation( trans, invocation, step_details=kwd.get('step_details', False) )
         invocation_response.update( rval )
         return invocation_response
 
@@ -316,12 +316,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         tool_id         = payload.get( 'tool_id', None )
         tool_version    = payload.get( 'tool_version', None )
-        tool_inputs     = payload.get( 'inputs', None )
-        annotation      = payload.get( 'annotation', '' )
-        
+        tool_inputs     = payload.get( 'inputs', {} )
+        annotation      = payload.get( 'annotation', tool_inputs.get('annotation', '') )
+
         # load tool
         tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
-        
+
         # initialize module
         trans.workflow_building_mode = True
         module = module_factory.from_dict( trans, {
@@ -329,9 +329,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'tool_id'       : tool.id,
             'tool_state'    : None
         } )
-        
+
         # create tool model and default tool state (if missing)
-        tool_model = module.tool.to_json(trans, tool_inputs, is_dynamic=False)
+        tool_model = module.tool.to_json(trans, tool_inputs, is_workflow=True)
         module.state.inputs = copy.deepcopy(tool_model['state_inputs'])
         return {
             'tool_model'        : tool_model,
@@ -463,7 +463,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         results = self.workflow_manager.build_invocations_query( trans, stored_workflow.id )
         out = []
         for r in results:
-            out.append( self.__encode_invocation( trans, r ) )
+            out.append( self.__encode_invocation( trans, r, view="collection" ) )
         return out
 
     @expose_api
@@ -483,7 +483,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         decoded_workflow_invocation_id = self.decode_id( invocation_id )
         workflow_invocation = self.workflow_manager.get_invocation( trans, decoded_workflow_invocation_id )
         if workflow_invocation:
-            return self.__encode_invocation( trans, workflow_invocation )
+            return self.__encode_invocation( trans, workflow_invocation, step_details=kwd.get('step_details', False) )
         return None
 
     @expose_api
@@ -596,9 +596,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.ObjectNotFound( "No such workflow found." )
         return stored_workflow
 
-    def __encode_invocation( self, trans, invocation, view="element" ):
+    def __encode_invocation( self, trans, invocation, view="element", step_details=False ):
         return self.encode_all_ids(
             trans,
-            invocation.to_dict( view ),
+            invocation.to_dict( view, step_details=step_details ),
             True
         )

@@ -71,7 +71,7 @@ class HistoryDatasetExtendMetadataController(BaseExtendedMetadataController):
     def _get_item_from_id(self, trans, idstr, check_writable=True):
         decoded_idstr = self.decode_id( idstr )
         if check_writable:
-            return self.hda_manager.get_owned( trans, decoded_idstr, trans.user )
+            return self.hda_manager.get_owned( decoded_idstr, trans.user, current_history=trans.history )
         else:
-            hda = self.hda_manager.get_accessible( trans, decoded_idstr, trans.user )
-            return self.hda_manager.error_if_uploading( trans, hda )
+            hda = self.hda_manager.get_accessible( decoded_idstr, trans.user )
+            return self.hda_manager.error_if_uploading( hda )

@@ -23,6 +23,7 @@ import assembly
 import ngsindex
 import graph
 import text
+import msa
 import galaxy.util
 from galaxy.util.odict import odict
 from display_applications.application import DisplayApplication
@@ -132,6 +133,10 @@ class Registry( object ):
                 # If make_subclass is True, it does not necessarily imply that we are subclassing a datatype that is contained
                 # in the distribution.
                 make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
+                edam_format = elem.get( 'edam_format', None )
+                if edam_format and not make_subclass:
+                    self.log.warn("Cannot specify edam_format without setting subclass to True, skipping datatype.")
+                    continue
                 # Proprietary datatypes included in installed tool shed repositories will include two special attributes
                 # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
                 # The value of proprietary_path is the path to the cloned location of the tool shed repository's contained
@@ -207,7 +212,7 @@ class Registry( object ):
                                         for mod in fields:
                                             module = getattr( module, mod )
                                         datatype_class = getattr( module, datatype_class_name )
-                                        self.log.debug( 'Retrieved datatype module %s from the datatype registry.' % str( datatype_module ) )
+                                        self.log.debug( 'Retrieved datatype module %s:%s from the datatype registry.' % ( str( datatype_module ), datatype_class_name ) )
                                     except Exception, e:
                                         self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
                                         ok = False
@@ -229,6 +234,8 @@ class Registry( object ):
                                                       ( str( extension ), str( config ) ) )
                                 if make_subclass:
                                     datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
+                                    if edam_format:
+                                        datatype_class.edam_format = edam_format
                                 self.datatypes_by_extension[ extension ] = datatype_class()
                                 if mimetype is None:
                                     # Use default mimetype per datatype specification.
@@ -694,6 +701,7 @@ class Registry( object ):
                 'scf'         : binary.Scf(),
                 'sff'         : binary.Sff(),
                 'tabular'     : tabular.Tabular(),
+                'csv'         : tabular.CSV(),
                 'taxonomy'    : tabular.Taxonomy(),
                 'txt'         : data.Text(),
                 'wig'         : interval.Wiggle(),
@@ -726,6 +734,7 @@ class Registry( object ):
                 'scf'         : 'application/octet-stream',
                 'sff'         : 'application/octet-stream',
                 'tabular'     : 'text/plain',
+                'csv'         : 'text/plain',
                 'taxonomy'    : 'text/plain',
                 'txt'         : 'text/plain',
                 'wig'         : 'text/plain',
@@ -760,7 +769,8 @@ class Registry( object ):
                 tabular.Pileup(),
                 interval.Interval(),
                 tabular.Sam(),
-                tabular.Eland()
+                tabular.Eland(),
+                tabular.CSV()
             ]
 
     def get_converters_by_datatype( self, ext ):
@@ -815,6 +825,15 @@ class Registry( object ):
         if 'auto' not in rval and 'txt' in rval: #need to manually add 'auto' datatype
             rval[ 'auto' ] = rval[ 'txt' ]
         return rval
+
+    @property
+    def edam_formats( self ):
+        """
+        """
+        mapping = {}
+        for k, v in self.datatypes_by_extension.iteritems():
+            mapping[k]= v.edam_format
+        return mapping
 
     @property
     def integrated_datatypes_configs( self ):

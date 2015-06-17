@@ -35,6 +35,8 @@ JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE = "Invalid job runner parameter for this pl
 JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = "Job runner parameter '%s' value '%s' could not be converted to the correct type"
 JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
 
+GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ]; then if [ -n "$PYTHONPATH" ]; then PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"; else PYTHONPATH="$GALAXY_LIB"; fi; export PYTHONPATH; fi;"""
+
 
 class RunnerParams( ParamsWithSpecs ):
 
@@ -253,11 +255,13 @@ class BaseJobRunner( object ):
         #this is terminate-able when output dataset/job is deleted
         #so that long running set_meta()s can be canceled without having to reboot the server
         if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and job_wrapper.output_paths:
+            lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             external_metadata_script = job_wrapper.setup_external_metadata( output_fnames=job_wrapper.get_output_fnames(),
                                                                             set_extension=True,
                                                                             tmp_dir=job_wrapper.working_directory,
                                                                             #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                             kwds={ 'overwrite' : False } )
+            external_metadata_script = "%s %s" % (lib_adjust, external_metadata_script)
             if resolve_requirements:
                 dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
                 if dependency_shell_commands:

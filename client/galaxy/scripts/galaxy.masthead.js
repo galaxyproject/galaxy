@@ -128,7 +128,7 @@ var GalaxyMasthead = Backbone.View.extend({
                     '</div>' +
                    '<div class="navbar-brand">' +
                         '<a href="' + options.logo_url + '">' +
-                            '<img border="0" src="' + galaxy_config.root + 'static/images/galaxyIcon_noText.png">' +
+                            '<img style="margin-left: 0.35em;" border="0" src="' + galaxy_config.root + 'static/images/galaxyIcon_noText.png">' +
                             '<span id="brand"> Galaxy ' + brand_text + '</span>' +
                         '</a>' +
                     '</div>' +

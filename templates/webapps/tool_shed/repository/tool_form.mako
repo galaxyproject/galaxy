@@ -21,7 +21,7 @@
             %for input_index, input in enumerate( inputs.itervalues() ):
                 %if not input.visible:
                     <% pass %>
-                %elif input.type == "repeat":
+                %elif input.type in ["repeat", "section"]:
                     <div class="repeat-group">
                         <div class="form-title-row">
                             <b>${input.title_plural}</b>

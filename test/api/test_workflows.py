@@ -867,6 +867,13 @@ test_data:
         content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
         assert content[ "name" ] == "foo was replaced", content[ "name" ]
 
+        # Test for regression of previous behavior where runtime post job actions
+        # would be added to the original workflow post job actions.
+        workflow_id = workflow_request["workflow_id"]
+        downloaded_workflow = self._download_workflow( workflow_id )
+        pjas = downloaded_workflow[ "steps" ][ "2" ][ "post_job_actions" ].values()
+        assert len( pjas ) == 0, len( pjas )
+
     @skip_without_tool( "cat1" )
     def test_run_with_delayed_runtime_pja( self ):
         workflow_id = self._upload_yaml_workflow("""

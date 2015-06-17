@@ -210,19 +210,5 @@ class PopulatedExternalService( object ):
         assert action, 'Action not found: %s' % actions_list
         return action
 
-    def get_action_links( self ):
-        rval = []
-        param_dict = {}
-        param_dict['fields'] = Bunch( **self.service_instance.form_values.content )
-        param_dict['item'] = self.item
-        for item in self.service.items:
-            if isinstance( item, ExternalServiceParameter ):
-                param_dict[ item.name ] = item.get_value( param_dict )
-            elif isinstance( item, ExternalServiceAction ):
-                rval.append( item.get_action_access_link( self.item, trans, param_dict ) )
-            elif isinstance( item, ExternalServiceActionsGroup ):
-                rval.extend( item.populate( self.service_instance, item, param_dict ).get_action_links() )
-            else:
-                raise 'unknown item type found'
     def __nonzero__( self ):
         return self.actions.has_action()

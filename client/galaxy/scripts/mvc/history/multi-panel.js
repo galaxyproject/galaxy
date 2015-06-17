@@ -968,7 +968,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
         // when scrolling - check for histories now in view: they will fire 'in-view' and queueHdaLoading if necc.
         //TODO:?? might be able to simplify and not use pub-sub
-        var debouncedInView = _.debounce( _.bind( this.checkColumnsInView, this ), 100 );
+        var debouncedInView = _.debounce( function _debouncedInner(){
+            multipanel.checkColumnsInView();
+        }, 100 );
         this.$( '.middle' ).parent().scroll( debouncedInView );
     },
 

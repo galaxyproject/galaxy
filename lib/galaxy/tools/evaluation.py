@@ -11,7 +11,6 @@ from galaxy.tools.wrappers import (
     DatasetFilenameWrapper,
     DatasetListWrapper,
     DatasetCollectionWrapper,
-    LibraryDatasetValueWrapper,
     SelectToolParameterWrapper,
     InputValueWrapper,
     RawObjectWrapper
@@ -19,10 +18,10 @@ from galaxy.tools.wrappers import (
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
     DataCollectionToolParameter,
-    LibraryDatasetToolParameter,
     SelectToolParameter,
 )
-from galaxy.tools.parameters.grouping import Conditional, Repeat
+from galaxy.tools.parameters.grouping import Conditional, Repeat, Section
+from galaxy.tools import global_tool_errors
 from galaxy.jobs.datasets import dataset_path_rewrites
 
 import logging
@@ -143,6 +142,9 @@ class ToolEvaluator( object ):
                     values = input_values[ input.name ]
                     current = values["__current_case__"]
                     do_walk( input.cases[current].inputs, values )
+                elif isinstance( input, Section ):
+                    values = input_values[ input.name ]
+                    do_walk( input.inputs, values )
                 else:
                     func( input_values, input )
 
@@ -225,10 +227,6 @@ class ToolEvaluator( object ):
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
                     input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
-            elif isinstance( input, LibraryDatasetToolParameter ):
-                # TODO: Handle input rewrites in here? How to test LibraryDatasetToolParameters?
-                input_values[ input.name ] = LibraryDatasetValueWrapper(
-                    input, input_values[ input.name ], param_dict )
             else:
                 input_values[ input.name ] = InputValueWrapper(
                     input, input_values[ input.name ], param_dict )
@@ -403,10 +401,25 @@ class ToolEvaluator( object ):
         self.extra_filenames = []
         self.command_line = None
 
-        self.__build_config_files( )
-        self.__build_param_file( )
-        self.__build_command_line( )
-
+        try:
+            self.__build_config_files( )
+        except Exception, e:
+            #capture and log parsing errors
+            global_tool_errors.add_error(self.tool.config_file, "Building Config Files", e)
+            raise e        
+        try:
+            self.__build_param_file( )
+        except Exception, e:
+            #capture and log parsing errors
+            global_tool_errors.add_error(self.tool.config_file, "Building Param File", e)
+            raise e
+        try:
+            self.__build_command_line( )
+        except Exception, e:
+            #capture and log parsing errors
+            global_tool_errors.add_error(self.tool.config_file, "Building Command Line", e)
+            raise e
+            
         return self.command_line, self.extra_filenames
 
     def __build_command_line( self ):

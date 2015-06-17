@@ -37,6 +37,9 @@ class ToolBoxSearch( object ):
         self.index = self.storage.create_index( schema )
         writer = self.index.writer()
         for id, tool in self.toolbox.tools():
+            #  Do not add data managers to the public index
+            if tool.tool_type == 'manage_data':
+                continue
             add_doc_kwds = {
                 "id": id,
                 "name": to_unicode( tool.name ),

@@ -7,31 +7,42 @@ from .test_parameter_parsing import BaseParameterTestCase
 
 class SelectToolParameterTestCase( BaseParameterTestCase ):
 
-    def test_dep_dummy_datasets_need_late_validation( self ):
+    def test_validated_values( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        assert self.param.need_late_validation( self.trans, { "input_bam": basic.DummyDataset() } )
+        try:
+            self.param.from_html("42", self.trans, { "input_bam": model.HistoryDatasetAssociation() })
+        except ValueError, err:
+            assert str(err) == "An invalid option was selected for my_name, '42', please verify."
+            return
+        assert False
 
-    def test_dep_runtime_values_need_late_validation( self ):
+    def test_validated_values_missing_dependency( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        assert self.param.need_late_validation( self.trans, { "input_bam": basic.RuntimeValue() } )
+        try:
+            self.param.from_html("42", self.trans)
+        except AssertionError, err:
+            assert str(err) == "Required dependency 'input_bam' not found in incoming values"
+            return
+        assert False
 
-    def test_dep_unvalidated_values_need_late_validation( self ):
+    def test_unvalidated_values( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        assert self.param.need_late_validation( self.trans, { "input_bam": basic.UnvalidatedValue( "42" ) } )
+        self.trans.workflow_building_mode = True
+        assert self.param.from_html("42", self.trans).value == "42"
 
-    def test_dep_real_datasets_no_late_validation( self ):
+    def test_validated_datasets( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        assert not self.param.need_late_validation( self.trans, { "input_bam": model.HistoryDatasetAssociation() } )
+        try:
+            self.param.from_html( model.HistoryDatasetAssociation(), self.trans, { "input_bam": basic.RuntimeValue() } )
+        except ValueError, err:
+            assert str(err) == "Parameter my_name requires a value, but has no legal values defined."
+            return
+        assert False
 
-    def test_nested_context_validation_needed( self ):
+    def test_unvalidated_datasets( self ):
         self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        # Data ref currently must be same level, if not at top level.
-        assert self.param.need_late_validation( self.trans, { "reference_source": { "my_name": "42", "input_bam": basic.RuntimeValue() } } )
-
-    def test_nested_context_validation_not_needed( self ):
-        self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
-        # Data ref currently must be same level, if not at top level.
-        assert not self.param.need_late_validation( self.trans, { "reference_source": { "my_name": "42", "input_bam": model.HistoryDatasetAssociation() } } )
+        self.trans.workflow_building_mode = True
+        assert isinstance( self.param.from_html( model.HistoryDatasetAssociation(), self.trans, { "input_bam": basic.RuntimeValue() } ).value, model.HistoryDatasetAssociation )
 
     def test_filter_param_value( self ):
         self.options_xml = '''<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="0" /></options>'''

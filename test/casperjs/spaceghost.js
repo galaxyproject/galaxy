@@ -532,7 +532,7 @@ SpaceGhost.prototype.openHomePage = function openHomePage( then, delay ){
             },
             then,
             function openHomePageTimeout(){
-                throw new GalaxyError( 'Homepage timed out' );
+                throw new GalaxyError( 'Homepage timed out - are you sure your instance is running?' );
             },
             delay
         );

@@ -8,6 +8,7 @@ from galaxy.util.template import fill_template
 from galaxy.tools.data import TabularToolDataTable
 from tool_shed.util import common_util
 import tool_shed.util.shed_util_common as suc
+import galaxy.queue_worker
 
 #set up logger
 import logging
@@ -301,6 +302,9 @@ class DataManager( object ):
                         moved = self.process_move( data_table_name, name, output_ref_values[ name ].extra_files_path, **data_table_value )
                         data_table_value[ name ] = self.process_value_translation( data_table_name, name, **data_table_value )
                 data_table.add_entry( data_table_value, persist=True, entry_source=self )
+                galaxy.queue_worker.send_control_task(self.data_managers.app, 'reload_tool_data_tables',
+                                                      noop_self=True,
+                                                      kwargs={'table_name': data_table_name} )
         if self.undeclared_tables and data_tables_dict:
             # We handle the data move, by just moving all the data out of the extra files path
             # moving a directory and the target already exists, we move the contents instead
@@ -318,6 +322,9 @@ class DataManager( object ):
                         if name in path_column_names:
                             data_table_value[ name ] = os.path.abspath( os.path.join( self.data_managers.app.config.galaxy_data_manager_data_path, value ) )
                     data_table.add_entry( data_table_value, persist=True, entry_source=self )
+                    galaxy.queue_worker.send_control_task(self.data_managers.app, 'reload_tool_data_tables',
+                                                          noop_self=True,
+                                                          kwargs={'table_name': data_table_name} )
         else:
             for data_table_name, data_table_values in data_tables_dict.iteritems():
                 # tool returned extra data table entries, but data table was not declared in data manager

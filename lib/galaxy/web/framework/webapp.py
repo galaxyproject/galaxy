@@ -668,7 +668,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         """
         history = None
         if self.galaxy_session:
-            history = self.galaxy_session.current_history
+            if hasattr( self.galaxy_session, 'current_history' ):
+                history = self.galaxy_session.current_history
         if not history and util.string_as_bool( create ):
             history = self.new_history()
         return history
@@ -817,8 +818,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         template = template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
 
-        data = dict( caller=self, t=self, trans=self, h=helpers, util=util,
-                     request=self.request, response=self.response, app=self.app )
+        data = dict( caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app )
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )

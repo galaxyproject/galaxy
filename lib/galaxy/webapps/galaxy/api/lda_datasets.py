@@ -33,7 +33,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
     def __init__( self, app ):
         super( LibraryDatasetsController, self ).__init__( app )
         self.folder_manager = folders.FolderManager()
-        self.role_manager = roles.RoleManager()
+        self.role_manager = roles.RoleManager( app )
 
     @expose_api_anonymous
     def show( self, trans, id, **kwd ):

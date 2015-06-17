@@ -69,6 +69,7 @@ class Data( object ):
     <class 'galaxy.datatypes.metadata.MetadataParameter'>
 
     """
+    edam_format = "format_1915"
     # Data is not chunkable by default.
     CHUNKABLE = False
 
@@ -640,6 +641,7 @@ class Data( object ):
 
 @dataproviders.decorators.has_dataproviders
 class Text( Data ):
+    edam_format = "format_2330"
     file_ext = 'txt'
     line_class = 'line'
 
@@ -843,6 +845,7 @@ class LineCount( Text ):
 
 class Newick( Text ):
     """New Hampshire/Newick Format"""
+    edam_format = "format_1910"
     file_ext = "nhx"
 
     def __init__(self, **kwd):
@@ -866,6 +869,7 @@ class Newick( Text ):
 
 class Nexus( Text ):
     """Nexus format as used By Paup, Mr Bayes, etc"""
+    edam_format = "format_1912"
     file_ext = "nex"
 
     def __init__(self, **kwd):

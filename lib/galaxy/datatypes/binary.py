@@ -12,6 +12,7 @@ import struct
 import subprocess
 import tempfile
 import re
+import warnings
 import zipfile
 
 from galaxy import eggs
@@ -24,12 +25,19 @@ from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListPa
 from galaxy.datatypes import metadata
 import dataproviders
 
+with warnings.catch_warnings():
+    warnings.simplefilter( "ignore" )
+    eggs.require( "pysam" )
+    from pysam import csamtools
+
+
 log = logging.getLogger(__name__)
 
 # Currently these supported binary data types must be manually set on upload
 
 class Binary( data.Data ):
     """Binary data"""
+    edam_format = "format_2333"
     sniffable_binary_formats = []
     unsniffable_binary_formats = []
 
@@ -106,6 +114,27 @@ class Ab1( Binary ):
 
 Binary.register_unsniffable_binary_ext("ab1")
 
+
+class Idat( Binary ):
+    """Binary data in idat format"""
+    file_ext = "idat"
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+
+    def sniff( self, filename ):
+        try:
+            header = open( filename ).read(4)
+            if binascii.b2a_hex( header ) == binascii.hexlify( 'IDAT' ):
+                return True
+            return False
+        except:
+            return False
+
+Binary.register_sniffable_binary_format("idat", "idat", Idat)
+
+
+
 class CompressedArchive( Binary ):
     """
         Class describing an compressed binary file
@@ -141,11 +170,18 @@ Binary.register_unsniffable_binary_ext("asn1-binary")
 @dataproviders.decorators.has_dataproviders
 class Bam( Binary ):
     """Class describing a BAM binary file"""
+    edam_format = "format_2572"
     file_ext = "bam"
     track_type = "ReadTrack"
     data_sources = { "data": "bai", "index": "bigwig" }
 
     MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True )
+    MetadataElement( name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None )
+    MetadataElement( name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None )
+    MetadataElement( name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[] )
+    MetadataElement( name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={} )
 
     def _get_samtools_version( self ):
         # Determine the version of samtools being used.  Wouldn't it be nice if
@@ -159,6 +195,25 @@ class Bam( Binary ):
                 version = line.split()[1]
                 break
         return version
+
+    @staticmethod
+    def merge(split_files, output_file):
+
+        tmp_dir = tempfile.mkdtemp()
+        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
+        command = ["samtools", "merge", "-f", output_file] + split_files
+        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
+        exit_code = proc.wait()
+        # Did merge succeed?
+        stderr = open(stderr_name).read().strip()
+        if stderr:
+            if exit_code != 0:
+                shutil.rmtree(tmp_dir)  # clean up
+                raise Exception, "Error merging BAM files: %s" % stderr
+            else:
+                print stderr
+        os.unlink(stderr_name)
+        os.rmdir(tmp_dir)
 
     def _is_coordinate_sorted( self, file_name ):
         """See if the input BAM file is sorted from the header information."""
@@ -291,6 +346,17 @@ class Bam( Binary ):
         dataset.metadata.bam_index = index_file
         # Remove temp file
         os.unlink( stderr_name )
+        # Now use pysam with BAI index to determine additional metadata
+        try:
+            bam_file = csamtools.Samfile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
+            dataset.metadata.reference_names = list( bam_file.references )
+            dataset.metadata.reference_lengths = list( bam_file.lengths )
+            dataset.metadata.bam_header = bam_file.header
+            dataset.metadata.read_groups = [ read_group['ID'] for read_group in dataset.metadata.bam_header.get( 'RG', [] ) if 'ID' in read_group ]
+            dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
+            dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
+        except:
+            pass
 
     def sniff( self, filename ):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
@@ -403,10 +469,12 @@ class Bam( Binary ):
 
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
 
-
 class Bcf( Binary):
     """Class describing a BCF file"""
+    edam_format = "format_3020"
     file_ext = "bcf"
+
+    MetadataElement( name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True )
 
     def sniff( self, filename ):
         # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
@@ -418,6 +486,37 @@ class Bcf( Binary):
             return False
         except:
             return False
+
+    def set_meta( self, dataset, overwrite = True, **kwd ):
+        """ Creates the index for the BCF file. """
+        # These metadata values are not accessible by users, always overwrite
+        index_file = dataset.metadata.bcf_index
+        if not index_file:
+            index_file = dataset.metadata.spec['bcf_index'].param.new_file( dataset = dataset )
+        # Create the bcf index
+        ##$ bcftools index
+        ##Usage: bcftools index <in.bcf>
+
+        dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
+                    '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+        os.symlink( dataset.file_name, dataset_symlink )
+
+        stderr_name = tempfile.NamedTemporaryFile( prefix = "bcf_index_stderr" ).name
+        command = [ 'bcftools', 'index', dataset_symlink ]
+        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
+        exit_code = proc.wait()
+        shutil.move( dataset_symlink + '.csi', index_file.file_name )
+
+        stderr = open( stderr_name ).read().strip()
+        if stderr:
+            if exit_code != 0:
+                os.unlink( stderr_name ) #clean up
+                raise Exception, "Error Setting BCF Metadata: %s" % stderr
+            else:
+                print stderr
+        dataset.metadata.bcf_index = index_file
+        # Remove temp file
+        os.unlink( stderr_name )
 
 Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
 
@@ -445,6 +544,7 @@ Binary.register_unsniffable_binary_ext("h5")
 
 class Scf( Binary ):
     """Class describing an scf binary sequence file"""
+    edam_format = "format_1632"
     file_ext = "scf"
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -466,6 +566,7 @@ Binary.register_unsniffable_binary_ext("scf")
 
 class Sff( Binary ):
     """ Standard Flowgram Format (SFF) """
+    edam_format = "format_3284"
     file_ext = "sff"
 
     def __init__( self, **kwd ):
@@ -505,6 +606,7 @@ class BigWig(Binary):
     The supplemental info in the paper has the binary details:
     http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btq351v1
     """
+    edam_format = "format_3006"
     track_type = "LineTrack"
     data_sources = { "data_standalone": "bigwig" }
 
@@ -542,7 +644,7 @@ Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 
 class BigBed(BigWig):
     """BigBed support from UCSC."""
-
+    edam_format = "format_3004"
     data_sources = { "data_standalone": "bigbed" }
 
     def __init__( self, **kwd ):
@@ -555,7 +657,7 @@ Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
 class TwoBit (Binary):
     """Class describing a TwoBit format nucleotide file"""
-
+    edam_format = "format_3009"
     file_ext = "twobit"
 
     def sniff(self, filename):
@@ -682,7 +784,7 @@ class SQlite ( Binary ):
 
 class GeminiSQLite( SQlite ):
     """Class describing a Gemini Sqlite database """
-    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version", 
+    MetadataElement( name="gemini_version", default='0.10.0' , param=MetadataParameter, desc="Gemini Version",
                      readonly=True, visible=True, no_value='0.10.0' )
     file_ext = "gemini.sqlite"
 
@@ -701,7 +803,7 @@ class GeminiSQLite( SQlite ):
 
     def sniff( self, filename ):
         if super( GeminiSQLite, self ).sniff( filename ):
-            gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples", 
+            gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
                                   "variant_impacts", "variants", "version" ]
             try:
                 conn = sqlite.connect( filename )
@@ -753,3 +855,62 @@ class Xlsx(Binary):
 
 Binary.register_sniffable_binary_format("xlsx", "xlsx", Xlsx)
 
+
+class Sra( Binary ):
+    """ Sequence Read Archive (SRA) datatype originally from mdshw5/sra-tools-galaxy"""
+    file_ext = 'sra'
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+
+    def sniff( self, filename ):
+        """ The first 8 bytes of any NCBI sra file is 'NCBI.sra', and the file is binary.
+        For details about the format, see http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure
+        """
+        try:
+            header = open(filename).read(8)
+            if binascii.b2a_hex(header) == binascii.hexlify('NCBI.sra'):
+                return True
+            else:
+                return False
+        except:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek  = 'Binary sra file'
+            dataset.blurb = data.nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return 'Binary sra file (%s)' % (data.nice_size(dataset.get_size()))
+
+Binary.register_sniffable_binary_format('sra', 'sra', Sra)
+
+
+class RData( Binary ):
+    """Generic R Data file datatype implementation"""
+    file_ext = 'rdata'
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+
+    def sniff( self, filename ):
+        rdata_header = binascii.hexlify('RDX2\nX\n')
+        try:
+            header = open(filename).read(7)
+            if binascii.b2a_hex(header) == rdata_header:
+                return True
+
+            header = gzip.open( filename ).read(7)
+            if binascii.b2a_hex(header) == rdata_header:
+                return True
+        except:
+            return False
+
+Binary.register_sniffable_binary_format('rdata', 'rdata', RData)

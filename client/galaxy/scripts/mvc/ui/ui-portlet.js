@@ -88,7 +88,12 @@ var View = Backbone.View.extend({
     append: function($el) {
         this.$content.append($el);
     },
-        
+
+    // remove all content
+    empty: function() {
+        this.$content.empty();
+    },
+
     // content
     content: function() {
         return this.$content;

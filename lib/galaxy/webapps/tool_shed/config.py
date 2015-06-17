@@ -43,8 +43,8 @@ class Configuration( object ):
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         # Whoosh search
-        self.toolshed_search_on = string_as_bool( kwargs.get( "toolshed_search_on", False ) )
-        self.toolshed_whoosh_index_dir = kwargs.get( "toolshed_whoosh_index_dir", None )
+        self.toolshed_search_on = string_as_bool( kwargs.get( "toolshed_search_on", True ) )
+        self.whoosh_index_dir = kwargs.get( "whoosh_index_dir", 'database/toolshed_whoosh_indexes' )
         # Analytics
         self.ga_code = kwargs.get( "ga_code", None )
         self.session_duration = int(kwargs.get( 'session_duration', 0 ))
@@ -64,6 +64,7 @@ class Configuration( object ):
         self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared','ucsc','chrom') ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         # Install and test framework for testing tools contained in repositories.
+        self.display_legacy_test_results = string_as_bool( kwargs.get( 'display_legacy_test_results', True ) )
         self.num_tool_test_results_saved = kwargs.get( 'num_tool_test_results_saved', 5 )
         self.update_integrated_tool_panel = False
         # Galaxy flavor Docker Image

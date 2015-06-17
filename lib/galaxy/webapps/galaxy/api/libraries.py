@@ -18,7 +18,7 @@ class LibrariesController( BaseAPIController ):
         super( LibrariesController, self ).__init__( app )
         self.folder_manager = folders.FolderManager()
         self.library_manager = libraries.LibraryManager()
-        self.role_manager = roles.RoleManager()
+        self.role_manager = roles.RoleManager( app )
 
     @expose_api_anonymous
     def index( self, trans, **kwd ):

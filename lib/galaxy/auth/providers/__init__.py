@@ -16,15 +16,17 @@ class AuthProvider(object):
         """ Short string providing labelling this plugin """
 
     @abc.abstractmethod
-    def authenticate(self, login, password, options):
+    def authenticate(self, email, username, password, options):
         """
-        Check that the username and password are correct.
+        Check that the user credentials are correct.
 
         NOTE: Used within auto-registration to check it is ok to register this
         user.
 
-        :param  login: the user's email address or username
-        :type   login: str
+        :param  email: the user's email address
+        :type   email: str
+        :param  username: the user's username
+        :type   username: str
         :param  password: the plain text password they typed
         :type   password: str
         :param  options: options provided in auth_config_file
@@ -44,8 +46,8 @@ class AuthProvider(object):
         NOTE: used on normal login to check authentication and update user
         details if required.
 
-        :param  username: the user's email address or username
-        :type   username: str
+        :param  user: the user to authenticate
+        :type   user: galaxy.model.User
         :param  password: the plain text password they typed
         :type   password: str
         :param  options: options provided in auth_config_file

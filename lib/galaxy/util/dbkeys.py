@@ -38,7 +38,7 @@ class GenomeBuilds( object ):
                 for dataset in datasets:
                     rval.append( ( dataset.dbkey, "%s (%s) [History]" % ( dataset.name, dataset.dbkey ) ) )
             user = trans.user
-            if user and 'dbkeys' in user.preferences:
+            if user and hasattr( user, 'preferences' ) and 'dbkeys' in user.preferences:
                 user_keys = loads( user.preferences['dbkeys'] )
                 for key, chrom_dict in user_keys.iteritems():
                     rval.append( ( key, "%s (%s) [Custom]" % ( chrom_dict['name'], key ) ) )

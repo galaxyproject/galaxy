@@ -33,6 +33,17 @@ This will:
 2. generate source maps and place them in static/maps
 
 
+Changing Styles/CSS
+===================
+
+The CSS and styling used by Galaxy is also controlled from this directory. Galaxy uses LESS, a superset of CSS that
+compiles to CSS, for its styling. LESS files are kept in client/galaxy/style/less. Compiled CSS is in statis/style/blue.
+
+Use grunt to recompile the LESS in into CSS (from the `client` directory):
+
+    grunt style
+
+
 Grunt watch
 ===========
 
@@ -58,3 +69,13 @@ version, you'll need to use the full, local path when calling it:
     ./node_modules/.bin/grunt
     # or
     ./node_modules/.bin/grunt watch
+
+
+The Toolshed Client Build
+=========================
+
+The commands mentioned above in 'Rebuilding' and 'Grunt watch' also can be applied to toolshed scripts by using the
+`--app=toolshed` option:
+
+	grunt watch --app=toolshed
+	grunt --app=toolshed

@@ -16,7 +16,7 @@ class AlwaysReject(AuthProvider):
     """
     plugin_type = 'alwaysreject'
 
-    def authenticate(self, login, password, options):
+    def authenticate(self, email, username, password, options):
         """
         See abstract method documentation.
         """

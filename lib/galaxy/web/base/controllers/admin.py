@@ -32,10 +32,10 @@ class Admin( object ):
         message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         if trans.webapp.name == 'galaxy':
-            installed_repositories = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first()
+            is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
             installing_repository_ids = suc.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
             return trans.fill_template( '/webapps/galaxy/admin/index.mako',
-                                        installed_repositories=installed_repositories,
+                                        is_repo_installed=is_repo_installed,
                                         installing_repository_ids=installing_repository_ids,
                                         message=message,
                                         status=status )
@@ -50,7 +50,11 @@ class Admin( object ):
         message = escape( kwd.get( 'message', ''  ) )
         status = kwd.get( 'status', 'done' )
         if trans.webapp.name == 'galaxy':
+            is_repo_installed = trans.install_model.context.query( trans.install_model.ToolShedRepository ).first() is not None
+            installing_repository_ids = suc.get_ids_of_tool_shed_repositories_being_installed( trans.app, as_string=True )
             return trans.fill_template( '/webapps/galaxy/admin/center.mako',
+                                        is_repo_installed=is_repo_installed,
+                                        installing_repository_ids=installing_repository_ids,
                                         message=message,
                                         status=status )
         else:
@@ -94,7 +98,7 @@ class Admin( object ):
         tool_id = None
         if params.get( 'reload_tool_button', False ):
             tool_id = params.get('tool_id', None)
-            galaxy.queue_worker.send_control_task(trans, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
+            galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id} )
             message, status = trans.app.toolbox.reload_tool_by_id( tool_id)
         return trans.fill_template( '/admin/reload_tool.mako',
                                     tool_id=tool_id,
@@ -1039,7 +1043,7 @@ class Admin( object ):
                 stop_msg += '.'
             for job_id in job_ids:
                 error_msg = "This job was stopped by an administrator: %s  <a href='%s' target='_blank'>Contact support</a> for additional help." \
-                        % ( stop_msg, self.app.config.get("support_url", "http://wiki.galaxyproject.org/Support" ) )
+                        % ( stop_msg, self.app.config.get("support_url", "https://wiki.galaxyproject.org/Support" ) )
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
                     job.stderr = error_msg
@@ -1058,11 +1062,11 @@ class Admin( object ):
             trans.sa_session.flush()
         if ajl_submit:
             if job_lock == 'on':
-                galaxy.queue_worker.send_control_task(trans, 'admin_job_lock',
+                galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock',
                                                       kwargs={'job_lock': True } )
                 job_lock = True
             else:
-                galaxy.queue_worker.send_control_task(trans, 'admin_job_lock',
+                galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock',
                                                       kwargs={'job_lock': False } )
                 job_lock = False
         else:
