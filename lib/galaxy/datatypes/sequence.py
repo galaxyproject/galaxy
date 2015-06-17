@@ -357,6 +357,12 @@ class Fasta( Sequence ):
                         line = fh.readline().strip()
                         if line == '' or line.startswith( '>' ):
                             break
+                        
+                        # The third line may not contain chars like '()[].' otherwise it's most likely a DotBracket file                        
+                        line = fh.readline()
+                        if line and re.search("[\(\)\[\]\.]",line):
+                            break
+                        
                         return True
                     else:
                         break #we found a non-empty line, but it's not a fasta header
@@ -940,4 +946,84 @@ class RNADotPlotMatrix( data.Data ):
                             pairs = True
                     if seq and coor and pairs:
                         return True
+        return False
+
+
+class DotBracket ( Sequence ):
+    edam_format = "format_1457"
+    file_ext = "dbn"
+    
+    sequence_regexp = re.compile( "^[ACGTURYKMSWBDHVN]+$", re.I)
+    structure_regexp = re.compile( "^[\(\)\.\[\]]*" )
+    
+    def set_meta( self, dataset, **kwd ):
+        """
+        Set the number of sequences and the number of data lines
+        in dataset.
+        """
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+            dataset.metadata.data_lines = None
+            dataset.metadata.sequences = None
+            dataset.metadata.seconday_structures = None
+            return
+        
+        data_lines = 0
+        sequences = 0
+        
+        for line in file( dataset.file_name ):
+            line = line.strip()
+            data_lines += 1
+            
+            if line and line.startswith( '>' ):
+                sequences += 1
+        
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.sequences = sequences
+    
+    def sniff(self, filename):
+        """
+        The Dot-Bracket format is as follows:
+        
+        >sequenceName1
+        CCCaaaGGG
+        (((...)))
+        >sequenceName2
+        GGGuuuCCC
+        (((...)))
+        
+        Because it remains unclear whether the Dot-Bracket format may
+        contain multiple sequences per file, sniffing is only applied
+        on the first 3 lines.
+        """
+        
+        i = 0
+        
+        with open( filename, "r" ) as handle:
+            for line in handle:
+                line = line.strip()
+                
+                state = i % 3
+                
+                #header line
+                if state == 0:
+                    if(line[0] != '>'):
+                        return False
+                
+                #sequence line
+                elif state == 1:
+                    if not self.sequence_regexp.match(line):
+                        return False
+                    else:
+                        sequence_size = len(line)
+                
+                #dot-bracket structure line
+                elif state == 2:
+                    if (sequence_size != len(line)) or (not self.structure_regexp.match(line)) or (line.count('(') != line.count(')')) or (line.count('[') != line.count(']')):
+                        return False
+                    else:
+                        return True
+        
+                i += 1
+        
+        # Number of lines is less than 3
         return False
