@@ -12,4 +12,7 @@
         <data name="output" format="auto"/>
     </outputs>
     <options sanitize="False" refresh="True"/>
+    <help>Obtain data from EBI SRA
+    </help>
+    <citations />
 </tool>

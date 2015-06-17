@@ -36,4 +36,7 @@
         <data name="output" format="tabular" />
     </outputs>
     <options sanitize="False" refresh="True"/>
+    <help>Obtain data from CBI Rice Mart
+    </help>
+    <citations />
 </tool>
