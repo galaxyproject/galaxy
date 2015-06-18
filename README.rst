@@ -7,7 +7,7 @@ The latest information about Galaxy is available via `http://galaxyproject.org/ 
     :target: https://biostar.usegalaxy.org
 
 .. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
-    :target: webchat.freenode.net/?channels=galaxyproject
+    :target: https://webchat.freenode.net/?channels=galaxyproject
 
 .. image:: https://travis-ci.org/galaxyproject/galaxy.svg?branch=dev
     :target: https://travis-ci.org/galaxyproject/galaxy
