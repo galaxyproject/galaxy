@@ -2,11 +2,10 @@
 OMERO Image Fetching Tool.
 
 Usage:
-  omero_fetch.py <tsv_input> --dataset_id=<id> --output_files_path=<path> --history_id=<id>
+  omero_fetch.py <tsv_input> --output_files_path=<path> --history_id=<id>
 
 Options:
   -h --help                   Show this screen.
-  --dataset_id=<id>           Galaxy dataset ID for the resulting HTML file
   --output_files_path=<path>  Path to the "files_path" for the resulting HTML.
   --history_id=<id>           The current history where images will be written to.
 """
@@ -57,7 +56,7 @@ def download_thumbnail(image_id, prefix=None, host=None, session=None, files_pat
       image.save(os.path.join(files_path, "data/images/{0}.jpg".format(prefix)))
 
 
-def create_json(tsv_file_path, dataset_id=None, history_id=None, output_files_path=None):
+def create_json(tsv_file_path, history_id=None, output_files_path=None):
 
     sessions = {}
 
@@ -68,8 +67,8 @@ def create_json(tsv_file_path, dataset_id=None, history_id=None, output_files_pa
         print("Could not open input file {0}".format(tsv_file_path))
         sys.exit(1)
 
-    # Assign the thumbnailUrl using dataset_id and CCC_DID
-    data["thumbnailUrl"] = data.cccDid.apply(lambda x: "datasets/{0}/data/images/{1}.jpg".format(dataset_id, x))
+    # Assign the thumbnailUrl using CCC_DID
+    data["thumbnailUrl"] = data.cccDid.apply(lambda x: "data/images/{0}.jpg".format(x))
 
     for index, row in data.iterrows():
 
@@ -89,7 +88,6 @@ def create_json(tsv_file_path, dataset_id=None, history_id=None, output_files_pa
 
     payload =  {
       "galaxy": {
-          "datasetId": dataset_id,
           "historyId": history_id },
       "images": json.loads(data.to_json(orient="records"))
     }
@@ -103,8 +101,7 @@ if __name__ == "__main__":
     arguments = docopt(__doc__, version="0.0.1")
 
     tsv_file_path = arguments["<tsv_input>"]
-    dataset_id = arguments["--dataset_id"]
     history_id = arguments["--history_id"]
     output_files_path = arguments["--output_files_path"]
 
-    create_json(tsv_file_path, dataset_id=dataset_id, history_id=history_id, output_files_path=output_files_path)
+    create_json(tsv_file_path, history_id=history_id, output_files_path=output_files_path)
