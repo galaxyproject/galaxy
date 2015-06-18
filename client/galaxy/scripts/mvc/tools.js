@@ -2,7 +2,7 @@
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
 
- define( ["libs/underscore", "viz/trackster/util", "mvc/data" ],
+ define( ["underscore", "viz/trackster/util", "mvc/data" ],
          function(_, util, data) {
 
 /**
