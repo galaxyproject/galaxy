@@ -3,6 +3,15 @@
 
 The latest information about Galaxy is available via `http://galaxyproject.org/ <http://galaxyproject.org/>`__
 
+.. image:: https://img.shields.io/badge/questions-galaxy%20biostar-blue.svg
+    :target: https://biostar.usegalaxy.org
+
+.. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
+    :target: webchat.freenode.net/?channels=galaxyproject
+
+.. image:: https://travis-ci.org/galaxyproject/galaxy.svg?branch=dev
+    :target: https://travis-ci.org/galaxyproject/galaxy
+
 Galaxy Quickstart
 =================
 
