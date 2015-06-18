@@ -27,17 +27,28 @@
 	<!-- Destinations define details about remote resources and how jobs
 	should be executed on those remote resources.
 	-->
-	<destination id="local" runner="local" metrics="off"/>
+	<destination id="local" runner="local" metrics="off">
+	  <param id="docker_enabled">true</param>
+	  <param id="docker_volumes">$defaults</param>
+	</destination>
 	<destination id="condor_16C_16G" runner="drmaa">
+	  <param id="docker_enabled">true</param>
+	  <param id="docker_volumes">$defaults</param>
 	  <param id="nativeSpecification">getenv=True\nrequest_cpus=16\nrequest_memory=16 GB</param>
 	</destination>
 	<destination id="condor_galaxy" runner="drmaa" metrics="off">
+	  <param id="docker_enabled">true</param>
+	  <param id="docker_volumes">$defaults</param>
 	  <param id="nativeSpecification">getenv=True\nrequest_cpus=2\nrequest_memory=8 GB\nrequirements=(machine=="exanode-0-23.local")</param>
 	</destination>
 	<destination id="condor_2C_2G" runner="drmaa">
+	  <param id="docker_enabled">true</param>
+	  <param id="docker_volumes">$defaults</param>
 	  <param id="nativeSpecification">getenv=True\nrequest_cpus=2\nrequest_memory=2 GB</param>
 	</destination>
 	<destination id="condor_1C_100M" runner="drmaa">
+	  <param id="docker_enabled">true</param>
+	  <param id="docker_volumes">$defaults</param>
 	  <param id="nativeSpecification">getenv=True\nrequest_cpus=1\nrequest_memory=100 MB</param>
 	</destination>
     </destinations>
