@@ -196,8 +196,8 @@ def test_loader():
 <tool>
     <expand macro="inputs" bar="hello" />
     <macros>
-        <xml name="inputs" dollar_tokens="bar">
-            <inputs type="the type is $BAR$" />
+        <xml name="inputs" tokens="bar" token_quote="$$">
+            <inputs type="the type is $$BAR$$" />
         </xml>
     </macros>
 </tool>
@@ -215,7 +215,7 @@ def test_loader():
     <expand macro="inputs" foo="world" />
     <expand macro="inputs" />
     <macros>
-        <xml name="inputs" at_token_foo="the_default">
+        <xml name="inputs" token_foo="the_default">
             <inputs>@FOO@</inputs>
         </xml>
     </macros>

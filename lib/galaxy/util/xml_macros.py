@@ -245,15 +245,19 @@ class XmlMacroDef(object):
     def __init__(self, el):
         self.elements = list(el)
         parameters = {}
+        tokens = []
+        token_quote = "@"
         for key, value in el.attrib.items():
-            for char, char_descript in [("@", "at"), ("$", "dollar")]:
-                if key == "%s_tokens" % char_descript:
-                    for at_token in value.split(","):
-                        parameter_name = at_token
-                        parameters[parameter_name] = (char, REQUIRED_PARAMETER)
-                elif key.startswith("%s_token_" % char_descript):
-                    parameter_name = key[len("%s_token_" % char_descript):]
-                    parameters[parameter_name] = (char, value)
+            if key == "token_quote":
+                token_quote = value
+            if key == "tokens":
+                for token in value.split(","):
+                    tokens.append((token, REQUIRED_PARAMETER))
+            elif key.startswith("token_"):
+                token = key[len("token_"):]
+                tokens.append((token, value))
+        for name, default in tokens:
+            parameters[name] = (token_quote, default)
         self.parameters = parameters
 
     def macro_tokens(self, expand_el):
