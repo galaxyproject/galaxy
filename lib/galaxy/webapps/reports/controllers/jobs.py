@@ -260,12 +260,12 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
-        
+
         if "entries" in kwd:
             entries = int(kwd.get( 'entries' ))
         else:
             entries = 4
-        limit = entries * 3
+        limit = entries * 4
 
         if "offset" in kwd:
             offset = int(kwd.get( 'offset' ))
@@ -308,7 +308,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date
                            ) )
 
-        pages_found = ceil(len(jobs)/float(entries))
+        pages_found = ceil(len(jobs) / float(entries))
         page_specs = PageSpec(entries, offset, page, pages_found)
         return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
                                     order=order,
