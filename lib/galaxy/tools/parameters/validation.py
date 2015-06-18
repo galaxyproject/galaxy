@@ -2,8 +2,8 @@
 Classes related to parameter validation.
 """
 
-import os, re, logging
-from xml.etree.ElementTree import XML
+import logging
+import re
 from galaxy import model
 from galaxy import util
 
@@ -35,7 +35,8 @@ class RegexValidator( Validator ):
     """
     Validator that evaluates a regular expression
 
-    >>> from galaxy.tools.parameters import ToolParameter
+    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
     ... <param name="blah" type="text" size="10" value="10">
     ...     <validator type="regex" message="Not gonna happen">[Ff]oo</validator>
@@ -68,7 +69,8 @@ class ExpressionValidator( Validator ):
     """
     Validator that evaluates a python expression using the value
 
-    >>> from galaxy.tools.parameters import ToolParameter
+    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
     ... <param name="blah" type="text" size="10" value="10">
     ...     <validator type="expression" message="Not gonna happen">value.lower() == "foo"</validator>
@@ -104,7 +106,8 @@ class InRangeValidator( Validator ):
     """
     Validator that ensures a number is in a specific range
 
-    >>> from galaxy.tools.parameters import ToolParameter
+    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
     ... <param name="blah" type="integer" size="10" value="10">
     ...     <validator type="in_range" message="Not gonna happen" min="10" exclude_min="true" max="20"/>
@@ -125,7 +128,7 @@ class InRangeValidator( Validator ):
     @classmethod
     def from_element( cls, param, elem ):
         return cls( elem.get( 'message', None ), elem.get( 'min' ),
-                    elem.get( 'max' ), elem.get( 'exclude_min', 'false' ), 
+                    elem.get( 'max' ), elem.get( 'exclude_min', 'false' ),
                     elem.get( 'exclude_max', 'false' ) )
 
     def __init__( self, message, range_min, range_max, exclude_min=False, exclude_max=False ):
@@ -171,7 +174,8 @@ class LengthValidator( Validator ):
     """
     Validator that ensures the length of the provided string (value) is in a specific range
 
-    >>> from galaxy.tools.parameters import ToolParameter
+    >>> from xml.etree.ElementTree import XML
+    >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build( None, XML( '''
     ... <param name="blah" type="text" size="10" value="foobar">
     ...     <validator type="length" min="2" max="8"/>
@@ -233,7 +237,7 @@ class MetadataValidator( Validator ):
     Validator that checks for missing metadata
     """
 
-    def __init__( self, message = None, check = "", skip = "" ):
+    def __init__( self, message=None, check="", skip="" ):
         self.message = message
         self.check = check.split( "," )
         self.skip = skip.split( "," )
@@ -246,7 +250,7 @@ class MetadataValidator( Validator ):
         if value:
             if not isinstance( value, model.DatasetInstance ):
                 raise ValueError( 'A non-dataset value was provided.' )
-            if value.missing_meta( check = self.check, skip = self.skip ):
+            if value.missing_meta( check=self.check, skip=self.skip ):
                 if self.message is None:
                     self.message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
                 raise ValueError( self.message )
@@ -268,7 +272,7 @@ class UnspecifiedBuildValidator( Validator ):
         return cls( elem.get( 'message', None ) )
 
     def validate( self, value, history=None ):
-        #if value is None, we cannot validate
+        # if value is None, we cannot validate
         if value:
             dbkey = value.metadata.dbkey
             if isinstance( dbkey, list ):
@@ -341,8 +345,9 @@ class MetadataInFileColumnValidator( Validator ):
                 if metadata_column < len( fields ):
                     self.valid_values.append( fields[metadata_column].strip() )
 
-    def validate( self, value, history = None ):
-        if not value: return
+    def validate( self, value, history=None ):
+        if not value:
+            return
         if hasattr( value, "metadata" ):
             if value.metadata.spec[self.metadata_name].param.to_string( value.metadata.get( self.metadata_name ) ) in self.valid_values:
                 return
@@ -391,8 +396,9 @@ class MetadataInDataTableColumnValidator( Validator ):
             if self._metadata_column < len( fields ):
                 self.valid_values.append( fields[ self._metadata_column ] )
 
-    def validate( self, value, history = None ):
-        if not value: return
+    def validate( self, value, history=None ):
+        if not value:
+            return
         if hasattr( value, "metadata" ):
             if not self._tool_data_table.is_current_version( self._data_table_content_version ):
                 log.debug( 'MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name )
@@ -413,7 +419,9 @@ validator_types = dict( expression=ExpressionValidator,
                         dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
                         dataset_ok_validator=DatasetOkValidator )
 
+
 def get_suite():
     """Get unittest suite for this module"""
-    import doctest, sys
+    import doctest
+    import sys
     return doctest.DocTestSuite( sys.modules[__name__] )

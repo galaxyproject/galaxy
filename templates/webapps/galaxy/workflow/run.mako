@@ -301,8 +301,7 @@
 </%def>
 
 <%
-from galaxy.tools.parameters import DataToolParameter, RuntimeValue
-from galaxy.tools.parameters import DataCollectionToolParameter
+from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.jobs.actions.post import ActionBox
 import re
 import colorsys

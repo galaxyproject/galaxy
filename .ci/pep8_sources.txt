@@ -12,11 +12,7 @@ lib/galaxy/openid/__init__.py
 lib/galaxy/queues.py
 lib/galaxy/queue_worker.py
 lib/galaxy/tags
-lib/galaxy/tools/deps/{commands,containers,dependencies,dockerfiles,docker_util,__init__,requirements}.py
-lib/galaxy/tools/filters
-lib/galaxy/tools/parser
-lib/galaxy/tools/toolbox
-lib/galaxy/tools/{errors,loader_directory,test}.py
+lib/galaxy/tools
 lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules}.py
 lib/galaxy/web/{proxy,security}
 lib/galaxy/web/base/{__init__,interactive_environments}.py
@@ -33,6 +29,7 @@ lib/galaxy/webapps/tool_shed/framework/__init__.py
 lib/galaxy/webapps/tool_shed/framework/middleware/__init__.py
 lib/galaxy/webapps/tool_shed/util/{__init__,shed_statistics}.py
 lib/galaxy/work
+lib/galaxy/workflow
 lib/galaxy/version.py
 lib/pulsar
 lib/tool_shed/__init__.py
@@ -41,3 +38,6 @@ lib/tool_shed/galaxy_install/repository_dependencies
 lib/tool_shed/galaxy_install/tools/{__init__,tool_panel_manager}.py
 lib/tool_shed/repository_types/{__init__,registry,unrestricted}.py
 lib/tool_shed/util/{__init__,repository_content_util,tool_util,web_util,workflow_util}.py
+test/functional/tools
+tools/data_source/upload.py
+tools/evolution/codingSnps_filter.py

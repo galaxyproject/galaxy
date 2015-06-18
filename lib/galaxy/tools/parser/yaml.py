@@ -6,6 +6,7 @@ from .util import error_on_exit_code
 
 from galaxy.tools.deps import requirements
 from galaxy.tools.parameters import output_collect
+from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.util.odict import odict
 import galaxy.tools
 
@@ -87,7 +88,7 @@ class YamlToolSource(ToolSource):
         output.tool = tool
         output.from_work_dir = output_dict.get("from_work_dir", None)
         output.hidden = output_dict.get("hidden", "")
-        output.actions = galaxy.tools.ToolOutputActionGroup( output, None )
+        output.actions = ToolOutputActionGroup( output, None )
         discover_datasets_dicts = output_dict.get( "discover_datasets", [] )
         if isinstance( discover_datasets_dicts, dict ):
             discover_datasets_dicts = [ discover_datasets_dicts ]

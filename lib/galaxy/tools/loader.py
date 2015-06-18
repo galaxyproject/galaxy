@@ -66,8 +66,8 @@ def _macros_of_type(root, type, el_func):
     macro_dict = {}
     if macros_el is not None:
         macro_els = macros_el.findall('macro')
-        macro_dict = dict([(macro_el.get("name"), el_func(macro_el)) \
-            for macro_el in macro_els \
+        macro_dict = dict([(macro_el.get("name"), el_func(macro_el))
+            for macro_el in macro_els
             if macro_el.get('type') == type])
     return macro_dict
 
@@ -80,11 +80,11 @@ def _expand_tokens(elements, tokens):
         value = element.text
         if value:
             new_value = _expand_tokens_str(element.text, tokens)
-            if not (new_value is value):
+            if new_value is not value:
                 element.text = new_value
         for key, value in element.attrib.iteritems():
             new_value = _expand_tokens_str(value, tokens)
-            if not (new_value is value):
+            if new_value is not value:
                 element.attrib[key] = new_value
         _expand_tokens(list(element), tokens)
 
@@ -211,10 +211,10 @@ def _xml_set_children(element, new_children):
 
 
 def _xml_replace(query, targets, parent_map):
-    #parent_el = query.find('..') ## Something like this would be better with newer xml library
+    # parent_el = query.find('..') ## Something like this would be better with newer xml library
     parent_el = parent_map[query]
     matching_index = -1
-    #for index, el in enumerate(parent_el.iter('.')):  ## Something like this for newer implementation
+    # for index, el in enumerate(parent_el.iter('.')):  ## Something like this for newer implementation
     for index, el in enumerate(list(parent_el)):
         if el == query:
             matching_index = index

@@ -438,7 +438,7 @@ def execute(cmds, env=None):
     if env:
         subprocess_kwds["env"] = env
     p = subprocess.Popen(cmds, **subprocess_kwds)
-    #log = p.stdout.read()
+    # log = p.stdout.read()
     global VERBOSE
     stdout, stderr = p.communicate()
     if p.returncode != 0:
