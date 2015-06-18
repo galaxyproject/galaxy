@@ -77,3 +77,8 @@ up to date with respect to the main repository. Github has `good documentation
     $ git checkout dev
     $ git merge upstream/dev
 
+
+
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+   :alt: Join the chat at https://gitter.im/galaxyproject/galaxy
+   :target: https://gitter.im/galaxyproject/galaxy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
