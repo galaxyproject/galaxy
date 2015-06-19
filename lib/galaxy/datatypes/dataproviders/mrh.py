@@ -102,7 +102,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
             raise TypeError( 'File does not appear to be a multi-resolution heatmap file' )
 
         # get the first half of recorded header/meta fields
-        header_field_names = [ 'offset', 'lres', 'hres', 'minobs', 'zoom', 'minscore', 'maxscore', 'trans']
+        header_field_names = [ 'offset', 'lres', 'hres', 'zoom', 'minobs', 'minscore', 'maxscore', 'trans']
         header_field_types = 'iiiiiffi'
         num_header_fields = len( header_field_names )
         int32_size = 4
