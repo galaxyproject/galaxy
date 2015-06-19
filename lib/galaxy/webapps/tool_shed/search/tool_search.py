@@ -30,7 +30,7 @@ tool_schema = Schema(
     
 class ToolSearch( object ):
 
-    def search( self, trans, search_term, page, **kwd ):
+    def search( self, trans, search_term, page, boosts ):
         """
         Perform the search on the given search_term
 
@@ -47,10 +47,10 @@ class ToolSearch( object ):
                 # http://trec.nist.gov/pubs/trec13/papers/microsoft-cambridge.web.hard.pdf
                 # http://en.wikipedia.org/wiki/Okapi_BM25
                 # __Basically__ the higher number the bigger weight.
-                tool_weighting = scoring.BM25F( field_B = { 'name_B' : 0.9,
-                                                            'description_B' : 0.6,
-                                                            'help_B' : 0.4,
-                                                            'repo_owner_username_B' : 0.3 } )
+                tool_weighting = scoring.BM25F( field_B = { 'name_B' : boosts.tool_name_boost,
+                                                            'description_B' : boosts.tool_description_boost,
+                                                            'help_B' : boosts.tool_help_boost,
+                                                            'repo_owner_username_B' : boosts.tool_repo_owner_username_boost } )
                 searcher = index.searcher( weighting = tool_weighting )
 
                 parser = MultifieldParser( [

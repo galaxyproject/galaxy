@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from collections import namedtuple
 from galaxy import web
 from galaxy import util
 from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
@@ -46,7 +47,7 @@ class ToolsController( BaseAPIController ):
         else:
             page = kwd.get( 'page', 1 )
             return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )
-            callback = kwd.get( 'callback', 'callback' )  
+            callback = kwd.get( 'callback', 'callback' )
             search_results = self._search( trans, q, page )
             if return_jsonp:
                 response = str( '%s(%s);' % ( callback, json.dumps( search_results ) ) )
@@ -62,15 +63,29 @@ class ToolsController( BaseAPIController ):
         Also TS config option toolshed_search_on has to be True and
         whoosh_index_dir has to be specified.
         """
-        if not self.app.config.toolshed_search_on:
+        conf = self.app.config
+        if not conf.toolshed_search_on:
             raise ConfigDoesNotAllowException( 'Searching the TS through the API is turned off for this instance.' )
-        if not self.app.config.whoosh_index_dir:
+        if not conf.whoosh_index_dir:
             raise ConfigDoesNotAllowException( 'There is no directory for the search index specified. Please contact the administrator.' )
         search_term = q.strip()
         if len( search_term ) < 3:
             raise RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
 
         tool_search = ToolSearch()
-        results = tool_search.search( trans, search_term, page )
+
+        Boosts = namedtuple( 'Boosts', [ 'tool_name_boost',
+                                         'tool_description_boost',
+                                         'tool_help_boost',
+                                         'tool_repo_owner_username_boost' ] )
+        boosts = Boosts( float( conf.get( 'tool_name_boost', 1.2 ) ),
+                         float( conf.get( 'tool_description_boost', 0.6 ) ),
+                         float( conf.get( 'tool_help_boost', 0.4 ) ),
+                         float( conf.get( 'tool_repo_owner_username_boost', 0.3 ) ) )
+
+        results = tool_search.search( trans,
+                                      search_term,
+                                      page,
+                                      boosts )
         results[ 'hostname' ] = web.url_for( '/', qualified = True )
         return results
