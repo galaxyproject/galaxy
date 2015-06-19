@@ -1,6 +1,8 @@
 <dataSource xmlns="http://edu.ohsu.ccc/dataSource/xml">
     <columns>
         <column>CCC_DID</column>
+        <column>cell_count</column>
+        <column>sample</column>
     </columns>
     <labkeyInstances>
         <labkeyInstance>
