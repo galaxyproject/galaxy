@@ -24,7 +24,6 @@ from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_ap
 from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
-from galaxy.web.framework.helpers import time_ago
 from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
 
 from tool_shed.capsule import capsule_manager
