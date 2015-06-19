@@ -954,7 +954,7 @@ class DotBracket ( Sequence ):
     file_ext = "dbn"
     
     sequence_regexp = re.compile( "^[ACGTURYKMSWBDHVN]+$", re.I)
-    structure_regexp = re.compile( "^[\(\)\.\[\]]*" )
+    structure_regexp = re.compile( "^[\(\)\.\[\]{}]+$" )
     
     def set_meta( self, dataset, **kwd ):
         """
@@ -982,48 +982,56 @@ class DotBracket ( Sequence ):
     
     def sniff(self, filename):
         """
-        The Dot-Bracket format is as follows:
+        Galaxy Dbn (Dot-Bracket notation) rules:
+
+        * The first non-empty line is a header line: no comment lines are allowed.
+          * A header line starts with a '>' symbol and continues with 0 or multiple symbols until the line ends.
+        * The second non-empty line is a sequence line.
+          * A sequence line may only include chars that match the Fasta format (https://en.wikipedia.org/wiki/FASTA_format#Sequence_representation) symbols for nucleotides: ACGTURYKMSWBDHVN, and may thus not include whitespaces.
+          * A sequence line has no prefix and no suffix.
+          * A sequence line is case insensitive.
+        * The third non-empty line is a structure (Dot-Bracket) line and only describes the 2D structure of the sequence above it.
+          * A structure line must consist of the following chars: '.{}[]()'.
+          * A structure line must be of the same length as the sequence line, and each char represents the structure of the nucleotide above it.
+          * A structure line has no prefix and no suffix.
+          * A nucleotide pairs with only 1 or 0 other nucleotides.
+            * In a structure line, the number of '(' symbols equals the number of ')' symbols, the number of '[' symbols equals the number of ']' symbols and the number of '{' symbols equals the number of '}' symbols.
+        * The format accepts multiple entries per file, given that each entry is provided as three lines: the header, sequence and structure line.
+            * Sniffing is only applied on the first entry.
+        * Empty lines are allowed.
+         """
         
-        >sequenceName1
-        CCCaaaGGG
-        (((...)))
-        >sequenceName2
-        GGGuuuCCC
-        (((...)))
-        
-        Because it remains unclear whether the Dot-Bracket format may
-        contain multiple sequences per file, sniffing is only applied
-        on the first 3 lines.
-        """
-        
-        i = 0
+        state = 0
         
         with open( filename, "r" ) as handle:
             for line in handle:
                 line = line.strip()
                 
-                state = i % 3
-                
-                #header line
-                if state == 0:
-                    if(line[0] != '>'):
-                        return False
-                
-                #sequence line
-                elif state == 1:
-                    if not self.sequence_regexp.match(line):
-                        return False
-                    else:
-                        sequence_size = len(line)
-                
-                #dot-bracket structure line
-                elif state == 2:
-                    if (sequence_size != len(line)) or (not self.structure_regexp.match(line)) or (line.count('(') != line.count(')')) or (line.count('[') != line.count(']')):
-                        return False
-                    else:
-                        return True
-        
-                i += 1
+                if line:
+                    #header line
+                    if state == 0:
+                        if(line[0] != '>'):
+                            return False
+                        else:
+                            state = 1
+                    
+                    #sequence line
+                    elif state == 1:
+                        if not self.sequence_regexp.match(line):
+                            return False
+                        else:
+                            sequence_size = len(line)
+                            state = 2
+                    
+                    #dot-bracket structure line
+                    elif state == 2:
+                        if sequence_size != len(line) or not self.structure_regexp.match(line) or \
+                                line.count('(') != line.count(')') or \
+                                line.count('[') != line.count(']') or \
+                                line.count('{') != line.count('}'):
+                            return False
+                        else:
+                            return True
         
         # Number of lines is less than 3
         return False
