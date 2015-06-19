@@ -1,3 +1,7 @@
+<%doc>
+    This file defines methods for displaying information about pagination
+</%doc>
+
 <%def name="get_page_url( sort_id, order, *args, **kwargs )">
         <a href="${h.url_for( controller=args[0], action=args[1], sort_id=sort_id, order=order, **kwargs )}">${kwargs.get("page")}</a>
 </%def>
@@ -38,7 +42,23 @@
             %endif
         %endfor
         <div id="next_button">&#x21a0;</div>
-    </div><br/><br/>
+    </div>
+</%def>
+
+<%def name="get_entry_selector(controller, action, entries, sort_id, order)">
+    <div id="entry_form" >
+        <form method="post" controller=${controller} action=${action}>
+            <input type="hidden" value=${sort_id} name="sort_id">
+            <input type="hidden" value=${order} name="order">
+            Max items:
+            <input id="entries_edit"
+                   type="text"
+                   name="entries"
+                   value="${entries}">
+            </input>
+            <button id="entry_submit">Go</button>
+        </form>
+    </div>
 </%def>
 
 <%def name="get_page_css()">
@@ -90,7 +110,7 @@
         }
         
         #formHeader > tbody > tr {
-            vertical-align: bottom;
+            vertical-align: middle;
         }
     </style>
     
@@ -98,16 +118,13 @@
         Entry Styling
     </%doc>
     <style>
-        #entry_form {
-            padding-top: 18px;
-            vertical-align: middle;
-        }
         
         #entries_edit {
             position: relative;
             padding: 0;
             width: 36px;
             height: 20px;
+            text-align: center;
             border: 1px solid black;
             border-radius: 3px;
             z-index: 6;
@@ -237,7 +254,7 @@
                         "z-index": "4",
                     });
                     $(".st1").css({
-                        "top": "+=9px",
+                        "top": $("#entries_edit").offset().top,
                     });
                     $(".st2").css({"z-index": "3"})
                     $(".st3").css({"z-index": "2"})

@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
-<%namespace file="/page_base.mako" import="get_pages" />
+<%namespace file="/page_base.mako" import="get_pages, get_entry_selector" />
 
 %if message:
     ${render_msg( message, 'done' )}
@@ -21,18 +21,8 @@ ${get_css()}
                     <h4 align="center">Jobs for ${month_label}&nbsp;${year_label}</h4>
                     <h5 align="center">Click job count to see the day's details</h5>
                 </td>
-                <td id="entry_form" align="right">
-                    <form method="post" controller="jobs" action="specified_month_all">
-                        <input type="hidden" value=${sort_id} name="sort_id">
-                        <input type="hidden" value=${order} name="order">
-                        Max items:
-                        <input id="entries_edit"
-                               type="text"
-                               name="entries"
-                               value="${page_specs.entries}">
-                        </input>
-                        <button id="entry_submit">Go</button>
-                    </form>
+                <td align="right">
+                    ${get_entry_selector("jobs", "specified_month_all", page_specs.entries, sort_id, order)}
                 </td>
             </tr>
         </table>
@@ -44,17 +34,17 @@ ${get_css()}
                     
                     <td>Day</td>
                     <td>
-                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'specified_month_all', 'Date')}
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'specified_month_all', 'Date', page=page_specs.page, entries=page_specs.entries)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User Jobs', page=page_specs.page, entries=page_specs.entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td>
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User and Monitor Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User and Monitor Jobs', page=page_specs.page, entries=page_specs.entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
