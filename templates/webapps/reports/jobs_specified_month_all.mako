@@ -21,6 +21,19 @@ ${get_css()}
                     <h4 align="center">Jobs for ${month_label}&nbsp;${year_label}</h4>
                     <h5 align="center">Click job count to see the day's details</h5>
                 </td>
+                <td id="entry_form" align="right">
+                    <form method="post" controller="jobs" action="specified_month_all">
+                        <input type="hidden" value=${sort_id} name="sort_id">
+                        <input type="hidden" value=${order} name="order">
+                        Max items:
+                        <input id="entries_edit"
+                               type="text"
+                               name="entries"
+                               value="${page_specs.entries}">
+                        </input>
+                        <button id="entry_submit">Go</button>
+                    </form>
+                </td>
             </tr>
         </table>
         <table align="center" width="60%" class="colored">

@@ -264,7 +264,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         if "entries" in kwd:
             entries = int(kwd.get( 'entries' ))
         else:
-            entries = 4
+            entries = 50
         limit = entries * 4
 
         if "offset" in kwd:
@@ -636,15 +636,6 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                               .get( trans.security.decode_id( kwd.get( 'id', '' ) ) )
         return trans.fill_template( '/webapps/reports/job_info.mako',
                                     job=job,
-                                    message=message )
-
-    @web.expose
-    def test( self, trans, **kwd ):
-        message = ''
-        order = "asc"
-
-        return trans.fill_template( '/webapps/reports/test.mako',
-                                    order=order,
                                     message=message )
 
 # ---- Utility methods -------------------------------------------------------
