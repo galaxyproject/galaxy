@@ -229,10 +229,11 @@ def main():
         test_dir = default_galaxy_test_file_dir
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
         galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
-        if not os.path.isabs( galaxy_test_file_dir ):
-            galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
-        library_import_dir = galaxy_test_file_dir
-        import_dir = os.path.join( galaxy_test_file_dir, 'users' )
+        first_test_file_dir = galaxy_test_file_dir.split(",")[0]
+        if not os.path.isabs( first_test_file_dir ):
+            first_test_file_dir = os.path.join( os.getcwd(), first_test_file_dir )
+        library_import_dir = first_test_file_dir
+        import_dir = os.path.join( first_test_file_dir, 'users' )
         if os.path.exists(import_dir):
             user_library_import_dir = import_dir
         else:
