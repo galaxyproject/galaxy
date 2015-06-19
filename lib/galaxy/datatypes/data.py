@@ -768,7 +768,7 @@ class Text( Data ):
                 if remainder > 0:
                     chunk += 1
                 lines_per_file.append(chunk)
-                remainder=- 1
+                remainder -= 1
                 length -= chunk
         elif split_params['split_mode'] == 'to_size':
             chunk_size = int(split_params['split_size'])
