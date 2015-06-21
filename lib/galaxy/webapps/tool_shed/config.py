@@ -42,9 +42,19 @@ class Configuration( object ):
         self.database_connection = kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
-        # Whoosh search
+        # Repository and Tool search API
         self.toolshed_search_on = string_as_bool( kwargs.get( "toolshed_search_on", True ) )
         self.whoosh_index_dir = kwargs.get( "whoosh_index_dir", 'database/toolshed_whoosh_indexes' )
+        self.repo_name_boost = kwargs.get( "repo_name_boost", 0.9 )
+        self.repo_description_boost = kwargs.get( "repo_description_boost", 0.6 )
+        self.repo_long_description_boost = kwargs.get( "repo_long_description_boost", 0.5 )
+        self.repo_homepage_url_boost = kwargs.get( "repo_homepage_url_boost", 0.3 )
+        self.repo_remote_repository_url_boost = kwargs.get( "repo_remote_repository_url_boost", 0.2 )
+        self.repo_owner_username_boost = kwargs.get( "repo_owner_username_boost", 0.3 )
+        self.tool_name_boost = kwargs.get( "tool_name_boost", 1.2 )
+        self.tool_description_boost = kwargs.get( "tool_description_boost", 0.6 )
+        self.tool_help_boost = kwargs.get( "tool_help_boost", 0.4 )
+        self.tool_repo_owner_username = kwargs.get( "tool_repo_owner_username", 0.3 )
         # Analytics
         self.ga_code = kwargs.get( "ga_code", None )
         self.session_duration = int(kwargs.get( 'session_duration', 0 ))

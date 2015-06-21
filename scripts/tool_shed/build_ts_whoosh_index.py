@@ -1,4 +1,4 @@
-""" 
+"""
 Build indexes for searching the TS.
 Run this script from the Tool Shed folder, example:
 
@@ -52,6 +52,7 @@ tool_schema = Schema(
     id=TEXT( stored=True ),
     help=TEXT( stored=True ),
     version=TEXT( stored=True),
+    repo_name=TEXT( stored=True ),
     repo_owner_username=TEXT( stored=True ),
     repo_id=STORED )
 
@@ -107,6 +108,7 @@ def build_index( sa_session, whoosh_index_dir, path_to_repositories ):
                                             description=to_unicode( tool.get( 'description' ) ),
                                             help=to_unicode( tool.get( 'help' ) ),
                                             repo_owner_username=to_unicode( repo.get( 'repo_owner_username' ) ),
+                                            repo_name=to_unicode( repo.get( 'name' ) ),
                                             repo_id=repo.get( 'id' ) )
             tools_indexed += 1
             print tools_indexed, 'tools (', tool.get( 'id' ), ')'

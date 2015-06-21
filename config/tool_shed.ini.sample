@@ -59,6 +59,24 @@ session_secret = changethisinproduction
 #toolshed_search_on = True
 #whoosh_index_dir = database/toolshed_whoosh_indexes
 
+# The following boosts are used to customize this instance's TS search.
+# The higher the boost, the more importance the scoring algorithm gives to the
+# given field.
+
+# For searching repositories at /api/repositories:
+#repo_name_boost = 0.9
+#repo_description_boost = 0.6
+#repo_long_description_boost = 0.5
+#repo_homepage_url_boost = 0.3
+#repo_remote_repository_url_boost = 0.2
+#repo_owner_username_boost = 0.3
+
+# For searching tools at /api/tools
+#tool_name_boost = 1.2
+#tool_description_boost = 0.6
+#tool_help_boost = 0.4
+#tool_repo_owner_username = 0.3
+
 # -- Analytics
 
 # You can enter tracking code here to track visitor's behavior
