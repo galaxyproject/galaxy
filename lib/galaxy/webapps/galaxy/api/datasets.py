@@ -299,7 +299,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         except Exception as exception:
             log.error( "Error getting display data for dataset (%s) from history (%s): %s",
-                       history_content_id, history_id, str( exception ), exc_info=True )
+                       history_content_id, history_id, str( exception ),exc_info=True )
             trans.response.status = 500
             rval = ( "Could not get display data for dataset: " + str( exception ) )
 
@@ -323,11 +323,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         dataset_id = payload['dataset_id']
         try:
             hda = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(dataset_id))
-        except ValueError:
-            hda = None
-        if not hda:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable(
-                "Invalid reference dataset id: %s." % escape(str(dataset_id)))
+        except Exception as e:
+            return str( e )
 
         # Get the associated job, if any. If this hda was copied from another,
         # we need to find the job that created the origial dataset association.
