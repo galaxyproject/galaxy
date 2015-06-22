@@ -17,9 +17,9 @@ except IndexError:
 
 def getbuilds(url):
     try:
-        page = urllib.urlopen(URL)
+        page = urllib.urlopen(url)
     except:
-        print "#Unable to open " + URL
+        print "#Unable to open " + url
         print "?\tunspecified (?)"
         sys.exit(1)
 
@@ -31,7 +31,7 @@ def getbuilds(url):
         print "?\tunspecified (?)"
         sys.exit(1)
 
-    print "#Harvested from " + URL
+    print "#Harvested from " + url
     print "?\tunspecified (?)"
     for dsn in tree:
         build = dsn.find("SOURCE").attrib['id']
