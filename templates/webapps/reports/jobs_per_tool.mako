@@ -51,7 +51,10 @@ ${get_css()}
                     %endif
                         <td><a href="${h.url_for( controller='jobs', action='tool_per_month', tool_id=job[0], sort_id='default', order='default' )}">${job[0]}</a></td>
                         <td>${job[1]}</td>
-                        ${make_sparkline(key, trends[key], "line", "/ day")}
+                        %try:
+                            ${make_sparkline(key, trends[key], "line", "/ day")}
+                        %except KeyError:
+                        %endtry
                         <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>

@@ -11,6 +11,7 @@ pkg_resources.require( "SQLAlchemy >= 0.4" )
 import re
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+import sys
 
 import logging
 log = logging.getLogger( __name__ )
@@ -570,16 +571,18 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         currday = datetime.today().date()
         trends = dict()
         for job in all_jobs_per_user.execute():
-            curr_user = re.sub(r'\W+', '', str(job.user_email))
+            curr_user = re.sub(r'\W+', '', job.user_email)
             try:
                 day = currday - job.date
-                day = day.days
+            except TypeError:
+                day = currday - datetime.date(job.date)
+
+            day = day.days
+            try:
                 if day < day_limit:
                     trends[curr_user][day] += 1
             except KeyError:
                 trends[curr_user] = [0] * day_limit
-                day = currday - job.date
-                day = day.days
                 if day < day_limit:
                     trends[curr_user][day] += 1
 
@@ -685,9 +688,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                        group_by=[ 'tool_id' ],
                        order_by=[ _order ] )
 
-        all_jobs_per_tool = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
-                                      model.Job.table.c.id.label( 'id' ),
-                                      model.Job.table.c.tool_id.label( 'tool_id' ) ),
+        all_jobs_per_tool = sa.select( ( model.Job.table.c.tool_id.label( 'tool_id' ),
+                                        model.Job.table.c.id.label( 'id' ),
+                                        self.select_month( model.Job.table.c.create_time ).label( 'date' ) ),
+                                      whereclause=model.Job.table.c.user_id != monitor_user_id,
                                       from_obj=[ model.Job.table ] )
 
         currday = date.today()
@@ -696,19 +700,29 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             curr_tool = re.sub(r'\W+', '', str(job.tool_id))
             try:
                 day = currday - job.date
-                day = day.days
+            except TypeError:
+                day = currday - datetime.date(job.date)
+
+            day = day.days
+            try:
                 if day < day_limit:
                     trends[curr_tool][day] += 1
             except KeyError:
                 trends[curr_tool] = [0] * day_limit
-                day = currday - job.date
-                day = day.days
                 if day < day_limit:
                     trends[curr_tool][day] += 1
 
         for row in q.execute():
             jobs.append( ( row.tool_id,
                            row.total_jobs ) )
+
+        print("==========jobs==================", file=sys.stderr)
+        for job in jobs:
+            print(re.sub(r'\W+', '', job[0]), file=sys.stderr)
+
+        print("==========trends==================", file=sys.stderr)
+        for item in trends.keys():
+            print(item, file=sys.stderr)
 
         return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
                                     order=order,
@@ -760,21 +774,17 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             curr_tool = re.sub(r'\W+', '', str(job.tool_id))
             try:
                 day = currday - job.date
-                day = day.days
+            except TypeError:
+                day = currday - datetime.date(job.date)
+
+            day = day.days
+            try:
                 if day < day_limit:
                     trends[curr_tool][day] += 1
             except KeyError:
                 trends[curr_tool] = [0] * day_limit
-                day = currday - job.date
-                day = day.days
                 if day < day_limit:
                     trends[curr_tool][day] += 1
-            except TypeError:
-                day = currday - date(job.date)
-                day = day.days
-                if day < day_limit:
-                    trends[curr_tool][day] += 1
-
         jobs = []
         for row in jobs_in_error_per_tool.execute():
             jobs.append( ( row.total_jobs, row.tool_id ) )
