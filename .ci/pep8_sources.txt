@@ -13,7 +13,7 @@ lib/galaxy/queues.py
 lib/galaxy/queue_worker.py
 lib/galaxy/tags
 lib/galaxy/tools
-lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules}.py
+lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules,xml_macros}.py
 lib/galaxy/web/{proxy,security}
 lib/galaxy/web/base/{__init__,interactive_environments}.py
 lib/galaxy/web/formatting.py
