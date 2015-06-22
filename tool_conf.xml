@@ -130,6 +130,7 @@
   </section>
   <section id="labkey" name="LabKey">
     <tool file="labkey/labkey_store.xml" />
+    <tool file="labkey/labkey_image_update.xml" />
   </section>  
   <section id="plots" name="Graph/Display Data">
     <!--<tool file="plotting/histogram2.xml" />-->
