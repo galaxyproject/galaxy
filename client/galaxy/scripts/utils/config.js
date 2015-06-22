@@ -1,4 +1,4 @@
-define(['libs/underscore', 'viz/trackster/util', 'utils/config'], function(_, util_mod, config_mod) {
+define(['underscore', 'viz/trackster/util', 'utils/config'], function(_, util_mod, config_mod) {
 
 /**
  * A configuration setting. Currently key is used as id.
