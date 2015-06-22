@@ -1,0 +1,363 @@
+<tool id="snpEff" name="SnpEff" version="@WRAPPER_VERSION@.0">
+    <description>Variant effect and annotation</description>
+    <expand macro="requirements" />
+    <macros>
+        <import>snpEff_macros.xml</import>
+    </macros>
+    <command>
+<![CDATA[
+        java -Xmx6G -jar \$SNPEFF_JAR_PATH/snpEff.jar eff 
+        -c \$SNPEFF_JAR_PATH/snpEff.config 
+        -i $inputFormat -o ${outputConditional.outputFormat} -upDownStreamLen $udLength
+        #if $spliceSiteSize and $spliceSiteSize.__str__ != '':
+          -spliceSiteSize $spliceSiteSize
+        #end if
+        #if $filterIn and $filterIn.__str__ != 'no_filter':
+          $filterIn 
+        #end if
+        #if $filterHomHet and $filterHomHet.__str__ != 'no_filter':
+          $filterHomHet 
+        #end if
+        #if $annotations and $annotations.__str__ != '':
+          #echo " "
+          #echo ' '.join($annotations.__str__.split(','))
+        #end if
+        #if $filterOut and $filterOut.__str__ != '':
+          #echo " "
+          #echo ' '.join($filterOut.__str__.split(','))
+        #end if
+        #if str( $transcripts ) != 'None':
+          -onlyTr $transcripts
+        #end if
+        #if str( $intervals ) != 'None':     ### fix this for multiple dataset input
+          -interval $intervals
+        #end if
+        #if $statsFile:
+          -stats $statsFile 
+        #end if
+        #if $offset.__str__ != 'default':
+          ${offset} 
+        #end if
+        #if $chr.__str__.strip() != '':
+          -chr "$chr" 
+        #end if
+          $noLog 
+        #if $snpDb.genomeSrc == 'cached':
+          -dataDir ${snpDb.genomeVersion.fields.path}
+          #if $snpDb.extra_annotations and $snpDb.extra_annotations.__str__ != '':
+            #echo " "
+            #echo ' '.join($snpDb.extra_annotations.__str__.split(','))
+          #end if
+          #if $snpDb.regulation and $snpDb.regulation.__str__ != '':
+            -reg #echo ' -reg '.join($snpDb.regulation.__str__.split(','))#
+          #end if
+          $snpDb.genomeVersion
+        #elif $snpDb.genomeSrc == 'history':
+          -dataDir ${snpDb.snpeff_db.extra_files_path}
+          #if $snpDb.extra_annotations and $snpDb.extra_annotations.__str__ != '':
+            #set xannotations = [' '] + $snpDb.extra_annotations.__str__.split(',')
+            #echo " "
+            #echo ' -'.join($xannotations)
+          #end if
+          #if $snpDb.regulation and $snpDb.regulation.__str__ != '':
+            -reg #echo ' -reg '.join($snpDb.regulation.__str__.split(','))#
+          #end if
+          ${snpDb.snpeff_db.metadata.genome_version}
+        #else 
+          -download
+          $snpDb.genome_version
+        #end if
+        $input > $snpeff_output ;
+        #if $statsFile:
+            #import os
+            #set $genes_file = str($statsFile) + '.genes.txt'
+            #set $genes_file_name = os.path.split($genes_file)[-1]
+            mkdir $statsFile.files_path;
+            mv $genes_file #echo os.path.join($statsFile.files_path, $genes_file_name)#;
+        #end if
+        #if $outputConditional.outputFormat == 'gatk' and $outputConditional.gatk_v1
+          ## Replace real SnpEff version with 2.0.5 to prevent this GATK 1.x error: "The version of SnpEff used to generate the SnpEff input file (x.x) is not currently supported by the GATK. Supported versions are: [2.0.5]"
+          sed -i 's/^\#\#SnpEffVersion="\(\S*\s\)/\#\#SnpEffVersion="2.0.5 - real is \1/' $snpeff_output
+        #end if
+]]>
+    </command>
+    <inputs>
+        <param format="vcf,tabular,pileup,bed" name="input" type="data" label="Sequence changes (SNPs, MNPs, InDels)"/>
+
+        <param name="inputFormat" type="select" label="Input format">
+            <option value="vcf" selected="true">VCF</option>
+            <option value="txt">Tabular (Deprecated)</option>
+            <option value="pileup">Pileup (Deprecated)</option>
+            <option value="bed">BED (Deprecated)</option>
+        </param>
+
+        <conditional name="outputConditional">
+            <param name="outputFormat" type="select" label="Output format">
+                <option value="vcf" selected="true">VCF (only if input is VCF)</option>
+                <option value="gatk">GATK-compatible VCF (only if input is VCF)</option>
+                <option value="txt">Tabular</option>
+                <option value="bed">BED</option>
+                <option value="bedAnn">BED annotations</option>
+            </param>
+            <when value="vcf" />
+            <when value="gatk">
+                <param name="gatk_v1" type="boolean" checked="true" label="Compatible with GATK 1.x" />
+            </when>
+            <when value="txt" />
+            <when value="bed" />
+            <when value="bedAnn" />
+        </conditional>
+
+        <conditional name="snpDb">
+            <param name="genomeSrc" type="select" label="Genome source">
+                <option value="cached">Locally installed reference genome</option>
+                <option value="history">Reference genome from your history</option>
+                <option value="named">Named on demand</option>
+            </param>
+            <when value="cached">
+                <param name="genomeVersion" type="select" label="Genome">
+                    <!--GENOME    DESCRIPTION-->
+                    <options from_data_table="snpeffv_genomedb">
+                           <filter type="static_value" name="snpeff_version" value="@SNPEFF_VERSION@" column="1"/>
+                           <filter type="unique_value" column="2" />
+                    </options>
+                </param>
+                <param name="extra_annotations" type="select" display="checkboxes" multiple="true" label="Additional annotations">
+                       <help>These are available for only a few genomes</help>
+                       <options from_data_table="snpeffv_annotations">
+                           <filter type="param_value" ref="genomeVersion" key="genome" column="2" />
+                           <filter type="unique_value" column="3" />
+                       </options>
+                </param>
+                <param name="regulation" type="select" display="checkboxes" multiple="true" label="Non-coding and regulatory annotation">
+                       <help>These are available for only a few genomes</help>
+                       <options from_data_table="snpeffv_regulationdb">
+                           <filter type="param_value" ref="genomeVersion" key="genome" column="2" />
+                           <filter type="unique_value" column="3" />
+                       </options>
+                </param>
+            </when>
+            <when value="history">
+                <param format="snpeffdb" name="snpeff_db" type="data" label="@SNPEFF_VERSION@ Genome Data">
+                    <options options_filter_attribute="metadata.snpeff_version" >
+                        <filter type="add_value" value="@SNPEFF_VERSION@" />
+                    </options>
+                    <validator type="expression" message="This version of SnpEff will only work with @SNPEFF_VERSION@ Genome databases.">value is not None and value.metadata.snpeff_version == "@SNPEFF_VERSION@"</validator>
+                </param>
+                <!-- From metadata -->
+                <param name="extra_annotations" type="select" display="checkboxes" multiple="true" label="Additional annotations">
+                    <help>These are available for only a few genomes</help>
+                    <options>
+                        <filter type="data_meta" ref="snpeff_db" key="annotation" />
+                    </options>
+                </param>
+                <param name="regulation" type="select" display="checkboxes" multiple="true" label="Non-coding and regulatory annotation">
+                    <help>These are available for only a few genomes</help>
+                    <options>
+                        <filter type="data_meta" ref="snpeff_db" key="regulation" />
+                    </options>
+                </param>
+            </when>
+            <when value="named">
+                <param name="genome_version" type="text" size="40" value="" label="Snpff Genome Version Name (e.g. GRCh38.76)">
+                    <help>@SNPEFF_DATABASE_URL@</help>
+                    <validator type="regex" message="A genome version name is required">\S+</validator>
+                </param>
+            </when>
+        </conditional>
+
+        <param name="udLength" type="select" label="Upstream / Downstream length">
+            <option value="0">No upstream / downstream intervals (0 bases)</option>
+            <option value="200">200 bases</option>
+            <option value="500">500 bases</option>
+            <option value="1000">1000 bases</option>
+            <option value="2000">2000 bases</option>
+            <option value="5000" selected="true">5000 bases</option>
+            <option value="10000">10000 bases</option>
+            <option value="20000">20000 bases</option>
+        </param>
+
+        <param name="spliceSiteSize" type="select" optional="true" label="Set size for splice sites (donor and acceptor) in bases" help="Default: 2">
+            <option value="1">1 base</option>
+            <option value="2" selected="true">2 bases</option>
+            <option value="3">3 bases</option>
+            <option value="4">4 bases</option>
+            <option value="5">5 bases</option>
+            <option value="6">6 bases</option>
+            <option value="7">7 bases</option>
+            <option value="8">8 bases</option>
+            <option value="9">9 bases</option>
+        </param>
+
+        <param name="filterHomHet" type="select" display="radio" label="Filter homozygous / heterozygous changes">
+            <option value="no_filter" selected="true">No filter (analyze everything)</option>
+            <option value="-hom">Analyze homozygous sequence changes only</option>
+            <option value="-het">Analyze heterozygous sequence changes only</option>
+        </param>
+
+        <!-- The tool testing code can not handle select,radio,check boxes values that start with '-', so the '-' is added in the command generation -->
+        <param name="filterIn" type="select" display="radio" label="Filter sequence changes">
+            <option value="no_filter" selected="true">No filter (analyze everything)</option>
+            <option value="-del">Analyze deletions only</option>
+            <option value="-ins">Analyze insertions only</option>
+            <option value="-mnp">Only MNPs (multiple nucleotide polymorphisms)</option>
+            <option value="-snp">Only SNPs (single nucleotide polymorphisms)</option>
+        </param>
+
+        <param name="annotations" type="select" display="checkboxes" multiple="true" label="Annotation options">
+            <option value="-cancer">Perform 'cancer' comparisons (somatic vs. germline)</option>
+            <option value="-canon">Only use canonical transcripts</option>
+            <option value="-geneId">Use gene ID instead of gene name (VCF output)</option>
+            <option value="-lof">Add loss of function (LOF) and nonsense mediated decay (NMD) tags</option>
+            <option value="-oicr">Add OICR tag in VCF file</option>
+            <option value="-onlyReg">Only use regulation tracks</option>
+            <option value="-classic">Use Classic Effect names and amino acid variant annotations (NON_SYNONYMOUS_CODING vs missense_variant and G180R vs p.Gly180Arg/c.538G>C)</option>
+            <option value="-hgvs">Override classic and use HGVS annotations for amino acid annotations (p.Gly180Arg/c.538G>C vs G180R)</option>
+            <option value="-sequenceOntology">Override classic and use Sequence Ontolgy terms for effects (missense_variant vs NON_SYNONYMOUS_CODING)</option>
+        </param>
+        <param name="intervals" format="bed" type="data" optional="true" label="Use custom interval file for annotation"/>
+        <param name="transcripts" format="tabular" type="data" optional="true" label="Only use the transcripts in this file." help="Format is one transcript ID per line."/>
+        <param name="filterOut" type="select" display="checkboxes" multiple="true" label="Filter output">
+            <option value="-no-downstream">Do not show DOWNSTREAM changes</option>
+            <option value="-no-intergenic">Do not show INTERGENIC changes</option>
+            <option value="-no-intron">Do not show INTRON changes</option>
+            <option value="-no-upstream">Do not show UPSTREAM changes</option>
+            <option value="-no-utr">Do not show 5_PRIME_UTR or 3_PRIME_UTR changes</option>
+        </param>
+
+        <param name="offset" type="select" display="radio" optional="true" label="Chromosomal position">
+            <option value="default" selected="true">Use default (based on input type)</option>
+            <option value="-0">Force zero-based positions (both input and output)</option>
+            <option value="-1">Force one-based positions (both input and output)</option>
+        </param>
+        <param name="chr" type="text" optionl="true" label="Text to prepend to chromosome name">
+            <help>
+               By default SnpEff simplifies all chromosome names. For instance 'chr1' is just '1'.
+               You can prepend any string you want to the chromosome name.
+            </help>
+            <validator type="regex" message="No whitespace allowed">^\S*$</validator>
+        </param>
+        <param name="generate_stats" type="boolean" truevalue="" falsevalue="-noStats" checked="true" label="Produce Summary Stats"/>
+        <param name="noLog" type="boolean" truevalue="-noLog" falsevalue="" checked="true" label="Do not report usage statistics to server"/>
+    </inputs>
+    <outputs>
+        <data format="vcf" name="snpeff_output" >
+            <change_format>
+                <when input="outputConditional.outputFormat" value="txt" format="tabular" />
+                <when input="outputConditional.outputFormat" value="bed" format="bed" />
+                <when input="outputConditional.outputFormat" value="bedAnn" format="bed" />
+            </change_format>
+        </data>
+        <data format="html" name="statsFile" label="${tool.name} on ${on_string} - stats">
+            <filter>generate_stats == True</filter>
+        </data>
+    </outputs>
+    <expand macro="stdio" />
+    <tests>
+        <!-- Check that an effect was added in out VCF -->
+        <!-- Check for a HTML header indicating that this was successful -->
+        <!--
+        <output name="statsFile">
+            <assert_contents>
+            <has_text text="SnpEff: Variant analysis" />
+            </assert_contents>
+        </output>
+        --> 
+        <!-- Setting filterOut throws exception in twilltestcase.py
+        <test>
+        <param name="input" ftype="vcf" value="vcf_homhet.vcf"/>
+        <param name="inputFormat" value="vcf"/>
+        <param name="outputFormat" value="vcf"/>
+        <param name="genomeSrc" value="named"/>
+        <param name="genome_version" value="testCase"/>
+        <param name="udLength" value="0"/>
+        <param name="filterHomHet" value="no_filter"/>
+        <param name="filterIn" value="no_filter"/>
+        <param name="generate_stats" value="False"/>
+        <param name="filterOut" value="+-no-upstream"/>
+        <output name="snpeff_output">
+            <assert_contents>
+            <has_text text="EFF=" />
+            </assert_contents>
+        </output>
+        </test>
+        --> 
+
+        <test>
+        <param name="input" ftype="vcf" value="vcf_homhet.vcf"/>
+        <param name="inputFormat" value="vcf"/>
+        <param name="outputFormat" value="vcf"/>
+        <param name="genomeSrc" value="named"/>
+        <param name="genome_version" value="testCase"/>
+        <param name="udLength" value="0"/>
+        <param name="filterHomHet" value="+-het"/>
+        <param name="filterIn" value="no_filter"/>
+        <!--
+        <param name="filterOut" value=""/>
+        -->
+        <param name="generate_stats" value="False"/>
+        <output name="snpeff_output">
+            <assert_contents>
+            <!-- Check that NO effects were added since -het is set -->
+            <not_has_text text="EFF=NON_SYNONYMOUS_CODING" />
+            </assert_contents>
+        </output>
+        </test>
+
+        <test>
+        <param name="input" ftype="vcf" value="vcf_homhet.vcf"/>
+        <param name="inputFormat" value="vcf"/>
+        <param name="outputFormat" value="vcf"/>
+        <param name="genomeSrc" value="named"/>
+        <param name="genome_version" value="testCase"/>
+        <param name="udLength" value="0"/>
+        <param name="filterHomHet" value="no_filter"/>
+        <param name="filterIn" value="+-del"/>
+        <!--
+        <param name="filterOut" value=""/>
+        -->
+        <param name="generate_stats" value="False"/>
+        <output name="snpeff_output">
+            <assert_contents>
+            <!-- Check that deleletions were evaluated -->
+            <has_text_matching expression="Y\t59030478\t.*EFF=INTERGENIC" />
+            <!-- Check that insertion on last line was NOT evaluated -->
+            <has_text_matching expression="Y\t59032947\t.*SF=5\tGT" />
+            </assert_contents>
+        </output>
+        </test>
+
+        <!-- Check that NO UPSTREAM  effect was added -->
+        <!-- Setting filterOut throws exception in twilltestcase.py
+        <test>
+        <param name="input" ftype="vcf" value="vcf_homhet.vcf"/>
+        <param name="inputFormat" value="vcf"/>
+        <param name="outputFormat" value="vcf"/>
+        <param name="genomeSrc" value="named"/>
+        <param name="genome_version" value="testCase"/>
+        <param name="udLength" value="0"/>
+        <param name="filterHomHet" value="no_filter"/>
+        <param name="filterIn" value="no_filter"/>
+        <param name="filterOut" value="+-no-upstream"/>
+        <param name="generate_stats" value="False"/>
+        <output name="snpeff_output">
+            <assert_contents>
+            <not_has_text text="UPSTREAM" />
+            </assert_contents>
+        </output>
+        </test>
+        -->
+
+    </tests>
+    <help>
+
+This tool calculate the effect of variants (SNPs/MNPs/Insertions) and deletions.
+
+@EXTERNAL_DOCUMENTATION@
+
+@CITATION_SECTION@
+
+    </help>
+    <expand macro="citations" />
+</tool>
+

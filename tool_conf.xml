@@ -141,6 +141,7 @@
     <!--<tool file="visualization/build_ucsc_custom_track.xml" />-->
     <tool file="maf/vcf_to_maf_customtrack.xml" />
     <!--<tool file="mutation/visualize.xml" />-->
+    <tool file="mutsig_viz/mutsig_viz.xml" />
   </section>
   <section id="multVar" name="Multivariate Analysis">
     <!--<tool file="multivariate_stats/pca.xml" />-->
@@ -168,6 +169,8 @@
   <section id="NGS_QC" name="NGS: QC and manipulation">
     
     <label id="fastqcsambam" text="FastQC: fastq/sam/bam" />
+    <tool file="fastqc/fastqc.xml" />
+    <tool file="multi_fastqc/multi_fastqc.xml"/>
     
     <label id="illumina" text="Illumina fastq" />
     
@@ -248,6 +251,7 @@
 	    <tool file="gatk/unified_genotyper.xml"/>
 	    <tool file="gatk/depth_of_coverage.xml"/>
 	    <tool file="gatk/variant_filtration.xml"/>
+	    <tool file="gatk/variant_select.xml" />
     <label id="Picard" text="Picard version 1.110"/>
 	    <tool file="picard/rgPicardMarkDups.xml" />
 	    <tool file="picard/picard_SamToFastq.xml" />
@@ -256,8 +260,14 @@
     <label id="BICSeq" text="BICSeq" />
 	    <tool file="Suzi_pipeline/Bic-Seq_samtools.xml" />
 	    <tool file="Suzi_pipeline/Bic-Seq.xml" /> 
-    <label id="mutect" text="MuTect version 1.1.7" />
+    <label id="Mutect" text="MuTect version 1.1.7" />
 	    <tool file="mutect/muTect.xml" />
+    <label id="Breakdancer" text="Breakdancer version 1.4.5" />
+            <tool file="breakdancer/breakdancer.xml" />
+    <label id="Pindel" text="Pindel 0.2.5a8" />
+            <tool file="pindel/pindel.xml" />
+    <label id="VcfSorter" text="VCF Sorter" />
+            <tool file="vcf_sorter/vcfsorter.xml" />
   </section>  
   <section id="RNA_sequencing" name="RNA sequencing tools">
      <label id="tophat2" text="Tophat2 version 2.0.14" />
@@ -266,6 +276,8 @@
 	    <tool file="cufflinks/cuffmerge_wrapper.xml" />
 	    <tool file="cufflinks/cufflinks_wrapper.xml" />
 	    <tool file="cufflinks/cuffdiff_wrapper.xml" />
+     <label id="concatenate_files" text="Concatenate 1.0.0" />
+             <tool file="concatenate/concatenate_wrapper.xml" />
   </section>  
   <section id="cbioportal_tools" name="cBioPortal Tools">
     <tool file="cbioportal/cbioportal_create_files.xml" />
@@ -276,6 +288,14 @@
     <tool file="SueRichards_lab_tools/writeGenotype.xml"/>
     <tool file="SueRichards_lab_tools/getAnnotation.xml"/>
     <tool file="SueRichards_lab_tools/seattleseq_filter.xml"/>
+  </section>
+  <section id="civic" name="CIViC for Decision Support">
+    <tool file="civic/civic_qrt.xml" />
+    <tool file="snpeff/snpEff.xml" />
+    <tool file="oncotator/oncotator.xml" />
+  </section>
+  <section id="variant_db_tools" name="Variant DB tools">
+    <tool file="variant_db/variant_db_client.xml"/>
   </section>
   <section id="custom_tools" name="Custom tools">
   </section>

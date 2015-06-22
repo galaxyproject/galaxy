@@ -1,0 +1,5 @@
+## Regulation Databases for SnpEff 
+## These are from the list on: http://snpeff.sourceforge.net/download.html
+#Key	snpeff_version	genome	regulation_name description
+#SnpEff4.0_GRCh37.74	SnpEff4.0	GRCh37.74	CD4	CD4
+#SnpEff4.1_GRCh38.76	SnpEff4.1	GRCh38.76	CD4	CD4

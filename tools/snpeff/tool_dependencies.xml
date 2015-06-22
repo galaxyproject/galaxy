@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="snpEff" version="4.0">
+        <repository name="package_snpeff_4_0" owner="iuc" changeset_revision="6bc55957927b" toolshed="http://toolshed.g2.bx.psu.edu" />
+    </package>
+</tool_dependency>
+

@@ -3,6 +3,7 @@
     <description>Gapped-read mapper for RNA-seq data</description>
     <version_command>tophat2 --version</version_command>
     <requirements>
+        <container type="docker">tophat2:2.0.9</container>
         <requirement type="package" version="0.1.18">samtools</requirement>
         <requirement type="package" version="2.1.0">bowtie2</requirement>
         <requirement type="package" version="2.0.9">tophat2</requirement>
@@ -112,24 +113,33 @@
           --rg-sample "$readGroup.rgsm"
         #end if
 
+
+
         ## Set index path, inputs and parameters specific to paired data.
         #if $singlePaired.sPaired != "single"
             -r $singlePaired.mate_inner_distance
             --mate-std-dev=$singlePaired.mate_std_dev
-            
             #if str($singlePaired.report_discordant_pairs) == "No":
                 --no-discordant
             #end if
+        #end if
 
+        ${index_path} 
+        '  <!--- end of pass through options -->
+
+        <!-- start input filename options -->
+        #if $singlePaired.sPaired != "single"
             #if $singlePaired.sPaired == "paired"
-              ${index_path} "$singlePaired.input1" "$singlePaired.input2"
+               --input_filename1 '  "$singlePaired.input1" '
+               --input_filename2 '  "$singlePaired.input2" '
             #else
-              ${index_path} "$singlePaired.input.forward" "$singlePaired.input.reverse"
+               --input_filename1 '  "$singlePaired.input.forward" '
+               --input_filename2 '  "$singlePaired.input.reverse" '
             #end if
         #else
-            ${index_path} "$singlePaired.input1"
+            --input_filename1 '  "$singlePaired.input1" '
         #end if
-        '  <!--- end of pass through options -->
+
     </command>
     
     <inputs>

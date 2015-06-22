@@ -1,0 +1,60 @@
+##fileformat=VCFv4.0
+##samtoolsVersion=0.1.15 (r949:203)
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Raw read depth">
+##INFO=<ID=DP4,Number=4,Type=Integer,Description="# high-quality ref-forward bases, ref-reverse, alt-forward and alt-reverse bases">
+##INFO=<ID=MQ,Number=1,Type=Integer,Description="Root-mean-square mapping quality of covering reads">
+##INFO=<ID=FQ,Number=1,Type=Float,Description="Phred probability of all samples being the same">
+##INFO=<ID=AF1,Number=1,Type=Float,Description="Max-likelihood estimate of the site allele frequency of the first ALT allele">
+##INFO=<ID=G3,Number=3,Type=Float,Description="ML estimate of genotype frequencies">
+##INFO=<ID=HWE,Number=1,Type=Float,Description="Chi^2 based HWE test P-value based on G3">
+##INFO=<ID=CI95,Number=2,Type=Float,Description="Equal-tail Bayesian credible interval of the site allele frequency at the 95% level">
+##INFO=<ID=PV4,Number=4,Type=Float,Description="P-values for strand bias, baseQ bias, mapQ bias and tail distance bias">
+##INFO=<ID=INDEL,Number=0,Type=Flag,Description="Indicates that the variant is an INDEL.">
+##INFO=<ID=PC2,Number=2,Type=Integer,Description="Phred probability of the nonRef allele frequency in group1 samples being larger (,smaller) than in group2.">
+##INFO=<ID=PCHI2,Number=1,Type=Float,Description="Posterior weighted chi^2 P-value for testing the association between group1 and group2 samples.">
+##INFO=<ID=QCHI2,Number=1,Type=Integer,Description="Phred scaled PCHI2.">
+##INFO=<ID=PR,Number=1,Type=Integer,Description="# permutations yielding a smaller PCHI2.">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype Quality">
+##FORMAT=<ID=GL,Number=3,Type=Float,Description="Likelihoods for RR,RA,AA genotypes (R=ref,A=alt)">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="# high-quality bases">
+##FORMAT=<ID=SP,Number=1,Type=Integer,Description="Phred-scaled strand bias P-value">
+##FORMAT=<ID=PL,Number=.,Type=Integer,Description="List of Phred-scaled genotype likelihoods, number of values is (#ALT+1)*(#ALT+2)/2">
+##source_20110319.1=/wsu/home/eq/eq83/eq8302/tools/vcftools/bin//vcf-merge s_1_ACAGTGA.vcf.gz s_1_CAGATCA.vcf.gz s_1_CGATGTA.vcf.gz s_1_CTTGTAA.vcf.gz s_1_GCCAATA.vcf.gz s_1_TGACCAA.vcf.gz
+##sourceFiles_20110319.1=0:s_1_ACAGTGA.vcf.gz,1:s_1_CAGATCA.vcf.gz,2:s_1_CGATGTA.vcf.gz,3:s_1_CTTGTAA.vcf.gz,4:s_1_GCCAATA.vcf.gz,5:s_1_TGACCAA.vcf.gz
+##INFO=<ID=SF,Number=.,Type=String,Description="Source File (index to sourceFiles, f when filtered)">
+##INFO=<ID=AC,Number=.,Type=Integer,Description="Allele count in genotypes">
+##INFO=<ID=AN,Number=1,Type=Integer,Description="Total number of alleles in called genotypes">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	s_1_ACAGTGA_sort.bam	s_1_CAGATCA_sort.bam	s_1_CGATGTA_sort.bam	s_1_CTTGTAA_sort.bam	s_1_GCCAATA_sort.bam	s_1_TGACCAA_sort.bam
+Y	3718196	.	C	T	7.59	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,2,0;DP=2;FQ=-33;G3=4.617e-16,8.575e-07,1;MQ=39;SF=1	GT:GQ:PL	.	1/1:61:38,6,0	.	.	.	.
+Y	3720217	.	A	G	8.65	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,0,1;DP=2;FQ=-30;G3=4.415e-15,5.291e-06,1;MQ=38;SF=5	GT:GQ:PL	.	.	.	.	.	1/1:53:38,3,0
+Y	3720581	.	A	G	7.80	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,1,0;DP=1;FQ=-30;G3=5.56e-15,5.291e-06,1;MQ=44;SF=1	GT:GQ:PL	.	1/1:53:37,3,0	.	.	.	.
+Y	3721154	.	A	G	13.90	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,2,0;DP=2;FQ=-33;G3=9.194e-17,8.566e-07,1;MQ=37;SF=3	GT:GQ:PL	.	.	.	1/1:61:45,6,0	.	.
+Y	3721230	.	C	G	21.80	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,0,2;DP=2;FQ=-33;G3=1.456e-17,8.564e-07,1;MQ=29;SF=3	GT:GQ:PL	.	.	.	1/1:61:53,6,0	.	.
+Y	3744605	.	C	A	3.98	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,0,2;DP=2;FQ=-33;G3=1.468e-15,8.599e-07,1;MQ=19;SF=2	GT:GQ:PL	.	.	1/1:61:33,6,0	.	.	.
+Y	4433091	.	T	C	11.10	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,2,0;DP=2;FQ=-33;G3=1.835e-16,8.568e-07,1;MQ=23;SF=5	GT:GQ:PL	.	.	.	.	.	1/1:61:42,6,0
+Y	9945223	.	ATTT	ATTTT	19.80	.	AC=4;AF1=1;AN=4;CI95=0.5,1;DP4=0,0,0,2;DP=2;FQ=-40.5;G3=2.906e-18,8.564e-07,1;INDEL;MQ=45;SF=0,2	GT:GQ:PL	1/1:61:60,6,0	.	1/1:61:57,6,0	.	.	.
+Y	9987395	.	TTAT	TT	80.40	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,1,2;DP=3;FQ=-43.5;G3=5.464e-26,5.886e-08,1;INDEL;MQ=43;SF=5	GT:GQ:PL	.	.	.	.	.	1/1:72:120,9,0
+Y	10011604	.	C	CTT	119.17	.	AC=12;AF1=1;AN=12;CI95=1,1;DP4=0,0,7,0;DP=9;FQ=-55.5;G3=4.948e-32,3.15e-11,1;INDEL;MQ=33;SF=0,1,2,3,4,5	GT:GQ:PL	1/1:99:139,21,0	1/1:96:134,24,0	1/1:99:168,36,0	1/1:99:159,45,0	1/1:99:185,33,0	1/1:99:175,39,0
+Y	10011748	.	GAAAAAA	GAAAAAAA	23.70	.	AC=6;AF1=0.5;AN=12;CI95=0.5,0.5;DP4=12,12,11,10;DP=51;FQ=33.5;G3=1.256e-14,1,1.991e-19;INDEL;MQ=33;PV4=1,0.49,0.012,0.2;SF=0,1,2,3,4,5	GT:GQ:PL	0/0:71:68,0,92	1/1:55:52,0,77	1/1:71:69,0,75	1/1:69:66,0,79	1/1:56:53,0,80	1/1:62:59,0,98
+Y	10011894	.	ATTATTTATTT	ATTATTT	58.62	.	AC=4;AF1=0.5;AN=8;CI95=0.5,0.5;DP4=4,11,0,6;DP=34;FQ=32.5;G3=1.991e-14,1,7.924e-52;INDEL;MQ=35;PV4=0.28,0.049,0.14,0.2;SF=1,3,4,5	GT:GQ:PL	.	0/0:70:67,0,254	.	1/1:99:152,0,255	1/1:83:80,0,255	1/1:89:86,0,255
+Y	10011930	.	ACT	A	90.85	.	AC=2;AF1=0.5;AN=4;CI95=0.5,0.5;DP4=2,6,1,3;DP=17;FQ=16.6;G3=3.155e-11,1,1.991e-34;INDEL;MQ=35;PV4=1,0.00044,0.33,1;SF=0,5	GT:GQ:PL	0/0:54:51,0,167	.	.	.	.	0/0:99:206,0,255
+Y	10011935	.	C	CT	83.83	.	AC=3;AF1=0.5;AN=6;CI95=0.5,0.5;DP4=1,8,2,5;DP=23;FQ=90.3;G3=1.256e-28,1,5e-26;INDEL;MQ=39;PV4=0.55,1,0.15,1;SF=1,2,4	GT:GQ:PL	.	0/0:99:138,0,125	1/1:92:89,0,148	.	1/1:99:138,0,171	.
+Y	10011966	.	ATT	AT	79.38	.	AC=6;AF1=0.5;AN=12;CI95=0.5,0.5;DP4=1,6,0,2;DP=14;FQ=5.09;G3=1.991e-12,1,1.256e-28;INDEL;MQ=38;PV4=1,1,0.46,0.088;SF=0,1,2,3,4,5	GT:GQ:PL	1/1:41:38,0,92	1/1:76:73,0,109	1/1:99:181,0,109	1/1:99:114,0,103	1/1:99:139,0,171	1/1:99:155,0,144
+Y	10028061	.	CA	CAA	28.40	.	AC=4;AF1=1;AN=4;CI95=0.5,1;DP4=0,0,2,1;DP=9;FQ=-43.5;G3=2.739e-22,5.886e-08,1;INDEL;MQ=37;SF=4,5	GT:GQ:PL	.	.	.	.	1/1:72:83,9,0	0/0:61:52,6,0
+Y	10029194	.	CA	C	73.47	.	AC=10;AF1=0.7304;AN=12;CI95=0.5,1;DP4=2,0,7,3;DP=19;FQ=-32.5;G3=2.922e-150,0.9991,0.000854;INDEL;MQ=25;PV4=1,0.4,1,0.23;SF=0,1,2,3,4,5	GT:GQ:PL	0/0:3:93,0,2	1/1:85:100,17,0	1/1:99:181,36,0	1/1:90:107,18,0	1/1:3:104,0,2	1/1:70:90,10,0
+Y	10029452	.	CAA	CAAA	7.26	.	AC=4;AF1=1;AN=4;CI95=0.5,1;DP4=0,0,4,0;DP=13;FQ=-46.5;G3=2.341e-18,6.106e-08,1;INDEL;MQ=26;SF=3,4	GT:GQ:PL	.	.	.	1/1:72:50,12,0	1/1:72:42,12,0	.
+Y	10037877	.	GCCC	GCCCC	14.40	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,0,2;DP=3;FQ=-40.5;G3=1.456e-17,8.564e-07,1;INDEL;MQ=29;SF=2	GT:GQ:PL	.	.	1/1:61:53,6,0	.	.	.
+Y	13266272	.	TTTT	TTTTATTT	51.50	.	AC=1;AF1=0.5;AN=2;CI95=0.5,0.5;DP4=5,1,7,0;DP=15;FQ=54.5;G3=7.924e-19,1,3.155e-24;INDEL;MQ=30;PV4=0.46,1,0.078,0.00035;SF=3	GT:GQ:PL	.	.	.	0/0:92:89,0,116	.	.
+Y	13268110	.	GC	GCC	3.66	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,2,0;DP=2;FQ=-40.5;G3=2.911e-16,8.571e-07,1;INDEL;MQ=23;SF=2	GT:GQ:PL	.	.	1/1:61:40,6,0	.	.	.
+Y	13292082	.	TCCCCCCCCCC	TCCCCCCC	14.40	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,0,2;DP=2;FQ=-40.5;G3=1.456e-17,8.564e-07,1;INDEL;MQ=29;SF=3	GT:GQ:PL	.	.	.	1/1:61:53,6,0	.	.
+Y	13297070	.	AGGTGGTGGTGGT	AGGTGGTGGT	12.70	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,0,1;DP=1;FQ=-37.5;G3=2.782e-16,5.287e-06,1;INDEL;MQ=50;SF=5	GT:GQ:PL	.	.	.	.	.	1/1:53:50,3,0
+Y	13312198	.	CGGGGG	CGGGG	14.87	.	AC=5;AF1=1;AN=6;CI95=0.5,1;DP4=2,0,10,0;DP=12;FQ=-43.5;G3=1.373e-19,5.886e-08,1;INDEL;MQ=24;PV4=1,0.44,1,0.019;SF=1,4,5	GT:GQ:PL	.	1/1:72:56,9,0	.	.	1/1:70:57,10,0	1/1:44:48,0,42
+Y	13312608	.	CA	CAA	22.50	.	AC=1;AF1=0.5032;AN=2;CI95=0.5,0.5;DP4=2,0,7,0;DP=16;FQ=-15.6;G3=4.937e-25,1,1.272e-08;INDEL;MQ=24;PV4=1,1,0.093,1;SF=2	GT:GQ:PL	.	.	0/0:22:60,0,19	.	.	.
+Y	13402810	.	TAGAGA	TAGA	29.80	.	AC=4;AF1=1;AN=4;CI95=0.5,1;DP4=0,0,1,1;DP=2;FQ=-40.5;G3=7.299e-19,8.564e-07,1;INDEL;MQ=33;SF=0,2	GT:GQ:PL	1/1:61:66,6,0	.	1/1:72:72,9,0	.	.	.
+Y	21153016	.	AG	ATG	213.83	.	AC=12;AF1=1;AN=12;CI95=1,1;DP4=0,0,6,9;DP=15;FQ=-79.5;G3=7.905e-54,1e-18,1;INDEL;MQ=43;SF=0,1,2,3,4,5	GT:GQ:PL	1/1:99:255,45,0	1/1:99:.,.,0	1/1:99:255,87,0	1/1:99:.,.,0	1/1:99:255,78,0	1/1:99:.,.,0
+Y	21153067	.	CCA	C	46.50	.	AC=1;AF1=0.5;AN=2;CI95=0.5,0.5;DP4=8,4,5,0;DP=18;FQ=49.5;G3=7.924e-18,1,5e-52;INDEL;MQ=39;PV4=0.26,0.08,0.035,1;SF=3	GT:GQ:PL	.	.	.	0/0:87:84,0,255	.	.
+Y	26325233	.	TGAGAGAGAGAGA	TGAGAGAGAGA	22.20	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,2,0;DP=2;FQ=-40.5;G3=2.308e-18,8.564e-07,1;INDEL;MQ=33;SF=0	GT:GQ:PL	1/1:61:61,6,0	.	.	.	.	.
+Y	28588049	.	ACATCAT	ACAT	7.35	.	AC=4;AF1=1;AN=4;CI95=0.5,1;DP4=0,0,1,0;DP=1;FQ=-37.5;G3=1.108e-15,5.288e-06,1;INDEL;MQ=44;SF=1,3	GT:GQ:PL	.	1/1:53:44,3,0	.	1/1:53:44,3,0	.	.
+Y	59030478	.	AAAACAAACAAACAAACAAACAAACAAA	AAAACAAACAAACAAA	14.40	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,0,2;DP=2;FQ=-40.5;G3=1.456e-17,8.564e-07,1;INDEL;MQ=29;SF=2	GT:GQ:PL	.	.	1/1:61:53,6,0	.	.	.
+Y	59032947	.	GTT	GTTT	28.20	.	AC=2;AF1=1;AN=2;CI95=0.5,1;DP4=0,0,0,2;DP=2;FQ=-40.5;G3=5.798e-19,8.564e-07,1;INDEL;MQ=37;SF=5	GT:GQ:PL	.	.	.	.	.	1/1:61:67,6,0
