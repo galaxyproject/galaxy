@@ -9,6 +9,10 @@ The latest information about Galaxy is available via `http://galaxyproject.org/ 
 .. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
     :target: https://webchat.freenode.net/?channels=galaxyproject
 
+.. image:: https://readthedocs.org/projects/galaxy/badge/?version=master
+    :target: http://galaxy.readthedocs.org/en/master/
+    :alt: Documentation Status
+
 .. image:: https://travis-ci.org/galaxyproject/galaxy.svg?branch=dev
     :target: https://travis-ci.org/galaxyproject/galaxy
 
@@ -50,7 +54,7 @@ Issues
 
 Issues can be submitted to trello via the `galaxyproject
 website <http://galaxyproject.org/trello/>`__ and viewed on the `Galaxy
-Trello Board <https://trello.com/b/75c1kASa/galaxy-development>`__
+Trello Board <https://trello.com/b/75c1kASa/galaxy-development>`__.
 
 
 Galaxy Development
