@@ -12,7 +12,6 @@ pkg_resources.require( "SQLAlchemy >= 0.4" )
 import re
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-import sys
 
 import logging
 log = logging.getLogger( __name__ )
@@ -784,7 +783,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         else:
             time_period = "days"
             _time_period = 1.0
-            
+
         limit = 30
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -814,7 +813,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             except TypeError:
                 day = currday - datetime.date(job.date)
 
-            #convert day into days/weeks/months/years
+            # convert day into days/weeks/months/years
             day = day.days
             container = floor(day / _time_period)
             container = int(container)
