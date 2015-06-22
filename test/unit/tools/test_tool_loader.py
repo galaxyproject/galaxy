@@ -190,7 +190,7 @@ def test_loader():
         value = tag_el.get('value')
         assert value == "The value.", value
 
-    # Test macros XML macros with $ expansions in attributes
+    # Test macros XML macros with $$ expansions in attributes
     with TestToolDirectory() as tool_dir:
         tool_dir.write('''
 <tool>
