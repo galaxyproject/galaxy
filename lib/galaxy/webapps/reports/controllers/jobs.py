@@ -570,7 +570,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         currday = datetime.today().date()
         trends = dict()
         for job in all_jobs_per_user.execute():
-            curr_user = re.sub(r'\W+', '', job.user_email)
+            curr_user = re.sub(r'\W+', '', str(job.user_email))
             try:
                 day = currday - job.date
                 day = day.days
@@ -690,10 +690,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                       model.Job.table.c.tool_id.label( 'tool_id' ) ),
                                       from_obj=[ model.Job.table ] )
 
-        currday = datetime.today().date()
+        currday = date.today()
         trends = dict()
         for job in all_jobs_per_tool.execute():
-            curr_tool = re.sub(r'\W+', '', job.tool_id)
+            curr_tool = re.sub(r'\W+', '', str(job.tool_id))
             try:
                 day = currday - job.date
                 day = day.days
@@ -754,10 +754,10 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                               from_obj=[ model.Job.table ]
                                               )
 
-        currday = datetime.today().date()
+        currday = date.today()
         trends = dict()
         for job in all_jobs_per_tool_errors.execute():
-            curr_tool = re.sub(r'\W+', '', job.tool_id)
+            curr_tool = re.sub(r'\W+', '', str(job.tool_id))
             try:
                 day = currday - job.date
                 day = day.days
@@ -769,6 +769,12 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 day = day.days
                 if day < day_limit:
                     trends[curr_tool][day] += 1
+            except TypeError:
+                day = currday - date(job.date)
+                day = day.days
+                if day < day_limit:
+                    trends[curr_tool][day] += 1
+                
 
         jobs = []
         for row in jobs_in_error_per_tool.execute():
