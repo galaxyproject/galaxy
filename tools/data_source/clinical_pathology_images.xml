@@ -15,7 +15,7 @@
 			 --filter "specimen_id/project_code/PrimarySite~eq=$primarySite"
 		#end if
 		#if $specimenType 
-			 --filter "specimen_id/specimenType~eq=$specimenType"
+			 --filter "specimen_id/specimen_type~eq=$specimenType"
 		#end if
 		#if $gender 
 			 --filter "specimen_id/donor_gender~eq=$gender"
