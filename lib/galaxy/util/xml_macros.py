@@ -127,7 +127,6 @@ def _expand_macro(element, expand_el, macros, tokens):
     _expand_macros(expanded_elements, macros, tokens)
     macro_tokens = macro_def.macro_tokens(expand_el)
     if macro_tokens:
-        print macro_tokens
         _expand_tokens(expanded_elements, macro_tokens)
 
     # HACK for elementtree, newer implementations (etree/lxml) won't
