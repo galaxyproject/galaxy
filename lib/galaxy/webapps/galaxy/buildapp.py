@@ -220,6 +220,7 @@ def populate_api_routes( webapp, app ):
                                      path_prefix='/api/histories/:history_id/contents/:history_content_id' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
+    webapp.mapper.connect( '/api/datasets/show_params', action='show_params', controller="datasets",  conditions=dict( method=["POST"] ))
     webapp.mapper.resource( 'tool_data', 'tool_data', path_prefix='/api' )
     webapp.mapper.connect( '/api/tool_data/{id:.+?}/fields/{value:.+?}/files/{path:.+?}', action='download_field_file', controller="tool_data" )
     webapp.mapper.connect( '/api/tool_data/{id:.+?}/fields/{value:.+?}', action='show_field', controller="tool_data" )
