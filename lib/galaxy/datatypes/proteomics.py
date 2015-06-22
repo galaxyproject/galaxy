@@ -1,5 +1,5 @@
 """
-Proteomics format classes
+Proteomics Datatypes
 """
 import logging
 import re
@@ -287,7 +287,7 @@ class Msp( Text ):
 
 class SPLibNoIndex( Text ):
     """SPlib without index file """
-    file_ext = "splib"
+    file_ext = "splib_noindex"
 
     def set_peek( self, dataset, is_multi_byte=False ):
         """Set the peek and blurb text"""
