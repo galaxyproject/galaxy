@@ -5,7 +5,7 @@ import tarfile
 import StringIO
 import tempfile
 from time import strftime
-
+from collections import namedtuple
 from cgi import FieldStorage
 
 from galaxy import util
@@ -24,7 +24,6 @@ from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_ap
 from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
-from galaxy.web.framework.helpers import time_ago
 from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
 
 from tool_shed.capsule import capsule_manager
@@ -392,16 +391,34 @@ class RepositoriesController( BaseAPIController ):
         Also TS config option toolshed_search_on has to be True and
         whoosh_index_dir has to be specified.
         """
-        if not self.app.config.toolshed_search_on:
+        conf = self.app.config
+        if not conf.toolshed_search_on:
             raise ConfigDoesNotAllowException( 'Searching the TS through the API is turned off for this instance.' )
-        if not self.app.config.whoosh_index_dir:
+        if not conf.whoosh_index_dir:
             raise ConfigDoesNotAllowException( 'There is no directory for the search index specified. Please contact the administrator.' )
         search_term = q.strip()
         if len( search_term ) < 3:
             raise RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
 
         repo_search = RepoSearch()
-        results = repo_search.search( trans, search_term, page )
+        
+        Boosts = namedtuple( 'Boosts', [ 'repo_name_boost',
+                                         'repo_description_boost',
+                                         'repo_long_description_boost',
+                                         'repo_homepage_url_boost',
+                                         'repo_remote_repository_url_boost',
+                                         'repo_owner_username_boost' ] )
+        boosts = Boosts( float( conf.get( 'repo_name_boost', 0.9 ) ),
+                         float( conf.get( 'repo_description_boost', 0.6 ) ),
+                         float( conf.get( 'repo_long_description_boost', 0.5 ) ),
+                         float( conf.get( 'repo_homepage_url_boost', 0.3 ) ),
+                         float( conf.get( 'repo_remote_repository_url_boost', 0.2 ) ),
+                         float( conf.get( 'repo_owner_username_boost', 0.3 ) ) )
+
+        results = repo_search.search( trans,
+                                      search_term,
+                                      page,
+                                      boosts )
         results[ 'hostname' ] = web.url_for( '/', qualified = True )
         return results
 

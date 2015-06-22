@@ -139,7 +139,7 @@ class ToolDataTableManager( object ):
         if not remove_elems:
             remove_elems = []
         full_path = os.path.abspath( shed_tool_data_table_config )
-        #FIXME: we should lock changing this file by other threads / head nodes
+        # FIXME: we should lock changing this file by other threads / head nodes
         try:
             tree = util.parse_xml( full_path )
             root = tree.getroot()
@@ -148,10 +148,10 @@ class ToolDataTableManager( object ):
             out_elems = []
             log.debug( 'Could not parse existing tool data table config, assume no existing elements: %s', e )
         for elem in remove_elems:
-            #handle multiple occurrences of remove elem in existing elems
+            # handle multiple occurrences of remove elem in existing elems
             while elem in out_elems:
                 remove_elems.remove( elem )
-        #add new elems
+        # add new elems
         out_elems.extend( new_elems )
         with open( full_path, 'wb' ) as out:
             out.write( '<?xml version="1.0"?>\n<tables>\n' )
@@ -273,7 +273,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
         # Configure columns
         self.parse_column_spec( config_element )
 
-        #store repo info if available:
+        # store repo info if available:
         repo_elem = config_element.find( 'tool_shed_repository' )
         if repo_elem is not None:
             repo_info = dict( tool_shed=repo_elem.find( 'tool_shed' ).text, name=repo_elem.find( 'repository_name' ).text,
@@ -303,7 +303,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 log.debug( "Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.", util.xml_to_string( file_element ), self.name )
                 continue
 
-            #FIXME: splitting on and merging paths from a configuration file when loading is wonky
+            # FIXME: splitting on and merging paths from a configuration file when loading is wonky
             # Data should exist on disk in the state needed, i.e. the xml configuration should
             # point directly to the desired file to load. Munging of the tool_data_tables_conf.xml.sample
             # can be done during installing / testing / metadata resetting with the creation of a proper
@@ -349,18 +349,18 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
 
     def merge_tool_data_table( self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
         assert self.columns == other_table.columns, "Merging tabular data tables with non matching columns is not allowed: %s:%s != %s:%s" % ( self.name, self.columns, other_table.name, other_table.columns )
-        #merge filename info
+        # merge filename info
         for filename, info in other_table.filenames.iteritems():
             if filename not in self.filenames:
                 self.filenames[ filename ] = info
-        #save info about table
+        # save info about table
         self._merged_load_info.append( ( other_table.__class__, other_table._load_info ) )
         # If we are merging in a data table that does not allow duplicates, enforce that upon the data table
         if self.allow_duplicate_entries and not other_table.allow_duplicate_entries:
             log.debug( 'While attempting to merge tool data table "%s", the other instance of the table specified that duplicate entries are not allowed, now deduplicating all previous entries.', self.name )
             self.allow_duplicate_entries = False
             self._deduplicate_data()
-        #add data entries and return current data table version
+        # add data entries and return current data table version
         return self.add_entries( other_table.data, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd )
 
     def handle_found_index_file( self, filename ):
@@ -469,7 +469,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                     if not found_column:
                         rval.append( name )
                     elif name == 'value':
-                        #the column named 'value' always has priority over other named columns
+                        # the column named 'value' always has priority over other named columns
                         rval[ -1 ] = name
                     found_column = True
             if not found_column:
@@ -513,7 +513,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
 
     def get_filename_for_source( self, source, default=None ):
         if source:
-            #if dict, assume is compatible info dict, otherwise call method
+            # if dict, assume is compatible info dict, otherwise call method
             if isinstance( source, dict ):
                 source_repo_info = source
             else:
@@ -529,7 +529,7 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
         return filename
 
     def _add_entry( self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd ):
-        #accepts dict or list of columns
+        # accepts dict or list of columns
         if isinstance( entry, dict ):
             fields = []
             for column_name in self.get_column_name_list():
@@ -557,11 +557,11 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
         if persist and ( not is_error or persist_on_error ):
             filename = self.get_filename_for_source( entry_source )
             if filename is None:
-                #should we default to using any filename here instead?
+                # should we default to using any filename here instead?
                 log.error( "Unable to determine filename for persisting data table '%s' values: '%s'.", self.name, fields )
                 is_error = True
             else:
-                #FIXME: Need to lock these files for editing
+                # FIXME: Need to lock these files for editing
                 log.debug( "Persisting changes to file: %s", filename )
                 try:
                     data_table_fh = open( filename, 'r+b' )
@@ -587,18 +587,16 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                 self.filter_file_fields( filename, values )
             else:
                 log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
-        
+
         self.reload_from_files()
 
     def filter_file_fields( self, loc_file, values ):
         """
         Reads separated lines from file and print back only the lines that pass a filter.
         """
-        separator_char = (lambda c: '<TAB>' if c == '\t' else c)(self.separator)
-
         with open(loc_file) as reader:
             rval = ""
-            for i, line in enumerate( reader ):
+            for line in reader:
                 if line.lstrip().startswith( self.comment_char ):
                     rval += line
                 else:
@@ -607,16 +605,16 @@ class TabularToolDataTable( ToolDataTable, Dictifiable ):
                         fields = line_s.split( self.separator )
                         if fields != values:
                             rval += line
-        
+
         with open(loc_file, 'wb') as writer:
             writer.write(rval)
-        
+
         return rval
 
     def _replace_field_separators( self, fields, separator=None, replace=None, comment_char=None ):
-        #make sure none of the fields contain separator
-        #make sure separator replace is different from comment_char,
-        #due to possible leading replace
+        # make sure none of the fields contain separator
+        # make sure separator replace is different from comment_char,
+        # due to possible leading replace
         if separator is None:
             separator = self.separator
         if replace is None:
