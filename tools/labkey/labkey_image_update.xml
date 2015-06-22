@@ -1,0 +1,21 @@
+<tool id="labkey_image_update" name="Update" version="4.1">
+  <description>Update LabKey Server with results</description>
+
+  <command>java -jar $__tool_directory__/labkeyUpdate.jar 
+  	   --hostname	$hostname
+  	   --table	$table
+  	   --input	$data
+	   --username 	\$LABKEY_USERNAME 
+  	   --password 	\$LABKEY_PASSWORD   
+  </command>
+  <inputs>
+	<param name="data" type="data" label="Data" multiple="false"/>
+	<param name="hostname" type="select" label="Choose target server">
+		<options from_file="labkeyServers.loc">
+			<column name="name" index="0"/>
+			<column name="value" index="1"/>
+		</options>
+	</param>
+    <param name="table" type="text" label="Table"/>
+  </inputs>
+</tool>
