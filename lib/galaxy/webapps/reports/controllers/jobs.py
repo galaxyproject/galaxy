@@ -6,6 +6,7 @@ from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model, util
 from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_, not_, or_
+from math import floor
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import re
@@ -554,7 +555,19 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
-        day_limit = 50
+        time_period = kwd.get('spark_time')
+        if time_period == "days":
+            _time_period = 1.0
+        elif time_period == "weeks":
+            _time_period = 7.0
+        elif time_period == "months":
+            _time_period = 30.0
+        elif time_period == "years":
+            _time_period = 365.0
+        else:
+            time_period = "days"
+            _time_period = 1.0
+        limit = 30
 
         jobs = []
         jobs_per_user = sa.select( ( model.User.table.c.email.label( 'user_email' ),
@@ -568,7 +581,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                       model.User.table.c.email.label( 'user_email' ) ),
                                       from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ] )
 
-        currday = datetime.today().date()
+        currday = date.today()
         trends = dict()
         for job in all_jobs_per_user.execute():
             curr_user = re.sub(r'\W+', '', job.user_email)
@@ -578,13 +591,15 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 day = currday - datetime.date(job.date)
 
             day = day.days
+            container = floor(day / _time_period)
+            container = int(container)
             try:
-                if day < day_limit:
-                    trends[curr_user][day] += 1
+                if container < limit:
+                    trends[curr_user][container] += 1
             except KeyError:
-                trends[curr_user] = [0] * day_limit
-                if day < day_limit:
-                    trends[curr_user][day] += 1
+                trends[curr_user] = [0] * limit
+                if container < limit:
+                    trends[curr_user][container] += 1
 
         for row in jobs_per_user.execute():
             if ( row.user_email is None ):
@@ -600,7 +615,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
-                                    day_limit=day_limit,
+                                    limit=limit,
+                                    time_period=time_period,
                                     trends=trends,
                                     jobs=jobs,
                                     message=message )
@@ -675,7 +691,20 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
-        day_limit = 50
+        time_period = kwd.get('spark_time')
+        if time_period == "days":
+            _time_period = 1.0
+        elif time_period == "weeks":
+            _time_period = 7.0
+        elif time_period == "months":
+            _time_period = 30.0
+        elif time_period == "years":
+            _time_period = 365.0
+        else:
+            time_period = "days"
+            _time_period = 1.0
+
+        limit = 30
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -704,31 +733,26 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 day = currday - datetime.date(job.date)
 
             day = day.days
+            container = floor(day / _time_period)
+            container = int(container)
             try:
-                if day < day_limit:
-                    trends[curr_tool][day] += 1
+                if container < limit:
+                    trends[curr_tool][container] += 1
             except KeyError:
-                trends[curr_tool] = [0] * day_limit
-                if day < day_limit:
-                    trends[curr_tool][day] += 1
+                trends[curr_tool] = [0] * limit
+                if container < limit:
+                    trends[curr_tool][container] += 1
 
         for row in q.execute():
             jobs.append( ( row.tool_id,
                            row.total_jobs ) )
 
-        print("==========jobs==================", file=sys.stderr)
-        for job in jobs:
-            print(re.sub(r'\W+', '', job[0]), file=sys.stderr)
-
-        print("==========trends==================", file=sys.stderr)
-        for item in trends.keys():
-            print(item, file=sys.stderr)
-
         return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
-                                    day_limit=day_limit,
+                                    limit=limit,
+                                    time_period=time_period,
                                     trends=trends,
                                     jobs=jobs,
                                     message=message,
@@ -748,7 +772,20 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
-        day_limit = 50
+        time_period = kwd.get('spark_time')
+        if time_period == "days":
+            _time_period = 1.0
+        elif time_period == "weeks":
+            _time_period = 7.0
+        elif time_period == "months":
+            _time_period = 30.0
+        elif time_period == "years":
+            _time_period = 365.0
+        else:
+            time_period = "days"
+            _time_period = 1.0
+            
+        limit = 30
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
@@ -777,14 +814,17 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             except TypeError:
                 day = currday - datetime.date(job.date)
 
+            #convert day into days/weeks/months/years
             day = day.days
+            container = floor(day / _time_period)
+            container = int(container)
             try:
-                if day < day_limit:
-                    trends[curr_tool][day] += 1
+                if container < limit:
+                    trends[curr_tool][container] += 1
             except KeyError:
-                trends[curr_tool] = [0] * day_limit
-                if day < day_limit:
-                    trends[curr_tool][day] += 1
+                trends[curr_tool] = [0] * limit
+                if day < limit:
+                    trends[curr_tool][container] += 1
         jobs = []
         for row in jobs_in_error_per_tool.execute():
             jobs.append( ( row.total_jobs, row.tool_id ) )
@@ -792,7 +832,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
-                                    day_limit=day_limit,
+                                    limit=limit,
+                                    time_period=time_period,
                                     trends=trends,
                                     jobs=jobs,
                                     message=message,

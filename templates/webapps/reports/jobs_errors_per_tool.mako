@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings, spark_css" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 <%!
     import re
@@ -10,6 +10,7 @@
     ${render_msg( message, 'done' )}
 %endif
 
+${spark_css()}
 ${jqs_style()}
 ${get_css()}
 
@@ -19,7 +20,7 @@ ${get_css()}
         <h4 align="center">Jobs In Error Per Tool</h4>
         <h5 align="center">
             <p>Click Tool ID to view details. Click error number to view job details.</p>
-            <p> Graph goes from present to past(${day_limit} days).</p>
+            Graph goes from present to past for ${make_spark_settings( "jobs", "errors_per_tool", limit, sort_id, order, time_period )}
         </h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
@@ -53,7 +54,7 @@ ${get_css()}
                         <td><a href="${h.url_for( controller='jobs', action='tool_per_month', tool_id=job[1], sort_id='default', order='default' )}">${job[1]}</a></td>
                         <td><a href="${h.url_for( controller='jobs', action='specified_date_handler', operation='specified_tool_in_error', tool_id= job[1] )}">${job[0]}</a></td>
                         %try:
-                            ${make_sparkline(key, trends[key], "line", "/ day")}
+                            ${make_sparkline(key, trends[key], "bar", "/ day")}
                         %except KeyError:
                         %endtry
                         <td id="${key}"></td>
