@@ -131,7 +131,6 @@ class JobConfXmlParserTestCase( unittest.TestCase ):
     def test_macro_expansion( self ):
         self.__with_advanced_config()
         for name in ["foo_small", "foo_medium", "foo_large", "foo_longrunning"]:
-            print self.job_config.destinations.keys()
             assert self.job_config.destinations[ name ]
 
     # TODO: Add job metrics parsing test.

@@ -39,5 +39,6 @@ lib/tool_shed/galaxy_install/tools/{__init__,tool_panel_manager}.py
 lib/tool_shed/repository_types/{__init__,registry,unrestricted}.py
 lib/tool_shed/util/{__init__,repository_content_util,tool_util,web_util,workflow_util}.py
 test/functional/tools
+test/unit/jobs/test_job_configuration.py
 tools/data_source/upload.py
 tools/evolution/codingSnps_filter.py
