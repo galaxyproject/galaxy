@@ -774,7 +774,6 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 day = day.days
                 if day < day_limit:
                     trends[curr_tool][day] += 1
-                
 
         jobs = []
         for row in jobs_in_error_per_tool.execute():
