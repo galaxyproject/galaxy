@@ -433,14 +433,16 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                    order_by=[ _order ] )
 
         # Use to make sparkline
-        all_jobs = sa.select( ( self.select_month(model.Job.table.c.create_time).label('date'), model.Job.table.c.id.label('id') ) )
+        all_jobs = sa.select( ( self.select_month(model.Job.table.c.create_time).label('month'),
+                               self.select_day(model.Job.table.c.create_time).label('day'),
+                               model.Job.table.c.id.label('id') ) )
 
         trends = dict()
         for job in all_jobs.execute():
-            job_day = int(job.date.strftime("%-d")) - 1
-            job_month = int(job.date.strftime("%-m"))
-            job_month_name = job.date.strftime("%B")
-            job_year = job.date.strftime("%Y")
+            job_day = int(job.day.strftime("%-d")) - 1
+            job_month = int(job.month.strftime("%-m"))
+            job_month_name = job.month.strftime("%B")
+            job_year = job.month.strftime("%Y")
             key = str( job_month_name + job_year)
 
             try:
