@@ -196,7 +196,8 @@ class BaseJobRunner( object ):
             job_wrapper,
             include_metadata=include_metadata,
             include_work_dir_outputs=include_work_dir_outputs,
-            container=container
+            container=container,
+            extra_docker_volumes=self.app.config.extra_docker_volumes
         )
 
     def get_work_dir_outputs( self, job_wrapper, job_working_directory=None ):
