@@ -305,7 +305,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         return rval
 
-     @web.expose_api
+    @web.expose_api
     def show_params(self, trans, payload, **kwd):
         """
             show_params( trans, payload )
