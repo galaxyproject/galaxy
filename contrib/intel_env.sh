@@ -33,3 +33,6 @@ export NSLOTS=16
 export PYTHON_EGG_CACHE=.eggs_cache
 export BIOBLEND_REPO_DIR=/cluster_share/Galaxy/api/bioblend
 export FASTQC_PERL_SCRIPT=/opt/Genomics/ohsu/dnapipeline/FastQC/fastqc
+export BCFTOOLS=/home/karthikg/broad/non_variant_db/bcftools/bcftools
+export TILEDB_IMPORT_EXE=/home/karthikg/broad/non_variant_db/variantDB/TileDB/example/bin/gt_example_loader
+export GCC49_PREFIX_PATH=/opt/gcc-4.9.1

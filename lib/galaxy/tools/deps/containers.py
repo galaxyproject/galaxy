@@ -186,7 +186,7 @@ class Container( object ):
         self.job_info = job_info
 
     @abstractmethod
-    def containerize_command(self, command):
+    def containerize_command(self, command, **kwargs):
         """
         Use destination supplied container configuration parameters,
         container_id, and command to build a new command that runs
@@ -196,7 +196,7 @@ class Container( object ):
 
 class DockerContainer(Container):
 
-    def containerize_command(self, command):
+    def containerize_command(self, command, **kwargs):
         def prop(name, default):
             destination_name = "docker_%s" % name
             return self.destination_info.get(destination_name, default)
@@ -218,6 +218,8 @@ class DockerContainer(Container):
             raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
 
         volumes_raw = self.__expand_str(self.destination_info.get("docker_volumes", "$defaults"))
+        if(kwargs and kwargs.get('extra_docker_volumes')):
+            volumes_raw = volumes_raw + ',' + kwargs.get('extra_docker_volumes');
         # TODO: Remove redundant volumes...
         volumes = docker_util.DockerVolume.volumes_from_str(volumes_raw)
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
