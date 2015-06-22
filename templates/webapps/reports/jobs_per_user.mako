@@ -46,7 +46,7 @@ ${get_css()}
                         <td><a href="${h.url_for( controller='jobs', action='user_per_month', email=job[0], sort_id='default', order='default' )}">${job[0]}</a></td>
                         <td>${job[1]}</td>
                         %try:
-                            ${make_sparkline(key, trends[key], "bar", "/ day")}
+                            ${make_sparkline(key, trends[key], "bar", "/ " + time_period[:-1])}
                         %except KeyError:
                         %endtry
                         <td id="${key}"></td>
