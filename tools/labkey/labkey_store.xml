@@ -1,7 +1,7 @@
 <tool id="labkey_store" name="Store" version="4.1">
   <description>a dataset in LabKey</description>
 
-  <command>curl --config $configfile --request POST $hostname/galaxyintegration/${containerPath}/importDataset.view? -s -S -u \${LABKEY_USERNAME}:\${LABKEY_PASSWORD}
+  <command>curl --config $configfile --request POST $hostname/galaxyintegration/${containerPath}/importDataset.view? -s -S -u \${LABKEY_USERNAME}:\${LABKEY_PASSWORD} > $html_outfile
   </command>
 
   <inputs>

@@ -1031,6 +1031,11 @@ use_interactive = True
 # if running many handlers.
 #cache_user_job_count = False
 
+#Extra directories to be mounted inside Docker containers. Note that ALL docker containers
+#will mount these volumes
+#extra_docker_volumes = /opt/Genomics:ro,/cluster_share/Galaxy/database/results:rw
+
+
 # ToolBox filtering
 
 # Modules from lib/galaxy/tools/toolbox/filters/ can be specified in

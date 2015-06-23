@@ -1,6 +1,7 @@
 <tool id="samtools_flagstat" name="Samtools Flagstat" version="1.0.1">
   <requirements>
     <requirement type="package" version="0.1.19">samtools</requirement>
+    <container type="docker">ccc.docker/samtools:latest</container>
   </requirements>
   <description>provides simple stats on BAM files</description>
   <command>samtools flagstat "$input1" > "$output1"

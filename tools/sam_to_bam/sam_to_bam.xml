@@ -2,6 +2,7 @@
   <description>converts SAM format to BAM format</description>
   <requirements>
     <requirement type="package" version="0.1.19">samtools</requirement>
+    <container type="docker">ccc.docker/samtools:latest</container>
   </requirements>
   <command interpreter="python">
     sam_to_bam.py

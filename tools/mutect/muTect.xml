@@ -1,7 +1,7 @@
 <tool id="muTect" name="muTect" version="1.0.0">
     <description>identify somatic point mutations</description>
     <requirements>
-        <container type="docker">mutect:1.1.7</container>
+        <container type="docker">ccc.docker/mutect:latest</container>
     </requirements>
     <command interpreter="python">muTect.py
 --reference-sequence $reference

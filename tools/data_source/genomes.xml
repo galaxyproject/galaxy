@@ -15,8 +15,11 @@
 		#if $primarySite
 			 --filter "specimen_id/project_code/PrimarySite~eq=$primarySite"
 		#end if
-		#if $specimenType 
-			 --filter "specimen_id/specimenType~eq=$specimenType"
+        #if $diseaseState
+            --filter "specimen_id/disease_state~eq=$diseaseState"
+        #end if
+		#if $specimenType
+			 --filter "specimen_id/specimen_type~eq=$specimenType"
 		#end if
 		#if $gender 
 			 --filter "specimen_id/donor_gender~eq=$gender"
@@ -51,6 +54,11 @@
 			<option value="Pancreas">Pancreas</option>
 			<option value="Prostate">Prostate</option>
 			<option value="Stomach">Stomach</option>
+        </param>
+        <param type="select" name="diseaseState" label="Disease State">
+            <option value="">All</option>
+            <option value="tumor">Tumor</option>
+            <option value="normal">Normal</option>
         </param>
         <param type="select" name="specimenType" label="Specimen Type">
             <option value="">All</option>
