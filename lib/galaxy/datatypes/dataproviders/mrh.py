@@ -16,8 +16,9 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
     """
     settings = {
         'start1'         : 'long',
+        'stop1'          : 'long',
         'start2'         : 'long',
-        'window_size'    : 'long',
+        'stop2'          : 'long',
         'min_resolution' : 'long',
         'max_resolution' : 'long',
         'header'         : 'bool',
@@ -25,17 +26,20 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         'transpose'      : 'bool',
     }
 
-    def __init__( self, source, start1=0, start2=0, window_size=0, min_resolution=0, max_resolution=5120000,
+    def __init__( self, source, start1=0, stop1=0, start2=0, stop2=0, min_resolution=0, max_resolution=5120000,
                   header=False, trans=False, transpose=False, **kwargs ):
         """
         :param start1: starting bp in sequence 1
         :type start1: long
 
+        :param stop1: stopping bp in sequence 1
+        :type stop1: long
+
         :param start2: starting bp in sequence 2
         :type start2: long
 
-        :param window_size: number of bp to compare
-        :type window_size: long
+        :param stop2: stopping bp in sequence 2
+        :type stop2: long
 
         :param min_resolution: largest bin size to return
         :type min_resolution: long
@@ -55,20 +59,20 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         super( MrhSquareDataProvider, self ).__init__( source, **kwargs )
         self.start1 = start1
         self.start2 = start2
-        self.width = window_size
+        self.stop1 = stop1
+        self.stop2 = stop2
         self.minres = min_resolution
         self.maxres = max_resolution
         self.header_only = header
         self.trans = trans
         self.transpose = transpose
 
-        if not trans and start1 > start2:
-            self.transpose = True
-        if self.transpose:
-            self.start1, self.start2 = self.start2, self.start1
-        self.stop1 = self.start1 + self.width
-        self.stop2 = self.start2 + self.width
-        self.overlap = self.stop1 > self.start2
+        if not trans and (stop1 > start2 or stop2 > start1):
+            self.overlap = True
+        else:
+            self.overlap = False
+        self.window1 = self.stop1 - self.start1
+        self.window2 = self.stop2 - self.start2
         # print self.start1, self.stop1
         # print self.start2, self.stop2
         # print self.width, self.maxres
@@ -138,13 +142,55 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
     def paint_cis_canvas( self, infile ):
         """
         """
-        outdata = []
+        if ( min( self.stop1, self.stop2 ) <= self.header['start'] or
+             max( self.start1, self.start2 ) >= self.header['stop'] ):
+            return []
         start_pos1 = max( 0, ( self.start1 - self.header['start'] ) / self.header['lres'] )
         end_pos1 = min( self.header['n'], ( self.stop1 - self.header['start'] ) / self.header['lres'] + 1 )
         start_pos2 = max( 0, ( self.start2 - self.header['start'] ) / self.header['lres'] )
         end_pos2 = min( self.header['n'], ( self.stop2 - self.header['start'] ) / self.header['lres'] + 1 )
-        resolution = self.header['lres']
+        if self.overlap:
+            outdata = []
+            mid_coord = min(self.stop1, self.stop2)
+            mid_start = min( self.header['n'], ( mid_coord - self.header['start'] ) / self.header['lres'] )
+            mid_stop = min( self.header['n'], ( mid_coord - self.header['start'] ) / self.header['lres'] ) + 1
+            if self.start1 <= self.start2:
+                self.reverse = False
+                self.eff_start1, self.eff_start2 = self.start1, self.start2
+                self.eff_stop1, self.eff_stop2 = self.stop1, self.stop2
+                outdata += self.paint_cis_upper_level( infile, start_pos1, mid_stop, start_pos2, mid_stop )
+            else:
+                self.reverse = True
+                self.eff_start2, self.eff_start1 = self.start1, self.start2
+                self.eff_stop2, self.eff_stop1 = self.stop1, self.stop2
+                outdata += self.paint_cis_upper_level( infile, start_pos2, mid_stop, start_pos1, mid_stop )
+            if self.stop1 > mid_coord:
+                self.revese = True
+                self.eff_start2, self.eff_start1 = self.start1, self.start2
+                self.eff_stop2, self.eff_stop1 = self.stop1, self.stop2
+                outdata += self.paint_cis_upper_level( infile, start_pos2, end_pos2, mid_start, end_pos1 )
+            elif self.stop2 > mid_coord:
+                self.reverse = False
+                self.eff_start1, self.eff_start2 = self.start1, self.start2
+                self.eff_stop1, self.eff_stop2 = self.stop1, self.stop2
+                outdata += self.paint_cis_upper_level( infile, start_pos1, end_pos1, mid_start, end_pos2 )
+        elif self.start2 < self.start1:
+            self.reverse = True
+            self.eff_start2, self.eff_start1 = self.start1, self.start2
+            self.eff_stop2, self.eff_stop1 = self.stop1, self.stop2
+            outdata = self.paint_cis_upper_level( infile, start_pos2, end_pos2, start_pos1, end_pos1 )
+        else:
+            self.reverse = False
+            self.eff_start1, self.eff_start2 = self.start1, self.start2
+            self.eff_stop1, self.eff_stop2 = self.stop1, self.stop2
+            outdata = self.paint_cis_upper_level( infile, start_pos1, end_pos1, start_pos2, end_pos2 )
+        return outdata
 
+    def paint_cis_upper_level( self, infile, start_pos1, end_pos1, start_pos2, end_pos2 ):
+        """
+        """
+        outdata = []
+        resolution = self.header['lres']
         for i in range( start_pos1, end_pos1 ):
             # Find position in file for data with 'i' as upstream interaction
             infile.seek( self.header['offset'] + ( i * ( self.header['n'] - 1 ) - ( i * ( i - 1 ) ) / 2 + max( i, start_pos2 ) ) * 4 )
@@ -170,11 +216,13 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
                     else:
                         if resolution <= self.minres and valid < self.header['zoom2']:
                             outdata.append( [start1, start2, resolution, data[k]] )
-                            if ( self.overlap and start1 != start2 and start2 + resolution > self.start1 and
-                                 start1 < self.stop2 ):
+                            if self.overlap and start2 + resolution > self.eff_start1 and start1 < self.eff_stop2:
                                 outdata.append( [start2, start1, resolution, data[k]] )
                     if valid > 0:
                         outdata += new_outdata
+        if self.reverse:
+            for i in range( len( outdata ) ):
+                outdata[i] = [ outdata[i][1], outdata[i][0] ] + outdata[i][2:]
         return outdata
 
     def paint_cis_lower_level( self, infile, index, resolution, start1, start2 ):
@@ -198,8 +246,8 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
                     if not math.isnan( data[k] ):
                         start1b = start1 + i * resolution
                         start2b = start2 + j * resolution
-                        if ( start1b > self.stop1 or start1b + resolution < self.start1 or
-                             start2b > self.stop2 or start2b + resolution < self.start2 ):
+                        if ( start1b >= self.eff_stop1 or start1b + resolution <= self.eff_start1 or
+                             start2b >= self.eff_stop2 or start2b + resolution <= self.eff_start2 ):
                             valid += 1
                         else:
                             if indices is not None and indices[k] != -1:
@@ -214,8 +262,8 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
                                 else:
                                     if new_valid < self.header['zoom2']:
                                         outdata.append( [start1b, start2b, resolution, data[k]] )
-                                        if ( self.overlap and start2b + resolution > self.start1 and
-                                             start1b < self.stop2 ):
+                                        if ( self.overlap and start2b + resolution > self.eff_start1 and
+                                             start1b < self.eff_stop2 ):
                                             outdata.append( [start2b, start1b, resolution, data[k]] )
                             if new_valid > 0:
                                 outdata += new_outdata
@@ -231,8 +279,8 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
                 if not math.isnan( data[i] ):
                     start1b = start1 + ( i / self.header['zoom'] ) * resolution
                     start2b = start2 + ( i % self.header['zoom'] ) * resolution
-                    if ( start1b > self.stop1 or start1b + resolution < self.start1 or
-                         start2b > self.stop2 or start2b + resolution < self.start2 ):
+                    if ( start1b > self.eff_stop1 or start1b + resolution < self.eff_start1 or
+                         start2b > self.eff_stop2 or start2b + resolution < self.eff_start2 ):
                         valid += 1
                     else:
                         if indices is not None and indices[i] != -1:
@@ -242,7 +290,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
                             new_valid = 0
                         if resolution <= self.minres and new_valid < self.header['zoom2']:
                             outdata.append( [start1b, start2b, resolution, data[i]] )
-                            if self.overlap and start2b + resolution > self.start1 and start1b < self.stop2:
+                            if self.overlap and start2b + resolution > self.eff_start1 and start1b < self.eff_stop2:
                                 outdata.append( [start2b, start1b, resolution, data[i]] )
                         if new_valid > 0:
                             outdata += new_outdata
@@ -319,7 +367,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
     def interpolate_square( self, square ):
         """
         """
-        if self.width == 0:
+        if self.start1 == self.stop1 or self.start2 == self.stop2:
             return
 
         square_dict = {
