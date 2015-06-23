@@ -34,7 +34,8 @@ class Test_BaseDataProvider( BaseTestCase ):
             provider = self.provider_class( source,
                 start1=3500000,
                 start2=3500000,
-                window_size=50000,
+                stop1=3550000,
+                stop2=3550000,
                 min_resolution=50001,
                 max_resolution=5000
             )
