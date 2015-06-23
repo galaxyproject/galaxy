@@ -273,15 +273,7 @@ class Msp( Text ):
         return next_line != None and next_line.startswith(prefix)
 
     def sniff(self, filename):
-        """ Determines whether the file is a NIST MSP output file. 
-
-        >>> fname = get_test_fname('test.msp')  
-        >>> Msp().sniff(fname)
-        True
-        >>> fname = get_test_fname('test.mzXML')
-        >>> Msp().sniff(fname)
-        False
-        """
+        """ Determines whether the file is a NIST MSP output file. """
         with open(filename, 'r') as contents:
             return Msp.next_line_starts_with(contents, "Name:") and Msp.next_line_starts_with(contents, "MW:")
 
@@ -353,15 +345,7 @@ class Ms2(Text):
     file_ext = "ms2"
     
     def sniff(self, filename):
-        """ Determines whether the file is a valid ms2 file. 
-
-        >>> fname = get_test_fname('test.msp')  
-        >>> Ms2().sniff(fname)
-        False
-        >>> fname = get_test_fname('test.ms2')
-        >>> Ms2().sniff(fname)
-        True
-        """
+        """ Determines whether the file is a valid ms2 file. """
 
         with open(filename, 'r') as contents:
             header_lines = []
