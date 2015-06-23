@@ -17,6 +17,7 @@ import subprocess
 import sys
 import traceback
 from galaxy import model, util
+from galaxy.util.xml_macros import load
 from galaxy.datatypes import metadata
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
@@ -129,7 +130,7 @@ class JobConfiguration( object ):
         # Initialize the config
         job_config_file = self.app.config.job_config_file
         try:
-            tree = util.parse_xml(job_config_file)
+            tree = load(job_config_file)
             self.__parse_job_conf_xml(tree)
         except IOError:
             log.warning( 'Job configuration "%s" does not exist, using legacy'
