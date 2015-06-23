@@ -288,7 +288,7 @@ class Msp(Text):
         """ Determines whether the file is a NIST MSP output file."""
         with open(filename, 'r') as f:
             begin_contents = f.read(1024)
-            if not in "\n" begin_contents:
+            if begin_contents not in "\n":
                 return False
             lines = begin_contents.splitlines()
             if len(lines) < 2:
