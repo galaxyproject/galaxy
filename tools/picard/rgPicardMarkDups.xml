@@ -1,4 +1,7 @@
 <tool name="Picard - Mark Duplicates" id="rgPicardMarkDups" version="1.110.0">
+    <requirements>
+        <container type="docker">ccc.docker/picard:latest</container>
+    </requirements>
   <command interpreter="python">
    picard_wrapper.py
    #for $i, $input_file in enumerate( $input_bams ):
