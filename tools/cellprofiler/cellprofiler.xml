@@ -17,9 +17,6 @@
             <option value="bcc">Brenden Colson Center</option>
             <option value="corl">Corless Pipeline</option>
             <option value="gray">Gray Lab</option>
-            <option value="yant">Yantasee Lab - IF</option>
-	    <option value="yant2">Yantasee Lab - Blood Vessel</option>
-            <option value="taka">Tsujikawa Lab</option>
         </param>
     </inputs>
     <outputs>
@@ -34,17 +31,11 @@
 
 This tool will run one of the 6 cellprofiler pipeline's aqcuired from OHSU.
 
-*Brenden Colson Center*: Evaluate # of nuclei appearing within enlarged ducts.
+*Brenden Colson Center*: Nuclei Count and Stain Area for Epitheial, Stroma, and Endocrine Cells 
 
 *Gray Lab*: 		High Throughput Imaging
 
 *Corless Lab*: 		Tumor Prevalence Estimation
-
-*Yantasee Lab*: 	Compares Her2+ Cells vs Total Cells
-
-*Yantasee Lab*:		Quantify percentage of image occupied by blood vessels		
-
-*Tsujikawa Lab*: 	Provides flow cytometry data for aligned images; Differentiates immune cells against cancer cells
 
     </help>
 </tool>

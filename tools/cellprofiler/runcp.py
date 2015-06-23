@@ -24,16 +24,15 @@ if(opts.pipeline == 'bcc'):
 	#the following for loop creates a symlink from galaxy's internal .dat file to the original filename (.tiff/png) that the pipeline expects 
 	for filename,link in zip(opts.inputs,opts.originalnames):
 		subprocess.call('ln -s '+filename+' '+tempdirectory+'/'+link, shell=True)
-	subprocess.call('ln -s '+cp_path+'/bcc/* '+tempdirectory, shell=True)
+	subprocess.call('ln -s '+cp_path+'/BCC_new/* '+tempdirectory, shell=True)
 	os.chdir(tempdirectory)
 	subprocess.call('python createFileList.py '+tempdirectory,shell=True)
-	subprocess.call('python makeHeadless.py',shell=True)
-	subprocess.call('cellprofiler --do-not-fetch -c -p headless.cppipe -i '+tempdirectory+' -o '+tempdirectory+'/output --data-file imageList.csv',shell=True,stdout=DEVNULL,stderr=DEVNULL)
-	subprocess.call('python curateTSV.py '+opts.output,shell=True)
+	subprocess.call('python fixOutput.py',shell=True)
+	subprocess.call('cellprofiler --do-not-fetch -c -p headless.cppipe -i '+tempdirectory+' -o '+tempdirectory+'/output --file-list=filelist.txt',shell=True,stdout=DEVNULL,stderr=DEVNULL)
+	subprocess.call('cp output/output.csv '+opts.output,shell=True)
 	subprocess.call('rm headless.cppipe',shell=True)
-	subprocess.call('python removeSymLinks.py',shell=True)
 	os.chdir(originalpath)
-	os.chdir(cp_path + '/bcc/')
+	os.chdir(cp_path + '/BCC_new/')
 	subprocess.call('rm -rf '+tempdirectory,shell=True)
 elif(opts.pipeline == 'corl'):
 	#create output file within temporary subdirectory
