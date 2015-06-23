@@ -17,11 +17,13 @@ import json
 import pandas as pd
 import requests
 import sys
+import time
 import os.path
+import httplib
 
 omero_login_payload = {
-    "username":  "root",
-    "password":  "omero",
+    "username":  "client",
+    "password":  "bigdata",
     "server":    "1"
 }
 
@@ -43,7 +45,11 @@ def login(host=None):
         except requests.exceptions.ChunkedEncodingError:
             print("Chunked Encoding Error: {0}".format(host))
             time.sleep(1.0)
-
+	
+	except httplib.IncompleteRead:
+	    print("Incomplete Read with OMERO Server: {0}".format(host))
+	    time.sleep(1.0)
+    
     return session
 
 
