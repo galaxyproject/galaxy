@@ -419,8 +419,13 @@ class ToolEvaluator( object ):
             # capture and log parsing errors
             global_tool_errors.add_error(self.tool.config_file, "Building Command Line", e)
             raise e
+        try:
+            self.__build_environment_variables()
+        except Exception, e:
+            global_tool_errors.add_error(self.tool.config_file, "Building Environment Variables", e)
+            raise e
 
-        return self.command_line, self.extra_filenames
+        return self.command_line, self.extra_filenames, self.environment_variables
 
     def __build_command_line( self ):
         """
@@ -469,14 +474,28 @@ class ToolEvaluator( object ):
             else:
                 fd, config_filename = tempfile.mkstemp( dir=directory )
                 os.close( fd )
-            f = open( config_filename, "w" )
-            f.write( fill_template( template_text, context=param_dict ) )
-            f.close()
-            # For running jobs as the actual user, ensure the config file is globally readable
-            os.chmod( config_filename, 0644 )
+            self.__write_workdir_file( config_filename, template_text, param_dict )
             self.__register_extra_file( name, config_filename )
             config_filenames.append( config_filename )
         return config_filenames
+
+    def __build_environment_variables( self ):
+        param_dict = self.param_dict
+        environment_variables = []
+        for environment_variable_def in self.tool.environment_variables:
+            directory = self.local_working_directory
+            environment_variable = environment_variable_def.copy()
+            environment_variable_template = environment_variable_def["template"]
+            fd, config_filename = tempfile.mkstemp( dir=directory )
+            os.close( fd )
+            self.__write_workdir_file( config_filename, environment_variable_template, param_dict )
+            config_file_basename = os.path.basename( config_filename )
+            environment_variable["value"] = "`cat %s`" % config_file_basename
+            environment_variable["raw"] = True
+            environment_variables.append(environment_variable)
+
+        self.environment_variables = environment_variables
+        return environment_variables
 
     def __build_param_file( self ):
         """
@@ -500,6 +519,14 @@ class ToolEvaluator( object ):
             return param_filename
         else:
             return None
+
+    def __write_workdir_file( self, config_filename, template, context ):
+        value = fill_template( template, context=context )
+        f = open( config_filename, "w" )
+        f.write( value )
+        f.close()
+        # For running jobs as the actual user, ensure the config file is globally readable
+        os.chmod( config_filename, 0644 )
 
     def __register_extra_file( self, name, local_config_path ):
         """

@@ -1,0 +1,24 @@
+<tool id="environment_variables" name="environment_variables" version="1.0.0">
+    <environment_variables>
+        <environment_variable name="INTVAR">$inttest</environment_variable>
+    </environment_variables>
+    <command>
+        echo "\$INTVAR" > $out_file1
+    </command>
+    <inputs>
+        <param name="inttest" value="1" type="integer" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="inttest" value="2" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="2" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
