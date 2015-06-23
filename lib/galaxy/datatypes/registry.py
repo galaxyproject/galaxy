@@ -21,7 +21,6 @@ import chrominfo
 import binary
 import assembly
 import ngsindex
-import proteomics
 import graph
 import text
 import msa
