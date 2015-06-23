@@ -1,0 +1,273 @@
+<tool id="pindel" name="pindel" version="0.0.1">
+    <description></description>
+
+    <requirements>
+        <container type="docker">pindel:0.2.5a7</container>
+    </requirements>
+
+    <command interpreter="python">
+        pindel.py
+        <!-- required -->
+        -r $inputReferenceFile
+        -R $referenceName
+#for $i, $s in enumerate($inputs):
+        -b $s.inputBamFile
+        -t $s.sampleTag
+        -bi $s.inputBamFile.metadata.bam_index
+#if $s.defineInsertSize.manual_define == "yes":
+        -s $s.defineInsertSize.insertSize
+#end if
+#end for
+        -o1 $outputRawFile
+        -o2 $outputVcfFile
+
+        --number_of_threads \${GALAXY_SLOTS:-4}
+        <!-- Parameters affecting which structural variants are reported -->
+        #if str($options_which.options_which_selector) == "yes":
+            #if $options_which.reportInversions:
+                --report_inversions
+            #end if
+            #if $options_which.reportDuplications:
+                --report_duplications
+            #end if
+            #if $options_which.reportLongInsertions:
+                --report_long_insertions
+            #end if
+            #if $options_which.reportBreakpoints:
+                --report_breakpoints
+            #end if
+            #if $options_which.report_only_close_mapped_reads:
+                -S
+            #end if
+            #if $options_which.report_interchromosomal_events:
+                --report_interchromosomal_events
+            #end if
+                -v $options_which.min_inversion_size
+            #if str($options_which.options_DD.options_DD_selector) == "yes":
+                #if $options_which.options_DD.report_close_mapped_reads:
+                    -s
+                #end if
+                -q
+                --MAX_DD_BREAKPOINT_DISTANCE $options_which.options_DD.MAX_DD_BREAKPOINT_DISTANCE
+                --MAX_DISTANCE_CLUSTER_READS $options_which.options_DD.MAX_DISTANCE_CLUSTER_READS
+                --MIN_DD_CLUSTER_SIZE $options_which.options_DD.MIN_DD_CLUSTER_SIZE
+                --MIN_DD_BREAKPOINT_SUPPORT $options_which.options_DD.MIN_DD_BREAKPOINT_SUPPORT
+                --MIN_DD_MAP_DISTANCE $options_which.options_DD.MIN_DD_MAP_DISTANCE
+                #if $options_which.options_DD.DD_REPORT_DUPLICATION_READS:
+                    --DD_REPORT_DUPLICATION_READS
+                #end if
+            #end if
+        #end if
+
+            <!-- Parameters affecting sensitivity and selectivity -->
+        #if str($options_sensel.options_sensel_selector) == "yes":
+            -d $options_sensel.min_num_matched_bases
+            -x $options_sensel.max_range_index
+            -a $options_sensel.additional_mismatch
+            -m $options_sensel.min_perfect_match_around_BP
+            --sequencing_error_rate $options_sensel.sequencing_error_rate
+            -u $options_sensel.maximum_allowed_mismatch_rate
+            --sensitivity $options_sensel.sensitivity
+            -n $options_sensel.NM
+            #if $options_sensel.NormalSamples:
+                -N
+            #end if
+            -B $options_sensel.balance_cutoff
+            -A $options_sensel.anchor_quality
+            -M $options_sensel.minimum_support_for_event
+        #end if
+
+            <!-- Miscellaneous parameters -->
+        #if str($options_miscellaneous.options_miscellaneous_selector) == "yes":
+            #if $options_miscellaneous.breakdancer.checking == "yes":
+                --breakdancer $options_miscellaneous.breakdancer.break_input
+            #end if
+
+            #if $options_miscellaneous.IndelCorrection:
+                -C
+            #end if
+
+            #if $options_miscellaneous.input_SV_Calls_for_assembly.checking == "yes":
+                -z options_miscellaneous.$input_SV_Calls_for_assembly.input_SV_Calls
+            #end if
+
+            #if str($options_miscellaneous.exclude_list) != "None":
+                --exclude $options_miscellaneous.exclude_list
+            #end if
+            #if str($options_miscellaneous.include_list) != "None":
+                --include $options_miscellaneous.include_list
+            #end if
+
+        #end if
+
+    </command>
+
+
+    <inputs>
+        <!-- required -->
+        <param format="fasta" name="inputReferenceFile" type="data" label="reference file" help="" />
+        <param name="referenceName" type="text" label="Reference Name" help="Name of the Reference Genome" value="HG19" />
+        <repeat name="inputs" title="Inputs">
+            <param format="bam" name="inputBamFile" type="data" label="bam file" help="" />
+            <param name="sampleTag" type="text" label="Tag" help="tag for this sample" value="sample" />
+            <conditional name="defineInsertSize">
+                <param name="manual_define" type="select" label="Manually Define Insert Size">
+                    <option value="yes">yes</option>
+                    <option value="no" selected="True">no</option>
+                </param>
+                <when value="yes">
+                    <param name="insertSize" type="integer" label="Insert size" help="insert size of the reads" value="" />
+                </when>
+            </conditional>
+        </repeat>
+        <!-- optional -->
+
+        <!-- Parameters affecting runtime and memory usage -->
+        <conditional name="options_runtime">
+            <param name="options_runtime_selector" type="select" label="Display paramters affecting runtime and memory usage">
+                <option value="yes" selected="True">yes</option>
+                <option value="no">no</option>
+            </param>
+            <when value="yes">
+                <!-- param name="number_of_procs" type="integer" label="Number of Procs" help="Number of chrome processes" value="4" / -->
+                <!-- param name="number_of_threads" type="integer" label="Number of threads" help="the number of threads Pindel will use" value="1" / -->
+                <param name="window_size" type="integer" value="5" label="Window size" help="for saving RAM, divides the reference in bins of X million bases and only analyzes the reads that belong in the current bin, (default=5 million)" />
+            </when>
+            <when value="no">
+                <!-- Do nothing here -->
+            </when>
+        </conditional>
+
+
+        <!-- Parameters affecting which structural variants are reported -->
+        <conditional name="options_which">
+            <param name="options_which_selector" type="select" label="Display paramters affecting which structural variants are reported">
+                <option value="yes" selected="True">yes</option>
+                <option value="no">no</option>
+            </param>
+            <when value="yes">
+                <param name="reportInversions" type="boolean" label="Report inversions" checked="true"/>
+                <param name="reportDuplications" type="boolean" label="Report duplications" checked="true"/>
+                <param name="reportLongInsertions" type="boolean" label="Report long insertions" checked="true"/>
+                <param name="reportBreakpoints" type="boolean" label="Report breakpoints" checked="true"/>
+                <param name="report_only_close_mapped_reads" type="boolean" label="Report only close mapped reads" help="do not search for SVs, only report reads of which only one end (the one closest to the mapped read of the paired-end read) could be mapped (the output file can then be used as an input file for another run of pindel, which may save size if you need to transfer files)." checked="false" />
+                <param name="report_interchromosomal_events" type="boolean" label="Report interchromosomal events" help="search for interchromosomal events. Note: will require the computer to have at least 4 GB of memory" checked="false" />
+                <param name="min_inversion_size" type="integer" value="50" label="min inversion size" help="only report inversions greater than this number of bases" />
+                <conditional name="options_DD">
+                    <param name="options_DD_selector" type="select" label="Display paramters affecting Dispersed Duplications">
+                        <option value="yes">yes</option>
+                        <option value="no" selected="True">no</option>
+                    </param>
+                    <when value="yes">
+                        <!-- <param name="detect_DD" type="boolean" label="Flag indicating whether to detect dispersed duplications" checked="false" /> -->
+                        <param name="MAX_DD_BREAKPOINT_DISTANCE" type="integer" value="350" label="MAX DD BREAKPOINT DISTANCE" help="Maximum distance between dispersed duplication breakpoints to assume they refer to the same event" />
+                        <param name="MAX_DISTANCE_CLUSTER_READS" type="integer" value="100" label="MAX DISTANCE CLUSTER READS" help="Maximum distance between reads for them to provide evidence for a single breakpoint for dispersed duplications" />
+                        <param name="MIN_DD_CLUSTER_SIZE" type="integer" value="3" label="MIN DD CLUSTER SIZE" help="Minimum number of reads needed for calling a breakpoint for dispersed duplications" />
+                        <param name="MIN_DD_BREAKPOINT_SUPPORT" type="integer" value="3" label="MIN DD BREAKPOINT SUPPORT" help="Minimum number of split reads for calling an exact breakpoint for dispersed duplications" />
+                        <param name="MIN_DD_MAP_DISTANCE" type="integer" value="8000" label="MIN DD MAP DISTANCE" help="Minimum mapping distance of read pairs for them to be considered discordant" />
+                        <param name="DD_REPORT_DUPLICATION_READS" type="boolean" label="DD REPORT DUPLICATION READS" checked="false" help="Report discordant sequences and positions for mates of reads mapping inside dispersed duplications"/>
+                        <param name="report_close_mapped_reads" type="boolean" label="Report close mapped reads" help="report reads of which only one end (the one closest to the mapped read of the paired-end read) could be mapped." checked="false" />
+                    </when>
+                    <when value="no">
+                        <!-- Do nothing here -->
+                    </when>
+                </conditional>
+            </when>
+            <when value="no">
+                <!-- Do nothing here -->
+            </when>
+        </conditional>
+
+
+        <!-- Parameters affecting sensitivity and selectivity -->
+        <conditional name="options_sensel">
+            <param name="options_sensel_selector" type="select" label="Display paramters affecting runtime and memory usage">
+                <option value="yes">yes</option>
+                <option value="no" selected="True">no</option>
+            </param>
+            <when value="yes">
+                <param name="sequencing_error_rate" type="float" value="0.01" label="Sequencing error rate" help="the expected fraction of sequencing errors"/>
+
+                <param name="sensitivity" type="float" value="0.95" label="Sensitivity" help="Increasing this parameter to say 0.99 will increase the sensitivity of pindel though you may get more false positives" />
+                <param name="balance_cutoff" type="integer" value="0" label="balance cutoff" help="the number of bases of a SV above which a more stringent filter is applied which demands that both sides of the SV are mapped with sufficiently long strings of bases" />
+
+                <param name="anchor_quality" type="integer" value="0" label="anchor quality" help="the minimal mapping quality of the reads Pindel uses as anchor If you only need high confident calls, set to 30 or higher" />
+                <param name="maximum_allowed_mismatch_rate" type="float" value="0.02" label="Maximum allowed mismatch rate" help="Only reads with more than this fraction of mismatches than the reference genome will be considered as harboring potential SVs." />
+                <param name="max_range_index" type="integer" value="4" label="the maximum size of structural variations to be detected" help="the higher this number, the greater the number of SVs reported, but the  computational cost and memory requirements increase, as does the rate of false positives. 1=128, 2=512, 3=2,048, 4=8,092, 5=32,368, 6=129,472, 7=517,888, 8=2,071,552, 9=8,286,208." />
+                <param name="NM" type="integer" value="2" label="NM" help="the minimum number of edit distance between reads and reference genome. reads at least NM edit distance (>= NM) will be realigned" />
+                <param name="additional_mismatch" type="integer" value="1" label="additional mismatch" help="Pindel will only map part of a read to the reference genome if there are no other candidate positions with no more than the specified number of mismatches position. The bigger the value, the more accurate but less sensitive (minimum value 1)" />
+                <param name="min_perfect_match_around_BP" type="integer" value="3" label="min perfect match around BP" help="at the point where the read is split into two, there should at least be this number of perfectly matching bases between read and reference" />
+                <param name="min_num_matched_bases" type="integer" value="30" label="min num matched bases" help="only consider reads as evidence if they map with more than X bases to the reference" />
+                <param name="NormalSamples" type="boolean" label="Normal Samples" help="Turn on germline filtering, less sensistive and you may miss somatic calls" checked="false" />
+                <param name="minimum_support_for_event" type="integer" value="3" label="minimum support for event" help="Pindel only calls events which have this number or more supporting reads" />
+            </when>
+            <when value="no">
+                <!-- Do nothing here -->
+            </when>
+        </conditional>
+
+
+        <!-- Miscellaneous parameters -->
+        <conditional name="options_miscellaneous">
+            <param name="options_miscellaneous_selector" type="select" label="Display miscellaneous paramters">
+                <option value="yes">yes</option>
+                <option value="no" selected="True">no</option>
+            </param>
+            <when value="yes">
+                <conditional name="breakdancer">
+                    <param name="checking" type="select" label="use calls from an other method?">
+                        <option value="yes">Yes</option>
+                        <option value="no" selected="True">No</option>
+                    </param>
+                    <when value="yes">
+                        <param name="break_input" type="data" format="tabular" label="variant call file" help="Pindel is able to use calls from other SV methods such as BreakDancer to further increase sensitivity and specificity. BreakDancer result or calls from any methods must in the format: ChrA LocA stringA ChrB LocB stringB other" />
+                    </when>
+                    <when value="no" />
+                </conditional>
+
+            <param name="IndelCorrection" type="boolean" label="Indel Correction" help="search for consensus indels to corret contigs" checked="false" />
+
+            <conditional name="input_SV_Calls_for_assembly">
+                <param name="checking" type="select" label="input SV Calls for assembly ?" >
+                    <option value="yes">Yes</option>
+                    <option value="no" selected="True">No</option>
+                </param>
+                <when value="yes">
+                    <param name="input_SV_Calls" type="data" format="tabular" label="variant call file" help="A filename of a list of SV calls for assembling breakpoints
+                        Types: DEL, INS, DUP, INV, CTX and ITX
+                        File format: Type chrA posA Confidence_Range_A chrB posB
+                        Confidence_Range_B
+                        Example: DEL chr1 10000 50 chr2 20000 100" />
+                </when>
+                <when value="no" />
+            </conditional>
+            <param name="exclude_list" type="data" format="bed" label="Exclude File" help="Locations to exclude, like centromeres" optional="True"/>
+            <param name="include_list" type="data" format="bed" label="Include File" help="Only process genomic regions from this list." optional="True"/>
+
+            <!-- <param name="genotyping" type="boolean" truevalue="true" falsevalue="false" checked="no" label="genotyping" help="genotype variants if -i is also used." /> -->
+            </when>
+            <when value="no">
+                <!-- Do nothing here -->
+            </when>
+        </conditional>
+
+    </inputs>
+
+    <outputs>
+        <data format="tabular" name="outputRawFile" />
+        <data format="vcf" name="outputVcfFile" />
+    </outputs>
+
+    <stdio>
+      <exit_code range="1:" level="fatal" />
+    </stdio>
+    
+    <help>
+        <!--
+        help="Pindel only reports reads if they can be fit around an event within a certain number of mismatches. If the fraction of sequencing errors is 0.01, (so we'd expect a total error rate of 0.011 since on average 1 in 1000 bases is a SNP) and pindel calls a deletion, but there are 4 mismatched bases in the new fit of the pindel read (100 bases) to the reference genome, Pindel would calculate that with an error rate of 0.01 (=0.011 including SNPs) the chance that there are 0, 1 or 2 mismatched bases in the reference genome is 90%. Setting -E to .90 (=90%) will thereforethrow away all reads with 3 or more mismatches, even though that means that you throw away 1 in 10 valid reads. Increasing this parameter to say 0.99 will increase the sensitivity of pindel though you may get more false positives, decreasing the parameter ensures you only get very good matches but pindel may not find as many events. (default 0.95)" -->
+    </help>
+
+    <tests>
+    </tests>
+
+</tool>

@@ -1,0 +1,78 @@
+<tool id="oncotator" name="Oncotator" version="v1.5.0.0">
+    <description>variant annotation tool</description>
+    <requirements>
+        <requirement type="package">bcbio-gff</requirement>
+        <requirement type="package">biopython</requirement>
+        <requirement type="package">cython</requirement>
+        <requirement type="package">nose</requirement>
+        <requirement type="package">numpy</requirement>
+        <requirement type="package">pandas</requirement>
+        <requirement type="package">shove</requirement>
+        <requirement type="package">sqlalchemy</requirement>
+        <requirement type="package" version="0.7.5">pysam</requirement>
+        <requirement type="package">python-memchached</requirement>
+        <requirement type="package">pyvcf</requirement>
+    </requirements>
+    <command interpreter="python">oncotator.py
+        ###if $datasource
+        --db-dir "\${ONCOTATOR_DB_SOURCE}" ##$datasource
+        ###end if
+        #if $override
+            -c $override
+        #end if
+        #if $prepend
+            --prepend
+        #end if
+        #if $infer_onps
+            --infer_onps
+        #end if
+        #if $input_type.input_select=='VCF'
+            -i VCF
+        #else
+            -i MAFLITE
+        #end if
+        #if $skip_no_alt
+            --skip_no_alt
+        #end if
+        $input
+        $output
+        #if $build.build_select=='hg19'
+            hg19
+        #end if
+    </command>
+
+    <inputs>
+        <!-- making this a path to a datasource for now -->
+        <!--<param name="datasource" type="text" label="Datasource: " />-->
+        <conditional name="input_type">
+            <param name="input_select" type="select" label="Input format: " >
+                <option value="VCF" select="true">VCF</option>
+                <option value="MAFLITE">MAFLITE</option>
+            </param>
+            <when value="VCF">
+                <param name="input" type="data" format="vcf" label="Input File: " />
+            </when>
+            <when value="MAFLITE">
+                <param name="input" type="data" format="tabular" label="Input File: " />
+            </when> 
+        </conditional>
+        <conditional name="build">
+            <param name="build_select" type="select" label="Build (only support for hg19): " >
+                <option value="hg19" select="true">hg19</option>
+            </param>
+        </conditional>
+        <param name="override" type="data" format="tabular" optional="true" label="Transcript override lists" />
+        <param name="prepend" type="boolean" optional="true" label="Label fields which aren't exactly TCGAMAF format with i_" />
+        <param name="infer_onps" type="boolean" optional="true" label="Merge adjacent SNPs,DNPs,TNPs,etc if in the same sample" />
+        <param name="skip_no_alt" type="boolean" optional="true" label="Any mutation with annotation alt_allele_seen of 'False' will not be annotated or rendered." />
+    </inputs>
+    <outputs>
+        <data format="maf" name="output" label="${tool.name} on ${on_string} - MAF file" from_work_dir="annot_mutations.maf"/>
+    </outputs>
+    <stdio>
+        <regex match="INFO" source="stdout" level="log" description="Oncotator stdout" />
+        <exit_code range="1:" level="fatal" />
+    </stdio>
+    <help>
+  </help>
+</tool>

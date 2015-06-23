@@ -1,0 +1,5 @@
+## Available Databases for SnpEff 
+## These are from the list on: http://snpeff.sourceforge.net/download.html
+## the Description field in this sample is "Genome : Version" 
+#key	snpeff_version	Version	Description
+#SnpEff4.0_GRCh37.75	SnpEff4.0	GRCh37.75	Homo sapiens : GRCh37.75

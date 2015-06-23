@@ -1,0 +1,82 @@
+<tool name="CIViC Query Report Tool" id="civic_qrt" version="0.1">
+  <description>CIViC Query Report Tool reads a MAF file, calls CIViC for each line therein, and outputs a table in HTML format for easy inclusion into downstream reports</description>
+  <command interpreter="python">
+   civic_qrt.py
+   -i "${input_file}"
+   -o "${out_file}"
+   -c "${host}"
+   -col "${entrez_id_column}"
+  </command>
+  <inputs>
+    <param name="input_file" type="data" format="maf" 
+      label="MAF File from Oncotator" help="If empty, upload or import a MAF dataset."/>
+    <param name="host" value="localhost:3000" type="text"
+      label="Host to query from" size="80" 
+      help="Query from the CIViC server"/>
+    <param name="entrez_id_column" value="1" type="text"
+     label="Entrez ID column number in MAF file. Default:1" size="10"
+     help="Entrez ID column number in MAF file. Default:1"/>
+  </inputs>
+  <outputs>
+    <data format="html" name="out_file" label="CIViC Summary with links to webpage."/>
+  </outputs>
+  <tests>
+    <test>
+    </test>
+  </tests>
+  
+  <help>
+
+.. class:: infomark
+
+
+**PURPOSE**
+
+CIViC Query Report Tool is a simple command line tool that reads a MAF file, calls CIViC for each line therein. It outputs a table in HTML format for easy inclusion into downstream reports
+
+CIViCReader requires Python 2.*. To check your python version, run: python -V
+
+**INPUTS, OUTPUTS AND PARAMETERS**
+
+$ python civic_reader.py -h
+
+usage: civic_reader [-h] [-i INPUT_FILE] [-o OUTPUT_FILE] [-c HOST] [-col ENTREZ_ID_COLUMN]
+
+      -h, --help            show this help message and exit
+      -i INPUT_FILE, --input_file INPUT_FILE
+                            input file (assumed to be tab separated MAF format); defaults to stdin
+      -o OUTPUT_FILE, --output_file OUTPUT_FILE
+                            output file; defaults to stdout
+      -c HOST, --host HOST  url of reference civic host; Default:civic.genome.wustl.edu
+      --col ENTREZ_ID_COLUMN, --entrez_id_column ENTREZ_ID_COLUMN
+                            column in the input file that contains the entrez id; Default(0 based): 1
+
+**PROCESS**
+
+On entry CIViCReader reads all variants from CIViC for a particular gene, using entrez_id as the gene identifier.
+
+If there is no data returned from CIViC, CIViCReader displays gene not found in civic and moves on.
+
+If there is data returned from CIViC, CIViCReader searches the CIViC EvidenceItems returned and matches on {Chromosome}:{Start_position}-{End_position} ({Reference_Allele}->{Tumor_Seq_Allele1})
+
+If there is a match CIViCReader displays [civic variant] with a link to the specific variant in CIViC
+Otherwise CIViCReader displays [civic gene] with a link to the gene in CIViC
+
+**CIViC**
+
+For further details about CIViC, please go to: https://civic.genome.wustl.edu
+
+  </help>
+</tool>
+
+
+
+
+
+
+
+
+
+
+
+

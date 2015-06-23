@@ -1,0 +1,22 @@
+<tool id="vcfsorter" name="VCF Sorter">
+    <description>Sort VCF Using Sequence Dictionary</description>
+    <command interpreter="perl">
+        vcfsorter.pl $genome_ref $vcf_input &gt; $vcf_output
+    </command>
+
+    <inputs>
+      <param name="genome_ref" type="data" format="fasta" metadata_name="dbkey" label="Select a reference from history" />
+      <!--<param name="genome_dict" type="text" label="Sequence Dictionary to Sort Against (File Path): " value="/data/broad/samples/Homo_sapiens_assembly19.v1/Homo_sapiens_assembly19.dict"/>  -->
+      <param format="vcf" name="vcf_input" type="data" label="Input VCF to Sort" />  
+    </inputs>
+
+    <outputs>
+        <data format="vcf" name="vcf_output" type="data" label="Output Sorted VCF"/>  
+    </outputs>
+
+    <tests>
+    </tests>
+
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,5 @@
+## Regulation Databases for SnpEff 
+## These are from the list on: http://snpeff.sourceforge.net/download.html
+#key	snpeff_version	genome	annotation_name description
+#SnpEff4.0_GRCh37.75	SnpEff4.0	GRCh37.75	nextprot	nextprot
+#SnpEff4.0_GRCh38.76	SnpEff4.1	GRCh38.76	motif	motif

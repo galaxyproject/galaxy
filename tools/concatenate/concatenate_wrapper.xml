@@ -1,0 +1,67 @@
+<tool id="concatenate_files" name="Concatenate fastq" version="1.0.0">
+    <description>Concatenate files using cat</description>
+    <requirements>
+        <container type="docker">concatenate_files:1.0.0</container>
+    </requirements>
+    <command interpreter="python">
+        concatenate_wrapper.py 
+        $out_file1
+        #set inputs = ' '.join( [ str( $inp ) for $inp in $input1 ] )
+        $inputs
+    </command>
+    <inputs>
+        <param name="input1" type="data" label="Concatenate Dataset" multiple="true" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="fastqsanger" metadata_source="input1"/> 
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="test.txt test2.txt"/>
+            <output name="out_file1" file="concatenated_files.txt"/>
+        </test>
+    </tests>
+    <help>
+
+.. class:: warningmark
+
+**WARNING:** Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format. 
+
+-----
+
+**What it does**
+
+Concatenates datasets
+
+-----
+
+**Example**
+
+Concatenating Dataset::
+
+    chrX  151087187  151087355  A  0  -
+    chrX  151572400  151572481  B  0  +
+
+with Dataset1::
+
+    chr1  151242630  151242955  X  0  +
+    chr1  151271715  151271999  Y  0  +
+    chr1  151278832  151279227  Z  0  -
+    
+and with Dataset2::
+
+    chr2  100000030  200000955  P  0  +
+    chr2  100000015  200000999  Q  0  +
+
+will result in the following::
+
+    chrX  151087187  151087355  A  0  -
+    chrX  151572400  151572481  B  0  +
+    chr1  151242630  151242955  X  0  +
+    chr1  151271715  151271999  Y  0  +
+    chr1  151278832  151279227  Z  0  -
+    chr2  100000030  200000955  P  0  +
+    chr2  100000015  200000999  Q  0  +
+
+    </help>
+</tool>

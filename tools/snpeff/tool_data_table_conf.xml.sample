@@ -1,0 +1,19 @@
+<tables>
+    <table name="snpeffv_genomedb" comment_char="#">
+        <columns>key, version, value, name, path</columns>
+        <file path="tool-data/snpeffv_genomedb.loc" />
+    </table>
+    <table name="snpeffv_regulationdb" comment_char="#">
+        <columns>key, version, genome, value, name</columns>
+        <file path="tool-data/snpeffv_regulationdb.loc" />
+    </table>
+    <table name="snpeffv_annotations" comment_char="#">
+        <columns>key, version, genome, value, name</columns>
+        <file path="tool-data/snpeffv_annotations.loc" />
+    </table>
+    <table name="snpeffv_databases" comment_char="#">
+        <columns>key, version, value, name</columns>
+        <file path="tool-data/snpeffv_databases.loc" />
+    </table>
+</tables>
+

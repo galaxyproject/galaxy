@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<tool_dependency>
+  <package name="FastQC" version="0.11.2">
+      <repository changeset_revision="4b65f6e39cb0" name="package_fastqc_0_11_2" owner="devteam" toolshed="https://toolshed.g2.bx.psu.edu" />
+    </package>
+</tool_dependency>
