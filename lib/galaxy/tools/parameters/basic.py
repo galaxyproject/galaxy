@@ -292,6 +292,51 @@ class TextToolParameter( ToolParameter ):
         d['size'] = self.size
         return d
 
+class PasswordToolParameter( ToolParameter ):
+    """
+    Parameter that can take on any text value and is displayed hidden (*).
+
+    >>> p = PasswordToolParameter( None, XML( '<param name="blah" type="password" size="4" value="default" />' ) )
+    >>> print p.name
+    blah
+    >>> print p.get_html()
+    <input type="password" name="blah" size="4" value="default">
+    >>> print p.get_html( value="meh" )
+    <input type="password" name="blah" size="4" value="meh">
+    """
+    def __init__( self, tool, input_source ):
+        input_source = ensure_input_source(input_source)
+        ToolParameter.__init__( self, tool, input_source )
+        self.size = input_source.get( 'size' )
+        self.value = input_source.get( 'value' )
+
+    def get_html_field( self, trans=None, value=None, other_values={} ):
+        if value is None:
+            value = self.value
+        return form_builder.PasswordField( self.name, self.size, value )
+
+    def to_string( self, value, app ):
+        """Convert a value to a string representation suitable for persisting"""
+        if value is None:
+            return ''
+        else:
+            return str( value )
+
+    def to_html_value( self, value, app ):
+        if value is None:
+            return ''
+        else:
+            return self.to_string( value, app )
+
+    def get_initial_value( self, trans, context, history=None ):
+        return self.value
+
+    def to_dict( self, trans, view='collection', value_mapper=None, other_values={} ):
+        d = super(PasswordToolParameter, self).to_dict(trans)
+        d['area'] = self.area
+        d['size'] = self.size
+        return d
+
 
 class IntegerToolParameter( TextToolParameter ):
     """
@@ -2544,6 +2589,7 @@ class LibraryDatasetToolParameter( ToolParameter ):
 
 parameter_types = dict(
     text=TextToolParameter,
+    password=PasswordToolParameter,
     integer=IntegerToolParameter,
     float=FloatToolParameter,
     boolean=BooleanToolParameter,
