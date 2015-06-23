@@ -870,6 +870,11 @@ set_metadata_externally = True
 #drmaa_external_killjob_script = None 
 #external_chown_script = None
 
+# Extra directories to be mounted inside Docker containers. Note that ALL docker containers
+# will mount these volumes
+extra_docker_volumes = /opt/Genomics:ro,/cluster_share/Galaxy/database/results:rw
+
+
 # ---- Galaxy Message Queue -------------------------------------------------
 
 # Galaxy uses AMQ protocol to receive messages from external sources like 

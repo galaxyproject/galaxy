@@ -5,6 +5,7 @@
       <requirement type="package" version="0.1.19">samtools</requirement>
       <requirement type="set_environment">GATK2_PATH</requirement>
       <requirement type="set_environment">GATK2_SITE_OPTIONS</requirement>
+      <container type="docker">ccc.docker/gatk</container>
     </requirements>
   </xml>
   <token name="@THREADS@">
