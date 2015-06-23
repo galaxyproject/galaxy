@@ -48,15 +48,8 @@ class Wiff(Binary):
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
-if hasattr(Binary, 'register_unsniffable_binary_ext'):
-    Binary.register_unsniffable_binary_ext('wiff')
-
-
 class IdpDB(Binary):
     file_ext = "idpDB"
-
-if hasattr(Binary, 'register_unsniffable_binary_ext'):
-    Binary.register_unsniffable_binary_ext('idpDB')
 
 
 class PepXmlReport(Tabular):
@@ -281,10 +274,6 @@ class RAW(Binary):
             return "Thermo Finnigan RAW file (%s)" % (data.nice_size(dataset.get_size()))
 
 
-if hasattr(Binary, 'register_sniffable_binary_format'):
-    Binary.register_sniffable_binary_format('raw', 'raw', RAW)
-
-
 class Msp(Text):
     """ Output of NIST MS Search Program chemdata.nist.gov/mass-spc/ftp/mass-spc/PepLib.pdf """
     file_ext = "msp"
@@ -296,8 +285,15 @@ class Msp(Text):
 
     def sniff(self, filename):
         """ Determines whether the file is a NIST MSP output file."""
-        with open(filename, 'r') as contents:
-            return Msp.next_line_starts_with(contents, "Name:") and Msp.next_line_starts_with(contents, "MW:")
+        with open(filename, 'r') as f:
+            begin_contents = f.read(1024)
+            if not "\n" in begin_contents:
+                return False
+            lines = begin_contents.splitlines()
+            if len(lines) < 2:
+                return False
+            return lines[0].startswith("Name:") and lines[1].startswith("MW:")
+
 
 class SPLibNoIndex( Text ):
     """SPlib without index file """
@@ -393,13 +389,7 @@ class XHunterAslFormat(Binary):
     """ Annotated Spectra in the HLF format http://www.thegpm.org/HUNTER/format_2006_09_15.html """
     file_ext = "hlf"
 
-if hasattr(Binary, 'register_unsniffable_binary_ext'):
-    Binary.register_unsniffable_binary_ext('hlf')
-
 
 class Sf3(Binary):
     """Class describing a Scaffold SF3 files"""
     file_ext = "sf3"
-
-if hasattr(Binary, 'register_unsniffable_binary_ext'):
-    Binary.register_unsniffable_binary_ext('sf3')
