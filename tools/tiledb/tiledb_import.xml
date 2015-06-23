@@ -1,0 +1,20 @@
+<tool id="tiledb_vcf_import" name="tiledb_vcf_import">
+    <description>Tool to import VCF/BCF into TileDB</description>
+    <command interpreter="python">tiledb_import.py
+        #for $input in $variant_files
+            ${input}
+        #end for
+        --tiledb_name $tiledb_name
+        --info_file $info_file
+    </command>
+    <inputs>
+        <param label="variant files" type="data" multiple="True" format="vcf,bcf" name="variant_files"/>
+        <param label="TileDB name" type="text" name="tiledb_name" value="GT"/>
+    </inputs>
+    <outputs>
+        <data label="Info file" format="txt" name="info_file"/>
+    </outputs>
+    <help>
+        Tool that imports data from VCFs/BCFs into TileDB  
+    </help>
+</tool>
