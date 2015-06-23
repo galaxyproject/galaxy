@@ -1,8 +1,9 @@
 #!/bin/bash
 PYTHON_2_7_PATH=/opt/python-2.7/
-export http_proxy=http://sparkdmz1:4000
-export https_proxy=${http_proxy}
-export ftp_proxy=${http_proxy}
+#export http_proxy=http://sparkdmz1:4000
+#export https_proxy=${http_proxy}
+#export ftp_proxy=${http_proxy}
+#export no_proxy=cluster3.ccc.com,.cluster3.ccc.com,intel.com,.intel.com,10.0.0.0/8,192.168.0.0/16,localhost,127.0.0.0/8,134.134.0.0/16
 export GALAXY_RUN_ALL=1
 #Creating env variables for location of exe/jar files, to be used by xml/py files.
 GENOMICS_DIR=/opt/Genomics
@@ -31,6 +32,9 @@ export PINDEL_PATH=$GENOMICS_DIR/ohsu/dnapipeline/pindel/
 export PATH=$PINDEL_PATH:$BREAKDANCER_PATH:$ONCOTATOR_DB_SOURCE:$ONCOTATOR_PATH:$TOPHAT_EXE_PATH:$CUFFLINKS_TOOLS_EXE_PATH:$BOWTIE_TOOLS_EXE_PATH:$GENOMICS_DIR:$BWA_DIR:$SAMTOOLS_DIR:$SAMTOOLS_v020_EXE_PATH:$PICARD_PATH:$PYTHON_2_7_PATH/bin:$PATH
 export NSLOTS=16
 export PYTHON_EGG_CACHE=.eggs_cache
+export CCC_DRMAA_PYTHON_MODULE_DIRECTORY=/mnt/app_hdd/CCC_central/testDRMAA/
+export PYTHONPATH=${CCC_DRMAA_PYTHON_MODULE_DIRECTORY}:$PYTHONPATH
+export OMERO_IMAGE_SELECTION=/cluster_share/omero
 export BIOBLEND_REPO_DIR=/cluster_share/Galaxy/api/bioblend
 export FASTQC_PERL_SCRIPT=/opt/Genomics/ohsu/dnapipeline/FastQC/fastqc
 export BCFTOOLS=/home/karthikg/broad/non_variant_db/bcftools/bcftools
