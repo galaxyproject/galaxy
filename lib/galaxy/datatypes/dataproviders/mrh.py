@@ -153,7 +153,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
             outdata = []
             mid_coord = min(self.stop1, self.stop2)
             mid_start = min( self.header['n'], ( mid_coord - self.header['start'] ) / self.header['lres'] )
-            mid_stop = min( self.header['n'], ( mid_coord - self.header['start'] ) / self.header['lres'] ) + 1
+            mid_stop = min( self.header['n'], ( mid_coord - self.header['start'] ) / self.header['lres'] + 1 )
             if self.start1 <= self.start2:
                 self.reverse = False
                 self.eff_start1, self.eff_start2 = self.start1, self.start2
