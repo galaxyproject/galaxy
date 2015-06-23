@@ -48,6 +48,7 @@ class Wiff(Binary):
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
+
 class IdpDB(Binary):
     file_ext = "idpDB"
 
@@ -287,7 +288,7 @@ class Msp(Text):
         """ Determines whether the file is a NIST MSP output file."""
         with open(filename, 'r') as f:
             begin_contents = f.read(1024)
-            if not "\n" in begin_contents:
+            if not in "\n" begin_contents:
                 return False
             lines = begin_contents.splitlines()
             if len(lines) < 2:
@@ -320,7 +321,7 @@ class SPLib(Msp):
                                 description='Spectral Library. Contains actual library spectra',
                                 is_binary=False)
         self.add_composite_file('library.spidx',
-                                description='Spectrum index',  is_binary=False)
+                                description='Spectrum index', is_binary=False)
         self.add_composite_file('library.pepidx',
                                 description='Peptide index', is_binary=False)
 
