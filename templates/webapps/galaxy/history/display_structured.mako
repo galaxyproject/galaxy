@@ -136,7 +136,7 @@
     hda_dicts = []
     id_hda_dict_map = {}
     for hda in history.active_datasets:
-        hda_dict = hda_serializer.serialize_to_view( trans, hda, 'detailed' )
+        hda_dict = hda_serializer.serialize_to_view( hda, user=trans.user, trans=trans, view='detailed' )
         id_hda_dict_map[ hda_dict[ 'id' ] ] = hda_dict
         hda_dicts.append( hda_dict )
 %>
@@ -155,7 +155,7 @@
                         linkTarget      : '_self',
                         purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                         logger          : Galaxy.logger
-                    }).render( false );
+                    }).render( 0 );
                 });
             });
         });
