@@ -10,11 +10,6 @@ import sys
 import urllib
 import xml.etree.ElementTree as ElementTree
 
-try:
-    URL = sys.argv[1]
-except IndexError:
-    URL = "http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
-
 
 def getbuilds(url):
     try:
@@ -51,5 +46,7 @@ def getbuilds(url):
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         URL = sys.argv[1]
+    else:
+        URL = "http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
     for build in getbuilds(URL):
         print build[0] + "\t" + build[1] + " (" + build[0] + ")"
