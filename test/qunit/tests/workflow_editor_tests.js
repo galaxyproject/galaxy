@@ -87,7 +87,7 @@ define([
         test_accept: function( other ) {
             other = other || { node: {}, datatypes: [ "txt" ] };
             if( ! other.mapOver ) {
-                other.mapOver = function() { return NULL_COLLECTION_TYPE_DESCRIPTION; };
+                other.mapOver = function() { return Terminals.NULL_COLLECTION_TYPE_DESCRIPTION; };
             }
             return this.input_terminal.canAccept( other );
         },
@@ -214,21 +214,21 @@ define([
         ok( self.test_accept() );
     } );
 
-    /*test( "can accept list collection for empty multiple inputs", function() {
-        var other = { node: {}, datatypes: [ "tabular" ], mapOver: function() { return new CollectionTypeDescription( "list" ) } };
+    test( "can accept list collection for empty multiple inputs", function() {
+        var other = { node: {}, datatypes: [ "tabular" ], mapOver: function() { return new Terminals.CollectionTypeDescription( "list" ) } };
         var self = this;
         this.multiple();
         ok( self.test_accept( other ) );
     } );
 
     test( "cannot accept list collection for multiple input if collection already connected", function() {
-        var other = { node: {}, datatypes: [ "tabular" ], mapOver: function() { return new CollectionTypeDescription( "list" ) } };
+        var other = { node: {}, datatypes: [ "tabular" ], mapOver: function() { return new Terminals.CollectionTypeDescription( "list" ) } };
         var self = this;
         this.multiple();
         this.with_test_connector( function() {
             ok( ! self.test_accept( other ) );
         } );
-    } );*/
+    } );
 
     module( "Connector test", {});
 
@@ -495,7 +495,7 @@ define([
 
             var outputTerminal = new Terminals.OutputTerminal( { name: "TestOuptut", datatypes: [ outputType ] } );
             outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
-            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: NULL_COLLECTION_TYPE_DESCRIPTION }; 
+            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION }; 
             var c = new Connector( outputTerminal, terminal );
 
             return c;
@@ -506,7 +506,7 @@ define([
 
             var outputTerminal = new Terminals.OutputTerminal( { name: "TestOuptut", datatypes: [ "txt" ] } );
             outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
-            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: new CollectionTypeDescription( "list" ) };
+            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: new Terminals.CollectionTypeDescription( "list" ) };
             var c = new Connector( outputTerminal, terminal );
 
             return c;
@@ -515,9 +515,9 @@ define([
             this.view.addDataInput( { name: "TestName", extensions: [ "txt" ], input_type: "dataset_collection" } );
             var terminal = this.view.node.input_terminals[ "TestName" ];
 
-            var outputTerminal = new OutputTerminal( { name: "TestOuptut", datatypes: [ "txt" ] } );
+            var outputTerminal = new Terminals.OutputTerminal( { name: "TestOuptut", datatypes: [ "txt" ] } );
             outputTerminal.node = { markChanged: function() {}, post_job_actions: [], hasMappedOverInputTerminals: function() { return false; }, hasConnectedOutputTerminals: function() { return true; } };
-            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: new CollectionTypeDescription( "list" ) }; 
+            outputTerminal.terminalMapping = { disableMapOver: function() {}, mapOver: new Terminals.CollectionTypeDescription( "list" ) };
             var c = new Connector( outputTerminal, terminal );
 
             return c;
@@ -558,7 +558,7 @@ define([
         ok( connector.handle2 === terminal );
     } );
 
-    /*test( "replacing terminal on data multiple input update preserves collection connections", function() {
+    test( "replacing terminal on data multiple input update preserves collection connections", function() {
         var connector = this.connectAttachedMultiInputTerminal( "txt", "txt" );
         var connector_destroy_spy = sinon.spy( connector, "destroy" );
         var newElement = $("<div class='inputs'></div>");
@@ -602,7 +602,7 @@ define([
         this.view.addDataInput( { name: "TestName", extensions: ["txt"], input_type: "dataset" }, newElement );
         var terminal = newElement.find(".input-terminal")[ 0 ].terminal;
         ok( connector_destroy_spy.called );
-    } );*/
+    } );
 
     // global InputTerminalView
     module( "Input terminal view", {
@@ -651,16 +651,15 @@ define([
         equal( el.className, "terminal output-terminal");
     } );
 
-/*
     module( "CollectionTypeDescription", {
         listType: function() {
-            return new CollectionTypeDescription( "list" );
+            return new Terminals.CollectionTypeDescription( "list" );
         },
         pairedType: function() {
-            return new CollectionTypeDescription( "paired" );
+            return new Terminals.CollectionTypeDescription( "paired" );
         },
         pairedListType: function() {
-            return new CollectionTypeDescription( "list:paired" );            
+            return new Terminals.CollectionTypeDescription( "list:paired" );
         }
     } );
 
@@ -671,11 +670,11 @@ define([
     } );
 
     test( "canMatch special types", function() {
-        ok( this.listType().canMatch( ANY_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ANY_COLLECTION_TYPE_DESCRIPTION.canMatch( this.pairedListType() ) );
+        ok( this.listType().canMatch( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.canMatch( this.pairedListType() ) );
 
-        ok( ! this.listType().canMatch( NULL_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! NULL_COLLECTION_TYPE_DESCRIPTION.canMatch( this.pairedListType() ) );
+        ok( ! this.listType().canMatch( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.canMatch( this.pairedListType() ) );
     } );
 
     test( "canMapOver", function() {
@@ -686,14 +685,14 @@ define([
     } );
 
     test( "canMapOver special types", function() {
-        ok( ! this.listType().canMapOver( NULL_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! NULL_COLLECTION_TYPE_DESCRIPTION.canMapOver( this.pairedListType() ) );
+        ok( ! this.listType().canMapOver( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.canMapOver( this.pairedListType() ) );
 
         // Following two should be able to be relaxed someday maybe - but the
         // tracking gets tricky I think. For now mapping only works for explicitly
         // defined collection types.
-        ok( ! this.listType().canMapOver( ANY_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! ANY_COLLECTION_TYPE_DESCRIPTION.canMapOver( this.pairedListType() ) );
+        ok( ! this.listType().canMapOver( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( ! Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.canMapOver( this.pairedListType() ) );
     } );
 
     test( "append", function( other ) {
@@ -703,50 +702,49 @@ define([
 
     test( "isCollection", function() {
         ok( this.listType().isCollection );
-        ok( ANY_COLLECTION_TYPE_DESCRIPTION.isCollection );
-        ok( ! NULL_COLLECTION_TYPE_DESCRIPTION.isCollection );
+        ok( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.isCollection );
+        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.isCollection );
     } );
 
     test( "equal", function() {
         ok( ! this.listType().equal( this.pairedType() ) );
         ok( this.listType().equal( this.listType() ) );
 
-        ok( ANY_COLLECTION_TYPE_DESCRIPTION.equal( ANY_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! ANY_COLLECTION_TYPE_DESCRIPTION.equal( NULL_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! ANY_COLLECTION_TYPE_DESCRIPTION.equal( this.pairedType() ) );
-        ok( ! this.pairedType().equal( ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( ! Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( ! Terminals.ANY_COLLECTION_TYPE_DESCRIPTION.equal( this.pairedType() ) );
+        ok( ! this.pairedType().equal( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
 
-        ok( NULL_COLLECTION_TYPE_DESCRIPTION.equal( NULL_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! NULL_COLLECTION_TYPE_DESCRIPTION.equal( ANY_COLLECTION_TYPE_DESCRIPTION ) );
-        ok( ! NULL_COLLECTION_TYPE_DESCRIPTION.equal( this.listType() ) );
-        ok( ! this.listType().equal( NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.equal( Terminals.ANY_COLLECTION_TYPE_DESCRIPTION ) );
+        ok( ! Terminals.NULL_COLLECTION_TYPE_DESCRIPTION.equal( this.listType() ) );
+        ok( ! this.listType().equal( Terminals.NULL_COLLECTION_TYPE_DESCRIPTION ) );
 
     } );
 
     module( "TerminalMapping", {
-
     } );
 
     test( "default constructor", function() {
         var terminal = {};
-        var mapping = new TerminalMapping( { terminal: terminal } );
+        var mapping = new Terminals.TerminalMapping( { terminal: terminal } );
         ok( terminal.terminalMapping === mapping );
-        ok( mapping.mapOver === NULL_COLLECTION_TYPE_DESCRIPTION );
+        ok( mapping.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION );
     } );
 
     test( "constructing with mapOver", function() {
         var terminal = {};
-        var mapping = new TerminalMapping( { terminal: terminal, mapOver: new CollectionTypeDescription( "list" ) } );
+        var mapping = new Terminals.TerminalMapping( { terminal: terminal, mapOver: new Terminals.CollectionTypeDescription( "list" ) } );
         ok( mapping.mapOver.collectionType == "list" );
     } );
 
     test( "disableMapOver", function() {
         var terminal = {};
-        var mapping = new TerminalMapping( { terminal: terminal, mapOver: new CollectionTypeDescription( "list" ) } );
+        var mapping = new Terminals.TerminalMapping( { terminal: terminal, mapOver: new Terminals.CollectionTypeDescription( "list" ) } );
         var changeSpy = sinon.spy();
         mapping.bind( "change", changeSpy );
         mapping.disableMapOver();
-        ok( mapping.mapOver === NULL_COLLECTION_TYPE_DESCRIPTION );
+        ok( mapping.mapOver === Terminals.NULL_COLLECTION_TYPE_DESCRIPTION );
         ok( changeSpy.called );
     } );
 
@@ -758,11 +756,11 @@ define([
                 input[ 'extensions'] = [ 'data' ];
             }
             var inputEl = $("<div>")[ 0 ];
-            var inputTerminal = new InputTerminal( { element: inputEl, input: input } );
-            var inputTerminalMapping = new InputTerminalMapping( { terminal: inputTerminal } );
+            var inputTerminal = new Terminals.InputTerminal( { element: inputEl, input: input } );
+            var inputTerminalMapping = new Terminals.TerminalMapping( { terminal: inputTerminal } );
             inputTerminal.node = node;
             if( mapOver ) {
-                inputTerminal.setMapOver( new CollectionTypeDescription( mapOver ) );
+                inputTerminal.setMapOver( new Terminals.CollectionTypeDescription( mapOver ) );
             }
             return inputTerminal;
         },
@@ -773,8 +771,8 @@ define([
                 input[ 'extensions'] = [ 'data' ];
             }
             var inputEl = $("<div>")[ 0 ];
-            var inputTerminal = new InputCollectionTerminal( { element: inputEl, input: input } );
-            var inputTerminalMapping = new InputCollectionTerminalMapping( { terminal: inputTerminal } );
+            var inputTerminal = new Terminals.InputCollectionTerminal( { element: inputEl, input: input } );
+            var inputTerminalMapping = new Terminals.TerminalMapping( { terminal: inputTerminal } );
             inputTerminal.node = node;
             return inputTerminal;
         },
@@ -785,11 +783,11 @@ define([
                 output[ 'extensions'] = [ 'data' ];
             }
             var outputEl = $("<div>")[ 0 ];
-            var outputTerminal = new OutputTerminal( { element: outputEl, datatypes: output.extensions } );
-            var outputTerminalMapping = new OutputTerminalMapping( { terminal: outputTerminal } );
+            var outputTerminal = new Terminals.OutputTerminal( { element: outputEl, datatypes: output.extensions } );
+            var outputTerminalMapping = new Terminals.TerminalMapping( { terminal: outputTerminal } );
             outputTerminal.node = node;
             if( mapOver ) {
-                outputTerminal.setMapOver( new CollectionTypeDescription( mapOver ) );
+                outputTerminal.setMapOver( new Terminals.CollectionTypeDescription( mapOver ) );
             }
             return outputTerminal;
         },
@@ -801,27 +799,25 @@ define([
                 output[ 'extensions'] = [ 'data' ];
             }
             var outputEl = $("<div>")[ 0 ];
-            var outputTerminal = new OutputCollectionTerminal( { element: outputEl, datatypes: output.extensions, collection_type: collectionType } );
-            var outputTerminalMapping = new OutputCollectionTerminalMapping( { terminal: outputTerminal } );
+            var outputTerminal = new Terminals.OutputCollectionTerminal( { element: outputEl, datatypes: output.extensions, collection_type: collectionType } );
+            var outputTerminalMapping = new Terminals.TerminalMapping( { terminal: outputTerminal } );
             outputTerminal.node = node;
             if( mapOver ) {
-                outputTerminal.setMapOver( new CollectionTypeDescription( mapOver ) );
+                outputTerminal.setMapOver( new Terminals.CollectionTypeDescription( mapOver ) );
             }
             return outputTerminal;
         },
         newNode: function( ) {
             var nodeEl = $("<div>")[ 0 ];
-            var node = new Node( { element: nodeEl } );
+            var node = new Node( create_app(), { element: nodeEl } );
             return node;
         },
         _addExistingOutput: function( terminal, output, connected ) {
             var self = this;
             var node = terminal.node;
             if( connected ) {
-                with_workflow_global( function() {
-                    var inputTerminal = self.newInputTerminal();
-                    new Connector( inputTerminal, output );
-                } );
+                var inputTerminal = self.newInputTerminal();
+                new Connector( inputTerminal, output );
             }
             this._addTerminalTo( output, node.output_terminals );
             return output;
@@ -845,10 +841,8 @@ define([
             var self = this;
             var connectedInput = this.newInputTerminal();
             var node = terminal.node;
-            with_workflow_global( function() {
-                var outputTerminal = self.newOutputTerminal();
-                new Connector( connectedInput, outputTerminal );
-            } );
+            var outputTerminal = self.newOutputTerminal();
+            new Connector( connectedInput, outputTerminal );
             this._addTerminalTo( connectedInput, node.input_terminals );
             return connectedInput;
         },
@@ -904,14 +898,14 @@ define([
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
-        connectedInput2.setMapOver( new CollectionTypeDescription( "list") );
+        connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list") );
         this.verifyAttachable( inputTerminal1, "list" );
     } );
 
     test( "unmapped input cannot be mapped over if not matching connected input terminals map type", function() {
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput = this.addConnectedInput( inputTerminal1 );
-        connectedInput.setMapOver( new CollectionTypeDescription( "paired" ) );
+        connectedInput.setMapOver( new Terminals.CollectionTypeDescription( "paired" ) );
         this.verifyNotAttachable( inputTerminal1, "list" );
     } );
 
@@ -919,7 +913,7 @@ define([
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
-        connectedInput2.setMapOver( new CollectionTypeDescription( "list") );
+        connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list") );
         var outputTerminal = this.newOutputCollectionTerminal( "list" );
         this.verifyAttachable( inputTerminal1, outputTerminal );
     } );
@@ -928,7 +922,7 @@ define([
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
-        connectedInput2.setMapOver( new CollectionTypeDescription( "list") );
+        connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list") );
         var outputTerminal = this.newOutputCollectionTerminal( "paired" );
         this.verifyNotAttachable( inputTerminal1, outputTerminal );
     } );
@@ -937,9 +931,9 @@ define([
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
-        connectedInput2.setMapOver( new CollectionTypeDescription( "list:paired") );
+        connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list:paired") );
         var outputTerminal = this.newOutputCollectionTerminal( "paired" );
-        outputTerminal.setMapOver( new CollectionTypeDescription( "list" ) );
+        outputTerminal.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         this.verifyAttachable( inputTerminal1, outputTerminal );
     } );
 
@@ -947,9 +941,9 @@ define([
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
-        connectedInput2.setMapOver( new CollectionTypeDescription( "list:paired") );
+        connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list:paired") );
         var outputTerminal = this.newOutputCollectionTerminal( "list" );
-        outputTerminal.setMapOver( new CollectionTypeDescription( "list" ) );
+        outputTerminal.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         this.verifyNotAttachable( inputTerminal1, outputTerminal );
     } );
 
@@ -957,9 +951,9 @@ define([
         var inputTerminal1 = this.newInputTerminal();
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
         var connectedInput2 = this.addConnectedInput( inputTerminal1 );
-        connectedInput2.setMapOver( new CollectionTypeDescription( "list:paired") );
+        connectedInput2.setMapOver( new Terminals.CollectionTypeDescription( "list:paired") );
         var outputTerminal = this.newOutputCollectionTerminal( "list" );
-        outputTerminal.setMapOver( new CollectionTypeDescription( "paired" ) );
+        outputTerminal.setMapOver( new Terminals.CollectionTypeDescription( "paired" ) );
         this.verifyNotAttachable( inputTerminal1, outputTerminal );
     } );
 
@@ -978,7 +972,7 @@ define([
         // to check that though.
         var inputTerminal1 = this.newInputTerminal();
         var connectedOutput = this.addConnectedOutput( inputTerminal1 );
-        connectedOutput.setMapOver( new CollectionTypeDescription( "list" ) );
+        connectedOutput.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         this.verifyAttachable( inputTerminal1, "list" );
     } );
 
@@ -988,19 +982,19 @@ define([
         // to check that though.
         var inputTerminal1 = this.newInputTerminal();
         var connectedOutput = this.addConnectedOutput( inputTerminal1 );
-        connectedOutput.setMapOver( new CollectionTypeDescription( "paired" ) );
+        connectedOutput.setMapOver( new Terminals.CollectionTypeDescription( "paired" ) );
         this.verifyNotAttachable( inputTerminal1, "list" );
     } );
 
     test( "explicitly constrained input can not be mapped over by incompatible collection type", function() {
         var inputTerminal1 = this.newInputTerminal();
-        inputTerminal1.setMapOver( new CollectionTypeDescription( "paired" ) );
+        inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "paired" ) );
         this.verifyNotAttachable( inputTerminal1, "list" );
     } );
 
     test( "explicitly constrained input can be mapped over by compatible collection type", function() {
         var inputTerminal1 = this.newInputTerminal();
-        inputTerminal1.setMapOver( new CollectionTypeDescription( "list" ) );
+        inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         this.verifyAttachable( inputTerminal1, "list" );
     } );
 
@@ -1016,13 +1010,13 @@ define([
 
     test( "explicitly mapped over collection input can be attached by explicit mapping", function() {
         var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "paired" } );
-        inputTerminal1.setMapOver( new CollectionTypeDescription( "list" ) );
+        inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         this.verifyAttachable( inputTerminal1, "list:paired" );
     } );
 
     test( "explicitly mapped over collection input can be attached by explicit mapping", function() {
         var inputTerminal1 = this.newInputCollectionTerminal( { collection_type: "list:paired" } );
-        inputTerminal1.setMapOver( new CollectionTypeDescription( "list" ) );
+        inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         // effectively input is list:list:paired so shouldn't be able to attach
         this.verifyNotAttachable( inputTerminal1, "list:paired" );
     } );
@@ -1060,7 +1054,7 @@ define([
     test( "resetMappingIfNeeded does not reset if connected output depends on being mapped", function() {
         var inputTerminal1 = this.newInputTerminal( "list" );
         var connectedOutput = this.addConnectedOutput( inputTerminal1 );
-        connectedOutput.setMapOver( new CollectionTypeDescription( "list" ) );
+        connectedOutput.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         inputTerminal1.resetMappingIfNeeded();
         this.verifyMappedOver( inputTerminal1 );
     } );
@@ -1068,7 +1062,7 @@ define([
     test( "resetMappingIfNeeded resets if node outputs are not connected to anything", function() {
         var inputTerminal1 = this.newInputTerminal( "list" );
         var output = this.addOutput( inputTerminal1 );
-        output.setMapOver( new CollectionTypeDescription( "list" ) );
+        output.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         inputTerminal1.resetMappingIfNeeded();
         this.verifyNotMappedOver( inputTerminal1 );
     } );
@@ -1076,7 +1070,7 @@ define([
     test( "resetMappingIfNeeded an input resets node outputs if they not connected to anything", function() {
         var inputTerminal1 = this.newInputTerminal( "list" );
         var output = this.addOutput( inputTerminal1 );
-        output.setMapOver( new CollectionTypeDescription( "list" ) );
+        output.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         inputTerminal1.resetMappingIfNeeded();
         this.verifyNotMappedOver( output );
     } );
@@ -1084,7 +1078,7 @@ define([
     test( "resetMappingIfNeeded an input resets node collection outputs if they not connected to anything", function() {
         var inputTerminal1 = this.newInputTerminal( "list" );
         var output = this.addCollectionOutput( inputTerminal1 );
-        output.setMapOver( new CollectionTypeDescription( "list" ) );
+        output.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         inputTerminal1.resetMappingIfNeeded();
         this.verifyNotMappedOver( output );
     } );
@@ -1094,9 +1088,9 @@ define([
         // over so don't need to disconnect output nodes.
         var inputTerminal1 = this.newInputTerminal( "list" );
         var connectedInput1 = this.addConnectedInput( inputTerminal1 );
-        connectedInput1.setMapOver( new CollectionTypeDescription( "list" ) );
+        connectedInput1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         var connectedOutput = this.addConnectedOutput( inputTerminal1 );
-        connectedOutput.setMapOver( new CollectionTypeDescription( "list" ) );
+        connectedOutput.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
         inputTerminal1.resetMappingIfNeeded();
         // inputTerminal1 can be reset because connectedInput1
         // is still forcing connectedOutput to be mapped over,
@@ -1110,7 +1104,7 @@ define([
     test( "simple mapping over collection outputs works correctly", function() {
         var inputTerminal1 = this.newInputTerminal();
         var connectedOutput = this.addConnectedCollectionOutput( inputTerminal1 );
-        inputTerminal1.setMapOver( new CollectionTypeDescription( "list" ) );
+        inputTerminal1.setMapOver( new Terminals.CollectionTypeDescription( "list" ) );
 
         // Can attach list output of collection type list that is being mapped
         // over another list to a list:list (because this is what it is) but not
@@ -1121,5 +1115,4 @@ define([
         var testTerminal1 = this.newInputTerminal( "list:list:list" );
         this.verifyNotAttachable( testTerminal1, connectedOutput );
     } );
-*/
 });

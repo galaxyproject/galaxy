@@ -474,10 +474,15 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
     } );
 
     return {
-        InputTerminal               : InputTerminal,
-        OutputTerminal              : OutputTerminal,
-        InputCollectionTerminal     : InputCollectionTerminal,
-        OutputCollectionTerminal    : OutputCollectionTerminal,
-        TerminalMapping             : TerminalMapping
+        InputTerminal                       : InputTerminal,
+        OutputTerminal                      : OutputTerminal,
+        InputCollectionTerminal             : InputCollectionTerminal,
+        OutputCollectionTerminal            : OutputCollectionTerminal,
+        TerminalMapping                     : TerminalMapping,
+
+        // test export
+        CollectionTypeDescription           : CollectionTypeDescription,
+        NULL_COLLECTION_TYPE_DESCRIPTION    : NULL_COLLECTION_TYPE_DESCRIPTION,
+        ANY_COLLECTION_TYPE_DESCRIPTION     : ANY_COLLECTION_TYPE_DESCRIPTION
     }
 });
