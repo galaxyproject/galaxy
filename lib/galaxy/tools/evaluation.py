@@ -522,9 +522,8 @@ class ToolEvaluator( object ):
 
     def __write_workdir_file( self, config_filename, template, context ):
         value = fill_template( template, context=context )
-        f = open( config_filename, "w" )
-        f.write( value )
-        f.close()
+        with open( config_filename, "w" ) as f:
+            f.write( value )
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod( config_filename, 0644 )
 
