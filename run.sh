@@ -5,6 +5,9 @@ cd `dirname $0`
 if [ -n "$USE_OHSU_EXACLOUD_ENVIRONMENT" ];
 then
     source contrib/ohsu_exacloud_env.sh
+elif [ -n "$USE_CCC_POC_ENVIRONMENT" ]
+then
+    source contrib/ccc_poc_env.sh
 else
     source contrib/intel_env.sh
 fi
