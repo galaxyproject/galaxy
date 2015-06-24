@@ -29,19 +29,41 @@ class Test_BaseDataProvider( BaseTestCase ):
             # print 'data: %s' % str( data )
             self.assertEqual( data, [] )
 
-    def test_small_window( self ):
+    def test_small_cis_window( self ):
         with open( TEST_FILE, 'rb' ) as source:
             provider = self.provider_class( source,
-                start1=3500000,
-                start2=3500000,
-                stop1=3550000,
-                stop2=3550000,
-                min_resolution=50001,
-                max_resolution=5000
+                chrom1='18',
+                chrom2='18',
+                start1=20000000,
+                start2=20000000,
+                stop1=22560000,
+                stop2=22560000,
+                min_resolution=1280000,
+                max_resolution=320000,
             )
             data = list( provider )
             # print 'len data: %s' % str( len( data ) )
-            self.assertEqual( len( data ), 102 )
+            self.assertEqual( len( data ), 64 )
+            # print data[1]['value']
+            self.assertEqual( "-2.98051", "%0.5f" % data[1]['value'])
+
+    def test_small_trans_window( self ):
+        with open( TEST_FILE, 'rb' ) as source:
+            provider = self.provider_class( source,
+                chrom1='18',
+                chrom2='19',
+                start1=20000000,
+                start2=20000000,
+                stop1=22560000,
+                stop2=22560000,
+                min_resolution=1280000,
+                max_resolution=320000,
+            )
+            data = list( provider )
+            # print 'len data: %s' % str( len( data ) )
+            self.assertEqual( len( data ), 7 )
+            # print data[1]['value']
+            self.assertEqual( "-13.46063", "%0.5f" % data[1]['value'])
 
 if __name__ == '__main__':
     unittest.main()
