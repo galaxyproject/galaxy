@@ -1,6 +1,7 @@
 lib/galaxy/auth
 lib/galaxy/config.py
 lib/galaxy/datatypes/data.py
+lib/galaxy/datatypes/triples.py
 lib/galaxy/exceptions/error_codes.py
 lib/galaxy/jobs/{__init__,error_level,manager,stock_rules}.py
 lib/galaxy/main.py

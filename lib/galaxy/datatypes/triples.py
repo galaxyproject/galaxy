@@ -4,14 +4,11 @@ Triple format classes
 import re
 import data
 import logging
-from galaxy.datatypes.sniff import *
-import dataproviders
 import xml
 import text
-import json
-import os
 
 log = logging.getLogger(__name__)
+
 
 class Triples( data.Text ):
     """
@@ -35,6 +32,7 @@ class Triples( data.Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+
 class NTriples( Triples ):
     """
     The N-Triples triple data format
@@ -46,10 +44,10 @@ class NTriples( Triples ):
         handle = open(filename)
         line = handle.readline()
         handle.close()
-             
-        #@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .  
+
+        # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
         if re.compile( r'<[^>]*>\s<[^>]*>\s<[^>]*>\s\.' ).search( line ):
-            return True 
+            return True
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -60,6 +58,7 @@ class NTriples( Triples ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
 
 class N3( Triples ):
     """
@@ -83,6 +82,7 @@ class N3( Triples ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+
 class Turtle( Triples ):
     """
     The Turtle triple data format
@@ -94,10 +94,10 @@ class Turtle( Triples ):
         handle = open(filename)
         line = handle.readline()
         handle.close()
-             
-        #@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .  
+
+        # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
         if re.compile( r'@prefix\s+[^:]*:\s+<[^>]*>\s\.' ).search( line ):
-            return True 
+            return True
 
         return False
 
@@ -110,7 +110,8 @@ class Turtle( Triples ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-#TODO: we might want to look at rdflib or a similar, larger lib/egg
+
+# TODO: we might want to look at rdflib or a similar, larger lib/egg
 class Rdf( xml.GenericXml, Triples ):
     """
     Resource Description Framework format (http://www.w3.org/RDF/).
@@ -137,16 +138,17 @@ class Rdf( xml.GenericXml, Triples ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
+
 class Jsonld( text.Json, Triples ):
     """
     The JSON-LD data format
     """
-    #format not defined in edam so we use the json format number 
-    edam_format = "format_3464" 
+    # format not defined in edam so we use the json format number
+    edam_format = "format_3464"
     file_ext = "jsonld"
 
     def sniff( self, filename ):
-        if self._looks_like_json( filename ): #super( text.Json, self ).sniff( filename )
+        if self._looks_like_json( filename ):
             f = open( filename, "r" )
             firstlines = "".join( f.readlines(5) )
             f.close()
@@ -163,4 +165,3 @@ class Jsonld( text.Json, Triples ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
-
