@@ -1,3 +1,4 @@
+cron/parse_builds.py
 lib/galaxy/auth
 lib/galaxy/config.py
 lib/galaxy/datatypes/data.py
