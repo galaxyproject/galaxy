@@ -15,7 +15,7 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
                         window.onbeforeunload = undefined;
                         window.document.location = self.urls.workflow_index;
                     };
-                    show_modal( "Close workflow editor",
+                    window.show_modal( "Close workflow editor",
                                 "There are unsaved changes to your workflow which will be lost.",
                                 {
                                     "Cancel" : hide_modal,
@@ -67,7 +67,7 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
                             self.workflow.stored = true;
                             self.showWorkflowParameters();
                             if ( data.errors ) {
-                                show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
+                                window.show_modal( "Saving workflow", body, { "Ok" : hide_modal } );
                             } else {
                                 if (callback) {
                                     callback();
@@ -93,7 +93,7 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
             };
 
             if ( window.lt_ie_7 ) {
-                    show_modal(
+                    window.show_modal(
                         "Browser not supported",
                         "Sorry, the workflow editor is not supported for IE6 and below."
                     );
@@ -176,58 +176,55 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
             this.reset();
 
             // get available datatypes for post job action options
-            datatypes = JSON.parse($.ajax({
-                type    : 'GET',
+            this.datatypes = JSON.parse($.ajax({
                 url     : galaxy_config.root + 'api/datatypes',
                 async   : false
             }).responseText);
 
-            // Load the datatype info
+            // get datatype mapping options
+            this.datatypes_mapping = JSON.parse($.ajax({
+                url     : galaxy_config.root + 'api/datatypes/mapping',
+                async   : false
+            }).responseText);
+
+            // set mapping sub lists
+            this.ext_to_type = this.datatypes_mapping.ext_to_class_name;
+            this.type_to_type = this.datatypes_mapping.class_to_classes;
+
+            // Load workflow definition
             $.ajax( {
-                url: self.urls.get_datatypes,
-                dataType: "json",
+                url: self.urls.load_workflow,
+                data: { id: self.options.id, "_": "true" },
+                dataType: 'json',
                 cache: false,
                 success: function( data ) {
-                    // populate datatypes
-                    self.ext_to_type = data.ext_to_class_name;
-                    self.type_to_type = data.class_to_classes;
-
-                    // Load workflow definition
-                    $.ajax( {
-                        url: self.urls.load_workflow,
-                        data: { id: self.options.id, "_": "true" },
-                        dataType: 'json',
-                        cache: false,
-                        success: function( data ) {
-                             self.reset();
-                             self.workflow.from_simple( data );
-                             self.workflow.has_changes = false;
-                             self.workflow.fit_canvas_to_nodes();
-                             self.scroll_to_nodes();
-                             self.canvas_manager.draw_overview();
-                             // Determine if any parameters were 'upgraded' and provide message
-                             upgrade_message = "";
-                             $.each( data.upgrade_messages, function( k, v ) {
-                                upgrade_message += ( "<li>Step " + ( parseInt(k, 10) + 1 ) + ": " + self.workflow.nodes[k].name + "<ul>");
-                                $.each( v, function( i, vv ) {
-                                    upgrade_message += "<li>" + vv +"</li>";
-                                });
-                                upgrade_message += "</ul></li>";
-                             });
-                             if ( upgrade_message ) {
-                                show_modal( "Workflow loaded with changes",
-                                            "Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>" + upgrade_message + "</ul>",
-                                            { "Continue" : hide_modal } );
-                             } else {
-                                hide_modal();
-                             }
-                             self.showWorkflowParameters();
-                         },
-                         beforeSubmit: function( data ) {
-                             show_message( "Loading workflow", "progress" );
-                         }
-                    });
-                }
+                     self.reset();
+                     self.workflow.from_simple( data );
+                     self.workflow.has_changes = false;
+                     self.workflow.fit_canvas_to_nodes();
+                     self.scroll_to_nodes();
+                     self.canvas_manager.draw_overview();
+                     // Determine if any parameters were 'upgraded' and provide message
+                     upgrade_message = "";
+                     $.each( data.upgrade_messages, function( k, v ) {
+                        upgrade_message += ( "<li>Step " + ( parseInt(k, 10) + 1 ) + ": " + self.workflow.nodes[k].name + "<ul>");
+                        $.each( v, function( i, vv ) {
+                            upgrade_message += "<li>" + vv +"</li>";
+                        });
+                        upgrade_message += "</ul></li>";
+                     });
+                     if ( upgrade_message ) {
+                        window.show_modal( "Workflow loaded with changes",
+                                    "Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>" + upgrade_message + "</ul>",
+                                    { "Continue" : hide_modal } );
+                     } else {
+                        hide_modal();
+                     }
+                     self.showWorkflowParameters();
+                 },
+                 beforeSubmit: function( data ) {
+                     show_message( "Loading workflow", "progress" );
+                 }
             });
 
             // For autosave purposes
@@ -241,11 +238,11 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
             $(document).ajaxError( function ( e, x ) {
                 // console.log( e, x );
                 var message = x.responseText || x.statusText || "Could not connect to server";
-                show_modal( "Server error", message, { "Ignore error" : hide_modal } );
+                window.show_modal( "Server error", message, { "Ignore error" : hide_modal } );
                 return false;
             });
 
-            make_popupmenu( $("#workflow-options-button"), {
+            window.make_popupmenu && make_popupmenu( $("#workflow-options-button"), {
                 "Save" : save_current_workflow,
                 "Run": function() {
                     window.location = self.urls.run_workflow;
@@ -384,15 +381,17 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
             });
 
             // Rename async.
-            async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
+            if (window.async_save_text) {
+                async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
 
-            // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
-            $('#workflow-tag').click( function() {
-                $('.tag-area').click();
-                return false;
-            });
-            // Annotate async.
-            async_save_text("workflow-annotation", "workflow-annotation", self.urls.annotate_async, "new_annotation", 25, true, 4);
+                // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
+                $('#workflow-tag').click( function() {
+                    $('.tag-area').click();
+                    return false;
+                });
+                // Annotate async.
+                async_save_text("workflow-annotation", "workflow-annotation", self.urls.annotate_async, "new_annotation", 25, true, 4);
+            }
         },
 
         // Global state for the whole workflow
@@ -569,7 +568,7 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
                 if (node.type == 'tool' && Utils.isJSON(text)) {
                     var options = JSON.parse(text);
                     options.node = node;
-                    options.datatypes = datatypes;
+                    options.datatypes = this.datatypes;
                     $el.append((new ToolsForm.View(options)).$el);
                 } else {
                     $el.append(this._genericFormTemplate( text, node ));
@@ -591,7 +590,7 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
             if (node && node.id != 'no-node') {
                 $el.find('.toolForm:first').after(this._genericStepAttributesTemplate( node ));
                 var self = this;
-                $el.find( 'form' ).ajaxForm( {
+                ($el.find( 'form' ).length > 0) && $el.find( 'form' ).ajaxForm( {
                     type: 'POST',
                     dataType: 'json',
                     success: function( data ) {
@@ -667,7 +666,7 @@ define(['utils/utils', 'mvc/workflow/workflow-globals', 'mvc/workflow/workflow-m
             // Fix width to computed width
             // Now add floats
             var buttons = $("<div class='buttons' style='float: right;'></div>");
-            buttons.append( $("<div>").addClass("fa-icon-button fa fa-times").click( function( e ) {
+            buttons.append( $("<div/>").addClass("fa-icon-button fa fa-times").click( function( e ) {
                 node.destroy();
             }));
             // Place inside container
