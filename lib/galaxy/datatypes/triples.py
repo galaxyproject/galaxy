@@ -41,9 +41,7 @@ class NTriples( Triples ):
     file_ext = "nt"
 
     def sniff( self, filename ):
-        handle = open(filename)
-        line = handle.readline()
-        handle.close()
+        line = self.safe_readline(filename)
 
         # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
         if re.compile( r'<[^>]*>\s<[^>]*>\s<[^>]*>\s\.' ).search( line ):
@@ -91,10 +89,7 @@ class Turtle( Triples ):
     file_ext = "ttl"
 
     def sniff( self, filename ):
-        handle = open(filename)
-        line = handle.readline()
-        handle.close()
-
+        line = self.safe_readline(filename)
         # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
         if re.compile( r'@prefix\s+[^:]*:\s+<[^>]*>\s\.' ).search( line ):
             return True
@@ -120,10 +115,7 @@ class Rdf( xml.GenericXml, Triples ):
     file_ext = "rdf"
 
     def sniff( self, filename ):
-        f = open( filename, "r" )
-        firstlines = "".join( f.readlines(5) )
-        f.close()
-
+        firstlines = self.safe_readlines(filename, 5)
         if "http://www.w3.org/1999/02/22-rdf-syntax-ns#" in firstlines and "RDF" in firstlines:
             return True
 
@@ -149,10 +141,7 @@ class Jsonld( text.Json, Triples ):
 
     def sniff( self, filename ):
         if self._looks_like_json( filename ):
-            f = open( filename, "r" )
-            firstlines = "".join( f.readlines(5) )
-            f.close()
-
+            firstlines = self.safe_readlines(filename, 5)
             if "\"@id\"" in firstlines or "\"@context\"" in firstlines:
                 return True
         return False

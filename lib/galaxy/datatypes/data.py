@@ -884,6 +884,20 @@ class Text( Data ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.line.RegexLineDataProvider( dataset_source, **settings )
 
+    def safe_readlines(self, path, num_lines=1, size=5 * 1024):
+        """
+        Read lines from the start of a file but be sure to restrict the size of
+        memory that will be consumed and use proper file handling to ensure file
+        handles aren't leaked.
+        """
+        with open(path, "r") as f:
+            start_of_file = f.read(size)
+            lines = start_of_file.splitlines()
+            return lines[0:num_lines]
+
+    def safe_readline(self, path):
+        self.safe_readlines(path)[0]
+
 
 class GenericAsn1( Text ):
     """Class for generic ASN.1 text format"""
