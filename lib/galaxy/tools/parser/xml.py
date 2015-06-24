@@ -90,6 +90,22 @@ class XmlToolSource(ToolSource):
         command_el = self._command_el
         return ( ( command_el is not None ) and command_el.text ) or None
 
+    def parse_environment_variables(self):
+        environment_variables_el = self.root.find("environment_variables")
+        if environment_variables_el is None:
+            return []
+
+        environment_variables = []
+        for environment_variable_el in environment_variables_el.findall("environment_variable"):
+            definition = {
+                "name": environment_variable_el.get("name"),
+                "template": environment_variable_el.text,
+            }
+            environment_variables.append(
+                definition
+            )
+        return environment_variables
+
     def parse_interpreter(self):
         command_el = self._command_el
         return (command_el is not None) and command_el.get("interpreter", None)

@@ -856,7 +856,7 @@ class JobWrapper( object ):
 
         self.sa_session.flush()
 
-        self.command_line, self.extra_filenames = tool_evaluator.build()
+        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
         # Shell fragment to inject dependencies
@@ -1742,7 +1742,7 @@ class TaskWrapper(JobWrapper):
 
         self.sa_session.flush()
 
-        self.command_line, self.extra_filenames = tool_evaluator.build()
+        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
