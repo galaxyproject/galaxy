@@ -13,7 +13,6 @@ from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import dumps
 from galaxy.util import string_as_bool
-from galaxy.visualization.data_providers.genome import *
 from galaxy.tools.parameters import check_param
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.meta import expand_meta_parameters
@@ -210,7 +209,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         if success:
             trans.response.set_content_type( 'application/x-gzip' )
             download_file = open( tool_tarball )
-            tarball_path, filename = os.path.split( tool_tarball )
             trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( id )
             return download_file
 
