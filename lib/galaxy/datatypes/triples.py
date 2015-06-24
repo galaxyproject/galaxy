@@ -43,7 +43,7 @@ class NTriples( Triples ):
     def sniff( self, filename ):
         line = self.safe_readline(filename)
 
-        # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+        #<http://example.org/dir/relfile> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/type> .
         if re.compile( r'<[^>]*>\s<[^>]*>\s<[^>]*>\s\.' ).search( line ):
             return True
         return False
