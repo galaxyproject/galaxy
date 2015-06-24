@@ -46,6 +46,26 @@ class DataMeta( type ):
         metadata.Statement.process( cls )
 
 
+def deprecated_datatype_reference(klass):
+    """ Decorate an older class location to indicate that the class has been
+    moved to a new module. See graph.py as an example.
+    """
+    old_init = klass.__init__
+
+    def new_init(self, *args, **kwargs):
+        old_location = "%s.%s" % (klass.__module__, klass.__name__)
+        new_klass = klass.__bases__[0]
+        new_location = "%s.%s" % (new_klass.__module__, new_klass.__name__)
+        message = "Using deprecated reference to class [%s] " % old_location
+        message += "update datatype configuration to reference [%s]" % new_location
+        log.warn(message)
+        old_init(self, *args, **kwargs)
+
+    klass.__init__ = new_init
+
+    return klass
+
+
 @dataproviders.decorators.has_dataproviders
 class Data( object ):
     """
@@ -863,6 +883,20 @@ class Text( Data ):
         """
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return dataproviders.line.RegexLineDataProvider( dataset_source, **settings )
+
+    def safe_readlines(self, path, num_lines=1, size=5 * 1024):
+        """
+        Read lines from the start of a file but be sure to restrict the size of
+        memory that will be consumed and use proper file handling to ensure file
+        handles aren't leaked.
+        """
+        with open(path, "r") as f:
+            start_of_file = f.read(size)
+            lines = start_of_file.splitlines()
+            return lines[0:num_lines]
+
+    def safe_readline(self, path):
+        self.safe_readlines(path)[0]
 
 
 class GenericAsn1( Text ):
