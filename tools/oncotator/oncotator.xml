@@ -13,7 +13,9 @@
         <requirement type="package">python-memchached</requirement>
         <requirement type="package">pyvcf</requirement>
     </requirements>
-    <command interpreter="python">oncotator.py
+    <command>
+        source \${ONCOTATOR_PATH}/activate;
+        python \${ONCOTATOR_PATH}/oncotator
         ###if $datasource
         --db-dir "\${ONCOTATOR_DB_SOURCE}" ##$datasource
         ###end if
