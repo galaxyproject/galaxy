@@ -23,7 +23,7 @@ def getbuilds(url):
     try:
         tree = ElementTree.fromstring(text)
     except:
-        print "#Invalid xml passed back from " + URL
+        print "#Invalid xml passed back from " + url
         print "?\tunspecified (?)"
         sys.exit(1)
 
