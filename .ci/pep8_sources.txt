@@ -1,3 +1,4 @@
+cron/parse_builds.py
 lib/galaxy/auth
 lib/galaxy/config.py
 lib/galaxy/datatypes/data.py
@@ -14,7 +15,7 @@ lib/galaxy/queues.py
 lib/galaxy/queue_worker.py
 lib/galaxy/tags
 lib/galaxy/tools
-lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules}.py
+lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules,xml_macros}.py
 lib/galaxy/web/{proxy,security}
 lib/galaxy/web/base/{__init__,interactive_environments}.py
 lib/galaxy/web/formatting.py
@@ -40,5 +41,7 @@ lib/tool_shed/galaxy_install/tools/{__init__,tool_panel_manager}.py
 lib/tool_shed/repository_types/{__init__,registry,unrestricted}.py
 lib/tool_shed/util/{__init__,repository_content_util,tool_util,web_util,workflow_util}.py
 test/functional/tools
+test/unit/jobs/test_job_configuration.py
+test/unit/tools
 tools/data_source/upload.py
 tools/evolution/codingSnps_filter.py

@@ -634,6 +634,7 @@ class Tool( object, Dictifiable ):
         else:
             self.command = ''
             self.interpreter = None
+        self.environment_variables = tool_source.parse_environment_variables()
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
