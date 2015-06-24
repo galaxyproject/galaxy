@@ -103,7 +103,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
     def __test_evaluation_with_path_rewrites( self ):
         # Various things can cause dataset paths to be rewritten (Task
         # splitting, config.outputs_to_working_directory). This tests that
-        #functionality.
+        # functionality.
         self._setup_test_bwa_job()
         job_path_1 = "%s/dataset_1.dat" % self.test_directory
         job_path_2 = "%s/dataset_2.dat" % self.test_directory
@@ -281,8 +281,6 @@ class MockTool( object ):
 
     @property
     def outputs( self ):
-        #elem_output1 = XML( '<param name="output1" type="data" format="txt"/>' )
-        #                DataToolParameter( self, elem_output1 ),
         return dict(
             output1=ToolOutput( "output1" ),
         )

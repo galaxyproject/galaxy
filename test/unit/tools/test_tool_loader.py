@@ -5,6 +5,7 @@ import os
 from galaxy.util import parse_xml
 from galaxy.tools.loader import template_macro_params, load_tool
 
+
 def test_loader():
 
     class TestToolDirectory(object):
@@ -27,7 +28,7 @@ def test_loader():
                 loader = parse_xml
             return loader(os.path.join(self.temp_directory, name))
 
-    ## Test simple macro replacement.
+    # Test simple macro replacement.
     with TestToolDirectory() as tool_dir:
         tool_dir.write('''
 <tool>
