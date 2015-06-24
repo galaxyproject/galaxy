@@ -8,6 +8,7 @@ import xml
 
 import dataproviders
 from galaxy.util import simplegraph
+from . import triples
 
 import logging
 log = logging.getLogger( __name__ )
@@ -159,3 +160,8 @@ class SIFGraphDataProvider( dataproviders.column.ColumnarDataProvider ):
                         graph.add_edge( source_id, target_id, type=relation )
 
         yield graph.as_dict()
+
+
+@data.deprecated_datatype_reference
+class Rdf(triples.Rdf):
+    pass
