@@ -14,7 +14,7 @@ ${get_css()}
 <div class="toolForm">
     <div class="toolFormBody">
         <h4 align="center">Jobs Per Month</h4>
-        <h5 align="center">Click Month to view details.</h5>
+        <h5 align="center">Click Month to view details. Graph goes from the 1st to the last of the month.</h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="4">There are no jobs.</td></tr>
