@@ -340,12 +340,6 @@ Galaxy offers the following API controllers:
 .. automodule:: galaxy.webapps.galaxy.api.forms
 
 
-:mod:`ftp_files` Module
-----------------------
-
-.. automodule:: galaxy.webapps.galaxy.api.ftp_files
-
-
 :mod:`genomes` Module
 ---------------------
 
@@ -446,6 +440,12 @@ Galaxy offers the following API controllers:
 --------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.quotas
+
+
+:mod:`remote_files` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.remote_files
 
 
 :mod:`request_types` Module
