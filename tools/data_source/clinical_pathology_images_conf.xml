@@ -1,23 +1,45 @@
 <dataSource xmlns="http://edu.ohsu.ccc/dataSource/xml">
     <columns>
-        <column>CCC_DID</column>
-        <column>cell_count</column>
-        <column>sample</column>
+        <column>cccDid</column>
+        <column>omeroHost</column>
+        <column>omeroImageId</column>
+	<column>primarySite</column>
+        <column>specimenType</column>
+        <column>gender</column>
+        <column>age</column>
+        <column>tumorGrade</column>
+        <column>tumorStage</column>
     </columns>
     <labkeyInstances>
         <labkeyInstance>
-			<name>Austin</name>
+	<name>Austin</name>
+            <baseUrl>http://g0.spark0.intel.com:9090/labkey</baseUrl>			
+            <containerPath>ccc</containerPath>
+            <schemaName>lists</schemaName>
+            <queryName>images</queryName>
+            <columnMapping>
+                <column name="specimen_id/name" alias=""/>
+            </columnMapping>
+        </labkeyInstance>
+        <labkeyInstance>
+	<name>Boston</name>
             <baseUrl>http://g1.spark0.intel.com:9090/labkey</baseUrl>
             <containerPath>ccc</containerPath>
             <schemaName>lists</schemaName>
             <queryName>images</queryName>
-        </labkeyInstance>
+            <columnMappings>
+		<columnMapping columnName="cccDid" fieldKey="CCC_DID"/>
+	    </columnMappings>
+	</labkeyInstance>
         <labkeyInstance>
-			<name>Portland</name>
+	<name>Portland</name>
             <baseUrl>http://g2.spark0.intel.com:9090/labkey</baseUrl>
             <containerPath>ccc</containerPath>
             <schemaName>lists</schemaName>
             <queryName>images</queryName>
-        </labkeyInstance>
+            <columnMappings>
+		<columnMapping columnName="cccDid" fieldKey="CCC_DID"/>
+	    </columnMappings>
+	</labkeyInstance>
     </labkeyInstances>
 </dataSource>
