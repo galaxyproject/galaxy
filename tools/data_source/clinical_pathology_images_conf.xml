@@ -13,26 +13,16 @@
     <labkeyInstances>
         <labkeyInstance>
 	<name>Austin</name>
-            <baseUrl>http://g0.spark0.intel.com:9090/labkey</baseUrl>			
+            <baseUrl>http://g1.spark0.intel.com:9090/labkey</baseUrl>			
             <containerPath>ccc</containerPath>
             <schemaName>lists</schemaName>
             <queryName>images</queryName>
-            <columnMapping>
-                <column name="specimen_id/name" alias=""/>
-            </columnMapping>
-        </labkeyInstance>
-        <labkeyInstance>
-	<name>Boston</name>
-            <baseUrl>http://g1.spark0.intel.com:9090/labkey</baseUrl>
-            <containerPath>ccc</containerPath>
-            <schemaName>lists</schemaName>
-            <queryName>images</queryName>
-            <columnMappings>
-		<columnMapping columnName="cccDid" fieldKey="CCC_DID"/>
+	    <columnMappings>
+	        <columnMapping columnName="cccDid" fieldKey="CCC_DID"/>
 	    </columnMappings>
 	</labkeyInstance>
         <labkeyInstance>
-	<name>Portland</name>
+	<name>Boston</name>
             <baseUrl>http://g2.spark0.intel.com:9090/labkey</baseUrl>
             <containerPath>ccc</containerPath>
             <schemaName>lists</schemaName>
