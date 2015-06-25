@@ -78,6 +78,9 @@ done
 echo -n "Retrieving admin user's API key from $local_shed_url..."
 
 curl_response=`curl -s --user $admin_user_email:$admin_user_password $local_shed_url/api/authenticate/baseauth/`
+# Gets an empty response only on first attempt for some reason?
+sleep 1
+curl_response=`curl -s --user $admin_user_email:$admin_user_password $local_shed_url/api/authenticate/baseauth/`
 api_key=`echo $curl_response | grep api_key | awk -F\" '{print $4}'` 
 
 if [[ -z $api_key && ${api_key+x} ]] ; then
