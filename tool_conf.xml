@@ -109,7 +109,7 @@
   <section id="cellprofiler" name="CellProfiler">
     <tool file="cellprofiler/cellprofiler.xml" />
   </section>
-  <section id="retrieveThumbnails" name="Retrieve Thumbnails">
+  <section id="retrieveThumbnails" name="OMERO Visualization Tool">
     <tool file="omero/retrieveThumbnails.xml" />
   </section>
   <section id="scores" name="Get Genomic Scores">
