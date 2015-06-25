@@ -42,9 +42,9 @@ class NTriples( Triples ):
 
     def sniff( self, filename ):
         with open(filename, "r") as f:
-            #<http://example.org/dir/relfile> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/type> .
+            # <http://example.org/dir/relfile> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/type> .
             if re.compile( r'<[^>]*>\s<[^>]*>\s<[^>]*>\s\.' ).search( f.readline( 1024 ) ):
-                 return True
+                return True
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
