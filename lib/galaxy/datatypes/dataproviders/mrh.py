@@ -24,10 +24,11 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         'min_resolution' : 'long',
         'max_resolution' : 'long',
         'header'         : 'bool',
+        'chromosomes'    : 'bool',
     }
 
-    def __init__( self, source, chrom1='18', start1=0, stop1=0, chrom2='18', start2=0, stop2=0, min_resolution=0,
-                  max_resolution=5120000, header=False, **kwargs ):
+    def __init__( self, source, chrom1='', start1=0, stop1=0, chrom2='', start2=0, stop2=0, min_resolution=0,
+                  max_resolution=0, header=False, chromosomes=False, **kwargs ):
         """
         :param chrom1: chromosome for sequence1
         :type chrom1: str.
@@ -53,7 +54,10 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         :param max_resolution: smallest bin size to return
         :type max_resolution: long
 
-        :param header: T/F send header data instead
+        :param header: T/F send chromosome-specific header data instead
+        :type resolution: bool
+
+        :param chromosomes: T/F send chromosome list instead
         :type resolution: bool
         """
         super( MrhSquareDataProvider, self ).__init__( source, **kwargs )
@@ -66,6 +70,8 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         self.minres = min_resolution
         self.maxres = max_resolution
         self.header_only = header
+        self.chroms_only = chromosomes
+        self.header = None
 
         if chrom1 == chrom2 and (stop1 > start2 or stop2 > start1):
             self.overlap = True
@@ -76,10 +82,13 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
 
     def __iter__( self ):
         with self.source as infile:
-            self.load_header( infile )
-            if self.header_only:
-                yield self.header
-            else:
+            if self.chroms_only:
+                yield self.load_chrom_data( infile )
+            elif self.header_only:
+                yield self.load_header( infile )
+            elif self.chrom1 != '' and self.chrom2 != '':
+                if self.header is None:
+                    self.load_header( infile )
                 if self.chrom1 != self.chrom2:
                     for square in self.paint_trans_canvas( infile ):
                         square = self.interpolate_square( square )
@@ -89,35 +98,45 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
                         square = self.interpolate_square( square )
                         yield square
 
-    def load_header( self, infile ):
+    def load_chrom_data( self, infile ):
         """
         """
         self.header = {}
         # get and validate magic number for mrh type
         mrh_magic_number = '42054205'
         mrh_magic_number_size = 4
+        infile.seek( 0 )
         magic_number = binascii.b2a_hex( infile.read( mrh_magic_number_size ) )
         if magic_number != mrh_magic_number:
             raise TypeError( 'File does not appear to be a multi-resolution heatmap file' )
 
         # get the number of chromosomes and whether the file includes inter-chromosome maps
         int_float32_size = 4
-        num_chroms, trans = struct.unpack( 'ii', infile.read( int_float32_size * 2 ) )
+        trans, num_chroms = struct.unpack( 'ii', infile.read( int_float32_size * 2 ) )
+        self.trans = trans
+        self.num_chroms = num_chroms
+        name_sizes = struct.unpack( 'i' * num_chroms, infile.read( int_float32_size * num_chroms ) )
+
+        # create dictionary of chromosome names and indices, retrieve chrom indices for requested data
+        self.chr2int = {}
+        for i in range( num_chroms ):
+            self.chr2int[ ''.join( struct.unpack( 'c' * name_sizes[i], infile.read( name_sizes[i] ) ) ).strip( ) ] = i
+        return { 'chromosomes':self.chr2int.keys( ), 'includes_trans':bool( trans ) }
+
+    def load_header( self, infile ):
+        int_float32_size = 4
+        self.load_chrom_data( infile )
+        trans = self.trans
+        num_chroms = self.num_chroms
         if self.chrom1 != self.chrom2 and not trans:
             raise TypeError( 'File does not appear to contain inter-chromosome data' )
         if trans:
             num_pairings = ( num_chroms * ( num_chroms + 1 ) ) / 2
         else:
             num_pairings = num_chroms
-
-        # create dictionary of chromosome names and indices, retrieve chrom indices for requested data
-        name_size = 10
-        chr2int = {}
-        for i in range( num_chroms ):
-            chr2int[ ''.join( struct.unpack( 'c' * name_size, infile.read( name_size ) ) ).strip( ) ] = i
-        if self.chrom1 in chr2int and self.chrom2 in chr2int:
-            chr_index1 = chr2int[ self.chrom1 ]
-            chr_index2 = chr2int[ self.chrom2 ]
+        if self.chrom1 in self.chr2int and self.chrom2 in self.chr2int:
+            chr_index1 = self.chr2int[ self.chrom1 ]
+            chr_index2 = self.chr2int[ self.chrom2 ]
         else:
             raise KeyError( 'File does not appear to contain data for the requested chromosome(s)' )
         self.transpose = False
