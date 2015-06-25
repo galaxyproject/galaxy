@@ -12,30 +12,27 @@
 		--output ${output}
         --includeSiteNameInOutput
 		#if $primarySite 
-			 --filter "specimen_id/project_code/PrimarySite~eq=$primarySite"
+		--filter "primarySite~eq=$primarySite"
 		#end if
 		#if $specimenType 
-			 --filter "specimen_id/specimen_type~eq=$specimenType"
+		--filter "specimenType~eq=$specimenType"
 		#end if
 		#if $gender 
-			 --filter "specimen_id/donor_gender~eq=$gender"
+		--filter "gender~eq=$gender"
 		#end if
 		#if $grade
-			 --filter "specimen_id/tumour_grade~eq=$grade"
+		--filter "tumorGrade~eq=$grade"
 		#end if
 		#if $stage
-			 --filter "specimen_id/tumour_stage~eq=$stage"
+		--filter "tumorStage~eq=$stage"
 		#end if
-
-		;\$BIOBLEND_REPO_DIR/sample_scripts/import_datasets_by_uuid.py -A $script_file -H "${output.creating_job.history.name}" -f ${output}
-
 	</command>
 	
 	<inputs>
         <param type="select" name="primarySite" label="Primary Site">
             <option value="">All</option>
 			<option value="Bladder">Bladder</option>
-            <option value="Blood">Blood</option>
+			<option value="Blood">Blood</option>
 			<option value="Colorectal">Colorectal</option>
 			<option value="Esophagus">Esophagus</option>
 			<option value="Head and Neck">Head and Neck</option>
@@ -48,25 +45,26 @@
         <param type="select" name="specimenType" label="Specimen Type">
             <option value="">All</option>
 			<option value="Cell line - derived from tumour">Cell line - derived from tumour</option>
-            <option value="Normal - blood derived">Normal - blood derived</option>
-			<option value="Normal - other">Normal - other</option>
+			<option value="Normal - blood derived">Normal - blood derived</option>
+			<option value="Normal">Normal</option>
 			<option value="Normal - solid tissue">Normal - solid tissue</option>
-			<option value="Primary tumour - blood derived (bone marrow)">Primary tumour - blood derived (bone marrow)</option>
-			<option value="Primary tumour - other">Primary tumour - other</option>
-			<option value="Primary tumour - solid tissue">Primary tumour - solid tissue</option>
+			<option value="Primary tumor - blood derived (bone marrow)">Primary tumour - blood derived (bone marrow)</option>
+			<option value="Primary Tumor">Primary Tumor</option>
+			<option value="Primary tumor - solid tissue">Primary tumour - solid tissue</option>
         </param>		
         <param type="select" name="gender" label="Gender">
 			<option value="">All</option>
             <option value="female">Female</option>
             <option value="male">Male</option>
         </param>
-        <param type="select" name="grade" label="Tumour Grade">
+        <param type="select" name="grade" label="Tumor Grade">
 			<option value="">All</option>
             <option value="Grade 1">Grade 1</option>
             <option value="Grade 2">Grade 2</option>
-			<option value="Grade 3">Grade 3</option>
+            <option value="Grade 3">Grade 3</option>
+ 	    <option value="Grade 4">Grade 4</option>
         </param>
-        <param type="select" name="stage" label="Tumour Stage">
+        <param type="select" name="stage" label="Tumor Stage">
 			<option value="">All</option>
             <option value="T1N0M0">T1N0M0</option>
             <option value="T2N0M0">T2N0M0</option>
