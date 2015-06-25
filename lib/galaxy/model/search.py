@@ -175,7 +175,7 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
     FIELDS = {
         'extended_metadata': ViewField('extended_metadata', handler=library_extended_metadata_filter),
         'name': ViewField('name', sqlalchemy_field=(LibraryDatasetDatasetAssociation, "name")),
-        'id': ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id, id_decode=True),
+        'id': ViewField('id', sqlalchemy_field=(LibraryDatasetDatasetAssociation, 'id'), id_decode=True),
         'deleted': ViewField('deleted', sqlalchemy_field=(LibraryDatasetDatasetAssociation, "deleted")),
         'parent_library_id': ViewField('parent_library_id', id_decode=True, post_filter=ldda_parent_library_filter),
         'data_type':  ViewField('data_type', sqlalchemy_field=(LibraryDatasetDatasetAssociation, "extension")),
@@ -193,7 +193,7 @@ class LibraryView(ViewQueryBaseClass):
     VIEW_NAME = "library"
     FIELDS = {
         'name': ViewField('name', sqlalchemy_field=(Library, "name")),
-        'id': ViewField('id', sqlalchemy_field=Library.id, id_decode=True),
+        'id': ViewField('id', sqlalchemy_field=(Library, 'id'), id_decode=True),
         'deleted': ViewField('deleted', sqlalchemy_field=(Library, "deleted")),
     }
 
