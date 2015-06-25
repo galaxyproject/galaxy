@@ -241,7 +241,7 @@ class MascotDat(Text):
                     return False
 
 
-class RAW(Binary):
+class ThermoRAW(Binary):
     """Class describing a Thermo Finnigan binary RAW file"""
     file_ext = "raw"
 
