@@ -29,6 +29,28 @@ class Test_BaseDataProvider( BaseTestCase ):
             # print 'data: %s' % str( data )
             self.assertEqual( data, [] )
 
+    def test_chroms( self ):
+        with open( TEST_FILE, 'rb' ) as source:
+            provider = self.provider_class( source,
+                chromosomes=True,
+            )
+            data = list( provider )
+            # print 'data: %s' % str( data )
+            self.assertEqual( data, [{'chromosomes': ['19', '18'], 'includes_trans': True}] )
+
+    def test_header( self ):
+        with open( TEST_FILE, 'rb' ) as source:
+            provider = self.provider_class( source,
+                header=True,
+                chrom1='18',
+                chrom2='19',
+            )
+            data = list( provider )
+            # print 'len data[0]: %s' % str( len( data[0] ) )
+            self.assertEqual( len(data[0]), 17 )
+            # print "data[0]['maxscore']]: %s" % str( data[0]['maxscore'] )
+            self.assertEqual( data[0]['maxscore'], -12.772971153259277 )
+
     def test_small_cis_window( self ):
         with open( TEST_FILE, 'rb' ) as source:
             provider = self.provider_class( source,
