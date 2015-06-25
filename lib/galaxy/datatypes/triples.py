@@ -41,11 +41,10 @@ class NTriples( Triples ):
     file_ext = "nt"
 
     def sniff( self, filename ):
-        line = self.safe_readline(filename)
-
-        #<http://example.org/dir/relfile> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/type> .
-        if re.compile( r'<[^>]*>\s<[^>]*>\s<[^>]*>\s\.' ).search( line ):
-            return True
+        with open(filename, "r") as f:
+            #<http://example.org/dir/relfile> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/type> .
+            if re.compile( r'<[^>]*>\s<[^>]*>\s<[^>]*>\s\.' ).search( f.readline( 1024 ) ):
+                 return True
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -89,11 +88,10 @@ class Turtle( Triples ):
     file_ext = "ttl"
 
     def sniff( self, filename ):
-        line = self.safe_readline(filename)
-        # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-        if re.compile( r'@prefix\s+[^:]*:\s+<[^>]*>\s\.' ).search( line ):
-            return True
-
+        with open(filename, "r") as f:
+            # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+            if re.compile( r'@prefix\s+[^:]*:\s+<[^>]*>\s\.' ).search( f.readline( 1024 ) ):
+                return True
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -115,10 +113,10 @@ class Rdf( xml.GenericXml, Triples ):
     file_ext = "rdf"
 
     def sniff( self, filename ):
-        firstlines = self.safe_readlines(filename, 5)
-        if "http://www.w3.org/1999/02/22-rdf-syntax-ns#" in firstlines and "RDF" in firstlines:
-            return True
-
+        with open(filename, "r") as f:
+            firstlines = "".join( f.readlines( 5000 ) )
+            if "http://www.w3.org/1999/02/22-rdf-syntax-ns#" in firstlines and "RDF" in firstlines:
+                return True
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
@@ -141,9 +139,10 @@ class Jsonld( text.Json, Triples ):
 
     def sniff( self, filename ):
         if self._looks_like_json( filename ):
-            firstlines = self.safe_readlines(filename, 5)
-            if "\"@id\"" in firstlines or "\"@context\"" in firstlines:
-                return True
+            with open(filename, "r") as f:
+                firstlines = "".join( f.readlines( 5000 ) )
+                if "\"@id\"" in firstlines or "\"@context\"" in firstlines:
+                    return True
         return False
 
     def set_peek( self, dataset, is_multi_byte=False ):
