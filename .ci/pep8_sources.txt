@@ -7,7 +7,7 @@ lib/galaxy/jobs/{__init__,error_level,manager,stock_rules}.py
 lib/galaxy/main.py
 lib/galaxy/managers/{api_keys,citations,collections,collections_util,datasets,folders,pages,tags,workflows}.py
 lib/galaxy/model/orm/{engine_factory,now}.py
-lib/galaxy/model/util.py
+lib/galaxy/model/{base,custom_types,search,util}.py
 lib/galaxy/model/tool_shed_install/__init__.py
 lib/galaxy/objectstore/{__init__,pulsar,rods,s3}.py
 lib/galaxy/openid/__init__.py
