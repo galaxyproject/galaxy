@@ -2,6 +2,7 @@ cron/parse_builds.py
 lib/galaxy/auth
 lib/galaxy/config.py
 lib/galaxy/datatypes/{data,proteomics}.py
+lib/galaxy/datatypes/converters/{bedgraph_to_array_tree_converter,wiggle_to_array_tree_converter}.py
 lib/galaxy/exceptions/error_codes.py
 lib/galaxy/jobs/{__init__,error_level,manager,stock_rules}.py
 lib/galaxy/main.py

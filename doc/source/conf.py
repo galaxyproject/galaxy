@@ -274,6 +274,6 @@ class Mock(object):
             return Mock()
 
 # adding pbs_python, DRMAA_python, markupsafe, and drmaa here had no effect.
-MOCK_MODULES = ['tables', 'decorator', 'numpy']
+MOCK_MODULES = ['tables', 'decorator']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()

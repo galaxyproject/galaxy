@@ -2,25 +2,27 @@
 Data providers for genome visualizations.
 """
 
-import os, sys, re
-import pkg_resources
 import itertools
-import random
 import math
+import os
+import random
+import re
+import sys
 
-pkg_resources.require( "numpy" )
-pkg_resources.require( "bx-python" )
-pkg_resources.require( "pysam" )
+from galaxy import eggs
+eggs.require('numpy')  # noqa
+eggs.require('bx-python')  # noqa
 from bx.interval_index_file import Indexes
-from bx.bbi.bigwig_file import BigWigFile
 from bx.bbi.bigbed_file import BigBedFile
+from bx.bbi.bigwig_file import BigWigFile
+eggs.require('pysam')  # noqa
 from pysam import csamtools, ctabix
 
+from galaxy.datatypes.interval import Bed, Gff, Gtf
 from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFFeature, GFFInterval, GFFReaderWrapper, parse_gff_attributes
 from galaxy.util.json import loads
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
-from galaxy.datatypes.interval import Bed, Gff, Gtf
 
 #
 # Utility functions.
