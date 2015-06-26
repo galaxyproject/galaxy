@@ -160,7 +160,7 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                        from_obj=[ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
                        group_by=self.group_by_month( model.StoredWorkflow.table.c.create_time ),
                        order_by=[ _order ] )
-        
+
         all_workflows = sa.select( ( self.select_day( model.StoredWorkflow.table.c.create_time ).label( 'date' ),
                      model.StoredWorkflow.table.c.id ) )
 
@@ -207,7 +207,7 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
         _order = specs.exc_order
         time_period = kwd.get('spark_time')
         time_period, _time_period = get_spark_time( time_period )
-        limit=30
+        limit = 30
 
         workflows = []
         q = sa.select( ( model.User.table.c.email.label( 'user_email' ),
@@ -272,7 +272,7 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                        from_obj=[ model.StoredWorkflow.table ],
                        group_by=self.group_by_month( model.StoredWorkflow.table.c.create_time ),
                        order_by=[ _order ] )
-        
+
         all_workflows_user_month = sa.select( ( self.select_day( model.StoredWorkflow.table.c.create_time ).label( 'date' ),
                                                model.StoredWorkflow.table.c.id ),
                                              whereclause=model.StoredWorkflow.table.c.user_id == user_id,

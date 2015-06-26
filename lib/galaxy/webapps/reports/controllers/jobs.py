@@ -52,6 +52,7 @@ def sorter(default_sort_id, kwd):
 
     return SortSpec(sort_id, order, arrow, _order)
 
+
 def get_spark_time( time_period ):
     _time_period = 0
 
@@ -68,6 +69,7 @@ def get_spark_time( time_period ):
         _time_period = 1.0
 
     return time_period, _time_period
+
 
 class SpecifiedDateListGrid( grids.Grid ):
 
