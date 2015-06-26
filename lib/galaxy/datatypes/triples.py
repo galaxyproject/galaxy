@@ -115,7 +115,8 @@ class Rdf( xml.GenericXml, Triples ):
     def sniff( self, filename ):
         with open(filename, "r") as f:
             firstlines = "".join( f.readlines( 5000 ) )
-            if "http://www.w3.org/1999/02/22-rdf-syntax-ns#" in firstlines and "RDF" in firstlines:
+            # <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ...
+            if re.compile( r'xmlns:[^=]*="http://www.w3.org/1999/02/22-rdf-syntax-ns#"' ).search( firstlines ) and "RDF" in firstlines.upper():
                 return True
         return False
 
