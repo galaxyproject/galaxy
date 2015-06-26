@@ -9,7 +9,6 @@ require.config({
         // Custom paths for Galaxy dependencies...
         "jquery": "libs/jquery/jquery",
         "backbone": "libs/backbone/backbone",
-        "underscore": "libs/underscore",
         // Custom paths for qunit testing dependencies...
         "QUnit": qunit_absolute_directory + "test-libs/qunit-1.14.0", // .. because baseUrl is scripts to match Galaxy.
         "sinon": qunit_absolute_directory + "test-libs/sinon-1.9.1",
@@ -38,7 +37,7 @@ require.config({
             exports: "_"
         },
         "backbone": {
-            deps: [ 'underscore', 'jquery' ],
+            deps: [ 'libs/underscore', 'jquery' ],
             exports: "Backbone"
         }
     }
@@ -61,7 +60,7 @@ require( [ "jquery", "QUnit" ], function( $, QUnit ) {
 
     // underscore + backbone loaded here because they are assumed globals by
     // much of the Galaxy client code.
-    require( [ "underscore", "backbone" ], function( _, Backbone ) {
+    require( [ "libs/underscore", "backbone" ], function( _, Backbone ) {
         require( [ test_module_path ], function( ) {
             QUnit.load();
             QUnit.start();
