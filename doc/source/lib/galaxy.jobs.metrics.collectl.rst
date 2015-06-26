@@ -1,43 +1,44 @@
-collectl Package
-================
-
-:mod:`collectl` Package
------------------------
+galaxy.jobs.metrics.collectl package
+====================================
 
 .. automodule:: galaxy.jobs.metrics.collectl
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`cli` Module
------------------
+Submodules
+----------
+
+galaxy.jobs.metrics.collectl.cli module
+---------------------------------------
 
 .. automodule:: galaxy.jobs.metrics.collectl.cli
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`processes` Module
------------------------
+galaxy.jobs.metrics.collectl.processes module
+---------------------------------------------
 
 .. automodule:: galaxy.jobs.metrics.collectl.processes
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`stats` Module
--------------------
+galaxy.jobs.metrics.collectl.stats module
+-----------------------------------------
 
 .. automodule:: galaxy.jobs.metrics.collectl.stats
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`subsystems` Module
-------------------------
+galaxy.jobs.metrics.collectl.subsystems module
+----------------------------------------------
 
 .. automodule:: galaxy.jobs.metrics.collectl.subsystems
     :members:
     :undoc-members:
     :show-inheritance:
+
 

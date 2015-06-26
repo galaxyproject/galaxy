@@ -1,59 +1,60 @@
-resolvers Package
-=================
-
-:mod:`resolvers` Package
-------------------------
+galaxy.tools.deps.resolvers package
+===================================
 
 .. automodule:: galaxy.tools.deps.resolvers
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`brewed_tool_shed_packages` Module
----------------------------------------
+Submodules
+----------
+
+galaxy.tools.deps.resolvers.brewed_tool_shed_packages module
+------------------------------------------------------------
 
 .. automodule:: galaxy.tools.deps.resolvers.brewed_tool_shed_packages
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`galaxy_packages` Module
------------------------------
+galaxy.tools.deps.resolvers.galaxy_packages module
+--------------------------------------------------
 
 .. automodule:: galaxy.tools.deps.resolvers.galaxy_packages
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`homebrew` Module
-----------------------
+galaxy.tools.deps.resolvers.homebrew module
+-------------------------------------------
 
 .. automodule:: galaxy.tools.deps.resolvers.homebrew
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`modules` Module
----------------------
+galaxy.tools.deps.resolvers.modules module
+------------------------------------------
 
 .. automodule:: galaxy.tools.deps.resolvers.modules
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`resolver_mixins` Module
------------------------------
+galaxy.tools.deps.resolvers.resolver_mixins module
+--------------------------------------------------
 
 .. automodule:: galaxy.tools.deps.resolvers.resolver_mixins
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`tool_shed_packages` Module
---------------------------------
+galaxy.tools.deps.resolvers.tool_shed_packages module
+-----------------------------------------------------
 
 .. automodule:: galaxy.tools.deps.resolvers.tool_shed_packages
     :members:
     :undoc-members:
     :show-inheritance:
+
 

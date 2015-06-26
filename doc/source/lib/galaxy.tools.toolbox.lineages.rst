@@ -1,43 +1,44 @@
-lineages Package
-================
-
-:mod:`lineages` Package
------------------------
+galaxy.tools.toolbox.lineages package
+=====================================
 
 .. automodule:: galaxy.tools.toolbox.lineages
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`factory` Module
----------------------
+Submodules
+----------
+
+galaxy.tools.toolbox.lineages.factory module
+--------------------------------------------
 
 .. automodule:: galaxy.tools.toolbox.lineages.factory
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`interface` Module
------------------------
+galaxy.tools.toolbox.lineages.interface module
+----------------------------------------------
 
 .. automodule:: galaxy.tools.toolbox.lineages.interface
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`stock` Module
--------------------
+galaxy.tools.toolbox.lineages.stock module
+------------------------------------------
 
 .. automodule:: galaxy.tools.toolbox.lineages.stock
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`tool_shed` Module
------------------------
+galaxy.tools.toolbox.lineages.tool_shed module
+----------------------------------------------
 
 .. automodule:: galaxy.tools.toolbox.lineages.tool_shed
     :members:
     :undoc-members:
     :show-inheritance:
+
 

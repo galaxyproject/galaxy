@@ -1,19 +1,28 @@
-search Package
-==============
+galaxy.webapps.tool_shed.search package
+=======================================
 
-:mod:`repo_search` Module
--------------------------
+.. automodule:: galaxy.webapps.tool_shed.search
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+galaxy.webapps.tool_shed.search.repo_search module
+--------------------------------------------------
 
 .. automodule:: galaxy.webapps.tool_shed.search.repo_search
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`tool_search` Module
--------------------------
+galaxy.webapps.tool_shed.search.tool_search module
+--------------------------------------------------
 
 .. automodule:: galaxy.webapps.tool_shed.search.tool_search
     :members:
     :undoc-members:
     :show-inheritance:
+
 

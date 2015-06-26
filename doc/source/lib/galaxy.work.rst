@@ -1,11 +1,20 @@
-work Package
-============
+galaxy.work package
+===================
 
-:mod:`context` Module
----------------------
+.. automodule:: galaxy.work
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+galaxy.work.context module
+--------------------------
 
 .. automodule:: galaxy.work.context
     :members:
     :undoc-members:
     :show-inheritance:
+
 

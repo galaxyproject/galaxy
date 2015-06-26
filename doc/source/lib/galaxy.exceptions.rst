@@ -1,19 +1,20 @@
-exceptions Package
-==================
-
-:mod:`exceptions` Package
--------------------------
+galaxy.exceptions package
+=========================
 
 .. automodule:: galaxy.exceptions
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`error_codes` Module
--------------------------
+Submodules
+----------
+
+galaxy.exceptions.error_codes module
+------------------------------------
 
 .. automodule:: galaxy.exceptions.error_codes
     :members:
     :undoc-members:
     :show-inheritance:
+
 

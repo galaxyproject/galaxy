@@ -1,8 +1,5 @@
-galaxy_ext Package
+galaxy_ext package
 ==================
-
-:mod:`galaxy_ext` Package
--------------------------
 
 .. automodule:: galaxy_ext
     :members:

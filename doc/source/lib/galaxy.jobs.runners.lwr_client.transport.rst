@@ -1,27 +1,28 @@
-transport Package
-=================
-
-:mod:`transport` Package
-------------------------
+galaxy.jobs.runners.lwr_client.transport package
+================================================
 
 .. automodule:: galaxy.jobs.runners.lwr_client.transport
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`curl` Module
-------------------
+Submodules
+----------
+
+galaxy.jobs.runners.lwr_client.transport.curl module
+----------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.lwr_client.transport.curl
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`standard` Module
-----------------------
+galaxy.jobs.runners.lwr_client.transport.standard module
+--------------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.lwr_client.transport.standard
     :members:
     :undoc-members:
     :show-inheritance:
+
 

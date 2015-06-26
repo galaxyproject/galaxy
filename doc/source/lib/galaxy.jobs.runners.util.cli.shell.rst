@@ -1,27 +1,28 @@
-shell Package
-=============
-
-:mod:`shell` Package
---------------------
+galaxy.jobs.runners.util.cli.shell package
+==========================================
 
 .. automodule:: galaxy.jobs.runners.util.cli.shell
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`local` Module
--------------------
+Submodules
+----------
+
+galaxy.jobs.runners.util.cli.shell.local module
+-----------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.cli.shell.local
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`rsh` Module
------------------
+galaxy.jobs.runners.util.cli.shell.rsh module
+---------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.cli.shell.rsh
     :members:
     :undoc-members:
     :show-inheritance:
+
 

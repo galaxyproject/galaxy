@@ -1,51 +1,52 @@
-transport Package
-=================
-
-:mod:`transport` Package
-------------------------
+pulsar.client.transport package
+===============================
 
 .. automodule:: pulsar.client.transport
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`curl` Module
-------------------
+Submodules
+----------
+
+pulsar.client.transport.curl module
+-----------------------------------
 
 .. automodule:: pulsar.client.transport.curl
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`poster` Module
---------------------
+pulsar.client.transport.poster module
+-------------------------------------
 
 .. automodule:: pulsar.client.transport.poster
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`requests` Module
-----------------------
+pulsar.client.transport.requests module
+---------------------------------------
 
 .. automodule:: pulsar.client.transport.requests
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`ssh` Module
------------------
+pulsar.client.transport.ssh module
+----------------------------------
 
 .. automodule:: pulsar.client.transport.ssh
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`standard` Module
-----------------------
+pulsar.client.transport.standard module
+---------------------------------------
 
 .. automodule:: pulsar.client.transport.standard
     :members:
     :undoc-members:
     :show-inheritance:
+
 

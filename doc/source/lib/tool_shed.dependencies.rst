@@ -1,10 +1,7 @@
-dependencies Package
-====================
+tool_shed.dependencies package
+==============================
 
-:mod:`attribute_handlers` Module
---------------------------------
-
-.. automodule:: tool_shed.dependencies.attribute_handlers
+.. automodule:: tool_shed.dependencies
     :members:
     :undoc-members:
     :show-inheritance:
@@ -16,4 +13,16 @@ Subpackages
 
     tool_shed.dependencies.repository
     tool_shed.dependencies.tool
+
+Submodules
+----------
+
+tool_shed.dependencies.attribute_handlers module
+------------------------------------------------
+
+.. automodule:: tool_shed.dependencies.attribute_handlers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

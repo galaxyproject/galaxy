@@ -1,51 +1,60 @@
-recipe Package
-==============
+tool_shed.galaxy_install.tool_dependencies.recipe package
+=========================================================
 
-:mod:`asynchronous_reader` Module
----------------------------------
+.. automodule:: tool_shed.galaxy_install.tool_dependencies.recipe
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+tool_shed.galaxy_install.tool_dependencies.recipe.asynchronous_reader module
+----------------------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tool_dependencies.recipe.asynchronous_reader
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`env_file_builder` Module
-------------------------------
+tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder module
+-------------------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`install_environment` Module
----------------------------------
+tool_shed.galaxy_install.tool_dependencies.recipe.install_environment module
+----------------------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tool_dependencies.recipe.install_environment
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`recipe_manager` Module
-----------------------------
+tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager module
+-----------------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`step_handler` Module
---------------------------
+tool_shed.galaxy_install.tool_dependencies.recipe.step_handler module
+---------------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tool_dependencies.recipe.step_handler
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`tag_handler` Module
--------------------------
+tool_shed.galaxy_install.tool_dependencies.recipe.tag_handler module
+--------------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tool_dependencies.recipe.tag_handler
     :members:
     :undoc-members:
     :show-inheritance:
+
 

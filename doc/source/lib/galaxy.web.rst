@@ -1,42 +1,7 @@
-web Package
-===========
-
-:mod:`web` Package
-------------------
+galaxy.web package
+==================
 
 .. automodule:: galaxy.web
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`buildapp` Module
-----------------------
-
-.. automodule:: galaxy.web.buildapp
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`form_builder` Module
---------------------------
-
-.. automodule:: galaxy.web.form_builder
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`formatting` Module
-------------------------
-
-.. automodule:: galaxy.web.formatting
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`params` Module
---------------------
-
-.. automodule:: galaxy.web.params
     :members:
     :undoc-members:
     :show-inheritance:
@@ -50,4 +15,40 @@ Subpackages
     galaxy.web.framework
     galaxy.web.proxy
     galaxy.web.security
+
+Submodules
+----------
+
+galaxy.web.buildapp module
+--------------------------
+
+.. automodule:: galaxy.web.buildapp
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.web.form_builder module
+------------------------------
+
+.. automodule:: galaxy.web.form_builder
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.web.formatting module
+----------------------------
+
+.. automodule:: galaxy.web.formatting
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.web.params module
+------------------------
+
+.. automodule:: galaxy.web.params
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

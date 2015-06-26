@@ -1,67 +1,68 @@
-linters Package
-===============
-
-:mod:`linters` Package
-----------------------
+galaxy.tools.linters package
+============================
 
 .. automodule:: galaxy.tools.linters
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`citations` Module
------------------------
+Submodules
+----------
+
+galaxy.tools.linters.citations module
+-------------------------------------
 
 .. automodule:: galaxy.tools.linters.citations
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`command` Module
----------------------
+galaxy.tools.linters.command module
+-----------------------------------
 
 .. automodule:: galaxy.tools.linters.command
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`help` Module
-------------------
+galaxy.tools.linters.help module
+--------------------------------
 
 .. automodule:: galaxy.tools.linters.help
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`inputs` Module
---------------------
+galaxy.tools.linters.inputs module
+----------------------------------
 
 .. automodule:: galaxy.tools.linters.inputs
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`outputs` Module
----------------------
+galaxy.tools.linters.outputs module
+-----------------------------------
 
 .. automodule:: galaxy.tools.linters.outputs
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`tests` Module
--------------------
+galaxy.tools.linters.tests module
+---------------------------------
 
 .. automodule:: galaxy.tools.linters.tests
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`top_level` Module
------------------------
+galaxy.tools.linters.top_level module
+-------------------------------------
 
 .. automodule:: galaxy.tools.linters.top_level
     :members:
     :undoc-members:
     :show-inheritance:
+
 

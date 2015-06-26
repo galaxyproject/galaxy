@@ -1,83 +1,84 @@
-dataproviders Package
-=====================
-
-:mod:`dataproviders` Package
-----------------------------
+galaxy.datatypes.dataproviders package
+======================================
 
 .. automodule:: galaxy.datatypes.dataproviders
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`base` Module
-------------------
+Submodules
+----------
+
+galaxy.datatypes.dataproviders.base module
+------------------------------------------
 
 .. automodule:: galaxy.datatypes.dataproviders.base
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`chunk` Module
--------------------
+galaxy.datatypes.dataproviders.chunk module
+-------------------------------------------
 
 .. automodule:: galaxy.datatypes.dataproviders.chunk
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`column` Module
---------------------
+galaxy.datatypes.dataproviders.column module
+--------------------------------------------
 
 .. automodule:: galaxy.datatypes.dataproviders.column
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`dataset` Module
----------------------
+galaxy.datatypes.dataproviders.dataset module
+---------------------------------------------
 
 .. automodule:: galaxy.datatypes.dataproviders.dataset
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`decorators` Module
-------------------------
+galaxy.datatypes.dataproviders.decorators module
+------------------------------------------------
 
 .. automodule:: galaxy.datatypes.dataproviders.decorators
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`exceptions` Module
-------------------------
+galaxy.datatypes.dataproviders.exceptions module
+------------------------------------------------
 
 .. automodule:: galaxy.datatypes.dataproviders.exceptions
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`external` Module
-----------------------
+galaxy.datatypes.dataproviders.external module
+----------------------------------------------
 
 .. automodule:: galaxy.datatypes.dataproviders.external
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`hierarchy` Module
------------------------
+galaxy.datatypes.dataproviders.hierarchy module
+-----------------------------------------------
 
 .. automodule:: galaxy.datatypes.dataproviders.hierarchy
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`line` Module
-------------------
+galaxy.datatypes.dataproviders.line module
+------------------------------------------
 
 .. automodule:: galaxy.datatypes.dataproviders.line
     :members:
     :undoc-members:
     :show-inheritance:
+
 

@@ -1,27 +1,28 @@
-types Package
-=============
-
-:mod:`types` Package
---------------------
+galaxy.dataset_collections.types package
+========================================
 
 .. automodule:: galaxy.dataset_collections.types
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`list` Module
-------------------
+Submodules
+----------
+
+galaxy.dataset_collections.types.list module
+--------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.types.list
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`paired` Module
---------------------
+galaxy.dataset_collections.types.paired module
+----------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.types.paired
     :members:
     :undoc-members:
     :show-inheritance:
+
 

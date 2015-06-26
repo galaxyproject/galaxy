@@ -1,8 +1,5 @@
-auth Package
-============
-
-:mod:`auth` Package
--------------------
+galaxy.auth package
+===================
 
 .. automodule:: galaxy.auth
     :members:

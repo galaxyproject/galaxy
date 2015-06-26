@@ -1,19 +1,28 @@
-tools Package
-=============
+tool_shed.galaxy_install.tools package
+======================================
 
-:mod:`data_manager` Module
---------------------------
+.. automodule:: tool_shed.galaxy_install.tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+tool_shed.galaxy_install.tools.data_manager module
+--------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tools.data_manager
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`tool_panel_manager` Module
---------------------------------
+tool_shed.galaxy_install.tools.tool_panel_manager module
+--------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tools.tool_panel_manager
     :members:
     :undoc-members:
     :show-inheritance:
+
 

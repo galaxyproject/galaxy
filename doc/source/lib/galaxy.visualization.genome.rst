@@ -1,8 +1,5 @@
-genome Package
-==============
-
-:mod:`genome` Package
----------------------
+galaxy.visualization.genome package
+===================================
 
 .. automodule:: galaxy.visualization.genome
     :members:

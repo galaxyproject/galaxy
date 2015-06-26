@@ -1,43 +1,52 @@
-plugins Package
-===============
+galaxy.visualization.plugins package
+====================================
 
-:mod:`config_parser` Module
----------------------------
+.. automodule:: galaxy.visualization.plugins
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+galaxy.visualization.plugins.config_parser module
+-------------------------------------------------
 
 .. automodule:: galaxy.visualization.plugins.config_parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`plugin` Module
---------------------
+galaxy.visualization.plugins.plugin module
+------------------------------------------
 
 .. automodule:: galaxy.visualization.plugins.plugin
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`registry` Module
-----------------------
+galaxy.visualization.plugins.registry module
+--------------------------------------------
 
 .. automodule:: galaxy.visualization.plugins.registry
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`resource_parser` Module
------------------------------
+galaxy.visualization.plugins.resource_parser module
+---------------------------------------------------
 
 .. automodule:: galaxy.visualization.plugins.resource_parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`utils` Module
--------------------
+galaxy.visualization.plugins.utils module
+-----------------------------------------
 
 .. automodule:: galaxy.visualization.plugins.utils
     :members:
     :undoc-members:
     :show-inheritance:
+
 

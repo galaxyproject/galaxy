@@ -1,8 +1,5 @@
-backports Package
-=================
-
-:mod:`backports` Package
-------------------------
+galaxy.util.backports package
+=============================
 
 .. automodule:: galaxy.util.backports
     :members:

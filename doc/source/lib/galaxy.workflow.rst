@@ -1,58 +1,7 @@
-workflow Package
-================
+galaxy.workflow package
+=======================
 
-:mod:`extract` Module
----------------------
-
-.. automodule:: galaxy.workflow.extract
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`modules` Module
----------------------
-
-.. automodule:: galaxy.workflow.modules
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`render` Module
---------------------
-
-.. automodule:: galaxy.workflow.render
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`run` Module
------------------
-
-.. automodule:: galaxy.workflow.run
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`run_request` Module
--------------------------
-
-.. automodule:: galaxy.workflow.run_request
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`scheduling_manager` Module
---------------------------------
-
-.. automodule:: galaxy.workflow.scheduling_manager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`steps` Module
--------------------
-
-.. automodule:: galaxy.workflow.steps
+.. automodule:: galaxy.workflow
     :members:
     :undoc-members:
     :show-inheritance:
@@ -63,4 +12,64 @@ Subpackages
 .. toctree::
 
     galaxy.workflow.schedulers
+
+Submodules
+----------
+
+galaxy.workflow.extract module
+------------------------------
+
+.. automodule:: galaxy.workflow.extract
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.workflow.modules module
+------------------------------
+
+.. automodule:: galaxy.workflow.modules
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.workflow.render module
+-----------------------------
+
+.. automodule:: galaxy.workflow.render
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.workflow.run module
+--------------------------
+
+.. automodule:: galaxy.workflow.run
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.workflow.run_request module
+----------------------------------
+
+.. automodule:: galaxy.workflow.run_request
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.workflow.scheduling_manager module
+-----------------------------------------
+
+.. automodule:: galaxy.workflow.scheduling_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.workflow.steps module
+----------------------------
+
+.. automodule:: galaxy.workflow.steps
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

@@ -1,50 +1,7 @@
-galaxy_install Package
-======================
+tool_shed.galaxy_install package
+================================
 
-:mod:`dependency_display` Module
---------------------------------
-
-.. automodule:: tool_shed.galaxy_install.dependency_display
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`install_manager` Module
------------------------------
-
-.. automodule:: tool_shed.galaxy_install.install_manager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`installed_repository_manager` Module
-------------------------------------------
-
-.. automodule:: tool_shed.galaxy_install.installed_repository_manager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`repair_repository_manager` Module
----------------------------------------
-
-.. automodule:: tool_shed.galaxy_install.repair_repository_manager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`tool_migration_manager` Module
-------------------------------------
-
-.. automodule:: tool_shed.galaxy_install.tool_migration_manager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`update_repository_manager` Module
----------------------------------------
-
-.. automodule:: tool_shed.galaxy_install.update_repository_manager
+.. automodule:: tool_shed.galaxy_install
     :members:
     :undoc-members:
     :show-inheritance:
@@ -62,4 +19,56 @@ Subpackages
     tool_shed.galaxy_install.tool_dependencies
     tool_shed.galaxy_install.tools
     tool_shed.galaxy_install.utility_containers
+
+Submodules
+----------
+
+tool_shed.galaxy_install.dependency_display module
+--------------------------------------------------
+
+.. automodule:: tool_shed.galaxy_install.dependency_display
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+tool_shed.galaxy_install.install_manager module
+-----------------------------------------------
+
+.. automodule:: tool_shed.galaxy_install.install_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+tool_shed.galaxy_install.installed_repository_manager module
+------------------------------------------------------------
+
+.. automodule:: tool_shed.galaxy_install.installed_repository_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+tool_shed.galaxy_install.repair_repository_manager module
+---------------------------------------------------------
+
+.. automodule:: tool_shed.galaxy_install.repair_repository_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+tool_shed.galaxy_install.tool_migration_manager module
+------------------------------------------------------
+
+.. automodule:: tool_shed.galaxy_install.tool_migration_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+tool_shed.galaxy_install.update_repository_manager module
+---------------------------------------------------------
+
+.. automodule:: tool_shed.galaxy_install.update_repository_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

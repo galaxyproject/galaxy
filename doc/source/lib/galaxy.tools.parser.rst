@@ -1,51 +1,52 @@
-parser Package
-==============
-
-:mod:`parser` Package
----------------------
+galaxy.tools.parser package
+===========================
 
 .. automodule:: galaxy.tools.parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`factory` Module
----------------------
+Submodules
+----------
+
+galaxy.tools.parser.factory module
+----------------------------------
 
 .. automodule:: galaxy.tools.parser.factory
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`interface` Module
------------------------
+galaxy.tools.parser.interface module
+------------------------------------
 
 .. automodule:: galaxy.tools.parser.interface
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`util` Module
-------------------
+galaxy.tools.parser.util module
+-------------------------------
 
 .. automodule:: galaxy.tools.parser.util
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`xml` Module
------------------
+galaxy.tools.parser.xml module
+------------------------------
 
 .. automodule:: galaxy.tools.parser.xml
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`yaml` Module
-------------------
+galaxy.tools.parser.yaml module
+-------------------------------
 
 .. automodule:: galaxy.tools.parser.yaml
     :members:
     :undoc-members:
     :show-inheritance:
+
 

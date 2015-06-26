@@ -1,8 +1,5 @@
-tracks Package
-==============
-
-:mod:`tracks` Package
----------------------
+galaxy.visualization.tracks package
+===================================
 
 .. automodule:: galaxy.visualization.tracks
     :members:

@@ -1,8 +1,5 @@
-webapps Package
-===============
-
-:mod:`webapps` Package
-----------------------
+galaxy.webapps package
+======================
 
 .. automodule:: galaxy.webapps
     :members:

@@ -1,27 +1,36 @@
-util Package
-============
+galaxy.webapps.tool_shed.util package
+=====================================
 
-:mod:`hgweb_config` Module
---------------------------
+.. automodule:: galaxy.webapps.tool_shed.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+galaxy.webapps.tool_shed.util.hgweb_config module
+-------------------------------------------------
 
 .. automodule:: galaxy.webapps.tool_shed.util.hgweb_config
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`ratings_util` Module
---------------------------
+galaxy.webapps.tool_shed.util.ratings_util module
+-------------------------------------------------
 
 .. automodule:: galaxy.webapps.tool_shed.util.ratings_util
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`shed_statistics` Module
------------------------------
+galaxy.webapps.tool_shed.util.shed_statistics module
+----------------------------------------------------
 
 .. automodule:: galaxy.webapps.tool_shed.util.shed_statistics
     :members:
     :undoc-members:
     :show-inheritance:
+
 

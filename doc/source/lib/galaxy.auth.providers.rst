@@ -1,35 +1,36 @@
-providers Package
-=================
-
-:mod:`providers` Package
-------------------------
+galaxy.auth.providers package
+=============================
 
 .. automodule:: galaxy.auth.providers
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`alwaysreject` Module
---------------------------
+Submodules
+----------
+
+galaxy.auth.providers.alwaysreject module
+-----------------------------------------
 
 .. automodule:: galaxy.auth.providers.alwaysreject
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`ldap_ad` Module
----------------------
+galaxy.auth.providers.ldap_ad module
+------------------------------------
 
 .. automodule:: galaxy.auth.providers.ldap_ad
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`localdb` Module
----------------------
+galaxy.auth.providers.localdb module
+------------------------------------
 
 .. automodule:: galaxy.auth.providers.localdb
     :members:
     :undoc-members:
     :show-inheritance:
+
 

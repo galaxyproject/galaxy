@@ -1,50 +1,7 @@
-toolbox Package
-===============
-
-:mod:`toolbox` Package
-----------------------
+galaxy.tools.toolbox package
+============================
 
 .. automodule:: galaxy.tools.toolbox
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`base` Module
-------------------
-
-.. automodule:: galaxy.tools.toolbox.base
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`integrated_panel` Module
-------------------------------
-
-.. automodule:: galaxy.tools.toolbox.integrated_panel
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`panel` Module
--------------------
-
-.. automodule:: galaxy.tools.toolbox.panel
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`tags` Module
-------------------
-
-.. automodule:: galaxy.tools.toolbox.tags
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`watcher` Module
----------------------
-
-.. automodule:: galaxy.tools.toolbox.watcher
     :members:
     :undoc-members:
     :show-inheritance:
@@ -56,4 +13,48 @@ Subpackages
 
     galaxy.tools.toolbox.filters
     galaxy.tools.toolbox.lineages
+
+Submodules
+----------
+
+galaxy.tools.toolbox.base module
+--------------------------------
+
+.. automodule:: galaxy.tools.toolbox.base
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.tools.toolbox.integrated_panel module
+--------------------------------------------
+
+.. automodule:: galaxy.tools.toolbox.integrated_panel
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.tools.toolbox.panel module
+---------------------------------
+
+.. automodule:: galaxy.tools.toolbox.panel
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.tools.toolbox.tags module
+--------------------------------
+
+.. automodule:: galaxy.tools.toolbox.tags
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.tools.toolbox.watcher module
+-----------------------------------
+
+.. automodule:: galaxy.tools.toolbox.watcher
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

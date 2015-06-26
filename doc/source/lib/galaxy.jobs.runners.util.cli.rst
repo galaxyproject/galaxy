@@ -1,18 +1,7 @@
-cli Package
-===========
-
-:mod:`cli` Package
-------------------
+galaxy.jobs.runners.util.cli package
+====================================
 
 .. automodule:: galaxy.jobs.runners.util.cli
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`factory` Module
----------------------
-
-.. automodule:: galaxy.jobs.runners.util.cli.factory
     :members:
     :undoc-members:
     :show-inheritance:
@@ -24,4 +13,16 @@ Subpackages
 
     galaxy.jobs.runners.util.cli.job
     galaxy.jobs.runners.util.cli.shell
+
+Submodules
+----------
+
+galaxy.jobs.runners.util.cli.factory module
+-------------------------------------------
+
+.. automodule:: galaxy.jobs.runners.util.cli.factory
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

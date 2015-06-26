@@ -1,8 +1,5 @@
-job_script Package
-==================
-
-:mod:`job_script` Package
--------------------------
+galaxy.jobs.runners.util.job_script package
+===========================================
 
 .. automodule:: galaxy.jobs.runners.util.job_script
     :members:

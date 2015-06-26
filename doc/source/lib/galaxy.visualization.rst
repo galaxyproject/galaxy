@@ -1,18 +1,7 @@
-visualization Package
-=====================
-
-:mod:`visualization` Package
-----------------------------
+galaxy.visualization package
+============================
 
 .. automodule:: galaxy.visualization
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`genomes` Module
----------------------
-
-.. automodule:: galaxy.visualization.genomes
     :members:
     :undoc-members:
     :show-inheritance:
@@ -26,4 +15,16 @@ Subpackages
     galaxy.visualization.genome
     galaxy.visualization.plugins
     galaxy.visualization.tracks
+
+Submodules
+----------
+
+galaxy.visualization.genomes module
+-----------------------------------
+
+.. automodule:: galaxy.visualization.genomes
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

@@ -17,8 +17,6 @@ import sys, os, datetime
 ####### REQUIRED GALAXY INCLUDES
 
 sys.path.append(os.path.join(os.getcwd(), '../../lib'))
-import galaxy
-from galaxy import eggs
 
 #######
 
@@ -103,7 +101,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'classic'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

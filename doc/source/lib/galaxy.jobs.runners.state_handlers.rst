@@ -1,11 +1,20 @@
-state_handlers Package
-======================
+galaxy.jobs.runners.state_handlers package
+==========================================
 
-:mod:`resubmit` Module
-----------------------
+.. automodule:: galaxy.jobs.runners.state_handlers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+galaxy.jobs.runners.state_handlers.resubmit module
+--------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.state_handlers.resubmit
     :members:
     :undoc-members:
     :show-inheritance:
+
 

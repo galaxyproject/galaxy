@@ -1,19 +1,20 @@
-schedulers Package
-==================
-
-:mod:`schedulers` Package
--------------------------
+galaxy.workflow.schedulers package
+==================================
 
 .. automodule:: galaxy.workflow.schedulers
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`core` Module
-------------------
+Submodules
+----------
+
+galaxy.workflow.schedulers.core module
+--------------------------------------
 
 .. automodule:: galaxy.workflow.schedulers.core
     :members:
     :undoc-members:
     :show-inheritance:
+
 

@@ -1,27 +1,28 @@
-staging Package
-===============
-
-:mod:`staging` Package
-----------------------
+galaxy.jobs.runners.lwr_client.staging package
+==============================================
 
 .. automodule:: galaxy.jobs.runners.lwr_client.staging
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`down` Module
-------------------
+Submodules
+----------
+
+galaxy.jobs.runners.lwr_client.staging.down module
+--------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.lwr_client.staging.down
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`up` Module
-----------------
+galaxy.jobs.runners.lwr_client.staging.up module
+------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.lwr_client.staging.up
     :members:
     :undoc-members:
     :show-inheritance:
+
 

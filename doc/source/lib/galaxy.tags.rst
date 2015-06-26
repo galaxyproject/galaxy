@@ -1,8 +1,5 @@
-tags Package
-============
-
-:mod:`tags` Package
--------------------
+galaxy.tags package
+===================
 
 .. automodule:: galaxy.tags
     :members:

@@ -1,18 +1,7 @@
-tool_shed Package
+tool_shed package
 =================
 
-:mod:`repository_registry` Module
----------------------------------
-
-.. automodule:: tool_shed.repository_registry
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`tool_shed_registry` Module
---------------------------------
-
-.. automodule:: tool_shed.tool_shed_registry
+.. automodule:: tool_shed
     :members:
     :undoc-members:
     :show-inheritance:
@@ -32,4 +21,24 @@ Subpackages
     tool_shed.tools
     tool_shed.util
     tool_shed.utility_containers
+
+Submodules
+----------
+
+tool_shed.repository_registry module
+------------------------------------
+
+.. automodule:: tool_shed.repository_registry
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+tool_shed.tool_shed_registry module
+-----------------------------------
+
+.. automodule:: tool_shed.tool_shed_registry
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

@@ -1,8 +1,5 @@
-condor Package
-==============
-
-:mod:`condor` Package
----------------------
+galaxy.jobs.runners.util.condor package
+=======================================
 
 .. automodule:: galaxy.jobs.runners.util.condor
     :members:
