@@ -1,11 +1,14 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings, spark_css" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
 
+${spark_css()}
+${jqs_style()}
 ${get_css()}
 
 <div class="toolForm">
@@ -27,6 +30,7 @@ ${get_css()}
                 </tr>
                 <% ctr = 0 %>
                 %for workflow in workflows:
+                    <% key = str(workflow[2]) + str(workflow[3]) %>
                     <%
                         month = workflow[0]
                         total = workflow[1]
@@ -38,6 +42,11 @@ ${get_css()}
                     %endif
                         <td>${month}</td>
                         <td>${total}</td>
+                        %try:
+                            ${make_sparkline(key, trends[key], "bar", "/ day")}
+                        %except KeyError:
+                        %endtry
+                        <td id=${key}></td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor

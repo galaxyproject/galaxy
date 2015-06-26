@@ -52,6 +52,22 @@ def sorter(default_sort_id, kwd):
 
     return SortSpec(sort_id, order, arrow, _order)
 
+def get_spark_time( time_period ):
+    _time_period = 0
+
+    if time_period == "days":
+        _time_period = 1.0
+    elif time_period == "weeks":
+        _time_period = 7.0
+    elif time_period == "months":
+        _time_period = 30.0
+    elif time_period == "years":
+        _time_period = 365.0
+    else:
+        time_period = "days"
+        _time_period = 1.0
+
+    return time_period, _time_period
 
 class SpecifiedDateListGrid( grids.Grid ):
 
@@ -454,10 +470,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         jobs = []
         for row in jobs_by_month.execute():
-            month = int(row.date.strftime("%-m"))
             month_name = row.date.strftime("%B")
             year = int(row.date.strftime("%Y"))
-            wday, day_range = calendar.monthrange(year, month)
 
             jobs.append( (
                 row.date.strftime( "%Y-%m" ),
@@ -557,17 +571,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         arrow = specs.arrow
         _order = specs.exc_order
         time_period = kwd.get('spark_time')
-        if time_period == "days":
-            _time_period = 1.0
-        elif time_period == "weeks":
-            _time_period = 7.0
-        elif time_period == "months":
-            _time_period = 30.0
-        elif time_period == "years":
-            _time_period = 365.0
-        else:
-            time_period = "days"
-            _time_period = 1.0
+        time_period, _time_period = get_spark_time( time_period )
         limit = 30
 
         jobs = []
@@ -689,18 +693,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         arrow = specs.arrow
         _order = specs.exc_order
         time_period = kwd.get('spark_time')
-        if time_period == "days":
-            _time_period = 1.0
-        elif time_period == "weeks":
-            _time_period = 7.0
-        elif time_period == "months":
-            _time_period = 30.0
-        elif time_period == "years":
-            _time_period = 365.0
-        else:
-            time_period = "days"
-            _time_period = 1.0
-
+        time_period, _time_period = get_spark_time( time_period )
         limit = 30
 
         # In case we don't know which is the monitor user we will query for all jobs
@@ -770,19 +763,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         arrow = specs.arrow
         _order = specs.exc_order
         time_period = kwd.get('spark_time')
-        if time_period == "days":
-            _time_period = 1.0
-        elif time_period == "weeks":
-            _time_period = 7.0
-        elif time_period == "months":
-            _time_period = 30.0
-        elif time_period == "years":
-            _time_period = 365.0
-        else:
-            time_period = "days"
-            _time_period = 1.0
-
+        time_period, _time_period = get_spark_time( time_period )
         limit = 30
+
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 

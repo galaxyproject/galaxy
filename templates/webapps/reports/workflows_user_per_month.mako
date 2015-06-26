@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
 <%
@@ -10,6 +11,7 @@
     ${render_msg( message, 'done' )}
 %endif
 
+${jqs_style()}
 ${get_css()}
     
 <%
@@ -19,6 +21,9 @@ ${get_css()}
 <div class="toolForm">
     <div class="toolFormBody">
         <h3 align="center">Workflows per month for user "${_email}"</h3>
+        <h4 align="center">
+            <p>Graph goes from first of the month to the last</p>
+        </h4>
         <table align="center" width="60%" class="colored">
             %if len( workflows ) == 0:
                 <tr><td colspan="2">There are no workflows for user "${_email}"</td></tr>
@@ -36,6 +41,7 @@ ${get_css()}
                 <% ctr = 0 %>
                 %for workflow in workflows:
                     <%
+                        key = workflow[2] + workflow[3]
                         month = workflow[0]
                         total = workflow[1]
                     %>
@@ -46,6 +52,8 @@ ${get_css()}
                     %endif
                         <td>${month}</td>
                         <td>${total}</td>
+                        ${make_sparkline(key, trends[key], "bar", "/ day")}
+                        <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>
                 %endfor

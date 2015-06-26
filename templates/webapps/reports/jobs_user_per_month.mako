@@ -3,7 +3,9 @@
 <%namespace file="/spark_base.mako" import="jqs_style, make_sparkline" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
-<% from galaxy import util %>
+<% 
+   from galaxy import util 
+%>
 
 %if message:
     ${render_msg( message, 'done' )}
