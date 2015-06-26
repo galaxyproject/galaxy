@@ -48,6 +48,7 @@ class Wiff(Binary):
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
+Binary.register_sniffable_binary_format("wiff", "wiff", Wiff )
 
 class IdpDB(Binary):
     file_ext = "idpDB"
@@ -274,6 +275,7 @@ class ThermoRAW(Binary):
         except:
             return "Thermo Finnigan RAW file (%s)" % (data.nice_size(dataset.get_size()))
 
+Binary.register_sniffable_binary_format("thermo.raw", "raw", ThermoRAW )
 
 class Msp(Text):
     """ Output of NIST MS Search Program chemdata.nist.gov/mass-spc/ftp/mass-spc/PepLib.pdf """
