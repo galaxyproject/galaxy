@@ -14,7 +14,7 @@ Subpackages
 
 .. toctree::
 
-    galaxy.webapps.community
     galaxy.webapps.galaxy
     galaxy.webapps.reports
+    galaxy.webapps.tool_shed
 

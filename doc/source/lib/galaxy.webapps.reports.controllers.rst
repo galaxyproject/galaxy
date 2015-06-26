@@ -17,6 +17,14 @@ controllers Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`query` Module
+-------------------
+
+.. automodule:: galaxy.webapps.reports.controllers.query
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`root` Module
 ------------------
 

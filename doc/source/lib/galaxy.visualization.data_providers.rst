@@ -17,6 +17,14 @@ data_providers Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`cigar` Module
+-------------------
+
+.. automodule:: galaxy.visualization.data_providers.cigar
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`genome` Module
 --------------------
 

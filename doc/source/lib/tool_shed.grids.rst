@@ -9,6 +9,14 @@ grids Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`repository_grid_filter_manager` Module
+--------------------------------------------
+
+.. automodule:: tool_shed.grids.repository_grid_filter_manager
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`repository_grids` Module
 ------------------------------
 

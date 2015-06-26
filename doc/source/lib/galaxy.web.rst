@@ -25,6 +25,14 @@ web Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`formatting` Module
+------------------------
+
+.. automodule:: galaxy.web.formatting
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`params` Module
 --------------------
 
@@ -40,5 +48,6 @@ Subpackages
 
     galaxy.web.base
     galaxy.web.framework
+    galaxy.web.proxy
     galaxy.web.security
 

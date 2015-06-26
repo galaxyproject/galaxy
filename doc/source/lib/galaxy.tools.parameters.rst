@@ -17,6 +17,14 @@ parameters Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`dataset_matcher` Module
+-----------------------------
+
+.. automodule:: galaxy.tools.parameters.dataset_matcher
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`dynamic_options` Module
 -----------------------------
 
@@ -33,6 +41,14 @@ parameters Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`history_query` Module
+---------------------------
+
+.. automodule:: galaxy.tools.parameters.history_query
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`input_translation` Module
 -------------------------------
 
@@ -41,10 +57,26 @@ parameters Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`meta` Module
+------------------
+
+.. automodule:: galaxy.tools.parameters.meta
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`output` Module
 --------------------
 
 .. automodule:: galaxy.tools.parameters.output
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`output_collect` Module
+----------------------------
+
+.. automodule:: galaxy.tools.parameters.output_collect
     :members:
     :undoc-members:
     :show-inheritance:
@@ -61,6 +93,14 @@ parameters Package
 ------------------------
 
 .. automodule:: galaxy.tools.parameters.validation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`wrapped` Module
+---------------------
+
+.. automodule:: galaxy.tools.parameters.wrapped
     :members:
     :undoc-members:
     :show-inheritance:

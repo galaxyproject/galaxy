@@ -1,6 +1,14 @@
 display_applications Package
 ============================
 
+:mod:`display_applications` Package
+-----------------------------------
+
+.. automodule:: galaxy.datatypes.display_applications
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`application` Module
 -------------------------
 

@@ -9,6 +9,14 @@ middleware Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`error` Module
+-------------------
+
+.. automodule:: galaxy.web.framework.middleware.error
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`profile` Module
 ---------------------
 
@@ -21,6 +29,22 @@ middleware Package
 ------------------------
 
 .. automodule:: galaxy.web.framework.middleware.remoteuser
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`request_id` Module
+------------------------
+
+.. automodule:: galaxy.web.framework.middleware.request_id
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`sentry` Module
+--------------------
+
+.. automodule:: galaxy.web.framework.middleware.sentry
     :members:
     :undoc-members:
     :show-inheritance:

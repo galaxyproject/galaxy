@@ -9,18 +9,26 @@ actions Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`history_imp_exp` Module
------------------------------
+:mod:`data_manager` Module
+--------------------------
 
-.. automodule:: galaxy.tools.actions.history_imp_exp
+.. automodule:: galaxy.tools.actions.data_manager
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`index_genome` Module
---------------------------
+:mod:`data_source` Module
+-------------------------
 
-.. automodule:: galaxy.tools.actions.index_genome
+.. automodule:: galaxy.tools.actions.data_source
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`history_imp_exp` Module
+-----------------------------
+
+.. automodule:: galaxy.tools.actions.history_imp_exp
     :members:
     :undoc-members:
     :show-inheritance:

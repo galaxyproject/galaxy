@@ -1,27 +1,18 @@
 tool_dependencies Package
 =========================
 
-:mod:`common_util` Module
+:mod:`env_manager` Module
 -------------------------
 
-.. automodule:: tool_shed.galaxy_install.tool_dependencies.common_util
+.. automodule:: tool_shed.galaxy_install.tool_dependencies.env_manager
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`fabric_util` Module
--------------------------
+Subpackages
+-----------
 
-.. automodule:: tool_shed.galaxy_install.tool_dependencies.fabric_util
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. toctree::
 
-:mod:`install_util` Module
---------------------------
-
-.. automodule:: tool_shed.galaxy_install.tool_dependencies.install_util
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    tool_shed.galaxy_install.tool_dependencies.recipe
 

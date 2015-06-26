@@ -17,30 +17,6 @@ deferred Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`genome_index` Module
---------------------------
-
-.. automodule:: galaxy.jobs.deferred.genome_index
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`genome_transfer` Module
------------------------------
-
-.. automodule:: galaxy.jobs.deferred.genome_transfer
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`liftover_transfer` Module
--------------------------------
-
-.. automodule:: galaxy.jobs.deferred.liftover_transfer
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`manual_data_transfer` Module
 ----------------------------------
 

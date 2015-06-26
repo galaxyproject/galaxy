@@ -57,6 +57,30 @@ runners Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`pulsar` Module
+--------------------
+
+.. automodule:: galaxy.jobs.runners.pulsar
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`slurm` Module
+-------------------
+
+.. automodule:: galaxy.jobs.runners.slurm
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`state_handler_factory` Module
+-----------------------------------
+
+.. automodule:: galaxy.jobs.runners.state_handler_factory
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`tasks` Module
 -------------------
 
@@ -70,7 +94,7 @@ Subpackages
 
 .. toctree::
 
-    galaxy.jobs.runners.cli_job
-    galaxy.jobs.runners.cli_shell
     galaxy.jobs.runners.lwr_client
+    galaxy.jobs.runners.state_handlers
+    galaxy.jobs.runners.util
 

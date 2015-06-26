@@ -9,6 +9,14 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`generic_util` Module
+--------------------------
+
+.. automodule:: galaxy.datatypes.util.generic_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`gff_util` Module
 ----------------------
 

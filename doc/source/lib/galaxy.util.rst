@@ -17,6 +17,14 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`biostar` Module
+---------------------
+
+.. automodule:: galaxy.util.biostar
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`bunch` Module
 -------------------
 
@@ -25,10 +33,34 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`dbkeys` Module
+--------------------
+
+.. automodule:: galaxy.util.dbkeys
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`debugging` Module
 -----------------------
 
 .. automodule:: galaxy.util.debugging
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`dictobj` Module
+---------------------
+
+.. automodule:: galaxy.util.dictobj
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`directory_hash` Module
+----------------------------
+
+.. automodule:: galaxy.util.directory_hash
     :members:
     :undoc-members:
     :show-inheritance:
@@ -73,18 +105,26 @@ util Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`lrucache` Module
-----------------------
+:mod:`jstree` Module
+--------------------
 
-.. automodule:: galaxy.util.lrucache
+.. automodule:: galaxy.util.jstree
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`memdump` Module
----------------------
+:mod:`lazy_process` Module
+--------------------------
 
-.. automodule:: galaxy.util.memdump
+.. automodule:: galaxy.util.lazy_process
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`lrucache` Module
+----------------------
+
+.. automodule:: galaxy.util.lrucache
     :members:
     :undoc-members:
     :show-inheritance:
@@ -97,10 +137,42 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`object_wrapper` Module
+----------------------------
+
+.. automodule:: galaxy.util.object_wrapper
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`odict` Module
 -------------------
 
 .. automodule:: galaxy.util.odict
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`permutations` Module
+--------------------------
+
+.. automodule:: galaxy.util.permutations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`plugin_config` Module
+---------------------------
+
+.. automodule:: galaxy.util.plugin_config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`properties` Module
+------------------------
+
+.. automodule:: galaxy.util.properties
     :members:
     :undoc-members:
     :show-inheritance:
@@ -113,18 +185,42 @@ util Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`shed_util` Module
------------------------
+:mod:`simplegraph` Module
+-------------------------
 
-.. automodule:: galaxy.util.shed_util
+.. automodule:: galaxy.util.simplegraph
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`shed_util_common` Module
-------------------------------
+:mod:`sleeper` Module
+---------------------
 
-.. automodule:: galaxy.util.shed_util_common
+.. automodule:: galaxy.util.sleeper
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`sockets` Module
+---------------------
+
+.. automodule:: galaxy.util.sockets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`specs` Module
+-------------------
+
+.. automodule:: galaxy.util.specs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`sqlite` Module
+--------------------
+
+.. automodule:: galaxy.util.sqlite
     :members:
     :undoc-members:
     :show-inheritance:
@@ -133,6 +229,14 @@ util Package
 ------------------------
 
 .. automodule:: galaxy.util.streamball
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`submodules` Module
+------------------------
+
+.. automodule:: galaxy.util.submodules
     :members:
     :undoc-members:
     :show-inheritance:
@@ -153,6 +257,22 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`validation` Module
+------------------------
+
+.. automodule:: galaxy.util.validation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`xml_macros` Module
+------------------------
+
+.. automodule:: galaxy.util.xml_macros
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
@@ -160,4 +280,5 @@ Subpackages
 
     galaxy.util.backports
     galaxy.util.log
+    galaxy.util.pastescript
 

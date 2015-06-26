@@ -33,6 +33,14 @@ controllers Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`biostar` Module
+---------------------
+
+.. automodule:: galaxy.webapps.galaxy.controllers.biostar
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`cloudlaunch` Module
 -------------------------
 
@@ -41,10 +49,10 @@ controllers Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`data_admin` Module
-------------------------
+:mod:`data_manager` Module
+--------------------------
 
-.. automodule:: galaxy.webapps.galaxy.controllers.data_admin
+.. automodule:: galaxy.webapps.galaxy.controllers.data_manager
     :members:
     :undoc-members:
     :show-inheritance:
@@ -177,6 +185,14 @@ controllers Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`search` Module
+--------------------
+
+.. automodule:: galaxy.webapps.galaxy.controllers.search
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`tag` Module
 -----------------
 
@@ -205,6 +221,14 @@ controllers Package
 ------------------
 
 .. automodule:: galaxy.webapps.galaxy.controllers.user
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`userskeys` Module
+-----------------------
+
+.. automodule:: galaxy.webapps.galaxy.controllers.userskeys
     :members:
     :undoc-members:
     :show-inheritance:

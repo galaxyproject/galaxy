@@ -9,6 +9,14 @@ model Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`base` Module
+------------------
+
+.. automodule:: galaxy.model.base
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`custom_types` Module
 --------------------------
 
@@ -33,10 +41,18 @@ model Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`mapping_tests` Module
----------------------------
+:mod:`search` Module
+--------------------
 
-.. automodule:: galaxy.model.mapping_tests
+.. automodule:: galaxy.model.search
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`util` Module
+------------------
+
+.. automodule:: galaxy.model.util
     :members:
     :undoc-members:
     :show-inheritance:
@@ -48,4 +64,5 @@ Subpackages
 
     galaxy.model.migrate
     galaxy.model.orm
+    galaxy.model.tool_shed_install
 

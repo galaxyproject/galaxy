@@ -9,6 +9,14 @@ orm Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`engine_factory` Module
+----------------------------
+
+.. automodule:: galaxy.model.orm.engine_factory
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`logging_connection_proxy` Module
 --------------------------------------
 
@@ -17,10 +25,19 @@ orm Package
     :undoc-members:
     :show-inheritance:
 
-Subpackages
------------
+:mod:`now` Module
+-----------------
 
-.. toctree::
+.. automodule:: galaxy.model.orm.now
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-    galaxy.model.orm.ext
+:mod:`scripts` Module
+---------------------
+
+.. automodule:: galaxy.model.orm.scripts
+    :members:
+    :undoc-members:
+    :show-inheritance:
 

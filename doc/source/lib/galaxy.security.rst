@@ -9,6 +9,14 @@ security Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`passwords` Module
+-----------------------
+
+.. automodule:: galaxy.security.passwords
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`validate_user_input` Module
 ---------------------------------
 

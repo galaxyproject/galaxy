@@ -42,6 +42,7 @@ Subpackages
     galaxy.webapps.tool_shed.controllers
     galaxy.webapps.tool_shed.framework
     galaxy.webapps.tool_shed.model
+    galaxy.webapps.tool_shed.search
     galaxy.webapps.tool_shed.security
     galaxy.webapps.tool_shed.util
 

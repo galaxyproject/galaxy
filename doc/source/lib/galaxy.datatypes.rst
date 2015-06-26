@@ -57,6 +57,14 @@ datatypes Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`graph` Module
+-------------------
+
+.. automodule:: galaxy.datatypes.graph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`images` Module
 --------------------
 
@@ -77,6 +85,14 @@ datatypes Package
 ----------------------
 
 .. automodule:: galaxy.datatypes.metadata
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`msa` Module
+-----------------
+
+.. automodule:: galaxy.datatypes.msa
     :members:
     :undoc-members:
     :show-inheritance:
@@ -129,6 +145,14 @@ datatypes Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`text` Module
+------------------
+
+.. automodule:: galaxy.datatypes.text
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`tracks` Module
 --------------------
 
@@ -151,6 +175,7 @@ Subpackages
 .. toctree::
 
     galaxy.datatypes.converters
+    galaxy.datatypes.dataproviders
     galaxy.datatypes.display_applications
     galaxy.datatypes.util
 

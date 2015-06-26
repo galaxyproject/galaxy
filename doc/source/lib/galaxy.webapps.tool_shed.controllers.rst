@@ -17,6 +17,14 @@ controllers Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`groups` Module
+--------------------
+
+.. automodule:: galaxy.webapps.tool_shed.controllers.groups
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`hg` Module
 ----------------
 

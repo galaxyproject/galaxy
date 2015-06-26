@@ -1,14 +1,6 @@
 converters Package
 ==================
 
-:mod:`bed_to_genetrack_converter` Module
-----------------------------------------
-
-.. automodule:: galaxy.datatypes.converters.bed_to_genetrack_converter
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`bed_to_gff_converter` Module
 ----------------------------------
 
@@ -129,14 +121,6 @@ converters Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`interval_to_summary_tree_converter` Module
-------------------------------------------------
-
-.. automodule:: galaxy.datatypes.converters.interval_to_summary_tree_converter
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`interval_to_tabix_converter` Module
 -----------------------------------------
 
@@ -201,10 +185,10 @@ converters Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`sam_or_bam_to_summary_tree_converter` Module
---------------------------------------------------
+:mod:`pileup_to_interval_index_converter` Module
+------------------------------------------------
 
-.. automodule:: galaxy.datatypes.converters.sam_or_bam_to_summary_tree_converter
+.. automodule:: galaxy.datatypes.converters.pileup_to_interval_index_converter
     :members:
     :undoc-members:
     :show-inheritance:
@@ -221,14 +205,6 @@ converters Package
 ---------------------------------------------
 
 .. automodule:: galaxy.datatypes.converters.vcf_to_interval_index_converter
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`vcf_to_summary_tree_converter` Module
--------------------------------------------
-
-.. automodule:: galaxy.datatypes.converters.vcf_to_summary_tree_converter
     :members:
     :undoc-members:
     :show-inheritance:
