@@ -4,15 +4,11 @@
    civic_qrt.py
    -i "${input_file}"
    -o "${out_file}"
-   -c "${host}"
    -col "${entrez_id_column}"
   </command>
   <inputs>
     <param name="input_file" type="data" format="maf" 
       label="MAF File from Oncotator" help="If empty, upload or import a MAF dataset."/>
-    <param name="host" value="localhost:3000" type="text"
-      label="Host to query from" size="80" 
-      help="Query from the CIViC server"/>
     <param name="entrez_id_column" value="1" type="text"
      label="Entrez ID column number in MAF file. Default:1" size="10"
      help="Entrez ID column number in MAF file. Default:1"/>
@@ -40,14 +36,13 @@ CIViCReader requires Python 2.*. To check your python version, run: python -V
 
 $ python civic_reader.py -h
 
-usage: civic_reader [-h] [-i INPUT_FILE] [-o OUTPUT_FILE] [-c HOST] [-col ENTREZ_ID_COLUMN]
+usage: civic_reader [-h] [-i INPUT_FILE] [-o OUTPUT_FILE] [-col ENTREZ_ID_COLUMN]
 
       -h, --help            show this help message and exit
       -i INPUT_FILE, --input_file INPUT_FILE
                             input file (assumed to be tab separated MAF format); defaults to stdin
       -o OUTPUT_FILE, --output_file OUTPUT_FILE
                             output file; defaults to stdout
-      -c HOST, --host HOST  url of reference civic host; Default:civic.genome.wustl.edu
       --col ENTREZ_ID_COLUMN, --entrez_id_column ENTREZ_ID_COLUMN
                             column in the input file that contains the entrez id; Default(0 based): 1
 
@@ -68,15 +63,3 @@ For further details about CIViC, please go to: https://civic.genome.wustl.edu
 
   </help>
 </tool>
-
-
-
-
-
-
-
-
-
-
-
-
