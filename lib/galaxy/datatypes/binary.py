@@ -1,6 +1,4 @@
-"""
-Binary classes
-"""
+"""Binary classes"""
 
 import binascii
 import data

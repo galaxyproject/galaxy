@@ -21,7 +21,7 @@ class HierarchalDataProvider( line.BlockDataProvider ):
     e.g. XML, HTML, GFF3, Phylogenetic
     """
     def __init__( self, source, **kwargs ):
-        #TODO: (and defer to better (than I can write) parsers for each subtype)
+        # TODO: (and defer to better (than I can write) parsers for each subtype)
         super( HierarchalDataProvider, self ).__init__( source, **kwargs )
 
 
@@ -31,13 +31,13 @@ class XMLDataProvider( HierarchalDataProvider ):
     Data provider that converts selected XML elements to dictionaries.
     """
     # using xml.etree's iterparse method to keep mem down
-    #TODO:   this, however (AFAIK), prevents the use of xpath
+    # TODO:   this, however (AFAIK), prevents the use of xpath
     settings = {
-        'selector'  : 'str', #urlencoded
+        'selector'  : 'str',  # urlencoded
         'max_depth' : 'int',
     }
     ITERPARSE_ALL_EVENTS = ( 'start', 'end', 'start-ns', 'end-ns' )
-    #TODO: move appropo into super
+    # TODO: move appropo into super
 
     def __init__( self, source, selector=None, max_depth=None, **kwargs ):
         """
@@ -60,10 +60,10 @@ class XMLDataProvider( HierarchalDataProvider ):
         Change point for more sophisticated selectors.
         """
         # search for partial match of selector to the element tag
-        #TODO: add more flexibility here w/o re-implementing xpath
-        #TODO: fails with '#' - browser thinks it's an anchor - use urlencode
-        #TODO: need removal/replacement of etree namespacing here - then move to string match
-        return bool( ( selector == None )
+        # TODO: add more flexibility here w/o re-implementing xpath
+        # TODO: fails with '#' - browser thinks it's an anchor - use urlencode
+        # TODO: need removal/replacement of etree namespacing here - then move to string match
+        return bool( ( selector is None )
                   or ( isinstance( element, Element ) and selector in element.tag ) )
 
     def element_as_dict( self, element ):
@@ -72,7 +72,7 @@ class XMLDataProvider( HierarchalDataProvider ):
 
         :param  element:    an XML ``Element``
         """
-        #TODO: Key collision is unlikely here, but still should be better handled
+        # TODO: Key collision is unlikely here, but still should be better handled
         return {
             'tag'      : element.tag,
             'text'     : element.text.strip() if element.text else None,
@@ -104,21 +104,18 @@ class XMLDataProvider( HierarchalDataProvider ):
 
         selected_element = None
         for event, element in context:
-            #print 'iterparse, event:', event
-            #print 'iterparse, element:', element, ( element.tag if hasattr( element, 'tag' ) else '' )
-
-            if   event == 'start-ns':
+            if event == 'start-ns':
                 ns, uri = element
                 self.namespaces[ ns ] = uri
 
             elif event == 'start':
-                if( ( selected_element == None )
+                if( ( selected_element is None )
                 and ( self.matches_selector( element, self.selector ) ) ):
                     # start tag of selected element - wait for 'end' to emit/yield
                     selected_element = element
 
             elif event == 'end':
-                if( ( selected_element != None )
+                if( ( selected_element is not None )
                 and ( element == selected_element ) ):
                     self.num_valid_data_read += 1
 
