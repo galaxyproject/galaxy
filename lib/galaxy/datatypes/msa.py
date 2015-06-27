@@ -6,7 +6,6 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.util import generic_util
 import os
 
-
 import logging
 log = logging.getLogger(__name__)
 

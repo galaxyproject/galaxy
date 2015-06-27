@@ -2,16 +2,14 @@
 Datatype classes for tracks/track views within galaxy.
 """
 
-import binary, binascii, logging
-from galaxy import util
-from galaxy.web import url_for
-from galaxy.util.hash_util import hmac_new
-from urllib import quote_plus
+import binary
+import logging
 
 log = logging.getLogger(__name__)
 
 # GeneTrack is no longer supported but leaving the datatype since
 # files of this type may still exist
+
 
 class GeneTrack( binary.Binary ):
     edam_format = "format_2919"
