@@ -11,8 +11,6 @@ import gettext
 from galaxy import model
 from galaxy import exceptions
 from galaxy import datatypes
-from galaxy import objectstore
-
 from galaxy.managers import datasets
 from galaxy.managers import secured
 from galaxy.managers import taggable
@@ -89,7 +87,7 @@ class HDAManager( datasets.DatasetAssociationManager,
 
         if history:
             history.add_dataset( hda, set_hid=( 'hid' not in kwargs ) )
-        #TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
+        # TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
 
         self.session().add( hda )
         if flush:
@@ -103,17 +101,17 @@ class HDAManager( datasets.DatasetAssociationManager,
         # TODO:?? not using the following as this fn does not set history and COPIES hid (this doesn't seem correct)
         # return hda.copy()
         copy = model.HistoryDatasetAssociation(
-            name        = hda.name,
-            info        = hda.info,
-            blurb       = hda.blurb,
-            peek        = hda.peek,
-            tool_version= hda.tool_version,
-            extension   = hda.extension,
-            dbkey       = hda.dbkey,
-            dataset     = hda.dataset,
-            visible     = hda.visible,
-            deleted     = hda.deleted,
-            parent_id   = kwargs.get( 'parent_id', None ),
+            name=hda.name,
+            info=hda.info,
+            blurb=hda.blurb,
+            peek=hda.peek,
+            tool_version=hda.tool_version,
+            extension=hda.extension,
+            dbkey=hda.dbkey,
+            dataset=hda.dataset,
+            visible=hda.visible,
+            deleted=hda.deleted,
+            parent_id=kwargs.get( 'parent_id', None ),
         )
         # add_dataset will update the hid to the next avail. in history
         if history:
@@ -162,7 +160,7 @@ class HDAManager( datasets.DatasetAssociationManager,
         """
         Raise error if HDA is still uploading.
         """
-        #TODO: may be better added to an overridden get_accessible
+        # TODO: may be better added to an overridden get_accessible
         if hda.state == model.Dataset.states.UPLOAD:
             raise exceptions.Conflict( "Please wait until this dataset finishes uploading" )
         return hda
@@ -228,10 +226,10 @@ class HDAManager( datasets.DatasetAssociationManager,
         return truncated, hda_data
 
 
-class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer,
-                     datasets.DatasetAssociationSerializer,
-                     taggable.TaggableSerializerMixin,
-                     annotatable.AnnotatableSerializerMixin ):
+class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
+        datasets.DatasetAssociationSerializer,
+        taggable.TaggableSerializerMixin,
+        annotatable.AnnotatableSerializerMixin ):
     # TODO: inherit from datasets.DatasetAssociationSerializer
     # TODO: move what makes sense into DatasetSerializer
 
@@ -256,7 +254,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
             'history_id', 'hid',
             # why include if model_class is there?
             'hda_ldda',
-            #TODO: accessible needs to go away
+            # TODO: accessible needs to go away
             'accessible',
 
             # remapped
@@ -265,7 +263,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
 
             'create_time', 'update_time',
             'resubmitted',
-             'metadata', 'meta_files', 'data_type',
+            'metadata', 'meta_files', 'data_type',
             'peek',
 
             'uuid',
@@ -276,7 +274,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
             'display_types',
             'visualizations',
 
-            #'url',
+            # 'url',
             'download_url',
 
             'annotation', 'tags',

@@ -295,7 +295,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             elif hda_state_counts[ states.QUEUED ] > 0:
                 state = states.QUEUED
             elif ( hda_state_counts[ states.ERROR ] > 0
-                or hda_state_counts[ states.FAILED_METADATA ] > 0 ):
+                    or hda_state_counts[ states.FAILED_METADATA ] > 0 ):
                 state = states.ERROR
             elif hda_state_counts[ states.OK ] == num_hdas:
                 state = states.OK

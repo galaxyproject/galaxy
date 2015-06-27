@@ -2,10 +2,7 @@
 Manager and Serializer for libraries.
 """
 
-import galaxy.web
 from galaxy import exceptions
-from galaxy.model import orm
-from galaxy.managers import base as manager_base
 from galaxy.model.orm import and_, not_, or_
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
@@ -115,9 +112,9 @@ class LibraryManager( object ):
                 #  Flag is not specified, do not filter on it.
                 pass
             elif deleted:
-                query = query.filter( trans.app.model.Library.table.c.deleted == True ) 
+                query = query.filter( trans.app.model.Library.table.c.deleted == True )  # noqa
             else:
-                query = query.filter( trans.app.model.Library.table.c.deleted == False )
+                query = query.filter( trans.app.model.Library.table.c.deleted == False )  # noqa
         else:
             #  Nonadmins can't see deleted libraries
             current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
@@ -199,9 +196,9 @@ class LibraryManager( object ):
         modify_library_role_list = [ ( modify_role.name, trans.security.encode_id( modify_role.id ) ) for modify_role in self.get_modify_roles( trans, library ) ]
         manage_library_role_list = [ ( manage_role.name, trans.security.encode_id( manage_role.id ) ) for manage_role in self.get_manage_roles( trans, library ) ]
         add_library_item_role_list = [ ( add_role.name, trans.security.encode_id( add_role.id ) ) for add_role in self.get_add_roles( trans, library ) ]
-        return dict( access_library_role_list=access_library_role_list, 
-                     modify_library_role_list=modify_library_role_list, 
-                     manage_library_role_list=manage_library_role_list, 
+        return dict( access_library_role_list=access_library_role_list,
+                     modify_library_role_list=modify_library_role_list,
+                     manage_library_role_list=manage_library_role_list,
                      add_library_item_role_list=add_library_item_role_list )
 
     def get_access_roles( self, trans, library ):
@@ -245,4 +242,3 @@ class LibraryManager( object ):
         Return true if lib is public.
         """
         return trans.app.security_agent.library_is_public( library )
-

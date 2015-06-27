@@ -48,7 +48,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         `user`.
         """
         user_filter = self.model_class.user_id == user.id
-        filters=self._munge_filters( user_filter, filters )
+        filters = self._munge_filters( user_filter, filters )
         return self.list( filters=filters, **kwargs )
 
     # .... owned/accessible interfaces
@@ -115,19 +115,19 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         return self._session_setattr( item, 'published', False, flush=flush )
 
     def _query_published( self, filters=None, **kwargs ):
-       """
-       Query all published items.
-       """
-       published_filter = self.model_class.published == True
-       filters = self._munge_filters( published_filter, filters )
-       return self.list( filters=filters, **kwargs )
+        """
+        Query all published items.
+        """
+        published_filter = self.model_class.published == True  # noqa
+        filters = self._munge_filters( published_filter, filters )
+        return self.list( filters=filters, **kwargs )
 
     def list_published( self, **kwargs ):
-       """
-       Return a list of all published items.
-       """
-       query = self._query_published( **kwargs )
-       return self.list( query=query, **kwargs )
+        """
+        Return a list of all published items.
+        """
+        query = self._query_published( **kwargs )
+        return self.list( query=query, **kwargs )
 
     # .... user sharing
     # sharing is often done via a 3rd table btwn a User and an item -> a <Item>UserShareAssociation
@@ -185,13 +185,13 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
             self.session().flush()
         return user_share_assoc
 
-    #def _query_shared_with( self, user, filters=None, **kwargs ):
-    ##TODO:
+    # def _query_shared_with( self, user, filters=None, **kwargs ):
+    # TODO:
     #    """
     #    """
     #    pass
 
-    #def list_shared_with( self, user, **kwargs ):
+    # def list_shared_with( self, user, **kwargs ):
     #    """
     #    """
     #    query = self._query_shared_with( user, **kwargs )
@@ -199,7 +199,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
     # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
-    #TODO: as validator, deserializer, etc. (maybe another object entirely?)
+    # TODO: as validator, deserializer, etc. (maybe another object entirely?)
     def set_slug( self, item, new_slug, user, flush=True ):
         """
         Validate and set the new slug for `item`.
@@ -226,12 +226,12 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
     def _existing_set_of_slugs( self, user ):
         query = ( self.session().query( self.model_class.slug )
-                    .filter_by( user=user ) )
+                .filter_by( user=user ) )
         return list( set( query.all() ) )
 
     def _slug_exists( self, user, slug ):
         query = ( self.session().query( self.model_class.slug )
-                    .filter_by( user=user, slug=slug ) )
+                .filter_by( user=user, slug=slug ) )
         return query.count() != 0
 
     def _slugify( self, start_with ):
@@ -287,24 +287,24 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
             self.session().flush()
         return item
 
-    #def by_slug( self, user, **kwargs ):
+    # def by_slug( self, user, **kwargs ):
     #    """
     #    """
     #    pass
 
     # .... display
-    #def display_by_username_and_slug( self, username, slug ):
+    # def display_by_username_and_slug( self, username, slug ):
     #    """ Display item by username and slug. """
 
-    #def set_public_username( self, id, username, **kwargs ):
+    # def set_public_username( self, id, username, **kwargs ):
     #    """ Set user's public username and delegate to sharing() """
-    #def sharing( self, id, **kwargs ):
+    # def sharing( self, id, **kwargs ):
     #    """ Handle item sharing. """
 
 
 class SharableModelSerializer( base.ModelSerializer,
         taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin ):
-#TODO: stub
+    # TODO: stub
     SINGLE_CHAR_ABBR = None
 
     def add_serializers( self ):
@@ -381,13 +381,13 @@ class SharableModelDeserializer( base.ModelDeserializer,
             self.manager.make_non_importable( item, flush=False )
         return item.published
 
-    #def deserialize_slug( self, item, val, **context ):
+    # def deserialize_slug( self, item, val, **context ):
     #    """
     #    """
     #    #TODO: call manager.set_slug
     #    pass
 
-    #def deserialize_user_shares():
+    # def deserialize_user_shares():
 
 
 class SharableModelFilters( base.ModelFilterParser,
@@ -404,5 +404,5 @@ class SharableModelFilters( base.ModelFilterParser,
             'published'     : { 'op': ( 'eq' ), 'val': self.parse_bool },
             'slug'          : { 'op': ( 'eq', 'contains', 'like' ) },
             # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
-            #'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
+            # 'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
         })
