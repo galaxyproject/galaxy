@@ -1,15 +1,15 @@
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+eggs.require( "Paste" )
+import paste.httpexceptions
+
 import galaxy.queue_worker
 from galaxy import web
 from galaxy.util.json import loads
 from galaxy.web.base.controller import BaseUIController
 
-import pkg_resources;
-pkg_resources.require( "Paste" )
-import paste.httpexceptions
-
-from galaxy.web.framework.helpers import escape
-
-#set up logger
+# set up logger
 import logging
 log = logging.getLogger( __name__ )
 

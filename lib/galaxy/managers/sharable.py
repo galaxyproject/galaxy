@@ -11,7 +11,6 @@ A sharable Galaxy object:
 """
 
 import re
-
 from galaxy import exceptions
 
 from galaxy.managers import base

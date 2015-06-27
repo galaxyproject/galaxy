@@ -1,5 +1,6 @@
 import pickle
 
+
 class DictionaryObject(object):
   """
   Copyright 2012 "Grim Apps"
@@ -32,16 +33,16 @@ class DictionaryObject(object):
   When using positional arguments, the first argument must always be something
   that would be a valid argument for a dict().  However, a second, optional
   argument may be passed to create a default value when keys are not found.
-  
+
   Examples:
     >>> d = DictionaryObject({'a':1, 'b':True, 3:'x'})
     >>> print d.a, d.b, d[3]
     1 True x
-    
+
     >>> d = DictionaryObject((('a',1),('b',2)))
     >>> print d.a, d.b
     1 2
-    
+
     >>> d = DictionaryObject(a=1, b=True)
     >>> print d
     DictionaryObject({'a': 1, 'b': True})
@@ -49,7 +50,7 @@ class DictionaryObject(object):
     >>> d = DictionaryObject({'a':1, 'b':True}, None)
     >>> print d.a, d.b, d.c, d.d
     1 True None None
-    
+
     >>> d = DictionaryObject({'a':1}, None)
     >>> m = MutableDictionaryObject(d)
     >>> print d == m
@@ -57,7 +58,7 @@ class DictionaryObject(object):
     >>> m.a = 0
     >>> print d == m, d < m, d > m, d != m, d <= m, d >= m
     False False True True False True
-  
+
     >>> import pickle
     >>> m1 = MutableDictionaryObject({'a':1}, None)
     >>> m2 = pickle.loads(pickle.dumps(m1))
@@ -144,23 +145,23 @@ class DictionaryObject(object):
 
   def __getitem__(self, name):
     return self._items[name]
-    
+
   def __contains__(self, name):
     return name in self._items
-    
+
   def __len__(self):
     return len(self._items)
-    
+
   def __iter__(self):
     return iter(self._items)
-      
+
   def __repr__(self):
     if self._defaultIsSet:
       params = "%s, %s" % (repr(self._items), self._defaultValue)
     else:
       params = repr(self._items)
     return "%s(%s)" % (type(self).__name__, params)
-    
+
   def __cmp__(self, rhs):
     if self < rhs:
       return -1
@@ -194,7 +195,7 @@ class DictionaryObject(object):
 
   def keys(self):
     return self._items.keys()
-    
+
   def values(self):
     return self._items.values()
 
@@ -241,7 +242,6 @@ class MutableDictionaryObject(DictionaryObject):
 
   def __delattr__(self, name):
     del self._items[name]
-    
+
   __setitem__ = __setattr__
   __delitem__ = __delattr__
-  

@@ -4,12 +4,13 @@ Contains the user interface in the Universe class
 
 import logging
 
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+
 from galaxy import web
 from galaxy import util, model
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
-from galaxy.web.framework.helpers import time_ago, grids, escape
-
-from inspect import getmembers
 
 log = logging.getLogger( __name__ )
 

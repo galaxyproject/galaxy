@@ -11,6 +11,10 @@ import urllib
 
 from datetime import datetime, timedelta
 
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+
 from galaxy import model
 from galaxy import util
 from galaxy import web
@@ -27,7 +31,7 @@ from galaxy.web.base.controller import (BaseUIController,
                                         CreatesUsersMixin,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
-from galaxy.web.framework.helpers import escape, grids, time_ago
+from galaxy.web.framework.helpers import grids, time_ago
 
 
 log = logging.getLogger( __name__ )

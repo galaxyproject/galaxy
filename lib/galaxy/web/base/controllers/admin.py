@@ -158,7 +158,7 @@ class Admin( object ):
                 message = "Enter a valid name and a description."
                 status = 'error'
                 ok = False
-            elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==name ).first():
+            elif trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == name ).first():
                 message = "Role names must be unique and a role with that name already exists, so choose another name."
                 status = 'error'
                 ok = False
@@ -186,7 +186,7 @@ class Admin( object ):
                     num_in_groups = len( in_groups )
                 trans.sa_session.flush()
                 message = "Role '%s' has been created with %d associated users and %d associated groups.  " \
-                % ( role.name, len( in_users ), num_in_groups )
+                    % ( role.name, len( in_users ), num_in_groups )
                 if create_group_for_role_checked:
                     message += 'One of the groups associated with this role is the newly created group with the same name.'
                 trans.response.send_redirect( web.url_for( controller='admin',
@@ -195,12 +195,12 @@ class Admin( object ):
                                                            status='done' ) )
         if ok:
             for user in trans.sa_session.query( trans.app.model.User ) \
-                                        .filter( trans.app.model.User.table.c.deleted==False ) \
-                                        .order_by( trans.app.model.User.table.c.email ):
+                                        .filter( trans.app.model.User.table.c.deleted == False ) \
+                                        .order_by( trans.app.model.User.table.c.email ):  # noqa
                 out_users.append( ( user.id, user.email ) )
             for group in trans.sa_session.query( trans.app.model.Group ) \
-                                         .filter( trans.app.model.Group.table.c.deleted==False ) \
-                                         .order_by( trans.app.model.Group.table.c.name ):
+                                         .filter( trans.app.model.Group.table.c.deleted == False ) \
+                                         .order_by( trans.app.model.Group.table.c.name ):  # noqa
                 out_groups.append( ( group.id, group.name ) )
         return trans.fill_template( '/admin/dataset_security/role/role_create.mako',
                                     name=name,
@@ -233,9 +233,9 @@ class Admin( object ):
             new_description = util.restore_text( params.description )
             if not new_name:
                 message = 'Enter a valid name'
-                status='error'
+                status = 'error'
             else:
-                existing_role = trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name==new_name ).first()
+                existing_role = trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.name == new_name ).first()
                 if existing_role and existing_role.id != role.id:
                     message = 'A role with that name already exists'
                     status = 'error'
@@ -298,15 +298,15 @@ class Admin( object ):
         in_groups = []
         out_groups = []
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
+                                    .filter( trans.app.model.User.table.c.deleted == False ) \
+                                    .order_by( trans.app.model.User.table.c.email ):  # noqa
             if user in [ x.user for x in role.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
                 out_users.append( ( user.id, user.email ) )
         for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted==False ) \
-                                     .order_by( trans.app.model.Group.table.c.name ):
+                                     .filter( trans.app.model.Group.table.c.deleted == False ) \
+                                     .order_by( trans.app.model.Group.table.c.name ):  # noqa
             if group in [ x.group for x in role.groups ]:
                 in_groups.append( ( group.id, group.name ) )
             else:
@@ -318,7 +318,7 @@ class Admin( object ):
             # [ ( LibraryDatasetDatasetAssociation [ action, action ] ) ]
             for dp in role.dataset_actions:
                 for ldda in trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ) \
-                                            .filter( trans.app.model.LibraryDatasetDatasetAssociation.dataset_id==dp.dataset_id ):
+                                            .filter( trans.app.model.LibraryDatasetDatasetAssociation.dataset_id == dp.dataset_id ):
                     root_found = False
                     folder_path = ''
                     folder = ldda.library_dataset.folder
@@ -499,7 +499,7 @@ class Admin( object ):
                 message = 'Enter a valid name'
                 status = 'error'
             else:
-                existing_group = trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==new_name ).first()
+                existing_group = trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == new_name ).first()
                 if existing_group and existing_group.id != group.id:
                     message = 'A group with that name already exists'
                     status = 'error'
@@ -540,15 +540,15 @@ class Admin( object ):
         in_users = []
         out_users = []
         for role in trans.sa_session.query(trans.app.model.Role ) \
-                                    .filter( trans.app.model.Role.table.c.deleted==False ) \
-                                    .order_by( trans.app.model.Role.table.c.name ):
+                                    .filter( trans.app.model.Role.table.c.deleted == False ) \
+                                    .order_by( trans.app.model.Role.table.c.name ):  # noqa
             if role in [ x.role for x in group.roles ]:
                 in_roles.append( ( role.id, role.name ) )
             else:
                 out_roles.append( ( role.id, role.name ) )
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
-                                    .order_by( trans.app.model.User.table.c.email ):
+                                    .filter( trans.app.model.User.table.c.deleted == False ) \
+                                    .order_by( trans.app.model.User.table.c.email ):  # noqa
             if user in [ x.user for x in group.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
@@ -582,7 +582,7 @@ class Admin( object ):
                 message = "Enter a valid name."
                 status = 'error'
                 ok = False
-            elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==name ).first():
+            elif trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():
                 message = "Group names must be unique and a group with that name already exists, so choose another name."
                 status = 'error'
                 ok = False
@@ -611,23 +611,21 @@ class Admin( object ):
                     num_in_roles = len( in_roles )
                 trans.sa_session.flush()
                 message = "Group '%s' has been created with %d associated users and %d associated roles.  " \
-                % ( group.name, len( in_users ), num_in_roles )
+                    % ( group.name, len( in_users ), num_in_roles )
                 if create_role_for_group_checked:
                     message += 'One of the roles associated with this group is the newly created role with the same name.'
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='groups',
                                                            message=util.sanitize_text( message ),
                                                            status='done' ) )
-
-
         if ok:
             for user in trans.sa_session.query( trans.app.model.User ) \
-                                        .filter( trans.app.model.User.table.c.deleted==False ) \
-                                        .order_by( trans.app.model.User.table.c.email ):
+                                        .filter( trans.app.model.User.table.c.deleted == False ) \
+                                        .order_by( trans.app.model.User.table.c.email ):  # noqa
                 out_users.append( ( user.id, user.email ) )
             for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( trans.app.model.Role.table.c.deleted==False ) \
-                                        .order_by( trans.app.model.Role.table.c.name ):
+                                        .filter( trans.app.model.Role.table.c.deleted == False ) \
+                                        .order_by( trans.app.model.Role.table.c.name ):  # noqa
                 out_roles.append( ( role.id, role.name ) )
         return trans.fill_template( '/admin/dataset_security/group/group_create.mako',
                                     name=name,
@@ -999,8 +997,8 @@ class Admin( object ):
         out_roles = []
         in_groups = []
         out_groups = []
-        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted==False ) \
-                                                                  .order_by( trans.app.model.Role.table.c.name ):
+        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == False ) \
+                                                                  .order_by( trans.app.model.Role.table.c.name ):  # noqa
             if role in [ x.role for x in user.roles ]:
                 in_roles.append( ( role.id, role.name ) )
             elif role.type != trans.app.model.Role.types.PRIVATE:
@@ -1009,8 +1007,8 @@ class Admin( object ):
                 # role, which should always be in in_roles.  The check above is added as an additional
                 # precaution, since for a period of time we were including private roles in the form fields.
                 out_roles.append( ( role.id, role.name ) )
-        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted==False ) \
-                                                                    .order_by( trans.app.model.Group.table.c.name ):
+        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == False ) \
+                                                                    .order_by( trans.app.model.Group.table.c.name ):  # noqa
             if group in [ x.group for x in user.groups ]:
                 in_groups.append( ( group.id, group.name ) )
             else:
@@ -1030,7 +1028,7 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
-    def jobs( self, trans, stop = [], stop_msg = None, cutoff = 180, job_lock = None, ajl_submit = None, **kwd ):
+    def jobs( self, trans, stop=[], stop_msg=None, cutoff=180, job_lock=None, ajl_submit=None, **kwd ):
         deleted = []
         msg = None
         status = None
@@ -1043,7 +1041,7 @@ class Admin( object ):
                 stop_msg += '.'
             for job_id in job_ids:
                 error_msg = "This job was stopped by an administrator: %s  <a href='%s' target='_blank'>Contact support</a> for additional help." \
-                        % ( stop_msg, self.app.config.get("support_url", "https://wiki.galaxyproject.org/Support" ) )
+                    % ( stop_msg, self.app.config.get("support_url", "https://wiki.galaxyproject.org/Support" ) )
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
                     job.stderr = error_msg
@@ -1080,10 +1078,10 @@ class Admin( object ):
                                                    trans.app.model.Job.state == trans.app.model.Job.states.UPLOAD ) ) ) \
                                .order_by( trans.app.model.Job.table.c.update_time.desc() ).all()
         recent_jobs = trans.sa_session.query( trans.app.model.Job ) \
-                               .filter( and_( trans.app.model.Job.table.c.update_time > cutoff_time,
-                                              or_( trans.app.model.Job.state == trans.app.model.Job.states.ERROR,
-                                                   trans.app.model.Job.state == trans.app.model.Job.states.OK) ) ) \
-                               .order_by( trans.app.model.Job.table.c.update_time.desc() ).all()
+            .filter( and_( trans.app.model.Job.table.c.update_time > cutoff_time,
+                or_( trans.app.model.Job.state == trans.app.model.Job.states.ERROR,
+                trans.app.model.Job.state == trans.app.model.Job.states.OK) ) ) \
+            .order_by( trans.app.model.Job.table.c.update_time.desc() ).all()
         last_updated = {}
         for job in jobs:
             delta = datetime.utcnow() - job.update_time
@@ -1103,15 +1101,14 @@ class Admin( object ):
             else:
                 finished[job.id] = '%s minutes' % int( delta.seconds / 60 )
         return trans.fill_template( '/admin/jobs.mako',
-                                    jobs = jobs,
-                                    recent_jobs = recent_jobs,
-                                    last_updated = last_updated,
-                                    finished = finished,
-                                    cutoff = cutoff,
-                                    msg = msg,
-                                    status = status,
-                                    job_lock = job_lock)
-
+                                    jobs=jobs,
+                                    recent_jobs=recent_jobs,
+                                    last_updated=last_updated,
+                                    finished=finished,
+                                    cutoff=cutoff,
+                                    msg=msg,
+                                    status=status,
+                                    job_lock=job_lock)
 
     @web.expose
     @web.require_admin
@@ -1120,11 +1117,11 @@ class Admin( object ):
         if jobid is not None:
             job = trans.sa_session.query( trans.app.model.Job ).get(jobid)
         return trans.fill_template( '/webapps/reports/job_info.mako',
-                                        job=job,
-                                        message="<a href='jobs'>Back</a>" )
+                                    job=job,
+                                    message="<a href='jobs'>Back</a>" )
 
+# ---- Utility methods -------------------------------------------------------
 
-## ---- Utility methods -------------------------------------------------------
 
 def get_user( trans, user_id ):
     """Get a User from the database by id."""
@@ -1133,12 +1130,14 @@ def get_user( trans, user_id ):
         return trans.show_error_message( "User not found for id (%s)" % str( user_id ) )
     return user
 
+
 def get_user_by_username( trans, username ):
     """Get a user from the database by username"""
     # TODO: Add exception handling here.
     return trans.sa_session.query( trans.model.User ) \
                            .filter( trans.model.User.table.c.username == username ) \
                            .one()
+
 
 def get_role( trans, id ):
     """Get a Role from the database by id."""
@@ -1149,6 +1148,7 @@ def get_role( trans, id ):
         return trans.show_error_message( "Role not found for id (%s)" % str( id ) )
     return role
 
+
 def get_group( trans, id ):
     """Get a Group from the database by id."""
     # Load user from database
@@ -1157,6 +1157,7 @@ def get_group( trans, id ):
     if not group:
         return trans.show_error_message( "Group not found for id (%s)" % str( id ) )
     return group
+
 
 def get_quota( trans, id ):
     """Get a Quota from the database by id."""

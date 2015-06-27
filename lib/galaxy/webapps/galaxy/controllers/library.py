@@ -1,9 +1,14 @@
 import logging
+
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+
 from galaxy import model, util
 from galaxy import web
 from galaxy.model.orm import and_, not_, or_
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.framework.helpers import escape, grids
+from galaxy.web.framework.helpers import grids
 from library_common import get_comptypes, lucene_search, whoosh_search
 
 

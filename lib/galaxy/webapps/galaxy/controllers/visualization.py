@@ -4,6 +4,9 @@ import copy
 
 from sqlalchemy import desc, or_, and_
 from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
 
 from galaxy import managers
 from galaxy import model, web
@@ -19,7 +22,7 @@ from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.web import error
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
-from galaxy.web.framework.helpers import escape, grids, time_ago
+from galaxy.web.framework.helpers import grids, time_ago
 
 from .library import LibraryListGrid
 

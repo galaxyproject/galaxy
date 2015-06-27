@@ -1536,36 +1536,36 @@ mapper( model.History, model.History.table,
                      datasets=relation( model.HistoryDatasetAssociation, backref="history", order_by=asc(model.HistoryDatasetAssociation.table.c.hid) ),
                      exports=relation( model.JobExportHistoryArchive, primaryjoin=( model.JobExportHistoryArchive.table.c.history_id == model.History.table.c.id ), order_by=desc( model.JobExportHistoryArchive.table.c.id ) ),
                      active_datasets=relation(
-                        model.HistoryDatasetAssociation,
-                        primaryjoin=(
-                            ( model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetAssociation.table.c.deleted )
-                        ),
-                        order_by=asc( model.HistoryDatasetAssociation.table.c.hid ),
-                        viewonly=True
-                     ),
-                     active_dataset_collections=relation(
-                        model.HistoryDatasetCollectionAssociation,
-                        primaryjoin=(
-                            ( model.HistoryDatasetCollectionAssociation.table.c.history_id ) == model.History.table.c.id ) & not_( model.HistoryDatasetCollectionAssociation.table.c.deleted ),
-                        order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.hid ),
-                        viewonly=True,
-                     ),
-                     visible_datasets=relation(
-                        model.HistoryDatasetAssociation,
-                        primaryjoin=( ( model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetAssociation.table.c.deleted ) & model.HistoryDatasetAssociation.table.c.visible ),
-                        order_by=asc( model.HistoryDatasetAssociation.table.c.hid ),
-                        viewonly=True,
-                     ),
-                     visible_dataset_collections=relation(
-                        model.HistoryDatasetCollectionAssociation,
-                        primaryjoin=( ( model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetCollectionAssociation.table.c.deleted ) & model.HistoryDatasetCollectionAssociation.table.c.visible ),
-                        order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.hid ),
-                        viewonly=True,
-                     ),
-                     tags=relation( model.HistoryTagAssociation, order_by=model.HistoryTagAssociation.table.c.id, backref="histories" ),
-                     annotations=relation( model.HistoryAnnotationAssociation, order_by=model.HistoryAnnotationAssociation.table.c.id, backref="histories" ),
-                     ratings=relation( model.HistoryRatingAssociation, order_by=model.HistoryRatingAssociation.table.c.id, backref="histories" ) )
-                      )
+        model.HistoryDatasetAssociation,
+        primaryjoin=(
+                    ( model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetAssociation.table.c.deleted )
+        ),
+        order_by=asc( model.HistoryDatasetAssociation.table.c.hid ),
+        viewonly=True
+    ),
+        active_dataset_collections=relation(
+            model.HistoryDatasetCollectionAssociation,
+        primaryjoin=(
+                    ( model.HistoryDatasetCollectionAssociation.table.c.history_id ) == model.History.table.c.id ) & not_( model.HistoryDatasetCollectionAssociation.table.c.deleted ),
+            order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.hid ),
+            viewonly=True,
+    ),
+        visible_datasets=relation(
+            model.HistoryDatasetAssociation,
+            primaryjoin=( ( model.HistoryDatasetAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetAssociation.table.c.deleted ) & model.HistoryDatasetAssociation.table.c.visible ),
+            order_by=asc( model.HistoryDatasetAssociation.table.c.hid ),
+            viewonly=True,
+    ),
+        visible_dataset_collections=relation(
+            model.HistoryDatasetCollectionAssociation,
+            primaryjoin=( ( model.HistoryDatasetCollectionAssociation.table.c.history_id == model.History.table.c.id ) & not_( model.HistoryDatasetCollectionAssociation.table.c.deleted ) & model.HistoryDatasetCollectionAssociation.table.c.visible ),
+            order_by=asc( model.HistoryDatasetCollectionAssociation.table.c.hid ),
+            viewonly=True,
+    ),
+        tags=relation( model.HistoryTagAssociation, order_by=model.HistoryTagAssociation.table.c.id, backref="histories" ),
+        annotations=relation( model.HistoryAnnotationAssociation, order_by=model.HistoryAnnotationAssociation.table.c.id, backref="histories" ),
+        ratings=relation( model.HistoryRatingAssociation, order_by=model.HistoryRatingAssociation.table.c.id, backref="histories" ) )
+)
 
 # Set up proxy so that
 #   History.users_shared_with
@@ -1575,7 +1575,8 @@ model.History.users_shared_with_dot_users = association_proxy( 'users_shared_wit
 mapper( model.HistoryUserShareAssociation, model.HistoryUserShareAssociation.table,
     properties=dict( user=relation( model.User, backref='histories_shared_by_others' ),
                      history=relation( model.History, backref='users_shared_with' )
-                   ) )
+                     )
+        )
 
 mapper( model.User, model.User.table,
     properties=dict( histories=relation( model.History, backref="user",
@@ -1605,15 +1606,15 @@ mapper( model.Group, model.Group.table,
     properties=dict( users=relation( model.UserGroupAssociation ) ) )
 
 mapper( model.UserGroupAssociation, model.UserGroupAssociation.table,
-    properties=dict( user=relation( model.User, backref = "groups" ),
-                     group=relation( model.Group, backref = "members" ) ) )
+    properties=dict( user=relation( model.User, backref="groups" ),
+                     group=relation( model.Group, backref="members" ) ) )
 
 mapper( model.DefaultUserPermissions, model.DefaultUserPermissions.table,
-    properties=dict( user=relation( model.User, backref = "default_permissions" ),
+    properties=dict( user=relation( model.User, backref="default_permissions" ),
                      role=relation( model.Role ) ) )
 
 mapper( model.DefaultHistoryPermissions, model.DefaultHistoryPermissions.table,
-    properties=dict( history=relation( model.History, backref = "default_permissions" ),
+    properties=dict( history=relation( model.History, backref="default_permissions" ),
                      role=relation( model.Role ) ) )
 
 mapper( model.Role, model.Role.table,
@@ -1685,7 +1686,7 @@ mapper( model.LibraryDatasetPermissions, model.LibraryDatasetPermissions.table,
 
 mapper( model.LibraryDatasetDatasetAssociationPermissions, model.LibraryDatasetDatasetAssociationPermissions.table,
     properties=dict(
-        library_dataset_dataset_association = relation( model.LibraryDatasetDatasetAssociation, backref="actions" ),
+        library_dataset_dataset_association=relation( model.LibraryDatasetDatasetAssociation, backref="actions" ),
         role=relation( model.Role, backref="library_dataset_dataset_actions" )
     )
 )
@@ -1702,8 +1703,7 @@ mapper( model.ExtendedMetadata, model.ExtendedMetadata.table,
             model.ExtendedMetadataIndex,
             primaryjoin=( model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ),
             backref=backref("parent",
-                primaryjoin=( model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id )
-            )
+                primaryjoin=( model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
         )
     )
 )
@@ -1719,13 +1719,13 @@ mapper( model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table,
 
 
 mapper( model.LibraryInfoAssociation, model.LibraryInfoAssociation.table,
-               properties=dict( library=relation( model.Library,
-                                                  primaryjoin=( ( model.LibraryInfoAssociation.table.c.library_id == model.Library.table.c.id ) & ( not_( model.LibraryInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
-                                template=relation( model.FormDefinition,
-                                                   primaryjoin=( model.LibraryInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
-                                info=relation( model.FormValues,
-                                               primaryjoin=( model.LibraryInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
-                              ) )
+        properties=dict( library=relation( model.Library,
+        primaryjoin=( ( model.LibraryInfoAssociation.table.c.library_id == model.Library.table.c.id ) & ( not_( model.LibraryInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
+            template=relation( model.FormDefinition,
+            primaryjoin=( model.LibraryInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
+            info=relation( model.FormValues,
+            primaryjoin=( model.LibraryInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
+        ) )
 
 mapper( model.LibraryFolder, model.LibraryFolder.table,
     properties=dict(
@@ -1737,7 +1737,7 @@ mapper( model.LibraryFolder, model.LibraryFolder.table,
         active_folders=relation( model.LibraryFolder,
             primaryjoin=( ( model.LibraryFolder.table.c.parent_id == model.LibraryFolder.table.c.id ) & ( not_( model.LibraryFolder.table.c.deleted ) ) ),
             order_by=asc( model.LibraryFolder.table.c.name ),
-            lazy=True, #"""sqlalchemy.exc.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
+            lazy=True,  # """sqlalchemy.exc.ArgumentError: Error creating eager relationship 'active_folders' on parent class '<class 'galaxy.model.LibraryFolder'>' to child class '<class 'galaxy.model.LibraryFolder'>': Cant use eager loading on a self referential relationship."""
             viewonly=True ),
         datasets=relation( model.LibraryDataset,
             primaryjoin=( ( model.LibraryDataset.table.c.folder_id == model.LibraryFolder.table.c.id ) ),
@@ -1752,27 +1752,27 @@ mapper( model.LibraryFolder, model.LibraryFolder.table,
     ) )
 
 mapper( model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.table,
-               properties=dict( folder=relation( model.LibraryFolder,
-                                                 primaryjoin=( ( model.LibraryFolderInfoAssociation.table.c.library_folder_id == model.LibraryFolder.table.c.id ) & ( not_( model.LibraryFolderInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
-                                template=relation( model.FormDefinition,
-                                                   primaryjoin=( model.LibraryFolderInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
-                                info=relation( model.FormValues,
-                                               primaryjoin=( model.LibraryFolderInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
-                              ) )
+        properties=dict( folder=relation( model.LibraryFolder,
+        primaryjoin=( ( model.LibraryFolderInfoAssociation.table.c.library_folder_id == model.LibraryFolder.table.c.id ) & ( not_( model.LibraryFolderInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
+            template=relation( model.FormDefinition,
+        primaryjoin=( model.LibraryFolderInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
+            info=relation( model.FormValues,
+        primaryjoin=( model.LibraryFolderInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
+        ) )
 
 mapper( model.LibraryDataset, model.LibraryDataset.table,
     properties=dict(
         folder=relation( model.LibraryFolder ),
         library_dataset_dataset_association=relation( model.LibraryDatasetDatasetAssociation, primaryjoin=( model.LibraryDataset.table.c.library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ),
-        expired_datasets = relation( model.LibraryDatasetDatasetAssociation, foreign_keys=[model.LibraryDataset.table.c.id,model.LibraryDataset.table.c.library_dataset_dataset_association_id ], primaryjoin=( ( model.LibraryDataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id ) & ( not_( model.LibraryDataset.table.c.library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ) ), viewonly=True, uselist=True )
-        ) )
+        expired_datasets=relation( model.LibraryDatasetDatasetAssociation, foreign_keys=[model.LibraryDataset.table.c.id, model.LibraryDataset.table.c.library_dataset_dataset_association_id ], primaryjoin=( ( model.LibraryDataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id ) & ( not_( model.LibraryDataset.table.c.library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ) ), viewonly=True, uselist=True )
+    ) )
 
 mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table,
     properties=dict(
         dataset=relation( model.Dataset ),
-        library_dataset = relation( model.LibraryDataset,
+        library_dataset=relation( model.LibraryDataset,
         primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id == model.LibraryDataset.table.c.id ) ),
-        #user=relation( model.User.mapper ),
+        # user=relation( model.User.mapper ),
         user=relation( model.User ),
         copied_from_library_dataset_dataset_association=relation(
             model.LibraryDatasetDatasetAssociation,
@@ -1798,7 +1798,7 @@ mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoc
             backref=backref( "parent", primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id] ) ),
         visible_children=relation(
             model.LibraryDatasetDatasetAssociation,
-            primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( model.LibraryDatasetDatasetAssociation.table.c.visible == True ) ),
+            primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( model.LibraryDatasetDatasetAssociation.table.c.visible == True ) ),  # noqa
             remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id]),
         extended_metadata=relation(
             model.ExtendedMetadata,
@@ -1807,13 +1807,13 @@ mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoc
     ))
 
 mapper( model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetInfoAssociation.table,
-               properties=dict( library_dataset_dataset_association=relation( model.LibraryDatasetDatasetAssociation,
-                                                                              primaryjoin=( ( model.LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( not_( model.LibraryDatasetDatasetInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
-                                template=relation( model.FormDefinition,
-                                                   primaryjoin=( model.LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
-                                info=relation( model.FormValues,
-                                               primaryjoin=( model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
-                              ) )
+        properties=dict( library_dataset_dataset_association=relation( model.LibraryDatasetDatasetAssociation,
+        primaryjoin=( ( model.LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( not_( model.LibraryDatasetDatasetInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
+            template=relation( model.FormDefinition,
+        primaryjoin=( model.LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
+            info=relation( model.FormValues,
+        primaryjoin=( model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
+        ) )
 
 mapper( model.JobToInputDatasetAssociation,
         model.JobToInputDatasetAssociation.table, properties=dict(
@@ -1890,34 +1890,34 @@ simple_mapping(
 mapper( model.JobParameter, model.JobParameter.table )
 
 mapper( model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table,
-    properties=dict( job = relation( model.Job ),
-                     history_dataset_association = relation( model.HistoryDatasetAssociation, lazy = False ),
-                     library_dataset_dataset_association = relation( model.LibraryDatasetDatasetAssociation, lazy = False ) ) )
+    properties=dict( job=relation( model.Job ),
+                     history_dataset_association=relation( model.HistoryDatasetAssociation, lazy=False ),
+                     library_dataset_dataset_association=relation( model.LibraryDatasetDatasetAssociation, lazy=False ) ) )
 
 mapper( model.JobExportHistoryArchive, model.JobExportHistoryArchive.table,
-    properties=dict( job = relation( model.Job ),
-                     history = relation( model.History ),
-                     dataset = relation( model.Dataset ) ) )
+    properties=dict( job=relation( model.Job ),
+                     history=relation( model.History ),
+                     dataset=relation( model.Dataset ) ) )
 
 mapper( model.JobImportHistoryArchive, model.JobImportHistoryArchive.table,
-    properties=dict( job = relation( model.Job ), history = relation( model.History ) ) )
+    properties=dict( job=relation( model.Job ), history=relation( model.History ) ) )
 
 mapper( model.GenomeIndexToolData, model.GenomeIndexToolData.table,
-    properties=dict( job = relation( model.Job, backref='job' ),
-                     dataset = relation( model.Dataset ),
-                     user = relation( model.User ),
-                     deferred = relation( model.DeferredJob, backref='deferred_job' ),
-                     transfer = relation( model.TransferJob, backref='transfer_job' ) ) )
+    properties=dict( job=relation( model.Job, backref='job' ),
+                     dataset=relation( model.Dataset ),
+                     user=relation( model.User ),
+                     deferred=relation( model.DeferredJob, backref='deferred_job' ),
+                     transfer=relation( model.TransferJob, backref='transfer_job' ) ) )
 
 mapper(model.PostJobAction, model.PostJobAction.table,
-    properties=dict(workflow_step = relation( model.WorkflowStep, backref='post_job_actions', primaryjoin=(model.WorkflowStep.table.c.id == model.PostJobAction.table.c.workflow_step_id))))
+    properties=dict(workflow_step=relation( model.WorkflowStep, backref='post_job_actions', primaryjoin=(model.WorkflowStep.table.c.id == model.PostJobAction.table.c.workflow_step_id))))
 
 mapper( model.PostJobActionAssociation, model.PostJobActionAssociation.table,
-    properties=dict( job = relation( model.Job ),
-                     post_job_action = relation( model.PostJobAction) ) )
+    properties=dict( job=relation( model.Job ),
+                     post_job_action=relation( model.PostJobAction) ) )
 
 mapper( model.Job, model.Job.table,
-    #properties=dict( user=relation( model.User.mapper ),
+    # properties=dict( user=relation( model.User.mapper ),
     properties=dict( user=relation( model.User ),
                      galaxy_session=relation( model.GalaxySession ),
                      history=relation( model.History ),
@@ -1930,17 +1930,17 @@ mapper( model.Job, model.Job.table,
                      post_job_actions=relation( model.PostJobActionAssociation, lazy=False ),
                      input_library_datasets=relation( model.JobToInputLibraryDatasetAssociation ),
                      output_library_datasets=relation( model.JobToOutputLibraryDatasetAssociation ),
-                     external_output_metadata = relation( model.JobExternalOutputMetadata, lazy = False ),
-                     tasks = relation(model.Task) ) )
+                     external_output_metadata=relation( model.JobExternalOutputMetadata, lazy=False ),
+                     tasks=relation(model.Task) ) )
 
 mapper( model.Task, model.Task.table,
-    properties=dict( job = relation( model.Job ) ) )
+    properties=dict( job=relation( model.Job ) ) )
 
 mapper( model.DeferredJob, model.DeferredJob.table,
-    properties = {} )
+    properties={} )
 
 mapper( model.TransferJob, model.TransferJob.table,
-    properties = {} )
+    properties={} )
 
 
 simple_mapping( model.DatasetCollection,
@@ -1979,8 +1979,7 @@ simple_mapping( model.LibraryDatasetCollectionAssociation,
     folder=relation( model.LibraryFolder, backref='dataset_collections' ),
     tags=relation( model.LibraryDatasetCollectionTagAssociation, order_by=model.LibraryDatasetCollectionTagAssociation.table.c.id, backref='dataset_collections' ),
     annotations=relation( model.LibraryDatasetCollectionAnnotationAssociation, order_by=model.LibraryDatasetCollectionAnnotationAssociation.table.c.id, backref="dataset_collections" ),
-    ratings=relation( model.LibraryDatasetCollectionRatingAssociation, order_by=model.LibraryDatasetCollectionRatingAssociation.table.c.id, backref="dataset_collections" ),
-)
+    ratings=relation( model.LibraryDatasetCollectionRatingAssociation, order_by=model.LibraryDatasetCollectionRatingAssociation.table.c.id, backref="dataset_collections" ),)
 
 simple_mapping( model.DatasetCollectionElement,
     hda=relation(
@@ -2000,13 +1999,13 @@ simple_mapping( model.DatasetCollectionElement,
 mapper( model.Event, model.Event.table,
     properties=dict( history=relation( model.History ),
                      galaxy_session=relation( model.GalaxySession ),
-                     #user=relation( model.User.mapper ) ) )
+                     # user=relation( model.User.mapper ) ) )
                      user=relation( model.User ) ) )
 
 mapper( model.GalaxySession, model.GalaxySession.table,
     properties=dict( histories=relation( model.GalaxySessionToHistoryAssociation ),
                      current_history=relation( model.History ),
-                     #user=relation( model.User.mapper ) ) )
+                     # user=relation( model.User.mapper ) ) )
                      user=relation( model.User ) ) )
 
 mapper( model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAssociation.table,
@@ -2021,13 +2020,13 @@ mapper( model.Workflow, model.Workflow.table,
                      ) )
 
 mapper( model.WorkflowStep, model.WorkflowStep.table,
-                properties=dict(
-                    tags=relation(model.WorkflowStepTagAssociation, order_by=model.WorkflowStepTagAssociation.table.c.id, backref="workflow_steps"),
-                    annotations=relation( model.WorkflowStepAnnotationAssociation, order_by=model.WorkflowStepAnnotationAssociation.table.c.id, backref="workflow_steps" ) )
-                )
+        properties=dict(
+            tags=relation(model.WorkflowStepTagAssociation, order_by=model.WorkflowStepTagAssociation.table.c.id, backref="workflow_steps"),
+            annotations=relation( model.WorkflowStepAnnotationAssociation, order_by=model.WorkflowStepAnnotationAssociation.table.c.id, backref="workflow_steps" ) )
+        )
 
 mapper( model.WorkflowOutput, model.WorkflowOutput.table,
-    properties=dict(workflow_step = relation( model.WorkflowStep, backref='workflow_outputs', primaryjoin=(model.WorkflowStep.table.c.id == model.WorkflowOutput.table.c.workflow_step_id))))
+        properties=dict(workflow_step=relation( model.WorkflowStep, backref='workflow_outputs', primaryjoin=(model.WorkflowStep.table.c.id == model.WorkflowOutput.table.c.workflow_step_id))))
 
 mapper( model.WorkflowStepConnection, model.WorkflowStepConnection.table,
     properties=dict( input_step=relation( model.WorkflowStep, backref="input_connections", cascade="all",
@@ -2053,7 +2052,7 @@ mapper( model.StoredWorkflow, model.StoredWorkflow.table,
                                     order_by=model.StoredWorkflowTagAssociation.table.c.id ),
                      annotations=relation( model.StoredWorkflowAnnotationAssociation, order_by=model.StoredWorkflowAnnotationAssociation.table.c.id, backref="stored_workflows" ),
                      ratings=relation( model.StoredWorkflowRatingAssociation, order_by=model.StoredWorkflowRatingAssociation.table.c.id, backref="stored_workflows" ) )
-                   )
+        )
 
 # Set up proxy so that
 #   StoredWorkflow.users_shared_with
@@ -2063,7 +2062,8 @@ model.StoredWorkflow.users_shared_with_dot_users = association_proxy( 'users_sha
 mapper( model.StoredWorkflowUserShareAssociation, model.StoredWorkflowUserShareAssociation.table,
     properties=dict( user=relation( model.User, backref='workflows_shared_by_others' ),
                      stored_workflow=relation( model.StoredWorkflow, backref='users_shared_with' )
-                   ) )
+                     )
+        )
 
 mapper( model.StoredWorkflowMenuEntry, model.StoredWorkflowMenuEntry.table,
     properties=dict( stored_workflow=relation( model.StoredWorkflow ) ) )
@@ -2080,8 +2080,8 @@ mapper( model.WorkflowInvocation, model.WorkflowInvocation.table,
 
 mapper( model.WorkflowInvocationStep, model.WorkflowInvocationStep.table,
     properties=dict(
-        workflow_step = relation( model.WorkflowStep ),
-        job = relation( model.Job, backref=backref( 'workflow_invocation_step', uselist=False ) ) ) )
+        workflow_step=relation( model.WorkflowStep ),
+        job=relation( model.Job, backref=backref( 'workflow_invocation_step', uselist=False ) ) ) )
 
 simple_mapping(
     model.WorkflowRequestInputParameter,
@@ -2126,7 +2126,8 @@ mapper( model.Page, model.Page.table,
                      tags=relation(model.PageTagAssociation, order_by=model.PageTagAssociation.table.c.id, backref="pages"),
                      annotations=relation( model.PageAnnotationAssociation, order_by=model.PageAnnotationAssociation.table.c.id, backref="pages" ),
                      ratings=relation( model.PageRatingAssociation, order_by=model.PageRatingAssociation.table.c.id, backref="pages" )
-                   ) )
+                     )
+        )
 
 # Set up proxy so that
 #   Page.users_shared_with
@@ -2136,7 +2137,8 @@ model.Page.users_shared_with_dot_users = association_proxy( 'users_shared_with',
 mapper( model.PageUserShareAssociation, model.PageUserShareAssociation.table,
    properties=dict( user=relation( model.User, backref='pages_shared_by_others' ),
                     page=relation( model.Page, backref='users_shared_with' )
-                  ) )
+                    )
+        )
 
 mapper( model.VisualizationRevision, model.VisualizationRevision.table )
 
@@ -2151,7 +2153,8 @@ mapper( model.Visualization, model.Visualization.table,
                      tags=relation( model.VisualizationTagAssociation, order_by=model.VisualizationTagAssociation.table.c.id, backref="visualizations" ),
                      annotations=relation( model.VisualizationAnnotationAssociation, order_by=model.VisualizationAnnotationAssociation.table.c.id, backref="visualizations" ),
                      ratings=relation( model.VisualizationRatingAssociation, order_by=model.VisualizationRatingAssociation.table.c.id, backref="visualizations" )
-                   ) )
+                     )
+        )
 
 # Set up proxy so that
 #   Visualization.users_shared_with
@@ -2161,12 +2164,13 @@ model.Visualization.users_shared_with_dot_users = association_proxy( 'users_shar
 mapper( model.VisualizationUserShareAssociation, model.VisualizationUserShareAssociation.table,
   properties=dict( user=relation( model.User, backref='visualizations_shared_by_others' ),
                    visualization=relation( model.Visualization, backref='users_shared_with' )
-                 ) )
+                   )
+        )
 
 # Tag tables.
 simple_mapping( model.Tag,
-    children=relation(model.Tag, backref=backref( 'parent', remote_side=[model.Tag.table.c.id] ) )
-)
+            children=relation(model.Tag, backref=backref( 'parent', remote_side=[model.Tag.table.c.id] ) )
+                )
 
 
 def tag_mapping( tag_association_class, backref_name ):
@@ -2234,40 +2238,42 @@ rating_mapping( model.HistoryDatasetCollectionRatingAssociation, history_dataset
 
 rating_mapping( model.LibraryDatasetCollectionRatingAssociation, libary_dataset_collection=model.LibraryDatasetCollectionAssociation )
 
-#Data Manager tables
+# Data Manager tables
 mapper( model.DataManagerHistoryAssociation, model.DataManagerHistoryAssociation.table,
     properties=dict( history=relation( model.History ),
                      user=relation( model.User, backref='data_manager_histories' )
-                    )
-              )
+                     )
+        )
 
 mapper( model.DataManagerJobAssociation, model.DataManagerJobAssociation.table,
     properties=dict( job=relation( model.Job, backref=backref('data_manager_association', uselist=False ), uselist=False ) )
-              )
+        )
 
 # User tables.
 
 mapper( model.UserPreference, model.UserPreference.table,
-    properties = {}
-              )
+    properties={}
+        )
 
 mapper( model.UserAction, model.UserAction.table,
-  #properties = dict( user=relation( model.User.mapper ) )
-  properties = dict( user=relation( model.User ) )
-            )
+    # properties = dict( user=relation( model.User.mapper ) )
+    properties=dict( user=relation( model.User ) )
+        )
 
 mapper( model.APIKeys, model.APIKeys.table,
-    properties = {} )
+    properties={}
+        )
 
 
-#model.HistoryDatasetAssociation.mapper.add_property( "creating_job_associations", relation( model.JobToOutputDatasetAssociation ) )
-#model.LibraryDatasetDatasetAssociation.mapper.add_property( "creating_job_associations", relation( model.JobToOutputLibraryDatasetAssociation ) )
+# model.HistoryDatasetAssociation.mapper.add_property( "creating_job_associations", relation( model.JobToOutputDatasetAssociation ) )
+# model.LibraryDatasetDatasetAssociation.mapper.add_property( "creating_job_associations", relation( model.JobToOutputLibraryDatasetAssociation ) )
 class_mapper(model.HistoryDatasetAssociation).add_property( "creating_job_associations", relation( model.JobToOutputDatasetAssociation ) )
 class_mapper(model.LibraryDatasetDatasetAssociation).add_property( "creating_job_associations", relation( model.JobToOutputLibraryDatasetAssociation ) )
 
 class_mapper(model.HistoryDatasetCollectionAssociation).add_property( "creating_job_associations", relation( model.JobToOutputDatasetCollectionAssociation ) )
 
 # Helper methods.
+
 
 def db_next_hid( self ):
     """
@@ -2285,7 +2291,7 @@ def db_next_hid( self ):
     trans = conn.begin()
     try:
         next_hid = select( [table.c.hid_counter], table.c.id == self.id, for_update=True ).scalar()
-        table.update( table.c.id == self.id ).execute( hid_counter = ( next_hid + 1 ) )
+        table.update( table.c.id == self.id ).execute( hid_counter=( next_hid + 1 ) )
         trans.commit()
         return next_hid
     except:
@@ -2311,7 +2317,7 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
 
     model_modules = [model]
     if map_install_models:
-        import galaxy.model.tool_shed_install.mapping
+        import galaxy.model.tool_shed_install.mapping  # noqa
         from galaxy.model import tool_shed_install
         model_modules.append(tool_shed_install)
 
@@ -2323,6 +2329,6 @@ def init( file_path, url, engine_options={}, create_tables=False, map_install_mo
         # metadata.engine.commit()
 
     result.create_tables = create_tables
-    #load local galaxy security policy
+    # load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
     return result

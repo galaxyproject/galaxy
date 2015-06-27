@@ -379,8 +379,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             if session_key:
                 # Retrieve the galaxy_session id via the unique session_key
                 galaxy_session = self.sa_session.query( self.app.model.GalaxySession ) \
-                                                .filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key, #noqa
-                                                               self.app.model.GalaxySession.table.c.is_valid==True ) ).options( joinedload( "user" ) ).first() #noqa
+                                                .filter( and_( self.app.model.GalaxySession.table.c.session_key == session_key,  # noqa
+                                                               self.app.model.GalaxySession.table.c.is_valid == True ) ).options( joinedload( "user" ) ).first()  # noqa
         # If remote user is in use it can invalidate the session and in some
         # cases won't have a cookie set above, so we need to to check some
         # things now.
@@ -524,8 +524,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
             return None
         if getattr( self.app.config, "normalize_remote_user_email", False ):
             remote_user_email = remote_user_email.lower()
-        user = self.sa_session.query( self.app.model.User
-                ).filter( self.app.model.User.table.c.email==remote_user_email ).first() #noqa
+        user = self.sa_session.query( self.app.model.User).filter( self.app.model.User.table.c.email == remote_user_email ).first()  # noqa
         if user:
             # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
             # role and default user / history permissions were not set for remote users.  When a
@@ -641,9 +640,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
         galaxy_user_id = prev_galaxy_session.user_id
         if logout_all and galaxy_user_id is not None:
             for other_galaxy_session in self.sa_session.query( self.app.model.GalaxySession
-                    ).filter( and_( self.app.model.GalaxySession.table.c.user_id==galaxy_user_id, #noqa
-                                    self.app.model.GalaxySession.table.c.is_valid==True, #noqa
-                                    self.app.model.GalaxySession.table.c.id!=prev_galaxy_session.id ) ): #noqa
+                                    ).filter( and_( self.app.model.GalaxySession.table.c.user_id == galaxy_user_id,  # noqa
+                                    self.app.model.GalaxySession.table.c.is_valid == True,  # noqa
+                                    self.app.model.GalaxySession.table.c.id != prev_galaxy_session.id ) ):  # noqa
                 other_galaxy_session.is_valid = False
                 self.sa_session.add( other_galaxy_session )
         self.sa_session.flush()

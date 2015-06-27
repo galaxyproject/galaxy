@@ -1,6 +1,10 @@
 import logging
 import urllib
 
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+
 import galaxy.util
 from galaxy import exceptions
 from galaxy import managers
@@ -20,7 +24,7 @@ from galaxy.web.base.controller import ERROR, INFO, SUCCESS, WARNING
 from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ImportsHistoryMixin
 from galaxy.web.base.controller import SharableMixin
-from galaxy.web.framework.helpers import escape, grids, iff, time_ago
+from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger( __name__ )
 

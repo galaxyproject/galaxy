@@ -3,6 +3,11 @@ Upload class
 """
 import os
 import logging
+
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+
 import galaxy.util
 from galaxy import web
 from galaxy.tools import DefaultToolState
@@ -16,7 +21,6 @@ from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
 from galaxy.web import error, url_for
-from galaxy.web.framework.helpers import escape
 from galaxy.web.base.controller import BaseUIController
 import tool_shed.util.shed_util_common as suc
 
