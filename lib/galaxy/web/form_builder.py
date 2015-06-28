@@ -46,7 +46,7 @@ class TextField(BaseField):
         if not isinstance( value, basestring ):
             value = str( value )
         value = unicodify( value )
-        return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>' \
+        return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>'
             % ( prefix, self.name, self.size, escape( value, quote=True ), self.get_disabled_str( disabled ) ) )
 
     def set_size(self, size):
@@ -68,7 +68,7 @@ class PasswordField(BaseField):
         self.value = value or ""
 
     def get_html( self, prefix="", disabled=False  ):
-        return unicodify( '<input type="password" name="%s%s" size="%d" value="%s"%s>' \
+        return unicodify( '<input type="password" name="%s%s" size="%d" value="%s"%s>'
             % ( prefix, self.name, self.size, escape( str( self.value ), quote=True ), self.get_disabled_str( disabled ) ) )
 
     def set_size(self, size):
@@ -95,7 +95,7 @@ class TextArea(BaseField):
         self.value = value or ""
 
     def get_html( self, prefix="", disabled=False ):
-        return unicodify( '<textarea name="%s%s" rows="%d" cols="%d"%s>%s</textarea>' \
+        return unicodify( '<textarea name="%s%s" rows="%d" cols="%d"%s>%s</textarea>'
             % ( prefix, self.name, self.rows, self.cols, self.get_disabled_str( disabled ), escape( str( self.value ), quote=True ) ) )
 
     def set_size(self, rows, cols):
@@ -136,7 +136,7 @@ class CheckboxField(BaseField):
         # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
         # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
         # correctness when the param is inside a conditional.
-        return unicodify( '<input type="checkbox" id="%s" name="%s" value="true"%s%s%s><input type="hidden" name="%s%s" value="true"%s>' \
+        return unicodify( '<input type="checkbox" id="%s" name="%s" value="true"%s%s%s><input type="hidden" name="%s%s" value="true"%s>'
             % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, prefix, self.name, self.get_disabled_str( disabled ) ) )
 
     @staticmethod
@@ -350,8 +350,8 @@ class SelectField(BaseField):
             selected_text = ""
             if selected:
                 selected_text = " checked='checked'"
-            rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>' % \
-                ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( text, quote=True ) ) )
+            rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>'
+                % ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( text, quote=True ) ) )
             ctr += 1
         return unicodify( "\n".join( rval ) )
 
@@ -367,8 +367,8 @@ class SelectField(BaseField):
             selected_text = ""
             if selected:
                 selected_text = " checked='checked'"
-            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>' % \
-                         ( style,
+            rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>'
+                         % ( style,
                            prefix,
                            self.name,
                            self.refresh_on_change_text,
@@ -407,8 +407,8 @@ class SelectField(BaseField):
             rval.append( '<option value="%s"%s>%s</option>' % ( escape( unicodify( value ), quote=True ), selected_text, escape( unicodify( text ), quote=True ) ) )
         if last_selected_value:
             last_selected_value = ' last_selected_value="%s"' % escape( unicodify( last_selected_value ), quote=True )
-        rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>' % \
-                     ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ) ) )
+        rval.insert( 0, '<select name="%s%s"%s%s%s%s%s>'
+                     % ( prefix, self.name, multiple, size, self.refresh_on_change_text, last_selected_value, self.get_disabled_str( disabled ) ) )
         rval.append( '</select>' )
         return unicodify( "\n".join( rval ) )
 
