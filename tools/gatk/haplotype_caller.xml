@@ -14,13 +14,22 @@
         #end if
     #end for
     -p '
+    #if $analysis_param_type.useScatterGather:
+        java -Xmx8g -cp \${SCATTER_GATHER_JAR_PATH}:\${GATK_JAR_PATH} ScatterGather ${reference_source.ref_file} ${output_vcf}
+    #end if
     @JAR_PATH@
     -T "HaplotypeCaller"
-    -o "${output_vcf}"
+    #if $analysis_param_type.useScatterGather:
+        --interval_padding 100
+        -L scatter.intervals
+        -o output.raw.snps.indels.vcf
+        --num_cpu_threads_per_data_thread 4
+    #else
+        -o "${output_vcf}"
+        --num_cpu_threads_per_data_thread \${GALAXY_SLOTS:-4}
+    #end if
 
     \$GATK2_SITE_OPTIONS
-
-    --num_cpu_threads_per_data_thread \${GALAXY_SLOTS:-4}
 
     #if $reference_source.reference_source_selector != "history":
         -R "${reference_source.ref_file.fields.path}"
@@ -238,6 +247,7 @@
               <option value="CACHING">CACHING</option>
               <option value="LOGLESS_CACHING">LOGLESS_CACHING</option>
               <option value="VECTOR_LOGLESS_CACHING" selected="True">VECTOR_LOGLESS_CACHING</option>
+              <option value="FPGA">FPGA</option>
         </param>
         <param name="standard_min_confidence_threshold_for_calling" type="float" value="30.0" optional="true" label="standard_min_confidence_threshold_for_calling" help="--standard_min_confidence_threshold_for_calling / -stand_call_conf  The minimum phred-scaled confidence threshold at which variants should be called"/>
         <param name="standard_min_confidence_threshold_for_emitting" type="float" value="30.0" optional="true" label="standard_min_confidence_threshold_for_emitting" help="--standard_min_confidence_threshold_for_emitting / -stand_emit_conf  The minimum phred-scaled confidence threshold at which variants should be emitted (and filtered with LowQual if less than the calling threshold)"/>
@@ -246,6 +256,7 @@
         <param name="gcpHMM" type="integer" value="10" optional="true" label="gcpHMM" help="--gcpHMM / -gcpHMM  Flat gap continuation penalty for use in the Pair HMM"/>
         <param name="genotypeFullActiveRegion" type="boolean" checked="False" truevalue="-genotypeFullActiveRegion" falsevalue="" label="genotypeFullActiveRegion" help="--genotypeFullActiveRegion / -genotypeFullActiveRegion  If specified, alternate alleles are considered to be the full active region for the purposes of genotyping"/>
         <param name="max_alternate_alleles" type="integer" value="6" optional="true" label="max_alternate_alleles" help="--max_alternate_alleles / -maxAltAlleles  Maximum number of alternate alleles to genotype"/>
+        <param name="useScatterGather" type="boolean" checked="False" truevalue="true" falsevalue="" label="useScatterGather" help="Use Scatter-Gather on all the cores of one node"/>
       </when>
     </conditional>
   </inputs>

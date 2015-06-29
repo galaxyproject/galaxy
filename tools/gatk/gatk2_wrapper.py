@@ -121,6 +121,11 @@ def __main__():
 		cmd = '%s %s "%s"' % ( cmd, gatk_filetype_argument_substitution( dataset_arg, galaxy_ext ), gatk_filename )
             if galaxy_ext == "bam":
                 bam_filenames.append( gatk_filename )
+            if "--dbsnp" in dataset_arg:
+                # use dbsnp index file, if it exists
+                dbsnp_index = filename + ".idx"
+                if os.path.isfile(dbsnp_index):
+                    gatk_filename_from_galaxy(dbsnp_index, galaxy_ext + ".idx", tmp_dir, prefix)
     print tmp_dir
     print bam_filenames
     index_bam_files( bam_filenames, tmp_dir )
