@@ -127,8 +127,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  workflow_name:               If from_history_id is set - name of the workflow to create when extracting a workflow from history
         :type   workflow_name:               str
 
-        :param  allow_tool_upgrades:         If set to True, any Tool parameter upgrades will not prevent running workflow, defaults to False
-        :type   allow_tool_upgrades:         bool
+        :param  allow_tool_state_corrections:  If set to True, any Tool parameter changes will not prevent running workflow, defaults to False
+        :type   allow_tool_state_corrections:  bool
         """
         ways_to_create = set( [
             'workflow_id',

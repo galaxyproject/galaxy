@@ -1075,7 +1075,7 @@ class WorkflowModuleInjector(object):
         return step_errors
 
 
-def populate_module_and_state( trans, workflow, param_map, allow_tool_upgrades=False ):
+def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corrections=False ):
     """ Used by API but not web controller, walks through a workflow's steps
     and populates transient module and state attributes on each.
     """
@@ -1088,7 +1088,7 @@ def populate_module_and_state( trans, workflow, param_map, allow_tool_upgrades=F
                 message = "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
                 raise exceptions.MessageException( message )
             if step.upgrade_messages:
-                if allow_tool_upgrades:
+                if allow_tool_state_corrections:
                     log.debug( 'Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages )
                 else:
                     message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
