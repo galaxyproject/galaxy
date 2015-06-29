@@ -7,6 +7,7 @@ from galaxy.datatypes.interval import Interval, ENCODEPeak, ChromatinInteraction
 from galaxy.datatypes.xml import Phyloxml
 from galaxy.datatypes.data import Newick, Nexus
 
+
 class DataProviderRegistry( object ):
     """
     Registry for data providers that enables listing and lookup.
