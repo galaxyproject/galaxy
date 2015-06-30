@@ -74,6 +74,7 @@
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_workflow', sort_id='default', order='default' )}">Runs per Workflows</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_month_all', sort_id='default', order='default' )}">Workflows per month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_user', sort_id='default', order='default' )}">Workflows per user</a></div>
                     </div>

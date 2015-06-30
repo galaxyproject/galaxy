@@ -223,6 +223,75 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                                     sort_id=sort_id,
                                     workflows=workflows,
                                     message=message )
+    
+    @web.expose
+    def per_workflow( self, trans, **kwd ):
+        message = ''
+
+        params = util.Params( kwd )
+        specs = sorter( 'workflow_name', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+        time_period = kwd.get('spark_time')
+        time_period, _time_period = get_spark_time( time_period )
+        limit = 30
+
+        # In case we don't know which is the monitor user we will query for all jobs
+
+        q = sa.select( ( model.Workflow.table.c.id.label( 'workflow_id' ),
+                        sa.func.min(model.Workflow.table.c.name).label( 'workflow_name' ),
+                       sa.func.count( model.WorkflowInvocation.table.c.id ).label( 'total_runs' ) ),
+                      from_obj=[ model.Workflow.table,
+                                model.WorkflowInvocation.table ],
+                      whereclause=sa.and_( model.WorkflowInvocation.table.c.workflow_id==model.Workflow.table.c.id ),
+                      group_by=[  model.Workflow.table.c.id ],
+                      order_by=[ _order ]
+                     )
+
+        all_runs_per_workflow = sa.select( ( model.Workflow.table.c.id.label( 'workflow_id' ),
+                                            model.Workflow.table.c.name.label( 'workflow_name' ),
+                                            self.select_day( model.WorkflowInvocation.table.c.create_time ).label( 'date' ) ),
+                                          from_obj=[ model.Workflow.table,
+                                                    model.WorkflowInvocation.table ],
+                                          whereclause=sa.and_( model.WorkflowInvocation.table.c.workflow_id==model.Workflow.table.c.id ) )
+
+        currday = date.today()
+        trends = dict()
+        for run in all_runs_per_workflow.execute():
+            curr_tool = re.sub(r'\W+', '', str(run.workflow_id))
+            try:
+                day = currday - run.date
+            except TypeError:
+                day = currday - datetime.date(run.date)
+
+            day = day.days
+            container = floor(day / _time_period)
+            container = int(container)
+            try:
+                if container < limit:
+                    trends[curr_tool][container] += 1
+            except KeyError:
+                trends[curr_tool] = [0] * limit
+                if container < limit:
+                    trends[curr_tool][container] += 1
+
+        runs = []
+        for row in q.execute():
+            runs.append( ( row.workflow_name,
+                           row.total_runs,
+                           row.workflow_id) )
+
+        return trans.fill_template( '/webapps/reports/workflows_per_workflow.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    limit=limit,
+                                    time_period=time_period,
+                                    trends=trends,
+                                    runs=runs,
+                                    message=message)
 
 # ---- Utility methods -------------------------------------------------------
 
