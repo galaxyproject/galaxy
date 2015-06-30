@@ -6,6 +6,7 @@ from galaxy import exceptions
 from galaxy import eggs
 from galaxy import web
 from galaxy.webapps.tool_shed import model
+from galaxy.exceptions import ObjectNotFound
 eggs.require( "Whoosh" )
 import whoosh.index
 from whoosh import scoring
@@ -60,7 +61,11 @@ class ToolSearch( object ):
                     'repo_owner_username' ], schema = tool_schema )
 
                 user_query = parser.parse( '*' + search_term + '*' )
-                hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
+
+                try:
+                    hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
+                except ValueError:
+                    raise ObjectNotFound( 'The requested page does not exist.' )
 
                 log.debug( 'searching tools for: #' +  str( search_term ) )
                 log.debug( 'total hits: ' +  str( len( hits ) ) )
