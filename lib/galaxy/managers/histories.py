@@ -82,7 +82,6 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         Purge this history and all HDAs, Collections, and Datasets inside this history.
         """
         self.hda_manager.dataset_manager.error_unless_dataset_purge_allowed()
-
         # First purge all the datasets
         for hda in history.datasets:
             if not hda.purged:
