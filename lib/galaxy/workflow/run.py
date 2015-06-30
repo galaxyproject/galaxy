@@ -50,6 +50,8 @@ def force_queue( trans, workflow ):
         if step.type == "data_collection_input" and force_for_collection:
             log.info("Found collection input step - backgrounding execution")
             return True
+        if step.type == "tool" and step.module.tool.produces_collections_with_unknown_structure:
+            return True
 
     return False
 
