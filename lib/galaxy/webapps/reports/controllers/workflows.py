@@ -308,12 +308,11 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                                     trends=trends,
                                     workflows=workflows,
                                     message=message )
-    
+
     @web.expose
     def per_workflow( self, trans, **kwd ):
         message = ''
 
-        params = util.Params( kwd )
         specs = sorter( 'workflow_name', kwd )
         sort_id = specs.sort_id
         order = specs.order
@@ -330,17 +329,16 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                        sa.func.count( model.WorkflowInvocation.table.c.id ).label( 'total_runs' ) ),
                       from_obj=[ model.Workflow.table,
                                 model.WorkflowInvocation.table ],
-                      whereclause=sa.and_( model.WorkflowInvocation.table.c.workflow_id==model.Workflow.table.c.id ),
+                      whereclause=sa.and_( model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id ),
                       group_by=[  model.Workflow.table.c.id ],
-                      order_by=[ _order ]
-                     )
+                      order_by=[ _order ] )
 
         all_runs_per_workflow = sa.select( ( model.Workflow.table.c.id.label( 'workflow_id' ),
                                             model.Workflow.table.c.name.label( 'workflow_name' ),
                                             self.select_day( model.WorkflowInvocation.table.c.create_time ).label( 'date' ) ),
                                           from_obj=[ model.Workflow.table,
                                                     model.WorkflowInvocation.table ],
-                                          whereclause=sa.and_( model.WorkflowInvocation.table.c.workflow_id==model.Workflow.table.c.id ) )
+                                          whereclause=sa.and_( model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id ) )
 
         currday = date.today()
         trends = dict()
