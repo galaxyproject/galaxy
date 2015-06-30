@@ -299,8 +299,106 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         except Exception as exception:
             log.error( "Error getting display data for dataset (%s) from history (%s): %s",
-                       history_content_id, history_id, str( exception ), exc_info=True )
+                       history_content_id, history_id, str( exception ),exc_info=True )
             trans.response.status = 500
             rval = ( "Could not get display data for dataset: " + str( exception ) )
 
         return rval
+
+    @web.expose_api
+    def show_params(self, trans, payload, **kwd):
+        """
+            show_params( trans, payload )
+            * POST /api/datasets/show_params
+            Show the parameters used for the job associated with an HDA
+
+            :type   payload: dict
+            :param  payload: dictionary structure containing:
+                * dataset_id:       the id of dataset
+
+            :rtype:     dict
+            :returns:   parameters used for the job associated with an HDA
+
+        """
+        dataset_id = payload['dataset_id']
+        try:
+            hda = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(dataset_id))
+        except Exception as e:
+            return str( e )
+
+        # Get the associated job, if any. If this hda was copied from another,
+        # we need to find the job that created the origial dataset association.
+        params_objects = None
+        job = None
+        tool = None
+        upgrade_messages = {}
+        has_parameter_errors = False
+        inherit_chain = hda.source_dataset_chain
+        if inherit_chain:
+            job_dataset_association = inherit_chain[-1][0]
+        else:
+            job_dataset_association = hda
+        if job_dataset_association.creating_job_associations:
+            job = job_dataset_association.creating_job_associations[0].job
+            if job:
+                # Get the tool object
+                try:
+                    # Load the tool
+                    toolbox = self.get_toolbox()
+                    tool = toolbox.get_tool(job.tool_id)
+                    assert tool is not None, 'Requested tool has not been loaded.'
+                    # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
+                    try:
+                        params_objects = job.get_param_values(trans.app, ignore_errors=False)
+                    except:
+                        params_objects = job.get_param_values(trans.app, ignore_errors=True)
+                        # use different param_objects in the following line, since we want to display original values as much as possible
+                        upgrade_messages = tool.check_and_update_param_values(
+                            job.get_param_values(trans.app, ignore_errors=True),
+                            trans,
+                            update_values=False)
+                        has_parameter_errors = True
+                except:
+                    pass
+
+        if job is None:
+            return None
+        # return trans.show_error_message( "Job information is not available for this dataset." )
+        # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
+
+        encoded_hda_id = trans.security.encode_id( hda.id )
+        encoded_history_id = trans.security.encode_id( hda.history_id )
+
+        params = {'tool': tool.name, 'name': hda.file_name,
+                  'created': hda.create_time.strftime(trans.app.config.pretty_datetime_format),
+                  'filesize': util.nice_size(hda.dataset.file_size), 'dbkey': hda.dbkey, 'format': hda.ext,
+                  'tool_version': hda.tool_version,
+                  #'tool_standard_output': h.url_for(controller='dataset', action='stdout', dataset_id=encoded_hda_id),
+                  #'tool_Standard_errror': h.url_for(controller='dataset', action='stderr', dataset_id=encoded_hda_id),
+                  'api_id': encoded_hda_id, 'history_id': encoded_history_id,
+                  'job': None}
+
+        if hda.dataset.uuid:
+            params['uuid'] =str(hda.dataset.uuid)
+
+
+        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+            params['full_path'] = hda.file_name
+
+        if job:
+            params['job'] = {
+                'galaxy_tool_id': job.tool_id,
+                'galaxy_tool_version': job.tool_version,
+                'tool_exit_code': job.exit_code,
+            }
+
+            if job.command_line and trans.user_is_admin():
+                params['job']['job_commandline'] = job.command_line
+
+            if job and trans.user_is_admin():
+
+                job_metrics = trans.app.job_metrics
+                for metric in job.metrics:
+                    metric_title, metric_value = job_metrics.format(metric.plugin, metric.metric_name, metric.metric_value)
+                    params['job'][metric.metric_name] = metric_value
+        return params
