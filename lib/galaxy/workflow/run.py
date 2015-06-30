@@ -51,6 +51,7 @@ def force_queue( trans, workflow ):
             log.info("Found collection input step - backgrounding execution")
             return True
         if step.type == "tool" and step.module.tool.produces_collections_with_unknown_structure:
+            log.info("Found dynamically structured output collection - backgrounding execution")
             return True
 
     return False
