@@ -1,4 +1,4 @@
-log_tempfile Module
+log_tempfile module
 ===================
 
 .. automodule:: log_tempfile

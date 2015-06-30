@@ -46,6 +46,10 @@ class ToolsController( BaseAPIController ):
             raise NotImplemented( 'Listing of all the tools is not implemented. Provide parameter "q" to search instead.' )
         else:
             page = kwd.get( 'page', 1 )
+            try:
+                page = int( page )
+            except ValueError:
+                raise RequestParameterInvalidException( 'The "page" requested has to be an integer.' )
             return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )
             callback = kwd.get( 'callback', 'callback' )
             search_results = self._search( trans, q, page )

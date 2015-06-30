@@ -1,8 +1,5 @@
-data Package
-============
-
-:mod:`data` Package
--------------------
+galaxy.tools.data package
+=========================
 
 .. automodule:: galaxy.tools.data
     :members:

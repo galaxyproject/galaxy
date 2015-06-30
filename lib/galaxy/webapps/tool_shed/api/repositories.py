@@ -357,6 +357,10 @@ class RepositoriesController( BaseAPIController ):
         q = kwd.get( 'q', '' )
         if q:
             page = kwd.get( 'page', 1 )
+            try:
+                page = int( page )
+            except ValueError:
+                raise RequestParameterInvalidException( 'The "page" requested has to be an integer.' )
             return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )
             callback = kwd.get( 'callback', 'callback' )  
             search_results = self._search( trans, q, page )

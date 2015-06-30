@@ -13,8 +13,8 @@
                 <tr><td colspan="4">There are no requests</td></tr>
             %else:
                 <tr class="header">
-                    <td>Month</td>
-                    <td>Total</td>
+                    <td class="half_width">Month</td>
+                    <td class="half_width">Total</td>
                 </tr>
                 <% ctr = 0 %>
                 %for request in requests:

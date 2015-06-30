@@ -208,7 +208,7 @@ class DiskObjectStore(ObjectStore):
                 if e.tag == 'files_dir':
                     self.file_path = e.get('path')
                 else:
-                    self.extra_dirs[e.tag] = e.get('path')
+                    self.extra_dirs[e.get('type')] = e.get('path')
         if extra_dirs is not None:
             self.extra_dirs.update( extra_dirs )
 
