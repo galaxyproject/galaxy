@@ -3,6 +3,7 @@ import datetime
 from galaxy import exceptions
 from galaxy import eggs
 from galaxy.webapps.tool_shed import model
+from galaxy.exceptions import ObjectNotFound
 import logging
 log = logging.getLogger( __name__ )
 
@@ -64,11 +65,12 @@ class RepoWeighting( scoring.BM25F ):
 
 class RepoSearch( object ):
 
-    def search( self, trans, search_term, page, **kwd ):
+    def search( self, trans, search_term, page, boosts ):
         """
         Perform the search on the given search_term
 
         :param search_term: unicode encoded string with the search term(s)
+        :param boosts: namedtuple containing custom boosts for searchfields, see api/repositories.py
 
         :returns results: dictionary containing number of hits, hits themselves and matched terms for each
         """
@@ -81,12 +83,12 @@ class RepoSearch( object ):
                 # http://trec.nist.gov/pubs/trec13/papers/microsoft-cambridge.web.hard.pdf
                 # http://en.wikipedia.org/wiki/Okapi_BM25
                 # __Basically__ the higher number the bigger weight.
-                repo_weighting = RepoWeighting( field_B = { 'name_B' : 0.9,
-                                                            'description_B' : 0.6,
-                                                            'long_description_B' : 0.5,
-                                                            'homepage_url_B' : 0.3,
-                                                            'remote_repository_url_B' : 0.2,
-                                                            'repo_owner_username' : 0.3 } )
+                repo_weighting = RepoWeighting( field_B = { 'name_B' : boosts.repo_name_boost,
+                                                            'description_B' : boosts.repo_description_boost,
+                                                            'long_description_B' : boosts.repo_long_description_boost,
+                                                            'homepage_url_B' : boosts.repo_homepage_url_boost,
+                                                            'remote_repository_url_B' : boosts.repo_remote_repository_url_boost,
+                                                            'repo_owner_username' : boosts.repo_owner_username_boost } )
 
                 searcher = index.searcher( weighting = repo_weighting )
 
@@ -99,7 +101,11 @@ class RepoSearch( object ):
                     'repo_owner_username' ], schema = schema )
 
                 user_query = parser.parse( '*' + search_term + '*' )
-                hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
+
+                try:
+                    hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
+                except ValueError:
+                    raise ObjectNotFound( 'The requested page does not exist.' )
 
                 log.debug( 'searching for: #' +  str( search_term ) )
                 log.debug( 'total hits: ' +  str( len( hits ) ) )

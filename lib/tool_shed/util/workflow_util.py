@@ -78,7 +78,7 @@ class RepoToolModule( ToolModule ):
         data_inputs = []
 
         def callback( input, value, prefixed_name, prefixed_label ):
-            if isinstance( input, galaxy.tools.parameters.DataToolParameter ):
+            if isinstance( input, galaxy.tools.parameters.basic.DataToolParameter ):
                 data_inputs.append( dict( name=prefixed_name,
                                           label=prefixed_label,
                                           extensions=input.extensions ) )
@@ -264,7 +264,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     # will be ( tool_id, tool_name, tool_version ).
     missing_tool_tups = []
     # First pass to build step objects and populate basic values
-    for key, step_dict in workflow_dict[ 'steps' ].iteritems():
+    for step_dict in workflow_dict[ 'steps' ].itervalues():
         # Create the model class for the step
         step = trans.model.WorkflowStep()
         step.name = step_dict[ 'name' ]
@@ -291,7 +291,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
                 step.annotations.append( new_step_annotation )
         # Unpack and add post-job actions.
         post_job_actions = step_dict.get( 'post_job_actions', {} )
-        for name, pja_dict in post_job_actions.items():
+        for pja_dict in post_job_actions.values():
             trans.model.PostJobAction( pja_dict[ 'action_type' ],
                                        step,
                                        pja_dict[ 'output_name' ],

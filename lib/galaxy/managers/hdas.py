@@ -143,14 +143,18 @@ class HDAManager( datasets.DatasetAssociationManager,
         return ldda.to_history_dataset_association( history, add_to_history=True )
 
     # .... deletion and purging
-    def purge( self, hda, current_user=None, flush=True ):
+    def purge( self, hda, flush=True):
         """
         Purge this HDA and the dataset underlying it.
         """
+        user = hda.history.user or None
+        quota_amount_reduction = 0
+        if user:
+            quota_amount_reduction = hda.quota_amount( user )
         super( HDAManager, self ).purge( hda, flush=flush )
         # decrease the user's space used
-        if current_user:
-            current_user.total_disk_usage -= hda.quota_amount( current_user )
+        if quota_amount_reduction:
+            user.total_disk_usage -= quota_amount_reduction
         return hda
 
     # .... states

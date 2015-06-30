@@ -293,6 +293,7 @@ class BaseJobRunner( object ):
         env_setup_commands.extend( self._get_egg_env_opts() or [] )
         destination = job_wrapper.job_destination or {}
         envs = destination.get( "env", [] )
+        envs.extend( job_wrapper.environment_variables )
         for env in envs:
             env_setup_commands.append( env_to_statement( env ) )
         command_line = job_wrapper.runner_command_line
