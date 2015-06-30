@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings, spark_css" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 <%!
     import re
@@ -10,7 +10,6 @@
     ${render_msg( message, 'done' )}
 %endif
 
-${spark_css()}
 ${jqs_style()}
 ${get_css()}
 
@@ -27,21 +26,22 @@ ${get_css()}
                 <tr><td colspan="2">There are no jobs in the error state.</td></tr>
             %else:
                 <tr class="header">
-                    <td>
+                    <td class="third_width">
                         ${get_sort_url(sort_id, order, 'tool_id', 'jobs', 'errors_per_tool', 'Tool ID', spark_time=time_period)}
                         <span class='dir_arrow tool_id'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
-    					<td>
+    					<td class="third_width">
                             ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'errors_per_tool', 'User Jobs in Error', spark_time=time_period)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
-	                    <td>
+	                    <td class="third_width">
                             ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'errors_per_tool', 'User and Monitor Jobs in Error', spark_time=time_period)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
+                    <td></td>
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:

@@ -150,6 +150,11 @@ def app_factory( global_conf, **kwargs ):
                            controller='repositories',
                            action='create',
                            conditions=dict( method=[ "POST" ] ) )
+    webapp.mapper.connect( 'tools',
+                           '/api/tools',
+                           controller='tools',
+                           action='index',
+                           conditions=dict( method=[ "GET" ] ) )
 
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware

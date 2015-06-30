@@ -11,7 +11,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             var self = this;
 
             // link with node representation in workflow module
-            this.node = workflow.active_node;
+            this.node = options.node;
             if (!this.node) {
                 console.debug('FAILED - tools-form-workflow:initialize() - Node not found in workflow.');
                 return;

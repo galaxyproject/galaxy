@@ -20,21 +20,22 @@ ${get_css()}
                 <tr><td colspan="2">There are no jobs in the error state.</td></tr>
             %else:
                 <tr class="header">
-                    <td>
+                    <td class="quarter_width">
                         ${get_sort_url(sort_id, order, 'date', 'jobs', 'per_month_in_error', 'Month')}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
-    					<td>
+    					<td class="quarter_width">
                             ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_in_error', 'User Jobs')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
-	                    <td>
+	                    <td class="quarter_width">
                             ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_in_error', 'User and Monitor Jobs')}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
+                    <td></td>
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:

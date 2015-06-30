@@ -1,32 +1,33 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
-<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings, spark_css" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
 
-${spark_css()}
 ${jqs_style()}
 ${get_css()}
 
 <div class="toolForm">
     <div class="toolFormBody">
         <h3 align="center">Workflows Per Month</h3>
+        <h5 align="center">Graph goes from the first to the last of the month.</h5>
         <table align="center" width="60%" class="colored">
             %if len( workflows ) == 0:
                 <tr><td colspan="4">There are no workflows</td></tr>
             %else:
                 <tr class="header">
-                    <td>
+                    <td class="third_width">
                         ${get_sort_url(sort_id, order, 'date', 'workflows', 'per_month_all', 'Month')}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
-                    <td>
+                    <td class="third_width">
                         ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'per_month_all', 'Total')}
                         <span class='dir_arrow total_workflows'>${arrow}</span>
                     </td>
+                    <td></td>
                 </tr>
                 <% ctr = 0 %>
                 %for workflow in workflows:

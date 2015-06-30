@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings, spark_css" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 <%!
     import re
@@ -10,7 +10,6 @@
     ${render_msg( message, 'done' )}
 %endif
 
-${spark_css()}
 ${jqs_style()}
 ${get_css()}
 
@@ -19,28 +18,30 @@ ${get_css()}
     <div class="toolFormBody">
         <h4 align="center">Jobs Per Tool</h4>
         <h5 align="center">
-            Click Tool ID to view details. Graph goes from present to past ${make_spark_settings( "jobs", "per_tool", limit, sort_id, order, time_period )}
+            <p>Click Tool ID to view details.</p>
+            Graph goes from present to past ${make_spark_settings( "jobs", "per_tool", limit, sort_id, order, time_period )}
         </h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="2">There are no jobs.</td></tr>
             %else:
                 <tr class="header">
-                    <td>
+                    <td class="third_width">
                         ${get_sort_url(sort_id, order, 'tool_id', 'jobs', 'per_tool', 'Tool ID', spark_time=time_period)}
                         <span class='dir_arrow tool_id'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
-                        <td>
+                        <td class="third_width">
                             ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_tool', 'User Jobs', spark_time=time_period)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
-                        <td>
+                        <td class="third_width">
                             ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_tool', 'User and Monitor Jobs', spark_time=time_period)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
+                    <td></td>
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:

@@ -23,22 +23,23 @@ ${get_css()}
     <div class="toolFormBody">
         <h3 align="center">Jobs per month for user "${_email}"</h3>
         <h4 align="center">
-            <p>Click Total Jobs to see the user's jobs for that month</p>
-            <p>Graph goes from first of the month to the last</p>
+            <p>Click Total Jobs to see the user's jobs for that month.</p>
+            <p>Graph goes from first of the month to the last.</p>
         </h4>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
                 <tr><td colspan="2">There are no jobs for user "${ _email }"</td></tr>
             %else:
                 <tr class="header">
-                    <td>
+                    <td class="third_width">
                         ${get_sort_url(sort_id, order, 'date', 'jobs', 'user_per_month', 'Month', email=email )}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
-                    <td>
+                    <td class="third_width">
                         ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'user_per_month', 'Total Jobs', email=email)}
                         <span class='dir_arrow total_jobs'>${arrow}</span>
                     </td>
+                    <td></td>
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:
