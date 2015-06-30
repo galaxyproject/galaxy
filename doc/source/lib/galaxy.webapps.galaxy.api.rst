@@ -89,8 +89,14 @@ galaxy.webapps.galaxy.api.forms module
     :undoc-members:
     :show-inheritance:
 
+<<<<<<< HEAD
+
+:mod:`genomes` Module
+---------------------
+=======
 galaxy.webapps.galaxy.api.genomes module
 ----------------------------------------
+>>>>>>> db88231d12ed74cdd99f36e09d621148eb2cf7e3
 
 .. automodule:: galaxy.webapps.galaxy.api.genomes
     :members:
@@ -228,10 +234,21 @@ galaxy.webapps.galaxy.api.quotas module
 galaxy.webapps.galaxy.api.remote_files module
 ---------------------------------------------
 
+<<<<<<< HEAD
+:mod:`remote_files` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.remote_files
+
+
+:mod:`request_types` Module
+---------------------------
+=======
 .. automodule:: galaxy.webapps.galaxy.api.remote_files
     :members:
     :undoc-members:
     :show-inheritance:
+>>>>>>> db88231d12ed74cdd99f36e09d621148eb2cf7e3
 
 galaxy.webapps.galaxy.api.request_types module
 ----------------------------------------------

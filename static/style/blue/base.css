@@ -2377,3 +2377,8 @@ div.toolTitleNoSection{padding-bottom:5px;font-weight:bold}
 .icon-button.chevron-expand:hover{background-image:url(sprite-fugue.png);background-position:0px -336px;width:16px;height:16px;height:16px}
 .icon-button.chevron-expand{background-image:url(sprite-fugue.png);background-position:0px -320px;width:16px;height:16px;height:16px}
 #for_bears{display:none}
+.dir_arrow{visibility:hidden}
+#spark_time_select{display:inline-block}
+#spark_select{height:23px;width:30px;padding:0;border-radius:2px}
+.quarter_width{width:25%}
+.third_width{width:30%}
