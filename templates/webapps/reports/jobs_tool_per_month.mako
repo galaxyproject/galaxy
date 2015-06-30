@@ -24,21 +24,22 @@ ${get_css()}
                 <tr><td colspan="2">There are no jobs for tool "${tool_id}"</td></tr>
             %else:
                 <tr class="header">
-                    <td>
+                    <td class="third_width">
                         ${get_sort_url(sort_id, order, 'date', 'jobs', 'tool_per_month', 'Month', tool_id=tool_id)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
-    					<td>
+    					<td class="third_width">
                             ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'tool_per_month', 'User Jobs', tool_id=tool_id)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
-	                    <td>
+	                    <td class="third_width">
                             ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'tool_per_month', 'User and Monitor Jobs', tool_id=tool_id)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
+                    <td></td>
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:

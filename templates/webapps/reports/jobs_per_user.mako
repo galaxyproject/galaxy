@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings, spark_css" />
+<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 <%!
     import re
@@ -10,7 +10,6 @@
     ${render_msg( message, 'done' )}
 %endif
 
-${spark_css()}
 ${jqs_style()}
 ${get_css()}
 
@@ -26,14 +25,15 @@ ${get_css()}
                 <tr><td colspan="2">There are no jobs.</td></tr>
             %else:
                 <tr class="header">
-                    <td>
+                    <td class="half_width">
                         ${get_sort_url(sort_id, order, 'user_email', 'jobs', 'per_user', 'User', spark_time=time_period)}
                         <span class='dir_arrow user_email'>${arrow}</span>
                     </td>
-                    <td>
+                    <td class="third_width">
                         ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_user', 'Total Jobs', spark_time=time_period)}
                         <span class='dir_arrow total_jobs'>${arrow}</span>
                     </td>
+                    <td></td>
                 </tr>
                 <% ctr = 0 %>
                 %for job in jobs:

@@ -8,21 +8,6 @@
     </style>
 </%def>
 
-<%def name="spark_css()">
-    <style>
-        #spark_time_select {
-            display: inline-block;
-        }
-        
-        #spark_select {
-            height: 23px;
-            width: 30px;
-            padding: 0;
-            border-radius: 2px;
-        }
-    </style>
-</%def>
-
 <%def name="make_spark_settings( controller, action, limit, sort_id, order, time_period )">
     <div id="spark_time_select">
         <form method="post" controller=${controller} action=${action}>
