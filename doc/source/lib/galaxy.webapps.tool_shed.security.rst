@@ -1,8 +1,5 @@
-security Package
-================
-
-:mod:`security` Package
------------------------
+galaxy.webapps.tool_shed.security package
+=========================================
 
 .. automodule:: galaxy.webapps.tool_shed.security
     :members:

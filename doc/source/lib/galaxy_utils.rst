@@ -1,5 +1,10 @@
-galaxy_utils Package
+galaxy_utils package
 ====================
+
+.. automodule:: galaxy_utils
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Subpackages
 -----------
