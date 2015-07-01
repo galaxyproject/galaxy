@@ -13,7 +13,6 @@ import galaxy.exceptions
 from galaxy.web.base import pluginframework
 from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins import plugin as vis_plugins
-from galaxy.visualization.plugins import utils as vis_utils
 
 
 import logging
@@ -150,16 +149,12 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
             return None
 
         data_sources = visualization.config[ 'data_sources' ]
-        # print 'data_sources:', data_sources
 
         # build a link using the first applicable datasource
         # NOTE: this implies more specific datasources should be listed first
         for data_source in data_sources:
             if not data_source.is_applicable( target_object ):
                 continue
-            print
-            print visualization_name, getattr( target_object, 'name', '(no name)' ), target_object
-            print 'IS_APPLICABLE', '\n'
 
             url_params = data_source.params( trans, target_object )
             url = self.get_visualization_url( trans, visualization_name, target_object, url_params )
@@ -193,30 +188,3 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
         # TODO:?? not sure if embedded would fit/used here? or added in client...
         return url
-
-    # def get_url_params( self, trans, target_object, param_data ):
-    #     """
-    #     Convert the applicable objects and assoc. data into a param dict
-    #     for a url query string to add to the url that loads the visualization.
-    #     """
-    #     print 'param_data:', param_data
-    #     params = {}
-    #     for to_param_name, to_param_data in param_data.items():
-    #         # TODO??: look into params as well? what is required, etc.
-    #         target_attr = to_param_data.get( 'param_attr', None )
-    #         assign = to_param_data.get( 'assign', None )
-    #         # one or the other is needed
-    #         # assign takes precedence (goes last, overwrites)?
-    #         # NOTE this is only one level
-
-    #         if target_attr and vis_utils.hasattr_recursive( target_object, target_attr ):
-    #             params[ to_param_name ] = vis_utils.getattr_recursive( target_object, target_attr )
-
-    #         if assign:
-    #             params[ to_param_name ] = assign
-
-    #     # NOTE!: don't expose raw ids: encode id, _id
-    #     # TODO: double encodes if from config
-    #     if params:
-    #         params = trans.security.encode_dict_ids( params )
-    #     return params

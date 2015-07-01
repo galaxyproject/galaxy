@@ -8,6 +8,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
+# -------------------------------------------------------------------
 class ParsingException( ValueError ):
     """
     An exception class for errors that occur during parsing of the visualizations
@@ -16,6 +17,7 @@ class ParsingException( ValueError ):
     pass
 
 
+# -------------------------------------------------------------------
 class VisualizationsConfigParser( object ):
     """
     Class that parses a visualizations configuration XML file.
@@ -64,7 +66,6 @@ class VisualizationsConfigParser( object ):
         returned[ 'name' ] = xml_tree.attrib.get( 'name', None )
         if not returned[ 'name' ]:
             raise ParsingException( 'visualization needs a name attribute' )
-        print returned[ 'name' ]
 
         # allow manually turning off a vis by checking for a disabled property
         if 'disabled' in xml_tree.attrib:
@@ -87,13 +88,14 @@ class VisualizationsConfigParser( object ):
         #   e.g. views on HDAs can use this to find out what visualizations are applicable to them
         data_sources = []
         data_sources_confs = xml_tree.find( 'data_sources' )
-        print 'dsconfs:', len( data_sources_confs.findall( 'data_source' ) )
         for data_source_conf in data_sources_confs.findall( 'data_source' ):
             data_source = self.data_source_parser.parse( data_source_conf )
             data_sources.append( data_source )
 
+        # data source groups are lists of objects/models where all objects must be applicable
+        # in order for the visualization to be considered applicable
+        # (they are otherwise treated as and have the same interface as data_sources)
         for data_source_group in data_sources_confs.findall( 'data_source_group' ):
-            print 'data_source_group:', data_source_group
             data_source = self.parse_data_source_group( data_source_group )
             data_sources.append( data_source )
 
@@ -159,6 +161,9 @@ class VisualizationsConfigParser( object ):
         return returned
 
     def parse_data_source_group( self, data_source_group ):
+        """
+        Parse multiple `data_source`s into a `DataSourceGroup`.
+        """
         sources = []
         for source in data_source_group.findall( 'data_source' ):
             sources.append( self.data_source_parser.parse( source ) )
@@ -201,7 +206,11 @@ class VisualizationsConfigParser( object ):
 # -------------------------------------------------------------------
 class DataSource( object ):
     """
+    A validator that:
+        tests if a visualization is applicable to (can be run with) an object/model
+        parses the to_params from the applicable objects into query string params
     """
+
     def __init__( self, model_class=None, tests=None, to_params=None ):
         self.model_class = model_class
         self.tests = tests or []
@@ -209,33 +218,28 @@ class DataSource( object ):
 
     # public interface
     def is_applicable( self, target ):
+        """
+        Can the plugin use this object/model within the visualization.
+        """
         # bail early if not matching model_class
         if self.model_class and not isinstance( target, self.model_class ):
             return False
 
         for test in self.tests:
-            test_type = test[ 'type' ]
-            result_type = test[ 'result_type' ]
             test_result = test[ 'result' ]
             test_fn = test[ 'fn' ]
-            # print test_type, result_type, test_result
 
-            # NOTE: tests are OR'd, if any test passes - the visualization can be applied
+            # NOTE: tests are (normally) OR'd, if any test passes - the visualization can be applied
             test_passed = test_fn( target, test_result )
-            # print 'test_passed:', test_passed
             if test_passed:
                 return True
 
         return False
 
-    # def params( self, target ):
-    #     # print 'params', self.to_params
-    #     return self.to_params
-
     def params( self, trans, target_object ):
         """
-        Convert the applicable objects and assoc. data into a param dict
-        for a url query string to add to the url that loads the visualization.
+        Return a dictionary suitable for query string parameters
+        that describe the source `target_object` according to the config file.
         """
         to_params = self.to_params
         target_params = {}
@@ -266,14 +270,19 @@ class DataSource( object ):
 # -------------------------------------------------------------------
 class DataSourceGroup( DataSource ):
     """
+    Defines a set of sources that must match a target set
+    of objects/models in order for the plugin to be applicable.
     """
+
     def __init__( self, sources=None ):
         self.sources = sources or []
 
     def is_applicable( self, targets ):
+        """
+        Override to cycle through all sources in the group.
+        """
         if not isinstance( targets, list ):
             return False
-        # print 'DataSourceGroup.is_applicable:', targets
         matching_targets = self._match_source_to_targets( targets )
         if len( matching_targets ) == len( self.sources ):
             return True
@@ -281,37 +290,27 @@ class DataSourceGroup( DataSource ):
 
     def _match_source_to_targets( self, targets ):
         # note: order of both sources and targets matter
+        # TODO: revisit - seems like this could be simplified
         working_targets = targets[:]
         matching_targets = []
-        # print
-        # print '_match_source_to_targets'
-        # print '\tworking_targets:', working_targets
         for source in self.sources:
-            # print '\tsource:', source
             new_working_targets = []
             for target in working_targets:
-                # print '\t\ttarget:', target
                 if source.is_applicable( target ):
-                    # print '\t\tis_applicable:', source, target
                     matching_targets.append( ( source, target ) )
-                    # break
                 else:
                     new_working_targets.append( target )
             working_targets = new_working_targets
-            # print '\tworking_targets now:', working_targets
         return matching_targets
 
     def params( self, trans, target_objects ):
-        # print '\ngroup params'
+        """
+        Override to cycle through all sources in the group.
+        """
         params = {}
         for source, target in self._match_source_to_targets( target_objects ):
             source_params = source.params( trans, target )
-            # print source, target
-            # print source_params
             params.update( source_params )
-        # print
-        # print 'params', params
-        # print
         return params
 
 
@@ -325,6 +324,7 @@ class DataSourceParser( object ):
     data for the visualization to consume (e.g. HDAs, LDDAs, Jobs, Users, etc.).
     There can be more than one data_source associated with a visualization.
     """
+
     # these are the allowed classes to associate visualizations with (as strings)
     #   any model_class element not in this list will throw a parsing ParsingExcepion
     ALLOWED_MODEL_CLASSES = [
@@ -332,6 +332,7 @@ class DataSourceParser( object ):
         'HistoryDatasetAssociation',
         'LibraryDatasetDatasetAssociation'
     ]
+
     ATTRIBUTE_SPLIT_CHAR = '.'
     # these are the allowed object attributes to use in data source tests
     #   any attribute element not in this list will throw a parsing ParsingExcepion
@@ -424,6 +425,9 @@ class DataSourceParser( object ):
 
     def parse_expected_test_result( self, test_element, test_type ):
         """
+        Validate 'result_type' in `test_element` for non-string comparison in tests.
+
+        'datatype' classes are pulled from the registry here for use in 'isinstance'.
         """
         # result type should tell the registry how to convert the result before the test
         result_type = test_element.get( 'result_type', 'string' )
@@ -434,11 +438,14 @@ class DataSourceParser( object ):
             datatype_class_name = expected_result
             expected_result = self.app().datatypes_registry.get_datatype_class_by_name( datatype_class_name )
             if not expected_result:
-                log.debug( 'config_parser cannot find datatype class:', datatype_class_name )
+                log.debug( 'config_parser cannot find datatype class: %s', datatype_class_name )
 
         return result_type, expected_result
 
     def build_test_fn( self, test_type, attr_to_test, result_type, result_should_be ):
+        """
+        Return the final test function for plugin applicability.
+        """
         # test_attr can be a dot separated chain of object attributes (e.g. dataset.datatype) - convert to list
         # TODO: too dangerous - constrain these to some allowed list
         # TODO: does this err if no test_attr - it should...
@@ -447,28 +454,30 @@ class DataSourceParser( object ):
         getter = self._build_getattr_lambda( test_attr )
 
         # test functions should be sent an object to test, and the parsed result expected from the test
+
+        # is test_attr attribute an instance of result
         if test_type == 'isinstance':
-            # is test_attr attribute an instance of result
             test_fn = lambda o, result: isinstance( getter( o ), result )
 
+        # does the object itself have a datatype attr and does that datatype have the given dataprovider
         elif test_type == 'has_dataprovider':
-            # does the object itself have a datatype attr and does that datatype have the given dataprovider
             test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
                                           and getter( o ).has_dataprovider( result ) )
 
+        # does the object itself have the attribute in result
         elif test_type == 'has_attribute':
-            # does the object itself have the attribute in result
             test_fn = lambda o, result: hasattr( getter( o ), result )
 
+        # does the object attr contain 'result'
+        elif test_type == 'contains':
+            test_fn = lambda o, result: result in getter( o )
+
+        # (string) non-equivalence
         elif test_type == 'not_eq':
             test_fn = lambda o, result: str( getter( o ) ) != result
 
-        elif test_type == 'contains':
-            # does the object attr contain 'result'
-            test_fn = lambda o, result: result in getter( o )
-
+        # default to simple (string) equilavance (coercing the test_attr to a string)
         else:
-            # default to simple (string) equilavance (coercing the test_attr to a string)
             test_fn = lambda o, result: str( getter( o ) ) == result
 
         return test_fn
@@ -492,14 +501,11 @@ class DataSourceParser( object ):
 
     def parse_anded_test( self, and_element ):
         """
+        Parse a compound test where all sub-tests must pass for it to pass.
         """
-        print '-' * 40
-        print 'parse_anded_test'
         # cycle through sub-tests using parse_tests recursively
         tests = and_element.findall( 'test' )
-        print tests
         tests = self.parse_tests( tests )
-        print tests
 
         # build anded_test_fn by calling all sub-tests within 'all'
         def _anded_test_fn( target, result ):
@@ -508,7 +514,6 @@ class DataSourceParser( object ):
                 fn = test[ 'fn' ]
                 expected = test[ 'result' ]
                 result = fn( target, expected )
-                # print ':::', fn, expected, result
                 subtest_results.append( result )
             return all( subtest_results )
 
@@ -557,13 +562,13 @@ class DataSourceParser( object ):
             #           be used for the conversion - this would allow CDATA values to be passed
             # <to_param param="json" type="assign"><![CDATA[{ "one": 1, "two": 2 }]]></to_param>
 
-            print param_name, param
             if param:
                 to_param_dict[ param_name ] = param
 
         return to_param_dict
 
 
+# -------------------------------------------------------------------
 class ParamParser( object ):
     """
     Component class of VisualizationsConfigParser that parses param elements
