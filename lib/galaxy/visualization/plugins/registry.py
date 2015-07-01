@@ -144,25 +144,25 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         `None` if it's not.
         """
         # log.debug( 'VisReg.get_visualization: %s, %s', visualization_name, target_object )
-        print
-        print visualization_name, getattr( target_object, 'name', '(no name)' )
 
         visualization = self.plugins.get( visualization_name, None )
         if not visualization:
             return None
 
         data_sources = visualization.config[ 'data_sources' ]
-        print 'data_sources:', data_sources
+        # print 'data_sources:', data_sources
 
         # build a link using the first applicable datasource
         # NOTE: this implies more specific datasources should be listed first
         for data_source in data_sources:
             if not data_source.is_applicable( target_object ):
                 continue
+            print
+            print visualization_name, getattr( target_object, 'name', '(no name)' ), target_object
             print 'IS_APPLICABLE', '\n'
 
-            param_data = data_source.params( target_object )
-            url = self.get_visualization_url( trans, target_object, visualization_name, param_data )
+            url_params = data_source.params( trans, target_object )
+            url = self.get_visualization_url( trans, visualization_name, target_object, url_params )
             display_name = visualization.config.get( 'name', None )
             render_target = visualization.config.get( 'render_target', 'galaxy_main' )
             embeddable = visualization.config.get( 'embeddable', False )
@@ -174,53 +174,49 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
                 'embeddable': embeddable
             }
 
-        print
         return None
 
-    def get_visualization_url( self, trans, target_object, visualization_name, param_data ):
+    def get_visualization_url( self, trans, visualization_name, target_object, url_params ):
         """
         Generates a url for the visualization with `visualization_name`
         for use with the given `target_object` with a query string built
         from the configuration data in `param_data`.
         """
-        # precondition: the target_object should be usable by the visualization (accrd. to data_sources)
-        # convert params using vis.data_source.to_params
-        params = self.get_url_params( trans, target_object, param_data )
-
         # we want existing visualizations to work as normal but still be part of the registry (without mod'ing)
         #   so generate their urls differently
         url = None
         if visualization_name in self.BUILT_IN_VISUALIZATIONS:
-            url = url_for( controller='visualization', action=visualization_name, **params )
+            url = url_for( controller='visualization', action=visualization_name, **url_params )
         else:
             url = url_for( controller='visualization', action='render',
-                           visualization_name=visualization_name, **params )
+                           visualization_name=visualization_name, **url_params )
 
         # TODO:?? not sure if embedded would fit/used here? or added in client...
         return url
 
-    def get_url_params( self, trans, target_object, param_data ):
-        """
-        Convert the applicable objects and assoc. data into a param dict
-        for a url query string to add to the url that loads the visualization.
-        """
-        params = {}
-        for to_param_name, to_param_data in param_data.items():
-            # TODO??: look into params as well? what is required, etc.
-            target_attr = to_param_data.get( 'param_attr', None )
-            assign = to_param_data.get( 'assign', None )
-            # one or the other is needed
-            # assign takes precedence (goes last, overwrites)?
-            # NOTE this is only one level
+    # def get_url_params( self, trans, target_object, param_data ):
+    #     """
+    #     Convert the applicable objects and assoc. data into a param dict
+    #     for a url query string to add to the url that loads the visualization.
+    #     """
+    #     print 'param_data:', param_data
+    #     params = {}
+    #     for to_param_name, to_param_data in param_data.items():
+    #         # TODO??: look into params as well? what is required, etc.
+    #         target_attr = to_param_data.get( 'param_attr', None )
+    #         assign = to_param_data.get( 'assign', None )
+    #         # one or the other is needed
+    #         # assign takes precedence (goes last, overwrites)?
+    #         # NOTE this is only one level
 
-            if target_attr and vis_utils.hasattr_recursive( target_object, target_attr ):
-                params[ to_param_name ] = vis_utils.getattr_recursive( target_object, target_attr )
+    #         if target_attr and vis_utils.hasattr_recursive( target_object, target_attr ):
+    #             params[ to_param_name ] = vis_utils.getattr_recursive( target_object, target_attr )
 
-            if assign:
-                params[ to_param_name ] = assign
+    #         if assign:
+    #             params[ to_param_name ] = assign
 
-        # NOTE!: don't expose raw ids: encode id, _id
-        # TODO: double encodes if from config
-        if params:
-            params = trans.security.encode_dict_ids( params )
-        return params
+    #     # NOTE!: don't expose raw ids: encode id, _id
+    #     # TODO: double encodes if from config
+    #     if params:
+    #         params = trans.security.encode_dict_ids( params )
+    #     return params

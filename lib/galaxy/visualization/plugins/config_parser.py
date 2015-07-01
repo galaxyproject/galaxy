@@ -2,6 +2,7 @@ import weakref
 
 import galaxy.model
 from galaxy import util
+from galaxy.visualization.plugins import utils as vis_utils
 
 import logging
 log = logging.getLogger( __name__ )
@@ -161,7 +162,8 @@ class VisualizationsConfigParser( object ):
         sources = []
         for source in data_source_group.findall( 'data_source' ):
             sources.append( self.data_source_parser.parse( source ) )
-        return DataSourceGroup( sources=sources )
+        group = DataSourceGroup( sources=sources )
+        return group
 
     def parse_entry_point( self, xml_tree ):
         """
@@ -216,18 +218,50 @@ class DataSource( object ):
             result_type = test[ 'result_type' ]
             test_result = test[ 'result' ]
             test_fn = test[ 'fn' ]
-            print test_type, result_type, test_result
+            # print test_type, result_type, test_result
 
             # NOTE: tests are OR'd, if any test passes - the visualization can be applied
             test_passed = test_fn( target, test_result )
-            print 'test_passed:', test_passed
+            # print 'test_passed:', test_passed
             if test_passed:
                 return True
 
         return False
 
-    def params( self, target ):
-        return self.to_params
+    # def params( self, target ):
+    #     # print 'params', self.to_params
+    #     return self.to_params
+
+    def params( self, trans, target_object ):
+        """
+        Convert the applicable objects and assoc. data into a param dict
+        for a url query string to add to the url that loads the visualization.
+        """
+        to_params = self.to_params
+        target_params = {}
+        for to_param_name, to_param_data in to_params.items():
+            # TODO??: look into params as well? what is required, etc.
+            target_attr = to_param_data.get( 'param_attr', None )
+            assign = to_param_data.get( 'assign', None )
+            # one or the other is needed
+            # assign takes precedence (goes last, overwrites)?
+            # NOTE this is only one level
+
+            if target_attr and vis_utils.hasattr_recursive( target_object, target_attr ):
+                target_params[ to_param_name ] = vis_utils.getattr_recursive( target_object, target_attr )
+
+            if assign:
+                target_params[ to_param_name ] = assign
+
+        # NOTE!: don't expose raw ids: encode id, _id
+        # TODO: double encodes if from config
+        if target_params:
+            target_params = trans.security.encode_dict_ids( target_params )
+        return target_params
+
+    def __str__( self ):
+        return 'DataSource({params})'.format( params=self.to_params )
+
 
 # -------------------------------------------------------------------
 class DataSourceGroup( DataSource ):
@@ -236,14 +270,50 @@ class DataSourceGroup( DataSource ):
     def __init__( self, sources=None ):
         self.sources = sources or []
 
-    def is_applicable( self, target ):
-        return all([ source.is_applicable( target ) for source in self.sources ])
+    def is_applicable( self, targets ):
+        if not isinstance( targets, list ):
+            return False
+        # print 'DataSourceGroup.is_applicable:', targets
+        matching_targets = self._match_source_to_targets( targets )
+        if len( matching_targets ) == len( self.sources ):
+            return True
+        return False
 
-    def params( self, target ):
-        params = {}
+    def _match_source_to_targets( self, targets ):
+        # note: order of both sources and targets matter
+        working_targets = targets[:]
+        matching_targets = []
+        # print
+        # print '_match_source_to_targets'
+        # print '\tworking_targets:', working_targets
         for source in self.sources:
-            params.update( source.params( target ) )
+            # print '\tsource:', source
+            new_working_targets = []
+            for target in working_targets:
+                # print '\t\ttarget:', target
+                if source.is_applicable( target ):
+                    # print '\t\tis_applicable:', source, target
+                    matching_targets.append( ( source, target ) )
+                    # break
+                else:
+                    new_working_targets.append( target )
+            working_targets = new_working_targets
+            # print '\tworking_targets now:', working_targets
+        return matching_targets
+
+    def params( self, trans, target_objects ):
+        # print '\ngroup params'
+        params = {}
+        for source, target in self._match_source_to_targets( target_objects ):
+            source_params = source.params( trans, target )
+            # print source, target
+            # print source_params
+            params.update( source_params )
+        # print
+        # print 'params', params
+        # print
         return params
+
 
 # -------------------------------------------------------------------
 class DataSourceParser( object ):
@@ -438,7 +508,7 @@ class DataSourceParser( object ):
                 fn = test[ 'fn' ]
                 expected = test[ 'result' ]
                 result = fn( target, expected )
-                print ':::', fn, expected, result
+                # print ':::', fn, expected, result
                 subtest_results.append( result )
             return all( subtest_results )
 
@@ -487,6 +557,7 @@ class DataSourceParser( object ):
             #           be used for the conversion - this would allow CDATA values to be passed
             # <to_param param="json" type="assign"><![CDATA[{ "one": 1, "two": 2 }]]></to_param>
 
+            print param_name, param
             if param:
                 to_param_dict[ param_name ] = param
 

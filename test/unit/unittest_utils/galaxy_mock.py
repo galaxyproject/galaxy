@@ -30,6 +30,10 @@ class MockApp( object ):
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagManager( self )
         self.quota_agent = quota.QuotaAgent( self.model )
+        self.datatypes_registry = kwargs.get(
+            'datatypes_registry',
+            MockDatatypesRegistry( kwargs.get( 'datatypes', None ) )
+        )
 
 
 class MockAppConfig( Bunch ):
@@ -149,3 +153,15 @@ class MockTemplateHelpers( object ):
 
     def css( *css_files ):
         pass
+
+
+class MockDatatypesRegistry( object ):
+
+    def __init__( self, datatypes=None ):
+        self.datatypes = datatypes or {}
+
+    def get_datatype_by_extension( self, ext ):
+        return self.datatypes.get( ext )
+
+    def get_datatype_class_by_name( self, name ):
+        return self.datatypes.get( name )

@@ -136,6 +136,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         Provides a block of data from a dataset.
         """
+        print '\n_data(', dataset, chrom, low, high, start_val, max_vals, kwargs
         # Parameter check.
         if not chrom:
             return dataset.conversion_messages.NO_DATA
@@ -197,6 +198,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Get data provider.
         data_provider = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='data' )
+        print 'data_provider:', data_provider
 
         # Allow max_vals top be data provider set if not passed
         if max_vals is None:
@@ -225,6 +227,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ),
                                          ref_seq=region, mean_depth=mean_depth, **kwargs )
         result.update( { 'dataset_type': data_provider.dataset_type, 'extra_info': extra_info } )
+        # print result
+        print
         return result
 
     def _raw_data( self, trans, dataset, provider=None, **kwargs ):
