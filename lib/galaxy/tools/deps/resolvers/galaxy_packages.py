@@ -1,3 +1,4 @@
+from os import listdir
 from os.path import join, islink, realpath, basename, exists
 
 from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
@@ -30,9 +31,23 @@ class GalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependencyDirM
             return self._find_dep_versioned( name, version, type=type, **kwds )
 
     def _find_dep_versioned( self, name, version, type='package', **kwds ):
-        base_path = self.base_path
-        path = join( base_path, name, version )
-        return self._galaxy_package_dep(path, version)
+        #First try the way without owner/name/revision
+        path = join( self.base_path, name, version )
+        package = self._galaxy_package_dep(path, version)
+        if package != INDETERMINATE_DEPENDENCY:
+            return package
+        #now try with an owner/name/revision
+        for owner in listdir(path):
+            owner_path = path + "/" + owner
+            for package_name in listdir(owner_path):
+                if package_name.startswith("package_"+name):
+                    package_path = owner_path + "/" + package_name
+                    for revision in listdir(package_path):
+                        revision_path = package_path + "/" + revision
+                        package = self._galaxy_package_dep(revision_path, version)
+                        if package != INDETERMINATE_DEPENDENCY:
+                            return package
+        return INDETERMINATE_DEPENDENCY
 
     def _find_dep_default( self, name, type='package', **kwds ):
         base_path = self.base_path
