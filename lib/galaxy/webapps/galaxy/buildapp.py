@@ -266,9 +266,8 @@ def populate_api_routes( webapp, app ):
                            conditions=dict( method=["POST"] ) )
 
     # visualizations registry generic template renderer
-    webapp.add_route( '/visualization/show/:visualization_name', controller='visualization', action='render', visualization_name=None )
-    webapp.mapper.connect( 'visualizations_registry_index', '/api/visualizations_registry',
-        controller='visualizations_registry', action='index' )
+    webapp.add_route( '/visualization/show/:visualization_name',
+        controller='visualization', action='render', visualization_name=None )
 
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect( 'import_workflow_deprecated',
