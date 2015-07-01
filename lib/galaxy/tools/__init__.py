@@ -531,6 +531,16 @@ class Tool( object, Dictifiable ):
 
         return any( map( output_is_dynamic_collection, self.outputs.values() ) )
 
+    @property
+    def produces_collections_with_unknown_structure( self ):
+
+        def output_is_dynamic(output):
+            if not output.collection:
+                return False
+            return output.dynamic_structure
+
+        return any( map( output_is_dynamic, self.outputs.values() ) )
+
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
 
