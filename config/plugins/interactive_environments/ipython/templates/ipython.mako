@@ -1,4 +1,4 @@
- <%namespace name="ie" file="ie.mako" />
+<%namespace name="ie" file="ie.mako" />
 
 <%
 import os
@@ -16,7 +16,7 @@ if ie_request.attr.PASSWORD_AUTH:
     m.update( ie_request.notebook_pw + ie_request.notebook_pw_salt )
     PASSWORD = 'sha1:%s:%s' % (ie_request.notebook_pw_salt, m.hexdigest())
 else:
-	PASSWORD = "none"
+    PASSWORD = "none"
 
 ## IPython Specific
 # Prepare an empty notebook
@@ -26,6 +26,7 @@ with open( os.path.join( ie_request.attr.our_template_dir, 'notebook.ipynb' ), '
 empty_nb = empty_nb % notebook_id
 # Copy over default notebook, unless the dataset this viz is running on is a notebook
 empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
+
 if hda.datatype.__class__.__name__ != "Ipynb":
     with open( empty_nb_path, 'w+' ) as handle:
         handle.write( empty_nb )
