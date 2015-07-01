@@ -1596,6 +1596,7 @@ class JobWrapper( object ):
                                                                       config_file=config_file,
                                                                       datatypes_config=datatypes_config,
                                                                       job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                      max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                       **kwds )
 
     @property
