@@ -357,6 +357,12 @@ class Fasta( Sequence ):
                         line = fh.readline().strip()
                         if line == '' or line.startswith( '>' ):
                             break
+                        
+                        # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file                        
+                        line = fh.readline()
+                        if not line.startswith('>') and re.search("[\(\)\[\]\.]",line):
+                            break
+                        
                         return True
                     else:
                         break #we found a non-empty line, but it's not a fasta header
@@ -940,4 +946,92 @@ class RNADotPlotMatrix( data.Data ):
                             pairs = True
                     if seq and coor and pairs:
                         return True
+        return False
+
+
+class DotBracket ( Sequence ):
+    edam_format = "format_1457"
+    file_ext = "dbn"
+    
+    sequence_regexp = re.compile( "^[ACGTURYKMSWBDHVN]+$", re.I)
+    structure_regexp = re.compile( "^[\(\)\.\[\]{}]+$" )
+    
+    def set_meta( self, dataset, **kwd ):
+        """
+        Set the number of sequences and the number of data lines
+        in dataset.
+        """
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+            dataset.metadata.data_lines = None
+            dataset.metadata.sequences = None
+            dataset.metadata.seconday_structures = None
+            return
+        
+        data_lines = 0
+        sequences = 0
+        
+        for line in file( dataset.file_name ):
+            line = line.strip()
+            data_lines += 1
+            
+            if line and line.startswith( '>' ):
+                sequences += 1
+        
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.sequences = sequences
+    
+    def sniff(self, filename):
+        """
+        Galaxy Dbn (Dot-Bracket notation) rules:
+
+        * The first non-empty line is a header line: no comment lines are allowed.
+          * A header line starts with a '>' symbol and continues with 0 or multiple symbols until the line ends.
+        * The second non-empty line is a sequence line.
+          * A sequence line may only include chars that match the Fasta format (https://en.wikipedia.org/wiki/FASTA_format#Sequence_representation) symbols for nucleotides: ACGTURYKMSWBDHVN, and may thus not include whitespaces.
+          * A sequence line has no prefix and no suffix.
+          * A sequence line is case insensitive.
+        * The third non-empty line is a structure (Dot-Bracket) line and only describes the 2D structure of the sequence above it.
+          * A structure line must consist of the following chars: '.{}[]()'.
+          * A structure line must be of the same length as the sequence line, and each char represents the structure of the nucleotide above it.
+          * A structure line has no prefix and no suffix.
+          * A nucleotide pairs with only 1 or 0 other nucleotides.
+            * In a structure line, the number of '(' symbols equals the number of ')' symbols, the number of '[' symbols equals the number of ']' symbols and the number of '{' symbols equals the number of '}' symbols.
+        * The format accepts multiple entries per file, given that each entry is provided as three lines: the header, sequence and structure line.
+            * Sniffing is only applied on the first entry.
+        * Empty lines are allowed.
+         """
+        
+        state = 0
+        
+        with open( filename, "r" ) as handle:
+            for line in handle:
+                line = line.strip()
+                
+                if line:
+                    #header line
+                    if state == 0:
+                        if(line[0] != '>'):
+                            return False
+                        else:
+                            state = 1
+                    
+                    #sequence line
+                    elif state == 1:
+                        if not self.sequence_regexp.match(line):
+                            return False
+                        else:
+                            sequence_size = len(line)
+                            state = 2
+                    
+                    #dot-bracket structure line
+                    elif state == 2:
+                        if sequence_size != len(line) or not self.structure_regexp.match(line) or \
+                                line.count('(') != line.count(')') or \
+                                line.count('[') != line.count(']') or \
+                                line.count('{') != line.count('}'):
+                            return False
+                        else:
+                            return True
+        
+        # Number of lines is less than 3
         return False
