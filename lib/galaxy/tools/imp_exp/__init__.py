@@ -197,6 +197,24 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                             raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
                         if datasets_usage_counts[ temp_dataset_file_name ] == 1:
                             shutil.move( temp_dataset_file_name, hda.file_name )
+
+                            # Import additional files if present. Histories exported previously might not have this attribute set.
+                            dataset_extra_files_path = ''
+                            try:
+                                dataset_extra_files_path = dataset_attrs[ 'extra_files_path' ]
+                            except KeyError:
+                                pass
+
+                            if dataset_extra_files_path:
+                                try:
+                                    file_list = os.listdir( os.path.join( archive_dir, dataset_extra_files_path ) )
+                                except OSError:
+                                    file_list = []
+
+                                if len( file_list ):
+                                    os.mkdir( hda.extra_files_path )
+                                    for extra_file in file_list:
+                                        shutil.move( os.path.join( archive_dir, dataset_extra_files_path, extra_file ), hda.extra_files_path )
                         else:
                             datasets_usage_counts[ temp_dataset_file_name ] -= 1
                             shutil.copyfile( temp_dataset_file_name, hda.file_name )
@@ -394,6 +412,7 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                         "uuid": ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
                         "annotation": to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags": get_item_tag_dict( obj ),
+                        "extra_files_path": obj.extra_files_path
                     }
                     if not obj.visible and not include_hidden:
                         rval['exported'] = False
