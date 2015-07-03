@@ -2,14 +2,17 @@
 Backup resolvers for when dependencies can not be loaded from the database.
 Mainly suited for testing stage.
 
-Ideally all dependencies will be stored in the database when a tool is added from a toolshed.
+Ideally all dependencies will be stored in the database 
+    when a tool is added from a toolshed.
 That should remain the preferred way of locating dependencies.
 
-In cases where that is not possible for example during testing this resolver can act as a backup.
-It will look not just for manually added dependencies but also ones added from a toolshed.
+In cases where that is not possible 
+    for example during testing this resolver can act as a backup.
+This resolver looks not just for manually added dependencies 
+    but also ones added from a toolshed.
 
 This tool is still under development so the default behaviour could change.
-It has only been tested when placed in the same directory as galaxy_packages.py
+It has been tested when placed in the same directory as galaxy_packages.py
 
 At the time of writting July 3 2015 this resolver has to be pluged in.
 See bottom for instuctions on how to add this resolver.
@@ -112,7 +115,8 @@ class UnlinkedToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver)
         return latest_candidate
 
     """
-    #Currently no need has been found for expand the verionsless method but there is no reason it could
+    #Currently no need has been found for expand the verionsless method 
+    #This is an example fo how it could be done
     def _find_dep_default( self, name, type='package', **kwds ):
         try:
             possibles = TODO
@@ -156,7 +160,8 @@ Adding resolver instuctions:
 
 1a. ALLWAYS add <tool_shed_packages /> first!!!!
 
-1b. <galaxy_packages /> is optional as this resolver will also find dependency found by that resolver
+1b. <galaxy_packages /> is optional as 
+    this resolver will also find dependency found by that resolver
 1bi Current default is to use a depenency to find that way first!
 1bii So an alternative version of dependency_resolvers_config.xml
 <dependency_resolvers>
@@ -166,11 +171,17 @@ Adding resolver instuctions:
 </dependency_resolvers>
 
 1c. See init for optional config values
-1ci versionless currently is handled by the super class GalaxyPackageDependencyResolver
+1ci versionless currently is handled by the super class 
+    GalaxyPackageDependencyResolver
 
 2. Add a parameter to config.init
 dependency_resolvers_config_file = ./config/dependency_resolvers_config.xml
 
 2a. File name/path can be different
 2b. config key must be dependency_resolvers_config_file
+
+3. For planemo it may be required to specify: 
+--dependency_resolvers_config_file (xml file described in 1 above)
+--tool_dependency_dir (root of dependencies typically galaxy/dependency_dir)
+See planemo test --help for more information
 """
