@@ -11,7 +11,6 @@ from galaxy.tools.wrappers import (
     DatasetFilenameWrapper,
     DatasetListWrapper,
     DatasetCollectionWrapper,
-    LibraryDatasetValueWrapper,
     SelectToolParameterWrapper,
     InputValueWrapper,
     RawObjectWrapper
@@ -19,10 +18,10 @@ from galaxy.tools.wrappers import (
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
     DataCollectionToolParameter,
-    LibraryDatasetToolParameter,
     SelectToolParameter,
 )
-from galaxy.tools.parameters.grouping import Conditional, Repeat
+from galaxy.tools.parameters.grouping import Conditional, Repeat, Section
+from galaxy.tools import global_tool_errors
 from galaxy.jobs.datasets import dataset_path_rewrites
 
 import logging
@@ -143,6 +142,9 @@ class ToolEvaluator( object ):
                     values = input_values[ input.name ]
                     current = values["__current_case__"]
                     do_walk( input.cases[current].inputs, values )
+                elif isinstance( input, Section ):
+                    values = input_values[ input.name ]
+                    do_walk( input.inputs, values )
                 else:
                     func( input_values, input )
 
@@ -162,11 +164,11 @@ class ToolEvaluator( object ):
                                         tool=self.tool,
                                         name=input.name )
             elif isinstance( input, DataToolParameter ):
-                ## FIXME: We're populating param_dict with conversions when
-                ##        wrapping values, this should happen as a separate
-                ##        step before wrapping (or call this wrapping step
-                ##        something more generic) (but iterating this same
-                ##        list twice would be wasteful)
+                # FIXME: We're populating param_dict with conversions when
+                #        wrapping values, this should happen as a separate
+                #        step before wrapping (or call this wrapping step
+                #        something more generic) (but iterating this same
+                #        list twice would be wasteful)
                 # Add explicit conversions by name to current parent
                 for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                     # If we are at building cmdline step, then converters
@@ -203,7 +205,7 @@ class ToolEvaluator( object ):
                 if identifier_key in param_dict:
                     wrapper_kwds["identifier"] = param_dict[identifier_key]
                 if dataset:
-                    #A None dataset does not have a filename
+                    # A None dataset does not have a filename
                     real_path = dataset.file_name
                     if real_path in input_dataset_paths:
                         wrapper_kwds[ "dataset_path" ] = input_dataset_paths[ real_path ]
@@ -225,10 +227,6 @@ class ToolEvaluator( object ):
             elif isinstance( input, SelectToolParameter ):
                 input_values[ input.name ] = SelectToolParameterWrapper(
                     input, input_values[ input.name ], self.app, other_values=param_dict, path_rewriter=self.unstructured_path_rewriter )
-            elif isinstance( input, LibraryDatasetToolParameter ):
-                # TODO: Handle input rewrites in here? How to test LibraryDatasetToolParameters?
-                input_values[ input.name ] = LibraryDatasetValueWrapper(
-                    input, input_values[ input.name ], param_dict )
             else:
                 input_values[ input.name ] = InputValueWrapper(
                     input, input_values[ input.name ], param_dict )
@@ -242,16 +240,16 @@ class ToolEvaluator( object ):
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):
         # TODO: Update this method for dataset collections? Need to test. -John.
 
-        ## FIXME: when self.check_values==True, input datasets are being wrapped
-        ##        twice (above and below, creating 2 separate
-        ##        DatasetFilenameWrapper objects - first is overwritten by
-        ##        second), is this necessary? - if we get rid of this way to
-        ##        access children, can we stop this redundancy, or is there
-        ##        another reason for this?
-        ## - Only necessary when self.check_values is False (==external dataset
-        ##   tool?: can this be abstracted out as part of being a datasouce tool?)
-        ## - But we still want (ALWAYS) to wrap input datasets (this should be
-        ##   checked to prevent overhead of creating a new object?)
+        # FIXME: when self.check_values==True, input datasets are being wrapped
+        #        twice (above and below, creating 2 separate
+        #        DatasetFilenameWrapper objects - first is overwritten by
+        #        second), is this necessary? - if we get rid of this way to
+        #        access children, can we stop this redundancy, or is there
+        #        another reason for this?
+        # - Only necessary when self.check_values is False (==external dataset
+        #   tool?: can this be abstracted out as part of being a datasouce tool?)
+        # - But we still want (ALWAYS) to wrap input datasets (this should be
+        #   checked to prevent overhead of creating a new object?)
         # Additionally, datasets go in the param dict. We wrap them such that
         # if the bare variable name is used it returns the filename (for
         # backwards compatibility). We also add any child datasets to the
@@ -283,9 +281,9 @@ class ToolEvaluator( object ):
         for name, out_collection in output_collections.items():
             if name not in tool.output_collections:
                 continue
-                #message_template = "Name [%s] not found in tool.output_collections %s"
-                #message = message_template % ( name, tool.output_collections )
-                #raise AssertionError( message )
+                # message_template = "Name [%s] not found in tool.output_collections %s"
+                # message = message_template % ( name, tool.output_collections )
+                # raise AssertionError( message )
 
             wrapper_kwds = dict(
                 datatypes_registry=self.app.datatypes_registry,
@@ -373,7 +371,7 @@ class ToolEvaluator( object ):
 
         if not self.tool.check_values and self.unstructured_path_rewriter:
             # The tools weren't "wrapped" yet, but need to be in order to get
-            #the paths rewritten.
+            # the paths rewritten.
             self.__walk_inputs( self.tool.inputs, param_dict, rewrite_unstructured_paths )
 
     def __sanitize_param_dict( self, param_dict ):
@@ -381,7 +379,7 @@ class ToolEvaluator( object ):
         Sanitize all values that will be substituted on the command line, with the exception of ToolParameterValueWrappers,
         which already have their own specific sanitization rules and also exclude special-cased named values.
         We will only examine the first level for values to skip; the wrapping function will recurse as necessary.
-        
+
         Note: this method follows the style of the similar populate calls, in that param_dict is modified in-place.
         """
         # chromInfo is a filename, do not sanitize it.
@@ -403,11 +401,31 @@ class ToolEvaluator( object ):
         self.extra_filenames = []
         self.command_line = None
 
-        self.__build_config_files( )
-        self.__build_param_file( )
-        self.__build_command_line( )
+        try:
+            self.__build_config_files( )
+        except Exception, e:
+            # capture and log parsing errors
+            global_tool_errors.add_error(self.tool.config_file, "Building Config Files", e)
+            raise e
+        try:
+            self.__build_param_file( )
+        except Exception, e:
+            # capture and log parsing errors
+            global_tool_errors.add_error(self.tool.config_file, "Building Param File", e)
+            raise e
+        try:
+            self.__build_command_line( )
+        except Exception, e:
+            # capture and log parsing errors
+            global_tool_errors.add_error(self.tool.config_file, "Building Command Line", e)
+            raise e
+        try:
+            self.__build_environment_variables()
+        except Exception, e:
+            global_tool_errors.add_error(self.tool.config_file, "Building Environment Variables", e)
+            raise e
 
-        return self.command_line, self.extra_filenames
+        return self.command_line, self.extra_filenames, self.environment_variables
 
     def __build_command_line( self ):
         """
@@ -431,7 +449,7 @@ class ToolEvaluator( object ):
             command_line = command_line.replace( "\n", " " ).replace( "\r", " " ).strip()
         except Exception:
             # Modify exception message to be more clear
-            #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ), )
+            # e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ), )
             raise
         if interpreter:
             # TODO: path munging for cluster/dataset server relocatability
@@ -456,14 +474,28 @@ class ToolEvaluator( object ):
             else:
                 fd, config_filename = tempfile.mkstemp( dir=directory )
                 os.close( fd )
-            f = open( config_filename, "wt" )
-            f.write( fill_template( template_text, context=param_dict ) )
-            f.close()
-            # For running jobs as the actual user, ensure the config file is globally readable
-            os.chmod( config_filename, 0644 )
+            self.__write_workdir_file( config_filename, template_text, param_dict )
             self.__register_extra_file( name, config_filename )
             config_filenames.append( config_filename )
         return config_filenames
+
+    def __build_environment_variables( self ):
+        param_dict = self.param_dict
+        environment_variables = []
+        for environment_variable_def in self.tool.environment_variables:
+            directory = self.local_working_directory
+            environment_variable = environment_variable_def.copy()
+            environment_variable_template = environment_variable_def["template"]
+            fd, config_filename = tempfile.mkstemp( dir=directory )
+            os.close( fd )
+            self.__write_workdir_file( config_filename, environment_variable_template, param_dict )
+            config_file_basename = os.path.basename( config_filename )
+            environment_variable["value"] = "`cat %s`" % config_file_basename
+            environment_variable["raw"] = True
+            environment_variables.append(environment_variable)
+
+        self.environment_variables = environment_variables
+        return environment_variables
 
     def __build_param_file( self ):
         """
@@ -475,10 +507,10 @@ class ToolEvaluator( object ):
         if command and "$param_file" in command:
             fd, param_filename = tempfile.mkstemp( dir=directory )
             os.close( fd )
-            f = open( param_filename, "wt" )
+            f = open( param_filename, "w" )
             for key, value in param_dict.items():
                 # parameters can be strings or lists of strings, coerce to list
-                if type(value) != type([]):
+                if not isinstance(value, list):
                     value = [ value ]
                 for elem in value:
                     f.write( '%s=%s\n' % (key, elem) )
@@ -487,6 +519,13 @@ class ToolEvaluator( object ):
             return param_filename
         else:
             return None
+
+    def __write_workdir_file( self, config_filename, template, context ):
+        value = fill_template( template, context=context )
+        with open( config_filename, "w" ) as f:
+            f.write( value )
+        # For running jobs as the actual user, ensure the config file is globally readable
+        os.chmod( config_filename, 0644 )
 
     def __register_extra_file( self, name, local_config_path ):
         """

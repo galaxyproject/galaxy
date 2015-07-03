@@ -11,10 +11,8 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         initialize: function(options) {
             // options
             this.optionsDefault = {
-                // uses dynamic fields instead of text fields
-                is_dynamic      : true,
-                // shows form in narrow view mode
-                narrow          : false,
+                // uses workflow editor mode i.e. text instead of select fields
+                is_workflow     : false,
                 // shows errors on start
                 initial_errors  : false,
                 // portlet style
@@ -111,6 +109,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 // mark error
                 input_element.error(message || 'Please verify this parameter.');
 
+                // trigger expand event for parent containers
+                this.trigger('expand', input_id);
+
                 // scroll to first input element
                 if (!silent) {
                     $('html, body').animate({
@@ -199,6 +200,13 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.section = new FormSection.View(this, {
                 inputs : this.options.inputs
             });
+
+            // switch to classic tool form mako if the form definition is incompatible
+            if (this.incompatible) {
+                this.$el.hide();
+                $('#tool-form-classic').show();
+                return;
+            }
 
             // create portlet
             this.portlet = new Portlet.View({

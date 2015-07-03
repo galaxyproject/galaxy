@@ -14,67 +14,53 @@
     <!--[if lt IE 9]>
       <script type='text/javascript' src="${h.url_for('/static/scripts/libs/IE/excanvas.js')}"></script>
     <![endif]-->
+    <!--[if lt IE 7]>
+      <script type='text/javascript'>
+        window.lt_ie_7 = true;
+      </script>
+    <![endif]-->
 
     ${h.js( "libs/jquery/jquery.event.drag",
             "libs/jquery/jquery.event.drop",
             "libs/jquery/jquery.event.hover",
             "libs/jquery/jquery.form",
             "libs/jquery/jstorage",
-            "galaxy.workflow_editor.canvas",
+            "libs/jquery/jquery-ui",
             "libs/jquery/jquery.autocomplete",
             "galaxy.autocom_tagging",
-            "galaxy.workflows" )}
-
-    <!--[if lt IE 7]>
-    <script type='text/javascript'>
-    window.lt_ie_7 = true;
-    </script>
-    <![endif]-->
+            "libs/bibtex" )}
 
     <script type='text/javascript'>
-        // Switch for new tool form
-        %if util.string_as_bool(trans.app.config.get('workflow_toolform_upgrade',  False)):
-        __NEWTOOLFORM__ = true;
-        %endif
-        
-        // Globals
-        workflow = null;
-        canvas_manager = null;
-        active_ajax_call = false;
-
-        var workflow_id = "${trans.security.encode_id( stored.id ) }";
+        workflow_view = null;
 
         // URLs used by galaxy.workflows.js
-        var tool_search_url = "${h.url_for( controller='root', action='tool_search' )}",
-            get_datatypes_url = "${h.url_for( '/api/datatypes/mapping' )}",
-            load_workflow_url = "${h.url_for( controller='workflow', action='load_workflow' )}",
-            run_workflow_url = "${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id))}",
-            rename_async_url = "${h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) )}",
-            annotate_async_url = "${h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) )}",
-            get_new_module_info_url = "${h.url_for(controller='workflow', action='get_new_module_info' )}",
-            workflow_index_url = "${h.url_for( controller='workflow', action='index' )}",
-            save_workflow_url = "${h.url_for(controller='workflow', action='save_workflow' )}";
+        var config = {
+            id      : "${trans.security.encode_id( stored.id ) }",
+            urls    : {
+                tool_search         : "${h.url_for( '/api/tools' )}",
+                get_datatypes       : "${h.url_for( '/api/datatypes/mapping' )}",
+                load_workflow       : "${h.url_for( controller='workflow', action='load_workflow' )}",
+                run_workflow        : "${h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id))}",
+                rename_async        : "${h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) )}",
+                annotate_async      : "${h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) )}",
+                get_new_module_info : "${h.url_for(controller='workflow', action='get_new_module_info' )}",
+                workflow_index      : "${h.url_for( controller='workflow', action='index' )}",
+                save_workflow       : "${h.url_for(controller='workflow', action='save_workflow' )}"
+            }
+        };
 
-    <%
-        from galaxy.jobs.actions.post import ActionBox
-    %>
-        // Post-job action vars.
-        var pja_list = "${ActionBox.get_add_list()}",
-            get_pja_form = function(pja, node) {
-                var p_str = '';
-                // FIXME: this writes JS code; this logic should be codified in galaxy.workflows.js
-                ${ActionBox.get_forms(trans)}
-                return p_str;
-            };
-
-        // NOTE: code to initialize and edit workflows is in galaxy.workflows.js
+        $( function() {
+            require(['mvc/workflow/workflow-view'], function(Workflow){
+                workflow_view = new Workflow(config);
+            });
+        });
     </script>
 </%def>
 
 <%def name="stylesheets()">
 
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base", "autocomplete_tagging", "tool_menu" )}
+    ${h.css( "base", "autocomplete_tagging", "tool_menu", "jquery-ui/smoothness/jquery-ui" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
@@ -120,7 +106,7 @@
     }
 
     .right-content {
-        margin: 5px;
+        margin: 3px;
     }
 
     canvas { position: absolute; z-index: 10; }
@@ -236,11 +222,11 @@
                 <div class="toolTitleNoSection">
             %endif
                 %if "[[" in tool.description and "]]" in tool.description:
-                    ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="javascript:add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
+                    ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_view.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                 %elif tool.name:
-                    <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
+                    <a id="link-${tool.id}" href="#" onclick="workflow_view.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
                 %else:
-                    <a id="link-${tool.id}" href="#" onclick="add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                    <a id="link-${tool.id}" href="#" onclick="workflow_view.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
                 %endif
             </div>
         %else:
@@ -355,7 +341,7 @@
                 <div class="toolSectionBg">
                 %for module in module_section["modules"]:
                     <div class="toolTitle">
-                        <a href="#" onclick="add_node_for_module( '${module['name']}', '${module['title']}' )">${module['description']}</a>
+                        <a href="#" onclick="workflow_view.add_node_for_module( '${module['name']}', '${module['title']}' )">${module['description']}</a>
                     </div><!-- end toolTitle -->
                 %endfor
                 </div>

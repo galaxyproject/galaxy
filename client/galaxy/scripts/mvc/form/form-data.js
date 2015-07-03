@@ -12,10 +12,14 @@ return Backbone.Model.extend({
     */
     checksum: function() {
         var sum = '';
-        for (var i in this.app.field_list) {
-            var field = this.app.field_list[i];
-            sum += JSON.stringify(field.value && field.value());
-        }
+        var self = this;
+        this.app.section.$el.find('.section-row').each(function() {
+            var id = $(this).attr('id');
+            var field = self.app.field_list[id];
+            if (field) {
+                sum += id + ':' + JSON.stringify(field.value && field.value()) + ':' + field.collapsed + ';';
+            }
+        });
         return sum;
     },
 
@@ -96,9 +100,9 @@ return Backbone.Model.extend({
                                 convert(job_input_id, head[input.id + '-section-' + selectedCase]);
                             }
                             break;
-                        // handle custom sub sections
+                        // handle sections
                         case 'section':
-                            convert('', node);
+                            convert(!input.flat && job_input_id || '', node);
                             break;
                         default:
                             // get field
@@ -109,6 +113,11 @@ return Backbone.Model.extend({
 
                                 // ignore certain values
                                 if (input.ignore === undefined || input.ignore != value) {
+                                    // replace value by collapsible value
+                                    if (field.collapsed && input.collapsible_value) {
+                                        value = input.collapsible_value;
+                                    }
+
                                     // add value to submission
                                     add (job_input_id, input.id, value);
 
@@ -190,6 +199,9 @@ return Backbone.Model.extend({
                         if (selectedCase != -1) {
                             search (index, node.cases[selectedCase].inputs);
                         }
+                        break;
+                    case 'section':
+                        search (index, node.inputs);
                         break;
                     default:
                         var input_id = self.map_dict[index];

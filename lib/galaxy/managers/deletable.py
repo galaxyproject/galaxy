@@ -18,14 +18,13 @@ class DeletableManagerMixin( object ):
     that they are no longer needed, should not be displayed, or may be actually
     removed by an admin/script.
     """
-
-    def delete( self, trans, item, flush=True, **kwargs ):
+    def delete( self, item, flush=True, **kwargs ):
         """
         Mark as deleted and return.
         """
         return self._session_setattr( item, 'deleted', True, flush=flush )
 
-    def undelete( self, trans, item, flush=True, **kwargs ):
+    def undelete( self, item, flush=True, **kwargs ):
         """
         Mark as not deleted and return.
         """
@@ -44,7 +43,7 @@ class DeletableDeserializerMixin( object ):
     def add_deserializers( self ):
         self.deserializers[ 'deleted' ] = self.deserialize_deleted
 
-    def deserialize_deleted( self, trans, item, key, val ):
+    def deserialize_deleted( self, item, key, val, **context ):
         """
         Delete or undelete `item` based on `val` then return `item.deleted`.
         """
@@ -53,9 +52,9 @@ class DeletableDeserializerMixin( object ):
             return item.deleted
         # TODO:?? flush=False?
         if new_deleted:
-            self.manager.delete( trans, item, flush=False )
+            self.manager.delete( item, flush=False )
         else:
-            self.manager.undelete( trans, item, flush=False )
+            self.manager.undelete( item, flush=False )
         return item.deleted
 
 
@@ -73,8 +72,7 @@ class PurgableManagerMixin( DeletableManagerMixin ):
     purging is often removal of some additional, non-db resource (e.g. a dataset's
     file).
     """
-
-    def purge( self, trans, item, flush=True, **kwargs ):
+    def purge( self, item, flush=True, **kwargs ):
         """
         Mark as purged and return.
 
@@ -96,15 +94,16 @@ class PurgableDeserializerMixin( DeletableDeserializerMixin ):
         DeletableDeserializerMixin.add_deserializers( self )
         self.deserializers[ 'purged' ] = self.deserialize_purged
 
-    def deserialize_purged( self, trans, item, key, val ):
+    def deserialize_purged( self, item, key, val, **context ):
         """
         If `val` is True, purge `item` and return `item.purged`.
         """
         new_purged = self.validate.bool( key, val )
         if new_purged == item.purged:
             return item.purged
+        # do we want to error if something attempts to 'unpurge'?
         if new_purged:
-            self.manager.purge( trans, item, flush=False )
+            self.manager.purge( item, flush=False )
         return item.purged
 
 

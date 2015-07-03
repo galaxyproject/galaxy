@@ -24,10 +24,6 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             // set element
             this.setElement('<div/>');
 
-            // append to body
-            this.container = options.container || 'body';
-            $(this.container).append(this.$el);
-
             // create form
             this._buildForm(options);
         },
@@ -212,7 +208,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 title   : (!options.narrow && 'Versions') || null,
                 tooltip : 'Select another tool version'
             });
-            if (options.versions && options.versions.length > 1) {
+            if (!options.is_workflow && options.versions && options.versions.length > 1) {
                 for (var i in options.versions) {
                     var version = options.versions[i];
                     if (version != options.version) {

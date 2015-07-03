@@ -2,25 +2,27 @@
 """
 import os
 import imp
-import unittest
 
-utility = imp.load_source( 'utility', os.path.join( os.path.dirname( __file__ ), '../../util/utility.py' ) )
-log = utility.set_up_filelogger( __name__ + '.log' )
-utility.add_galaxy_lib_to_path( 'test/unit/web/base' )
+import logging
+log = logging.getLogger( __name__ )
+
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
+import galaxy_mock
 
 from galaxy.web.base.pluginframework import PageServingPluginManager
 
-import mock
 
 # ----------------------------------------------------------------------------- globals
 contents1 = """${what} ${you} ${say}"""
 
+
 # -----------------------------------------------------------------------------
-class PageServingPluginManager_TestCase( unittest.TestCase ):
+class PageServingPluginManager_TestCase( test_utils.unittest.TestCase ):
 
     def test_plugin_load( self ):
         """should attempt load if criteria met"""
-        mock_app_dir = mock.MockDir({
+        mock_app_dir = galaxy_mock.MockDir({
             'plugins'   : {
                 'plugin1'   : {
                     'templates' : {},
@@ -36,7 +38,7 @@ class PageServingPluginManager_TestCase( unittest.TestCase ):
                 'not_a_plugin2'     : {},
             }
         })
-        mock_app = mock.MockApp( mock_app_dir.root_path )
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = PageServingPluginManager( mock_app, 'test', directories_setting='plugins' )
 
         app_path = mock_app_dir.root_path
@@ -79,7 +81,7 @@ class PageServingPluginManager_TestCase( unittest.TestCase ):
 
     def test_plugin_static_map( self ):
         """"""
-        mock_app_dir = mock.MockDir({
+        mock_app_dir = galaxy_mock.MockDir({
             'plugins'   : {
                 'plugin1'   : {
                     'templates' : {},
@@ -87,11 +89,9 @@ class PageServingPluginManager_TestCase( unittest.TestCase ):
                 }
             }
         })
-        mock_app = mock.MockApp( mock_app_dir.root_path )
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = PageServingPluginManager( mock_app, 'test', directories_setting='plugins' )
 
-        app_path = mock_app_dir.root_path
-        expected_plugins_path = os.path.join( app_path, 'plugins' )
         self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
         plugin = plugin_mgr.plugins[ 'plugin1' ]
         self.assertEqual( plugin_mgr.get_static_urls_and_paths(), [( plugin.static_url, plugin.static_path )] )
@@ -100,7 +100,7 @@ class PageServingPluginManager_TestCase( unittest.TestCase ):
 
     def test_plugin_templates( self ):
         """"""
-        mock_app_dir = mock.MockDir({
+        mock_app_dir = galaxy_mock.MockDir({
             'plugins'   : {
                 'plugin1'   : {
                     'templates' : {
@@ -109,15 +109,12 @@ class PageServingPluginManager_TestCase( unittest.TestCase ):
                 }
             }
         })
-        mock_app = mock.MockApp( mock_app_dir.root_path )
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = PageServingPluginManager( mock_app, 'test', directories_setting='plugins' )
 
-        app_path = mock_app_dir.root_path
-        expected_plugins_path = os.path.join( app_path, 'plugins' )
         self.assertItemsEqual( plugin_mgr.plugins.keys(), [ 'plugin1' ] )
-
         plugin = plugin_mgr.plugins[ 'plugin1' ]
-        rendered = plugin_mgr.fill_template( mock.MockTrans(), plugin, 'test.mako',
+        rendered = plugin_mgr.fill_template( galaxy_mock.MockTrans(), plugin, 'test.mako',
             what='Hey', you='Ho', say='HeyHey HoHo' )
         self.assertEqual( rendered, 'Hey Ho HeyHey HoHo' )
 
@@ -125,4 +122,4 @@ class PageServingPluginManager_TestCase( unittest.TestCase ):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    test_utils.unittest.main()

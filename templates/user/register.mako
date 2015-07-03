@@ -1,7 +1,6 @@
 <%!
 #This is a hack, we should restructure templates to avoid this.
 def inherit(context):
-    print 'context:', context
     if context.get('trans').webapp.name == 'galaxy' and context.get( 'use_panels', True ):
         return '/webapps/galaxy/base_panels.mako'
     else:
@@ -96,7 +95,7 @@ def inherit(context):
 
     			var error_text_email= 'Please enter your valid email address';
     			var error_text_email_long= 'Email cannot be more than 255 characters in length';
-    			var error_text_username_characters = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 3.';
+    			var error_text_username_characters = 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.';
     			var error_text_password_short = 'Please use a password of at least 6 characters';
     			var error_text_password_match = "Passwords don't match";
 
@@ -141,19 +140,19 @@ def inherit(context):
                 %if t.webapp.name == 'galaxy':
                     <div class="toolParamHelp" style="clear: both;">
                         Your public name is an identifier that will be used to generate addresses for information
-                        you share publicly. Public names must be at least four characters in length and contain only lower-case
+                        you share publicly. Public names must be at least three characters in length and contain only lower-case
                         letters, numbers, and the '-' character.
                     </div>
                 %else:
                     <div class="toolParamHelp" style="clear: both;">
                         Your public name provides a means of identifying you publicly within this tool shed. Public
-                        names must be at least four characters in length and contain only lower-case letters, numbers,
+                        names must be at least three characters in length and contain only lower-case letters, numbers,
                         and the '-' character.  You cannot change your public name after you have created a repository
                         in this tool shed.
                     </div>
                 %endif
             </div>
-            %if trans.app.config.smtp_server:
+            %if trans.app.config.smtp_server and trans.app.config.mailing_join_addr:
                 <div class="form-row">
                     <label>Subscribe to mailing list:</label>
                     %if subscribe_checked:

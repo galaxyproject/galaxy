@@ -24,4 +24,3 @@ def lint_citations(tool_xml, lint_ctx):
 
     if valid_citations > 0:
         lint_ctx.valid("Found %d likely valid citations.", valid_citations)
-

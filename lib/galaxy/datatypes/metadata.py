@@ -24,6 +24,7 @@ from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util import stringify_dictionary_keys
 from galaxy.util import string_as_bool
 from galaxy.util import in_directory
+from galaxy.util.json import safe_dumps
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 
@@ -166,6 +167,8 @@ class MetadataCollection( object ):
                 # if the metadata value is not found in our externally set metadata but it has a value in the 'old'
                 # metadata associated with our dataset, we'll delete it from our dataset's metadata dict
                 del dataset._metadata[ name ]
+        if '__extension__' in JSONified_dict:
+            dataset.extension = JSONified_dict['__extension__']
 
     def to_JSON_dict( self, filename=None ):
         # galaxy.model.customtypes.json_encoder.encode()
@@ -174,6 +177,8 @@ class MetadataCollection( object ):
         for name, spec in self.spec.items():
             if name in dataset_meta_dict:
                 meta_dict[ name ] = spec.param.to_external_value( dataset_meta_dict[ name ] )
+        if '__extension__' in dataset_meta_dict:
+            meta_dict[ '__extension__' ] = dataset_meta_dict['__extension__']
         if filename is None:
             return json.dumps( meta_dict )
         json.dump( meta_dict, open( filename, 'wb+' ) )
@@ -503,7 +508,7 @@ class DictParameter( MetadataParameter ):
 
     def to_safe_string( self, value ):
         # We do not sanitize json dicts
-        return json.safe_dumps( value )
+        return safe_dumps( value )
 
 
 class PythonObjectParameter( MetadataParameter ):
@@ -683,11 +688,15 @@ class JobExternalOutputMetadataWrapper( object ):
     def get_output_filenames_by_dataset( self, dataset, sa_session ):
         if isinstance( dataset, galaxy.model.HistoryDatasetAssociation ):
             return sa_session.query( galaxy.model.JobExternalOutputMetadata ) \
-                             .filter_by( job_id=self.job_id, history_dataset_association_id=dataset.id ) \
+                             .filter_by( job_id=self.job_id,
+                                         history_dataset_association_id=dataset.id,
+                                         is_valid=True ) \
                              .first()  # there should only be one or None
         elif isinstance( dataset, galaxy.model.LibraryDatasetDatasetAssociation ):
             return sa_session.query( galaxy.model.JobExternalOutputMetadata ) \
-                             .filter_by( job_id=self.job_id, library_dataset_dataset_association_id=dataset.id ) \
+                             .filter_by( job_id=self.job_id,
+                                         library_dataset_dataset_association_id=dataset.id,
+                                         is_valid=True ) \
                              .first()  # there should only be one or None
         return None
 
@@ -695,6 +704,16 @@ class JobExternalOutputMetadataWrapper( object ):
         # Set meta can be called on library items and history items,
         # need to make different keys for them, since ids can overlap
         return "%s_%d" % ( dataset.__class__.__name__, dataset.id )
+
+    def invalidate_external_metadata( self, datasets, sa_session ):
+        for dataset in datasets:
+            jeom = self.get_output_filenames_by_dataset( dataset, sa_session )
+            # shouldn't be more than one valid, but you never know
+            while jeom:
+                jeom.is_valid = False
+                sa_session.add( jeom )
+                sa_session.flush()
+                jeom = self.get_output_filenames_by_dataset( dataset, sa_session )
 
     def setup_external_metadata( self, datasets, sa_session, exec_dir=None,
                                  tmp_dir=None, dataset_files_path=None,
@@ -758,8 +777,8 @@ class JobExternalOutputMetadataWrapper( object ):
             # so we will only populate the dictionary once
             metadata_files = self.get_output_filenames_by_dataset( dataset, sa_session )
             if not metadata_files:
-                metadata_files = galaxy.model.JobExternalOutputMetadata( dataset=dataset)
-                metadata_files.job_id = self.job_id
+                job = sa_session.query( galaxy.model.Job ).get( self.job_id )
+                metadata_files = galaxy.model.JobExternalOutputMetadata( job=job, dataset=dataset )
                 # we are using tempfile to create unique filenames, tempfile always returns an absolute path
                 # we will use pathnames relative to the galaxy root, to accommodate instances where the galaxy root
                 # is located differently, i.e. on a cluster node with a different filesystem structure

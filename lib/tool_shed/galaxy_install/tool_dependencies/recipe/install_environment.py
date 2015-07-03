@@ -46,11 +46,6 @@ class InstallEnvironment( object ):
         self.install_dir = install_dir
         self.tool_shed_repository_install_dir = tool_shed_repository_install_dir
 
-    def __call__( self ):
-        with settings( warn_only=True, **basic_util.get_env_var_values( self ) ):
-            with prefix( self.__setup_environment() ):
-                yield
-
     def add_env_shell_file_paths( self, paths ):
         for path in paths:
             self.env_shell_file_paths.append( str( path ) )

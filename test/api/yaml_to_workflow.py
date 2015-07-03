@@ -17,7 +17,7 @@ STEP_TYPE_ALIASES = {
 
 def yaml_to_workflow(has_yaml):
     as_python = yaml.load(has_yaml)
-    return python_to_workflow(as_path)
+    return python_to_workflow(as_python)
 
 
 def python_to_workflow(as_python):

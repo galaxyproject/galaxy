@@ -37,7 +37,7 @@ def validate_email( trans, email, user=None, check_dup=True ):
 
 
 def validate_publicname( trans, publicname, user=None ):
-    # User names must be at least four characters in length and contain only lower-case
+    # User names must be at least three characters in length and contain only lower-case
     # letters, numbers, and the '-' character.
     if user and user.username == publicname:
         return ''
@@ -45,8 +45,10 @@ def validate_publicname( trans, publicname, user=None ):
         if len( publicname ) < 3:
             return "Public name must be at least 3 characters in length"
     else:
-        if len( publicname ) < 4:
-            return "Public name must be at least 4 characters in length"
+        # DCT - TODO - Simplify logic if 3 chars is okay for publicname for
+        # galaxy as well as toolshed
+        if len( publicname ) < 3:
+            return "Public name must be at least 3 characters in length"
     if len( publicname ) > 255:
         return "Public name cannot be more than 255 characters in length"
     if not( VALID_PUBLICNAME_RE.match( publicname ) ):

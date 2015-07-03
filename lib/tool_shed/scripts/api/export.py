@@ -25,7 +25,7 @@ def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_
                                           export_repository_dependencies, use_tmp_archive_dir=False ):
     tool_shed = remove_protocol_from_tool_shed_url( tool_shed_url )
     file_type_str = basic_util.get_file_type_str( changeset_revision, file_type )
-    if self.export_repository_dependencies:
+    if export_repository_dependencies:
         repositories_archive_filename = '%s_%s_%s_%s_%s' % ( CAPSULE_WITH_DEPENDENCIES_FILENAME,
                                                              tool_shed,
                                                              name,

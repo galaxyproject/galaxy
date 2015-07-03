@@ -11,6 +11,7 @@ from paste import httpexceptions
 
 import pkg_resources
 
+from galaxy.config import process_is_uwsgi
 from galaxy.util import asbool
 
 import galaxy.model
@@ -20,8 +21,10 @@ from galaxy.util.properties import load_app_properties
 
 log = logging.getLogger( __name__ )
 
+
 class ReportsWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
+
 
 def add_ui_controllers( webapp, app ):
     """
@@ -70,11 +73,12 @@ def app_factory( global_conf, **kwargs ):
         webapp = wrap_in_static( webapp, global_conf, **kwargs )
     # Close any pooled database connections before forking
     try:
-        galaxy.model.mapping.metadata.engine.connection_provider._pool.dispose()
+        galaxy.model.mapping.metadata.bind.dispose()
     except:
-        pass
+        log.exception("Unable to dispose of pooled galaxy model database connections.")
     # Return
     return webapp
+
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """Based on the configuration wrap `app` in a set of common and useful middleware."""
@@ -113,7 +117,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             from paste.debug import prints
             app = prints.PrintDebugMiddleware( app, conf )
             log.debug( "Enabling 'print debug' middleware" )
-    if debug and asbool( conf.get( 'use_interactive', False ) ):
+    if debug and asbool( conf.get( 'use_interactive', False ) ) and not process_is_uwsgi:
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
@@ -123,6 +127,9 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
                                            templating_formatters=build_template_error_formatters() )
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
+        if debug and asbool( conf.get( 'use_interactive', False ) ) and process_is_uwsgi:
+            log.error("Interactive debugging middleware is enabled in your configuration "
+                      "but this is a uwsgi process.  Refusing to wrap in interactive error middleware.")
         # Not in interactive debug mode, just use the regular error middleware
         from paste.exceptions import errormiddleware
         app = errormiddleware.ErrorMiddleware( app, conf )

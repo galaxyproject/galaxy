@@ -73,7 +73,9 @@ class DatasetCollectionManager( object ):
                 for input_name, input_collection in implicit_collection_info[ "implicit_inputs" ]:
                     dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
                 for output_dataset in implicit_collection_info.get( "outputs" ):
-                    if isinstance( output_dataset, model.HistoryDatasetCollectionAssociation ):
+                    if isinstance( output_dataset, model.HistoryDatasetAssociation ):
+                        output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
+                    elif isinstance( output_dataset, model.HistoryDatasetCollectionAssociation ):
                         dataset_collection_instance.add_implicit_input_collection( input_name, input_collection )
                     else:
                         # dataset collection, don't need to do anything...
@@ -277,7 +279,7 @@ class DatasetCollectionManager( object ):
 
         if src_type == 'hda':
             decoded_id = int( trans.app.security.decode_id( encoded_id ) )
-            element = self.hda_manager.get_accessible( trans, decoded_id, trans.user )
+            element = self.hda_manager.get_accessible( decoded_id, trans.user )
         elif src_type == 'ldda':
             element = self.ldda_manager.get( trans, encoded_id )
         elif src_type == 'hdca':
@@ -312,9 +314,9 @@ class DatasetCollectionManager( object ):
         instance_id = int( trans.app.security.decode_id( id ) )
         collection_instance = trans.sa_session.query( trans.app.model.HistoryDatasetCollectionAssociation ).get( instance_id )
         if check_ownership:
-            self.history_manager.error_unless_owner( trans, collection_instance.history, trans.user )
+            self.history_manager.error_unless_owner( collection_instance.history, trans.user, current_history=trans.history )
         if check_accessible:
-            self.history_manager.error_unless_accessible( trans, collection_instance.history, trans.user )
+            self.history_manager.error_unless_accessible( collection_instance.history, trans.user, current_history=trans.history )
         return collection_instance
 
     def __get_library_collection_instance( self, trans, id, check_ownership=False, check_accessible=True ):

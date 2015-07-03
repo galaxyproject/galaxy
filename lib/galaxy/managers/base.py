@@ -179,7 +179,7 @@ class ModelManager( object ):
         return item
 
     # .... query foundation wrapper
-    def query( self, trans, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    def query( self, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
 
@@ -258,11 +258,11 @@ class ModelManager( object ):
         return query
 
     # .... query resolution
-    def one( self, trans, **kwargs ):
+    def one( self, **kwargs ):
         """
         Sends kwargs to build the query and returns one and only one model.
         """
-        query = self.query( trans, **kwargs )
+        query = self.query( **kwargs )
         return self._one_with_recast_errors( query )
 
     def _one_with_recast_errors( self, query ):
@@ -292,33 +292,33 @@ class ModelManager( object ):
             return None
 
     #NOTE: at this layer, all ids are expected to be decoded and in int form
-    def by_id( self, trans, id, **kwargs ):
+    def by_id( self, id, **kwargs ):
         """
         Gets a model by primary id.
         """
         id_filter = self.model_class.id == id
-        return self.one( trans, filters=id_filter, **kwargs )
+        return self.one( filters=id_filter, **kwargs )
 
     # .... multirow queries
-    def _orm_list( self, trans, query=None, **kwargs ):
+    def _orm_list( self, query=None, **kwargs ):
         """
         Sends kwargs to build the query return all models found.
         """
-        query = query or self.query( trans, **kwargs )
+        query = query or self.query( **kwargs )
         return query.all()
 
-    #def list( self, trans, query=None, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
-    def list( self, trans, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    #def list( self, query=None, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    def list( self, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
         Returns all objects matching the given filters
         """
         orm_filters, fn_filters = self._split_filters( filters )
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            return self._orm_list( trans, filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs )
+            return self._orm_list( filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs )
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
-        query = self.query( trans, filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs )
+        query = self.query( filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs )
         items = query.all()
 
         # apply limit, offset after SQL filtering
@@ -381,12 +381,12 @@ class ModelManager( object ):
             yield item
             yielded += 1
 
-    def by_ids( self, trans, ids, filters=None, **kwargs ):
+    def by_ids( self, ids, filters=None, **kwargs ):
         """
         Returns an in-order list of models with the matching ids in `ids`.
         """
         ids_filter = self.model_class.id.in_( ids )
-        found = self.list( trans, filters=self._munge_filters( ids_filter, filters ), **kwargs )
+        found = self.list( filters=self._munge_filters( ids_filter, filters ), **kwargs )
         # TODO: this does not order by the original 'ids' array
 
         # ...could use get (supposedly since found are in the session, the db won't be hit twice)
@@ -420,7 +420,7 @@ class ModelManager( object ):
                 in_order.append( item_dict[ id ] )
         return in_order
 
-    def create( self, trans, flush=True, *args, **kwargs ):
+    def create( self, flush=True, *args, **kwargs ):
         """
         Generically create a new model.
         """
@@ -431,13 +431,13 @@ class ModelManager( object ):
             self.session().flush()
         return item
 
-    def copy( self, trans, item, **kwargs ):
+    def copy( self, item, **kwargs ):
         """
         Clone or copy an item.
         """
         raise exceptions.NotImplemented( 'Abstract method' )
 
-    def update( self, trans, item, new_values, flush=True, **kwargs ):
+    def update( self, item, new_values, flush=True, **kwargs ):
         """
         Given a dictionary of new values, update `item` and return it.
 
@@ -452,7 +452,7 @@ class ModelManager( object ):
         return item
 
     # TODO: yagni?
-    def associate( self, trans, associate_with, item, foreign_key_name=None ):
+    def associate( self, associate_with, item, foreign_key_name=None ):
         """
         Generically associate `item` with `associate_with` based on `foreign_key_name`.
         """
@@ -460,7 +460,7 @@ class ModelManager( object ):
         setattr( associate_with, foreign_key_name, item )
         return item
 
-    def query_associated( self, trans, associated_model_class, item, foreign_key_name=None ):
+    def query_associated( self, associated_model_class, item, foreign_key_name=None ):
         """
         Generically query other items that have been associated with this `item`.
         """
@@ -469,7 +469,7 @@ class ModelManager( object ):
         return self.session().query( associated_model_class ).filter( foreign_key == item )
 
     # a rename of sql DELETE to differentiate from the Galaxy notion of mark_as_deleted
-    # def destroy( self, trans, item, **kwargs ):
+    # def destroy( self, item, **kwargs ):
     #    return item
 
 
@@ -486,13 +486,21 @@ class ModelDeserializingError( exceptions.ObjectAttributeInvalidException ):
     pass
 
 
+class SkipAttribute( Exception ):
+    """
+    Raise this inside a serializer to prevent the returned dictionary from having
+    a the associated key or value for this attribute.
+    """
+    pass
+
+
 class ModelSerializer( object ):
     """
     Turns models into JSONable dicts.
 
     Maintains a map of requestable keys and the Callable() serializer functions
     that should be called for those keys.
-    E.g. { 'x' : lambda trans, item, key: item.x, ... }
+    E.g. { 'x' : lambda item, key: item.x, ... }
 
     Note: if a key to serialize is not listed in the Serializer.serializable_keyset
     or serializers, it will not be returned.
@@ -501,7 +509,7 @@ class ModelSerializer( object ):
         my_serializer = MySerializer( app )
         ...
         keys_to_serialize = [ 'id', 'name', 'attr1', 'attr2', ... ]
-        item_dict = MySerializer.serialize( trans, my_item, keys_to_serialize )
+        item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
     #: 'service' to use for getting urls - use class var to allow overriding when testing
     url_for = staticmethod( routes.url_for )
@@ -534,8 +542,9 @@ class ModelSerializer( object ):
         Register a map of attribute keys -> serializing functions that will serialize
         the attribute.
         """
-        # to be overridden in subclasses
-        pass
+        self.serializers.update({
+            'id' : self.serialize_id,
+        })
 
     def add_view( self, view_name, key_list, include_keys_from=None ):
         """
@@ -550,7 +559,7 @@ class ModelSerializer( object ):
         self.serializable_keyset.update( key_list )
         return key_list
 
-    def serialize( self, trans, item, keys ):
+    def serialize( self, item, keys, **context ):
         """
         Serialize the model `item` to a dictionary.
 
@@ -558,18 +567,37 @@ class ModelSerializer( object ):
         built from each key in `keys` that also exists in `serializers` and
         values of calling the keyed/named serializers on item.
         """
-        # main interface fn for converting a model to a dict
+        # TODO: constrain context to current_user/whos_asking when that's all we need (trans)
         returned = {}
         for key in keys:
             # check both serializers and serializable keys
             if key in self.serializers:
-                returned[ key ] = self.serializers[ key ]( trans, item, key )
+                try:
+                    returned[ key ] = self.serializers[ key ]( item, key, **context )
+                except SkipAttribute, skip:
+                    # dont add this key if the deserializer threw this
+                    pass
             elif key in self.serializable_keyset:
-                returned[ key ] = self.default_serializer( trans, item, key )
+                returned[ key ] = self.default_serializer( item, key, **context )
             # ignore bad/unreg keys
         return returned
 
-    def default_serializer( self, trans, item, key ):
+    def skip( self, msg='skipped' ):
+        """
+        To be called from inside a serializer to skip it.
+
+        Handy for config checks, information hiding, etc.
+        """
+        raise SkipAttribute( msg )
+
+    def _remap_from( self, original_key ):
+        if original_key in self.serializers:
+            return self.serializers[ original_key ]
+        if original_key in self.serializable_keyset:
+            return lambda i, k, **c: self.default_serializer( i, original_key, **c )
+        raise KeyError( 'serializer not found for remap: ' + original_key )
+
+    def default_serializer( self, item, key, **context ):
         """
         Serialize the `item`'s attribute named `key`.
         """
@@ -577,22 +605,23 @@ class ModelSerializer( object ):
         return getattr( item, key )
 
     # serializers for common galaxy objects
-    def serialize_date( self, trans, item, key ):
+    def serialize_date( self, item, key, **context ):
         """
         Serialize a date attribute of `item`.
         """
         date = getattr( item, key )
         return date.isoformat() if date is not None else None
 
-    def serialize_id( self, trans, item, key ):
+    def serialize_id( self, item, key, **context ):
         """
         Serialize an id attribute of `item`.
         """
         id = getattr( item, key )
+        # Note: it may not be best to encode the id at this layer
         return self.app.security.encode_id( id ) if id is not None else None
 
     # serializing to a view where a view is a predefied list of keys to serialize
-    def serialize_to_view( self, trans, item, view=None, keys=None, default_view=None ):
+    def serialize_to_view( self, item, view=None, keys=None, default_view=None, **context ):
         """
         Use a predefined list of keys (the string `view`) and any additional keys
         listed in `keys`.
@@ -603,7 +632,7 @@ class ModelSerializer( object ):
             no `view` or `keys`: use the `default_view` if any
             `view` and `keys`: combine both into one list of keys
         """
-#TODO: default view + view makes no sense outside the API.index context - move default view there
+        #TODO: default view + view makes no sense outside the API.index context - move default view there
         all_keys = []
         keys = keys or []
         # chose explicit over concise here
@@ -618,7 +647,7 @@ class ModelSerializer( object ):
             elif default_view:
                 all_keys = self._view_to_keys( default_view )
 
-        return self.serialize( trans, item, all_keys )
+        return self.serialize( item, all_keys, **context )
 
     def _view_to_keys( self, view=None ):
         """
@@ -668,16 +697,17 @@ class ModelDeserializer( object ):
         # to be overridden in subclasses
         pass
 
-    def deserialize( self, trans, item, data, flush=True ):
+    def deserialize( self, item, data, flush=True, **context ):
         """
         Convert an incoming serialized dict into values that can be
         directly assigned to an item's attributes and assign them
         """
+        # TODO: constrain context to current_user/whos_asking when that's all we need (trans)
         sa_session = self.app.model.context
         new_dict = {}
         for key, val in data.items():
             if key in self.deserializers:
-                new_dict[ key ] = self.deserializers[ key ]( trans, item, key, val )
+                new_dict[ key ] = self.deserializers[ key ]( item, key, val, **context )
             # !important: don't error on unreg. keys -- many clients will add weird ass keys onto the model
 
         # TODO:?? add and flush here or in manager?
@@ -688,7 +718,7 @@ class ModelDeserializer( object ):
         return new_dict
 
     # ... common deserializers for primitives
-    def default_deserializer( self, trans, item, key, val ):
+    def default_deserializer( self, item, key, val, **context ):
         """
         If the incoming `val` is different than the `item` value change it
         and, in either case, return the value.
@@ -700,28 +730,28 @@ class ModelDeserializer( object ):
             setattr( item, key, val )
         return val
 
-    def deserialize_basestring( self, trans, item, key, val, convert_none_to_empty=False ):
+    def deserialize_basestring( self, item, key, val, convert_none_to_empty=False, **context ):
         val = '' if ( convert_none_to_empty and val is None ) else self.validate.basestring( key, val )
-        return self.default_deserializer( trans, item, key, val )
+        return self.default_deserializer( item, key, val, **context )
 
-    def deserialize_bool( self, trans, item, key, val ):
+    def deserialize_bool( self, item, key, val, **context ):
         val = self.validate.bool( key, val )
-        return self.default_deserializer( trans, item, key, val )
+        return self.default_deserializer( item, key, val, **context )
 
-    def deserialize_int( self, trans, item, key, val, min=None, max=None ):
+    def deserialize_int( self, item, key, val, min=None, max=None, **context ):
         val = self.validate.int_range( key, val, min, max )
-        return self.default_deserializer( trans, item, key, val )
+        return self.default_deserializer( item, key, val, **context )
 
-    #def deserialize_date( self, trans, item, key, val ):
+    #def deserialize_date( self, item, key, val ):
     #   #TODO: parse isoformat date into date object
 
     # ... common deserializers for Galaxy
-    def deserialize_genome_build( self, trans, item, key, val ):
+    def deserialize_genome_build( self, item, key, val, **context ):
         """
         Make sure `val` is a valid dbkey and assign it.
         """
         val = self.validate.genome_build( key, val )
-        return self.default_deserializer( trans, item, key, val )
+        return self.default_deserializer( item, key, val, **context )
 
 
 class ModelValidator( object ):
@@ -801,7 +831,7 @@ class ModelValidator( object ):
         # IOW: fallback to string validation
         return self.basestring( key, val )
 
-    # def slug( self, trans, item, key, val ):
+    # def slug( self, item, key, val ):
     #    """validate slug"""
     #    pass
 
@@ -854,9 +884,11 @@ class ModelFilterParser( object ):
         """
         Set up, extend, or alter `orm_filter_parsers` and `fn_filter_parsers`.
         """
+        # note: these are the default filters for all models
         self.orm_filter_parsers.update({
             # (prob.) applicable to all models
-            'id'            : { 'op': ( 'in' ), 'val': self.parse_id_list },
+            'id'            : { 'op': ( 'in' ) },
+            'encoded_id'    : { 'column' : 'id', 'op': ( 'in' ), 'val': self.parse_id_list },
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
             'create_time'   : { 'op': ( 'le', 'ge' ) },
             'update_time'   : { 'op': ( 'le', 'ge' ) },
@@ -895,7 +927,7 @@ class ModelFilterParser( object ):
         # by convention, assume most val parsers raise ValueError
         except ValueError, val_err:
             raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
-                column=attr, operation=op, value=val )
+                column=attr, operation=op, value=val, ValueError=str( val_err ) )
 
         # if neither of the above work, raise an error with how-to info
         #TODO: send back all valid filter keys in exception for added user help
@@ -904,6 +936,7 @@ class ModelFilterParser( object ):
     # ---- fn filters
     def _parse_fn_filter( self, attr, op, val ):
         """
+        Attempt to parse a non-ORM filter function.
         """
         # fn_filter_list is a dict: fn_filter_list[ attr ] = { 'opname1' : opfn1, 'opname2' : opfn2, etc. }
 
@@ -927,18 +960,33 @@ class ModelFilterParser( object ):
     # ---- ORM filters
     def _parse_orm_filter( self, attr, op, val ):
         """
+        Attempt to parse a ORM-based filter.
+
+        Using SQLAlchemy, this would yield a sql.elements.BinaryExpression.
         """
         # orm_filter_list is a dict: orm_filter_list[ attr ] = <list of allowed ops>
-        # attr must be a whitelisted column
-        column = self.model_class.table.columns.get( attr )
         column_map = self.orm_filter_parsers.get( attr, None )
-        if column is None or not column_map:
+        if not column_map:
+            # no column mapping (not whitelisted)
             return None
+        # attr must be a whitelisted column by attr name or by key passed in column_map
+        # note: column_map[ 'column' ] takes precedence
+        column = self.model_class.table.columns.get( attr )
+        if 'column' in column_map:
+            remap_to = column_map[ 'column' ]
+            column = self.model_class.table.columns.get( remap_to )
+        if column is None:
+            # no orm column
+            return None
+
         # op must be whitelisted: contained in the list orm_filter_list[ attr ][ 'op' ]
         allowed_ops = column_map.get( 'op' )
         if op not in allowed_ops:
             return None
         op = self._convert_op_string_to_fn( column, op )
+        if not op:
+            return None
+
         # parse the val from string using the 'val' parser if present (otherwise, leave as string)
         val_parser = column_map.get( 'val', None )
         if val_parser:
@@ -963,65 +1011,23 @@ class ModelFilterParser( object ):
             fn_name = 'in_'
 
         # get the column fn using the op_string and error if not a callable attr
-        #TODO: special case 'not in' - or disallow?
+        # TODO: special case 'not in' - or disallow?
         op_fn = getattr( column, fn_name, None )
         if not op_fn or not callable( op_fn ):
             return None
         return op_fn
 
+    # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
+    def string_standard_ops( self, key ):
+        return {
+            'op' : {
+                'eq'        : lambda i, v: v == getattr( i, key ),
+                'contains'  : lambda i, v: v in getattr( i, key ),
+            }
+        }
+
     # --- more parsers! yay!
-#TODO: These should go somewhere central - we've got ~6 parser modules/sections now
-    #TODO: to annotatable
-    def _owner_annotation( self, item ):
-        """
-        Get the annotation by the item's owner.
-        """
-        if not item.user:
-            return None
-        for annotation in item.annotations:
-            if annotation.user == item.user:
-                return annotation.annotation
-        return None
-
-    def filter_annotation_contains( self, item, val ):
-        """
-        Test whether `val` is in the owner's annotation.
-        """
-        owner_annotation = self._owner_annotation( item )
-        if owner_annotation is None:
-            return False
-        return val in owner_annotation
-
-    #TODO: to taggable
-    def _tag_str_gen( self, item ):
-        """
-        Return a list of strings built from the item's tags.
-        """
-        #TODO: which user is this? all?
-        for tag in item.tags:
-            tag_str = tag.user_tname
-            if tag.value is not None:
-                tag_str += ":" + tag.user_value
-            yield tag_str
-
-    def filter_has_partial_tag( self, item, val ):
-        """
-        Return True if any tag partially contains `val`.
-        """
-        for tag_str in self._tag_str_gen( item ):
-            if val in tag_str:
-                return True
-        return False
-
-    def filter_has_tag( self, item, val ):
-        """
-        Return True if any tag exactly equals `val`.
-        """
-        for tag_str in self._tag_str_gen( item ):
-            if val == tag_str:
-                return True
-        return False
-
+    #TODO: These should go somewhere central - we've got ~6 parser modules/sections now
     def parse_bool( self, bool_string ):
         """
         Parse a boolean from a string.

@@ -124,7 +124,7 @@ var CurrentHistoryPanel = _super.extend(
                 //});
             };
         return this.loadHistoryWithDetails( historyId, attributes, historyFn )
-            .then(function( historyData, contentsData ){
+            .then( function( historyData, contentsData ){
                 panel.trigger( 'switched-history', panel );
             });
     },
@@ -293,11 +293,9 @@ var CurrentHistoryPanel = _super.extend(
     /** Override to add the current-content highlight class to currentContentId's view */
     _attachItems : function( $whereTo ){
         _super.prototype._attachItems.call( this, $whereTo );
-        var panel = this,
-            currentContentView;
-        if( panel.currentContentId
-        && ( currentContentView = panel.viewFromModelId( panel.currentContentId ) ) ){
-            panel.setCurrentContent( currentContentView );
+        var panel = this;
+        if( panel.currentContentId ){
+            panel._setCurrentContentById( panel.currentContentId );
         }
         return this;
     },
@@ -325,9 +323,9 @@ var CurrentHistoryPanel = _super.extend(
         }, this );
 
         // when content is manipulated, make it the current-content
-        view.on( 'display edit params rerun report-err visualize', function( v, ev ){
-            this.setCurrentContent( v );
-        }, this );
+        // view.on( 'visualize', function( v, ev ){
+        //     this.setCurrentContent( v );
+        // }, this );
 
         return this;
     },
@@ -341,6 +339,12 @@ var CurrentHistoryPanel = _super.extend(
         } else {
             this.currentContentId = null;
         }
+    },
+
+    /** find the view with the id and then call setCurrentContent on it */
+    _setCurrentContentById : function( id ){
+        var view = this.viewFromModelId( id ) || null;
+        this.setCurrentContent( view );
     },
 
     /** Handle drill down by hiding this panels list and controls and showing the sub-panel */
@@ -360,6 +364,36 @@ var CurrentHistoryPanel = _super.extend(
     },
 
     // ........................................................................ external objects/MVC
+    listenToGalaxy : function( galaxy ){
+        // TODO: MEM: questionable reference island / closure practice
+        galaxy.on( 'galaxy_main:load', function( data ){
+            var pathToMatch = data.fullpath,
+                useToURLRegexMap = {
+                    'display'       : /datasets\/([a-f0-9]+)\/display/,
+                    'edit'          : /datasets\/([a-f0-9]+)\/edit/,
+                    'report_error'  : /dataset\/errors\?id=([a-f0-9]+)/,
+                    'rerun'         : /tool_runner\/rerun\?id=([a-f0-9]+)/,
+                    'show_params'   : /datasets\/([a-f0-9]+)\/show_params/,
+                    // no great way to do this here? (leave it in the dataset event handlers above?)
+                    // 'visualization' : 'visualization',
+                },
+                hdaId = null,
+                hdaUse = null;
+            _.find( useToURLRegexMap, function( regex, use ){
+                var match = pathToMatch.match( regex );
+                if( match && match.length == 2 ){
+                    hdaId = match[1];
+                    hdaUse = use;
+                    return true;
+                }
+                return false;
+            });
+            // need to type mangle to go from web route to history contents
+            hdaId = 'dataset-' + hdaId;
+            this._setCurrentContentById( hdaId );
+        }, this );
+    },
+
 //TODO: remove quota meter from panel and remove this
     /** add listeners to an external quota meter (mvc/user/user-quotameter.js) */
     connectToQuotaMeter : function( quotaMeter ){

@@ -75,6 +75,17 @@ class CompressedFile( object ):
                 if not os.path.exists( extraction_path ):
                     os.makedirs( extraction_path )
                 self.archive.extractall( os.path.join( extraction_path ) )
+        # Since .zip files store unix permissions separately, we need to iterate through the zip file
+        # and set permissions on extracted members.
+        if self.file_type == 'zip':
+            for zipped_file in self.getmembers():
+                filename = self.getname( zipped_file )
+                absolute_filepath = os.path.join( extraction_path, filename )
+                external_attributes = self.archive.getinfo( filename ).external_attr
+                # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
+                unix_permissions = external_attributes >> 16
+                if unix_permissions != 0:
+                    os.chmod( absolute_filepath, unix_permissions )
         return os.path.abspath( extraction_path )
 
     def getmembers_tar( self ):
@@ -238,7 +249,7 @@ class AssertDirectoryExecutable( RecipeStep ):
             return False
         if os.path.isdir( full_path ):
             # Make sure the owner has execute permission on the directory.
-            # See http://docs.python.org/2/library/stat.html
+            # See https://docs.python.org/2/library/stat.html
             if stat.S_IXUSR & os.stat( full_path )[ stat.ST_MODE ] == 64:
                 return True
         return False
@@ -334,7 +345,7 @@ class AssertFileExecutable( RecipeStep ):
             return False
         if os.path.exists( full_path ):
             # Make sure the owner has execute permission on the file.
-            # See http://docs.python.org/2/library/stat.html
+            # See https://docs.python.org/2/library/stat.html
             if stat.S_IXUSR & os.stat( full_path )[ stat.ST_MODE ] == 64:
                 return True
         return False
@@ -896,7 +907,7 @@ class SetEnvironment( RecipeStep ):
         in the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
         tool_dependencies.xml file contained in the osra repository, which is available at:
     
-        http://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
+        https://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
     
         The first tag set defines a complex repository dependency like this.  This tag set ensures that changeset
         revision XXX of the repository named package_graphicsmagick_1_3 owned by YYY in the tool shed ZZZ has been
@@ -962,29 +973,27 @@ class SetEnvironment( RecipeStep ):
         ----
         """
         env_var_value = env_var_dict[ 'value' ]
-        # env_var_value is the text of an environment variable tag like this: <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">
+        # env_var_value is the text of an environment variable tag like this:
+        # <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">
         # Here is an example of what env_var_value could look like: $ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/
         if '$ENV[' in env_var_value and ']' in env_var_value:
             # Pull out the name of the environment variable to populate.
             inherited_env_var_name = env_var_value.split( '[' )[1].split( ']' )[0]
             to_replace = '$ENV[%s]' % inherited_env_var_name
-            # Build a command line that outputs VARIABLE_NAME: <the value of the variable>.
-            set_prior_environment_commands.append( 'echo %s: $%s' % ( inherited_env_var_name, inherited_env_var_name ) )
-            command = ' ; '.join( set_prior_environment_commands )
-            # Run the command and capture the output.
-            command_return = install_environment.handle_command( tool_dependency=tool_dependency,
-                                                                 cmd=command,
-                                                                 return_output=True )
-            # And extract anything labeled with the name of the environment variable we're populating here.
-            if '%s: ' % inherited_env_var_name in command_return:
-                environment_variable_value = command_return.split( '\n' )
-                for line in environment_variable_value:
-                    if line.startswith( inherited_env_var_name ):
-                        inherited_env_var_value = line.replace( '%s: ' % inherited_env_var_name, '' )
-                        log.info( 'Replacing %s with %s in env.sh for this repository.', to_replace, inherited_env_var_value )
-                        env_var_value = env_var_value.replace( to_replace, inherited_env_var_value )
-            else:
-                # If the return is empty, replace the original $ENV[] with nothing, to avoid any shell misparsings later on.
+            found = False
+            for env_cmd in set_prior_environment_commands:
+                # LD_LIBRARY_PATH=/<my configured tool dependency path>/<some path>; export LD_LIBRARY_PATH
+                if env_cmd.startswith( inherited_env_var_name ):
+                    env_val = env_cmd.split( '=' )[1]
+                    # /<my configured tool dependency path>/<some path>; export LD_LIBRARY_PATH
+                    env_val = env_val.split( ';' )[0]
+                    # /<my configured tool dependency path>/<some path>
+                    log.info( 'Replacing %s with %s in env.sh for this repository.', to_replace, env_val )
+                    env_var_value = env_var_value.replace( to_replace, env_val )
+                    found = True
+                    break
+            if not found:
+                # Replace the original $ENV[] with nothing, to avoid any shell misparsings later on.
                 log.debug( 'Environment variable %s not found, removing from set_environment.', inherited_env_var_name )
                 env_var_value = env_var_value.replace( to_replace, '$%s' % inherited_env_var_name )
             env_var_dict[ 'value' ] = env_var_value
@@ -1337,18 +1346,22 @@ class SetupRubyEnvironment( Download, RecipeStep ):
             with settings( warn_only=True ):
                 ruby_package_tups = action_dict.get( 'ruby_package_tups', [] )
                 for ruby_package_tup in ruby_package_tups:
-                    gem, gem_version = ruby_package_tup
+                    gem, gem_version, gem_parameters = ruby_package_tup
+                    if gem_parameters:
+                        gem_parameters = '-- %s' % gem_parameters
+                    else:
+                        gem_parameters = ''
                     if os.path.isfile( gem ):
                         # we assume a local shipped gem file
                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local %s''' % ( gem )
+                                gem install --local %s %s''' % ( gem, gem_parameters )
                     elif gem.find( '://' ) != -1:
                         # We assume a URL to a gem file.
                         url = gem
                         gem_name = url.split( '/' )[ -1 ]
                         self.url_download( work_dir, gem_name, url, extract=False )
                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local %s ''' % ( gem_name )
+                                gem install --local %s %s''' % ( gem_name, gem_parameters )
                     else:
                         # gem file from rubygems.org with or without version number
                         if gem_version:
@@ -1356,11 +1369,11 @@ class SetupRubyEnvironment( Download, RecipeStep ):
                             # Use raw strings so that python won't automatically unescape the quotes before passing the command
                             # to subprocess.Popen.
                             cmd = r'''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install %s --version "=%s"''' % ( gem, gem_version)
+                                gem install %s --version "=%s" %s''' % ( gem, gem_version, gem_parameters)
                         else:
                             # no version number given
                             cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install %s''' % ( gem )
+                                gem install %s %s''' % ( gem, gem_parameters )
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                       cmd=cmd,
@@ -1413,15 +1426,16 @@ class SetupRubyEnvironment( Download, RecipeStep ):
                 #    protk
                 #    ftp://ftp.gruening.de/protk.gem
                 gem_token = env_elem.text.strip().split( '=' )
+                gem_parameters = env_elem.get( 'parameters', None)
                 if len( gem_token ) == 2:
                     # version string
                     gem_name = gem_token[ 0 ]
                     gem_version = gem_token[ 1 ]
-                    ruby_package_tups.append( ( gem_name, gem_version ) )
+                    ruby_package_tups.append( ( gem_name, gem_version, gem_parameters ) )
                 else:
                     # gem name for rubygems.org without version number
                     gem = env_elem.text.strip()
-                    ruby_package_tups.append( ( gem, None ) )
+                    ruby_package_tups.append( ( gem, None, gem_parameters ) )
         if ruby_package_tups:
             action_dict[ 'ruby_package_tups' ] = ruby_package_tups
         return action_dict

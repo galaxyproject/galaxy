@@ -143,5 +143,5 @@ class EnvManager( object ):
                 all_env_shell_file_paths.extend( env_shell_file_paths )
         if all_env_shell_file_paths:
             action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
-            action_dict[ 'action_shell_file_paths' ] = env_shell_file_paths
+            action_dict[ 'action_shell_file_paths' ] = all_env_shell_file_paths
         return action_dict

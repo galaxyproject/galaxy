@@ -53,17 +53,21 @@ class Mobile( BaseUIController ):
         # trans.log_event( "User logged out" )
         # trans.handle_user_logout()
 
-    def __login( self, trans, email="", password="" ):
+    def __login(self, trans, login="", password=""):
         return trans.response.send_redirect( web.url_for(controller='root', action='index' ) )
         # error = password_error = None
-        # user = trans.sa_session.query( model.User ).filter_by( email = email ).first()
+        # user = trans.sa_session.query( model.User ).filter(or_(
+        #    email == login,
+        #    username == login
+        # )).first()
         # if not user:
-        #     autoreg = galaxy.auth.check_auto_registration(trans, email, password, trans.app.config.auth_config_file)
+        #     autoreg = galaxy.auth.check_auto_registration(trans, login, password, trans.app.config.auth_config_file)
         #     if autoreg[0]:
         #         kwd = {}
-        #         kwd['username'] = autoreg[1]
+        #         kwd['email'] = autoreg[1]
+        #         kwd['username'] = autoreg[2]
         #         params = util.Params( kwd )
-        #         message = validate_email( trans, email )
+        #         message = validate_email( trans, kwd['email'] )
         #         if not message:
         #             message, status, user, success = self.__register( trans, 'user', False, **kwd )
         #             if success:

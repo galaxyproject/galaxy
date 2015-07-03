@@ -1,0 +1,52 @@
+<tool id="output_action_change_format" name="output_action_change_format" version="1.0.0">
+    <command>
+        echo "1\t2" > out1;
+    </command>
+    <inputs>
+        <conditional name="input_cond">
+            <param type="select" name="dispatch" label="Dispatch on type">
+                <option value="dont">Dont</option>
+                <option value="do">Do</option>
+            </param>
+            <when value="dont">
+                <param type="data" name="input" format="data" />
+            </when>
+            <when value="do">
+                <param type="data" name="input" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="out1" from_work_dir="out1">
+            <actions>
+                <conditional name="input_cond.dispatch">
+                    <when value="do">
+                        <action type="format">
+                            <option type="from_param" name="input_cond.input" param_attribute="ext" />
+                        </action>
+                    </when>
+                </conditional>
+            </actions>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="dispatch" value="dont" />
+            <param name="input" value="simple_line.txt" />
+            <output name="out1" ftype="data">
+                <assert_contents>
+                    <has_line line="1&#009;2" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="dispatch" value="do" />
+            <param name="input" value="simple_line.txt" />
+            <output name="out1" ftype="txt">
+                <assert_contents>
+                    <has_line line="1&#009;2" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

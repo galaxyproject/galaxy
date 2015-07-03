@@ -1,8 +1,5 @@
-search Package
-==============
-
-:mod:`search` Package
----------------------
+galaxy.tools.search package
+===========================
 
 .. automodule:: galaxy.tools.search
     :members:

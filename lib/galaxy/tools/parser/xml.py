@@ -15,12 +15,17 @@ from .interface import (
     TestCollectionDef,
     TestCollectionOutputDef,
 )
+from .util import (
+    error_on_exit_code,
+    aggressive_error_checks,
+)
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
 from galaxy.tools.deps import requirements
 import galaxy.tools
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters import dynamic_options
+from galaxy.tools.parameters.output import ToolOutputActionGroup
 
 log = logging.getLogger( __name__ )
 
@@ -84,6 +89,22 @@ class XmlToolSource(ToolSource):
     def parse_command(self):
         command_el = self._command_el
         return ( ( command_el is not None ) and command_el.text ) or None
+
+    def parse_environment_variables(self):
+        environment_variables_el = self.root.find("environment_variables")
+        if environment_variables_el is None:
+            return []
+
+        environment_variables = []
+        for environment_variable_el in environment_variables_el.findall("environment_variable"):
+            definition = {
+                "name": environment_variable_el.get("name"),
+                "template": environment_variable_el.text,
+            }
+            environment_variables.append(
+                definition
+            )
+        return environment_variables
 
     def parse_interpreter(self):
         command_el = self._command_el
@@ -154,6 +175,7 @@ class XmlToolSource(ToolSource):
 
         for collection_elem in out_elem.findall("collection"):
             name = collection_elem.get( "name" )
+            label = xml_text( collection_elem, "label" )
             default_format = collection_elem.get( "format", "data" )
             collection_type = collection_elem.get( "type", None )
             structured_like = collection_elem.get( "structured_like", None )
@@ -176,6 +198,7 @@ class XmlToolSource(ToolSource):
             output_collection = galaxy.tools.ToolOutputCollection(
                 name,
                 structure,
+                label=label,
                 default_format=default_format,
                 inherit_format=inherit_format,
                 inherit_metadata=inherit_metadata,
@@ -213,7 +236,13 @@ class XmlToolSource(ToolSource):
         default_metadata_source="",
     ):
         output = galaxy.tools.ToolOutput( data_elem.get("name") )
-        output.format = data_elem.get("format", default_format)
+        output_format = data_elem.get("format", default_format)
+        auto_format = string_as_bool( data_elem.get( "auto_format", "false" ) )
+        if auto_format and output_format != "data":
+            raise ValueError("Setting format and auto_format is not supported at this time.")
+        elif auto_format:
+            output_format = "_sniff_"
+        output.format = output_format
         output.change_format = data_elem.findall("change_format")
         output.format_source = data_elem.get("format_source", default_format_source)
         output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
@@ -224,13 +253,25 @@ class XmlToolSource(ToolSource):
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
         output.hidden = string_as_bool( data_elem.get("hidden", "") )
-        output.actions = galaxy.tools.ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
+        output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
         output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
         return output
 
     def parse_stdio(self):
-        parser = StdioParser(self.root)
-        return parser.stdio_exit_codes, parser.stdio_regexes
+        command_el = self._command_el
+        detect_errors = None
+        if command_el is not None:
+            detect_errors = command_el.get("detect_errors")
+        if detect_errors and detect_errors != "default":
+            if detect_errors == "exit_code":
+                return error_on_exit_code()
+            elif detect_errors == "aggressive":
+                return aggressive_error_checks()
+            else:
+                raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
+        else:
+            parser = StdioParser(self.root)
+            return parser.stdio_exit_codes, parser.stdio_regexes
 
     def parse_help(self):
         help_elem = self.root.find( 'help' )
@@ -346,11 +387,13 @@ def __parse_test_attributes( output_elem, attrib ):
     metadata = {}
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
-    if not (assert_list or file or extra_files or metadata):
-        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, etc...)")
+    md5sum = attrib.get("md5", None)
+    if not (assert_list or file or extra_files or metadata or md5sum):
+        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or md5 tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
+    attributes['md5'] = md5sum
     return file, attributes
 
 
@@ -421,6 +464,13 @@ def __expand_input_elems( root_elem, prefix="" ):
         __expand_input_elems( cond_elem, new_prefix )
         __pull_up_params( root_elem, cond_elem )
         root_elem.remove( cond_elem )
+
+    section_elems = root_elem.findall( 'section' )
+    for section_elem in section_elems:
+        new_prefix = __prefix_join( prefix, section_elem.get( "name" ) )
+        __expand_input_elems( section_elem, new_prefix )
+        __pull_up_params( root_elem, section_elem )
+        root_elem.remove( section_elem )
 
 
 def __append_prefix_to_params( elem, prefix ):

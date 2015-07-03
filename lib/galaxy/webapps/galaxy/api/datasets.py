@@ -66,7 +66,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             else:
                 # Default: return dataset as dict.
                 if hda_ldda == 'hda':
-                    return self.hda_serializer.serialize_to_view( trans, dataset, view=kwd.get( 'view', 'detailed' ) )
+                    return self.hda_serializer.serialize_to_view( dataset,
+                        view=kwd.get( 'view', 'detailed' ), user=trans.user, trans=trans )
                 else:
                     rval = dataset.to_dict()
 
@@ -80,7 +81,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         """
         Returns state of dataset.
         """
-        msg = self.hda_manager.data_conversion_status( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( dataset )
         if not msg:
             msg = dataset.conversion_messages.DATA
 
@@ -91,7 +92,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
         """
-        msg = self.hda_manager.data_conversion_status( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( dataset )
         if msg:
             return msg
 
@@ -140,7 +141,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             return dataset.conversion_messages.NO_DATA
 
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( dataset )
         if msg:
             return msg
 
@@ -233,7 +234,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         be slow because indexes need to be created.
         """
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status( trans, dataset )
+        msg = self.hda_manager.data_conversion_status( dataset )
         if msg:
             return msg
 
@@ -280,7 +281,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         rval = ''
         try:
-            hda = self.hda_manager.get_accessible( trans, decoded_content_id, trans.user )
+            hda = self.hda_manager.get_accessible( decoded_content_id, trans.user )
 
             if raw:
                 if filename and filename != 'index':

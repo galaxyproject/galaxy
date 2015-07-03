@@ -103,7 +103,6 @@ model.HistoryDatasetAssociation.table = Table( "history_dataset_association", me
     Column( "state", TrimmedString( 64 ), index=True, key="_state" ),
     Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
     Column( "copied_from_library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
-    Column( "hid", Integer ),
     Column( "name", TrimmedString( 255 ) ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
@@ -114,12 +113,14 @@ model.HistoryDatasetAssociation.table = Table( "history_dataset_association", me
     Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
-    Column( "purged", Boolean, index=True, default=False ),
     Column( "visible", Boolean ),
+    Column( "extended_metadata_id", Integer, ForeignKey( "extended_metadata.id" ), index=True ),
+    # differs from ldda
+    Column( "hid", Integer ),
+    Column( "purged", Boolean, index=True, default=False ),
     Column( "hidden_beneath_collection_instance_id", ForeignKey( "history_dataset_collection_association.id" ), nullable=True ),
-    Column( "extended_metadata_id", Integer,
-        ForeignKey( "extended_metadata.id" ), index=True )
-    )
+)
+
 
 model.Dataset.table = Table( "dataset", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -322,11 +323,11 @@ model.LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_a
     Column( "designation", TrimmedString( 255 ) ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "visible", Boolean ),
+    Column( "extended_metadata_id", Integer, ForeignKey( "extended_metadata.id" ), index=True ),
+    # differs from hda
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "message", TrimmedString( 255 ) ),
-    Column( "extended_metadata_id", Integer,
-        ForeignKey( "extended_metadata.id" ), index=True )
-    )
+)
 
 
 model.ExtendedMetadata.table = Table("extended_metadata", metadata,
@@ -484,6 +485,7 @@ model.JobExternalOutputMetadata.table = Table( "job_external_output_metadata", m
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True, nullable=True ),
+    Column( "is_valid", Boolean, default=True ),
     Column( "filename_in", String( 255 ) ),
     Column( "filename_out", String( 255 ) ),
     Column( "filename_results_code", String( 255 ) ),

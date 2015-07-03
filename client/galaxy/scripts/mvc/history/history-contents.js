@@ -41,10 +41,13 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
                 case 'list:paired':
                     return new HDCA_MODEL.HistoryListPairedDatasetCollection( attrs, options );
             }
-            throw new TypeError( 'Unknown collection_type: ' + attrs.collection_type );
+            // This is a hack inside a hack:
+            // Raise a plain object with validationError to fake a model.validationError
+            // (since we don't have a model to use validate with)
+            // (the outer hack being the mixed content/model function in this collection)
+            return { validationError : 'Unknown collection_type: ' + attrs.history_content_type };
         }
-        // TODO: Handle unknown history_content_type...
-        throw new TypeError( 'Unknown history_content_type: ' + attrs.history_content_type );
+        return { validationError : 'Unknown history_content_type: ' + attrs.history_content_type };
     },
 
     /** Set up.

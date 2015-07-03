@@ -11,7 +11,8 @@ usage: reset_metadata_on_repositories.py key <my_writable>
 Here is a working example of how to use this script to reset metadata on certain repositories in a specified Tool Shed.
 python ./reset_metadata_on_repositories.py -a 22be3b -m True -u http://localhost:9009/
 """
-
+import logging
+log = logging.getLogger(__name__)
 import argparse
 import os
 import sys

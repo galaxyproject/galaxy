@@ -1084,10 +1084,13 @@ class TwillTestCase( unittest.TestCase ):
                 diff = list( difflib.unified_diff( local_file, history_data, "local_file", "history_data" ) )
                 diff_lines = get_lines_diff( diff )
                 if diff_lines > allowed_diff_count:
-                    if len(diff) < 60:
-                        diff_slice = diff[0:40]
+                    if 'GALAXY_TEST_RAW_DIFF' in os.environ:
+                        diff_slice = diff
                     else:
-                        diff_slice = diff[:25] + ["********\n", "*SNIP *\n", "********\n"] + diff[-25:]
+                        if len(diff) < 60:
+                            diff_slice = diff[0:40]
+                        else:
+                            diff_slice = diff[:25] + ["********\n", "*SNIP *\n", "********\n"] + diff[-25:]
                     #FIXME: This pdf stuff is rather special cased and has not been updated to consider lines_diff
                     #due to unknown desired behavior when used in conjunction with a non-zero lines_diff
                     #PDF forgiveness can probably be handled better by not special casing by __extension__ here
@@ -1513,7 +1516,7 @@ class TwillTestCase( unittest.TestCase ):
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "/user/login?use_panels=False" )
-            self.submit_form( 'login', 'login_button', email=email, redirect=redirect, password=password )
+            self.submit_form( 'login', 'login_button', login=email, redirect=redirect, password=password )
 
     def logout( self ):
         self.visit_url( "%s/user/logout" % self.url )
@@ -2271,6 +2274,14 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg = 'History item %s different than expected\n' % (hid)
                 errmsg += str( err )
                 raise AssertionError( errmsg )
+        if attributes is not None and attributes.get("md5", None) is not None:
+            md5 = attributes.get("md5")
+            try:
+                self._verify_md5(data, md5)
+            except AssertionError, err:
+                errmsg = 'History item %s different than expected\n' % (hid)
+                errmsg += str( err )
+                raise AssertionError( errmsg )
         if filename is not None:
             local_name = self.get_filename( filename, shed_tool_id=shed_tool_id )
             temp_name = self.makeTfname(fname=filename)
@@ -2322,6 +2333,18 @@ class TwillTestCase( unittest.TestCase ):
             finally:
                 if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
                     os.remove( temp_name )
+
+    def _verify_md5( self, data, expected_md5 ):
+        import md5
+        m = md5.new()
+        m.update( data )
+        actual_md5 = m.hexdigest()
+        if expected_md5 != actual_md5:
+            template = "Output md5sum [%s] does not match expected [%s]."
+            message = template % (actual_md5, expected_md5)
+            assert False, message
+
+
 
     def view_external_service( self, external_service_id, strings_displayed=[] ):
         self.visit_url( '%s/external_service/view_external_service?id=%s' % ( self.url, external_service_id ) )

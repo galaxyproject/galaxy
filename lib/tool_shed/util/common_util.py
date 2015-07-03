@@ -334,7 +334,7 @@ def tool_shed_get( app, tool_shed_url, uri ):
     """Make contact with the tool shed via the uri provided."""
     registry = app.tool_shed_registry
     # urllib2 auto-detects system proxies, when passed a Proxyhandler.
-    # Refer: http://docs.python.org/2/howto/urllib2.html#proxies
+    # Refer: https://docs.python.org/2/howto/urllib2.html#proxies
     proxy = urllib2.ProxyHandler()
     urlopener = urllib2.build_opener( proxy )
     urllib2.install_opener( urlopener )

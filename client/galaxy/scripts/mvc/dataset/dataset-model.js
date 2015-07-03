@@ -57,7 +57,7 @@ var DatasetAssociation = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
 
         this._setUpListeners();
     },
-    
+
     /** returns misc. web urls for rendering things like re-run, display, etc. */
     _generateUrls : function(){
 //TODO: would be nice if the API did this
@@ -250,6 +250,11 @@ var DatasetAssociationCollection = Backbone.Collection.extend( BASE_MVC.Loggable
     /** root api url */
     urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' ))
         + 'api/datasets',
+
+    /** url fn */
+    url : function(){
+        return this.urlRoot
+    },
 
     // ........................................................................ common queries
     /** Get the ids of every item in this collection

@@ -42,9 +42,11 @@ Contents
 .. toctree::
    :maxdepth: 5
 
-   API Documentation <lib/galaxy.webapps.galaxy.api>
+   API Documentation <api_doc>
 
    Application Documentation <lib/modules>
+
+   Releases <releases/index>
 
 Indices and tables
 ==================

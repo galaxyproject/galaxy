@@ -1,5 +1,4 @@
 <display id="igb_gtf" version="1.0.0" name="display in IGB">
-    
     <link id="View" name="View">
         <url>$bioviz</url>
         <param type="data" name="gtf_file_for_name" viewable="False"/>
@@ -9,7 +8,6 @@
             ${re.sub('\W',"_",nm)}
         </param>
         <param type="data" name="gtf_file" url="${niceName}.gtf" />
-        
         <param type="template" name="bioviz" strip="True" >
              http://bioviz.org/igb/galaxy.html?version=${gtf_file.dbkey}&amp;loadresidues=false&amp;feature_url_0=${gtf_file.url}&amp;sym_name_0=${niceName}&amp;sym_method_0=${gtf_file.url}&amp;query_url=${gtf_file.url}&amp;server_url=galaxy
         </param>

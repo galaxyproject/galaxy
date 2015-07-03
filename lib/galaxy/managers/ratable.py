@@ -26,12 +26,12 @@ class RatableSerializerMixin( object ):
         self.serializers[ 'user_rating' ] = self.serialize_user_rating
         self.serializers[ 'community_rating' ] = self.serialize_community_rating
 
-    def serialize_user_rating( self, trans, item, key ):
+    def serialize_user_rating( self, item, key, user=None, **context ):
         """
         """
         pass
 
-    def serialize_community_rating( self, trans, item, key ):
+    def serialize_community_rating( self, item, key, **context ):
         """
         """
         pass

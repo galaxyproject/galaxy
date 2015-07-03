@@ -3,6 +3,7 @@ from __init__ import DefaultToolAction
 import logging
 log = logging.getLogger( __name__ )
 
+
 class DataSourceToolAction( DefaultToolAction ):
     """Tool action used for Data Source Tools"""
 

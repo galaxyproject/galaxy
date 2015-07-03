@@ -42,7 +42,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         # Apply tag.
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
-        self.get_tag_handler( trans ).apply_item_tags( trans, user, item, new_tag.encode( 'utf-8' ) )
+        self.get_tag_handler( trans ).apply_item_tags( user, item, new_tag.encode( 'utf-8' ) )
         trans.sa_session.flush()
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=new_tag )
@@ -57,7 +57,7 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         # Remove tag.
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
-        self.get_tag_handler( trans ).remove_item_tag( trans, user, item, tag_name.encode( 'utf-8' ) )
+        self.get_tag_handler( trans ).remove_item_tag( user, item, tag_name.encode( 'utf-8' ) )
         trans.sa_session.flush()
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=tag_name )
@@ -73,8 +73,8 @@ class TagsController ( BaseUIController, UsesTagsMixin ):
         # Apply tags.
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
-        self.get_tag_handler( trans ).delete_item_tags( trans, user, item )
-        self.get_tag_handler( trans ).apply_item_tags( trans, user, item, new_tags.encode( 'utf-8' ) )
+        self.get_tag_handler( trans ).delete_item_tags( user, item )
+        self.get_tag_handler( trans ).apply_item_tags( user, item, new_tags.encode( 'utf-8' ) )
         trans.sa_session.flush()
 
     @web.expose
