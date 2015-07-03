@@ -1062,7 +1062,7 @@ class Tool( object, Dictifiable ):
         for name in param.get_dependencies():
             # Let it throw exception, but give some hint what the problem might be
             if name not in context:
-                log.error("Could not find dependency '%s' for tool %s" % (name, self.name) )
+                log.error("Could not find dependency '%s' of parameter '%s' in tool %s" % (name, param.name, self.name) )
             context[ name ].refresh_on_change = True
         return param
 
