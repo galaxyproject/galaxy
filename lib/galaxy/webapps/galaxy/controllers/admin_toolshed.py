@@ -2012,7 +2012,7 @@ class AdminToolshed( AdminGalaxy ):
             repository_names_not_updated = []
             updated_count = 0
             for repository in trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                                         .filter( trans.install_model.ToolShedRepository.table.c.deleted == False ):
+                                                         .filter( trans.install_model.ToolShedRepository.table.c.deleted == False ):  # noqa
                 ok, updated = \
                     repository_util.check_or_update_tool_shed_status_for_installed_repository( trans.app, repository )
                 if ok:

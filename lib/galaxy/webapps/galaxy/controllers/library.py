@@ -30,7 +30,7 @@ class LibraryListGrid( grids.Grid ):
     # Grid definition
     title = "Data Libraries"
     model_class = model.Library
-    template='/library/grid.mako'
+    template = '/library/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Data library name",
@@ -55,15 +55,15 @@ class LibraryListGrid( grids.Grid ):
     use_paging = True
 
     def build_initial_query( self, trans, **kwargs ):
-        return trans.sa_session.query( self.model_class ).filter( self.model_class.table.c.deleted == False )
+        return trans.sa_session.query( self.model_class ).filter( self.model_class.table.c.deleted == False )  # noqa
 
     def apply_query_filter( self, trans, query, **kwd ):
         current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
-        restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
-                                                                           .filter( trans.model.LibraryPermissions.table.c.action == library_access_action ) \
+        restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions )
+                                                                           .filter( trans.model.LibraryPermissions.table.c.action == library_access_action )
                                                                            .distinct() ]
-        accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
+        accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions )
                                                                                       .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
                                                                                                      trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
         if not trans.user:
@@ -81,7 +81,6 @@ class Library( BaseUIController ):
 
     library_list_grid = LibraryListGrid()
 
-    
     @web.expose
     def list( self, trans, **kwd ):
         # define app configuration for generic mako template
@@ -89,9 +88,9 @@ class Library( BaseUIController ):
             'jscript'       : "galaxy.library"
         }
         return trans.fill_template( 'galaxy.panels.mako',
-                                    config = { 
-                                    'title': 'Galaxy Data Libraries',
-                                    'app': app } )
+                                    config={
+                                        'title': 'Galaxy Data Libraries',
+                                        'app': app } )
 
     @web.expose
     def index( self, trans, **kwd ):

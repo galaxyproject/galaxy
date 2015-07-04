@@ -21,13 +21,15 @@ from galaxy.web.base.controller import ImportsHistoryMixin
 
 from galaxy.managers import histories, citations, users
 
-from galaxy import util
 from galaxy.util import string_as_bool
 from galaxy.util import restore_text
 from galaxy.web import url_for
 
 import logging
 log = logging.getLogger( __name__ )
+
+# TODO: not used in this file
+from galaxy import util
 
 
 class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistoryMixin ):
@@ -105,7 +107,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             current_history = self.history_manager.get_current( trans )
             if not current_history:
                 return []
-            #note: ignores filters, limit, offset
+            # note: ignores filters, limit, offset
             return [ self.history_serializer.serialize_to_view( current_history,
                      user=current_user, trans=trans, **serialization_params ) ]
 
@@ -117,7 +119,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         # and any sent in from the query string
         filters += self.history_filters.parse_filters( filter_params )
 
-        #TODO: eventually make order_by a param as well
+        # TODO: eventually make order_by a param as well
         order_by = sqlalchemy.desc( self.app.model.History.create_time )
         histories = self.history_manager.list( filters=filters, order_by=order_by, limit=limit, offset=offset )
 
@@ -129,7 +131,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         return rval
 
     def _get_deleted_filter( self, deleted, filter_params ):
-        #TODO: this should all be removed (along with the default) in v2
+        # TODO: this should all be removed (along with the default) in v2
         # support the old default of not-returning/filtering-out deleted histories
         try:
             # the consumer must explicitly ask for both deleted and non-deleted
@@ -142,7 +144,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         # the deleted string bool was also used as an 'include deleted' flag
         if deleted in ( 'True', 'true' ):
-            return [ self.app.model.History.deleted == True ]
+            return [ self.app.model.History.deleted is True ]
 
         # the third option not handled here is 'return only deleted'
         #   if this is passed in (in the form below), simply return and let the filter system handle it
@@ -150,7 +152,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             return []
 
         # otherwise, do the default filter of removing the deleted histories
-        return [ self.app.model.History.deleted == False ]
+        return [ self.app.model.History.deleted is False ]
 
     @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
@@ -179,7 +181,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         if history_id == "most_recently_used":
             history = self.history_manager.most_recent( trans.user,
-                filters=( self.app.model.History.deleted == False ), current_history=trans.history )
+                filters=( self.app.model.History.deleted == False ), current_history=trans.history )  # noqa
         else:
             history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
 
@@ -336,7 +338,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :returns:   an error object if an error occurred or a dictionary containing
             any values that were different from the original and, therefore, updated
         """
-        #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
+        # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
         history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
 
         self.history_deserializer.deserialize( history, payload, user=trans.user, trans=trans )
@@ -363,7 +365,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         jeha = history.latest_export
         up_to_date = jeha and jeha.up_to_date
         if 'force' in kwds:
-            up_to_date = False #Temp hack to force rebuild everytime during dev
+            up_to_date = False  # Temp hack to force rebuild everytime during dev
         if not up_to_date:
             # Need to create new JEHA + job.
             gzip = kwds.get( "gzip", True )

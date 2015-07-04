@@ -7,7 +7,6 @@ from galaxy import util
 
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import url_for
 
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixin
@@ -18,8 +17,6 @@ from galaxy.managers import histories
 from galaxy.managers import hdas
 from galaxy.managers.collections_util import api_payload_to_create_params
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
-from galaxy.util import validation
-
 
 import logging
 log = logging.getLogger( __name__ )
@@ -132,8 +129,6 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :rtype:     dict
         :returns:   dictionary containing detailed HDA information
         """
-        history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
-
         contents_type = kwd.get('type', 'dataset')
         if contents_type == 'dataset':
             return self.__show_dataset( trans, id, **kwd )
@@ -229,7 +224,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         source = payload.get( 'source', None )
         if source not in ( 'library', 'hda' ):
             raise exceptions.RequestParameterInvalidException(
-                "'source' must be either 'library' or 'hda': %s" %( source ) )
+                "'source' must be either 'library' or 'hda': %s" % ( source ) )
         content = payload.get( 'content', None )
         if content is None:
             raise exceptions.RequestParameterMissingException( "'content' id of lda or hda is missing" )
@@ -238,7 +233,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         hda = None
         if source == 'library':
             ld = self.get_library_dataset( trans, content, check_ownership=False, check_accessible=False )
-            #TODO: why would get_library_dataset NOT return a library dataset?
+            # TODO: why would get_library_dataset NOT return a library dataset?
             if type( ld ) is not trans.app.model.LibraryDataset:
                 raise exceptions.RequestParameterInvalidException(
                     "Library content id ( %s ) is not a dataset" % content )
@@ -307,7 +302,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         :returns:   an error object if an error occurred or a dictionary containing
             any values that were different from the original and, therefore, updated
         """
-        #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
+        # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
         contents_type = kwd.get('type', 'dataset')
         if contents_type == "dataset":
             return self.__update_dataset( trans, history_id, id, payload, **kwd )
@@ -319,7 +314,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
     def __update_dataset( self, trans, history_id, id, payload, **kwd ):
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        if trans.user == None:
+        if trans.user is None:
             hda = self.hda_manager.by_id( self.decode_id( id ) )
             if hda.history != trans.history:
                 raise exceptions.AuthenticationRequired( 'API authentication required for this request' )
@@ -342,10 +337,10 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 hda = self.hda_manager.error_if_uploading( hda )
 
         # make the actual changes
-        #TODO: is this if still needed?
+        # TODO: is this if still needed?
         if hda and isinstance( hda, trans.model.HistoryDatasetAssociation ):
             self.hda_deserializer.deserialize( hda, payload, user=trans.user, trans=trans )
-            #TODO: this should be an effect of deleting the hda
+            # TODO: this should be an effect of deleting the hda
             if payload.get( 'deleted', False ):
                 self.hda_manager.stop_creating_job( hda )
             return self.hda_serializer.serialize_to_view( hda,
@@ -356,7 +351,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
     def __update_dataset_collection( self, trans, history_id, id, payload, **kwd ):
         return trans.app.dataset_collections_service.update( trans, "history", id, payload )
 
-    #TODO: allow anonymous del/purge and test security on this
+    # TODO: allow anonymous del/purge and test security on this
     @expose_api
     def delete( self, trans, history_id, id, purge=False, **kwd ):
         """

@@ -80,14 +80,14 @@ class PageAllPublishedGrid( grids.Grid ):
             "Search title, annotation, owner, and tags",
             cols_to_filter=[ columns[0], columns[1], columns[2], columns[4] ],
             key="free-text-search", visible=False, filterable="standard" )
-        )
+    )
 
     def build_initial_query( self, trans, **kwargs ):
         # Join so that searching history.user makes sense.
         return trans.sa_session.query( self.model_class ).join( model.User.table )
 
     def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter( self.model_class.deleted == False ).filter( self.model_class.published == True )
+        return query.filter( self.model_class.deleted == False ).filter( self.model_class.published == True )  # noqa
 
 
 class ItemSelectionGrid( grids.Grid ):
@@ -131,7 +131,7 @@ class HistorySelectionGrid( ItemSelectionGrid ):
             "Search",
             cols_to_filter=[ columns[0], columns[1] ],
             key="free-text-search", visible=False, filterable="standard" )
-        )
+    )
 
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, purged=False )
@@ -155,7 +155,7 @@ class HistoryDatasetAssociationSelectionGrid( ItemSelectionGrid ):
             "Search",
             cols_to_filter=[ columns[0], columns[1] ],
             key="free-text-search", visible=False, filterable="standard" )
-        )
+    )
 
     def apply_query_filter( self, trans, query, **kwargs ):
         # To filter HDAs by user, need to join HDA and History table and then filter histories by user. This is necessary because HDAs do not have
@@ -181,7 +181,7 @@ class WorkflowSelectionGrid( ItemSelectionGrid ):
             "Search",
             cols_to_filter=[ columns[0], columns[1] ],
             key="free-text-search", visible=False, filterable="standard" )
-        )
+    )
 
 
 class PageSelectionGrid( ItemSelectionGrid ):
@@ -202,7 +202,7 @@ class PageSelectionGrid( ItemSelectionGrid ):
             "Search",
             cols_to_filter=[ columns[0], columns[1] ],
             key="free-text-search", visible=False, filterable="standard" )
-        )
+    )
 
 
 class VisualizationSelectionGrid( ItemSelectionGrid ):
@@ -222,7 +222,7 @@ class VisualizationSelectionGrid( ItemSelectionGrid ):
             "Search",
             cols_to_filter=[ columns[0], columns[2] ],
             key="free-text-search", visible=False, filterable="standard" )
-        )
+    )
 
 
 class _PageContentProcessor( _BaseHTMLProcessor ):
@@ -334,7 +334,7 @@ class PageController( BaseUIController, SharableMixin,
             .join( model.Page.table ) \
             .filter( model.Page.deleted == False ) \
             .order_by( desc( model.Page.update_time ) ) \
-            .all()
+            .all()  # noqa
 
         # Render grid wrapped in panels
         return trans.fill_template( "page/index.mako", embedded_grid=grid, shared_by_others=shared_by_others )
@@ -389,16 +389,16 @@ class PageController( BaseUIController, SharableMixin,
                 return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
         return trans.show_form(
             web.FormBuilder( web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit" )
-                .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
-                .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                           help="""A unique identifier that will be used for
+            .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
+            .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
+                    help="""A unique identifier that will be used for
                                 public links to this page. A default is generated
                                 from the page title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
-                .add_text( "page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                            help="A description of the page; annotation is shown alongside published pages."),
-                template="page/create.mako" )
+            .add_text( "page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
+                    help="A description of the page; annotation is shown alongside published pages."),
+            template="page/create.mako" )
 
     @web.expose
     @web.require_login( "edit pages" )
@@ -440,15 +440,15 @@ class PageController( BaseUIController, SharableMixin,
                 page_annotation = ""
         return trans.show_form(
             web.FormBuilder( web.url_for(controller='page', action='edit', id=encoded_id ), "Edit page attributes", submit_text="Submit" )
-                .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
-                .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                           help="""A unique identifier that will be used for
+            .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
+            .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
+                    help="""A unique identifier that will be used for
                                 public links to this page. A default is generated
                                 from the page title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
-                .add_text( "page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                            help="A description of the page; annotation is shown alongside published pages."),
+            .add_text( "page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
+                    help="A description of the page; annotation is shown alongside published pages."),
             template="page/create.mako" )
 
     @web.expose
@@ -506,9 +506,9 @@ class PageController( BaseUIController, SharableMixin,
         page = trans.sa_session.query( model.Page ).get( self.decode_id( id ) )
         if email:
             other = trans.sa_session.query( model.User ) \
-                                    .filter( and_( model.User.table.c.email==email,
-                                                   model.User.table.c.deleted==False ) ) \
-                                    .first()
+                                    .filter( and_( model.User.table.c.email == email,
+                                                   model.User.table.c.deleted == False ) ) \
+                                    .first()  # noqa
             if not other:
                 mtype = "error"
                 msg = ( "User '%s' does not exist" % escape( email ) )
