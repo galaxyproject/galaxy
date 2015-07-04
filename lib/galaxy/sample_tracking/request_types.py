@@ -26,7 +26,7 @@ class RequestTypeFactory( object ):
         sample_states_elem = elem.find( 'sample_states' )
         if sample_states_elem:
             for sample_state_elem in sample_states_elem.findall( 'state' ):
-                sample_state = self.sample_state_factory.from_elem( rval, sample_state_elem )
+                self.sample_state_factory.from_elem( rval, sample_state_elem )  # should this be the return value??
         return rval
 
 request_type_factory = RequestTypeFactory( sample_state_factory, RENAME_DATASET_OPTIONS )
