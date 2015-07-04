@@ -7,7 +7,7 @@ lib/galaxy/datatypes/{assembly,binary,checkers,chrominfo,coverage,data,proteomic
 lib/galaxy/datatypes/converters/{bedgraph_to_array_tree_converter,bgzip,wiggle_to_array_tree_converter}.py
 lib/galaxy/exceptions/
 lib/galaxy/external_services/
-lib/galaxy/jobs/{__init__,error_level,manager,stock_rules}.py
+lib/galaxy/jobs/
 lib/galaxy/managers/
 lib/galaxy/model/orm/{engine_factory,now}.py
 lib/galaxy/model/{base,custom_types,search,util}.py

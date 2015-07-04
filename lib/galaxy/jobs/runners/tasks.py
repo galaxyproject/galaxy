@@ -1,5 +1,4 @@
 import logging
-import subprocess
 
 from galaxy import model
 
@@ -54,7 +53,7 @@ class TaskedJobRunner( BaseJobRunner ):
             # Split with the defined method.
             parallelism = job_wrapper.get_parallelism()
             try:
-                splitter = getattr(__import__('galaxy.jobs.splitters',  globals(),  locals(),  [parallelism.method]),  parallelism.method)
+                splitter = getattr(__import__('galaxy.jobs.splitters', globals(), locals(), [parallelism.method]), parallelism.method)
             except:
                 job_wrapper.change_state( model.Job.states.ERROR )
                 job_wrapper.fail("Job Splitting Failed, no match for '%s'" % parallelism)
@@ -78,8 +77,8 @@ class TaskedJobRunner( BaseJobRunner ):
             sleep_time = 1
             # sleep/loop until no more progress can be made. That is when
             # all tasks are one of { OK, ERROR, DELETED }. If a task
-            completed_states = [ model.Task.states.OK, \
-                                 model.Task.states.ERROR, \
+            completed_states = [ model.Task.states.OK,
+                                 model.Task.states.ERROR,
                                  model.Task.states.DELETED ]
 
             # TODO: Should we report an error (and not merge outputs) if
@@ -104,7 +103,7 @@ class TaskedJobRunner( BaseJobRunner ):
                         self._cancel_job( job_wrapper, task_wrappers )
                         tasks_complete = True
                         break
-                    elif not task_state in completed_states:
+                    elif task_state not in completed_states:
                         tasks_complete = False
                     else:
                         job_exit_code = tw.get_exit_code()
@@ -115,15 +114,15 @@ class TaskedJobRunner( BaseJobRunner ):
                         sleep_time *= 2
             job_wrapper.reclaim_ownership()      # if running as the actual user, change ownership before merging.
             log.debug('execution finished - beginning merge: %s' % command_line)
-            stdout,  stderr = splitter.do_merge(job_wrapper,  task_wrappers)
+            stdout, stderr = splitter.do_merge(job_wrapper, task_wrappers)
         except Exception:
             job_wrapper.fail( "failure running job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
 
-        #run the metadata setting script here
-        #this is terminate-able when output dataset/job is deleted
-        #so that long running set_meta()s can be canceled without having to reboot the server
+        # run the metadata setting script here
+        # this is terminate-able when output dataset/job is deleted
+        # so that long running set_meta()s can be canceled without having to reboot the server
         self._handle_metadata_externally(job_wrapper, resolve_requirements=True )
         # Finish the job
         try:
@@ -147,7 +146,7 @@ class TaskedJobRunner( BaseJobRunner ):
         # this if the tasks runner is used but the tool does not use
         # parallelism.
         else:
-            #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+            # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
             if job.external_output_metadata:
                 pid = job.external_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             else:

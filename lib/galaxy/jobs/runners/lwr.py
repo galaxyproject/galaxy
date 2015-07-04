@@ -320,7 +320,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
     def get_client( self, job_destination_params, job_id, env=[] ):
         # Cannot use url_for outside of web thread.
-        #files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
+        # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
 
         encoded_job_id = self.app.security.encode_id(job_id)
         job_key = self.app.security.encode_id( job_id, kind="jobs_files" )
@@ -400,7 +400,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             return False
 
     def stop_job( self, job ):
-        #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         job_ext_output_metadata = job.get_external_output_metadata()
         if job_ext_output_metadata:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them

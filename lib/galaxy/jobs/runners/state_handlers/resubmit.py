@@ -1,15 +1,12 @@
 import logging
 
-from galaxy import model
-
-
 __all__ = ['failure']
 
 log = logging.getLogger(__name__)
 
 MESSAGES = dict(
-    walltime_reached = 'it reached the walltime',
-    memory_limit_reached = 'it exceeded the amount of allocated memory'
+    walltime_reached='it reached the walltime',
+    memory_limit_reached='it exceeded the amount of allocated memory'
 )
 
 

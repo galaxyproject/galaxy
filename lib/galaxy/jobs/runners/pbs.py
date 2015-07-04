@@ -189,10 +189,10 @@ class PBSJobRunner( AsynchronousJobRunner ):
             if arg == 'l':
                 resource_attrs = value.split(',')
                 for j, ( res, val ) in enumerate( [ a.split('=', 1) for a in resource_attrs ] ):
-                    rval.append( dict( name = pbs.ATTR_l, value = val, resource = res ) )
+                    rval.append( dict( name=pbs.ATTR_l, value=val, resource=res ) )
             else:
                 try:
-                    rval.append( dict( name = getattr( pbs, 'ATTR_' + arg ), value = value ) )
+                    rval.append( dict( name=getattr( pbs, 'ATTR_' + arg ), value=value ) )
                 except AttributeError, e:
                     raise Exception("Invalid parameter '%s': %s" % (arg, e))
         return rval
@@ -207,9 +207,6 @@ class PBSJobRunner( AsynchronousJobRunner ):
         # prepare the job
         if not self.prepare_job( job_wrapper, include_metadata=not( self.app.config.pbs_stage_path ) ):
             return
-
-        # command line has been added to the wrapper by prepare_job()
-        command_line = job_wrapper.runner_command_line
 
         job_destination = job_wrapper.job_destination
 
@@ -260,20 +257,20 @@ class PBSJobRunner( AsynchronousJobRunner ):
             stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + output_files, symlink=True )
             stageout = self.get_stage_in_out( output_files )
             attrs = [
-                dict( name = pbs.ATTR_o, value = pbs_ofile ),
-                dict( name = pbs.ATTR_e, value = pbs_efile ),
-                dict( name = pbs.ATTR_stagein, value = stagein ),
-                dict( name = pbs.ATTR_stageout, value = stageout ),
+                dict( name=pbs.ATTR_o, value=pbs_ofile ),
+                dict( name=pbs.ATTR_e, value=pbs_efile ),
+                dict( name=pbs.ATTR_stagein, value=stagein ),
+                dict( name=pbs.ATTR_stageout, value=stageout ),
             ]
         # If not, we're using NFS
         else:
             attrs = [
-                dict( name = pbs.ATTR_o, value = ofile ),
-                dict( name = pbs.ATTR_e, value = efile ),
+                dict( name=pbs.ATTR_o, value=ofile ),
+                dict( name=pbs.ATTR_e, value=efile ),
             ]
 
         # define PBS job options
-        attrs.append( dict( name = pbs.ATTR_N, value = str( "%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user ) ) ) )
+        attrs.append( dict( name=pbs.ATTR_N, value=str( "%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user ) ) ) )
         job_attrs = pbs.new_attropl( len( attrs ) + len( pbs_options ) )
         for i, attr in enumerate( attrs + pbs_options ):
             job_attrs[i].name = attr['name']
@@ -366,7 +363,6 @@ class PBSJobRunner( AsynchronousJobRunner ):
         ( failures, statuses ) = self.check_all_jobs()
         for pbs_job_state in self.watched:
             job_id = pbs_job_state.job_id
-            #galaxy_job_id = pbs_job_state.job_wrapper.job_id
             galaxy_job_id = pbs_job_state.job_wrapper.get_id_tag()
             old_state = pbs_job_state.old_state
             pbs_server_name = self.__get_pbs_server(pbs_job_state.job_destination.params)

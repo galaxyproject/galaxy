@@ -57,8 +57,8 @@ class JobRunnerMapper( object ):
 
     def __get_rule_modules( self ):
         unsorted_module_names = self.__get_rule_module_names( )
-        ## Load modules in reverse order to allow hierarchical overrides
-        ## i.e. 000_galaxy_rules.py, 100_site_rules.py, 200_instance_rules.py
+        # Load modules in reverse order to allow hierarchical overrides
+        # i.e. 000_galaxy_rules.py, 100_site_rules.py, 200_instance_rules.py
         module_names = sorted( unsorted_module_names, reverse=True )
         modules = []
         for rule_module_name in module_names:

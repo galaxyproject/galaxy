@@ -39,7 +39,7 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
             # that range, then apply the error level and add a message.
             # If we've reached a fatal error rule, then stop.
             max_error_level = StdioErrorLevel.NO_ERROR
-            if tool_exit_code != None:
+            if tool_exit_code is not None:
                 for stdio_exit_code in tool.stdio_exit_codes:
                     if ( tool_exit_code >= stdio_exit_code.range_start and
                          tool_exit_code <= stdio_exit_code.range_end ):

@@ -53,9 +53,6 @@ class ShellJobRunner( AsynchronousJobRunner ):
         if not self.prepare_job( job_wrapper, include_metadata=True ):
             return
 
-        # command line has been added to the wrapper by prepare_job()
-        command_line = job_wrapper.runner_command_line
-
         # Get shell and job execution interface
         job_destination = job_wrapper.job_destination
         shell_params, job_params = self.parse_destination_params(job_destination.params)
@@ -98,7 +95,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
             log.error('(%s) submission failed (stderr): %s' % (galaxy_id_tag, cmd_out.stderr))
             job_wrapper.fail("failure submitting job")
             return
-        # Some job runners return something like 'Submitted batch job XXXX' 
+        # Some job runners return something like 'Submitted batch job XXXX'
         # Strip and split to get job ID.
         external_job_id = cmd_out.stdout.strip().split()[-1]
         if not external_job_id:

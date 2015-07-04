@@ -2,20 +2,24 @@
 Module for managing jobs in Pacific Bioscience's SMRT Portal and automatically transferring files
 produced by SMRT Portal.
 """
-import logging, urllib2, re, shutil
+import logging
+import urllib2
 from string import Template
 from galaxy.util import json
 
-from data_transfer import *
+from data_transfer import DataTransfer
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'SMRTPortalPlugin' ]
 
+
 class SMRTPortalPlugin( DataTransfer ):
     api_path = '/smrtportal/api'
+
     def __init__( self, app ):
         super( SMRTPortalPlugin, self ).__init__( app )
+
     def create_job( self, trans, **kwd ):
         if 'secondary_analysis_job_id' in kwd:
             sample = kwd[ 'sample' ]
@@ -42,7 +46,7 @@ class SMRTPortalPlugin( DataTransfer ):
                         results[ id ] = { field : v }
             for id, attrs in results.items():
                 url_template = external_service_type.run_details[ 'results_urls' ].get( id + '_name' )
-                url = Template( url_template ).substitute( host = smrt_host, secondary_analysis_job_id = kwd[ 'secondary_analysis_job_id' ] )
+                url = Template( url_template ).substitute( host=smrt_host, secondary_analysis_job_id=kwd[ 'secondary_analysis_job_id' ] )
                 results[ id ][ 'url' ] = url
                 if sample.workflow:
                     # DBTODO Make sure all ds| mappings get the URL of the dataset, for linking to later.
@@ -75,6 +79,7 @@ class SMRTPortalPlugin( DataTransfer ):
         self.sa_session.flush()
         log.debug( 'Created a deferred job in the SMRTPortalPlugin of type: %s' % params[ 'type' ] )
         # TODO: error reporting to caller (if possible?)
+
     def check_job( self, job ):
         if self._missing_params( job.params, [ 'type' ] ):
             return self.job_states.INVALID
@@ -106,6 +111,7 @@ class SMRTPortalPlugin( DataTransfer ):
         else:
             log.error( 'Unknown job type for SMRTPortalPlugin: %s' % str( job.params[ 'type' ] ) )
             return self.job_states.INVALID
+
     def _associate_untransferred_datasets_with_sample( self, sample, external_service, results_dict ):
         # results_dict looks something like:
         # {'dataset2': {'datatype': 'fasta', 'url': '127.0.0.1:8080/data/filtered_subreads.fa', 'name': 'Filtered reads'} }

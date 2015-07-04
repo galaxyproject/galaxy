@@ -251,15 +251,15 @@ class BaseJobRunner( object ):
         Set metadata externally. Used by the local and lwr job runners where this
         shouldn't be attached to command-line to execute.
         """
-        #run the metadata setting script here
-        #this is terminate-able when output dataset/job is deleted
-        #so that long running set_meta()s can be canceled without having to reboot the server
+        # run the metadata setting script here
+        # this is terminate-able when output dataset/job is deleted
+        # so that long running set_meta()s can be canceled without having to reboot the server
         if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and job_wrapper.output_paths:
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             external_metadata_script = job_wrapper.setup_external_metadata( output_fnames=job_wrapper.get_output_fnames(),
                                                                             set_extension=True,
                                                                             tmp_dir=job_wrapper.working_directory,
-                                                                            #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+                                                                            # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                             kwds={ 'overwrite' : False } )
             external_metadata_script = "%s %s" % (lib_adjust, external_metadata_script)
             if resolve_requirements:
@@ -304,8 +304,8 @@ class BaseJobRunner( object ):
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
         )
-        ## Additional logging to enable if debugging from_work_dir handling, metadata
-        ## commands, etc... (or just peak in the job script.)
+        # Additional logging to enable if debugging from_work_dir handling, metadata
+        # commands, etc... (or just peak in the job script.)
         job_id = job_wrapper.job_id
         log.debug( '(%s) command is: %s' % ( job_id, command_line ) )
         options.update(**kwds)
@@ -361,11 +361,12 @@ class JobState( object ):
     Encapsulate state of jobs.
     """
     runner_states = Bunch(
-        WALLTIME_REACHED = 'walltime_reached',
-        MEMORY_LIMIT_REACHED = 'memory_limit_reached',
-        GLOBAL_WALLTIME_REACHED = 'global_walltime_reached',
-        OUTPUT_SIZE_LIMIT = 'output_size_limit'
+        WALLTIME_REACHED='walltime_reached',
+        MEMORY_LIMIT_REACHED='memory_limit_reached',
+        GLOBAL_WALLTIME_REACHED='global_walltime_reached',
+        OUTPUT_SIZE_LIMIT='output_size_limit'
     )
+
     def __init__( self ):
         self.runner_state_handled = False
 
