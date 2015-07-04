@@ -47,7 +47,7 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
                         # plus a specific code description. For example,
                         # this might prepend "Job 42: Warning (Out of Memory)\n".
                         code_desc = stdio_exit_code.desc
-                        if ( None == code_desc ):
+                        if ( None is code_desc ):
                             code_desc = ""
                         tool_msg = ( "%s: Exit code %d (%s)" % (
                                      StdioErrorLevel.desc( stdio_exit_code.error_level ),
@@ -128,12 +128,12 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
     # On any exception, return True.
     except:
         tb = traceback.format_exc()
-        log.warning( "Tool check encountered unexpected exception; "
-                   + "assuming tool was successful: " + tb )
+        log.warning( "Tool check encountered unexpected exception; " +
+                     "assuming tool was successful: " + tb )
         success = True
 
     # Store the modified stdout and stderr in the job:
-    if None != job:
+    if None is not job:
         job.stdout = stdout
         job.stderr = stderr
 
@@ -150,7 +150,7 @@ def __regex_err_msg( match, regex ):
     err_msg = StdioErrorLevel.desc( regex.error_level ) + ": "
     # If there's a description for the regular expression, then use it.
     # Otherwise, we'll take the first 256 characters of the match.
-    if None != regex.desc:
+    if None is not regex.desc:
         err_msg += regex.desc
     else:
         mstart = match.start()

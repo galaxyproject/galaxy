@@ -589,7 +589,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
             log.debug( "%s Unable to stop job: %s" % ( job_tag, e ) )
         finally:
             # Cleanup: disconnect from the server.
-            if ( None != c ):
+            if ( None is not c ):
                 pbs.pbs_disconnect( c )
 
     def recover( self, job, job_wrapper ):

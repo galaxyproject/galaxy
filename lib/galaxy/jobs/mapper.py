@@ -3,12 +3,11 @@ import inspect
 import os
 import sys
 
-log = logging.getLogger( __name__ )
-
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
-
 from .rule_helper import RuleHelper
+
+log = logging.getLogger( __name__ )
 
 DYNAMIC_RUNNER_NAME = "dynamic"
 DYNAMIC_DESTINATION_ID = "dynamic_legacy_from_url"

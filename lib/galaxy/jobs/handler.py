@@ -110,13 +110,13 @@ class JobHandlerQueue( object ):
         if self.app.config.user_activation_on:
                 jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
                     .outerjoin( model.User ) \
-                    .filter( model.Job.state.in_( in_list )
-                    & ( model.Job.handler == self.app.config.server_name )
-                        & or_( ( model.Job.user_id is None ), ( model.User.active is True ) ) ).all()
+                    .filter( model.Job.state.in_( in_list ) &
+                    ( model.Job.handler == self.app.config.server_name ) &
+                    or_( ( model.Job.user_id is None ), ( model.User.active is True ) ) ).all()
         else:
             jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
-                .filter( model.Job.state.in_( in_list )
-            & ( model.Job.handler == self.app.config.server_name ) ).all()
+                .filter( model.Job.state.in_( in_list ) &
+                ( model.Job.handler == self.app.config.server_name ) ).all()
 
         for job in jobs_at_startup:
             if not self.app.toolbox.has_tool( job.tool_id, job.tool_version, exact=True ):
@@ -663,8 +663,8 @@ class JobHandlerStopQueue( object ):
             self.sa_session.expunge_all()
             # Fetch all new jobs
             newly_deleted_jobs = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
-                                     .filter( ( model.Job.state == model.Job.states.DELETED_NEW )
-                                              & ( model.Job.handler == self.app.config.server_name ) ).all()
+                                     .filter( ( model.Job.state == model.Job.states.DELETED_NEW ) &
+                                     ( model.Job.handler == self.app.config.server_name ) ).all()
             for job in newly_deleted_jobs:
                 jobs_to_check.append( ( job, job.stderr ) )
         # Also pull from the queue (in the case of Administrative stopped jobs)
@@ -680,9 +680,10 @@ class JobHandlerStopQueue( object ):
         except Empty:
             pass
         for job, error_msg in jobs_to_check:
-            if ( job.state not in ( job.states.DELETED_NEW,
-                                    job.states.DELETED )
-                 and job.finished ):
+            if ( job.state not in
+                    ( job.states.DELETED_NEW,
+                    job.states.DELETED ) and
+                    job.finished ):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue
@@ -779,7 +780,7 @@ class DefaultJobDispatcher( object ):
         # The runner name is not set until the job has started.
         # If we're stopping a task, then the runner_name may be
         # None, in which case it hasn't been scheduled.
-        if ( None != job.get_job_runner_name() ):
+        if ( job.get_job_runner_name() is not None ):
             runner_name = ( job.get_job_runner_name().split( ":", 1 ) )[ 0 ]
             if ( isinstance( job, model.Job ) ):
                 log.debug( "stopping job %d in %s runner" % ( job.get_id(), runner_name ) )
