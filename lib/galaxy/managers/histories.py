@@ -12,10 +12,10 @@ from galaxy.managers import hdas
 from galaxy.managers import collections_util
 
 import logging
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMixin ):
+class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin):
 
     model_class = model.History
     foreign_key_name = 'history'
@@ -27,57 +27,59 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
 
     # TODO: incorporate imp/exp (or alias to)
 
-    def __init__( self, app, *args, **kwargs ):
-        super( HistoryManager, self ).__init__( app, *args, **kwargs )
+    def __init__(self, app, *args, **kwargs):
+        super(HistoryManager, self).__init__(app, *args, **kwargs)
 
-        self.hda_manager = hdas.HDAManager( app )
+        self.hda_manager = hdas.HDAManager(app)
 
-    def copy( self, history, user, **kwargs ):
+    def copy(self, history, user, **kwargs):
         """
         Copy and return the given `history`.
         """
-        return history.copy( target_user=user, **kwargs )
+        return history.copy(target_user=user, **kwargs)
 
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases
-    def by_user( self, user, current_history=None, **kwargs ):
+    def by_user(self, user, current_history=None, **kwargs):
         """
         Get all the histories for a given user (allowing anon users' theirs)
         ordered by update time.
         """
-        # handle default and/or anonymous user (which still may not have a history yet)
-        if self.user_manager.is_anonymous( user ):
-            return [ current_history ] if current_history else []
-        return super( HistoryManager, self ).by_user( user, **kwargs )
+        # handle default and/or anonymous user (which still may not have a
+        # history yet)
+        if self.user_manager.is_anonymous(user):
+            return [current_history] if current_history else []
+        return super(HistoryManager, self).by_user(user, **kwargs)
 
-    def is_owner( self, history, user, current_history=None, **kwargs ):
+    def is_owner(self, history, user, current_history=None, **kwargs):
         """
         True if the current user is the owner of the given history.
         """
         # anon users are only allowed to view their current history
-        if self.user_manager.is_anonymous( user ):
+        if self.user_manager.is_anonymous(user):
             if current_history and history == current_history:
                 return True
             return False
-        return super( HistoryManager, self ).is_owner( history, user )
+        return super(HistoryManager, self).is_owner(history, user)
 
     # TODO: possibly to sharable or base
-    def most_recent( self, user, filters=None, current_history=None, **kwargs ):
+    def most_recent(self, user, filters=None, current_history=None, **kwargs):
         """
         Return the most recently update history for the user.
 
         If user is anonymous, return the current history. If the user is anonymous
         and the current history is deleted, return None.
         """
-        if self.user_manager.is_anonymous( user ):
-            return None if ( not current_history or current_history.deleted ) else current_history
+        if self.user_manager.is_anonymous(user):
+            return None if (not current_history or current_history.deleted) else current_history
         desc_update_time = self.model_class.table.c.update_time
-        filters = self._munge_filters( filters, self.model_class.user_id == user.id )
+        filters = self._munge_filters(
+            filters, self.model_class.user_id == user.id)
         # TODO: normalize this return value
-        return self.query( filters=filters, order_by=desc_update_time, limit=1, **kwargs ).first()
+        return self.query(filters=filters, order_by=desc_update_time, limit=1, **kwargs).first()
 
     # .... purgable
-    def purge( self, history, flush=True, **kwargs ):
+    def purge(self, history, flush=True, **kwargs):
         """
         Purge this history and all HDAs, Collections, and Datasets inside this history.
         """
@@ -85,101 +87,106 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         # First purge all the datasets
         for hda in history.datasets:
             if not hda.purged:
-                self.hda_manager.purge( hda, flush=True )
+                self.hda_manager.purge(hda, flush=True)
 
         # Now mark the history as purged
-        super( HistoryManager, self ).purge( history, flush=flush, **kwargs )
+        super(HistoryManager, self).purge(history, flush=flush, **kwargs)
 
     # .... current
     # TODO: make something to bypass the anon user + current history permissions issue
     # def is_current_users_current_history( self, history, trans ):
     #     pass
 
-    def get_current( self, trans ):
+    def get_current(self, trans):
         """
         Return the current history.
         """
         # TODO: trans
         return trans.get_history()
 
-    def set_current( self, trans, history ):
+    def set_current(self, trans, history):
         """
         Set the current history.
         """
         # TODO: trans
-        trans.set_history( history )
+        trans.set_history(history)
         return history
 
-    def set_current_by_id( self, trans, history_id ):
+    def set_current_by_id(self, trans, history_id):
         """
         Set the current history by an id.
         """
-        return self.set_current( trans, self.by_id( history_id ) )
+        return self.set_current(trans, self.by_id(history_id))
 
 # TODO: replace or move to serializer
-    def _get_history_data( self, trans, history ):
+    def _get_history_data(self, trans, history):
         """
         Returns a dictionary containing ``history`` and ``contents``, serialized
         history and an array of serialized history contents respectively.
         """
         # TODO: instantiate here? really?
-        history_serializer = HistorySerializer( self.app )
-        hda_serializer = hdas.HDASerializer( self.app )
+        history_serializer = HistorySerializer(self.app)
+        hda_serializer = hdas.HDASerializer(self.app)
         history_dictionary = {}
         contents_dictionaries = []
         try:
-            history_dictionary = history_serializer.serialize_to_view( history, view='detailed',
-                user=trans.user, trans=trans )
+            history_dictionary = history_serializer.serialize_to_view(
+                history, view='detailed',
+                user=trans.user, trans=trans)
 
-            for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
+            for content in history.contents_iter(types=['dataset', 'dataset_collection']):
                 contents_dict = {}
-                if isinstance( content, model.HistoryDatasetAssociation ):
-                    contents_dict = hda_serializer.serialize_to_view( content, view='detailed',
-                        user=trans.user, trans=trans )
-                elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
+                if isinstance(content, model.HistoryDatasetAssociation):
+                    contents_dict = hda_serializer.serialize_to_view(
+                        content, view='detailed',
+                        user=trans.user, trans=trans)
+                elif isinstance(content, model.HistoryDatasetCollectionAssociation):
                     try:
                         service = self.app.dataset_collections_service
                         collection = service.get_dataset_collection_instance(
                             trans=trans,
                             instance_type='history',
-                            id=self.app.security.encode_id( content.id ),
+                            id=self.app.security.encode_id(content.id),
                         )
                         serializer = collections_util.dictify_dataset_collection_instance
-                        contents_dict = serializer( collection,
-                                                    security=self.app.security,
-                                                    parent=collection.history,
-                                                    view="element" )
+                        contents_dict = serializer(collection,
+                                                   security=self.app.security,
+                                                   parent=collection.history,
+                                                   view="element")
                     except Exception, exc:
-                        log.exception( "Error in history API at listing dataset collection: %s", exc )
+                        log.exception(
+                            "Error in history API at listing dataset collection: %s", exc)
                         # TODO: return some dict with the error
-                contents_dictionaries.append( contents_dict )
+                contents_dictionaries.append(contents_dict)
 
         except Exception, exc:
-            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
-            message = ( 'An error occurred getting the history data from the server. '
-                        'Please contact a Galaxy administrator if the problem persists.' )
-            history_dictionary[ 'error' ] = message
+            user_id = str(trans.user.id) if trans.user else '(anonymous)'
+            log.exception(
+                'Error bootstrapping history for user %s: %s', user_id, str(exc))
+            message = ('An error occurred getting the history data from the server. '
+                       'Please contact a Galaxy administrator if the problem persists.')
+            history_dictionary['error'] = message
 
-        return { 'history': history_dictionary,
-                 'contents': contents_dictionaries }
+        return {'history': history_dictionary,
+                'contents': contents_dictionaries}
 
 
-class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSerializerMixin ):
+class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSerializerMixin):
+
     """
     Interface/service object for serializing histories into dictionaries.
     """
     SINGLE_CHAR_ABBR = 'h'
 
-    def __init__( self, app ):
-        super( HistorySerializer, self ).__init__( app )
+    def __init__(self, app):
+        super(HistorySerializer, self).__init__(app)
 
-        self.history_manager = HistoryManager( app )
-        self.hda_manager = hdas.HDAManager( app )
-        self.hda_serializer = hdas.HDASerializer( app )
+        self.history_manager = HistoryManager(app)
+        self.hda_manager = hdas.HDAManager(app)
+        self.hda_serializer = hdas.HDASerializer(app)
 
         self.default_view = 'summary'
-        self.add_view( 'summary', [
+        self.add_view('summary', [
             'id',
             'model_class',
             'name',
@@ -192,7 +199,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'annotation',
             'tags',
         ])
-        self.add_view( 'detailed', [
+        self.add_view('detailed', [
             'contents_url',
             # 'hdas',
             'empty',
@@ -201,58 +208,61 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'create_time', 'update_time',
             'importable', 'slug', 'username_and_slug',
             'genome_build',
-            # TODO: remove the next three - instead getting the same info from the 'hdas' list
+            # TODO: remove the next three - instead getting the same info from
+            # the 'hdas' list
             'state',
             'state_details',
             'state_ids',
-            # in the Historys' case, each of these views includes the keys from the previous
-        ], include_keys_from='summary' )
+            # in the Historys' case, each of these views includes the keys from
+            # the previous
+        ], include_keys_from='summary')
 
     # assumes: outgoing to json.dumps and sanitized
-    def add_serializers( self ):
-        super( HistorySerializer, self ).add_serializers()
-        deletable.PurgableSerializerMixin.add_serializers( self )
+    def add_serializers(self):
+        super(HistorySerializer, self).add_serializers()
+        deletable.PurgableSerializerMixin.add_serializers(self)
 
         self.serializers.update({
-            'model_class'   : lambda *a, **c: 'History',
-            'id'            : self.serialize_id,
-            'create_time'   : self.serialize_date,
-            'update_time'   : self.serialize_date,
-            'size'          : lambda i, k, **c: int( i.get_disk_size() ),
-            'nice_size'     : lambda i, k, **c: i.get_disk_size( nice_size=True ),
-            'state'         : self.serialize_history_state,
+            'model_class': lambda *a, **c: 'History',
+            'id': self.serialize_id,
+            'create_time': self.serialize_date,
+            'update_time': self.serialize_date,
+            'size': lambda i, k, **c: int(i.get_disk_size()),
+            'nice_size': lambda i, k, **c: i.get_disk_size(nice_size=True),
+            'state': self.serialize_history_state,
 
-            'url'           : lambda i, k, **c: self.url_for( 'history', id=self.app.security.encode_id( i.id ) ),
-            'contents_url'  : lambda i, k, **c: self.url_for( 'history_contents',
-                history_id=self.app.security.encode_id( i.id ) ),
+            'url': lambda i, k, **c: self.url_for('history', id=self.app.security.encode_id(i.id)),
+            'contents_url': lambda i, k, **c: self.url_for('history_contents',
+                                                           history_id=self.app.security.encode_id(
+                                                               i.id)),
 
-            'empty'         : lambda i, k, **c: ( len( i.datasets ) + len( i.dataset_collections ) ) <= 0,
-            'count'         : lambda i, k, **c: len( i.datasets ),
-            'hdas'          : lambda i, k, **c: [ self.app.security.encode_id( hda.id ) for hda in i.datasets ],
-            'state_details' : self.serialize_state_counts,
-            'state_ids'     : self.serialize_state_ids,
-            'contents'      : self.serialize_contents
+            'empty': lambda i, k, **c: (len(i.datasets) + len(i.dataset_collections)) <= 0,
+            'count': lambda i, k, **c: len(i.datasets),
+            'hdas': lambda i, k, **c: [self.app.security.encode_id(hda.id) for hda in i.datasets],
+            'state_details': self.serialize_state_counts,
+            'state_ids': self.serialize_state_ids,
+            'contents': self.serialize_contents
         })
 
     # remove this
-    def serialize_state_ids( self, history, key, **context ):
+    def serialize_state_ids(self, history, key, **context):
         """
         Return a dictionary keyed to possible dataset states and valued with lists
         containing the ids of each HDA in that state.
         """
         state_ids = {}
         for state in model.Dataset.states.values():
-            state_ids[ state ] = []
+            state_ids[state] = []
 
         # TODO:?? collections and coll. states?
         for hda in history.datasets:
             # TODO: do not encode ids at this layer
-            encoded_id = self.app.security.encode_id( hda.id )
-            state_ids[ hda.state ].append( encoded_id )
+            encoded_id = self.app.security.encode_id(hda.id)
+            state_ids[hda.state].append(encoded_id)
         return state_ids
 
     # remove this
-    def serialize_state_counts( self, history, key, exclude_deleted=True, exclude_hidden=False, **context ):
+    def serialize_state_counts(self, history, key, exclude_deleted=True, exclude_hidden=False, **context):
         """
         Return a dictionary keyed to possible dataset states and valued with the number
         of datasets in this history that have those states.
@@ -260,7 +270,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         # TODO: the default flags above may not make a lot of sense (T,T?)
         state_counts = {}
         for state in model.Dataset.states.values():
-            state_counts[ state ] = 0
+            state_counts[state] = 0
 
         # TODO:?? collections and coll. states?
         for hda in history.datasets:
@@ -268,11 +278,11 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
                 continue
             if exclude_hidden and not hda.visible:
                 continue
-            state_counts[ hda.state ] = state_counts[ hda.state ] + 1
+            state_counts[hda.state] = state_counts[hda.state] + 1
         return state_counts
 
     # TODO: remove this (is state used/useful?)
-    def serialize_history_state( self, history, key, **context ):
+    def serialize_history_state(self, history, key, **context):
         """
         Returns the history state based on the states of the HDAs it contains.
         """
@@ -281,79 +291,84 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
         state = states.ERROR
         # TODO: history_state and state_counts are classically calc'd at the same time
         #   so this is rel. ineff. - if we keep this...
-        hda_state_counts = self.serialize_state_counts( history, 'counts', exclude_deleted=True, **context )
-        num_hdas = sum( hda_state_counts.values() )
+        hda_state_counts = self.serialize_state_counts(
+            history, 'counts', exclude_deleted=True, **context)
+        num_hdas = sum(hda_state_counts.values())
         if num_hdas == 0:
             state = states.NEW
 
         else:
-            if ( hda_state_counts[ states.RUNNING ] > 0
-              or hda_state_counts[ states.SETTING_METADATA ] > 0
-              or hda_state_counts[ states.UPLOAD ] > 0 ):
+            if (hda_state_counts[states.RUNNING] > 0
+               or hda_state_counts[states.SETTING_METADATA] > 0
+               or hda_state_counts[states.UPLOAD] > 0):
                 state = states.RUNNING
-            # TODO: this method may be more useful if we *also* polled the histories jobs here too
-            elif hda_state_counts[ states.QUEUED ] > 0:
+            # TODO: this method may be more useful if we *also* polled the
+            # histories jobs here too
+            elif hda_state_counts[states.QUEUED] > 0:
                 state = states.QUEUED
-            elif ( hda_state_counts[ states.ERROR ] > 0
-                    or hda_state_counts[ states.FAILED_METADATA ] > 0 ):
+            elif (hda_state_counts[states.ERROR] > 0
+                    or hda_state_counts[states.FAILED_METADATA] > 0):
                 state = states.ERROR
-            elif hda_state_counts[ states.OK ] == num_hdas:
+            elif hda_state_counts[states.OK] == num_hdas:
                 state = states.OK
 
         return state
 
-    def serialize_contents( self, history, *args, **context ):
+    def serialize_contents(self, history, *args, **context):
         contents_dictionaries = []
-        for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
+        for content in history.contents_iter(types=['dataset', 'dataset_collection']):
             contents_dict = {}
-            if isinstance( content, model.HistoryDatasetAssociation ):
-                contents_dict = self.hda_serializer.serialize_to_view( content, view='detailed', **context )
+            if isinstance(content, model.HistoryDatasetAssociation):
+                contents_dict = self.hda_serializer.serialize_to_view(
+                    content, view='detailed', **context)
             # elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
             #     contents_dict = self._serialize_collection( trans, content )
-            contents_dictionaries.append( contents_dict )
+            contents_dictionaries.append(contents_dict)
         return contents_dictionaries
 
     # TODO: remove trans
-    def _serialize_collection( self, trans, collection ):
+    def _serialize_collection(self, trans, collection):
         service = self.app.dataset_collections_service
         dataset_collection_instance = service.get_dataset_collection_instance(
             trans=trans,
             instance_type='history',
-            id=self.app.security.encode_id( collection.id ),
+            id=self.app.security.encode_id(collection.id),
         )
-        return collections_util.dictify_dataset_collection_instance( dataset_collection_instance,
-            security=self.app.security, parent=dataset_collection_instance.history, view="element" )
+        return collections_util.dictify_dataset_collection_instance(
+            dataset_collection_instance,
+            security=self.app.security, parent=dataset_collection_instance.history, view="element")
 
 
-class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.PurgableDeserializerMixin ):
+class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.PurgableDeserializerMixin):
+
     """
     Interface/service object for validating and deserializing dictionaries into histories.
     """
     model_manager_class = HistoryManager
 
-    def __init__( self, app ):
-        super( HistoryDeserializer, self ).__init__( app )
+    def __init__(self, app):
+        super(HistoryDeserializer, self).__init__(app)
         self.history_manager = self.manager
 
-    def add_deserializers( self ):
-        super( HistoryDeserializer, self ).add_deserializers()
-        deletable.PurgableDeserializerMixin.add_deserializers( self )
+    def add_deserializers(self):
+        super(HistoryDeserializer, self).add_deserializers()
+        deletable.PurgableDeserializerMixin.add_deserializers(self)
 
         self.deserializers.update({
-            'name'          : self.deserialize_basestring,
-            'genome_build'  : self.deserialize_genome_build,
+            'name': self.deserialize_basestring,
+            'genome_build': self.deserialize_genome_build,
         })
 
 
-class HistoryFilters( sharable.SharableModelFilters,
-                      deletable.PurgableFiltersMixin ):
+class HistoryFilters(sharable.SharableModelFilters,
+                     deletable.PurgableFiltersMixin):
     model_class = model.History
 
-    def _add_parsers( self ):
-        super( HistoryFilters, self )._add_parsers()
-        deletable.PurgableFiltersMixin._add_parsers( self )
+    def _add_parsers(self):
+        super(HistoryFilters, self)._add_parsers()
+        deletable.PurgableFiltersMixin._add_parsers(self)
         self.orm_filter_parsers.update({
             # history specific
-            'name'          : { 'op': ( 'eq', 'contains', 'like' ) },
-            'genome_build'  : { 'op': ( 'eq', 'contains', 'like' ) },
+            'name': {'op': ('eq', 'contains', 'like')},
+            'genome_build': {'op': ('eq', 'contains', 'like')},
         })
