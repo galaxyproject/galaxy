@@ -19,9 +19,7 @@ lib/galaxy/tags/
 lib/galaxy/tools/
 lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules,xml_macros}.py
 lib/galaxy/visualization/
-lib/galaxy/web/{proxy,security}
-lib/galaxy/web/base/{__init__,interactive_environments}.py
-lib/galaxy/web/formatting.py
+lib/galaxy/web/
 lib/galaxy/webapps/__init__.py
 lib/galaxy/webapps/galaxy/__init__.py
 lib/galaxy/webapps/galaxy/api/{__init__,authenticate,dataset_collections,datatypes,folder_contents,folders,lda_datasets,job_files,libraries,library_contents,provenance,remote_files,search,users}.py
