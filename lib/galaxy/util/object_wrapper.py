@@ -160,7 +160,6 @@ class SafeStringWrapper( object ):
     def __new__( cls, *arg, **kwd ):
         # We need to define a __new__ since, we are subclassing from e.g. immutable str, which internally sets data
         # that will be used when other + this (this + other is handled by __add__)
-        safe_string_wrapper_function = kwd.get( 'safe_string_wrapper_function', None) or wrap_with_safe_string
         try:
             return super( SafeStringWrapper, cls ).__new__( cls, sanitize_lists_to_string( arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP ) )
         except Exception, e:

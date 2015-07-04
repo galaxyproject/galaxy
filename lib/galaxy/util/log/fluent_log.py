@@ -2,7 +2,6 @@
 Provides a `TraceLogger` implementation that logs to a fluentd collector
 """
 
-import time
 import threading
 
 try:

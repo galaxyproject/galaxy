@@ -92,7 +92,7 @@ class Heartbeat( threading.Thread ):
         sleeper function (at least in python 2.5)
         """
         _filename = last_stack_frame[0]
-        _line = last_stack_frame[1]
+        # _line = last_stack_frame[1]
         _funcname = last_stack_frame[2]
         _text = last_stack_frame[3]
         # Ugly hack to tell if a thread is supposedly sleeping or not
