@@ -250,9 +250,12 @@ var FolderToolbarView = Backbone.View.extend({
     // we can save last used history to pre-select it next time
     this.options.last_used_history_id = history_id;
     var dataset_ids = [];
+    var folder_ids = [];
     $('#folder_table').find(':checked').each(function(){
-        if (this.parentElement.parentElement.id !== '') {
+        if (this.parentElement.parentElement.id !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
             dataset_ids.push(this.parentElement.parentElement.id);
+        } else if (this.parentElement.parentElement.id !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
+            folder_ids.push(this.parentElement.parentElement.id);
         }
     });
     // prepare the dataset objects to be imported
@@ -265,6 +268,18 @@ var FolderToolbarView = Backbone.View.extend({
         historyItem.source = 'library';
         datasets_to_import.push(historyItem);
     }
+
+    // prepare the folder objects to be imported
+    var folders_to_import = [];
+    for (var i = folder_ids.length - 1; i >= 0; i--) {
+        var library_folder_id = folder_ids[i];
+        var historyItem = new mod_library_model.HistoryItem();
+        historyItem.url = historyItem.urlRoot + history_id + '/contents';
+        historyItem.content = library_folder_id;
+        historyItem.source = 'library_folder';
+        datasets_to_import.push(historyItem);
+    }
+
     this.initChainCallControl( { length: datasets_to_import.length, action: 'to_history', history_name: history_name } );
     // set the used history as current so user will see the last one 
     // that he imported into in the history panel on the 'analysis' page
