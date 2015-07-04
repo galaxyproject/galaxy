@@ -8,6 +8,7 @@ lib/galaxy/datatypes/converters/{bedgraph_to_array_tree_converter,bgzip,wiggle_t
 lib/galaxy/eggs/
 lib/galaxy/exceptions/
 lib/galaxy/external_services/
+lib/galaxy/forms/
 lib/galaxy/jobs/
 lib/galaxy/managers/
 lib/galaxy/model/orm/{__init__,scripts,engine_factory,now,scripts}.py
