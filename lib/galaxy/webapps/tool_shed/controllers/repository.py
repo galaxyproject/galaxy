@@ -5,7 +5,6 @@ import tempfile
 from time import gmtime
 from time import strftime
 from datetime import date
-from datetime import datetime
 
 from galaxy import util
 from galaxy import web
@@ -452,7 +451,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             default = 'Repositories Owned by %s' % str( user.username )
         else:
             trailing_string = ''
-            default='Repositories'
+            default = 'Repositories'
         title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
                                                                          trailing_string=trailing_string,
                                                                          default=default )
@@ -880,9 +879,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                          operation='preview_tools_in_changeset',
                          repository_id=repository_id )
         self.valid_repository_grid.operations = [ grids.GridOperation( "Preview and install",
-                                                                        url_args=url_args,
-                                                                        allow_multiple=False,
-                                                                        async_compatible=False ) ]
+                                                                    url_args=url_args,
+                                                                    allow_multiple=False,
+                                                                    async_compatible=False ) ]
         title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
                                                                          trailing_string='',
                                                                          default='Valid Repositories' )
@@ -893,7 +892,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def check_for_updates( self, trans, **kwd ):
         """Handle a request from a local Galaxy instance."""
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         # If the request originated with the UpdateRepositoryManager, it will not include a galaxy_url.
         galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
         name = kwd.get( 'name', None )
@@ -946,7 +944,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 update_to_changeset_hash = None
                 for changeset in repo.changelog:
                     changeset_hash = str( repo.changectx( changeset ) )
-                    ctx = hg_util.get_changectx_for_changeset( repo, changeset_hash )
+                    hg_util.get_changectx_for_changeset( repo, changeset_hash )
                     if update_to_changeset_hash:
                         if changeset_hash == repository.tip( trans.app ):
                             update_to_ctx = hg_util.get_changectx_for_changeset( repo, changeset_hash )
@@ -1160,7 +1158,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     file_name = os.path.basename( relative_path_to_image_file )
                     try:
                         extension = file_name.split( '.' )[ -1 ]
-                    except Exception, e:
+                    except Exception:
                         extension = None
                     if extension:
                         mimetype = trans.app.datatypes_registry.get_mimetype_by_extension( extension )
@@ -1243,7 +1241,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository = suc.get_repository_in_tool_shed( trans.app, repository_id )
         if kwd.get( 'export_repository_button', False ):
             # We'll currently support only gzip-compressed tar archives.
-            file_type = 'gz'
             export_repository_dependencies = CheckboxField.is_checked( export_repository_dependencies )
             tool_shed_url = web.url_for( '/', qualified=True )
             erm = capsule_manager.ExportRepositoryManager( app=trans.app,
@@ -1319,7 +1316,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def find_tools( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
-        galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
+        common_util.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
             item_id = kwd.get( 'id', '' )
             if item_id:
@@ -1410,7 +1407,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
     def find_workflows( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
-        galaxy_url = common_util.handle_galaxy_url( trans, **kwd )
+        common_util.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
             item_id = kwd.get( 'id', '' )
             if item_id:
@@ -1514,7 +1511,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                                               includes_tool_dependencies=False,
                                               includes_workflows=False )
             if repository_metadata:
-                includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
                 metadata = repository_metadata.metadata
                 if metadata:
                     if 'data_manager' in metadata:
@@ -1583,7 +1579,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     has_repository_dependencies = False
                     has_repository_dependencies_only_if_compiling_contained_td = False
                     changeset_hash = str( repo.changectx( changeset ) )
-                    ctx = hg_util.get_changectx_for_changeset( repo, changeset_hash )
+                    hg_util.get_changectx_for_changeset( repo, changeset_hash )
                     if update_to_changeset_hash:
                         update_to_repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                                                            trans.security.encode_id( repository.id ),
@@ -1659,12 +1655,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # Return only metadata revisions where tools_functionally_correct is set to True.
             metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
                                     trans.model.RepositoryMetadata.table.c.tools_functionally_correct == True,
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )  # noqa
         elif status == 'failed':
             # Return only metadata revisions where tools_functionally_correct is set to False.
             metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
                                     trans.model.RepositoryMetadata.table.c.tools_functionally_correct == False,
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )  # noqa
         else:
             # Return all metadata entries for this user's repositories.
             metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,

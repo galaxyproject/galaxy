@@ -1,9 +1,5 @@
 """Tool Shed Security"""
-import ConfigParser
 import logging
-import os
-from datetime import datetime
-from datetime import timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.util import listify
 from galaxy.model.orm import and_
@@ -244,7 +240,7 @@ class CommunityRBACAgent( RBACAgent ):
         iuc_group = self.sa_session.query( self.model.Group ) \
                                    .filter( and_( self.model.Group.table.c.name == 'Intergalactic Utilities Commission',
                                                   self.model.Group.table.c.deleted == False ) ) \
-                                   .first()
+                                   .first()  # noqa
         if iuc_group is not None:
             for uga in iuc_group.users:
                if uga.user.id == user.id:
