@@ -1,13 +1,12 @@
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.interfaces import *
-
 import logging
 log = logging.getLogger( __name__ )
 
+from sqlalchemy import * # noqa
+from sqlalchemy.orm import * # noqa
+from sqlalchemy.interfaces import * # noqa
 
 dialect_to_egg = {
     "sqlite": "pysqlite>=2",

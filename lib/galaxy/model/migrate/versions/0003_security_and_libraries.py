@@ -1,13 +1,14 @@
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
+# from sqlalchemy import *
+# from sqlalchemy.orm import *
+# from sqlalchemy.exc import *
+# from migrate import *
+# from migrate.changeset import *
 
 import datetime
 now = datetime.datetime.utcnow
 
-import sys, logging
+import sys
+import logging
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -17,7 +18,24 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import Boolean
+from galaxy.model.custom_types import Column
+from galaxy.model.custom_types import DateTime
+from galaxy.model.custom_types import db
+from galaxy.model.custom_types import ForeignKey
+from galaxy.model.custom_types import ForeignKeyConstraint
+from galaxy.model.custom_types import Index
+from galaxy.model.custom_types import Integer
+from galaxy.model.custom_types import JSONType
+from galaxy.model.custom_types import MetaData
+from galaxy.model.custom_types import MetadataType
+from galaxy.model.custom_types import NoSuchTableError
+from galaxy.model.custom_types import scoped_session
+from galaxy.model.custom_types import sessionmaker
+from galaxy.model.custom_types import String
+from galaxy.model.custom_types import Table
+from galaxy.model.custom_types import TEXT
+from galaxy.model.custom_types import TrimmedString
 
 metadata = MetaData()
 
@@ -131,13 +149,13 @@ DefaultHistoryPermissions_table = Table( "default_history_permissions", metadata
 
 LibraryDataset_table = Table( "library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),#current version of dataset, if null, there is not a current version selected
+    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),  # current version of dataset, if null, there is not a current version selected
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
     Column( "order_id", Integer ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TrimmedString( 255 ), key="_name" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
-    Column( "info", TrimmedString( 255 ),  key="_info" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
+    Column( "name", TrimmedString( 255 ), key="_name" ),  # when not None/null this will supercede display in library (but not when imported into user's history?)
+    Column( "info", TrimmedString( 255 ), key="_info" ),  # when not None/null this will supercede display in library (but not when imported into user's history?)
     Column( "deleted", Boolean, index=True, default=False ) )
 
 LibraryDatasetDatasetAssociation_table = Table( "library_dataset_dataset_association", metadata,
@@ -173,7 +191,7 @@ Library_table = Table( "library", metadata,
 
 LibraryFolder_table = Table( "library_folder", metadata,
     Column( "id", Integer, primary_key=True ),
-    Column( "parent_id", Integer, ForeignKey( "library_folder.id" ), nullable = True, index=True ),
+    Column( "parent_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "name", TEXT ),
@@ -304,6 +322,7 @@ JobExternalOutputMetadata_table = Table( "job_external_output_metadata", metadat
     Column( "job_runner_external_pid", String( 255 ) ) )
 Index( "ix_jeom_library_dataset_dataset_association_id", JobExternalOutputMetadata_table.c.library_dataset_dataset_association_id )
 
+
 def upgrade(migrate_engine):
     db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
     metadata.bind = migrate_engine
@@ -319,20 +338,20 @@ def upgrade(migrate_engine):
             raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
     def localtimestamp():
-       if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
-           return "LOCALTIMESTAMP"
-       elif migrate_engine.name == 'sqlite':
-           return "current_date || ' ' || current_time"
-       else:
-           raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+        if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
+            return "LOCALTIMESTAMP"
+        elif migrate_engine.name == 'sqlite':
+            return "current_date || ' ' || current_time"
+        else:
+            raise Exception( 'Unable to convert data for unknown database type: %s' % db )
 
     def boolean_false():
-       if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
-           return False
-       elif migrate_engine.name == 'sqlite':
-           return 0
-       else:
-           raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+        if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
+            return False
+        elif migrate_engine.name == 'sqlite':
+            return 0
+        else:
+            raise Exception( 'Unable to convert data for unknown database type: %s' % db )
 
     # Add 2 new columns to the galaxy_user table
     try:
@@ -441,7 +460,7 @@ def upgrade(migrate_engine):
         LibraryDatasetDatasetAssociation_table = None
         log.debug( "Failed loading table library_dataset_dataset_association" )
     if migrate_engine.name != 'sqlite':
-        #Sqlite can't alter table add foreign key.
+        # Sqlite can't alter table add foreign key.
         if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
             try:
                 cons = ForeignKeyConstraint( [MetadataFile_table.c.lda_id],
@@ -533,11 +552,13 @@ def upgrade(migrate_engine):
             cmd = cmd % ( nextval('dataset_permissions'), localtimestamp(), localtimestamp(), boolean_false() )
             db_session.execute( cmd )
 
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     if migrate_engine.name == 'postgres':
         # http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
         from sqlalchemy.databases import postgres
+
         class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
             def visit_table(self, table):
                 for column in table.columns:

@@ -9,9 +9,13 @@ lib/galaxy/exceptions/
 lib/galaxy/external_services/
 lib/galaxy/jobs/
 lib/galaxy/managers/
-lib/galaxy/model/orm/{engine_factory,now}.py
+lib/galaxy/model/orm/{__init__,scripts,engine_factory,now,scripts}.py
 lib/galaxy/model/{base,custom_types,search,util}.py
-lib/galaxy/model/tool_shed_install/__init__.py
+lib/galaxy/model/migrate/check.py
+lib/galaxy/model/migrate/versions/{0001_initial_tables,0002_metadata_file_table,
+0003_security_and_libraries,0004_indexes_and_defaults,0005_cleanup_datasets_fix}
+lib/galaxy/model/tool_shed_install/{__init__,mapping}.py
+lib/galaxy/model/tool_shed_install/migrate/check.py
 lib/galaxy/objectstore/
 lib/galaxy/openid/
 lib/galaxy/quota/

@@ -100,7 +100,7 @@ mapper( install_model.ToolVersion, install_model.ToolVersion.table,
         child_tool_association=relation( install_model.ToolVersionAssociation,
             primaryjoin=( install_model.ToolVersion.table.c.id == install_model.ToolVersionAssociation.table.c.parent_id ) )
     )
- )
+)
 
 mapper( install_model.ToolVersionAssociation, install_model.ToolVersionAssociation.table )
 
@@ -117,5 +117,5 @@ def init( url, engine_options={}, create_tables=False ):
         metadata.create_all()
         # metadata.engine.commit()
     result.create_tables = create_tables
-    #load local galaxy security policy
+    # load local galaxy security policy
     return result

@@ -1,11 +1,18 @@
-from sqlalchemy import *
-from migrate import *
+# from sqlalchemy import *
+# from migrate import *
 
 import datetime
 now = datetime.datetime.utcnow
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import Boolean
+from galaxy.model.custom_types import Column
+from galaxy.model.custom_types import DateTime
+from galaxy.model.custom_types import ForeignKey
+from galaxy.model.custom_types import Integer
+from galaxy.model.custom_types import MetaData
+from galaxy.model.custom_types import Table
+from galaxy.model.custom_types import TEXT
 
 import logging
 log = logging.getLogger( __name__ )
@@ -22,10 +29,12 @@ MetadataFile_table = Table( "metadata_file", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     MetadataFile_table.create()
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
