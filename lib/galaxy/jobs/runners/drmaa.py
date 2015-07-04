@@ -150,7 +150,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             fh = file( ajs.job_file, "w" )
             fh.write( script )
             fh.close()
-            os.chmod( ajs.job_file, 0755 )
+            os.chmod( ajs.job_file, 0o755 )
         except:
             job_wrapper.fail( "failure preparing job script", exception=True )
             log.exception( "(%s) failure writing job script" % galaxy_id_tag )
@@ -178,7 +178,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 try:
                     external_job_id = self.ds.runJob(jt)
                     break
-                except ( drmaa.InternalException, drmaa.DeniedByDrmException ), e:
+                except ( drmaa.InternalException, drmaa.DeniedByDrmException ) as e:
                     trynum += 1
                     log.warning( '(%s) drmaa.Session.runJob() failed, will retry: %s', galaxy_id_tag, e )
                     fail_msg = "Unable to run this job due to a cluster error, please retry it later"
@@ -256,7 +256,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             try:
                 assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
                 state = self.ds.jobStatus( external_job_id )
-            except ( drmaa.InternalException, drmaa.InvalidJobException ), e:
+            except ( drmaa.InternalException, drmaa.InvalidJobException ) as e:
                 if isinstance( e , drmaa.InvalidJobException ):
                     ecn = "InvalidJobException".lower()
                 else:
@@ -278,11 +278,11 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 else:
                     raise Exception( "%s is set to an invalid value (%s), this should not be possible. See galaxy.jobs.drmaa.__init__()", state_param, self.runner_params[ state_param ] )
                 continue
-            except drmaa.DrmCommunicationException, e:
+            except drmaa.DrmCommunicationException as e:
                 log.warning( "(%s/%s) unable to communicate with DRM: %s", galaxy_id_tag, external_job_id, e )
                 new_watched.append( ajs )
                 continue
-            except Exception, e:
+            except Exception as e:
                 # so we don't kill the monitor thread
                 log.exception( "(%s/%s) Unable to check job status: %s" % ( galaxy_id_tag, external_job_id, str( e ) ) )
                 log.warning( "(%s/%s) job will now be errored" % ( galaxy_id_tag, external_job_id ) )
@@ -318,7 +318,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), ext_id ) )
         except drmaa.InvalidJobException:
             log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.get_id(), ext_id ) )
-        except Exception, e:
+        except Exception as e:
             log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.get_id(), ext_id, e ) )
 
     def recover( self, job, job_wrapper ):

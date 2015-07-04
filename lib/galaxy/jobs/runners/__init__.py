@@ -82,7 +82,7 @@ class BaseJobRunner( object ):
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)
         """
-        while 1:
+        while True:
             ( method, arg ) = self.work_queue.get()
             if method is STOP_SIGNAL:
                 return
@@ -454,7 +454,7 @@ class AsynchronousJobState( JobState ):
         for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
             try:
                 os.unlink( file )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "(%s/%s) Unable to cleanup %s: %s" % ( self.job_wrapper.get_id_tag(), self.job_id, file, str( e ) ) )
 
     def register_cleanup_file_attribute( self, attribute ):
@@ -493,10 +493,10 @@ class AsynchronousJobRunner( BaseJobRunner ):
         Watches jobs currently in the monitor queue and deals with state
         changes (queued to running) and job completion.
         """
-        while 1:
+        while True:
             # Take any new watched jobs and put them on the monitor list
             try:
-                while 1:
+                while True:
                     async_job_state = self.monitor_queue.get_nowait()
                     if async_job_state is STOP_SIGNAL:
                         # TODO: This is where any cleanup would occur
@@ -560,7 +560,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
                 stdout = shrink_stream_by_size( file( job_state.output_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
                 stderr = shrink_stream_by_size( file( job_state.error_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
                 which_try = (self.app.config.retry_job_output_collection + 1)
-            except Exception, e:
+            except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
                     stderr = 'Job output not returned from cluster'

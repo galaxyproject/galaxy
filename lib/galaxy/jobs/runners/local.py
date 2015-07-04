@@ -69,7 +69,7 @@ class LocalJobRunner( BaseJobRunner ):
         }
         job_file_contents = self.get_job_file( job_wrapper, **job_script_props )
         open( job_file, 'w' ).write( job_file_contents )
-        os.chmod( job_file, 0755 )
+        os.chmod( job_file, 0o755 )
         return job_file, exit_code_path
 
     def queue_job( self, job_wrapper ):
@@ -150,7 +150,7 @@ class LocalJobRunner( BaseJobRunner ):
         for sig in [ 15, 9 ]:
             try:
                 os.killpg( pid, sig )
-            except OSError, e:
+            except OSError as e:
                 log.warning( "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job.get_id(), errno.errorcode[e.errno], sig, pid, e.strerror ) )
                 return  # give up
             sleep( 2 )
@@ -168,7 +168,7 @@ class LocalJobRunner( BaseJobRunner ):
         try:
             os.kill( pid, 0 )
             return True
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 log.debug( "_check_pid(): PID %d is dead" % pid )
             else:

@@ -392,7 +392,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         try:
             os.kill( pid, 0 )
             return True
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 log.debug( "check_pid(): PID %d is dead" % pid )
             else:
@@ -414,7 +414,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             for sig in [ 15, 9 ]:
                 try:
                     os.killpg( pid, sig )
-                except OSError, e:
+                except OSError as e:
                     log.warning( "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job.id, errno.errorcode[e.errno], sig, pid, e.strerror ) )
                     return  # give up
                 sleep( 2 )

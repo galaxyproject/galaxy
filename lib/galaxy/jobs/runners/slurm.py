@@ -80,7 +80,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     ajs.stop_job = False
                     self.work_queue.put( ( self.fail_job, ajs ) )
                     return
-            except Exception, e:
+            except Exception as e:
                 log.exception( '(%s/%s) Unable to inspect failed slurm job using scontrol, job will be unconditionally failed: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, e )
                 super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
         # by default, finish as if the job was successful.

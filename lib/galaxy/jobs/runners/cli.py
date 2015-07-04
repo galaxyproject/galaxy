@@ -198,7 +198,7 @@ class ShellJobRunner( AsynchronousJobRunner ):
             cmd_out = shell.execute(job_interface.delete( job.job_runner_external_id ))
             assert cmd_out.returncode == 0, cmd_out.stderr
             log.debug( "(%s/%s) Terminated at user's request" % ( job.id, job.job_runner_external_id ) )
-        except Exception, e:
+        except Exception as e:
             log.debug( "(%s/%s) User killed running job, but error encountered during termination: %s" % ( job.id, job.job_runner_external_id, e ) )
 
     def recover( self, job, job_wrapper ):

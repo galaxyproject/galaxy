@@ -93,7 +93,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             fh = file( executable, "w" )
             fh.write( script )
             fh.close()
-            os.chmod( executable, 0750 )
+            os.chmod( executable, 0o750 )
         except:
             job_wrapper.fail( "failure preparing job script", exception=True )
             log.exception( "(%s) failure preparing job script" % galaxy_id_tag )

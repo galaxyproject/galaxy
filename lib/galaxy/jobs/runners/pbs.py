@@ -28,7 +28,7 @@ Additional errors may follow:
 try:
     pkg_resources.require( "pbs_python" )
     pbs = __import__( "pbs" )
-except Exception, e:
+except Exception as e:
     raise Exception( egg_message % str( e ) )
 
 log = logging.getLogger( __name__ )
@@ -193,7 +193,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
             else:
                 try:
                     rval.append( dict( name=getattr( pbs, 'ATTR_' + arg ), value=value ) )
-                except AttributeError, e:
+                except AttributeError as e:
                     raise Exception("Invalid parameter '%s': %s" % (arg, e))
         return rval
 
@@ -543,7 +543,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         for file in files:
             try:
                 os.unlink( file )
-            except Exception, e:
+            except Exception as e:
                 log.warning( "Unable to cleanup: %s" % str( e ) )
 
     def get_stage_in_out( self, fnames, symlink=False ):

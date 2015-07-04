@@ -12,9 +12,9 @@ MESSAGES = dict(
 
 def failure(app, job_runner, job_state):
     runner_state = getattr(job_state, 'runner_state', None)
-    if (not runner_state
-        or runner_state not in (job_state.runner_states.WALLTIME_REACHED,
-                                job_state.runner_states.MEMORY_LIMIT_REACHED)):
+    if (not runner_state or
+        runner_state not in (job_state.runner_states.WALLTIME_REACHED,
+                             job_state.runner_states.MEMORY_LIMIT_REACHED)):
         # not set or not a handleable runner state
         return
     # Intercept jobs that hit the walltime and have a walltime or

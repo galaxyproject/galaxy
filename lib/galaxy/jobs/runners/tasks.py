@@ -211,7 +211,7 @@ class TaskedJobRunner( BaseJobRunner ):
         try:
             os.kill( pid, 0 )
             return True
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 log.debug( "_check_pid(): PID %d is dead" % pid )
             else:
@@ -233,7 +233,7 @@ class TaskedJobRunner( BaseJobRunner ):
         for sig in [ 15, 9 ]:
             try:
                 os.killpg( pid, sig )
-            except OSError, e:
+            except OSError as e:
                 # This warning could be bogus; many tasks are stopped with
                 # SIGTERM (signal 15), but ymmv depending on the platform.
                 log.warning( "_stop_pid(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job_id, errno.errorcode[e.errno], sig, pid, e.strerror ) )
