@@ -31,7 +31,7 @@ tool_schema = Schema(
     
 class ToolSearch( object ):
 
-    def search( self, trans, search_term, page, boosts ):
+    def search( self, trans, search_term, page, page_size, boosts ):
         """
         Perform the search on the given search_term
 
@@ -63,7 +63,7 @@ class ToolSearch( object ):
                 user_query = parser.parse( '*' + search_term + '*' )
 
                 try:
-                    hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
+                    hits = searcher.search_page( user_query, page, pagelen = page_size, terms = True )
                 except ValueError:
                     raise ObjectNotFound( 'The requested page does not exist.' )
 
@@ -72,6 +72,8 @@ class ToolSearch( object ):
                 log.debug( 'scored hits: ' + str( hits.scored_length() ) )
                 results = {}
                 results[ 'total_results'] = str( len( hits ) )
+                results[ 'page'] = str( page )
+                results[ 'page_size'] = str( page_size )
                 results[ 'hits' ] = []
                 for hit in hits:
                     hit_dict = {}

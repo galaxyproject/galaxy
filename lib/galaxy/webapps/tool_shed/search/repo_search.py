@@ -37,8 +37,6 @@ class RepoWeighting( scoring.BM25F ):
     use_final = True
 
     def final( self, searcher, docnum, score ):
-        # log.debug('score before: ' +  str(score) )
-        
         # Arbitrary for now
         reasonable_hits = 100.0
 
@@ -51,21 +49,18 @@ class RepoWeighting( scoring.BM25F ):
         if times_downloaded == 0:
             times_downloaded = 1
         popularity_modifier = ( times_downloaded / reasonable_hits )
-        # log.debug('popularity_modifier: ' +  str(popularity_modifier) )
 
         cert_modifier = 2 if searcher.stored_fields( docnum )[ "approved" ] == 'yes' else 1
-        # log.debug('cert_modifier: ' +  str(cert_modifier) )
 
         # Adjust the computed score for this document by the popularity
         # and by the certification level.
         final_score = score * popularity_modifier * cert_modifier
-        # log.debug('score after: ' +  str( final_score ) )
         return final_score
 
 
 class RepoSearch( object ):
 
-    def search( self, trans, search_term, page, boosts ):
+    def search( self, trans, search_term, page, page_size, boosts ):
         """
         Perform the search on the given search_term
 
@@ -103,7 +98,7 @@ class RepoSearch( object ):
                 user_query = parser.parse( '*' + search_term + '*' )
 
                 try:
-                    hits = searcher.search_page( user_query, page, pagelen = 10, terms = True )
+                    hits = searcher.search_page( user_query, page, pagelen = page_size, terms = True )
                 except ValueError:
                     raise ObjectNotFound( 'The requested page does not exist.' )
 
@@ -112,6 +107,8 @@ class RepoSearch( object ):
                 log.debug( 'scored hits: ' + str( hits.scored_length() ) )
                 results = {}
                 results[ 'total_results'] = str( len( hits ) )
+                results[ 'page'] = str( page )
+                results[ 'page_size'] = str( page_size )
                 results[ 'hits' ] = []
                 for hit in hits:
                     hit_dict = {}
