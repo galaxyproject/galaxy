@@ -544,8 +544,8 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
         """
         comparison_class = self.app.datatypes_registry.get_datatype_class_by_name(
             class_str)
-        return (comparison_class
-                and dataset_assoc.datatype.__class__ == comparison_class)
+        return (comparison_class and
+            dataset_assoc.datatype.__class__ == comparison_class)
 
     def isinstance_datatype(self, dataset_assoc, class_strs):
         """
@@ -558,5 +558,5 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
             datatype_class = parse_datatype_fn(class_str)
             if datatype_class:
                 comparison_classes.append(datatype_class)
-        return (comparison_classes
-                and isinstance(dataset_assoc.datatype, comparison_classes))
+        return (comparison_classes and
+            isinstance(dataset_assoc.datatype, comparison_classes))
