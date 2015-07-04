@@ -330,6 +330,9 @@ class RepositoriesController( BaseAPIController ):
         :param page:     (optional)requested page of the search
         :type  page:     int
 
+        :param page_size:     (optional)requested page_size of the search
+        :type  page_size:     int
+
         :param jsonp:    (optional)flag whether to use jsonp format response, defaults to False
         :type  jsonp:    bool
 
@@ -357,13 +360,15 @@ class RepositoriesController( BaseAPIController ):
         q = kwd.get( 'q', '' )
         if q:
             page = kwd.get( 'page', 1 )
+            page_size = kwd.get( 'page_size', 10 )
             try:
                 page = int( page )
+                page_size = int( page_size )
             except ValueError:
-                raise RequestParameterInvalidException( 'The "page" requested has to be an integer.' )
+                raise RequestParameterInvalidException( 'The "page" and "page_size" parameters have to be integers.' )
             return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )
             callback = kwd.get( 'callback', 'callback' )  
-            search_results = self._search( trans, q, page )
+            search_results = self._search( trans, q, page, page_size )
             if return_jsonp:
                 response = str( '%s(%s);' % ( callback, json.dumps( search_results ) ) )
             else:
@@ -387,7 +392,7 @@ class RepositoriesController( BaseAPIController ):
             repository_dicts.append( repository_dict )
         return json.dumps( repository_dicts )
 
-    def _search( self, trans, q, page=1 ):
+    def _search( self, trans, q, page=1, page_size=10 ):
         """
         Perform the search over TS repositories.
         Note that search works over the Whoosh index which you have
@@ -422,6 +427,7 @@ class RepositoriesController( BaseAPIController ):
         results = repo_search.search( trans,
                                       search_term,
                                       page,
+                                      page_size,
                                       boosts )
         results[ 'hostname' ] = web.url_for( '/', qualified = True )
         return results
