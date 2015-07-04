@@ -12,22 +12,22 @@ ross lazarus for rgenetics
 august 20 2007
 """
 
-import logging, os, sys, time, tempfile, shutil, string, glob
+import os
+import sys
+import logging
 import data
-from galaxy import util
 from cgi import escape
-import urllib, binascii
+import urllib
 from galaxy.web import url_for
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.data import Text
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.images import Html
-from galaxy.datatypes.interval import Interval
 from galaxy.util.hash_util import *
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
+
 
 class GenomeGraphs( Tabular ):
     """
@@ -44,13 +44,12 @@ class GenomeGraphs( Tabular ):
         Initialize gg datatype, by adding UCSC display apps
         """
         Tabular.__init__(self, **kwd)
-        self.add_display_app ( 'ucsc', 'Genome Graph', 'as_ucsc_display_file', 'ucsc_links' )
+        self.add_display_app( 'ucsc', 'Genome Graph', 'as_ucsc_display_file', 'ucsc_links' )
 
-
-    def set_meta(self,dataset,**kwd):
+    def set_meta(self, dataset, **kwd):
         Tabular.set_meta( self, dataset, **kwd)
         dataset.metadata.markerCol = 1
-        header = file(dataset.file_name,'r').readlines()[0].strip().split('\t')
+        header = file(dataset.file_name, 'r').readlines()[0].strip().split('\t')
         dataset.metadata.columns = len(header)
         t = ['numeric' for x in header]
         t[0] = 'string'
@@ -810,4 +809,3 @@ class MAlist( RexpBase ):
 if __name__ == '__main__':
     import doctest, sys
     doctest.testmod(sys.modules[__name__])
-

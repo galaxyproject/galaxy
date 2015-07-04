@@ -3,33 +3,28 @@ DataProvider related decorators.
 """
 
 # I'd like to decorate the factory methods that give data_providers by the name they can be accessed from. e.g.:
-#@provides( 'id_seq' ) # where 'id_seq' is some 'data_format' string/alias
-#def get_id_seq_provider( dataset, **settings ):
+# @provides( 'id_seq' ) # where 'id_seq' is some 'data_format' string/alias
+# def get_id_seq_provider( dataset, **settings ):
 
 # then in some central dispatch (maybe data.Data), have it look up the proper method by the data_format string
 
 # also it would be good to have this decorator maintain a list of available providers (for a datatype)
 
 # i don't particularly want to cut up method names ( get_([\w_]*)_provider )
-#!/usr/bin/env python
-
 # adapted from: http://stackoverflow.com
 #    /questions/14095616/python-can-i-programmatically-decorate-class-methods-from-a-class-instance
 
 from functools import wraps
-#from types import MethodType
 import urllib2
 import copy
 
 import logging
 log = logging.getLogger( __name__ )
 
-
-# -----------------------------------------------------------------------------
 _DATAPROVIDER_CLASS_MAP_KEY = 'dataproviders'
 _DATAPROVIDER_METHOD_NAME_KEY = '_dataprovider_name'
 
-# -----------------------------------------------------------------------------
+
 def has_dataproviders( cls ):
     """
     Wraps a class (generally a Datatype), finds methods within that have been
@@ -57,7 +52,6 @@ def has_dataproviders( cls ):
     provider = dataset.datatype.dataproviders[ 'bler' ]( dataset,
                                                          my_setting='blah', ... )
     """
-    #log.debug( 'has_dataproviders:', cls )
     # init the class dataproviders map if necc.
     if not hasattr( cls, _DATAPROVIDER_CLASS_MAP_KEY ):
         setattr( cls, _DATAPROVIDER_CLASS_MAP_KEY, {} )
@@ -73,20 +67,14 @@ def has_dataproviders( cls ):
     # note: this has a 'cascading' effect
     #       where it's possible to override a super's provider with a sub's
     for attr_key, attr_value in cls.__dict__.iteritems():
-        #log.debug( '\t key:', attr_key )
         # can't use isinstance( attr_value, MethodType ) bc of wrapping
         if( ( callable( attr_value ) )
         and ( not attr_key.startswith( "__" ) )
         and ( getattr( attr_value, _DATAPROVIDER_METHOD_NAME_KEY, None ) ) ):
-            #log.debug( '\t\t is a dataprovider', attr_key )
             name = getattr( attr_value, _DATAPROVIDER_METHOD_NAME_KEY )
             dataproviders[ name ] = attr_value
-
-    #log.debug( 'dataproviders:' )
-    #for name, fn in cls.dataproviders.items():
-    #    log.debug( '\t ', name, '->', fn.__name__, fn )
-    #    log.debug( '\t\t ', fn.__doc__ )
     return cls
+
 
 def dataprovider_factory( name, settings=None ):
     """
@@ -105,37 +93,34 @@ def dataprovider_factory( name, settings=None ):
     to __init__ arguments
     :type settings: dictionary
     """
-    #TODO:?? use *args for settings allowing mulitple dictionaries
+    # TODO:?? use *args for settings allowing mulitple dictionaries
     # make a function available through the name->provider dispatch to parse query strings
     #   callable like:
     # settings_dict = dataproviders[ provider_name ].parse_query_string_settings( query_kwargs )
-    #TODO: ugh - overly complicated but the best I could think of
+    # TODO: ugh - overly complicated but the best I could think of
     def parse_query_string_settings( query_kwargs ):
         return _parse_query_string_settings( query_kwargs, settings )
 
-    #log.debug( 'dataprovider:', name )
     def named_dataprovider_factory( func ):
-        #log.debug( 'named_dataprovider_factory:', name, '->', func.__name__ )
         setattr( func, _DATAPROVIDER_METHOD_NAME_KEY, name )
 
         setattr( func, 'parse_query_string_settings', parse_query_string_settings )
         setattr( func, 'settings', settings )
-        #TODO: I want a way to inherit settings from the previous provider( this_name ) instead of defining over and over
+        # TODO: I want a way to inherit settings from the previous provider( this_name ) instead of defining over and over
 
-        #log.debug( '\t setting:', getattr( func, _DATAPROVIDER_METHOD_NAME_KEY ) )
         @wraps( func )
         def wrapped_dataprovider_factory( self, *args, **kwargs ):
-            #log.debug( 'wrapped_dataprovider_factory', name, self, args, kwargs )
             return func( self, *args, **kwargs )
         return wrapped_dataprovider_factory
     return named_dataprovider_factory
+
 
 def _parse_query_string_settings( query_kwargs, settings=None ):
     """
     Parse the values in `query_kwargs` from strings to the proper types
     listed in the same key in `settings`.
     """
-    #TODO: this was a relatively late addition: review and re-think
+    # TODO: this was a relatively late addition: review and re-think
     def list_from_query_string( s ):
         # assume csv
         return s.split( ',' )
@@ -155,7 +140,7 @@ def _parse_query_string_settings( query_kwargs, settings=None ):
     #   if we can't parse it (no parser, bad value), delete the key from query_kwargs so the provider will use the defaults
     for key in settings:
         if key in query_kwargs:
-            #TODO: this would be the place to sanitize any strings
+            # TODO: this would be the place to sanitize any strings
             query_value = query_kwargs[ key ]
             needed_type = settings[ key ]
             if needed_type != 'str':
@@ -164,6 +149,5 @@ def _parse_query_string_settings( query_kwargs, settings=None ):
                 except ( KeyError, ValueError ):
                     del query_kwargs[ key ]
 
-        #TODO:?? do we want to remove query_kwarg entries NOT in settings?
+        # TODO:?? do we want to remove query_kwarg entries NOT in settings?
     return query_kwargs
-
