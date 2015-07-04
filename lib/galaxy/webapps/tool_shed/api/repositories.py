@@ -3,7 +3,6 @@ import logging
 import os
 import tarfile
 import StringIO
-import tempfile
 from time import strftime
 from collections import namedtuple
 from cgi import FieldStorage
@@ -208,18 +207,18 @@ class RepositoriesController( BaseAPIController ):
                                                                  id=encoded_repository_metadata_id )
                 # Get the repo_info_dict for installing the repository.
                 repo_info_dict, \
-                includes_tools, \
-                includes_tool_dependencies, \
-                includes_tools_for_display_in_tool_panel, \
-                has_repository_dependencies, \
-                has_repository_dependencies_only_if_compiling_contained_td = \
+                    includes_tools, \
+                    includes_tool_dependencies, \
+                    includes_tools_for_display_in_tool_panel, \
+                    has_repository_dependencies, \
+                    has_repository_dependencies_only_if_compiling_contained_td = \
                     repository_util.get_repo_info_dict( trans.app,
                                                         trans.user,
                                                         encoded_repository_id,
                                                         changeset_revision )
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
-                log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" % \
+                log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" %
                     ( str( repository.id ), str( changeset_revision ) ) )
                 return repository_dict, {}, {}
         else:
@@ -280,7 +279,7 @@ class RepositoriesController( BaseAPIController ):
         capsule_dict = irm.validate_capsule( **capsule_dict )
         status = capsule_dict.get( 'status', 'error' )
         if status == 'error':
-            log.debug( 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
+            log.debug( 'The capsule contents are invalid and cannot be imported:<br/>%s' %
                 str( capsule_dict.get( 'error_message', '' ) ) )
             return {}
         encoded_file_path = capsule_dict.get( 'encoded_file_path', None )
@@ -288,8 +287,6 @@ class RepositoriesController( BaseAPIController ):
             log.debug( 'The capsule_dict %s is missing the required encoded_file_path entry.' % str( capsule_dict ) )
             return {}
         file_path = encoding_util.tool_shed_decode( encoded_file_path )
-        export_info_file_path = os.path.join( file_path, 'export_info.xml' )
-        export_info_dict = irm.get_export_info_dict( export_info_file_path )
         manifest_file_path = os.path.join( file_path, 'manifest.xml' )
         # The manifest.xml file has already been validated, so no error_message should be returned here.
         repository_info_dicts, error_message = irm.get_repository_info_from_manifest( manifest_file_path )
@@ -325,7 +322,7 @@ class RepositoriesController( BaseAPIController ):
         Displays a collection of repositories with optional criteria.
 
         :param q:        (optional)if present search on the given query will be performed
-        :type  q:        str 
+        :type  q:        str
 
         :param page:     (optional)requested page of the search
         :type  page:     int
@@ -345,7 +342,7 @@ class RepositoriesController( BaseAPIController ):
 
         :param owner:    (optional)the owner's public username.
         :type  owner:    str
-        
+
         :param name:     (optional)the repository name.
         :type  name:     str
 
@@ -367,7 +364,7 @@ class RepositoriesController( BaseAPIController ):
             except ValueError:
                 raise RequestParameterInvalidException( 'The "page" and "page_size" parameters have to be integers.' )
             return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )
-            callback = kwd.get( 'callback', 'callback' )  
+            callback = kwd.get( 'callback', 'callback' )
             search_results = self._search( trans, q, page, page_size )
             if return_jsonp:
                 response = str( '%s(%s);' % ( callback, json.dumps( search_results ) ) )
@@ -376,7 +373,7 @@ class RepositoriesController( BaseAPIController ):
             return response
 
         clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == False,
-                              trans.app.model.Repository.table.c.deleted == deleted ) ]
+                              trans.app.model.Repository.table.c.deleted == deleted ) ]  # noqa
         if owner is not None:
             clause_list.append( and_( trans.app.model.User.table.c.username == owner,
                                       trans.app.model.Repository.table.c.user_id == trans.app.model.User.table.c.id ) )
@@ -388,7 +385,7 @@ class RepositoriesController( BaseAPIController ):
             repository_dict = repository.to_dict( view='collection',
                                                   value_mapper=self.__get_value_mapper( trans ) )
             repository_dict[ 'category_ids' ] = \
-                    [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
+                [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
             repository_dicts.append( repository_dict )
         return json.dumps( repository_dicts )
 
@@ -410,7 +407,7 @@ class RepositoriesController( BaseAPIController ):
             raise RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
 
         repo_search = RepoSearch()
-        
+
         Boosts = namedtuple( 'Boosts', [ 'repo_name_boost',
                                          'repo_description_boost',
                                          'repo_long_description_boost',
@@ -429,7 +426,7 @@ class RepositoriesController( BaseAPIController ):
                                       page,
                                       page_size,
                                       boosts )
-        results[ 'hostname' ] = web.url_for( '/', qualified = True )
+        results[ 'hostname' ] = web.url_for( '/', qualified=True )
         return results
 
     @web.expose_api
@@ -583,7 +580,7 @@ class RepositoriesController( BaseAPIController ):
         for repository in query:
             encoded_id = trans.security.encode_id( repository.id )
             if encoded_id in encoded_ids_to_skip:
-                log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
+                log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" %
                            ( str( repository.id ), str( encoded_ids_to_skip ) ) )
             elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                 results = handle_repository( trans, rmm, repository, results )
@@ -591,7 +588,7 @@ class RepositoriesController( BaseAPIController ):
         for repository in query:
             encoded_id = trans.security.encode_id( repository.id )
             if encoded_id in encoded_ids_to_skip:
-                log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
+                log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" %
                            ( str( repository.id ), str( encoded_ids_to_skip ) ) )
             elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                 results = handle_repository( trans, rmm, repository, results )
@@ -657,7 +654,7 @@ class RepositoriesController( BaseAPIController ):
         Returns information about a repository in the Tool Shed.
 
         Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
-        
+
         :param id: the encoded id of the Repository object
         :type  id: encoded str
 
@@ -778,7 +775,6 @@ class RepositoriesController( BaseAPIController ):
         remote_repository_url = payload.get( 'remote_repository_url', '' )
         homepage_url = payload.get( 'homepage_url', '' )
         category_ids = util.listify( payload.get( 'category_ids[]', '' ) )
-        selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
 
         repo_type = payload.get( 'type', rt_util.UNRESTRICTED )
         if repo_type not in rt_util.types:
@@ -793,7 +789,7 @@ class RepositoriesController( BaseAPIController ):
                                                   type=repo_type,
                                                   description=synopsis,
                                                   long_description=description,
-                                                  user_id = trans.user.id,
+                                                  user_id=trans.user.id,
                                                   category_ids=category_ids,
                                                   remote_repository_url=remote_repository_url,
                                                   homepage_url=homepage_url )

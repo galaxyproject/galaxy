@@ -257,9 +257,11 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     log.debug( "Enabling hg middleware" )
     return app
 
+
 def wrap_in_static( app, global_conf, **local_conf ):
     urlmap, _ = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     return urlmap
+
 
 def build_template_error_formatters():
     """
@@ -270,6 +272,7 @@ def build_template_error_formatters():
     formatters = []
     # Formatter for mako
     import mako.exceptions
+
     def mako_html_data( exc_value ):
         if isinstance( exc_value, ( mako.exceptions.CompileException, mako.exceptions.SyntaxException ) ):
             return mako.exceptions.html_error_template().render( full=False, css=False )

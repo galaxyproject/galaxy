@@ -243,8 +243,8 @@ class CommunityRBACAgent( RBACAgent ):
                                    .first()  # noqa
         if iuc_group is not None:
             for uga in iuc_group.users:
-               if uga.user.id == user.id:
-                   return True
+                if uga.user.id == user.id:
+                    return True
         return False
 
     def user_can_review_repositories( self, user ):
@@ -266,6 +266,7 @@ class CommunityRBACAgent( RBACAgent ):
                     # Reviewers can access private/public component reviews.
                     return True
         return False
+
 
 def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''
