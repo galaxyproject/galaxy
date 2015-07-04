@@ -76,8 +76,8 @@ class DatasetDataProvider( base.DataProvider ):
         :type indeces: list of ints
         """
         metadata_column_types = ( self.dataset.metadata.column_types
-                                or getattr( self.dataset.datatype, 'column_types', None )
-                                or None )
+                                  or getattr( self.dataset.datatype, 'column_types', None )
+                                  or None )
         if not metadata_column_types:
             return metadata_column_types
         if indeces:
@@ -118,12 +118,14 @@ class DatasetDataProvider( base.DataProvider ):
         :raises ValueError: if an entry in list_of_column_names is not in column_names
         """
         metadata_column_names = ( self.dataset.metadata.column_names
-                                or getattr( self.dataset.datatype, 'column_names', None )
-                                or None )
+                                  or getattr( self.dataset.datatype, 'column_names', None )
+                                  or None )
         if not metadata_column_names:
             raise KeyError( 'No column_names found for '
-                          + 'datatype: %s, dataset: %s' % ( str( self.dataset.datatype ), str( self.dataset ) ) )
-        indeces = []
+                            + 'datatype: %s, dataset: %s' % ( str( self.dataset.datatype ), str( self.dataset ) ) )
+        indeces = []        # if indeces and column_names:
+        #    # pull using indeces and re-name with given names - no need to alter (does as super would)
+        #    pass
         for column_name in list_of_column_names:
             indeces.append( metadata_column_names.index( column_name ) )
         return indeces
@@ -227,10 +229,6 @@ class DatasetDictDataProvider( column.DictDataProvider ):
         # if no column_types given, get column_types from indeces (or all if indeces == None)
         indeces = kwargs.get( 'indeces', None )
         column_names = kwargs.get( 'column_names', None )
-
-        # if indeces and column_names:
-        #    # pull using indeces and re-name with given names - no need to alter (does as super would)
-        #    pass
 
         if not indeces and column_names:
             # pull columns by name
