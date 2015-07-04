@@ -1,11 +1,14 @@
 #!/bin/bash
 
 # explicitly attempt to fetch eggs before running
-FETCH_EGGS=1
+FETCH_WHEELS=1
+SET_VENV=1
 COPY_SAMPLE_FILES=1
 for arg in "$@"; do
-    [ "$arg" = "--skip-eggs" ] && FETCH_EGGS=0
-    [ "$arg" = "--stop-daemon" ] && FETCH_EGGS=0
+    [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
+    [ "$arg" = "--skip-wheels" ] && FETCH_WHEELS=0
+    [ "$arg" = "--skip-venv" ] && SET_VENV=0
+    [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
 done
 
@@ -23,6 +26,10 @@ SAMPLES="
     static/welcome.html.sample
 "
 
+RMFILES="
+    lib/pkg_resources.pyc
+"
+
 if [ $COPY_SAMPLE_FILES -eq 1 ]; then
 	# Create any missing config/location files
 	for sample in $SAMPLES; do
@@ -34,6 +41,11 @@ if [ $COPY_SAMPLE_FILES -eq 1 ]; then
 	done
 fi
 
+# remove problematic cached files
+for rmfile in $RMFILES; do
+    [ -f $rmfile ] && rm -f $rmfile
+done
+
 : ${GALAXY_CONFIG_FILE:=config/galaxy.ini}
 if [ ! -f $GALAXY_CONFIG_FILE ]; then
     GALAXY_CONFIG_FILE=universe_wsgi.ini
@@ -42,16 +54,41 @@ if [ ! -f $GALAXY_CONFIG_FILE ]; then
     GALAXY_CONFIG_FILE=config/galaxy.ini.sample
 fi
 
-if [ $FETCH_EGGS -eq 1 ]; then
-    python ./scripts/check_eggs.py -q -c $GALAXY_CONFIG_FILE
-    if [ $? -ne 0 ]; then
-        echo "Some eggs are out of date, attempting to fetch..."
-        python ./scripts/fetch_eggs.py -c $GALAXY_CONFIG_FILE
-        if [ $? -eq 0 ]; then
-            echo "Fetch successful."
+if [ $SET_VENV -eq 1 ]; then
+    # If not already in a virtualenv and .venv does not exist, attempt to create it.
+    if [ -z "$VIRTUAL_ENV" -a ! -d .venv ]
+    then
+        vvers=13.1.0
+        vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
+        if command -v virtualenv >/dev/null; then
+            virtualenv .venv
         else
-            echo "Fetch failed."
-            exit 1
+            vtmp=`mktemp -d -t galaxy-virtualenv-XXXXXX`
+            vsrc="$vtmp/`basename $vurl`"
+            ( if command -v curl >/dev/null; then
+                curl --silent -o $vsrc $vurl
+            elif command -v wget >/dev/null; then
+                wget --quiet -O $vsrc $vurl
+            else
+                python -c "import urllib; urllib.urlretrieve('$vurl', '$vsrc')"
+            fi ) &&
+            tar zxf $vsrc -C $vtmp &&
+            python $vtmp/virtualenv-$vvers/virtualenv.py .venv &&
+            rm -rf $vtmp
         fi
     fi
-fi	
+
+    # If there is a .venv/ directory, assume it contains a virtualenv that we
+    # should run this instance in.
+    if [ -d .venv ];
+    then
+        printf "Activating virtualenv at %s/.venv\n" $(pwd)
+        . .venv/bin/activate
+    fi
+fi
+
+
+if [ $FETCH_WHEELS -eq 1 ]; then
+    PYTHONPATH=lib python -c "import galaxy.wheels; print '\n'.join(galaxy.wheels.requirements('$GALAXY_CONFIG_FILE'))" | pip install -r /dev/stdin
+    #pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/
+fi
