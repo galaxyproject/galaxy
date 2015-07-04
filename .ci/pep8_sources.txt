@@ -17,7 +17,7 @@ lib/galaxy/queue_worker.py
 lib/galaxy/tags
 lib/galaxy/tools
 lib/galaxy/util/{__init__,json,permutations,plugin_config,properties,simplegraph,sockets,sleeper,streamball,submodules,xml_macros}.py
-lib/galaxy/visualization/data_providers/{__init__,genome,registry}.py
+lib/galaxy/visualization/
 lib/galaxy/web/{proxy,security}
 lib/galaxy/web/base/{__init__,interactive_environments}.py
 lib/galaxy/web/formatting.py
