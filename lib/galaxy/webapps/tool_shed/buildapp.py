@@ -134,7 +134,7 @@ def app_factory( global_conf, **kwargs ):
                             path_prefix='/api',
                             parent_resources=dict( member_name='user', collection_name='users' ) )
     webapp.mapper.connect( 'update_repository',
-                          '/api/repositories/:id',
+                           '/api/repositories/:id',
                            controller='repositories',
                            action='update',
                            conditions=dict( method=[ "PATCH", "PUT" ] ) )
@@ -189,9 +189,9 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     if asbool(conf.get( 'use_remote_user', False )):
         from galaxy.webapps.tool_shed.framework.middleware.remoteuser import RemoteUser
         app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ),
-                        display_servers=util.listify( conf.get( 'display_servers', '' ) ),
-                        admin_users=conf.get( 'admin_users', '' ).split( ',' ),
-                        remote_user_secret_header=conf.get('remote_user_secret', None) )
+                          display_servers=util.listify( conf.get( 'display_servers', '' ) ),
+                          admin_users=conf.get( 'admin_users', '' ).split( ',' ),
+                          remote_user_secret_header=conf.get('remote_user_secret', None) )
         log.debug( "Enabling 'remote user' middleware" )
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.

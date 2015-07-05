@@ -879,9 +879,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                          operation='preview_tools_in_changeset',
                          repository_id=repository_id )
         self.valid_repository_grid.operations = [ grids.GridOperation( "Preview and install",
-                                                                    url_args=url_args,
-                                                                    allow_multiple=False,
-                                                                    async_compatible=False ) ]
+                                                                       url_args=url_args,
+                                                                       allow_multiple=False,
+                                                                       async_compatible=False ) ]
         title = trans.app.repository_grid_filter_manager.get_grid_title( trans,
                                                                          trailing_string='',
                                                                          default='Valid Repositories' )
@@ -1712,12 +1712,12 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                         repository_dependency_errors = installation_errors.get( 'repository_dependencies', [] )
                         current_repository_errors = installation_errors.get( 'current_repository', [] )
                     description_lines.append( '%d tests passed, %d tests failed, %d tests missing test components.' %
-                        ( passed_tests, failed_tests, missing_test_components ) )
+                                              ( passed_tests, failed_tests, missing_test_components ) )
                     if current_repository_errors:
                         description_lines.append( '\nThis repository did not install correctly. ' )
                     if tool_dependency_errors or repository_dependency_errors:
                         description_lines.append( '\n%d tool dependencies and %d repository dependencies failed to install. ' %
-                            ( len( tool_dependency_errors ), len( repository_dependency_errors ) ) )
+                                                  ( len( tool_dependency_errors ), len( repository_dependency_errors ) ) )
                     title = 'Revision %s of %s' % ( repository_metadata.changeset_revision, repository.name )
                     # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
                     # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable

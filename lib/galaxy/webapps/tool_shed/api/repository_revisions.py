@@ -251,12 +251,12 @@ class RepositoryRevisionsController( BaseAPIController ):
                 if key in [ 'do_not_test', 'includes_tools', 'missing_test_components', 'test_install_error',
                             'tools_functionally_correct' ]:
                     log.debug( 'Setting repository_metadata column %s to value %s for changeset_revision %s via the Tool Shed API.' %
-                        ( str( key ), str( new_value ), str( repository_metadata.changeset_revision ) ) )
+                               ( str( key ), str( new_value ), str( repository_metadata.changeset_revision ) ) )
                 setattr( repository_metadata, key, new_value )
                 flush_needed = True
         if flush_needed:
             log.debug( 'Updating repository_metadata record with id %s and changeset_revision %s.' %
-                ( str( decoded_repository_metadata_id ), str( repository_metadata.changeset_revision ) ) )
+                       ( str( decoded_repository_metadata_id ), str( repository_metadata.changeset_revision ) ) )
             trans.sa_session.add( repository_metadata )
             trans.sa_session.flush()
             trans.sa_session.refresh( repository_metadata )

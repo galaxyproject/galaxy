@@ -169,8 +169,8 @@ class Repository( object, Dictifiable ):
                          NOT_TRACKED='?' )
 
     def __init__( self, id=None, name=None, type=None, remote_repository_url=None, homepage_url=None,
-                description=None, long_description=None, user_id=None, private=False,
-                deleted=None, email_alerts=None, times_downloaded=0, deprecated=False ):
+                  description=None, long_description=None, user_id=None, private=False,
+                  deleted=None, email_alerts=None, times_downloaded=0, deprecated=False ):
         self.id = id
         self.name = name or "Unnamed repository"
         self.type = type
@@ -193,7 +193,7 @@ class Repository( object, Dictifiable ):
             if str( role.name ) == admin_role_name:
                 return role
         raise Exception( 'Repository %s owned by %s is not associated with a required administrative role.' %
-            ( str( self.name ), str( self.user.username ) ) )
+                         ( str( self.name ), str( self.user.username ) ) )
 
     def allow_push( self, app ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )

@@ -219,7 +219,7 @@ class RepositoriesController( BaseAPIController ):
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
                 log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" %
-                    ( str( repository.id ), str( changeset_revision ) ) )
+                           ( str( repository.id ), str( changeset_revision ) ) )
                 return repository_dict, {}, {}
         else:
             debug_msg = "Error in the Tool Shed repositories API in get_repository_revision_install_info: "
@@ -280,7 +280,7 @@ class RepositoriesController( BaseAPIController ):
         status = capsule_dict.get( 'status', 'error' )
         if status == 'error':
             log.debug( 'The capsule contents are invalid and cannot be imported:<br/>%s' %
-                str( capsule_dict.get( 'error_message', '' ) ) )
+                       str( capsule_dict.get( 'error_message', '' ) ) )
             return {}
         encoded_file_path = capsule_dict.get( 'encoded_file_path', None )
         if encoded_file_path is None:
@@ -785,14 +785,14 @@ class RepositoriesController( BaseAPIController ):
             raise RequestParameterInvalidException( invalid_message )
 
         repo, message = repository_util.create_repository( app=trans.app,
-                                                  name=name,
-                                                  type=repo_type,
-                                                  description=synopsis,
-                                                  long_description=description,
-                                                  user_id=trans.user.id,
-                                                  category_ids=category_ids,
-                                                  remote_repository_url=remote_repository_url,
-                                                  homepage_url=homepage_url )
+                                                           name=name,
+                                                           type=repo_type,
+                                                           description=synopsis,
+                                                           long_description=description,
+                                                           user_id=trans.user.id,
+                                                           category_ids=category_ids,
+                                                           remote_repository_url=remote_repository_url,
+                                                           homepage_url=homepage_url )
 
         repository_dict = repo.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
         repository_dict[ 'category_ids' ] = \
