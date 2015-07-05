@@ -435,23 +435,23 @@ class GalaxyConfig( object ):
         else:
             try:
                 return { "psycopg2":
-                    lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres" ),
+                         lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres" ),
                          "MySQL_python":
-                    lambda: self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ),
+                         lambda: self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ),
                          "DRMAA_python":
-                    lambda: "sge" in self.config.get( "app:main", "start_job_runners" ).split(","),
+                         lambda: "sge" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "drmaa":
-                    lambda: "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(","),
+                         lambda: "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "pbs_python":
-                    lambda: "pbs" in self.config.get( "app:main", "start_job_runners" ).split(","),
+                         lambda: "pbs" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "python_openid":
-                    lambda: self.config.get( "app:main", "enable_openid" ),
+                         lambda: self.config.get( "app:main", "enable_openid" ),
                          "python_daemon":
-                    lambda: sys.version_info[:2] >= ( 2, 5 ),
+                         lambda: sys.version_info[:2] >= ( 2, 5 ),
                          "pysam":
-                    lambda: check_pysam(),
+                         lambda: check_pysam(),
                          "PyRods":
-                    lambda: self.config.get( "app:main", "object_store" ) == "irods"
+                         lambda: self.config.get( "app:main", "object_store" ) == "irods"
                          }.get( egg_name, lambda: True )()
             except:
                 return False
