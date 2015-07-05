@@ -592,7 +592,7 @@ class StdioParser(object):
                     code_range = exit_code_elem.get( "value", "" )
                 if code_range is None:
                     log.warning( "Tool stdio exit codes must have " +
-                                "a range or value" )
+                                 "a range or value" )
                     continue
                 # Parse the range. We look for:
                 #   :Y
