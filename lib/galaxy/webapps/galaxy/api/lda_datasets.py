@@ -600,7 +600,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 folder = self.folder_manager.get( trans, folder_id )
                 library_datasets.extend( traverse( folder ) )
 
-        if library_datasets is None:
+        if not library_datasets:
             raise exceptions.RequestParameterMissingException( 'Request has to contain a list of dataset ids or folder ids to download.' )
 
         if format in [ 'zip', 'tgz', 'tbz' ]:
