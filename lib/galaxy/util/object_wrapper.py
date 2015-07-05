@@ -23,7 +23,7 @@ __CALLABLE_TYPES__ = ( FunctionType, MethodType, GeneratorType, CodeType, Builti
 
 # Always wrap these types without attempting to subclass
 __WRAP_NO_SUBCLASS__ = ( ModuleType, XRangeType, SliceType, BufferType, TracebackType, FrameType, DictProxyType,
-                    GetSetDescriptorType, MemberDescriptorType ) + __CALLABLE_TYPES__
+                         GetSetDescriptorType, MemberDescriptorType ) + __CALLABLE_TYPES__
 
 # Don't wrap or sanitize.
 __DONT_SANITIZE_TYPES__ = ( Number, bool, NoneType, NotImplementedType, EllipsisType, bytearray, )
@@ -43,17 +43,17 @@ VALID_CHARACTERS = set( string.letters + string.digits + " -=_.()/+*^,:?!@" )
 
 # characters that are allowed but need to be escaped
 CHARACTER_MAP = { '>': '__gt__',
-                 '<': '__lt__',
-                 "'": '__sq__',
-                 '"': '__dq__',
-                 '[': '__ob__',
-                 ']': '__cb__',
-                 '{': '__oc__',
-                 '}': '__cc__',
-                 '\n': '__cn__',
-                 '\r': '__cr__',
-                 '\t': '__tc__',
-                 '#': '__pd__'}
+                  '<': '__lt__',
+                  "'": '__sq__',
+                  '"': '__dq__',
+                  '[': '__ob__',
+                  ']': '__cb__',
+                  '{': '__oc__',
+                  '}': '__cc__',
+                  '\n': '__cn__',
+                  '\r': '__cr__',
+                  '\t': '__tc__',
+                  '#': '__pd__'}
 
 INVALID_CHARACTER = "X"
 

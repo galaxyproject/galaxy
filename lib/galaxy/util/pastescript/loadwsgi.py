@@ -436,7 +436,7 @@ _loaders['egg'] = _loadegg
 
 
 def _loadfunc(object_type, uri, spec, name, relative_to,
-             global_conf):
+              global_conf):
 
     loader = FuncLoader(spec)
     return loader.get_context(object_type, name, global_conf)
