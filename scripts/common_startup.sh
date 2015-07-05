@@ -87,8 +87,13 @@ if [ $SET_VENV -eq 1 ]; then
     fi
 fi
 
+if [ -z "$VIRTUAL_ENV" ]; then
+    echo "ERROR: A virtualenv cannot be found or created. Please create a virtualenv in .venv, or activate one."
+    exit 1
+fi
+
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    PYTHONPATH=lib python -c "import galaxy.wheels; print '\n'.join(galaxy.wheels.requirements('$GALAXY_CONFIG_FILE'))" | pip install -r /dev/stdin
-    #pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/
+    pip install git+https://github.com/natefoo/pip@linux-wheels
+    PYTHONPATH=lib python -c "import galaxy.wheels; print '\n'.join(galaxy.wheels.requirements('$GALAXY_CONFIG_FILE'))" | pip install -r /dev/stdin --index-url https://wheels.galaxyproject.org/simple/
 fi
