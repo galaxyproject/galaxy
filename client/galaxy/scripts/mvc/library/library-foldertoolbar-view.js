@@ -26,9 +26,9 @@ var FolderToolbarView = Backbone.View.extend({
   },
 
   defaults: {
-    'can_add_library_item'  : false,
-    'contains_file'         : false,
-    'chain_call_control'    : {
+    'can_add_library_item'    : false,
+    'contains_file_or_folder' : false,
+    'chain_call_control'      : {
                                 'total_number'  : 0,
                                 'failed_number' : 0
                               },
@@ -116,7 +116,7 @@ var FolderToolbarView = Backbone.View.extend({
     } else{
       $('.add-library-items').hide();
     }
-    if (this.options.contains_file === true){
+    if (this.options.contains_file_or_folder === true){
       if (Galaxy.currUser){
         if (!Galaxy.currUser.isAnonymous()){
           $('.logged-dataset-manipulation').show();
