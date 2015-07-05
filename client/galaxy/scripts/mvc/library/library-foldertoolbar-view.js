@@ -304,13 +304,16 @@ var FolderToolbarView = Backbone.View.extend({
    */
   download : function( folder_id, format ){
     var dataset_ids = [];
+    var folder_ids = [];
         $( '#folder_table' ).find( ':checked' ).each( function(){
-            if ( this.parentElement.parentElement.id !== '' ) {
+            if ( this.parentElement.parentElement.id !== '' && this.parentElement.parentElement.classList.contains('dataset_row') ) {
                 dataset_ids.push( this.parentElement.parentElement.id );
+            } else if ( this.parentElement.parentElement.id !== '' && this.parentElement.parentElement.classList.contains('folder_row') ) {
+                folder_ids.push( this.parentElement.parentElement.id );
             }
         } );
     var url = ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets/download/' + format;
-    var data = { 'ld_ids' : dataset_ids };
+    var data = { 'ld_ids' : dataset_ids, 'lf_ids' : folder_ids };
     this.processDownload( url, data, 'get' );
   },
 
