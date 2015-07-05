@@ -8,7 +8,7 @@ import operator
 from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.util import listify
-from galaxy.model.orm import *
+from galaxy.model.orm import and_, or_, not_, eagerload_all
 
 log = logging.getLogger(__name__)
 
@@ -626,9 +626,10 @@ class GalaxyRBACAgent( RBACAgent ):
         library_access_action = self.permitted_actions.LIBRARY_ACCESS.action
         restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions )
                                 .filter( trans.model.LibraryPermissions.table.c.action == library_access_action ).distinct() ]
-        accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
-                                                .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,  # noqa
-                                                trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
+        accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query(
+                                              trans.model.LibraryPermissions ).filter(
+                                              and_( trans.model.LibraryPermissions.table.c.action == library_access_action,  # noqa
+                                              trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
         # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
         for library in trans.sa_session.query( trans.model.Library ) \
@@ -943,12 +944,14 @@ class GalaxyRBACAgent( RBACAgent ):
         accessible_request_types = []
         current_user_role_ids = [ role.id for role in user.all_roles() ]
         request_type_access_action = self.permitted_actions.REQUEST_TYPE_ACCESS.action
-        restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query( trans.model.RequestTypePermissions ) \
-                                        .filter( trans.model.RequestTypePermissions.table.c.action == request_type_access_action ) \
-                                        .distinct() ]  # noqa
-        accessible_restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query( trans.model.RequestTypePermissions ) \
-                                                    .filter( and_( trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
-                                                    trans.model.RequestTypePermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
+        restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query(
+                                        trans.model.RequestTypePermissions ).filter(
+                                        trans.model.RequestTypePermissions.table.c.action == request_type_access_action ).distinct()
+                                      ]  # noqa
+        accessible_restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query(
+                                                   trans.model.RequestTypePermissions ).filter(
+                                                   and_( trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
+                                                   trans.model.RequestTypePermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
         # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
         for request_type in trans.sa_session.query( trans.model.RequestType ) \
@@ -1017,7 +1020,6 @@ class GalaxyRBACAgent( RBACAgent ):
                             # Well this looks like a bug, this should be looked at.
                             # Default permissions above is single hash that keeps getting reeditted here
                             # because permission is being defined instead of permissions. -John
-                            permission = {}
                             permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = [ trans.app.security_agent.get_private_user_role( library_item.user ) ]
                             self.set_dataset_permission( library_item.dataset, permissions )
                         if action == self.permitted_actions.LIBRARY_MANAGE.action and roles:
@@ -1184,7 +1186,7 @@ class GalaxyRBACAgent( RBACAgent ):
         accessible = False
         # legitimate will be True only if all roles in DATASET_ACCESS_in are in the set of roles returned from
         # get_legitimate_roles()
-        legitimate = False
+        # legitimate = False # TODO: not used
         # private_role_found will be true only if more than 1 role is being associated with the DATASET_ACCESS
         # permission on item, and at least 1 of the roles is private.
         private_role_found = False
@@ -1222,8 +1224,6 @@ class GalaxyRBACAgent( RBACAgent ):
                             if role in legitimate_roles:
                                 new_in_roles.append( role )
                         in_roles = new_in_roles
-                    else:
-                        legitimate = True
                 if len( in_roles ) > 1:
                     # At least 1 user must have every role associated with the access
                     # permission on this dataset, or the dataset is not accessible.
@@ -1314,7 +1314,7 @@ class GalaxyRBACAgent( RBACAgent ):
         """
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
                                         .filter( trans.app.model.Library.table.c.deleted == False ) \
-                                        .order_by( trans.app.model.Library.name )
+                                        .order_by( trans.app.model.Library.name )  # noqa
         roles = user.all_roles()
         actions_to_check = actions
         # The libraries dictionary looks like: { library : '1,2' }, library : '3' }
@@ -1515,7 +1515,7 @@ class HostAgent( RBACAgent ):
     # TODO: Make sites user configurable
     sites = Bunch(
         ucsc_main=( 'hgw1.cse.ucsc.edu', 'hgw2.cse.ucsc.edu', 'hgw3.cse.ucsc.edu', 'hgw4.cse.ucsc.edu',
-                      'hgw5.cse.ucsc.edu', 'hgw6.cse.ucsc.edu', 'hgw7.cse.ucsc.edu', 'hgw8.cse.ucsc.edu' ),
+                    'hgw5.cse.ucsc.edu', 'hgw6.cse.ucsc.edu', 'hgw7.cse.ucsc.edu', 'hgw8.cse.ucsc.edu' ),
         ucsc_test=( 'hgwdev.cse.ucsc.edu', ),
         ucsc_archaea=( 'lowepub.cse.ucsc.edu', )
     )

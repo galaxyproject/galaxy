@@ -2256,23 +2256,23 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         rval = dict( id=hda.id,
                      hda_ldda='hda',
                      uuid=( lambda uuid: str( uuid ) if uuid else None )( hda.dataset.uuid ),
-                     hid = hda.hid,
-                     file_ext = hda.ext,
-                     peek = ( lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None )( hda ),
-                     model_class = self.__class__.__name__,
-                     name = hda.name,
-                     deleted = hda.deleted,
-                     purged = hda.purged,
-                     visible = hda.visible,
-                     state = hda.state,
+                     hid=hda.hid,
+                     file_ext=hda.ext,
+                     peek=( lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None )( hda ),
+                     model_class=self.__class__.__name__,
+                     name=hda.name,
+                     deleted=hda.deleted,
+                     purged=hda.purged,
+                     visible=hda.visible,
+                     state=hda.state,
                      history_content_type=hda.history_content_type,
-                     file_size = int( hda.get_size() ),
-                     create_time = hda.create_time.isoformat(),
-                     update_time = hda.update_time.isoformat(),
-                     data_type = hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
-                     genome_build = hda.dbkey,
-                     misc_info = hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
-                     misc_blurb = hda.blurb )
+                     file_size=int( hda.get_size() ),
+                     create_time=hda.create_time.isoformat(),
+                     update_time=hda.update_time.isoformat(),
+                     data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
+                     genome_build=hda.dbkey,
+                     misc_info=hda.info.strip() if isinstance( hda.info, basestring ) else hda.info,
+                     misc_blurb=hda.blurb )
 
         # add tags string list
         tags_str_list = []
@@ -2584,7 +2584,7 @@ class LibraryDataset( object ):
                      misc_info=ldda.info,
                      misc_blurb=ldda.blurb,
                      peek=( lambda ldda: ldda.display_peek() if ldda.peek and ldda.peek != 'no peek' else None )( ldda ),
-                     template_data = template_data )
+                     template_data=template_data )
         if ldda.dataset.uuid is None:
             rval['uuid'] = None
         else:
