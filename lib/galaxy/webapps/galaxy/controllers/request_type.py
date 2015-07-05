@@ -50,12 +50,12 @@ class RequestTypeGrid( grids.Grid ):
                     attach_popup=True,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
-                        key='desc',
-                        filterable="advanced" ),
+                           key='desc',
+                           filterable="advanced" ),
         RequestFormColumn( "Request Form",
-                        link=( lambda item: iff( item.deleted, None, dict( operation="view_form_definition", id=item.request_form.id ) ) ) ),
+                           link=( lambda item: iff( item.deleted, None, dict( operation="view_form_definition", id=item.request_form.id ) ) ) ),
         SampleFormColumn( "Sample Form",
-                        link=( lambda item: iff( item.deleted, None, dict( operation="view_form_definition", id=item.sample_form.id ) ) ) ),
+                          link=( lambda item: iff( item.deleted, None, dict( operation="view_form_definition", id=item.sample_form.id ) ) ) ),
         ExternalServiceColumn( "External Services" ),
         grids.DeletedColumn( "Deleted",
                              key="deleted",
@@ -315,8 +315,8 @@ class RequestType( BaseUIController, UsesFormDefinitionsMixin ):
 
     def __get_populated_request_type_widgets( self, trans, **kwd ):
         request_form_definitions = self.get_all_forms( trans,
-                                                filter=dict( deleted=False ),
-                                                form_type=trans.model.FormDefinition.types.REQUEST )
+                                                       filter=dict( deleted=False ),
+                                                       form_type=trans.model.FormDefinition.types.REQUEST )
         sample_form_definitions = self.get_all_forms( trans,
                                                       filter=dict( deleted=False ),
                                                       form_type=trans.model.FormDefinition.types.SAMPLE )
@@ -332,11 +332,11 @@ class RequestType( BaseUIController, UsesFormDefinitionsMixin ):
                                                            selected_value=request_form_id,
                                                            refresh_on_change=False )
         sample_form_id_select_field = build_select_field( trans,
-                                                        objs=sample_form_definitions,
-                                                        label_attr='name',
-                                                        select_field_name='sample_form_id',
-                                                        selected_value=sample_form_id,
-                                                        refresh_on_change=False )
+                                                          objs=sample_form_definitions,
+                                                          label_attr='name',
+                                                          select_field_name='sample_form_id',
+                                                          selected_value=sample_form_id,
+                                                          refresh_on_change=False )
         rt_info_widgets = [ dict( label='Name',
                                   widget=TextField( 'name', 40, util.restore_text( params.get( 'name', '' ) ) ) ),
                             dict( label='Description',

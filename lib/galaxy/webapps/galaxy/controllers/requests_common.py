@@ -119,8 +119,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     if sample.state.name != state:
                         rval[ id ] = { "state": sample.state.name,
                                        "html_state": unicode( trans.fill_template( "requests/common/sample_state.mako",
-                                                            sample=sample),
-                                                            'utf-8' ) }
+                                                                                   sample=sample),
+                                                              'utf-8' ) }
         return rval
 
     @web.json
@@ -140,8 +140,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     if len( sample.datasets ) != number_of_datasets:
                         rval[ id ] = { "datasets": len( sample.datasets ),
                                        "html_datasets": unicode( trans.fill_template( "requests/common/sample_datasets.mako",
-                                                                sample=sample),
-                                                              'utf-8' ) }
+                                                                                      sample=sample),
+                                                                 'utf-8' ) }
         return rval
 
     @web.json
@@ -161,8 +161,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                     if sample_dataset.status != transfer_status:
                         rval[ id ] = { "status": sample_dataset.status,
                                        "html_status": unicode( trans.fill_template( "requests/common/sample_dataset_transfer_status.mako",
-                                                            sample_dataset=sample_dataset),
-                                                            'utf-8' ) }
+                                                                                    sample_dataset=sample_dataset),
+                                                               'utf-8' ) }
         return rval
 
     @web.expose
@@ -444,9 +444,9 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             return invalid_id_redirect( trans, cntrller, request_id )
         if params.get( 'cancel_changes_button', False ):
             return trans.response.send_redirect( web.url_for( controller='requests_common',
-                                                            action='edit_samples',
-                                                            cntrller=cntrller,
-                                                            id=request_id ) )
+                                                              action='edit_samples',
+                                                              cntrller=cntrller,
+                                                              id=request_id ) )
         libraries = trans.app.security_agent.get_accessible_libraries( trans, request.user )
         # Build a list of sample widgets (based on the attributes of each sample) for display.
         displayable_sample_widgets = self.__get_sample_widgets( trans, request, request.samples, **kwd )
@@ -1556,19 +1556,19 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                                                                                        folder_id=folder_id,
                                                                                                        **kwd )
             history_select_field = self.__build_history_select_field( trans=trans,
-                                                        user=request.user,
-                                                        sample_index=index,
-                                                        sample=sample,
-                                                        history_id=history_id,
-                                                        **kwd)
+                                                                      user=request.user,
+                                                                      sample_index=index,
+                                                                      sample=sample,
+                                                                      history_id=history_id,
+                                                                      **kwd)
             workflow_select_field = self.__build_workflow_select_field( trans=trans,
-                                                          user=request.user,
-                                                          request=request,
-                                                          sample_index=index,
-                                                          sample=sample,
-                                                          workflow_dict=workflow_dict,
-                                                          history_id=history_id,
-                                                          **kwd)
+                                                                        user=request.user,
+                                                                        request=request,
+                                                                        sample_index=index,
+                                                                        sample=sample,
+                                                                        workflow_dict=workflow_dict,
+                                                                        history_id=history_id,
+                                                                        **kwd)
             sample_widgets.append( dict( id=sample_id,
                                          name=name,
                                          bar_code=bar_code,
@@ -1633,20 +1633,20 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                                                                                        folder_id=folder_id,
                                                                                                        **kwd )
             history_select_field = self.__build_history_select_field( trans=trans,
-                                                       user=request.user,
-                                                       sample_index=index,
-                                                       sample=None,
-                                                       history_id=history_id,
-                                                       **kwd)
+                                                                      user=request.user,
+                                                                      sample_index=index,
+                                                                      sample=None,
+                                                                      history_id=history_id,
+                                                                      **kwd)
 
             workflow_select_field = self.__build_workflow_select_field( trans=trans,
-                                                         user=request.user,
-                                                         request=request,
-                                                         sample_index=index,
-                                                         sample=None,
-                                                         workflow_dict=workflow_dict,
-                                                         history_id=history_id,
-                                                         **kwd)
+                                                                        user=request.user,
+                                                                        request=request,
+                                                                        sample_index=index,
+                                                                        sample=None,
+                                                                        workflow_dict=workflow_dict,
+                                                                        history_id=history_id,
+                                                                        **kwd)
             sample_widgets.append( dict( id=None,
                                          name=name,
                                          bar_code=bar_code,
@@ -1781,12 +1781,12 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             history_id = trans.security.encode_id( sample.history.id )
         # Build the sample_%i_history_id SelectField with refresh on change disabled
         hsf = build_select_field( trans,
-            [h for h in user.histories if not h.deleted],
-            'name',
-            history_select_field_name,
-            initial_value='none',
-            selected_value=str( history_id ).lower(),
-            refresh_on_change=True )
+                                  [h for h in user.histories if not h.deleted],
+                                  'name',
+                                  history_select_field_name,
+                                  initial_value='none',
+                                  selected_value=str( history_id ).lower(),
+                                  refresh_on_change=True )
         # This is ugly, but allows for an explicit "New History", while still using build_select_field.
         # hsf.options = hsf.options[:1] + [( "Create a New History", 'new', 'new'==str( history_id ).lower() )] + hsf.options[1:]
         hsf.options = [( "Select one", 'none', 'none' == str( history_id ).lower() )] + hsf.options[1:]

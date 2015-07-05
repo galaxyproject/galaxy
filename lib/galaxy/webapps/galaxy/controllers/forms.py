@@ -52,9 +52,9 @@ class FormsGrid( grids.Grid ):
                            filterable="advanced" ),
         TypeColumn( "Type" ),
         grids.DeletedColumn( "Deleted",
-                       key="deleted",
-                       visible=False,
-                       filterable="advanced" )
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
                                                 cols_to_filter=[ columns[0], columns[1] ],
@@ -426,8 +426,8 @@ class Forms( BaseUIController ):
         helptext = TextField( 'field_helptext_' + str( field_index ), 40, field['helptext'] )
         # field type
         field_type_select_field = SelectField( 'field_type_' + str( field_index ),
-                                            refresh_on_change=True,
-                                            refresh_on_change_values=[ SelectField.__name__ ] )
+                                               refresh_on_change=True,
+                                               refresh_on_change_values=[ SelectField.__name__ ] )
         # fill up the field type selectfield options
         field_type_options = []
         # if the form is for defining samples, then use the sample field types
@@ -436,26 +436,26 @@ class Forms( BaseUIController ):
             for supported_field_type in trans.model.Sample.supported_field_types:
                 if supported_field_type.__name__ == field[ 'type' ]:
                     field_type_select_field.add_option( supported_field_type.__name__,
-                                                     supported_field_type.__name__,
-                                                     selected=True )
+                                                        supported_field_type.__name__,
+                                                        selected=True )
                     if supported_field_type.__name__ == SelectField.__name__:
                         # when field type is Selectfield, add option Textfields
                         field_type_options = self.__build_field_type_select_field_options( field, field_index )
                 else:
                     field_type_select_field.add_option( supported_field_type.__name__,
-                                                     supported_field_type.__name__ )
+                                                        supported_field_type.__name__ )
         else:
             for supported_field_type in trans.model.FormDefinition.supported_field_types:
                 if supported_field_type.__name__ == field[ 'type' ]:
                     field_type_select_field.add_option( supported_field_type.__name__,
-                                                     supported_field_type.__name__,
-                                                     selected=True )
+                                                        supported_field_type.__name__,
+                                                        selected=True )
                     if supported_field_type.__name__ == SelectField.__name__:
                         # when field type is Selectfield, add option Textfields
                         field_type_options = self.__build_field_type_select_field_options( field, field_index )
                 else:
                     field_type_select_field.add_option( supported_field_type.__name__,
-                                                     supported_field_type.__name__ )
+                                                        supported_field_type.__name__ )
         # required/optional radio button
         required = SelectField( 'field_required_' + str(field_index), display='radio' )
         if field[ 'required' ] == 'required':

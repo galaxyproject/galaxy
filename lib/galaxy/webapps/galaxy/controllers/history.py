@@ -499,8 +499,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         assert history
         # TODO: formalize to trans.show_error
         assert ( history.user and ( history.user.id == trans.user.id ) or
-            ( history.id == trans.history.id ) or
-            ( trans.user_is_admin() ) )
+                 ( history.id == trans.history.id ) or
+                 ( trans.user_is_admin() ) )
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
         # top level
@@ -566,8 +566,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         hda_dictionaries = history_data[ 'contents' ]
 
         jobs = ( trans.sa_session.query( trans.app.model.Job )
-            .filter( trans.app.model.Job.user == trans.user )
-            .filter( trans.app.model.Job.history_id == unencoded_history_id ) ).all()
+                 .filter( trans.app.model.Job.user == trans.user )
+                 .filter( trans.app.model.Job.history_id == unencoded_history_id ) ).all()
         jobs = map( lambda j: self.encode_all_ids( trans, j.to_dict( 'element' ), True ), jobs )
 
         tools = {}
@@ -580,7 +580,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             tools[ tool_id ] = tool.to_dict( trans, io_details=True, link_details=True )
 
         return trans.fill_template( "history/structure.mako", historyId=history_dictionary[ 'id' ],
-            history=history_dictionary, hdas=hda_dictionaries, jobs=jobs, tools=tools, **kwargs )
+                                    history=history_dictionary, hdas=hda_dictionaries, jobs=jobs, tools=tools, **kwargs )
 
     @web.expose
     def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):
@@ -618,8 +618,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             return trans.show_error_message( error_msg, use_panels=use_panels )
 
         return trans.fill_template_mako( "history/view.mako",
-            history=history_dictionary, hdas=hda_dictionaries, user_is_owner=user_is_owner,
-            show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
+                                         history=history_dictionary, hdas=hda_dictionaries, user_is_owner=user_is_owner,
+                                         show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
     @web.expose
     def view_multiple( self, trans, include_deleted_histories=False, order='update' ):
@@ -647,12 +647,12 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         history_dictionaries = []
         for history in self.history_manager.by_user( trans.user, filters=deleted_filter ):
             history_dictionary = self.history_serializer.serialize_to_view( history,
-                view='detailed', user=trans.user, trans=trans )
+                                                                            view='detailed', user=trans.user, trans=trans )
             history_dictionaries.append( history_dictionary )
 
         return trans.fill_template_mako( "history/view_multiple.mako",
-            current_history_id=current_history_id, histories=history_dictionaries,
-            include_deleted_histories=include_deleted_histories, order=order )
+                                         current_history_id=current_history_id, histories=history_dictionaries,
+                                         include_deleted_histories=include_deleted_histories, order=order )
 
     @web.expose
     def display_by_username_and_slug( self, trans, username, slug ):
@@ -691,8 +691,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         #    dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
 
         return trans.stream_template_mako( "history/display.mako", item=history, item_data=[],
-            user_is_owner=user_is_owner, history_dict=history_dict, hda_dicts=hda_dicts,
-            user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+                                           user_is_owner=user_is_owner, history_dict=history_dict, hda_dicts=hda_dicts,
+                                           user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     # ......................................................................... sharing & publishing
     @web.expose
@@ -1155,7 +1155,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if most_recent_history:
             trans.set_history( most_recent_history )
             return trans.show_ok_message( "History deleted, your most recent history is now active",
-                refresh_frames=['history'] )
+                                          refresh_frames=['history'] )
 
         trans.get_or_create_default_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
@@ -1278,7 +1278,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return_dict = {
             "name" : history.name,
             "link" : url_for(controller='history', action="display_by_username_and_slug",
-                username=history.user.username, slug=history.slug ) }
+                             username=history.user.username, slug=history.slug ) }
         return return_dict
         # TODO: used in page/editor.mako
 
@@ -1307,8 +1307,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         ac_data = ""
         for history in ( trans.sa_session.query( model.History )
-                .filter_by( user=user )
-                .filter( func.lower( model.History.name ).like(q.lower() + "%") ) ):
+                         .filter_by( user=user )
+                         .filter( func.lower( model.History.name ).like(q.lower() + "%") ) ):
             ac_data = ac_data + history.name + "\n"
         return ac_data
         # TODO: used in grid_base.mako

@@ -137,7 +137,7 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
     ]
     columns.append(
         grids.MulticolFilterColumn( "Search name and filetype", cols_to_filter=[ columns[1], columns[2] ],
-        key="free-text-search", visible=False, filterable="standard" )
+                                    key="free-text-search", visible=False, filterable="standard" )
     )
 
     def get_current_item( self, trans, **kwargs ):
@@ -593,14 +593,14 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
             encoded_visualization_id = trans.security.encode_id( visualization.id )
             return trans.stream_template_mako( 'visualization/display_in_frame.mako',
-                item=visualization, encoded_visualization_id=encoded_visualization_id,
-                user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
-                content_only=True )
+                                               item=visualization, encoded_visualization_id=encoded_visualization_id,
+                                               user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                               content_only=True )
 
         visualization_config = self.get_visualization_config( trans, visualization )
         return trans.stream_template_mako( "visualization/display.mako", item=visualization, item_data=visualization_config,
-                            user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
-                            content_only=True )
+                                           user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                           content_only=True )
 
     @web.expose
     @web.json
@@ -626,7 +626,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         # Return content.
         visualization_config = self.get_visualization_config( trans, visualization )
         return trans.fill_template_mako( "visualization/item_content.mako", encoded_id=trans.security.encode_id(visualization.id),
-                                        item=visualization, item_data=visualization_config, content_only=True )
+                                         item=visualization, item_data=visualization_config, content_only=True )
 
     @web.expose
     @web.require_login( "create visualizations" )
@@ -656,14 +656,14 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             .add_text( "visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err )
             .add_select( "visualization_type", "Type", options=viz_type_options, error=None )
             .add_text( "visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                help="""A unique identifier that will be used for
+                              help="""A unique identifier that will be used for
                                 public links to this visualization. A default is generated
                                 from the visualization title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
             .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), error=None)
             .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                help="A description of the visualization; annotation is shown alongside published visualizations."),
+                              help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako"
         )
 
@@ -723,13 +723,13 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             web.FormBuilder( web.url_for(controller='visualization', action='edit', id=id ), "Edit visualization attributes", submit_text="Submit" )
             .add_text( "visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err )
             .add_text( "visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                help="""A unique identifier that will be used for
+                              help="""A unique identifier that will be used for
                                 public links to this visualization. A default is generated
                                 from the visualization title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
             .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                help="A description of the visualization; annotation is shown alongside published visualizations."),
+                              help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako" )
 
     # ------------------------- registry.

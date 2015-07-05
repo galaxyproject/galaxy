@@ -113,7 +113,7 @@ class RootController( BaseUIController, UsesAnnotations ):
         """
         if as_xml:
             return self.history_as_xml( trans,
-                show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
+                                        show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
 
         if trans.app.config.require_login and not trans.user:
             return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy histories.' )
@@ -132,11 +132,11 @@ class RootController( BaseUIController, UsesAnnotations ):
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
             log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
             history_dictionary[ 'error' ] = ( 'An error occurred getting the history data from the server. ' +
-                'Please contact a Galaxy administrator if the problem persists.' )
+                                              'Please contact a Galaxy administrator if the problem persists.' )
 
         return trans.fill_template_mako( "root/history.mako",
-            history=history_dictionary, hdas=hda_dictionaries,
-            show_deleted=show_deleted, show_hidden=show_hidden )
+                                         history=history_dictionary, hdas=hda_dictionaries,
+                                         show_deleted=show_deleted, show_hidden=show_hidden )
 
     # ---- Dataset display / editing ----------------------------------------
     @web.expose
@@ -348,7 +348,7 @@ class RootController( BaseUIController, UsesAnnotations ):
 
     @web.expose
     def history_add_to( self, trans, history_id=None, file_data=None,
-            name="Data Added to History", info=None, ext="txt", dbkey="?", copy_access_from=None, **kwd ):
+                        name="Data Added to History", info=None, ext="txt", dbkey="?", copy_access_from=None, **kwd ):
         """Adds a POSTed file to a History.
         """
         # TODO: unencoded id
@@ -418,7 +418,7 @@ class RootController( BaseUIController, UsesAnnotations ):
                 dataset = 'dataset' in kwd
                 bypass_manage_permission = 'bypass_manage_permission' in kwd
                 trans.app.security_agent.history_set_default_permissions( history, permissions,
-                    dataset=dataset, bypass_manage_permission=bypass_manage_permission )
+                                                                          dataset=dataset, bypass_manage_permission=bypass_manage_permission )
                 return trans.show_ok_message( 'Default history permissions have been changed.' )
             return trans.fill_template( 'history/permissions.mako' )
         else:

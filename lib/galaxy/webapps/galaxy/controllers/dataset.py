@@ -59,8 +59,8 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
     default_sort_key = "-update_time"
     columns = [
         grids.TextColumn( "Name", key="name",
-                        # Link name to dataset's history.
-                        link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True, inbound=True ),
+                          # Link name to dataset's history.
+                          link=( lambda item: iff( item.history.deleted, None, dict( operation="switch", id=item.id ) ) ), filterable="advanced", attach_popup=True, inbound=True ),
         HistoryColumn( "History", key="history", sortable=False, inbound=True,
                         link=( lambda item: iff( item.history.deleted, None, dict( operation="switch_history", id=item.id ) ) ) ),
         grids.IndividualTagsColumn( "Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid" ),

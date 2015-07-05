@@ -40,8 +40,8 @@ class ExternalServiceGrid( grids.Grid ):
                     attach_popup=True,
                     filterable="advanced" ),
         grids.TextColumn( "Description",
-                        key='description',
-                        filterable="advanced" ),
+                          key='description',
+                          filterable="advanced" ),
         ExternalServiceTypeColumn( "External Service Type" ),
         grids.GridColumn( "Last Updated",
                           key="update_time",
@@ -283,9 +283,9 @@ class ExternalService( BaseUIController, UsesFormDefinitionsMixin ):
             status = 'done'
             message = 'Reloaded external service type: %s' % new_external_service_type.name
         external_service_type_select_field = self.__build_external_service_type_select_field( trans,
-                                                                                external_service_type_id,
-                                                                                refresh_on_change=False,
-                                                                                visible_external_service_types_only=False )
+                                                                                              external_service_type_id,
+                                                                                              refresh_on_change=False,
+                                                                                              visible_external_service_types_only=False )
         if not trans.app.external_service_types.visible_external_service_types:
             message = 'There are no visible external service types in the external service types config file.'
             status = 'error'

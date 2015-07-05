@@ -501,7 +501,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         # something like: "Are you sure you want to continue connecting (yes/no)."
         output = pexpect.run( cmd,
                               events={ '\(yes\/no\)\.*' : 'yes\r\n',
-                                      '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
+                                       '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
                                        pexpect.TIMEOUT : print_ticks },
                               timeout=10 )
         if 'No such file or directory' in output:
@@ -616,8 +616,8 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                 if external_service not in dataset_elements:
                     dataset_elements[ external_service ] = ''
                 dataset_elements[ external_service ] += dataset_xml % dict( ID=str( sample_dataset.id ),
-                                                                      NAME=sample_dataset.name,
-                                                                      FILE=sample_dataset.file_path )
+                                                                            NAME=sample_dataset.name,
+                                                                            FILE=sample_dataset.file_path )
                 # update the dataset transfer status
                 sample_dataset.status = trans.app.model.SampleDataset.transfer_status.IN_QUEUE
                 trans.sa_session.add( sample_dataset )
