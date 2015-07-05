@@ -28,6 +28,7 @@ var FolderListView = Backbone.View.extend({
     events: {
         'click #select-all-checkboxes'  : 'selectAll',
         'click .dataset_row'            : 'selectClickedRow',
+        'click .folder_row'             : 'selectClickedRow',
         'click .sort-folder-link'       : 'sortColumnClicked'
     },
 
