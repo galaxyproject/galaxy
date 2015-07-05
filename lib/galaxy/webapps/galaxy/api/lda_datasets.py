@@ -574,7 +574,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
             folders_to_download = kwd.get( 'folder_ids', None )
         if folders_to_download is not None:
             folders_to_download = util.listify( folders_to_download )
-            
+
             current_user_roles = trans.get_current_user_roles()
 
             def traverse( folder ):
