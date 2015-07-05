@@ -313,7 +313,7 @@ var FolderToolbarView = Backbone.View.extend({
             }
         } );
     var url = ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets/download/' + format;
-    var data = { 'ld_ids' : dataset_ids, 'lf_ids' : folder_ids };
+    var data = { 'ld_ids' : dataset_ids, 'folder_ids' : folder_ids };
     this.processDownload( url, data, 'get' );
   },
 

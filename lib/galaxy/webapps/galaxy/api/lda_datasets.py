@@ -544,8 +544,8 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :type   format:      string
         :param  ld_ids[]:      an array of encoded dataset ids
         :type   ld_ids[]:      an array
-        :param  lf_ids[]:      an array of encoded folder ids
-        :type   lf_ids[]:      an array
+        :param  folder_ids[]:      an array of encoded folder ids
+        :type   folder_ids[]:      an array
 
         :rtype:   file
         :returns: either archive with the requested datasets packed inside or a single uncompressed dataset
@@ -569,9 +569,9 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 except Exception, e:
                     raise exceptions.InternalServerError( 'Unknown error.' )
 
-        folders_to_download = kwd.get( 'lf_ids%5B%5D', None )
+        folders_to_download = kwd.get( 'folder_ids%5B%5D', None )
         if folders_to_download is None:
-            folders_to_download = kwd.get( 'lf_ids', None )
+            folders_to_download = kwd.get( 'folder_ids', None )
         if folders_to_download is not None:
             folders_to_download = util.listify( folders_to_download )
             
