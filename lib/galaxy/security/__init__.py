@@ -488,12 +488,12 @@ class GalaxyRBACAgent( RBACAgent ):
                         # TODO: Fix this failure message:
                         else:
                             log.debug( "Error: dataset %d; originally: %s; now: %s"
-                                     % ( item.library_dataset_id,
-                                         base_result, new_result ) )
+                                       % ( item.library_dataset_id,
+                                           base_result, new_result ) )
                     else:
                         log.debug( "Error: dataset %d: had %d entries, now %d entries"
-                                 % ( item.library_dataset_id, len( base_result ),
-                                     len( new_result ) ) )
+                                   % ( item.library_dataset_id, len( base_result ),
+                                       len( new_result ) ) )
                 log.debug( "get_actions_for_items: Test end" )
             except Exception, e:
                 log.debug( "Exception in test code: %s" % e )
@@ -549,7 +549,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     log.debug( "Item %d: success" % item.id )
                 else:
                     log.debug( "Item %d: fail: original: %s; new: %s"
-                             % ( item.id, orig_value, ret_allow_action[ item.id ] ) )
+                               % ( item.id, orig_value, ret_allow_action[ item.id ] ) )
             log.debug( "allow_action_for_items: test end" )
         return ret_allow_action
 
@@ -625,7 +625,7 @@ class GalaxyRBACAgent( RBACAgent ):
         current_user_role_ids = [ role.id for role in user.all_roles() ]
         library_access_action = self.permitted_actions.LIBRARY_ACCESS.action
         restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions )
-                                .filter( trans.model.LibraryPermissions.table.c.action == library_access_action ).distinct() ]
+                                   .filter( trans.model.LibraryPermissions.table.c.action == library_access_action ).distinct() ]
         accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query(
                                               trans.model.LibraryPermissions ).filter(
                                               and_( trans.model.LibraryPermissions.table.c.action == library_access_action,  # noqa
@@ -951,7 +951,7 @@ class GalaxyRBACAgent( RBACAgent ):
         accessible_restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query(
                                                    trans.model.RequestTypePermissions ).filter(
                                                    and_( trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
-                                                   trans.model.RequestTypePermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
+                                                         trans.model.RequestTypePermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
         # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
         for request_type in trans.sa_session.query( trans.model.RequestType ) \
