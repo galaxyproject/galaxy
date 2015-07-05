@@ -376,8 +376,8 @@ class Data( object ):
         else:
             trans.response.set_content_type( "text/html" )
             return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data=open( data.file_name ).read(max_peek_size),
-                                            data=data)
+                                               truncated_data=open( data.file_name ).read(max_peek_size),
+                                               data=data)
 
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""

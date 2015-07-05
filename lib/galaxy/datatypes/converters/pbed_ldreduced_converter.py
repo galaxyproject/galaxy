@@ -54,7 +54,7 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
 
 
 def makeLDreduced(basename, infpath=None, outfpath=None, plinke='plink', forcerebuild=False, returnFname=False,
-        winsize="60", winmove="40", r2thresh="0.1" ):
+                  winsize="60", winmove="40", r2thresh="0.1" ):
     """ not there so make and leave in output dir for post job hook to copy back into input extra files path for next time
     """
     ldr = basename  # we store ld reduced and thinned data
@@ -70,7 +70,7 @@ def makeLDreduced(basename, infpath=None, outfpath=None, plinke='plink', forcere
     plinktasks = []
     vclbase = [plinke, '--noweb']
     plinktasks += [['--bfile', inbase, '--indep-pairwise %s %s %s' % (winsize, winmove, r2thresh), '--out %s' % outbase],
-            ['--bfile', inbase, '--extract %s.prune.in --make-bed --out %s' % (outbase, outbase)]]
+                   ['--bfile', inbase, '--extract %s.prune.in --make-bed --out %s' % (outbase, outbase)]]
     vclbase = [plinke, '--noweb']
     loglines = pruneLD(plinktasks=plinktasks, cd=outfpath, vclbase=vclbase)
 
@@ -105,7 +105,7 @@ def main():
         pass
     plink = sys.argv[7]
     makeLDreduced(base_name, infpath=inpedfilepath, outfpath=outfilepath, plinke=plink, forcerebuild=False, returnFname=False,
-        winsize=winsize, winmove=winmove, r2thresh=r2thresh)
+                  winsize=winsize, winmove=winmove, r2thresh=r2thresh)
     f = file(outhtmlname, 'w')
     f.write(galhtmlprefix % prog)
     flist = os.listdir(outfilepath)

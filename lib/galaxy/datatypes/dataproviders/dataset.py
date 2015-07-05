@@ -119,7 +119,7 @@ class DatasetDataProvider( base.DataProvider ):
                                   getattr( self.dataset.datatype, 'column_names', None ) or None )
         if not metadata_column_names:
             raise KeyError( 'No column_names found for ' +
-                'datatype: %s, dataset: %s' % ( str( self.dataset.datatype ), str( self.dataset ) ) )
+                            'datatype: %s, dataset: %s' % ( str( self.dataset.datatype ), str( self.dataset ) ) )
         indeces = []  # if indeces and column_names:
         # pull using indeces and re-name with given names - no need to alter (does as super would)
         #    pass
@@ -295,7 +295,7 @@ class GenomicRegionDataProvider( column.ColumnarDataProvider ):
         indeces = [ chrom_column, start_column, end_column ]
         if not all( map( lambda i: i is not None, indeces ) ):
             raise ValueError( "Could not determine proper column indeces for" +
-                " chrom, start, end: %s" % ( str( indeces ) ) )
+                              " chrom, start, end: %s" % ( str( indeces ) ) )
         kwargs.update({ 'indeces' : indeces })
 
         if not kwargs.get( 'column_types', None ):

@@ -83,8 +83,8 @@ class TabularData( data.Text ):
             else:
                 trans.response.set_content_type( "text/html" )
                 return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data=open( dataset.file_name ).read(max_peek_size),
-                                            data=dataset)
+                                                   truncated_data=open( dataset.file_name ).read(max_peek_size),
+                                                   data=dataset)
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -98,11 +98,11 @@ class TabularData( data.Text ):
             if column_number is None:
                 column_number = 'null'
             return trans.fill_template( "/dataset/tabular_chunked.mako",
-                        dataset=dataset,
-                        chunk=self.get_chunk(trans, dataset, 0),
-                        column_number=column_number,
-                        column_names=column_names,
-                        column_types=column_types )
+                                        dataset=dataset,
+                                        chunk=self.get_chunk(trans, dataset, 0),
+                                        column_number=column_number,
+                                        column_names=column_names,
+                                        column_types=column_types )
 
     def make_html_table( self, dataset, **kwargs ):
         """Create HTML table, used for displaying peek"""

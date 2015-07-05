@@ -42,8 +42,8 @@ class ColumnarDataProvider( line.RegexLineDataProvider ):
     }
 
     def __init__( self, source, indeces=None,
-            column_count=None, column_types=None, parsers=None, parse_columns=True,
-            deliminator='\t', filters=None, **kwargs ):
+                  column_count=None, column_types=None, parsers=None, parse_columns=True,
+                  deliminator='\t', filters=None, **kwargs ):
         """
         :param indeces: a list of indeces of columns to gather from each row
             Optional: will default to `None`.

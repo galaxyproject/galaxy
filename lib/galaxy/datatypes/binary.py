@@ -323,7 +323,7 @@ class Bam( Binary ):
         if exit_code == -6:
             # SIGABRT, most likely samtools 1.0+ which does not accept the index name parameter.
             dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
-                    '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+                                            '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
             os.symlink( dataset.file_name, dataset_symlink )
             try:
                 command = [ 'samtools', 'index', dataset_symlink ]
@@ -494,7 +494,7 @@ class Bcf( Binary):
         # Usage: bcftools index <in.bcf>
 
         dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
-                    '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+                                        '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
         os.symlink( dataset.file_name, dataset_symlink )
 
         stderr_name = tempfile.NamedTemporaryFile( prefix="bcf_index_stderr" ).name
@@ -799,7 +799,7 @@ class GeminiSQLite( SQlite ):
     def sniff( self, filename ):
         if super( GeminiSQLite, self ).sniff( filename ):
             gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
-                                  "variant_impacts", "variants", "version" ]
+                                   "variant_impacts", "variants", "version" ]
             try:
                 conn = sqlite.connect( filename )
                 c = conn.cursor()

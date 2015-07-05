@@ -253,7 +253,7 @@ class Rgenetics(Html):
     """
 
     MetadataElement( name="base_name", desc="base name for all transformed versions of this genetic dataset", default='RgeneticsData',
-    readonly=True, set_in_upload=True)
+                     readonly=True, set_in_upload=True)
 
     composite_type = 'auto_primary_file'
     allow_datatype_change = False
@@ -365,13 +365,13 @@ class Lped(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.ped',
-            description='Pedigree File',
-            substitute_name_with_metadata='base_name',
-            is_binary=False )
+                                 description='Pedigree File',
+                                 substitute_name_with_metadata='base_name',
+                                 is_binary=False )
         self.add_composite_file( '%s.map',
-            description='Map File',
-            substitute_name_with_metadata='base_name',
-            is_binary=False )
+                                 description='Map File',
+                                 substitute_name_with_metadata='base_name',
+                                 is_binary=False )
 
 
 class Pphe(Rgenetics):
@@ -383,9 +383,9 @@ class Pphe(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.pphe',
-            description='Plink Phenotype File',
-            substitute_name_with_metadata='base_name',
-            is_binary=False )
+                                 description='Plink Phenotype File',
+                                 substitute_name_with_metadata='base_name',
+                                 is_binary=False )
 
 
 class Fphe(Rgenetics):
@@ -398,8 +398,8 @@ class Fphe(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.fphe',
-            description='FBAT Phenotype File',
-            substitute_name_with_metadata='base_name' )
+                                 description='FBAT Phenotype File',
+                                 substitute_name_with_metadata='base_name' )
 
 
 class Phe(Rgenetics):
@@ -411,9 +411,9 @@ class Phe(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.phe',
-            description='Phenotype File',
-            substitute_name_with_metadata='base_name',
-            is_binary=False )
+                                 description='Phenotype File',
+                                 substitute_name_with_metadata='base_name',
+                                 is_binary=False )
 
 
 class Fped(Rgenetics):
@@ -426,8 +426,8 @@ class Fped(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.fped', description='FBAT format pedfile',
-            substitute_name_with_metadata='base_name',
-            is_binary=False )
+                                 substitute_name_with_metadata='base_name',
+                                 is_binary=False )
 
 
 class Pbed(Rgenetics):
@@ -483,7 +483,7 @@ class Eigenstratpca(Rgenetics):
     def __init__( self, **kwd ):
         Rgenetics.__init__(self, **kwd)
         self.add_composite_file( '%s.eigenstratpca',
-            description='Eigenstrat PCA file', substitute_name_with_metadata='base_name' )
+                                 description='Eigenstrat PCA file', substitute_name_with_metadata='base_name' )
 
 
 class Snptest(Rgenetics):
@@ -510,7 +510,7 @@ class RexpBase( Html ):
     MetadataElement( name="column_names", default=[], desc="Column names", visible=True )
     MetadataElement(name="pheCols", default=[], desc="Select list for potentially interesting variables", visible=True)
     MetadataElement( name="base_name",
-    desc="base name for all transformed versions of this expression dataset", default='rexpression', set_in_upload=True)
+                     desc="base name for all transformed versions of this expression dataset", default='rexpression', set_in_upload=True)
     MetadataElement( name="pheno_path", desc="Path to phenotype data for this experiment", default="rexpression.pheno", visible=True)
     file_ext = 'rexpbase'
     html_table = None
@@ -521,7 +521,7 @@ class RexpBase( Html ):
     def __init__( self, **kwd ):
         Html.__init__(self, **kwd)
         self.add_composite_file( '%s.pheno', description='Phenodata tab text file',
-          substitute_name_with_metadata='base_name', is_binary=False)
+                                 substitute_name_with_metadata='base_name', is_binary=False)
 
     def generate_primary_file( self, dataset=None ):
         """
@@ -776,8 +776,8 @@ class Affybatch( RexpBase ):
     def __init__( self, **kwd ):
         RexpBase.__init__(self, **kwd)
         self.add_composite_file( '%s.affybatch',
-            description='AffyBatch R object saved to file',
-            substitute_name_with_metadata='base_name', is_binary=True )
+                                 description='AffyBatch R object saved to file',
+                                 substitute_name_with_metadata='base_name', is_binary=True )
 
 
 class Eset( RexpBase ):
@@ -789,8 +789,8 @@ class Eset( RexpBase ):
     def __init__( self, **kwd ):
         RexpBase.__init__(self, **kwd)
         self.add_composite_file( '%s.eset',
-            description='ESet R object saved to file',
-            substitute_name_with_metadata='base_name', is_binary=True )
+                                 description='ESet R object saved to file',
+                                 substitute_name_with_metadata='base_name', is_binary=True )
 
 
 class MAlist( RexpBase ):
@@ -802,8 +802,8 @@ class MAlist( RexpBase ):
     def __init__( self, **kwd ):
         RexpBase.__init__(self, **kwd)
         self.add_composite_file( '%s.malist',
-            description='MAlist R object saved to file',
-            substitute_name_with_metadata='base_name', is_binary=True )
+                                 description='MAlist R object saved to file',
+                                 substitute_name_with_metadata='base_name', is_binary=True )
 
 
 if __name__ == '__main__':

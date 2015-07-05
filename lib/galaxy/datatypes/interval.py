@@ -263,9 +263,9 @@ class Interval( Tabular ):
             internal_url = url_for( controller='dataset', dataset_id=dataset.id,
                                     action='display_at', filename='ucsc_' + site_name )
             display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
-                    % (base_url, url_for( controller='root' ), dataset.id, type) )
+                                             % (base_url, url_for( controller='root' ), dataset.id, type) )
             redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s"
-                    % (site_url, dataset.dbkey, chrom, start, stop ) )
+                                              % (site_url, dataset.dbkey, chrom, start, stop ) )
             link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
             ret_val.append( ( site_name, link ) )
         return ret_val
@@ -650,7 +650,7 @@ class Gff( Tabular, _RemoteCallMixin ):
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'int', 'str', 'str', 'str'],
-        param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     MetadataElement( name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0 )
     MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[] )
@@ -902,7 +902,7 @@ class Gff3( Gff ):
 
     """Add metadata elements"""
     MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
-        param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
@@ -1014,7 +1014,7 @@ class Gtf( Gff ):
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
-        param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     def sniff( self, filename ):
         """
