@@ -75,9 +75,8 @@ class DatasetDataProvider( base.DataProvider ):
             Optional: defaults to None (return all types)
         :type indeces: list of ints
         """
-        metadata_column_types = ( self.dataset.metadata.column_types
-                                  or getattr( self.dataset.datatype, 'column_types', None )
-                                  or None )
+        metadata_column_types = ( self.dataset.metadata.column_types or
+                                  getattr( self.dataset.datatype, 'column_types', None ) or None )
         if not metadata_column_types:
             return metadata_column_types
         if indeces:
@@ -95,9 +94,8 @@ class DatasetDataProvider( base.DataProvider ):
             Optional: defaults to None (return all names)
         :type indeces: list of ints
         """
-        metadata_column_names = ( self.dataset.metadata.column_names
-                                or getattr( self.dataset.datatype, 'column_names', None )
-                                or None )
+        metadata_column_names = ( self.dataset.metadata.column_names or
+                                  getattr( self.dataset.datatype, 'column_names', None ) or None )
         if not metadata_column_names:
             return metadata_column_names
         if indeces:
@@ -117,13 +115,12 @@ class DatasetDataProvider( base.DataProvider ):
         :raises KeyError: if column_names are not found
         :raises ValueError: if an entry in list_of_column_names is not in column_names
         """
-        metadata_column_names = ( self.dataset.metadata.column_names
-                                  or getattr( self.dataset.datatype, 'column_names', None )
-                                  or None )
+        metadata_column_names = ( self.dataset.metadata.column_names or
+                                  getattr( self.dataset.datatype, 'column_names', None ) or None )
         if not metadata_column_names:
-            raise KeyError( 'No column_names found for '
-                            + 'datatype: %s, dataset: %s' % ( str( self.dataset.datatype ), str( self.dataset ) ) )
-        indeces = []        # if indeces and column_names:
+            raise KeyError( 'No column_names found for ' +
+                'datatype: %s, dataset: %s' % ( str( self.dataset.datatype ), str( self.dataset ) ) )
+        indeces = []  # if indeces and column_names:
         # pull using indeces and re-name with given names - no need to alter (does as super would)
         #    pass
         for column_name in list_of_column_names:
@@ -297,8 +294,8 @@ class GenomicRegionDataProvider( column.ColumnarDataProvider ):
             end_column = dataset_source.get_metadata_column_index_by_name( 'endCol' )
         indeces = [ chrom_column, start_column, end_column ]
         if not all( map( lambda i: i is not None, indeces ) ):
-            raise ValueError( "Could not determine proper column indeces for"
-                            + " chrom, start, end: %s" % ( str( indeces ) ) )
+            raise ValueError( "Could not determine proper column indeces for" +
+                " chrom, start, end: %s" % ( str( indeces ) ) )
         kwargs.update({ 'indeces' : indeces })
 
         if not kwargs.get( 'column_types', None ):
@@ -647,8 +644,8 @@ class SamtoolsDataProvider( line.RegexLineDataProvider ):
 
         # if sam add -S
         # TODO: not the best test in the world...
-        if( ( self.dataset.ext == 'sam' )
-        and ( 'S' not in validated_flag_list ) ):
+        if( ( self.dataset.ext == 'sam' ) and
+                ( 'S' not in validated_flag_list ) ):
             validated_flag_list.append( 'S' )
 
         if validated_flag_list:

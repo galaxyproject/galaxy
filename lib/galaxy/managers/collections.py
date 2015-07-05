@@ -43,8 +43,8 @@ class DatasetCollectionManager( object ):
         self,
         trans,
         parent,
-            # PRECONDITION: security checks on ability to add to parent
-            # occurred during load.
+        # PRECONDITION: security checks on ability to add to parent
+        # occurred during load.
         name,
         collection_type,
         element_identifiers=None,
@@ -181,8 +181,8 @@ class DatasetCollectionManager( object ):
         self,
         trans,
         parent,
-            # PRECONDITION: security checks on ability to add to parent
-            # occurred during load.
+        # PRECONDITION: security checks on ability to add to parent
+        # occurred during load.
         source,
         encoded_source_id,
     ):

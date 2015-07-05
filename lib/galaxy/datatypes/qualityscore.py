@@ -4,8 +4,6 @@ Qualityscore class
 
 import data
 import logging
-from galaxy.datatypes.sniff import *
-
 log = logging.getLogger(__name__)
 
 
@@ -24,6 +22,7 @@ class QualityScoreSOLiD ( QualityScore ):
 
     def sniff( self, filename ):
         """
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
         >>> QualityScoreSOLiD().sniff( fname )
         False
@@ -80,6 +79,7 @@ class QualityScore454 ( QualityScore ):
 
     def sniff( self, filename ):
         """
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
         >>> QualityScore454().sniff( fname )
         False

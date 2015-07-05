@@ -15,7 +15,7 @@ from cgi import escape
 from galaxy import eggs, util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.checkers import is_gzip
-from galaxy.datatypes.sniff import get_test_fname, get_headers
+from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.util.image_util import check_image_type
 
@@ -49,7 +49,7 @@ class SequenceSplitLocations( data.Text ):
                 # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
                 dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
                 dataset.blurb = '%d sections' % len(parsed_data['sections'])
-            except Exception as e:
+            except Exception:
                 dataset.peek = 'Not FQTOC file'
                 dataset.blurb = 'Not FQTOC file'
         else:
@@ -96,6 +96,7 @@ class Sequence( data.Text ):
                 data_lines += 1
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
+
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
@@ -167,6 +168,7 @@ class Sequence( data.Text ):
 
     def write_split_files(cls, input_datasets, toc_file_datasets, subdir_generator_function, sequences_per_file):
         directories = []
+
         def get_subdir(idx):
             if idx < len(directories):
                 return directories[idx]
@@ -287,7 +289,7 @@ class Sequence( data.Text ):
         if is_compressed:
             cmd = 'zcat "%s" | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c' % (input_name, start_line + 1, line_count)
         else:
-            cmd = 'tail -n +%s "%s" 2> /dev/null | head -%s'  % (start_line + 1, input_name, line_count)
+            cmd = 'tail -n +%s "%s" 2> /dev/null | head -%s' % (start_line + 1, input_name, line_count)
         cmd += ' > "%s"' % output_name
 
         return [cmd]
@@ -338,6 +340,7 @@ class Fasta( Sequence ):
 
             We will only check that the first purported sequence is correctly formatted.
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Fasta().sniff( fname )
         False
@@ -397,8 +400,7 @@ class Fasta( Sequence ):
             # if split_mode = number_of_parts, and split_size = 10, and
             # we know the number of sequences (say 1234), then divide by
             # by ten, giving ten files of approx 123 sequences each.
-            if input_datasets[0].metadata is not None \
-            and input_datasets[0].metadata.sequences:
+            if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences:
                 # Galaxy has already counted/estimated the number
                 batch_size = 1 + input_datasets[0].metadata.sequences // split_size
                 cls._count_split(input_file, batch_size, subdir_generator_function)
@@ -425,8 +427,7 @@ class Fasta( Sequence ):
         This does of course preserve complete records - it only splits at the
         start of a new FASTQ sequence record.
         """
-        log.debug("Attemping to split FASTA file %s into chunks of %i bytes" \
-                  % (input_file, chunk_size))
+        log.debug("Attemping to split FASTA file %s into chunks of %i bytes" % (input_file, chunk_size))
         f = open(input_file, "rU")
         part_file = None
         try:
@@ -462,8 +463,7 @@ class Fasta( Sequence ):
 
     def _count_split(cls, input_file, chunk_size, subdir_generator_function):
         """Split a FASTA file into chunks based on counting records."""
-        log.debug("Attemping to split FASTA file %s into chunks of %i sequences" \
-                  % (input_file, chunk_size))
+        log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
         f = open(input_file, "rU")
         part_file = None
         try:
@@ -511,6 +511,7 @@ class csFasta( Sequence ):
             >2_15_85_F3
             T213021013012303002332212012112221222112212222
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
         >>> csFasta().sniff( fname )
         False
@@ -586,7 +587,8 @@ class Fastq ( Sequence ):
             sequences += 1
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
-    def sniff ( self, filename ):
+
+    def sniff( self, filename ):
         """
         Determines whether the file is in generic fastq format
         For details, see http://maq.sourceforge.net/fastq.shtml
@@ -594,6 +596,7 @@ class Fastq ( Sequence ):
         Note: There are three kinds of FASTQ files, known as "Sanger" (sometimes called "Standard"), Solexa, and Illumina
               These differ in the representation of the quality scores
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( '1.fastqsanger' )
         >>> Fastq().sniff( fname )
         True
@@ -698,6 +701,7 @@ class Maf( Alignment ):
 
     def init_meta( self, dataset, copy_from=None ):
         Alignment.init_meta( self, dataset, copy_from=copy_from )
+
     def set_meta( self, dataset, overwrite=True, **kwd ):
         """
         Parses and sets species, chromosomes, index from MAF file.
@@ -726,6 +730,7 @@ class Maf( Alignment ):
             index_file = dataset.metadata.spec['maf_index'].param.new_file( dataset=dataset )
         indexes.write( open( index_file.file_name, 'wb' ) )
         dataset.metadata.maf_index = index_file
+
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
@@ -739,9 +744,11 @@ class Maf( Alignment ):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return self.make_html_table( dataset )
+
     def make_html_table( self, dataset, skipchars=[] ):
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -753,7 +760,7 @@ class Maf( Alignment ):
             if not dataset.peek:
                 dataset.set_peek()
             data = dataset.peek
-            lines =  data.splitlines()
+            lines = data.splitlines()
             for line in lines:
                 line = line.strip()
                 if not line:
@@ -764,6 +771,7 @@ class Maf( Alignment ):
         except Exception as exc:
             out = "Can't create peek %s" % exc
         return out
+
     def sniff( self, filename ):
         """
         Determines wether the file is in maf format
@@ -779,6 +787,7 @@ class Maf( Alignment ):
 
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format5
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Maf().sniff( fname )
         True
@@ -861,6 +870,7 @@ class Axt( data.Text ):
 
         For complete details see http://genome.ucsc.edu/goldenPath/help/axt.html
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'alignment.axt' )
         >>> Axt().sniff( fname )
         True
@@ -878,7 +888,7 @@ class Axt( data.Text ):
                 if len(hdr) != 9:
                     return False
                 try:
-                    map ( int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]] )
+                    map( int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]] )
                 except:
                     return False
                 if hdr[7] not in data.valid_strand:
@@ -905,6 +915,7 @@ class Lav( data.Text ):
 
         For complete details see http://www.bioperl.org/wiki/LAV_alignment_format
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'alignment.lav' )
         >>> Lav().sniff( fname )
         True

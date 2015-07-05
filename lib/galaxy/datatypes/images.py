@@ -5,8 +5,8 @@ Image classes
 import data
 import logging
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.sniff import *
-from galaxy.datatypes.util.image_util import *
+from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.util.image_util import check_image_type
 from urllib import quote_plus
 import zipfile
 import imghdr
@@ -316,6 +316,7 @@ class Html( data.Text ):
         """
         Determines whether the file is in html format
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'complete.bed' )
         >>> Html().sniff( fname )
         False

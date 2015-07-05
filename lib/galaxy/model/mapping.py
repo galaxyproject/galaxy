@@ -1349,8 +1349,7 @@ mapper( model.RequestTypeExternalServiceAssociation, model.RequestTypeExternalSe
         request_type=relation( model.RequestType,
                                primaryjoin=( ( model.RequestTypeExternalServiceAssociation.table.c.request_type_id == model.RequestType.table.c.id ) ), backref="external_service_associations" ),
         external_service=relation( model.ExternalService,
-                                   primaryjoin=( model.RequestTypeExternalServiceAssociation.table.c.external_service_id
-                                       == model.ExternalService.table.c.id ) )
+                                   primaryjoin=( model.RequestTypeExternalServiceAssociation.table.c.external_service_id == model.ExternalService.table.c.id ) )
     )
 )
 

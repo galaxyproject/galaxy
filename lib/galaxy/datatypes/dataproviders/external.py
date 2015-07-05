@@ -158,7 +158,6 @@ class TempfileDataProvider( base.DataProvider ):
 
     def write_to_file( self ):
         parent_gen = super( TempfileDataProvider, self ).__iter__()
-        #???
         with open( self.tmp_file, 'w' ) as open_file:
             for datum in parent_gen:
                 open_file.write( datum + '\n' )

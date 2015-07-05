@@ -527,16 +527,9 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
         """
         Is the `dataset_assoc` datatype equal to the registered datatype `class_str`?
         """
-<<<<<<< HEAD
-        comparison_class = self.app.datatypes_registry.get_datatype_class_by_name(
-            class_str)
-        return (comparison_class and
-            dataset_assoc.datatype.__class__ == comparison_class)
-=======
         comparison_class = self.app.datatypes_registry.get_datatype_class_by_name( class_str )
-        return ( comparison_class
-             and dataset_assoc.datatype.__class__ == comparison_class )
->>>>>>> parent of b947d95... linting lib/galaxy/managers/
+        return ( comparison_class and
+            dataset_assoc.datatype.__class__ == comparison_class )
 
     def isinstance_datatype( self, dataset_assoc, class_strs ):
         """
@@ -548,12 +541,6 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
         for class_str in class_strs.split( ',' ):
             datatype_class = parse_datatype_fn( class_str )
             if datatype_class:
-<<<<<<< HEAD
                 comparison_classes.append(datatype_class)
         return (comparison_classes and
             isinstance(dataset_assoc.datatype, comparison_classes))
-=======
-                comparison_classes.append( datatype_class )
-        return ( comparison_classes
-             and isinstance( dataset_assoc.datatype, comparison_classes ) )
->>>>>>> parent of b947d95... linting lib/galaxy/managers/

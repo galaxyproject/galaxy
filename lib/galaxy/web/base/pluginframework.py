@@ -12,16 +12,14 @@ import os.path
 import sys
 import imp
 
-import pkg_resources
-pkg_resources.require( 'MarkupSafe' )
-pkg_resources.require( 'Mako' )
-import mako.lookup
-
 from galaxy import util
 from galaxy.util import odict
 from galaxy.util import bunch
 
-
+import pkg_resources
+pkg_resources.require( 'MarkupSafe' )
+pkg_resources.require( 'Mako' )
+import mako.lookup
 import logging
 log = logging.getLogger( __name__ )
 
@@ -446,8 +444,7 @@ class PageServingPluginManager( PluginManager ):
             return False
         # reject only if we don't have either
         listdir = os.listdir( plugin_path )
-        if( ( 'templates' not in listdir )
-        and ( 'static' not in listdir ) ):
+        if( ( 'templates' not in listdir ) and ( 'static' not in listdir ) ):
             return False
         return True
 
