@@ -1201,22 +1201,22 @@ class GalaxyRBACAgent( RBACAgent ):
                 if ( library and not self.library_is_public( item ) ) or ( not library and not self.dataset_is_public( item ) ):
                     # Ensure that roles being associated with DATASET_ACCESS are a subset of the legitimate roles
                     # derived from the roles associated with the access permission on item if it's not public.  This
-                    # will keep ill-legitimate roles from being associated with the DATASET_ACCESS permission on the
+                    # will keep illegitimate roles from being associated with the DATASET_ACCESS permission on the
                     # dataset (i.e., in the case where item is .a library, if Role1 is associated with LIBRARY_ACCESS,
                     # then only those users that have Role1 should be associated with DATASET_ACCESS.
                     legitimate_roles = self.get_legitimate_roles( trans, item, cntrller )
-                    ill_legitimate_roles = []
+                    illegitimate_roles = []
                     for role in in_roles:
                         if role not in legitimate_roles:
-                            ill_legitimate_roles.append( role )
-                    if ill_legitimate_roles:
-                        # This condition should never occur since ill-legitimate roles are filtered out of the set of
+                            illegitimate_roles.append( role )
+                    if illegitimate_roles:
+                        # This condition should never occur since illegitimate roles are filtered out of the set of
                         # roles displayed on the forms, but just in case there is a bug somewhere that incorrectly
                         # filters, we'll display this message.
                         error = True
                         msg += "The following roles are not associated with users that have the 'access' permission on this "
                         msg += "item, so they were incorrectly displayed: "
-                        for role in ill_legitimate_roles:
+                        for role in illegitimate_roles:
                             msg += "%s, " % role.name
                         msg = msg.rstrip( ", " )
                         new_in_roles = []
