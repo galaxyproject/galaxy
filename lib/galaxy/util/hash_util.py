@@ -16,8 +16,10 @@ try:
 except ImportError, e:
     from sha import new as sha1
     import sha
-    from md5 import new as md5  # noqa
+    from md5 import new as md5
 import hmac
+
+__all__ = ['md5', 'hashlib', 'sha1', 'sha', 'new_secure_hash', 'hmac_new', 'is_hashable']
 
 log = logging.getLogger( __name__ )
 
