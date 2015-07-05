@@ -123,7 +123,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         rval = []
         for history in histories:
             history_dict = self.history_serializer.serialize_to_view( history,
-                user=trans.user, trans=trans, **serialization_params )
+                                                                      user=trans.user, trans=trans, **serialization_params )
             rval.append( history_dict )
         return rval
 
@@ -183,7 +183,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
 
         return self.history_serializer.serialize_to_view( history,
-            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api_anonymous
     def citations( self, trans, history_id, **kwd ):
@@ -249,7 +249,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         trans.sa_session.flush()
 
         return self.history_serializer.serialize_to_view( new_history,
-            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def delete( self, trans, id, **kwd ):
@@ -288,7 +288,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             self.history_manager.purge( history )
 
         return self.history_serializer.serialize_to_view( history,
-            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def undelete( self, trans, id, **kwd ):
@@ -311,7 +311,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         self.history_manager.undelete( history )
 
         return self.history_serializer.serialize_to_view( history,
-            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def update( self, trans, id, payload, **kwd ):
@@ -340,7 +340,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         self.history_deserializer.deserialize( history, payload, user=trans.user, trans=trans )
         return self.history_serializer.serialize_to_view( history,
-            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def archive_export( self, trans, id, **kwds ):

@@ -120,7 +120,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
 
     def __get_value_mapper( self, trans, tool_shed_repository ):
         value_mapper = { 'id' : trans.security.encode_id( tool_shed_repository.id ),
-                       'error_message' : tool_shed_repository.error_message or '' }
+                         'error_message' : tool_shed_repository.error_message or '' }
         return value_mapper
 
     @expose_api

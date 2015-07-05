@@ -56,8 +56,8 @@ class GroupUsersAPIController( BaseAPIController ):
             for uga in group.users:
                 if uga.user == user:
                     item = dict( id=user_id,
-                                email=user.email,
-                                url=url_for( 'group_user', group_id=group_id, id=user_id) )  # TODO Fix This
+                                 email=user.email,
+                                 url=url_for( 'group_user', group_id=group_id, id=user_id) )  # TODO Fix This
             if not item:
                 item = "user %s not in group %s" % (user.email, group.name)
         except Exception, e:
@@ -82,8 +82,8 @@ class GroupUsersAPIController( BaseAPIController ):
             for uga in group.users:
                 if uga.user == user:
                     item = dict( id=user_id,
-                                email=user.email,
-                                url=url_for( 'group_user', group_id=group_id, id=user_id) )
+                                 email=user.email,
+                                 url=url_for( 'group_user', group_id=group_id, id=user_id) )
             if not item:
                 uga = trans.app.model.UserGroupAssociation( user, group )
                 # Add UserGroupAssociations

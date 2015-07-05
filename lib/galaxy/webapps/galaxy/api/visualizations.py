@@ -63,7 +63,7 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         dictionary = trans.security.encode_dict_ids( self.get_visualization_dict( visualization ) )
         dictionary[ 'url' ] = web.url_for( controller='visualization',
-            action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug )
+                                           action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug )
         dictionary[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, trans.user, visualization )
 
         # need to encode ids in revisions as well

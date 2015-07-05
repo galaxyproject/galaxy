@@ -56,8 +56,8 @@ class GroupRolesAPIController( BaseAPIController ):
             for gra in group.roles:
                 if gra.role == role:
                     item = dict( id=role_id,
-                                name=role.name,
-                                url=url_for( 'group_role', group_id=group_id, id=role_id) )  # TODO Fix This
+                                 name=role.name,
+                                 url=url_for( 'group_role', group_id=group_id, id=role_id) )  # TODO Fix This
             if not item:
                 item = "role %s not in group %s" % (role.name, group.name)
         except Exception, e:
@@ -82,8 +82,8 @@ class GroupRolesAPIController( BaseAPIController ):
             for gra in group.roles:
                 if gra.role == role:
                     item = dict( id=role_id,
-                                name=role.name,
-                                url=url_for( 'group_role', group_id=group_id, id=role_id) )
+                                 name=role.name,
+                                 url=url_for( 'group_role', group_id=group_id, id=role_id) )
             if not item:
                 gra = trans.app.model.GroupRoleAssociation( group, role )
                 # Add GroupRoleAssociation
