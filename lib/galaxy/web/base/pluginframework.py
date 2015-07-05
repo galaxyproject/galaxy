@@ -557,7 +557,7 @@ class PageServingPluginManager( PluginManager ):
         return template_lookup
 
     def _create_mako_template_lookup( self, cache_dir, paths,
-            collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING ):
+                                      collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING ):
         """
         Create a ``TemplateLookup`` with defaults.
 

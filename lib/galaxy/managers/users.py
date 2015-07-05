@@ -165,8 +165,8 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         Return this most recent APIKey for this user or None if none have been created.
         """
         query = ( self.session().query( model.APIKeys )
-                .filter_by( user=user )
-                .order_by( sqlalchemy.desc( model.APIKeys.create_time ) ) )
+                  .filter_by( user=user )
+                  .order_by( sqlalchemy.desc( model.APIKeys.create_time ) ) )
         all = query.all()
         if len( all ):
             return all[0]
@@ -214,7 +214,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         all_tags_query = None
         for tag_model in tag_models:
             subq = ( self.session().query( tag_model.user_tname, tag_model.user_value )
-                    .filter( tag_model.user == user ) )
+                     .filter( tag_model.user == user ) )
             all_tags_query = subq if all_tags_query is None else all_tags_query.union( subq )
 
         # if nothing init'd the query, bail

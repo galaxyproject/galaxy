@@ -174,12 +174,12 @@ class InteractiveEnviornmentRequest(object):
         volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
         return '%s run %s -d %s -p %s:%s -v "%s:/import/" %s %s' % \
             (self.attr.viz_config.get("docker", "command"),
-            env_str,
-            self.attr.viz_config.get("docker", "command_inject"),
-            self.attr.PORT, self.attr.docker_port,
-            temp_dir,
-            volume_str,
-            self.attr.viz_config.get("docker", "image"))
+             env_str,
+             self.attr.viz_config.get("docker", "command_inject"),
+             self.attr.PORT, self.attr.docker_port,
+             temp_dir,
+             volume_str,
+             self.attr.viz_config.get("docker", "image"))
 
     def launch(self, raw_cmd=None, env_override={}, volumes=[]):
         if raw_cmd is None:

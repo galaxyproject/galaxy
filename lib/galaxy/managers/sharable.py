@@ -25,7 +25,7 @@ log = logging.getLogger( __name__ )
 
 
 class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secured.AccessibleManagerMixin,
-        taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin, ratable.RatableManagerMixin ):
+                            taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin, ratable.RatableManagerMixin ):
     # e.g. histories, pages, stored workflows, visualizations
     # base.DeleteableModelMixin? (all four are deletable)
 
@@ -225,12 +225,12 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
     def _existing_set_of_slugs( self, user ):
         query = ( self.session().query( self.model_class.slug )
-                .filter_by( user=user ) )
+                  .filter_by( user=user ) )
         return list( set( query.all() ) )
 
     def _slug_exists( self, user, slug ):
         query = ( self.session().query( self.model_class.slug )
-                .filter_by( user=user, slug=slug ) )
+                  .filter_by( user=user, slug=slug ) )
         return query.count() != 0
 
     def _slugify( self, start_with ):
@@ -302,7 +302,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
 
 class SharableModelSerializer( base.ModelSerializer,
-        taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin ):
+                               taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin ):
     # TODO: stub
     SINGLE_CHAR_ABBR = None
 
@@ -341,7 +341,7 @@ class SharableModelSerializer( base.ModelSerializer,
 
 
 class SharableModelDeserializer( base.ModelDeserializer,
-        taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin, ratable.RatableDeserializerMixin ):
+                                 taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin, ratable.RatableDeserializerMixin ):
 
     def add_deserializers( self ):
         super( SharableModelDeserializer, self ).add_deserializers()
@@ -390,8 +390,8 @@ class SharableModelDeserializer( base.ModelDeserializer,
 
 
 class SharableModelFilters( base.ModelFilterParser,
-                      taggable.TaggableFilterMixin,
-                      annotatable.AnnotatableFilterMixin ):
+                            taggable.TaggableFilterMixin,
+                            annotatable.AnnotatableFilterMixin ):
 
     def _add_parsers( self ):
         super( SharableModelFilters, self )._add_parsers()

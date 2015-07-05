@@ -254,8 +254,8 @@ class CatchingIter(object):
 
             if not self.start_checker.response_started:
                 self.start_checker('500 Internal Server Error',
-                               [('content-type', 'text/html')],
-                    exc_info)
+                                   [('content-type', 'text/html')],
+                                   exc_info)
 
             return response
 

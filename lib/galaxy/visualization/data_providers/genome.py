@@ -252,9 +252,9 @@ class GenomeDataProvider( BaseDataProvider ):
                     attrs = self.col_name_data_attr_mapping[ col_name ]
                 except KeyError:
                     continue
-                filters.append(
-                    { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index],
-                              'index' : attrs[ 'index' ] } )
+                filters.append( { 'name': attrs[ 'name' ],
+                                  'type': column_types[viz_col_index],
+                                  'index': attrs[ 'index' ] } )
         return filters
 
     def get_default_max_vals( self ):

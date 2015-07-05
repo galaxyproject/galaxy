@@ -15,39 +15,39 @@ metadata = MetaData()
 # Annotation tables.
 
 HistoryAnnotationAssociation_table = Table( "history_annotation_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "annotation", TEXT ) )
+                                            Column( "id", Integer, primary_key=True ),
+                                            Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+                                            Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                            Column( "annotation", TEXT ) )
 
 HistoryDatasetAssociationAnnotationAssociation_table = Table( "history_dataset_association_annotation_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "annotation", TEXT ) )
+                                                              Column( "id", Integer, primary_key=True ),
+                                                              Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+                                                              Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                                              Column( "annotation", TEXT ) )
 
 StoredWorkflowAnnotationAssociation_table = Table( "stored_workflow_annotation_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "annotation", TEXT ) )
+                                                   Column( "id", Integer, primary_key=True ),
+                                                   Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
+                                                   Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                                   Column( "annotation", TEXT ) )
 
 WorkflowStepAnnotationAssociation_table = Table( "workflow_step_annotation_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "annotation", TEXT ) )
+                                                 Column( "id", Integer, primary_key=True ),
+                                                 Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
+                                                 Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                                 Column( "annotation", TEXT ) )
 
 # Tagging tables.
 
 WorkflowStepTagAssociation_table = Table( "workflow_step_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", Unicode(255), index=True),
-    Column( "value", Unicode(255), index=True),
-    Column( "user_value", Unicode(255), index=True) )
+                                          Column( "id", Integer, primary_key=True ),
+                                          Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
+                                          Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                          Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                          Column( "user_tname", Unicode(255), index=True),
+                                          Column( "value", Unicode(255), index=True),
+                                          Column( "user_value", Unicode(255), index=True) )
 
 
 def upgrade(migrate_engine):

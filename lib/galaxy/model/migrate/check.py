@@ -113,7 +113,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
         if os.path.abspath( os.path.join( os.getcwd(), 'config', 'galaxy.ini' ) ) != galaxy_config_file:
             config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
         raise Exception( "Your database has version '%d' but this code expects version '%d'.  Please backup your database and then migrate the schema by running 'sh manage_db.sh%s upgrade'."
-            % ( db_schema.version, migrate_repository.versions.latest, config_arg ) )
+                         % ( db_schema.version, migrate_repository.versions.latest, config_arg ) )
     else:
         log.info( "At database version %d" % db_schema.version )
 

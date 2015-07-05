@@ -47,7 +47,7 @@ class TextField(BaseField):
             value = str( value )
         value = unicodify( value )
         return unicodify( '<input type="text" name="%s%s" size="%d" value="%s"%s>'
-            % ( prefix, self.name, self.size, escape( value, quote=True ), self.get_disabled_str( disabled ) ) )
+                          % ( prefix, self.name, self.size, escape( value, quote=True ), self.get_disabled_str( disabled ) ) )
 
     def set_size(self, size):
         self.size = int( size )
@@ -69,7 +69,7 @@ class PasswordField(BaseField):
 
     def get_html( self, prefix="", disabled=False  ):
         return unicodify( '<input type="password" name="%s%s" size="%d" value="%s"%s>'
-            % ( prefix, self.name, self.size, escape( str( self.value ), quote=True ), self.get_disabled_str( disabled ) ) )
+                          % ( prefix, self.name, self.size, escape( str( self.value ), quote=True ), self.get_disabled_str( disabled ) ) )
 
     def set_size(self, size):
         self.size = int( size )
@@ -96,7 +96,7 @@ class TextArea(BaseField):
 
     def get_html( self, prefix="", disabled=False ):
         return unicodify( '<textarea name="%s%s" rows="%d" cols="%d"%s>%s</textarea>'
-            % ( prefix, self.name, self.rows, self.cols, self.get_disabled_str( disabled ), escape( str( self.value ), quote=True ) ) )
+                          % ( prefix, self.name, self.rows, self.cols, self.get_disabled_str( disabled ), escape( str( self.value ), quote=True ) ) )
 
     def set_size(self, rows, cols):
         self.rows = rows
@@ -137,7 +137,7 @@ class CheckboxField(BaseField):
         # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
         # correctness when the param is inside a conditional.
         return unicodify( '<input type="checkbox" id="%s" name="%s" value="true"%s%s%s><input type="hidden" name="%s%s" value="true"%s>'
-            % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, prefix, self.name, self.get_disabled_str( disabled ) ) )
+                          % ( id_name, id_name, checked_text, self.get_disabled_str( disabled ), self.refresh_on_change_text, prefix, self.name, self.get_disabled_str( disabled ) ) )
 
     @staticmethod
     def is_checked( value ):
@@ -351,7 +351,7 @@ class SelectField(BaseField):
             if selected:
                 selected_text = " checked='checked'"
             rval.append( '<div%s><input type="checkbox" name="%s%s" value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>'
-                % ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( text, quote=True ) ) )
+                         % ( style, prefix, self.name, escaped_value, uniq_id, selected_text, self.get_disabled_str( disabled ), uniq_id, escape( text, quote=True ) ) )
             ctr += 1
         return unicodify( "\n".join( rval ) )
 
@@ -369,15 +369,15 @@ class SelectField(BaseField):
                 selected_text = " checked='checked'"
             rval.append( '<div%s><input type="radio" name="%s%s"%s value="%s" id="%s"%s%s><label class="inline" for="%s">%s</label></div>'
                          % ( style,
-                           prefix,
-                           self.name,
-                           self.refresh_on_change_text,
-                           escaped_value,
-                           uniq_id,
-                           selected_text,
-                           self.get_disabled_str( disabled ),
-                           uniq_id,
-                           text ) )
+                             prefix,
+                             self.name,
+                             self.refresh_on_change_text,
+                             escaped_value,
+                             uniq_id,
+                             selected_text,
+                             self.get_disabled_str( disabled ),
+                             uniq_id,
+                             text ) )
             ctr += 1
         return unicodify( "\n".join( rval ) )
 
@@ -620,14 +620,14 @@ class AddressField(BaseField):
     @staticmethod
     def fields():
         return [  ( "short_desc", "Short address description", "Required" ),
-                ( "name", "Name", "Required" ),
-                ( "institution", "Institution", "Required" ),
-                ( "address", "Address", "Required" ),
-                ( "city", "City", "Required" ),
-                ( "state", "State/Province/Region", "Required" ),
-                ( "postal_code", "Postal Code", "Required" ),
-                ( "country", "Country", "Required" ),
-                ( "phone", "Phone", "" )  ]
+                  ( "name", "Name", "Required" ),
+                  ( "institution", "Institution", "Required" ),
+                  ( "address", "Address", "Required" ),
+                  ( "city", "City", "Required" ),
+                  ( "state", "State/Province/Region", "Required" ),
+                  ( "postal_code", "Postal Code", "Required" ),
+                  ( "country", "Country", "Required" ),
+                  ( "phone", "Phone", "" )  ]
 
     def __init__(self, name, user=None, value=None, params=None):
         self.name = name
@@ -667,8 +667,8 @@ class AddressField(BaseField):
             self.select_address.add_option( 'Add a new address', 'new', selected=True )
             for field_name, label, help_text in self.fields():
                 add_field = TextField( self.name + '_' + field_name,
-                                      40,
-                                      restore_text( self.params.get( self.name + '_' + field_name, ''  ) ) )
+                                       40,
+                                       restore_text( self.params.get( self.name + '_' + field_name, ''  ) ) )
                 address_html += '''
                                 <div class="form-row">
                                     <label>%s</label>

@@ -83,7 +83,7 @@ class HDAManager( datasets.DatasetAssociationManager,
         if not dataset:
             kwargs[ 'create_dataset' ] = True
         hda = model.HistoryDatasetAssociation( history=history, dataset=dataset,
-            sa_session=self.app.model.context, **kwargs )
+                                               sa_session=self.app.model.context, **kwargs )
 
         if history:
             history.add_dataset( hda, set_hid=( 'hid' not in kwargs ) )
@@ -171,7 +171,7 @@ class HDAManager( datasets.DatasetAssociationManager,
         """
         job_states = model.Job.states
         query = ( self._job_state_history_query( hda )
-            .filter( model.JobStateHistory.state == job_states.RESUBMITTED ) )
+                  .filter( model.JobStateHistory.state == job_states.RESUBMITTED ) )
         return self.app.model.context.query( query.exists() ).scalar()
 
     def _job_state_history_query( self, hda ):
@@ -186,9 +186,9 @@ class HDAManager( datasets.DatasetAssociationManager,
         # NOTE: don't eagerload (JODA will load the hda were using!)
         hda_id = hda.id
         query = ( session.query( JobToOutputDatasetAssociation, JobStateHistory )
-            .filter( JobToOutputDatasetAssociation.dataset_id == hda_id )
-            .filter( JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id )
-            .enable_eagerloads( False ) )
+                  .filter( JobToOutputDatasetAssociation.dataset_id == hda_id )
+                  .filter( JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id )
+                  .enable_eagerloads( False ) )
         return query
 
     def data_conversion_status( self, hda ):
@@ -322,14 +322,14 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             #   see also: https://trello.com/c/5d6j4X5y
             #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
             'url'           : lambda i, k, **c: self.url_for( 'history_content',
-                history_id=self.app.security.encode_id( i.history_id ),
-                id=self.app.security.encode_id( i.id ) ),
+                                                              history_id=self.app.security.encode_id( i.history_id ),
+                                                              id=self.app.security.encode_id( i.id ) ),
             'urls'          : self.serialize_urls,
 
             # TODO: backwards compat: need to go away
             'download_url'  : lambda i, k, **c: self.url_for( 'history_contents_display',
-                history_id=self.app.security.encode_id( i.history.id ),
-                history_content_id=self.app.security.encode_id( i.id ) ),
+                                                              history_id=self.app.security.encode_id( i.history.id ),
+                                                              history_content_id=self.app.security.encode_id( i.id ) ),
             'parent_id'     : self.serialize_id,
             'accessible'    : lambda *a, **c: True,
             'api_type'      : lambda *a, **c: 'file',
@@ -440,7 +440,7 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
             # remapped
             'genome_build'  : lambda i, k, v, **c: self.deserialize_genome_build( i, 'dbkey', v ),
             'misc_info'     : lambda i, k, v, **c: self.deserialize_basestring( i, 'info', v,
-                convert_none_to_empty=True ),
+                                                                                convert_none_to_empty=True ),
         })
         self.deserializable_keyset.update( self.deserializers.keys() )
 

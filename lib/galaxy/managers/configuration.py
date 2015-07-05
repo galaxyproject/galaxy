@@ -49,7 +49,7 @@ class ConfigSerializer( base.ModelSerializer ):
             'lims_doc_url'              : _defaults_to( "https://usegalaxy.org/u/rkchak/p/sts" ),
             'biostar_url'               : _defaults_to( '' ),
             'biostar_url_redirect'      : lambda *a, **c: self.url_for( controller='biostar', action='biostar_redirect',
-                                                                   qualified=True ),
+                                                                        qualified=True ),
 
             'allow_user_creation'       : lambda i, k, **c: i.allow_user_creation,
             'use_remote_user'           : _defaults_to( None ),

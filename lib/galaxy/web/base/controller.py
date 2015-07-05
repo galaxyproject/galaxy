@@ -166,7 +166,7 @@ class BaseUIController( BaseController ):
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         try:
             return BaseController.get_object( self, trans, id, class_name,
-                check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
 
         except MessageException:
             raise       # handled in the caller
@@ -180,7 +180,7 @@ class BaseAPIController( BaseController ):
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         try:
             return BaseController.get_object( self, trans, id, class_name,
-                check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
 
         except ItemDeletionException, e:
             raise HTTPBadRequest( detail="Invalid %s id ( %s ) specified: %s" % ( class_name, str( id ), str( e ) ) )
@@ -269,7 +269,7 @@ class CreatesUsersMixin:
         if trans.webapp.name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
             trans.app.security_agent.user_set_default_permissions( user,
-                default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
+                                                                   default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
         return user
 
 
@@ -370,7 +370,7 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
         if not trans.user:
             return False
         return (  ( trans.user_is_admin() ) or
-            ( trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ) ) )
+                  ( trans.app.security_agent.can_add_library_item( trans.get_current_user_roles(), item ) ) )
 
     def check_user_can_add_to_library_item( self, trans, item, check_accessible=True ):
         """
@@ -1091,7 +1091,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin, UsesAnnotations ):
         self.copy_item_annotation( session, stored.user, stored, imported_stored.user, imported_stored )
         for order_index, step in enumerate( stored.latest_workflow.steps ):
             self.copy_item_annotation( session, stored.user, step,
-                                    imported_stored.user, imported_stored.latest_workflow.steps[order_index] )
+                                       imported_stored.user, imported_stored.latest_workflow.steps[order_index] )
         session.flush()
         return imported_stored
 
@@ -2063,7 +2063,7 @@ class UsesTagsMixin( SharableItemSecurityMixin ):
         all_tags_query = None
         for tag_model in tag_models:
             subq = ( trans.sa_session.query( tag_model.user_tname, tag_model.user_value )
-                    .filter( tag_model.user == trans.user ) )
+                     .filter( tag_model.user == trans.user ) )
             all_tags_query = subq if all_tags_query is None else all_tags_query.union( subq )
 
         # if nothing init'd the query, bail

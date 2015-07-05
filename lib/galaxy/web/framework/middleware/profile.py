@@ -99,7 +99,7 @@ def pstats_as_html( stats, *sel_list ):
     rval = []
     # Number of function calls, primitive calls, total time
     rval.append( "<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
-            % ( stats.total_calls, stats.prim_calls, stats.total_tt ) )
+                 % ( stats.total_calls, stats.prim_calls, stats.total_tt ) )
     # Extract functions that match 'sel_list'
     funcs, order_message, select_message = get_func_list( stats, sel_list )
     # Deal with any ordering or selection messages

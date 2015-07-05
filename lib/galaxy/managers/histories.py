@@ -129,13 +129,13 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         contents_dictionaries = []
         try:
             history_dictionary = history_serializer.serialize_to_view( history, view='detailed',
-                user=trans.user, trans=trans )
+                                                                       user=trans.user, trans=trans )
 
             for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
                 contents_dict = {}
                 if isinstance( content, model.HistoryDatasetAssociation ):
                     contents_dict = hda_serializer.serialize_to_view( content, view='detailed',
-                        user=trans.user, trans=trans )
+                                                                      user=trans.user, trans=trans )
                 elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
                     try:
                         service = self.app.dataset_collections_service
@@ -224,7 +224,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
             'url'           : lambda i, k, **c: self.url_for( 'history', id=self.app.security.encode_id( i.id ) ),
             'contents_url'  : lambda i, k, **c: self.url_for( 'history_contents',
-                history_id=self.app.security.encode_id( i.id ) ),
+                                                              history_id=self.app.security.encode_id( i.id ) ),
 
             'empty'         : lambda i, k, **c: ( len( i.datasets ) + len( i.dataset_collections ) ) <= 0,
             'count'         : lambda i, k, **c: len( i.datasets ),
@@ -322,7 +322,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             id=self.app.security.encode_id( collection.id ),
         )
         return collections_util.dictify_dataset_collection_instance( dataset_collection_instance,
-            security=self.app.security, parent=dataset_collection_instance.history, view="element" )
+                                                                     security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
 
 class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.PurgableDeserializerMixin ):

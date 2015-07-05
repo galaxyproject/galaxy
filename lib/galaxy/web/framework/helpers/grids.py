@@ -303,7 +303,7 @@ class Grid( object ):
                                     use_hide_message=self.use_hide_message,
                                     advanced_search=self.advanced_search,
                                     show_item_checkboxes=( self.show_item_checkboxes or
-                                                        kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
+                                                           kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.
                                     kwargs=kwargs )
@@ -570,9 +570,9 @@ class OwnerAnnotationColumn( TextColumn, UsesAnnotations ):
         """ Filter by annotation and annotation owner. """
         return self.model_class.annotations.any(
             and_( func.lower( self.model_annotation_association_class.annotation ).like( "%" + a_filter.lower() + "%" ),
-                # TODO: not sure why, to filter by owner's annotations, we have to do this rather than
-                # 'self.model_class.user==self.model_annotation_association_class.user'
-                self.model_annotation_association_class.table.c.user_id == self.model_class.table.c.user_id ) )
+               # TODO: not sure why, to filter by owner's annotations, we have to do this rather than
+               # 'self.model_class.user==self.model_annotation_association_class.user'
+               self.model_annotation_association_class.table.c.user_id == self.model_class.table.c.user_id ) )
 
 
 class CommunityTagsColumn( TextColumn ):

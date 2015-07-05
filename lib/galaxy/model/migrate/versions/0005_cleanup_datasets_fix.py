@@ -595,141 +595,133 @@ class LibraryDataset( object ):
 # Tables
 
 Dataset.table = Table( "dataset", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
-    Column( "state", TrimmedString( 64 ) ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "purged", Boolean, index=True, default=False ),
-    Column( "purgable", Boolean, default=True ),
-    Column( "external_filename" , TEXT ),
-    Column( "_extra_files_path", TEXT ),
-    Column( 'file_size', Numeric( 15, 0 ) ) )
+                       Column( "id", Integer, primary_key=True ),
+                       Column( "create_time", DateTime, default=now ),
+                       Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+                       Column( "state", TrimmedString( 64 ) ),
+                       Column( "deleted", Boolean, index=True, default=False ),
+                       Column( "purged", Boolean, index=True, default=False ),
+                       Column( "purgable", Boolean, default=True ),
+                       Column( "external_filename" , TEXT ),
+                       Column( "_extra_files_path", TEXT ),
+                       Column( 'file_size', Numeric( 15, 0 ) ) )
 
 HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
-    Column( "copied_from_library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
-    Column( "hid", Integer ),
-    Column( "name", TrimmedString( 255 ) ),
-    Column( "info", TrimmedString( 255 ) ),
-    Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
-    Column( "extension", TrimmedString( 64 ) ),
-    Column( "metadata", MetadataType(), key="_metadata" ),
-    Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
-    Column( "designation", TrimmedString( 255 ) ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "visible", Boolean ) )
+                                         Column( "id", Integer, primary_key=True ),
+                                         Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+                                         Column( "create_time", DateTime, default=now ),
+                                         Column( "update_time", DateTime, default=now, onupdate=now ),
+                                         Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
+                                         Column( "copied_from_library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
+                                         Column( "hid", Integer ),
+                                         Column( "name", TrimmedString( 255 ) ),
+                                         Column( "info", TrimmedString( 255 ) ),
+                                         Column( "blurb", TrimmedString( 255 ) ),
+                                         Column( "peek" , TEXT ),
+                                         Column( "extension", TrimmedString( 64 ) ),
+                                         Column( "metadata", MetadataType(), key="_metadata" ),
+                                         Column( "parent_id", Integer, ForeignKey( "history_dataset_association.id" ), nullable=True ),
+                                         Column( "designation", TrimmedString( 255 ) ),
+                                         Column( "deleted", Boolean, index=True, default=False ),
+                                         Column( "visible", Boolean ) )
 
 
 LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey' ), nullable=True ),
-    Column( "copied_from_library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name='library_dataset_dataset_association_id_fkey' ), nullable=True ),
-    Column( "name", TrimmedString( 255 ) ),
-    Column( "info", TrimmedString( 255 ) ),
-    Column( "blurb", TrimmedString( 255 ) ),
-    Column( "peek" , TEXT ),
-    Column( "extension", TrimmedString( 64 ) ),
-    Column( "metadata", MetadataType(), key="_metadata" ),
-    Column( "parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
-    Column( "designation", TrimmedString( 255 ) ),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "visible", Boolean ),
-    Column( "message", TrimmedString( 255 ) ) )
+                                                Column( "id", Integer, primary_key=True ),
+                                                Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ),
+                                                Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+                                                Column( "create_time", DateTime, default=now ),
+                                                Column( "update_time", DateTime, default=now, onupdate=now ),
+                                                Column( "copied_from_history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey' ), nullable=True ),
+                                                Column( "copied_from_library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name='library_dataset_dataset_association_id_fkey' ), nullable=True ),
+                                                Column( "name", TrimmedString( 255 ) ),
+                                                Column( "info", TrimmedString( 255 ) ),
+                                                Column( "blurb", TrimmedString( 255 ) ),
+                                                Column( "peek" , TEXT ),
+                                                Column( "extension", TrimmedString( 64 ) ),
+                                                Column( "metadata", MetadataType(), key="_metadata" ),
+                                                Column( "parent_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True ),
+                                                Column( "designation", TrimmedString( 255 ) ),
+                                                Column( "deleted", Boolean, index=True, default=False ),
+                                                Column( "visible", Boolean ),
+                                                Column( "message", TrimmedString( 255 ) ) )
 
 LibraryDataset.table = Table( "library_dataset", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),  # current version of dataset, if null, there is not a current version selected
-    Column( "order_id", Integer ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TrimmedString( 255 ), key="_name" ),  # when not None/null this will supercede display in library (but not when imported into user's history?)
-    Column( "info", TrimmedString( 255 ), key="_info" ),  # when not None/null this will supercede display in library (but not when imported into user's history?)
-    Column( "deleted", Boolean, index=True, default=False ) )
+                              Column( "id", Integer, primary_key=True ),
+                              Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),  # current version of dataset, if null, there is not a current version selected
+                              Column( "order_id", Integer ),
+                              Column( "create_time", DateTime, default=now ),
+                              Column( "update_time", DateTime, default=now, onupdate=now ),
+                              Column( "name", TrimmedString( 255 ), key="_name" ),  # when not None/null this will supercede display in library (but not when imported into user's history?)
+                              Column( "info", TrimmedString( 255 ), key="_info" ),  # when not None/null this will supercede display in library (but not when imported into user's history?)
+                              Column( "deleted", Boolean, index=True, default=False ) )
 
 # Mappers
 
 mapper( Dataset, Dataset.table,
-    properties=dict(
-        history_associations=relation(
-            HistoryDatasetAssociation,
-            primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
-        active_history_associations=relation(
-            HistoryDatasetAssociation,
-            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted is False ) ) ),
-        library_associations=relation(
-            LibraryDatasetDatasetAssociation,
-            primaryjoin=( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),
-        active_library_associations=relation(
-            LibraryDatasetDatasetAssociation,
-
-            primaryjoin=( ( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( LibraryDatasetDatasetAssociation.table.c.deleted is False ) ) )
-    )
-)
+        properties=dict(
+            history_associations=relation(
+                HistoryDatasetAssociation,
+                primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
+            active_history_associations=relation(
+                HistoryDatasetAssociation,
+                primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted is False ) ) ),
+            library_associations=relation(
+                LibraryDatasetDatasetAssociation,
+                primaryjoin=( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),
+            active_library_associations=relation(
+                LibraryDatasetDatasetAssociation,
+                primaryjoin=( ( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( LibraryDatasetDatasetAssociation.table.c.deleted is False ) ) ) ) )
 
 
 mapper( HistoryDatasetAssociation, HistoryDatasetAssociation.table,
-    properties=dict(
-        dataset=relation(
-            Dataset,
-            primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ), lazy=False ),
-        # .history defined in History mapper
-        copied_to_history_dataset_associations=relation(
-            HistoryDatasetAssociation,
-            primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
-        copied_to_library_dataset_dataset_associations=relation(
-            LibraryDatasetDatasetAssociation,
-            primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id], uselist=False ) ),
-        children=relation(
-            HistoryDatasetAssociation,
-            primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ),
-            backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
-        visible_children=relation(
-            HistoryDatasetAssociation,
-            primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible is True ) ) )
-    )
-)
+        properties=dict(
+            dataset=relation(
+                Dataset,
+                primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ),
+                lazy=False ),
+            # .history defined in History mapper
+            copied_to_history_dataset_associations=relation(
+                HistoryDatasetAssociation,
+                primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ),
+                backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
+            copied_to_library_dataset_dataset_associations=relation(
+                LibraryDatasetDatasetAssociation,
+                primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
+                backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id], uselist=False ) ),
+            children=relation(
+                HistoryDatasetAssociation,
+                primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ),
+                backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
+            visible_children=relation(
+                HistoryDatasetAssociation,
+                primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible is True ) ) ) ) )
 
 mapper( LibraryDatasetDatasetAssociation, LibraryDatasetDatasetAssociation.table,
-    properties=dict(
-        dataset=relation( Dataset ),
-        library_dataset=relation( LibraryDataset,
-        primaryjoin=( LibraryDatasetDatasetAssociation.table.c.library_dataset_id == LibraryDataset.table.c.id ) ),
-        copied_to_library_dataset_dataset_associations=relation(
-            LibraryDatasetDatasetAssociation,
-            primaryjoin=( LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_library_dataset_dataset_association", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
-        copied_to_history_dataset_associations=relation(
-            HistoryDatasetAssociation,
-            primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
-            backref=backref( "copied_from_library_dataset_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id], uselist=False ) ),
-        children=relation(
-            LibraryDatasetDatasetAssociation,
-            primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ),
-            backref=backref( "parent", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
-        visible_children=relation(
-            LibraryDatasetDatasetAssociation,
-            primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible is True ) ) )
-    )
-)
+        properties=dict(
+            dataset=relation( Dataset ),
+            library_dataset=relation( LibraryDataset,
+                                      primaryjoin=( LibraryDatasetDatasetAssociation.table.c.library_dataset_id == LibraryDataset.table.c.id ) ),
+            copied_to_library_dataset_dataset_associations=relation(
+                LibraryDatasetDatasetAssociation,
+                primaryjoin=( LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
+                backref=backref( "copied_from_library_dataset_dataset_association", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
+            copied_to_history_dataset_associations=relation(
+                HistoryDatasetAssociation,
+                primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
+                backref=backref( "copied_from_library_dataset_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id], uselist=False ) ),
+            children=relation(
+                LibraryDatasetDatasetAssociation,
+                primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ),
+                backref=backref( "parent", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
+            visible_children=relation(
+                LibraryDatasetDatasetAssociation,
+                primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible is True ) ) ) ) )
 
 mapper( LibraryDataset, LibraryDataset.table,
-    properties=dict(
-        library_dataset_dataset_association=relation( LibraryDatasetDatasetAssociation, primaryjoin=( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
-        expired_datasets=relation( LibraryDatasetDatasetAssociation, foreign_keys=[LibraryDataset.table.c.id, LibraryDataset.table.c.library_dataset_dataset_association_id ], primaryjoin=( ( LibraryDataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.library_dataset_id ) & ( not ( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ) ), viewonly=True, uselist=True )
-    )
-)
+        properties=dict(
+            library_dataset_dataset_association=relation( LibraryDatasetDatasetAssociation, primaryjoin=( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
+            expired_datasets=relation( LibraryDatasetDatasetAssociation, foreign_keys=[LibraryDataset.table.c.id, LibraryDataset.table.c.library_dataset_dataset_association_id ], primaryjoin=( ( LibraryDataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.library_dataset_id ) & ( not ( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ) ), viewonly=True, uselist=True ) ) )
 
 
 def __guess_dataset_by_filename( filename ):

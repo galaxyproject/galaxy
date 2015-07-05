@@ -223,7 +223,7 @@ class AccessDatasetRBACPermission( DatasetRBACPermission ):
         # NOTE: that because of short circuiting this allows
         #   anonymous access to public datasets
         return ( self._is_public_from_roles( current_roles ) or
-            self._user_has_all_roles( user, current_roles ) )
+                 self._user_has_all_roles( user, current_roles ) )
 
     def grant( self, item, user ):
         pass
@@ -257,5 +257,5 @@ class AccessDatasetRBACPermission( DatasetRBACPermission ):
     def _role_is_permitted( self, dataset, role ):
         current_roles = self._roles( dataset )
         return ( self._is_public_from_roles( current_roles ) or
-            # if there's only one role and this is it, let em in
-            ( ( len( current_roles ) == 1 ) and ( role == current_roles[0] ) ) )
+                 # if there's only one role and this is it, let em in
+                 ( ( len( current_roles ) == 1 ) and ( role == current_roles[0] ) ) )
