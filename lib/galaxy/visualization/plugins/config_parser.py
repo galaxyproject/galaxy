@@ -284,7 +284,7 @@ class DataSourceParser( object ):
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
                 log.warn( 'Skipping test. Needs both type attribute and text node to be parsed: ' +
-                    '%s, %s' % ( test_type, test_elem.text ) )
+                          '%s, %s' % ( test_type, test_elem.text ) )
                 continue
             test_result = test_result.strip()
 
@@ -311,7 +311,7 @@ class DataSourceParser( object ):
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 def test_fn(o, result):
                     return (hasattr( getter( o ), 'has_dataprovider' ) and
-                        getter( o ).has_dataprovider( result ) )
+                            getter( o ).has_dataprovider( result ) )
 
             elif test_type == 'has_attribute':
                 # does the object itself have attr in 'result' (no equivalence checking)

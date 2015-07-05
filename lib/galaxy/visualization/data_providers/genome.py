@@ -254,7 +254,7 @@ class GenomeDataProvider( BaseDataProvider ):
                     continue
                 filters.append(
                     { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index],
-                    'index' : attrs[ 'index' ] } )
+                              'index' : attrs[ 'index' ] } )
         return filters
 
     def get_default_max_vals( self ):
@@ -826,7 +826,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         filters = []
         filters.append( { 'name': 'Mapping Quality',
                         'type': 'number',
-                        'index': filter_col }
+                          'index': filter_col }
                         )
         return filters
 
@@ -1558,15 +1558,15 @@ class ENCODEPeakTabixDataProvider( TabixDataProvider, ENCODEPeakDataProvider ):
         filter_col += 1
         filters.append( { 'name': 'pValue',
                         'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c8' } )
+                          'index': filter_col,
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c8' } )
         filter_col += 1
         filters.append( { 'name': 'qValue',
                         'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c9' } )
+                          'index': filter_col,
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c9' } )
         return filters
 
 #

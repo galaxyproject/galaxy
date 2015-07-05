@@ -100,7 +100,7 @@ class ColumnDataProvider( BaseDataProvider ):
         columns = loads( columns )
         for column in columns:
             assert( ( column < self.original_dataset.metadata.columns ) and
-                ( column >= 0 ) ), (
+                    ( column >= 0 ) ), (
                 "column index (%d) must be positive and less" % ( column ) +
                 " than the number of columns: %d" % ( self.original_dataset.metadata.columns ) )
         # print columns, start_val, max_vals, skip_comments, kwargs
