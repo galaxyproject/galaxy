@@ -61,3 +61,4 @@ bioblend
 Parsley
 WebError
 http://svgfig.googlecode.com/files/svgfig-1.1.6.tgz
+nose
