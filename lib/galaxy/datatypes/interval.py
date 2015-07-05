@@ -11,14 +11,14 @@ import logging
 import tempfile
 import data
 from galaxy import util
-from galaxy.datatypes.sniff import *
 from galaxy.web import url_for
 import urllib
-from bx.intervals.io import *
+from bx.intervals.io import GenomicIntervalReader, ParseError
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff_attributes
+from galaxy.datatypes.sniff import get_headers
 import math
 import dataproviders
 
@@ -303,6 +303,7 @@ class Interval( Tabular ):
         This format is mostly used by galaxy itself.  Valid interval files should include
         a valid header comment, but this seems to be loosely regulated.
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test_space.txt' )
         >>> Interval().sniff( fname )
         False
@@ -487,6 +488,7 @@ class Bed( Interval ):
 
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format1
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test_tab.bed' )
         >>> Bed().sniff( fname )
         True
@@ -830,6 +832,7 @@ class Gff( Tabular, _RemoteCallMixin ):
 
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'gff_version_3.gff' )
         >>> Gff().sniff( fname )
         False
@@ -956,6 +959,7 @@ class Gff3( Gff ):
 
         For complete details see http://song.sourceforge.net/gff3.shtml
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test.gff' )
         >>> Gff3().sniff( fname )
         False
@@ -1026,6 +1030,7 @@ class Gtf( Gff ):
 
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format4
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( '1.bed' )
         >>> Gtf().sniff( fname )
         False
@@ -1222,6 +1227,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
 
         For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'interval1.bed' )
         >>> Wiggle().sniff( fname )
         False
@@ -1381,6 +1387,7 @@ class CustomTrack ( Tabular ):
 
         track name="User Track" description="User Supplied Track (from Galaxy)" color=0,0,0 visibility=1
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'complete.bed' )
         >>> CustomTrack().sniff( fname )
         False

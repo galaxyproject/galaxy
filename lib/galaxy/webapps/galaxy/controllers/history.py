@@ -498,9 +498,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         ).get( id )
         assert history
         # TODO: formalize to trans.show_error
-        assert ( history.user and ( history.user.id == trans.user.id )
-            or ( history.id == trans.history.id )
-            or ( trans.user_is_admin() ) )
+        assert ( history.user and ( history.user.id == trans.user.id ) or
+            ( history.id == trans.history.id ) or
+            ( trans.user_is_admin() ) )
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
         # top level
@@ -613,8 +613,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             if isinstance( exc, exceptions.ItemAccessibilityException ):
                 error_msg = 'You do not have permission to view this history.'
             else:
-                error_msg = ( 'An error occurred getting the history data from the server. '
-                              + 'Please contact a Galaxy administrator if the problem persists.' )
+                error_msg = ( 'An error occurred getting the history data from the server. ' +
+                              'Please contact a Galaxy administrator if the problem persists.' )
             return trans.show_error_message( error_msg, use_panels=use_panels )
 
         return trans.fill_template_mako( "history/view.mako",

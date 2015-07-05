@@ -6,6 +6,7 @@ introduced hashlib which replaced sha in Python 2.4 and previous versions.
 import logging
 
 # Use hashlib module if for Python 2.5+, fall back on old sha and md5 modules
+# ./lib/galaxy/web/framework/helpers/__init__.py is using the md5 module
 # sha1 requires explicit calls to new if also being passed to hmac (!)
 try:
     import hashlib
@@ -15,7 +16,7 @@ try:
 except ImportError, e:
     from sha import new as sha1
     import sha
-    from md5 import new as md5
+    from md5 import new as md5  # noqa
 import hmac
 
 log = logging.getLogger( __name__ )

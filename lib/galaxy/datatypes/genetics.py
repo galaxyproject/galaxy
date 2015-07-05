@@ -23,7 +23,6 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.images import Html
-from galaxy.util.hash_util import *
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
@@ -80,12 +79,11 @@ class GenomeGraphs( Tabular ):
 
         """
         ret_val = []
-        ggtail = 'hgGenome_doSubmitUpload=submit'
         if not dataset.dbkey:
             dataset.dbkey = 'hg18'  # punt!
         if dataset.has_data():
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
-                if site_name in datatypes_registry.get_display_sites('ucsc'):
+                if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     site_url = site_url.replace('/hgTracks?', '/hgGenome?')  # for genome graphs
                     internal_url = "%s" % url_for( controller='dataset',
                                                    dataset_id=dataset.id,
@@ -156,7 +154,7 @@ class GenomeGraphs( Tabular ):
                 try:
                     x = float(x)
                 except:
-                    badval.append('col%d:%s' % (j + 1, x))
+                    badvals.append('col%d:%s' % (j + 1, x))
         if len(badvals) > 0:
             errors.append('row %d, %s' % (' '.join(badvals)))
             return errors
@@ -166,15 +164,14 @@ class GenomeGraphs( Tabular ):
         Determines whether the file is in gg format
         """
         f = open(filename, 'r')
-        headers = f.readline().split()
         rows = [f.readline().split()[1:] for x in range(3)]  # small sample
         # headers = get_headers( filename, '\t' )
         for row in rows:
             try:
                 [float(x) for x in row]  # first col has been removed
             except:
-                return false
-        return true
+                return False
+        return True
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
@@ -224,7 +221,7 @@ class rgSampleList(rgTabList):
         # this is what Plink wants as at 2009
 
     def sniff(self, filename):
-        infile = open(dataset.file_name, "r")
+        infile = open(filename, "r")
         header = infile.next()  # header
         if header[0] == 'FID' and header[1] == 'IID':
             return True
@@ -350,7 +347,7 @@ class SNPMatrix(Rgenetics):
     def sniff(self, filename):
         """ need to check the file header hex code
         """
-        infile = open(dataset.file_name, "b")
+        infile = open(filename, "b")
         head = infile.read(16)
         head = [hex(x) for x in head]
         if head != '':

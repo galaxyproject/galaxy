@@ -5,7 +5,7 @@ Provides utilities for working with GFF files.
 import copy
 import pkg_resources
 pkg_resources.require( "bx-python" )
-from bx.intervals.io import *
+from bx.intervals.io import GenomicInterval, MissingFieldError, NiceReaderWrapper, ParseError, GenomicIntervalReader
 from bx.tabular.io import Header, Comment
 from galaxy.util.odict import odict
 
@@ -379,8 +379,8 @@ def read_unordered_gtf( iterator, strict=False ):
     """
 
     # -- Get function that generates line/feature key. --
-
-    get_transcript_id = lambda fields: parse_gff_attributes( fields[8] )[ 'transcript_id' ]
+    def get_transcript_id(fields):
+        return parse_gff_attributes( fields[8] )[ 'transcript_id' ]
     if strict:
         # Strict GTF parsing uses transcript_id only to group lines into feature.
         key_fn = get_transcript_id
@@ -388,7 +388,8 @@ def read_unordered_gtf( iterator, strict=False ):
         # Use lenient parsing where chromosome + transcript_id is the key. This allows
         # transcripts with same ID on different chromosomes; this occurs in some popular
         # datasources, such as RefGenes in UCSC.
-        key_fn = lambda fields: fields[0] + '_' + get_transcript_id( fields )
+        def key_fn(fields):
+            return fields[0] + '_' + get_transcript_id( fields )
 
     # Aggregate intervals by transcript_id and collect comments.
     feature_intervals = odict()

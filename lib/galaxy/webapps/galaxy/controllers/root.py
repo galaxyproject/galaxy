@@ -131,8 +131,8 @@ class RootController( BaseUIController, UsesAnnotations ):
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
             log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
-            history_dictionary[ 'error' ] = ( 'An error occurred getting the history data from the server. '
-                                            + 'Please contact a Galaxy administrator if the problem persists.' )
+            history_dictionary[ 'error' ] = ( 'An error occurred getting the history data from the server. ' +
+                'Please contact a Galaxy administrator if the problem persists.' )
 
         return trans.fill_template_mako( "root/history.mako",
             history=history_dictionary, hdas=hda_dictionaries,

@@ -777,8 +777,8 @@ class PageController( BaseUIController, SharableMixin,
             return None
 
         # Fork to template based on visualization.type (registry or builtin).
-        if(( trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins )
-           and ( visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS ) ):
+        if(( trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins ) and
+                ( visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS ) ):
             # if a registry visualization, load a version into an iframe :(
             # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')

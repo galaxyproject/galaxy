@@ -28,9 +28,6 @@ from galaxy.web import url_for
 import logging
 log = logging.getLogger( __name__ )
 
-# TODO: not used in this file
-from galaxy import util
-
 
 class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistoryMixin ):
 

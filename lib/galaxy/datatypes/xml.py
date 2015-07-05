@@ -4,7 +4,6 @@ XML format classes
 import re
 import data
 import logging
-from galaxy.datatypes.sniff import *
 import dataproviders
 
 log = logging.getLogger(__name__)
@@ -29,6 +28,7 @@ class GenericXml( data.Text ):
         """
         Determines whether the file is XML or not
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'megablast_xml_parser_test1.blastxml' )
         >>> GenericXml().sniff( fname )
         True

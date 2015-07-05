@@ -108,8 +108,8 @@ class ResourceParser( object ):
                     config_val = self.parse_parameter( trans, param_config, config_val )
 
                 except Exception, exception:
-                    log.warn( 'Exception parsing visualization param from query: '
-                        + '%s, %s, (%s) %s' % ( param_name, config_val, str( type( exception ) ), str( exception ) ))
+                    log.warn( 'Exception parsing visualization param from query: ' +
+                        '%s, %s, (%s) %s' % ( param_name, config_val, str( type( exception ) ), str( exception ) ))
                     config_val = None
 
             # here - we've either had no value in the query_params or there was a failure to parse

@@ -91,9 +91,9 @@ class ColumnDataProvider( BaseDataProvider ):
 
         # skip comment lines (if any/avail)
         # pre: should have original_dataset and
-        if( skip_comments
-        and self.original_dataset.metadata.comment_lines
-        and start_val < self.original_dataset.metadata.comment_lines ):
+        if( skip_comments and
+                self.original_dataset.metadata.comment_lines and
+                start_val < self.original_dataset.metadata.comment_lines ):
             start_val = int( self.original_dataset.metadata.comment_lines )
 
         # columns is an array of ints for now (should handle column names later)
@@ -101,8 +101,8 @@ class ColumnDataProvider( BaseDataProvider ):
         for column in columns:
             assert( ( column < self.original_dataset.metadata.columns ) and
                 ( column >= 0 ) ), (
-                "column index (%d) must be positive and less" % ( column )
-                + " than the number of columns: %d" % ( self.original_dataset.metadata.columns ) )
+                "column index (%d) must be positive and less" % ( column ) +
+                " than the number of columns: %d" % ( self.original_dataset.metadata.columns ) )
         # print columns, start_val, max_vals, skip_comments, kwargs
 
         # set up the response, column lists
@@ -179,8 +179,7 @@ class ColumnDataProvider( BaseDataProvider ):
             column_type = column_types[ index ]
             count = meta[ 'count' ]
 
-            if( ( column_type == 'float' or column_type == 'int' )
-            and count ):
+            if( ( column_type == 'float' or column_type == 'int' ) and count ):
                 meta[ 'mean' ] = float( meta[ 'sum' ] ) / count
 
                 sorted_data = sorted( response[ 'data' ][ index ] )

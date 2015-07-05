@@ -133,9 +133,9 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         config = payload.get( 'config', visualization.latest_revision.config )
 
         latest_config = visualization.latest_revision.config
-        if( ( title != visualization.latest_revision.title )
-        or ( dbkey != visualization.latest_revision.dbkey )
-        or ( util.json.dumps( config ) != util.json.dumps( latest_config ) ) ):
+        if( ( title != visualization.latest_revision.title ) or
+                ( dbkey != visualization.latest_revision.dbkey ) or
+                ( util.json.dumps( config ) != util.json.dumps( latest_config ) ) ):
             revision = self.add_visualization_revision( trans, visualization, config, title, dbkey )
             rval = { 'id' : id, 'revision' : revision.id }
 
