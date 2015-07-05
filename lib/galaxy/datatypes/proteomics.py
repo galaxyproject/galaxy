@@ -9,7 +9,10 @@ from galaxy.datatypes import data
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.xml import GenericXml
 from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.binary import SQlite
 from galaxy.datatypes.tabular import Tabular
+from galaxy.util import sqlite
+
 
 log = logging.getLogger(__name__)
 
@@ -399,16 +402,17 @@ class Sf3(Binary):
     """Class describing a Scaffold SF3 files"""
     file_ext = "sf3"
 
-class MzSQLite( SQlite ):
+
+class MzSQlite( SQlite ):
     """Class describing a Proteomics Sqlite database """
     file_ext = "mz.sqlite"
 
-    def set_meta( self, dataset, overwrite = True, **kwd ):
-        super( MzSQLite, self ).set_meta( dataset, overwrite = overwrite, **kwd )
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( MzSQlite, self ).set_meta( dataset, overwrite=overwrite, **kwd )
 
     def sniff( self, filename ):
-        if super( MzSQLite, self ).sniff( filename ):
-            mz_table_names = [ "DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification]
+        if super( MzSQlite, self ).sniff( filename ):
+            mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
             try:
                 conn = sqlite.connect( filename )
                 c = conn.cursor()
@@ -422,4 +426,3 @@ class MzSQLite( SQlite ):
             except Exception, e:
                 log.warn( '%s, sniff Exception: %s', self, e )
         return False
-
