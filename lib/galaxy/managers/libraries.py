@@ -119,13 +119,20 @@ class LibraryManager( object ):
             #  Nonadmins can't see deleted libraries
             current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
             library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
-            restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
-                                                                 .filter( trans.model.LibraryPermissions.table.c.action == library_access_action )
-                                                                 .distinct() ) ]
-            accessible_restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
-                                                  .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
-                                                                 trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ) ]
-            query = query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ), trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
+            restricted_library_ids = [ lp.library_id for lp in (
+                trans.sa_session.query( trans.model.LibraryPermissions ).filter(
+                    trans.model.LibraryPermissions.table.c.action == library_access_action
+                ).distinct() ) ]
+            accessible_restricted_library_ids = [ lp.library_id for lp in (
+                trans.sa_session.query( trans.model.LibraryPermissions ).filter(
+                    and_(
+                        trans.model.LibraryPermissions.table.c.action == library_access_action,
+                        trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids )
+                    ) ) ) ]
+            query = query.filter( or_(
+                not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ),
+                trans.model.Library.table.c.id.in_( accessible_restricted_library_ids )
+            ) )
         return query
 
     def secure( self, trans, library, check_accessible=True ):
