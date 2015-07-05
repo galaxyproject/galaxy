@@ -1,6 +1,8 @@
 """
 """
 
+import sys
+
 from os import pardir
 from os.path import abspath, join, dirname
 
@@ -37,7 +39,7 @@ class GalaxyConfig( object ):
         # SQLite is different since it can be specified in two config vars and defaults to True
         if name == "pysqlite":
             try:
-                return config.get( "app:main", "database_connection" ).startswith( "sqlite://" )
+                return self.config.get( "app:main", "database_connection" ).startswith( "sqlite://" )
             except:
                 return True
         else:
@@ -49,7 +51,6 @@ class GalaxyConfig( object ):
                          "pbs_python":      lambda: "pbs" in self.config.get( "app:main", "start_job_runners" ).split(","),
                          "python_openid":   lambda: self.config.get( "app:main", "enable_openid" ),
                          "python_daemon":   lambda: sys.version_info[:2] >= ( 2, 5 ),
-                         "pysam":           lambda: check_pysam(),
                          "PyRods":          lambda: self.config.get( "app:main", "object_store" ) == "irods"
                          }.get( name, lambda: True )()
             except:
