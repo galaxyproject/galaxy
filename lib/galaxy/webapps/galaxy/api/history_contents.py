@@ -271,7 +271,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __create_datasets_from_library_folder( self, trans, history, payload, **kwd ):
-        created_hdas = []
+        rval = []
 
         source = payload.get( 'source', None )
         if source == 'library_folder':
@@ -282,7 +282,6 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             folder_id = self.folder_manager.cut_and_decode( trans, content )
             folder = self.folder_manager.get( trans, folder_id )
 
-            rval = []
             current_user_roles = trans.get_current_user_roles()
 
             def traverse( folder ):
@@ -305,13 +304,15 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
             for ld in traverse( folder ):
                 hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
+                hda_dict = self.hda_serializer.serialize_to_view( hda,
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                rval.append( hda_dict )
         else:
             message = "Invalid 'source' parameter in request %s" % source
             raise exceptions.RequestParameterInvalidException(message)
 
         trans.sa_session.flush()
-        if not created_hdas:
-            return None
+        return rval
 
     def __create_dataset_collection( self, trans, history, payload, **kwd ):
         source = kwd.get("source", "new_collection")
