@@ -176,8 +176,7 @@ var FolderListView = Backbone.View.extend({
      */
     postRender: function(){
         var fetched_metadata = this.folderContainer.attributes.metadata;
-        fetched_metadata.contains_file_or_folder = typeof this.collection.findWhere({type: 'file'}) !== 'undefined';
-        fetched_metadata.contains_file_or_folder = typeof this.collection.findWhere({type: 'folder'}) !== 'undefined';
+        fetched_metadata.contains_file_or_folder = typeof this.collection.findWhere({type: 'file'}) !== 'undefined' || typeof this.collection.findWhere({type: 'folder'}) !== 'undefined';
         Galaxy.libraries.folderToolbarView.configureElements(fetched_metadata);
         $('.library-row').hover(function() {
           $(this).find('.show_on_hover').show();
