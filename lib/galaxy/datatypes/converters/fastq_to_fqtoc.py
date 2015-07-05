@@ -24,8 +24,8 @@ def main():
     out_file = open(sys.argv[2], 'w')
 
     current_line = 0
-    sequences=1000000
-    lines_per_chunk = 4*sequences
+    sequences = 1000000
+    lines_per_chunk = 4 * sequences
     chunk_begin = 0
 
     in_file = open(input_fname)

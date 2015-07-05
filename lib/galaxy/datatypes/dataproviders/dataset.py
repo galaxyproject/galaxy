@@ -124,7 +124,7 @@ class DatasetDataProvider( base.DataProvider ):
             raise KeyError( 'No column_names found for '
                             + 'datatype: %s, dataset: %s' % ( str( self.dataset.datatype ), str( self.dataset ) ) )
         indeces = []        # if indeces and column_names:
-        #    # pull using indeces and re-name with given names - no need to alter (does as super would)
+        # pull using indeces and re-name with given names - no need to alter (does as super would)
         #    pass
         for column_name in list_of_column_names:
             indeces.append( metadata_column_names.index( column_name ) )
@@ -736,7 +736,7 @@ class SQliteDataTableProvider( base.DataProvider ):
         'limit': 'int'
     }
 
-    def __init__( self, source, query=None, headers=False, limit=sys.maxint, **kwargs ):
+    def __init__( self, source, query=None, headers=False, limit=sys.maxsize, **kwargs ):
         self.query = query
         self.headers = headers
         self.limit = limit

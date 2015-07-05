@@ -161,7 +161,7 @@ class Stockholm_1_0( Text ):
                     stockholm_lines_accumulated = []
             if stockholm_lines_accumulated:
                 _write_part_stockholm_file( stockholm_lines_accumulated )
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)

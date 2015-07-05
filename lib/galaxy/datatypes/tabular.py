@@ -112,7 +112,7 @@ class TabularData( data.Text ):
             out.append( self.make_html_peek_rows( dataset, **kwargs ) )
             out.append( '</table>' )
             out = "".join( out )
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create peek %s" % str( exc )
         return out
 
@@ -157,7 +157,7 @@ class TabularData( data.Text ):
                     out.append( '%s.%s' % ( str( i + 1 ), escape( header ) ) )
                 out.append( '</th>' )
             out.append( '</tr>' )
-        except Exception, exc:
+        except Exception as exc:
             log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
             raise Exception( "Can't create peek header %s" % str( exc ) )
         return "".join( out )
@@ -185,7 +185,7 @@ class TabularData( data.Text ):
                         for elem in elems:
                             out.append( '<td>%s</td>' % escape( elem ) )
                         out.append( '</tr>' )
-        except Exception, exc:
+        except Exception as exc:
             log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
             raise Exception( "Can't create peek rows %s" % str( exc ) )
         return "".join( out )
@@ -743,7 +743,7 @@ class Eland( Tabular ):
             out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
             out.append( '</table>' )
             out = "".join( out )
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create peek %s" % exc
         return out
 
@@ -811,12 +811,12 @@ class Eland( Tabular ):
             tiles = {}
             barcodes = {}
             reads = {}
-            #     # Should always read the entire file (until we devise a more clever way to pass metadata on)
+            # Should always read the entire file (until we devise a more clever way to pass metadata on)
             # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            #     # If the dataset is larger than optional_metadata, just count comment lines.
+            # If the dataset is larger than optional_metadata, just count comment lines.
             #     dataset.metadata.data_lines = None
             # else:
-            #     # Otherwise, read the whole thing and set num data lines.
+            # Otherwise, read the whole thing and set num data lines.
             for i, line in enumerate(dataset_fh):
                 if line:
                     linePieces = line.split('\t')

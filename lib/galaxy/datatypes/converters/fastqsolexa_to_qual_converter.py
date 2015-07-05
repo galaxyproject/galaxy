@@ -18,9 +18,11 @@ from math import *
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+
 def stop_err( msg ):
     sys.stderr.write( "%s" % msg )
     sys.exit()
+
 
 def __main__():
     infile_name = sys.argv[1]
@@ -73,7 +75,7 @@ def __main__():
             except:
                 fastq_integer = False
 
-            if fastq_integer: # digits
+            if fastq_integer:  # digits
                 qual = line
             else:
                 # ascii

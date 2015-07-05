@@ -39,7 +39,7 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
         target_encoding = util.DEFAULT_ENCODING  # utf-8
     if not source_encoding:
         source_encoding = util.DEFAULT_ENCODING  # sys.getdefaultencoding() would mimic old behavior (defaults to ascii)
-    while 1:
+    while True:
         chunk = stream.read( CHUNK_SIZE )
         if not chunk:
             break
@@ -384,7 +384,7 @@ def handle_compressed_file( filename, datatypes_registry, ext='auto' ):
         while True:
             try:
                 chunk = compressed_file.read( CHUNK_SIZE )
-            except IOError, e:
+            except IOError as e:
                 os.close( fd )
                 os.remove( uncompressed )
                 compressed_file.close()

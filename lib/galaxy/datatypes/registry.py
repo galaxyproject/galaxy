@@ -174,7 +174,7 @@ class Registry( object ):
                                 fields = dtype.split( ':' )
                                 datatype_module = fields[ 0 ]
                                 datatype_class_name = fields[ 1 ]
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.exception( 'Error parsing datatype definition for dtype %s: %s' % ( str( dtype ), str( e ) ) )
                                 ok = False
                             if ok:
@@ -190,7 +190,7 @@ class Registry( object ):
                                             self.imported_modules.append( imported_module )
                                         if hasattr( imported_module, datatype_class_name ):
                                             datatype_class = getattr( imported_module, datatype_class_name )
-                                    except Exception, e:
+                                    except Exception as e:
                                         full_path = os.path.join( proprietary_path, proprietary_datatype_module )
                                         self.log.debug( "Exception importing proprietary code file %s: %s" % ( str( full_path ), str( e ) ) )
                                 # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
@@ -204,13 +204,13 @@ class Registry( object ):
                                             module = getattr( module, mod )
                                         datatype_class = getattr( module, datatype_class_name )
                                         self.log.debug( 'Retrieved datatype module %s:%s from the datatype registry.' % ( str( datatype_module ), datatype_class_name ) )
-                                    except Exception, e:
+                                    except Exception as e:
                                         self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[ type_extension ].__class__
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.exception( 'Error determining datatype_class for type_extension %s: %s' % ( str( type_extension ), str( e ) ) )
                                 ok = False
                         if ok:
@@ -355,7 +355,7 @@ class Registry( object ):
                         datatype_module = fields[ 0 ]
                         datatype_class_name = fields[ 1 ]
                         module = None
-                    except Exception, e:
+                    except Exception as e:
                         self.log.exception( 'Error determining datatype class or module for dtype %s: %s' % ( str( dtype ), str( e ) ) )
                         ok = False
                     if ok:
@@ -371,13 +371,13 @@ class Registry( object ):
                                 module = __import__( datatype_module )
                                 for comp in datatype_module.split( '.' )[ 1: ]:
                                     module = getattr( module, comp )
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.exception( "Error importing datatype class for '%s': %s" % ( str( dtype ), str( e ) ) )
                                 ok = False
                         if ok:
                             try:
                                 aclass = getattr( module, datatype_class_name )()
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.exception( 'Error calling method %s from class %s: %s', str( datatype_class_name ), str( module ), str( e ) )
                                 ok = False
                             if ok:
@@ -528,7 +528,7 @@ class Registry( object ):
                         self.datatype_converters[ source_datatype ] = odict()
                     self.datatype_converters[ source_datatype ][ target_datatype ] = converter
                     self.log.debug( "Loaded converter: %s", converter.id )
-            except Exception, e:
+            except Exception as e:
                 if deactivate:
                     self.log.exception( "Error deactivating converter from (%s): %s" % ( converter_path, str( e ) ) )
                 else:
@@ -596,7 +596,7 @@ class Registry( object ):
                             if inherit and ( self.datatypes_by_extension[ extension ], display_app ) not in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.append( ( self.datatypes_by_extension[ extension ], display_app ) )
                             self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s." % ( display_app.id, extension, inherit ) )
-                except Exception, e:
+                except Exception as e:
                     if deactivate:
                         self.log.exception( "Error deactivating display application (%s): %s" % ( config_path, str( e ) ) )
                     else:
@@ -624,7 +624,7 @@ class Registry( object ):
             try:
                 self.display_applications[ display_application_id ].reload()
                 reloaded.append( display_application_id )
-            except Exception, e:
+            except Exception as e:
                 self.log.debug( 'Requested to reload display application "%s", but failed: %s.', display_application_id, e  )
                 failed.append( display_application_id )
         return ( reloaded, failed )
@@ -861,4 +861,4 @@ class Registry( object ):
         os.write( fd, '</sniffers>\n' )
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
-        os.chmod( self.xml_filename, 0644 )
+        os.chmod( self.xml_filename, 0o644 )

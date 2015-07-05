@@ -673,7 +673,7 @@ class MetadataTempFile( object ):
                 if isinstance( value, cls ) and os.path.exists( value.file_name ):
                     log.debug( 'Cleaning up abandoned MetadataTempFile file: %s' % value.file_name )
                     os.unlink( value.file_name )
-        except Exception, e:
+        except Exception as e:
             log.debug( 'Failed to cleanup MetadataTempFile temp files from %s: %s' % ( filename, e ) )
 
 
@@ -863,7 +863,7 @@ class JobExternalOutputMetadataWrapper( object ):
                                 ( 'filename_override_metadata', metadata_files.filename_override_metadata ) ]:
                 try:
                     os.remove( fname )
-                except Exception, e:
+                except Exception as e:
                     log.debug( 'Failed to cleanup external metadata file (%s) for %s: %s' % ( key, dataset_key, e ) )
 
     def set_job_runner_external_pid( self, pid, sa_session ):

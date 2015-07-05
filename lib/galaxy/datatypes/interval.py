@@ -163,7 +163,7 @@ class Interval( Tabular ):
                 end_col = int( dataset.metadata.endCol ) - 1
             # Scan lines of file to find a reasonable chromosome and range
             chrom = None
-            start = sys.maxint
+            start = sys.maxsize
             end = 0
             max_col = max( chrom_col, start_col, end_col )
             fh = open( dataset.file_name )
@@ -286,7 +286,7 @@ class Interval( Tabular ):
         while True:
             try:
                 reader.next()
-            except ParseError, e:
+            except ParseError as e:
                 errors.append(e)
             except StopIteration:
                 infile.close()
@@ -729,7 +729,7 @@ class Gff( Tabular, _RemoteCallMixin ):
         if self.displayable( dataset ):
             try:
                 seqid = None
-                start = sys.maxint
+                start = sys.maxsize
                 stop = 0
                 fh = open( dataset.file_name )
                 while True:
@@ -741,14 +741,14 @@ class Gff( Tabular, _RemoteCallMixin ):
                             elems = line.rstrip( '\n\r' ).split()
                             if len( elems ) > 3:
                                 # line looks like:
-                                # ##sequence-region   ctg123 1 1497228
+                                # sequence-region   ctg123 1 1497228
                                 seqid = elems[1]  # IV
                                 start = int( elems[2] )  # 6000000
                                 stop = int( elems[3] )  # 6030000
                                 break  # use location declared in file
                             elif len( elems ) == 2 and elems[1].find( '..' ) > 0:
                                 # line looks like this:
-                                # ##sequence-region X:120000..140000
+                                # sequence-region X:120000..140000
                                 elems = elems[1].split( ':' )
                                 seqid = elems[0]
                                 start = int( elems[1].split( '..' )[0] )
@@ -791,7 +791,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                         break
                 if seqid is not None:
                     return ( seqid, str( start ), str( stop ) )  # Necessary to return strings?
-            except Exception, e:
+            except Exception as e:
                 # unexpected error
                 log.exception( str( e ) )
         return ( None, None, None )  # could not determine viewport
@@ -1095,7 +1095,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         if self.displayable( dataset ):
             try:
                 chrom = None
-                start = sys.maxint
+                start = sys.maxsize
                 end = 0
                 span = 1
                 step = None
@@ -1148,7 +1148,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                         break
                 if chrom is not None:
                     return ( chrom, str( start ), str( end ) )  # Necessary to return strings?
-            except Exception, e:
+            except Exception as e:
                 # unexpected error
                 log.exception( str( e ) )
         return ( None, None, None )  # could not determine viewport
@@ -1354,7 +1354,7 @@ class CustomTrack ( Tabular ):
                     if not max_line_count:
                         # exceeded viewport or total line count to check
                         break
-            except Exception, e:
+            except Exception as e:
                 # unexpected error
                 log.exception( str( e ) )
         return ( None, None, None )  # could not determine viewport

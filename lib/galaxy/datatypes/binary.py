@@ -329,7 +329,7 @@ class Bam( Binary ):
                 command = [ 'samtools', 'index', dataset_symlink ]
                 exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
                 shutil.move( dataset_symlink + '.bai', index_file.file_name )
-            except Exception, e:
+            except Exception as e:
                 open( stderr_name, 'ab+' ).write( 'Galaxy attempted to build the BAM index with samtools 1.0+ but failed: %s\n' % e)
             finally:
                 os.unlink( dataset_symlink )
@@ -711,18 +711,18 @@ class SQlite ( Binary ):
                     cur = conn.cursor().execute(col_query)
                     cols = [col[0] for col in cur.description]
                     columns[table] = cols
-                except Exception, exc:
+                except Exception as exc:
                     log.warn( '%s, set_meta Exception: %s', self, exc )
             for table in tables:
                 try:
                     row_query = "SELECT count(*) FROM %s" % table
                     rowcounts[table] = c.execute(row_query).fetchone()[0]
-                except Exception, exc:
+                except Exception as exc:
                     log.warn( '%s, set_meta Exception: %s', self, exc )
             dataset.metadata.tables = tables
             dataset.metadata.table_columns = columns
             dataset.metadata.table_row_count = rowcounts
-        except Exception, exc:
+        except Exception as exc:
             log.warn( '%s, set_meta Exception: %s', self, exc )
 
     def sniff( self, filename ):
@@ -793,7 +793,7 @@ class GeminiSQLite( SQlite ):
             for version, in result:
                 dataset.metadata.gemini_version = version
             # TODO: Can/should we detect even more attributes, such as use of PED file, what was input annotation type, etc.
-        except Exception, e:
+        except Exception as e:
             log.warn( '%s, set_meta Exception: %s', self, e )
 
     def sniff( self, filename ):
@@ -810,7 +810,7 @@ class GeminiSQLite( SQlite ):
                     if table_name not in result:
                         return False
                 return True
-            except Exception, e:
+            except Exception as e:
                 log.warn( '%s, sniff Exception: %s', self, e )
         return False
 

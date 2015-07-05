@@ -371,12 +371,12 @@ class SnpSiftDbNSFP( Text ):
                             lines = buf.splitlines()
                             headers = lines[0].split('\t')
                             dataset.metadata.annotation = headers[4:]
-                        except Exception, e:
+                        except Exception as e:
                             log.warn("set_meta fname: %s  %s" % (fname, str(e)))
                         finally:
                             fh.close()
                     if fname.endswith('.tbi'):
                         dataset.metadata.index = fname
             self.regenerate_primary_file(dataset)
-        except Exception, e:
+        except Exception as e:
             log.warn("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))

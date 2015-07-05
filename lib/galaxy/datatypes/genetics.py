@@ -138,7 +138,7 @@ class GenomeGraphs( Tabular ):
                 out.append('</tr>')
             out.append( '</table>' )
             out = "".join( out )
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create peek %s" % exc
         return out
 
@@ -596,8 +596,7 @@ class RexpBase( Html ):
             del useConc[i]  # get rid of concordance
             del useCols[i]  # and usecols entry
         for i, conc in enumerate(useConc):  # these are all unique columns for the design matrix
-                ccounts = [(conc.get(code, 0), code) for code in conc.keys()]  # decorate
-                ccounts.sort()
+                ccounts = sorted([(conc.get(code, 0), code) for code in conc.keys()])  # decorate
                 cc = [(x[1], x[0]) for x in ccounts]  # list of code count tuples
                 codeDetails = (head[useCols[i]], cc)  # ('foo',[('a',3),('b',11),..])
                 listCol.append(codeDetails)
@@ -758,7 +757,7 @@ class RexpBase( Html ):
                 out.append(''.join(orow))
             out.append( '</table>' )
             out = "\n".join( out )
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create html table %s" % str( exc )
         return out
 

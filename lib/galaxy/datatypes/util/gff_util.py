@@ -183,7 +183,7 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             while not self.seed_interval:
                 try:
                     self.seed_interval = GenomicIntervalReader.next( self )
-                except ParseError, e:
+                except ParseError as e:
                     handle_parse_error( e )
                 # TODO: When no longer supporting python 2.4 use finally:
                 # finally:
@@ -211,13 +211,13 @@ class GFFReaderWrapper( NiceReaderWrapper ):
             try:
                 interval = GenomicIntervalReader.next( self )
                 raw_size += len( self.current_line )
-            except StopIteration, e:
+            except StopIteration as e:
                 # No more intervals to read, but last feature needs to be
                 # returned.
                 interval = None
                 raw_size += len( self.current_line )
                 break
-            except ParseError, e:
+            except ParseError as e:
                 handle_parse_error( e )
                 raw_size += len( self.current_line )
                 continue
@@ -283,7 +283,7 @@ def convert_bed_coords_to_gff( interval ):
         if isinstance( interval, GFFFeature ):
             for subinterval in interval.intervals:
                 convert_bed_coords_to_gff( subinterval )
-    elif type( interval ) is list:
+    elif isinstance(interval, list):
         interval[ 0 ] += 1
     return interval
 
@@ -300,7 +300,7 @@ def convert_gff_coords_to_bed( interval ):
         if isinstance( interval, GFFFeature ):
             for subinterval in interval.intervals:
                 convert_gff_coords_to_bed( subinterval )
-    elif type( interval ) is list:
+    elif isinstance(interval, list):
         interval[ 0 ] -= 1
     return interval
 

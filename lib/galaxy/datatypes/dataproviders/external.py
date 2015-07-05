@@ -52,7 +52,7 @@ class SubprocessDataProvider( base.DataProvider ):
             popen = subprocess.Popen( command_list, stderr=subprocess.PIPE, stdout=subprocess.PIPE )
             log.info( 'opened subrocess (%s), PID: %s' % ( str( command_list ), str( popen.pid ) ) )
 
-        except OSError, os_err:
+        except OSError as os_err:
             command_str = ' '.join( self.command )
             raise OSError( ' '.join([ str( os_err ), ':', command_str ]) )
 
