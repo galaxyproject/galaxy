@@ -38,8 +38,8 @@ from galaxy.util.directory_hash import directory_hash_id
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
-        PasswordField, SelectField, TextArea, TextField, WorkflowField,
-        WorkflowMappingField)
+                                     PasswordField, SelectField, TextArea, TextField, WorkflowField,
+                                     WorkflowMappingField)
 from galaxy.model.orm import and_, or_
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm import joinedload
@@ -797,7 +797,7 @@ class Task( object, HasJobMetrics ):
         # differentiate between the kinds of Runnable things (Jobs and Tasks)
         # that they're using.
         log.debug( "Task %d: Set external id to %s"
-                 % ( self.id, task_runner_external_id ) )
+                   % ( self.id, task_runner_external_id ) )
         self.task_runner_external_id = task_runner_external_id
 
     def set_task_runner_external_id( self, task_runner_external_id ):
@@ -1231,10 +1231,10 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         if not hasattr(self, '_active_datasets_children_and_roles'):
             db_session = object_session( self )
             query = ( db_session.query( HistoryDatasetAssociation )
-                    .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
-                    .filter( not_( HistoryDatasetAssociation.deleted ) )
-                    .order_by( HistoryDatasetAssociation.table.c.hid.asc() )
-                    .options(
+                      .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+                      .filter( not_( HistoryDatasetAssociation.deleted ) )
+                      .order_by( HistoryDatasetAssociation.table.c.hid.asc() )
+                      .options(
                         joinedload("children"),
                         joinedload("dataset"),
                         joinedload("dataset.actions"),
@@ -2140,7 +2140,7 @@ class HistoryDatasetAssociation( DatasetInstance, Dictifiable, UsesAnnotations, 
         return hda
 
     def to_library_dataset_dataset_association( self, trans, target_folder,
-            replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
+                                                replace_dataset=None, parent_id=None, user=None, roles=None, ldda_message='' ):
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
