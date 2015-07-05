@@ -3,11 +3,11 @@ Mixins for Ratable model managers and serializers.
 """
 
 import logging
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 
 
 # TODO: stub
-class RatableManagerMixin(object):
+class RatableManagerMixin( object ):
     #: class of RatingAssociation (e.g. HistoryRatingAssociation)
     rating_assoc = None
 
@@ -17,26 +17,26 @@ class RatableManagerMixin(object):
     #    pass
 
 
-class RatableSerializerMixin(object):
+class RatableSerializerMixin( object ):
 
-    def add_serializers(self):
-        self.serializers['user_rating'] = self.serialize_user_rating
-        self.serializers['community_rating'] = self.serialize_community_rating
+    def add_serializers( self ):
+        self.serializers[ 'user_rating' ] = self.serialize_user_rating
+        self.serializers[ 'community_rating' ] = self.serialize_community_rating
 
-    def serialize_user_rating(self, item, key, user=None, **context):
+    def serialize_user_rating( self, item, key, user=None, **context ):
         """
         """
         pass
 
-    def serialize_community_rating(self, item, key, **context):
+    def serialize_community_rating( self, item, key, **context ):
         """
         """
         pass
 
 
-class RatableDeserializerMixin(object):
+class RatableDeserializerMixin( object ):
 
-    def add_deserializers(self):
+    def add_deserializers( self ):
         pass
         # self.deserializers[ 'user_rating' ] = self.deserialize_rating
 
