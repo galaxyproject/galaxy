@@ -99,7 +99,7 @@ class TaskedJobRunner( BaseJobRunner ):
                     if ( model.Task.states.ERROR == task_state ):
                         job_exit_code = tw.get_exit_code()
                         log.debug( "Canceling job %d: Task %s returned an error"
-                                 % ( tw.job_id, tw.task_id ) )
+                                   % ( tw.job_id, tw.task_id ) )
                         self._cancel_job( job_wrapper, task_wrappers )
                         tasks_complete = True
                         break
@@ -190,7 +190,7 @@ class TaskedJobRunner( BaseJobRunner ):
             task_state = task.get_state()
             if ( model.Task.states.QUEUED == task_state ):
                 log.debug( "_cancel_job for job %d: Task %d is not running; setting state to DELETED"
-                         % ( job.get_id(), task.get_id() ) )
+                           % ( job.get_id(), task.get_id() ) )
                 task_wrapper.change_state( task.states.DELETED )
         # If a task failed, then the caller will have waited a few seconds
         # before recognizing the failure. In that time, a queued task could
@@ -202,7 +202,7 @@ class TaskedJobRunner( BaseJobRunner ):
             if ( model.Task.states.RUNNING == task_wrapper.get_state() ):
                 task = task_wrapper.get_task()
                 log.debug( "_cancel_job for job %d: Stopping running task %d"
-                         % ( job.get_id(), task.get_id() ) )
+                           % ( job.get_id(), task.get_id() ) )
                 job_wrapper.app.job_manager.job_handler.dispatcher.stop( task )
 
     def _check_pid( self, pid ):

@@ -574,16 +574,16 @@ class PBSJobRunner( AsynchronousJobRunner ):
             pbs_server_name = self.__get_pbs_server( job.destination_params )
             if pbs_server_name is None:
                 log.debug("(%s) Job queued but no destination stored in job params, cannot delete"
-                         % job_tag )
+                          % job_tag )
                 return
             c = pbs.pbs_connect( util.smart_str( pbs_server_name ) )
             if c <= 0:
                 log.debug("(%s) Connection to PBS server for job delete failed"
-                         % job_tag )
+                          % job_tag )
                 return
             pbs.pbs_deljob( c, job_id, '' )
             log.debug( "%s Removed from PBS queue before job completion"
-                     % job_tag )
+                       % job_tag )
         except:
             e = traceback.format_exc()
             log.debug( "%s Unable to stop job: %s" % ( job_tag, e ) )

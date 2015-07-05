@@ -84,7 +84,7 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
                         if ( regex_match ):
                             rexmsg = __regex_err_msg( regex_match, regex)
                             log.info( "Job %s: %s"
-                                    % ( job.get_id_tag(), rexmsg ) )
+                                      % ( job.get_id_tag(), rexmsg ) )
                             stdout = rexmsg + "\n" + stdout
                             max_error_level = max( max_error_level,
                                                    regex.error_level )
@@ -98,7 +98,7 @@ def check_output( tool, stdout, stderr, tool_exit_code, job ):
                         if ( regex_match ):
                             rexmsg = __regex_err_msg( regex_match, regex)
                             log.info( "Job %s: %s"
-                                    % ( job.get_id_tag(), rexmsg ) )
+                                      % ( job.get_id_tag(), rexmsg ) )
                             stderr = rexmsg + "\n" + stderr
                             max_error_level = max( max_error_level,
                                                    regex.error_level )

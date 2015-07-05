@@ -388,7 +388,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         command.extend( [ str(username), jobtemplate_filename ] )
         log.info("Running command %s" % command)
         p = subprocess.Popen(command,
-                shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                             shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdoutdata, stderrdata) = p.communicate()
         exitcode = p.returncode
         # os.unlink(jobtemplate_filename)
