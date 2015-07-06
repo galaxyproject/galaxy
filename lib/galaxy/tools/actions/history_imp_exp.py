@@ -2,7 +2,7 @@ import os
 import tempfile
 
 from galaxy.tools.actions import ToolAction
-from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper
+from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper
 from galaxy.util.odict import odict
 
 import logging

@@ -80,7 +80,7 @@ class CompressedFile( object ):
         if self.file_type == 'zip':
             for zipped_file in self.getmembers():
                 filename = self.getname( zipped_file )
-                absolute_filepath = os.path.join( path, filename )
+                absolute_filepath = os.path.join( extraction_path, filename )
                 external_attributes = self.archive.getinfo( filename ).external_attr
                 # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
                 unix_permissions = external_attributes >> 16
@@ -973,29 +973,27 @@ class SetEnvironment( RecipeStep ):
         ----
         """
         env_var_value = env_var_dict[ 'value' ]
-        # env_var_value is the text of an environment variable tag like this: <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">
+        # env_var_value is the text of an environment variable tag like this:
+        # <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">
         # Here is an example of what env_var_value could look like: $ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/
         if '$ENV[' in env_var_value and ']' in env_var_value:
             # Pull out the name of the environment variable to populate.
             inherited_env_var_name = env_var_value.split( '[' )[1].split( ']' )[0]
             to_replace = '$ENV[%s]' % inherited_env_var_name
-            # Build a command line that outputs VARIABLE_NAME: <the value of the variable>.
-            set_prior_environment_commands.append( 'echo %s: $%s' % ( inherited_env_var_name, inherited_env_var_name ) )
-            command = ' ; '.join( set_prior_environment_commands )
-            # Run the command and capture the output.
-            command_return = install_environment.handle_command( tool_dependency=tool_dependency,
-                                                                 cmd=command,
-                                                                 return_output=True )
-            # And extract anything labeled with the name of the environment variable we're populating here.
-            if '%s: ' % inherited_env_var_name in command_return:
-                environment_variable_value = command_return.split( '\n' )
-                for line in environment_variable_value:
-                    if line.startswith( inherited_env_var_name ):
-                        inherited_env_var_value = line.replace( '%s: ' % inherited_env_var_name, '' )
-                        log.info( 'Replacing %s with %s in env.sh for this repository.', to_replace, inherited_env_var_value )
-                        env_var_value = env_var_value.replace( to_replace, inherited_env_var_value )
-            else:
-                # If the return is empty, replace the original $ENV[] with nothing, to avoid any shell misparsings later on.
+            found = False
+            for env_cmd in set_prior_environment_commands:
+                # LD_LIBRARY_PATH=/<my configured tool dependency path>/<some path>; export LD_LIBRARY_PATH
+                if env_cmd.startswith( inherited_env_var_name ):
+                    env_val = env_cmd.split( '=' )[1]
+                    # /<my configured tool dependency path>/<some path>; export LD_LIBRARY_PATH
+                    env_val = env_val.split( ';' )[0]
+                    # /<my configured tool dependency path>/<some path>
+                    log.info( 'Replacing %s with %s in env.sh for this repository.', to_replace, env_val )
+                    env_var_value = env_var_value.replace( to_replace, env_val )
+                    found = True
+                    break
+            if not found:
+                # Replace the original $ENV[] with nothing, to avoid any shell misparsings later on.
                 log.debug( 'Environment variable %s not found, removing from set_environment.', inherited_env_var_name )
                 env_var_value = env_var_value.replace( to_replace, '$%s' % inherited_env_var_name )
             env_var_dict[ 'value' ] = env_var_value

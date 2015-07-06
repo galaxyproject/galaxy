@@ -1,9 +1,12 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 
 %if message:
     ${render_msg( message, 'done' )}
 %endif
+
+${get_css()}
 
 <div class="toolForm">
     <div class="toolFormBody">
@@ -13,8 +16,15 @@
                 <tr><td colspan="2">There are no workflows</td></tr>
             %else:
                 <tr class="header">
-                    <td>User</td>
-                    <td>Total Workflows</td>
+                    <td>
+                        ${get_sort_url(sort_id, order, 'user_email', 'workflows', 'per_user', 'User')}
+                        <span class='dir_arrow user_email'>${arrow}</span>
+                    
+                    </td>
+                    <td>
+                        ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'per_user', 'Total Workflows')}
+                        <span class='dir_arrow total_workflows'>${arrow}</span>
+                    </td>
                 </tr>
                 <% ctr = 0 %>
                 %for workflow in workflows:
@@ -31,7 +41,7 @@
                     %else:
                         <tr class="tr">
                     %endif
-                        <td><a href="${h.url_for( controller='workflows', action='user_per_month', id=trans.security.encode_id( user.id ), email=util.sanitize_text( user.email ) )}">${email}</a></td>
+                        <td><a href="${h.url_for( controller='workflows', action='user_per_month', id=trans.security.encode_id( user.id ), email=util.sanitize_text( user.email ), sort_id='default', order='default')}">${email}</a></td>
                         <td>${total}</td>
                     </tr>
                     <% ctr += 1 %>

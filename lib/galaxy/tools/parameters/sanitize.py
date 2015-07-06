@@ -8,6 +8,7 @@ import galaxy.util
 
 log = logging.getLogger( __name__ )
 
+
 class ToolParameterSanitizer( object ):
     """
     Handles tool parameter specific sanitizing.
@@ -41,15 +42,15 @@ class ToolParameterSanitizer( object ):
     True
     """
 
-    VALID_PRESET = { 'default':( string.letters + string.digits +" -=_.()/+*^,:?!" ), 'none':'' }
-    MAPPING_PRESET = { 'default':galaxy.util.mapped_chars, 'none':{} }
+    VALID_PRESET = { 'default': ( string.letters + string.digits + " -=_.()/+*^,:?!" ), 'none': '' }
+    MAPPING_PRESET = { 'default': galaxy.util.mapped_chars, 'none': {} }
     DEFAULT_INVALID_CHAR = 'X'
 
-    #class methods
+    # class methods
     @classmethod
     def from_element( cls, elem ):
         """Loads the proper filter by the type attribute of elem"""
-        #TODO: Add ability to generically specify a method to use for sanitizing input via specification in tool XML
+        # TODO: Add ability to generically specify a method to use for sanitizing input via specification in tool XML
         rval = ToolParameterSanitizer()
         rval._invalid_char = elem.get( 'invalid_char', cls.DEFAULT_INVALID_CHAR )
         rval.sanitize = galaxy.util.string_as_bool( elem.get( 'sanitize', 'True' ) )
@@ -59,11 +60,11 @@ class ToolParameterSanitizer( object ):
                 preset = rval.get_valid_by_name( action_elem.get( 'preset', 'none' ) )
                 valid_value = [ val for val in action_elem.get( 'value', [] ) ]
                 if action_elem.tag.lower() == 'add':
-                    for val in ( preset + valid_value ):
+                    for val in preset + valid_value:
                         if val not in rval._valid_chars:
                             rval._valid_chars.append( val )
                 elif action_elem.tag.lower() == 'remove':
-                    for val in ( preset + valid_value ):
+                    for val in preset + valid_value:
                         while val in rval._valid_chars:
                             rval._valid_chars.remove( val )
                 else:
@@ -116,13 +117,13 @@ class ToolParameterSanitizer( object ):
             else:
                 log.debug( 'Invalid preset name specified: %s' % split_name )
         return rval
-    #end class methods
+    # end class methods
 
     def __init__( self ):
-        self._valid_chars = [] #List of valid characters
-        self._mapped_chars = {} #Replace a char with a any number of characters
-        self._invalid_char = self.DEFAULT_INVALID_CHAR #Replace invalid characters with this character
-        self.sanitize = True #Simply pass back the passed in value
+        self._valid_chars = []  # List of valid characters
+        self._mapped_chars = {}  # Replace a char with a any number of characters
+        self._invalid_char = self.DEFAULT_INVALID_CHAR  # Replace invalid characters with this character
+        self.sanitize = True  # Simply pass back the passed in value
 
     def restore_text( self, text ):
         """Restores sanitized text"""
@@ -138,7 +139,7 @@ class ToolParameterSanitizer( object ):
             elif isinstance( value, list ):
                 return map( self.restore_text, value )
             else:
-                raise Exception, 'Unknown parameter type (%s:%s)' % ( type( value ), value )
+                raise Exception('Unknown parameter type (%s:%s)' % ( type( value ), value ))
         return value
 
     def sanitize_text( self, text ):
@@ -164,4 +165,4 @@ class ToolParameterSanitizer( object ):
         elif isinstance( value, list ):
             return map( self.sanitize_text, value )
         else:
-            raise Exception, 'Unknown parameter type (%s:%s)' % ( type( value ), value )
+            raise Exception('Unknown parameter type (%s:%s)' % ( type( value ), value ))

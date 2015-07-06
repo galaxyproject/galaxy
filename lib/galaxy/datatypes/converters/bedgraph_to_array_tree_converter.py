@@ -3,12 +3,15 @@
 from __future__ import division
 
 import sys
+
 from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
-from bx.arrays.array_tree import *
-# from bx.arrays.wiggle import BedReader
+
+eggs.require('numpy')  # noqa
+eggs.require('bx-python')  # noqa
+from bx.arrays.array_tree import array_tree_dict_from_reader, FileArrayTreeDict
 
 BLOCK_SIZE = 100
+
 
 class BedGraphReader:
     def __init__( self, f ):
@@ -36,6 +39,8 @@ class BedGraphReader:
                 chrom_end = int(feature[2])
                 score = float(feature[3])
                 return chrom, chrom_start, chrom_end, None, score
+
+
 def main():
 
     input_fname = sys.argv[1]
@@ -44,7 +49,7 @@ def main():
     reader = BedGraphReader( open( input_fname ) )
 
     # Fill array from reader
-    d = array_tree_dict_from_reader( reader, {}, block_size = BLOCK_SIZE )
+    d = array_tree_dict_from_reader( reader, {}, block_size=BLOCK_SIZE )
 
     for array_tree in d.itervalues():
         array_tree.root.build_summary()

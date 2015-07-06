@@ -1,4 +1,4 @@
-#Contains actions that are used in External Services
+# Contains actions that are used in External Services
 import logging
 from urllib import urlopen
 from galaxy.web import url_for
@@ -7,26 +7,32 @@ from result_handlers.basic import ExternalServiceActionResultHandler
 
 log = logging.getLogger( __name__ )
 
+
 class PopulatedExternalServiceAction( object ):
     def __init__( self, action, param_dict ):
         self.action = action
         self.param_dict = param_dict
         self.result = None
         self.handled_results = None
+
     def __getattr__( self, name ):
         return getattr( self.action, name )
+
     def get_action_access_link( self, trans ):
         return self.action.get_action_access_link( trans, self.param_dict )
+
     def perform_action( self ):
         if self.result is None:
             self.result = self.action.perform_action( self.param_dict )
         return self.result
+
     def handle_results( self, trans ):
         if self.result is None:
             self.perform_action()
         if self.handled_results is None:
             self.handled_results = self.action.handle_action( self.result, self.param_dict, trans )
         return self.handled_results
+
 
 class ExternalServiceAction( object ):
     """ Abstract Class for External Service Actions """
@@ -38,6 +44,7 @@ class ExternalServiceAction( object ):
         action_type = elem.get( 'type', None )
         assert action_type, 'ExternalServiceAction requires a type'
         return action_type_to_class[ action_type ]( elem, parent )
+
     def __init__( self, elem, parent ):
         self.name = elem.get( 'name', None )
         assert self.name, 'ExternalServiceAction requires a name'
@@ -45,7 +52,8 @@ class ExternalServiceAction( object ):
         self.parent = parent
         self.result_handlers = []
         for handler in elem.findall( 'result_handler' ):
-            self.result_handlers.append( ExternalServiceActionResultHandler.from_elem( handler, self ) ) #parent ) )
+            self.result_handlers.append( ExternalServiceActionResultHandler.from_elem( handler, self ) )
+
     def __action_url_id( self, param_dict ):
         rval = self.name
         parent = self.parent

@@ -9,7 +9,6 @@
 Enhancements
 -------------------------------
 
-.. starthighlight
 * Pluggable framework to custom authentication (including new LDAP/Active
   Directory integration). Thanks to many including Andrew Robinson,
   Nicola Soranzo, and David Trudgian. `Pull Request 1`_, `Pull Request 33`_,
@@ -20,7 +19,6 @@ Enhancements
 * New UI widgets allowing much more flexibility when creating simple dataset
   pair and list collections. `Pull Request 134`_,
   `Trello <https://trello.com/c/xCdFQPBW>`__
-.. endhighlight
 * Improved JavaScript build system for client code and libraries (now
   using uglify_ and featuring `Source Maps`_). 72c876c_, 9a7f5fc_, 648a623_,
   22f280f_, `Trello <https://trello.com/c/7midE7Bx>`__

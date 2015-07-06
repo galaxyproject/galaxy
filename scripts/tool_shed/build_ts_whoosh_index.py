@@ -1,14 +1,15 @@
-""" 
+"""
 Build indexes for searching the TS.
 Run this script from the Tool Shed folder, example:
 
-$ python scripts/tool_shed/build_ts_whoosh_index_test.py -c config/tool_shed.ini -r database/community_files
+$ python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.ini
 
 Make sure you adjusted your config to:
  * turn on searching via toolshed_search_on
  * specify whoosh_index_dir where the indexes will be placed
 
-Also make sure that GALAXY_EGGS_PATH variable is properly set.
+Also make sure that GALAXY_EGGS_PATH variable is properly set
+in case you are using non-default location for Galaxy.
 """
 import sys
 import os
@@ -51,6 +52,7 @@ tool_schema = Schema(
     id=TEXT( stored=True ),
     help=TEXT( stored=True ),
     version=TEXT( stored=True),
+    repo_name=TEXT( stored=True ),
     repo_owner_username=TEXT( stored=True ),
     repo_id=STORED )
 
@@ -106,6 +108,7 @@ def build_index( sa_session, whoosh_index_dir, path_to_repositories ):
                                             description=to_unicode( tool.get( 'description' ) ),
                                             help=to_unicode( tool.get( 'help' ) ),
                                             repo_owner_username=to_unicode( repo.get( 'repo_owner_username' ) ),
+                                            repo_name=to_unicode( repo.get( 'name' ) ),
                                             repo_id=repo.get( 'id' ) )
             tools_indexed += 1
             print tools_indexed, 'tools (', tool.get( 'id' ), ')'
@@ -205,10 +208,9 @@ def get_sa_session_and_needed_config_settings( path_to_tool_shed_config ):
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-c", "--config", dest="path_to_tool_shed_config", default="config/tool_shed.ini", help="specify tool_shed.ini location")
-    parser.add_option("-r", "--repos", dest="path_to_repositories", default="database/community_files", help="specify path to folder with repositories")
     (options, args) = parser.parse_args()
     path_to_tool_shed_config = options.path_to_tool_shed_config
-    path_to_repositories = options.path_to_repositories
     sa_session, config_settings = get_sa_session_and_needed_config_settings( path_to_tool_shed_config )
     whoosh_index_dir = config_settings.get( 'whoosh_index_dir', None )
+    path_to_repositories = config_settings.get( 'file_path', 'database/community_files' )
     build_index( sa_session, whoosh_index_dir, path_to_repositories )

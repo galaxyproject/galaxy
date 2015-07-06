@@ -17,6 +17,7 @@ import subprocess
 import sys
 import traceback
 from galaxy import model, util
+from galaxy.util.xml_macros import load
 from galaxy.datatypes import metadata
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
@@ -129,7 +130,7 @@ class JobConfiguration( object ):
         # Initialize the config
         job_config_file = self.app.config.job_config_file
         try:
-            tree = util.parse_xml(job_config_file)
+            tree = load(job_config_file)
             self.__parse_job_conf_xml(tree)
         except IOError:
             log.warning( 'Job configuration "%s" does not exist, using legacy'
@@ -855,7 +856,7 @@ class JobWrapper( object ):
 
         self.sa_session.flush()
 
-        self.command_line, self.extra_filenames = tool_evaluator.build()
+        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
         # Shell fragment to inject dependencies
@@ -1596,6 +1597,7 @@ class JobWrapper( object ):
                                                                       config_file=config_file,
                                                                       datatypes_config=datatypes_config,
                                                                       job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                      max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                       **kwds )
 
     @property
@@ -1741,7 +1743,7 @@ class TaskWrapper(JobWrapper):
 
         self.sa_session.flush()
 
-        self.command_line, self.extra_filenames = tool_evaluator.build()
+        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir

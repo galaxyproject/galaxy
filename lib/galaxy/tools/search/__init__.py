@@ -18,6 +18,7 @@ schema = Schema( id=STORED,
 import logging
 log = logging.getLogger( __name__ )
 
+
 class ToolBoxSearch( object ):
     """
     Support searching tools in a toolbox. This implementation uses
