@@ -212,10 +212,10 @@ class JobHandlerQueue( object ):
                 .join(model.LibraryDatasetDatasetAssociation) \
                 .join(model.Dataset) \
                 .filter(and_((model.Job.state == model.Job.states.NEW),
-                             or_((model.LibraryDatasetDatasetAssociation._state is not None),
-                        (model.LibraryDatasetDatasetAssociation.deleted is True),
-                        (model.Dataset.state != model.Dataset.states.OK),
-                        (model.Dataset.deleted is True)))).subquery()
+                        or_((model.LibraryDatasetDatasetAssociation._state is not None),
+                            (model.LibraryDatasetDatasetAssociation.deleted is True),
+                            (model.Dataset.state != model.Dataset.states.OK),
+                            (model.Dataset.deleted is True)))).subquery()
             if self.app.config.user_activation_on:
                 jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
                     .outerjoin( model.User ) \
