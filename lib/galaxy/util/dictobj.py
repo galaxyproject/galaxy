@@ -2,7 +2,7 @@ import pickle
 
 
 class DictionaryObject(object):
-  """
+    """
   Copyright 2012 "Grim Apps"
 
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,175 +73,177 @@ class DictionaryObject(object):
     >>> m1['c']
     5
     """
-  def __init__(self, contents=(), *args, **kwargs):
-    """
-    Take as input a dictionary-like object and return a DictionaryObject.
-    It also makes sure any keys containing dictionaries are also converted
-    to DictionaryObjects.
-    """
-    super(DictionaryObject, self).__init__()
-    if isinstance(contents, DictionaryObject):
-      self.__dict__.update(pickle.loads(pickle.dumps(contents.__dict__)))
-      return
 
-    self.__dict__['_items'] = dict(contents, **kwargs)
+    def __init__(self, contents=(), *args, **kwargs):
+        """
+        Take as input a dictionary-like object and return a DictionaryObject.
+        It also makes sure any keys containing dictionaries are also converted
+        to DictionaryObjects.
+        """
+        super(DictionaryObject, self).__init__()
+        if isinstance(contents, DictionaryObject):
+            self.__dict__.update(pickle.loads(pickle.dumps(contents.__dict__)))
+            return
 
-    if len(args) > 1:
-      raise TypeError("too many arguments")
+        self.__dict__['_items'] = dict(contents, **kwargs)
 
-    # If we have more than one argument passed in, use the second argument
-    # as a default value.
-    if args:
-      try:
-        default = type(self)(args[0])
-      except:
-        default = args[0]
-      self.__dict__['_defaultValue'] = default
-    else:
-      self.__dict__['_defaultValue'] = None
-    self.__dict__['_defaultIsSet'] = len(args) > 0
+        if len(args) > 1:
+            raise TypeError("too many arguments")
 
-    for k in self._items:
-      if isinstance(self._items[k], dict):
-        self._items[k] = type(self)(self._items[k])
+        # If we have more than one argument passed in, use the second argument
+        # as a default value.
+        if args:
+            try:
+                default = type(self)(args[0])
+            except:
+                default = args[0]
+            self.__dict__['_defaultValue'] = default
+        else:
+            self.__dict__['_defaultValue'] = None
+        self.__dict__['_defaultIsSet'] = len(args) > 0
 
-  def __setstate__(self, dict):
-    self.__dict__.update(dict)
+        for k in self._items:
+            if isinstance(self._items[k], dict):
+                self._items[k] = type(self)(self._items[k])
 
-  def __getstate__(self):
-    return self.__dict__.copy()
+    def __setstate__(self, dict):
+        self.__dict__.update(dict)
 
-  def __getattr__(self, name):
-    """
-    This is the method that makes all the magic happen.  Search for
-    'name' in self._items and return the value if found.  If a default
-    value has been set and 'name' is not found in self._items, return it.
-    Otherwise raise an AttributeError.
+    def __getstate__(self):
+        return self.__dict__.copy()
 
-    Example:
-      >>> d = DictionaryObject({'keys':[1,2], 'values':3, 'x':1})
-      >>> d.keys
-      <bound method DictionaryObject.keys of DictionaryObject({'keys': [1, 2], 'x': 1, 'values': 3})>
-      >>> d.values
-      <bound method DictionaryObject.values of DictionaryObject({'keys': [1, 2], 'x': 1, 'values': 3})>
-      >>> d.x
-      1
-      >>> d['keys']
-      [1, 2]
-      >>> d['values']
-      3
-    """
-    if name in self._items:
-      return self._items[name]
-    if self._defaultIsSet:
-      return self._defaultValue
-    raise AttributeError("'%s' object has no attribute '%s'" % (type(self).__name__, name))
+    def __getattr__(self, name):
+        """
+        This is the method that makes all the magic happen.  Search for
+        'name' in self._items and return the value if found.  If a default
+        value has been set and 'name' is not found in self._items, return it.
+        Otherwise raise an AttributeError.
 
-  def __setattr__(self, name, value):
-    """
-    This class is immutable-by-default.  See MutableDictionaryObject.
-    """
-    raise AttributeError("'%s' object does not support assignment" % type(self).__name__)
+        Example:
+          >>> d = DictionaryObject({'keys':[1,2], 'values':3, 'x':1})
+          >>> d.keys
+          <bound method DictionaryObject.keys of DictionaryObject({'keys': [1, 2], 'x': 1, 'values': 3})>
+          >>> d.values
+          <bound method DictionaryObject.values of DictionaryObject({'keys': [1, 2], 'x': 1, 'values': 3})>
+          >>> d.x
+          1
+          >>> d['keys']
+          [1, 2]
+          >>> d['values']
+          3
+        """
+        if name in self._items:
+            return self._items[name]
+        if self._defaultIsSet:
+            return self._defaultValue
+        raise AttributeError("'%s' object has no attribute '%s'" % (type(self).__name__, name))
 
-  def __getitem__(self, name):
-    return self._items[name]
+    def __setattr__(self, name, value):
+        """
+        This class is immutable-by-default.  See MutableDictionaryObject.
+        """
+        raise AttributeError("'%s' object does not support assignment" % type(self).__name__)
 
-  def __contains__(self, name):
-    return name in self._items
+    def __getitem__(self, name):
+        return self._items[name]
 
-  def __len__(self):
-    return len(self._items)
+    def __contains__(self, name):
+        return name in self._items
 
-  def __iter__(self):
-    return iter(self._items)
+    def __len__(self):
+        return len(self._items)
 
-  def __repr__(self):
-    if self._defaultIsSet:
-      params = "%s, %s" % (repr(self._items), self._defaultValue)
-    else:
-      params = repr(self._items)
-    return "%s(%s)" % (type(self).__name__, params)
+    def __iter__(self):
+        return iter(self._items)
 
-  def __cmp__(self, rhs):
-    if self < rhs:
-      return -1
-    if self > rhs:
-      return 1
-    return 0
+    def __repr__(self):
+        if self._defaultIsSet:
+            params = "%s, %s" % (repr(self._items), self._defaultValue)
+        else:
+            params = repr(self._items)
+        return "%s(%s)" % (type(self).__name__, params)
 
-  def __eq__(self, rhs):
-    val = cmp(self._items, rhs._items)
-    if 0 == val:
-      return 0 == cmp(self._defaultValue, rhs._defaultValue)
-    return 0 == val
+    def __cmp__(self, rhs):
+        if self < rhs:
+            return -1
+        if self > rhs:
+            return 1
+        return 0
 
-  def __ne__(self, rhs):
-    return not (self == rhs)
+    def __eq__(self, rhs):
+        val = cmp(self._items, rhs._items)
+        if 0 == val:
+            return 0 == cmp(self._defaultValue, rhs._defaultValue)
+        return 0 == val
 
-  def __lt__(self, rhs):
-    val = cmp(self._items, rhs._items)
-    if 0 == val:
-      return -1 == cmp(self._defaultValue, rhs._defaultValue)
-    return -1 == val
+    def __ne__(self, rhs):
+        return not (self == rhs)
 
-  def __le__(self, rhs):
-    return self < rhs or self == rhs
+    def __lt__(self, rhs):
+        val = cmp(self._items, rhs._items)
+        if 0 == val:
+            return -1 == cmp(self._defaultValue, rhs._defaultValue)
+        return -1 == val
 
-  def __gt__(self, rhs):
-    return not (self <= rhs)
+    def __le__(self, rhs):
+        return self < rhs or self == rhs
 
-  def __ge__(self, rhs):
-    return self > rhs or self == rhs
+    def __gt__(self, rhs):
+        return not (self <= rhs)
 
-  def keys(self):
-    return self._items.keys()
+    def __ge__(self, rhs):
+        return self > rhs or self == rhs
 
-  def values(self):
-    return self._items.values()
+    def keys(self):
+        return self._items.keys()
 
-  def asdict(self):
-    """
-    Copy the data back out of here and into a dict.  Then return it.
-    Some libraries may check specifically for dict objects, such
-    as the json library; so, this makes it convenient to get the data
-    back out.
+    def values(self):
+        return self._items.values()
 
-    >>> import dictobj
-    >>> d = {'a':1, 'b':2}
-    >>> dictobj.DictionaryObject(d).asdict() == d
-    True
-    >>> d['c'] = {1:2, 3:4}
-    >>> dictobj.DictionaryObject(d).asdict() == d
-    True
-    """
-    items = {}
-    for name in self._items:
-      value = self._items[name]
-      if isinstance(value, DictionaryObject):
-        items[name] = value.asdict()
-      else:
-        items[name] = value
-    return items
+    def asdict(self):
+        """
+        Copy the data back out of here and into a dict.  Then return it.
+        Some libraries may check specifically for dict objects, such
+        as the json library; so, this makes it convenient to get the data
+        back out.
+
+        >>> import dictobj
+        >>> d = {'a':1, 'b':2}
+        >>> dictobj.DictionaryObject(d).asdict() == d
+        True
+        >>> d['c'] = {1:2, 3:4}
+        >>> dictobj.DictionaryObject(d).asdict() == d
+        True
+        """
+        items = {}
+        for name in self._items:
+            value = self._items[name]
+        if isinstance(value, DictionaryObject):
+            items[name] = value.asdict()
+        else:
+            items[name] = value
+        return items
+
 
 class MutableDictionaryObject(DictionaryObject):
-  """
-  Slight enhancement of the DictionaryObject allowing one to add
-  attributes easily, in cases where that functionality is wanted.
+    """
+      Slight enhancement of the DictionaryObject allowing one to add
+      attributes easily, in cases where that functionality is wanted.
 
-  Examples:
-    >>> d = MutableDictionaryObject({'a':1, 'b':True}, None)
-    >>> print d.a, d.b, d.c, d.d
-    1 True None None
-    >>> d.c = 3
-    >>> del d.a
-    >>> print d.a, d.b, d.c, d.d
-    None True 3 None
-  """
-  def __setattr__(self, name, value):
-    self._items[name] = value
+      Examples:
+        >>> d = MutableDictionaryObject({'a':1, 'b':True}, None)
+        >>> print d.a, d.b, d.c, d.d
+        1 True None None
+        >>> d.c = 3
+        >>> del d.a
+        >>> print d.a, d.b, d.c, d.d
+        None True 3 None
+    """
+    def __setattr__(self, name, value):
+        self._items[name] = value
 
-  def __delattr__(self, name):
-    del self._items[name]
+    def __delattr__(self, name):
+        del self._items[name]
 
-  __setitem__ = __setattr__
-  __delitem__ = __delattr__
+    __setitem__ = __setattr__
+    __delitem__ = __delattr__

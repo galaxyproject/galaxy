@@ -1245,7 +1245,7 @@ def safe_str_cmp(a, b):
         rv |= ord(x) ^ ord(y)
     return rv == 0
 
-galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
+galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")  # noqa
 
 
 def galaxy_directory():
