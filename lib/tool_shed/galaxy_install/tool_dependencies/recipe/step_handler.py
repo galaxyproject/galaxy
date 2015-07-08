@@ -150,30 +150,12 @@ class CompressedFile( object ):
 
 class Download( object ):
     
-    def url_download( self, install_dir, downloaded_file_name, download_url, extract=True ):
-        """
-            The given download_url can have an extension like #md5# or #sha256#.
-            This indicates a checksum which will be chekced after download. 
-            If the checksum does not match an exception is thrown.
-            
-            https://pypi.python.org/packages/source/k/khmer/khmer-1.0.tar.gz#md5#b60639a8b2939836f66495b9a88df757
-        """
-
+    def url_download( self, install_dir, downloaded_file_name, download_url, extract=True, checksums={} ):
         file_path = os.path.join( install_dir, downloaded_file_name )
         src = None
         dst = None
-        checksum = None
-        sha256 = False
-        md5 = False
         # Set a timer so we don't sit here forever.
-
-        if '#md5#' in download_url:
-            md5 = True
-            download_url, checksum = download_url.split('#md5#')
-        elif '#sha256#' in download_url:
-            sha256 = True
-            download_url, checksum = download_url.split('#sha256#')
-
+        
         start_time = time.time()
         try:
             src = urllib2.urlopen( download_url )
@@ -197,18 +179,18 @@ class Download( object ):
                 src.close()
             if dst:
                 dst.close()
-
-        try:
-            if sha256:
-                downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
-            elif md5:
-                downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest()
-
-            if checksum and downloaded_checksum != checksum:
-                raise Exception( 'Given checksum does not match with the one from the downloaded file (%s).' % (downloaded_checksum) )
-        except Exception, e:
-            raise
-
+        
+        #try:
+        if checksums.has_key('sha256sum'):
+            downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
+            if downloaded_checksum != checksums['sha256sum']:
+                raise Exception( 'Given sha256 checksum does not match with the one from the downloaded file (%s).' % (downloaded_checksum) )
+        
+        if checksums.has_key('md5sum'):
+            downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest()
+            if downloaded_checksum != checksums['md5sum']:
+                raise Exception( 'Given md5 checksum does not match with the one from the downloaded file (%s).' % (downloaded_checksum) )
+        
         if extract:
             if tarfile.is_tarfile( file_path ) or ( zipfile.is_zipfile( file_path ) and not file_path.endswith( '.jar' ) ):
                 archive = CompressedFile( file_path )
@@ -660,7 +642,9 @@ class DownloadByUrl( Download, RecipeStep ):
             downloaded_filename = action_dict[ 'target_filename' ]
         else:
             downloaded_filename = os.path.split( url )[ -1 ]
-        dir = self.url_download( work_dir, downloaded_filename, url, extract=True )
+        
+        checksums = dict(filter(lambda i:i[0] in ['md5sum','sha256sum'], action_dict.iteritems()))
+        dir = self.url_download( work_dir, downloaded_filename, url, extract=True, checksums=checksums )
         if is_binary:
             log_file = os.path.join( install_environment.install_dir, basic_util.INSTALLATION_LOG )
             if os.path.exists( log_file ):
@@ -678,6 +662,19 @@ class DownloadByUrl( Download, RecipeStep ):
         # <action type="download_by_url">
         #     http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2
         # </action>
+        #
+        # <action type="download_by_url" md5sum="71dab132e21c0766f0de84c2371a9157" sha256sum="f3faaf34430d4782956562eb72906289e8e34d44d0c4d73837bdbeead7746b16">
+        #     http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2
+        # </action>
+        
+        md5sum = action_elem.get( 'md5sum', None )
+        sha256sum = action_elem.get( 'sha256sum', None )
+        
+        if(md5sum):
+            action_dict['md5sum'] = md5sum
+        if(sha256sum):
+            action_dict['sha256sum'] = sha256sum
+        
         if is_binary_download:
             action_dict[ 'is_binary' ] = True
         if action_elem.text:
