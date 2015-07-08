@@ -152,7 +152,7 @@ class Download( object ):
     def url_download( self, install_dir, downloaded_file_name, download_url, extract=True ):
         """
             The given download_url can have an extension like #md5# or #sha256#.
-            This indicates a checksum which will be chekced after download.
+            This indicates a checksum which will be checked after download.
             If the checksum does not match an exception is thrown.
 
             https://pypi.python.org/packages/source/k/khmer/khmer-1.0.tar.gz#md5#b60639a8b2939836f66495b9a88df757
