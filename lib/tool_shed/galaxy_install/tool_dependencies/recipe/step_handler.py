@@ -149,13 +149,25 @@ class CompressedFile( object ):
 
 
 class Download( object ):
-    
+
     def url_download( self, install_dir, downloaded_file_name, download_url, extract=True, checksums={} ):
+        """
+            The given download_url can have an extension like #md5#, #sha256#, (or #md5= to support pypi defaults).
+
+                https://pypi.python.org/packages/source/k/khmer/khmer-1.0.tar.gz#md5#b60639a8b2939836f66495b9a88df757
+
+            Alternatively, to not break HTTP spec, you can specify md5 and
+            sha256 as keys in the <action /> element.
+
+            This indicates a checksum which will be checked after download.
+            If the checksum does not match an exception is thrown.
+        """
         file_path = os.path.join( install_dir, downloaded_file_name )
         src = None
         dst = None
+
+
         # Set a timer so we don't sit here forever.
-        
         start_time = time.time()
         try:
             src = urllib2.urlopen( download_url )
@@ -179,18 +191,34 @@ class Download( object ):
                 src.close()
             if dst:
                 dst.close()
-        
-        #try:
-        if checksums.has_key('sha256sum'):
+
+        if checksums.has_key('sha256sum') or '#sha256#' in download_url:
             downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
-            if downloaded_checksum != checksums['sha256sum']:
-                raise Exception( 'Given sha256 checksum does not match with the one from the downloaded file (%s).' % (downloaded_checksum) )
-        
-        if checksums.has_key('md5sum'):
+
+            # Determine expected value
+            if checksums.has_key('sha256sum'):
+                expected = checksums['sha256sum']
+            else:
+                expected = download_url.split('#sha256#')[1]
+
+            if downloaded_checksum != expected:
+                raise Exception( 'Given sha256 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected) )
+
+        if checksums.has_key('md5sum') or '#md5#' in download_url or '#md5=' in download_url:
             downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest()
-            if downloaded_checksum != checksums['md5sum']:
-                raise Exception( 'Given md5 checksum does not match with the one from the downloaded file (%s).' % (downloaded_checksum) )
-        
+
+            # Determine expected value
+            if checksums.has_key('md5sum'):
+                expected = checksums['md5sum']
+            else:
+                if '#md5=' in download_url:
+                    expected = download_url.split('#md5=')[1]
+                else:
+                    expected = download_url.split('#md5#')[1]
+
+            if downloaded_checksum != expected:
+                raise Exception( 'Given md5 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected) )
+
         if extract:
             if tarfile.is_tarfile( file_path ) or ( zipfile.is_zipfile( file_path ) and not file_path.endswith( '.jar' ) ):
                 archive = CompressedFile( file_path )
@@ -620,7 +648,7 @@ class DownloadByUrl( Download, RecipeStep ):
     def __init__( self, app ):
         self.app = app
         self.type = 'download_by_url'
-    
+
     def execute_step( self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                       install_environment, work_dir, current_dir=None, initial_download=False ):
         """
@@ -642,7 +670,7 @@ class DownloadByUrl( Download, RecipeStep ):
             downloaded_filename = action_dict[ 'target_filename' ]
         else:
             downloaded_filename = os.path.split( url )[ -1 ]
-        
+
         checksums = dict(filter(lambda i:i[0] in ['md5sum','sha256sum'], action_dict.iteritems()))
         dir = self.url_download( work_dir, downloaded_filename, url, extract=True, checksums=checksums )
         if is_binary:
@@ -666,15 +694,11 @@ class DownloadByUrl( Download, RecipeStep ):
         # <action type="download_by_url" md5sum="71dab132e21c0766f0de84c2371a9157" sha256sum="f3faaf34430d4782956562eb72906289e8e34d44d0c4d73837bdbeead7746b16">
         #     http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2
         # </action>
-        
-        md5sum = action_elem.get( 'md5sum', None )
-        sha256sum = action_elem.get( 'sha256sum', None )
-        
-        if(md5sum):
-            action_dict['md5sum'] = md5sum
-        if(sha256sum):
-            action_dict['sha256sum'] = sha256sum
-        
+
+        for hash_type in ('md5sum', 'sha256sum'):
+            if hash_type in action_elem:
+                action_dict[hash_type] = action_elem[hash_type]
+
         if is_binary_download:
             action_dict[ 'is_binary' ] = True
         if action_elem.text:
@@ -903,26 +927,26 @@ class SetEnvironment( RecipeStep ):
         This method works with with a combination of three tool dependency definition tag sets, which are defined
         in the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
         tool_dependencies.xml file contained in the osra repository, which is available at:
-    
+
         https://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
-    
+
         The first tag set defines a complex repository dependency like this.  This tag set ensures that changeset
         revision XXX of the repository named package_graphicsmagick_1_3 owned by YYY in the tool shed ZZZ has been
         previously installed.
-    
+
         <tool_dependency>
             <package name="graphicsmagick" version="1.3.18">
                 <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" prior_installation_required="True" toolshed="ZZZ" />
             </package>
             ...
-    
+
         * By the way, there is an env.sh file associated with version 1.3.18 of the graphicsmagick package which looks
         something like this (we'll reference this file later in this discussion.
         ----
         GRAPHICSMAGICK_ROOT_DIR=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick;
         export GRAPHICSMAGICK_ROOT_DIR
         ----
-    
+
         The second tag set defines a specific package dependency that has been previously installed (guaranteed by the
         tag set discussed above) and compiled, where the compiled dependency is needed by the tool dependency currently
         being installed (osra version 2.0.0 in this case) and complied in order for its installation and compilation to
@@ -931,21 +955,21 @@ class SetEnvironment( RecipeStep ):
         compile.  When this tag set is handled, one of the effects is that the env.sh file associated with graphicsmagick
         version 1.3.18 is "sourced", which undoubtedly sets or alters certain environment variables (e.g. PATH, PYTHONPATH,
         etc).
-    
+
         <!-- populate the environment variables from the dependent repositories -->
         <action type="set_environment_for_install">
             <repository changeset_revision="XXX" name="package_graphicsmagick_1_3" owner="YYY" toolshed="ZZZ">
                 <package name="graphicsmagick" version="1.3.18" />
             </repository>
         </action>
-    
+
         The third tag set enables discovery of the same required package dependency discussed above for correctly compiling
         the osra version 2.0.0 package, but in this case the package can be discovered at tool execution time.  Using the
         $ENV[] option as shown in this example, the value of the environment variable named GRAPHICSMAGICK_ROOT_DIR (which
         was set in the environment using the second tag set described above) will be used to automatically alter the env.sh
         file associated with the osra version 2.0.0 tool dependency when it is installed into Galaxy.  * Refer to where we
         discussed the env.sh file for version 1.3.18 of the graphicsmagick package above.
-    
+
         <action type="set_environment">
             <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$ENV[GRAPHICSMAGICK_ROOT_DIR]/lib/</environment_variable>
             <environment_variable action="prepend_to" name="LD_LIBRARY_PATH">$INSTALL_DIR/potrace/build/lib/</environment_variable>
@@ -953,11 +977,11 @@ class SetEnvironment( RecipeStep ):
             <!-- OSRA_DATA_FILES is only used by the galaxy wrapper and is not part of OSRA -->
             <environment_variable action="set_to" name="OSRA_DATA_FILES">$INSTALL_DIR/share</environment_variable>
         </action>
-    
+
         The above tag will produce an env.sh file for version 2.0.0 of the osra package when it it installed into Galaxy
         that looks something like this.  Notice that the path to the gmagick binary is included here since it expands the
         defined $ENV[GRAPHICSMAGICK_ROOT_DIR] value in the above tag set.
-    
+
         ----
         LD_LIBRARY_PATH=/<my configured tool dependency path>/graphicsmagick/1.3.18/YYY/package_graphicsmagick_1_3/XXX/gmagick/lib/:$LD_LIBRARY_PATH;
         export LD_LIBRARY_PATH
@@ -1700,7 +1724,7 @@ class SetupVirtualEnv( Download, RecipeStep ):
         # Use raw strings so that python won't automatically unescape the quotes before passing the command
         # to subprocess.Popen.
         for site_packages_command in [ r"""%s -c 'import site; site.getsitepackages()[0]'""" % \
-                                        os.path.join( venv_directory, "bin", "python" ), 
+                                        os.path.join( venv_directory, "bin", "python" ),
                                       r"""%s -c 'import os, sys; print os.path.join( sys.prefix, "lib", "python" + sys.version[:3], "site-packages" )'""" % \
                                         os.path.join( venv_directory, "bin", "python" ) ]:
             output = install_environment.handle_command( tool_dependency=tool_dependency,
