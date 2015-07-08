@@ -9,6 +9,7 @@ import sys
 from galaxy import eggs
 from galaxy.config import process_is_uwsgi
 
+eggs.require('PyYAML')
 eggs.require('anyjson')
 if sys.version_info < (2, 7, 0):
     # Kombu requires importlib and ordereddict to function in Python 2.6.

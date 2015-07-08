@@ -1,7 +1,6 @@
 """Utility functions for galaxyops"""
 import sys
-from bx.bitset import *
-from bx.intervals.io import *
+
 
 def warn( msg ):
     # TODO: since everything printed to stderr results in job.state = error, we
@@ -9,12 +8,14 @@ def warn( msg ):
     print >> sys.stderr, msg
     sys.exit( 1 )
 
+
 def fail( msg ):
     print >> sys.stderr, msg
     sys.exit( 1 )
 
 # Default chrom, start, end, strand cols for a bed file
 BED_DEFAULT_COLS = 0, 1, 2, 5
+
 
 def parse_cols_arg( cols ):
     """Parse a columns command line argument into a four-tuple"""
@@ -28,9 +29,11 @@ def parse_cols_arg( cols ):
     else:
         return BED_DEFAULT_COLS
 
+
 def default_printer( stream, exc, obj ):
     print >> stream, "%d: %s" % ( obj.linenum, obj.current_line )
     print >> stream, "\tError: %s" % ( str(exc) )
+
 
 def skipped( reader, filedesc="" ):
     first_line, line_contents, problem = reader.skipped_lines[0]

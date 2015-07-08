@@ -49,7 +49,7 @@ var GroupListView = Backbone.View.extend({
         this.options = _.extend( this.options, options );
         $( ".tooltip" ).hide();
         var template = this.templateGroupsList();
-        this.$el.html( template( { length: 10, order: 'asc' } ) );
+        this.$el.html( template( { length: window.globalTS.groups.collection.models.length } ) );
         this.renderRows( window.globalTS.groups.collection.models );
         $( "#center [data-toggle]" ).tooltip();
         $( "#center" ).css( 'overflow','auto' );
@@ -124,10 +124,10 @@ var GroupListView = Backbone.View.extend({
         tmpl_array.push('<% } else{ %>');
         tmpl_array.push('<table class="grid table table-condensed">');
         tmpl_array.push('   <thead>');
-        tmpl_array.push('     <th style="width:30%;"><a class="sort-groups-link" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span></th>');
-        tmpl_array.push('     <th style="width:22%;">description</th>');
-        tmpl_array.push('     <th style="width:22%;">members</th> ');
-        tmpl_array.push('     <th style="width:26%;">repositories</th>');
+        tmpl_array.push('     <th>Name</th>');
+        // tmpl_array.push('     <th style="width:22%;">description</th>');
+        tmpl_array.push('     <th>Members</th> ');
+        tmpl_array.push('     <th>Repositories</th>');
         tmpl_array.push('   </thead>');
         tmpl_array.push('   <tbody id="group_list_body">');
         // group item views will attach here

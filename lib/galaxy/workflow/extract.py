@@ -279,7 +279,7 @@ class WorkflowSummary( object ):
         return hdca
 
     def __original_hda( self, hda ):
-        #if this hda was copied from another, we need to find the job that created the origial hda
+        # if this hda was copied from another, we need to find the job that created the origial hda
         job_hda = hda
         while job_hda.copied_from_history_dataset_association:
             job_hda = job_hda.copied_from_history_dataset_association

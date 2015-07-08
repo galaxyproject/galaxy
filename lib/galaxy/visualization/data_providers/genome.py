@@ -2,38 +2,42 @@
 Data providers for genome visualizations.
 """
 
-import os, sys, re
-import pkg_resources
 import itertools
-import random
 import math
+import os
+import random
+import re
+import sys
 
-pkg_resources.require( "numpy" )
-pkg_resources.require( "bx-python" )
-pkg_resources.require( "pysam" )
+from galaxy import eggs
+eggs.require('numpy')  # noqa
+eggs.require('bx-python')  # noqa
 from bx.interval_index_file import Indexes
-from bx.bbi.bigwig_file import BigWigFile
 from bx.bbi.bigbed_file import BigBedFile
+from bx.bbi.bigwig_file import BigWigFile
+eggs.require('pysam')  # noqa
 from pysam import csamtools, ctabix
 
+from galaxy.datatypes.interval import Bed, Gff, Gtf
 from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFFeature, GFFInterval, GFFReaderWrapper, parse_gff_attributes
 from galaxy.util.json import loads
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
-from galaxy.datatypes.interval import Bed, Gff, Gtf
 
 #
 # Utility functions.
 #
 
+
 def float_nan(n):
     '''
     Return None instead of NaN to pass jQuery 1.4's strict JSON
     '''
-    if n != n: # NaN != NaN
+    if n != n:  # NaN != NaN
         return None
     else:
         return float(n)
+
 
 def get_bounds( reads, start_pos_index, end_pos_index ):
     '''
@@ -48,6 +52,7 @@ def get_bounds( reads, start_pos_index, end_pos_index ):
             max_high = read[ end_pos_index ]
     return max_low, max_high
 
+
 def _convert_between_ucsc_and_ensemble_naming( chrom ):
     '''
     Convert between UCSC chromosome ('chr1') naming conventions and Ensembl
@@ -60,8 +65,10 @@ def _convert_between_ucsc_and_ensemble_naming( chrom ):
         # Convert from Ensembl to UCSC
         return 'chr' + chrom
 
+
 def _chrom_naming_matches( chrom1, chrom2 ):
     return ( chrom1.startswith( 'chr' ) and chrom2.startswith( 'chr' ) ) or ( not chrom1.startswith( 'chr' ) and not chrom2.startswith( 'chr' ) )
+
 
 class FeatureLocationIndexDataProvider( BaseDataProvider ):
     """
@@ -111,6 +118,7 @@ class FeatureLocationIndexDataProvider( BaseDataProvider ):
         textloc_file.close()
         return result
 
+
 class GenomeDataProvider( BaseDataProvider ):
     """
     Base class for genome data providers. All genome providers use BED coordinate
@@ -150,7 +158,7 @@ class GenomeDataProvider( BaseDataProvider ):
         """
         Returns chroms/contigs that the dataset contains
         """
-        return None # by default
+        return None  # by default
 
     def has_data( self, chrom, start, end, **kwargs ):
         """
@@ -208,7 +216,6 @@ class GenomeDataProvider( BaseDataProvider ):
             'dataset_type': self.dataset_type
         }
 
-
     def get_filters( self ):
         """
         Returns filters for provider's data. Return value is a list of
@@ -222,7 +229,7 @@ class GenomeDataProvider( BaseDataProvider ):
         except AttributeError:
             try:
                 column_names = range( self.original_dataset.metadata.columns )
-            except: # Give up
+            except:  # Give up
                 return []
 
         # Dataset must have column types; if not, cannot create filters.
@@ -238,7 +245,7 @@ class GenomeDataProvider( BaseDataProvider ):
                 # Some columns are optional, so can't assume that a filter
                 # column is in dataset.
                 if viz_col_index >= len( column_names ):
-                    continue;
+                    continue
                 col_name = column_names[ viz_col_index ]
                 # Make sure that column has a mapped index. If not, do not add filter.
                 try:
@@ -246,7 +253,7 @@ class GenomeDataProvider( BaseDataProvider ):
                 except KeyError:
                     continue
                 filters.append(
-                    { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index], \
+                    { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index],
                     'index' : attrs[ 'index' ] } )
         return filters
 
@@ -256,6 +263,7 @@ class GenomeDataProvider( BaseDataProvider ):
 #
 # -- Base mixins and providers --
 #
+
 
 class FilterableMixin:
     def get_filters( self ):
@@ -268,13 +276,14 @@ class FilterableMixin:
                 return True
             except:
                 return False
+
         def is_float( column_text ):
             try:
                 float( column_text )
                 return True
             except:
                 if column_text.strip().lower() == 'na':
-                    return True #na is special cased to be a float
+                    return True  # na is special cased to be a float
                 return False
 
         #
@@ -305,27 +314,6 @@ class FilterableMixin:
                               'tool_id': 'gff_filter_by_attribute',
                               'tool_exp_name': name } )
                         filter_col += 1
-
-                '''
-                # Old code: use first line in dataset to find attributes.
-                for i, line in enumerate( open(self.original_dataset.file_name) ):
-                    if not line.startswith('#'):
-                        # Look at first line for attributes and types.
-                        attributes = parse_gff_attributes( line.split('\t')[8] )
-                        for attr, value in attributes.items():
-                            # Get attribute type.
-                            if is_int( value ):
-                                attr_type = 'int'
-                            elif is_float( value ):
-                                attr_type = 'float'
-                            else:
-                                attr_type = 'str'
-                            # Add to filters.
-                            if attr_type is not 'str':
-                                filters.append( { 'name': attr, 'type': attr_type, 'index': filter_col } )
-                                filter_col += 1
-                        break
-                '''
         elif isinstance( self.original_dataset.datatype, Bed ):
             # Can filter by score column only.
             filters = [ { 'name': 'Score',
@@ -333,7 +321,7 @@ class FilterableMixin:
                           'index': filter_col,
                           'tool_id': 'Filter1',
                           'tool_exp_name': 'c5'
-                           } ]
+                          } ]
 
         return filters
 
@@ -349,8 +337,8 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
 
     def get_iterator( self, chrom, start, end, **kwargs ):
         start, end = int(start), int(end)
-        if end >= (2<<29):
-            end = (2<<29 - 1) # Tabix-enforced maximum
+        if end >= (2 << 29):
+            end = (2 << 29 - 1)  # Tabix-enforced maximum
 
         bgzip_fname = self.dependencies['bgzip'].file_name
 
@@ -369,7 +357,6 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
 
         return iterator
 
-
     def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
 
@@ -387,6 +374,7 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
 #
 # -- Interval data providers --
 #
+
 
 class IntervalDataProvider( GenomeDataProvider ):
     dataset_type = 'interval_index'
@@ -413,8 +401,11 @@ class IntervalDataProvider( GenomeDataProvider ):
         no_detail = ( "no_detail" in kwargs )
         rval = []
         message = None
+
         # Subtract one b/c columns are 1-based but indices are 0-based.
-        col_fn = lambda col: None if col is None else col - 1
+        def col_fn(col):
+            return None if col is None else col - 1
+
         start_col = self.original_dataset.metadata.startCol - 1
         end_col = self.original_dataset.metadata.endCol - 1
         strand_col = col_fn( self.original_dataset.metadata.strandCol )
@@ -422,14 +413,14 @@ class IntervalDataProvider( GenomeDataProvider ):
         for count, line in enumerate( iterator ):
             if count < start_val:
                 continue
-            if max_vals and count-start_val >= max_vals:
+            if max_vals and count - start_val >= max_vals:
                 message = self.error_max_vals % ( max_vals, "features" )
                 break
 
             feature = line.split()
             length = len(feature)
             # Unique id is just a hash of the line
-            payload = [ hash(line), int( feature[start_col] ), int( feature [end_col] ) ]
+            payload = [ hash(line), int( feature[start_col] ), int( feature[end_col] ) ]
 
             if no_detail:
                 rval.append( payload )
@@ -440,7 +431,8 @@ class IntervalDataProvider( GenomeDataProvider ):
                 payload.append( feature[name_col] )
             if strand_col:
                 # Put empty name as placeholder.
-                if not name_col: payload.append( "" )
+                if not name_col:
+                    payload.append( "" )
                 payload.append( feature[strand_col] )
 
             # Score (filter data)
@@ -456,6 +448,7 @@ class IntervalDataProvider( GenomeDataProvider ):
 
     def write_data_to_file( self, regions, filename ):
         raise Exception( "Unimplemented Function" )
+
 
 class IntervalTabixDataProvider( TabixDataProvider, IntervalDataProvider ):
     """
@@ -497,7 +490,7 @@ class BedDataProvider( GenomeDataProvider ):
         for count, line in enumerate( iterator ):
             if count < start_val:
                 continue
-            if max_vals and count-start_val >= max_vals:
+            if max_vals and count - start_val >= max_vals:
                 message = self.error_max_vals % ( max_vals, "features" )
                 break
             # TODO: can we use column metadata to fill out payload?
@@ -558,11 +551,13 @@ class BedDataProvider( GenomeDataProvider ):
 
         out.close()
 
+
 class BedTabixDataProvider( TabixDataProvider, BedDataProvider ):
     """
     Provides data from a BED file indexed via tabix.
     """
     pass
+
 
 class RawBedDataProvider( BedDataProvider ):
     """
@@ -590,8 +585,8 @@ class RawBedDataProvider( BedDataProvider ):
                 feature_start = int( feature[1] )
                 feature_end = int( feature[2] )
                 if ( chrom is not None and feature_chrom != chrom ) \
-                    or ( start is not None and feature_start > end ) \
-                    or ( end is not None and feature_end < start ):
+                        or ( start is not None and feature_start > end ) \
+                        or ( end is not None and feature_end < start ):
                     continue
                 yield line
 
@@ -600,6 +595,7 @@ class RawBedDataProvider( BedDataProvider ):
 #
 # -- VCF data providers --
 #
+
 
 class VcfDataProvider( GenomeDataProvider ):
     """
@@ -669,7 +665,7 @@ class VcfDataProvider( GenomeDataProvider ):
         for count, line in enumerate( iterator ):
             if count < start_val:
                 continue
-            if max_vals and count-start_val >= max_vals:
+            if max_vals and count - start_val >= max_vals:
                 message = self.error_max_vals % ( max_vals, "features" )
                 break
 
@@ -678,11 +674,9 @@ class VcfDataProvider( GenomeDataProvider ):
             pos, c_id, ref, alt, qual, c_filter, info = feature[ 1:8 ]
 
             # Format and samples data are optional.
-            format = None
             samples_data = []
             if len( feature ) > 8:
-                format = feature[ 8 ]
-                samples_data = feature [ 9: ]
+                samples_data = feature[ 9: ]
 
             # VCF is 1-based but provided position is 0-based.
             pos = int( pos ) - 1
@@ -693,7 +687,7 @@ class VcfDataProvider( GenomeDataProvider ):
                 continue
 
             # Set up array to track allele counts.
-            allele_counts = [ 0 for i in range ( alt.count( ',' ) + 1 ) ]
+            allele_counts = [ 0 for i in range( alt.count( ',' ) + 1 ) ]
             sample_gts = []
 
             if samples_data:
@@ -728,7 +722,7 @@ class VcfDataProvider( GenomeDataProvider ):
                 # No samples, so set allele count and sample genotype manually.
                 allele_counts = [ 1 ]
                 sample_gts = [ '1/1' ]
-            
+
             # Add locus data.
             locus_data = [
                 -1,
@@ -758,12 +752,14 @@ class VcfDataProvider( GenomeDataProvider ):
                 out.write( "%s\n" % line )
         out.close()
 
+
 class VcfTabixDataProvider( TabixDataProvider, VcfDataProvider ):
     """
     Provides data from a VCF file indexed via tabix.
     """
 
     dataset_type = 'variant'
+
 
 class RawVcfDataProvider( VcfDataProvider ):
     """
@@ -777,13 +773,10 @@ class RawVcfDataProvider( VcfDataProvider ):
         source = open( self.original_dataset.file_name )
 
         # Skip comments.
-        pos = 0
         line = None
         for line in source:
             if not line.startswith("#"):
                 break
-            else:
-                pos = source.tell()
 
         # If last line is a comment, there are no data lines.
         if line.startswith( "#" ):
@@ -815,6 +808,7 @@ class RawVcfDataProvider( VcfDataProvider ):
 
         return line_filter_iter()
 
+
 class BamDataProvider( GenomeDataProvider, FilterableMixin ):
     """
     Provides access to intervals from a sorted indexed BAM file. Coordinate
@@ -832,10 +826,9 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         filters = []
         filters.append( { 'name': 'Mapping Quality',
                         'type': 'number',
-                        'index': filter_col
-                         } )
+                        'index': filter_col }
+                        )
         return filters
-
 
     def write_data_to_file( self, regions, filename ):
         """
@@ -843,7 +836,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         """
 
         # Open current BAM file using index.
-        bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb', \
+        bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb',
                                      index_filename=self.converted_dataset.file_name )
 
         # TODO: write headers as well?
@@ -857,7 +850,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
 
             try:
                 data = bamfile.fetch(start=start, end=end, reference=chrom)
-            except ValueError, e:
+            except ValueError:
                 # Try alternative chrom naming.
                 chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
                 try:
@@ -885,7 +878,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         bamfile = csamtools.Samfile( filename=orig_data_filename, mode='rb', index_filename=index_filename )
         try:
             data = bamfile.fetch( start=start, end=end, reference=chrom )
-        except ValueError, e:
+        except ValueError:
             # Try alternative chrom naming.
             chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
             try:
@@ -893,9 +886,8 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             except ValueError:
                 return None
         return data
-        
 
-    def process_data( self, iterator, start_val=0, max_vals=None, ref_seq=None, 
+    def process_data( self, iterator, start_val=0, max_vals=None, ref_seq=None,
                       iterator_type='nth', mean_depth=None, start=0, end=0, **kwargs ):
         """
         Returns a dict with the following attributes::
@@ -930,7 +922,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
 
         def decode_strand( read_flag, mask ):
             """ Decode strand from read flag. """
-        
+
             strand_flag = ( read_flag & mask == 0 )
             if strand_flag:
                 return "+"
@@ -954,15 +946,8 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             """
 
             # Convert threshold to N for stepping through iterator.
-            n = int( 1/threshold )
+            n = int( 1 / threshold )
             return itertools.islice( read_iterator, None, None, n )
-
-            # Alternatate and much slower implementation that looks for pending pairs.
-            '''
-            for i, e in enumerate( read_iterator ):
-                if e.qname in paired_pending or ( i % n ) == 0:
-                    yield e
-            '''
 
         # -- Choose iterator. --
 
@@ -974,8 +959,8 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             return { 'data': [], 'message': None, 'max_low': start, 'max_high': start }
 
         read_len = len( first_read.seq )
-        num_reads = max( ( end - start ) * mean_depth / float ( read_len ), 1 )
-        threshold = float( max_vals )/ num_reads
+        num_reads = max( ( end - start ) * mean_depth / float( read_len ), 1 )
+        threshold = float( max_vals ) / num_reads
         iterator = itertools.chain( iter( [ first_read ] ), iterator )
 
         # Use specified iterator type, save for when threshold is >= 1.
@@ -1013,9 +998,9 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             seq = read.seq
             strand = decode_strand( read.flag, 0x0010 )
             if read.cigar is not None:
-                read_len = sum( [cig[1] for cig in read.cigar] ) # Use cigar to determine length
+                read_len = sum( [cig[1] for cig in read.cigar] )  # Use cigar to determine length
             else:
-                read_len = len(seq) # If no cigar, just use sequence length
+                read_len = len(seq)  # If no cigar, just use sequence length
 
             if read.is_proper_pair:
                 if qname in paired_pending:
@@ -1028,7 +1013,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                                       [ pair['start'], pair['end'], pair['cigar'], pair['strand'], pair['seq'] ],
                                       [ read.pos, read.pos + read_len, read.cigar, strand, seq ],
                                       None, [ pair['mapq'], read.mapq ]
-                                     ] )
+                                      ] )
                     del paired_pending[qname]
                 else:
                     # Insert first of pair.
@@ -1040,7 +1025,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                                 read.pos, read.pos + read_len, qname,
                                 read.cigar, strand, read.seq, read.mapq ] )
                 count += 1
-        
+
         # Take care of reads whose mates are out of range.
         for qname, read in paired_pending.iteritems():
             if read['mate_start'] < read['start']:
@@ -1087,7 +1072,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 read_cigar += '%i%s' % ( op_tuple[1], cigar_ops[ op_tuple[0] ] )
             read[ cigar_field ] = read_cigar
 
-        # Choose method for processing reads. Use reference-based compression 
+        # Choose method for processing reads. Use reference-based compression
         # if possible. Otherwise, convert cigar.
         if ref_seq:
             # Uppercase for easy comparison.
@@ -1112,6 +1097,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
 
         return { 'data': results, 'message': message, 'max_low': max_low, 'max_high': max_high }
 
+
 class SamDataProvider( BamDataProvider ):
 
     dataset_type = 'bai'
@@ -1128,6 +1114,7 @@ class SamDataProvider( BamDataProvider ):
             self.original_dataset = converted_dataset
             self.converted_dataset = converted_dataset.metadata.bam_index
 
+
 class BBIDataProvider( GenomeDataProvider ):
     """
     BBI data provider for the Galaxy track browser.
@@ -1142,7 +1129,7 @@ class BBIDataProvider( GenomeDataProvider ):
     def has_data( self, chrom ):
         f, bbi = self._get_dataset()
         all_dat = bbi.query( chrom, 0, 2147483647, 1 ) or \
-                  bbi.query( _convert_between_ucsc_and_ensemble_naming( chrom ), 0, 2147483647, 1 )
+            bbi.query( _convert_between_ucsc_and_ensemble_naming( chrom ), 0, 2147483647, 1 )
         f.close()
         return all_dat is not None
 
@@ -1154,7 +1141,7 @@ class BBIDataProvider( GenomeDataProvider ):
         # naming convention.
         def _summarize_bbi( bbi, chrom, start, end, num_points ):
             return bbi.summarize( chrom, start, end, num_points ) or \
-                   bbi.summarize( _convert_between_ucsc_and_ensemble_naming( chrom ) , start, end, num_points )
+                bbi.summarize( _convert_between_ucsc_and_ensemble_naming( chrom ) , start, end, num_points )
 
         # Bigwig can be a standalone bigwig file, in which case we use
         # original_dataset, or coming from wig->bigwig conversion in
@@ -1201,12 +1188,12 @@ class BBIDataProvider( GenomeDataProvider ):
             # of interval length.
             summary = _summarize_bbi( bbi, chrom, start, end, num_points )
             if summary:
-                #mean = summary.sum_data / summary.valid_count
+                # mean = summary.sum_data / summary.valid_count
 
-                ## Standard deviation by bin, not yet used
-                ## var = summary.sum_squares - mean
-                ## var /= minimum( valid_count - 1, 1 )
-                ## sd = sqrt( var )
+                # Standard deviation by bin, not yet used
+                # var = summary.sum_squares - mean
+                # var /= minimum( valid_count - 1, 1 )
+                # sd = sqrt( var )
 
                 pos = start
                 step_size = (end - start) / num_points
@@ -1257,11 +1244,13 @@ class BBIDataProvider( GenomeDataProvider ):
             'dataset_type': self.dataset_type
         }
 
+
 class BigBedDataProvider( BBIDataProvider ):
     def _get_dataset( self ):
         # Nothing converts to bigBed so we don't consider converted dataset
         f = open( self.original_dataset.file_name )
         return f, BigBedFile(file=f)
+
 
 class BigWigDataProvider ( BBIDataProvider ):
     """
@@ -1274,6 +1263,7 @@ class BigWigDataProvider ( BBIDataProvider ):
         else:
             f = open( self.original_dataset.file_name )
         return f, BigWigFile(file=f)
+
 
 class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
     """
@@ -1315,7 +1305,6 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
         provides data in the region chrom:start-end
         """
         start, end = int(start), int(end)
-        source = open( self.original_dataset.file_name )
         index = Indexes( self.converted_dataset.file_name )
 
         if chrom not in index.indexes:
@@ -1339,10 +1328,10 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
         filter_cols = loads( kwargs.get( "filter_cols", "[]" ) )
         no_detail = ( "no_detail" in kwargs )
         for count, val in enumerate( iterator ):
-            start, end, offset = val[0], val[1], val[2]
+            offset = val[2]
             if count < start_val:
                 continue
-            if count-start_val >= max_vals:
+            if count - start_val >= max_vals:
                 message = self.error_max_vals % ( max_vals, "features" )
                 break
             source.seek( offset )
@@ -1357,6 +1346,7 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
             results.append( payload )
 
         return { 'data': results, 'message': message }
+
 
 class RawGFFDataProvider( GenomeDataProvider ):
     """
@@ -1412,7 +1402,7 @@ class RawGFFDataProvider( GenomeDataProvider ):
         for count, ( feature, offset ) in enumerate( iterator ):
             if count < start_val:
                 continue
-            if count-start_val >= max_vals:
+            if count - start_val >= max_vals:
                 message = self.error_max_vals % ( max_vals, "reads" )
                 break
 
@@ -1420,8 +1410,8 @@ class RawGFFDataProvider( GenomeDataProvider ):
             payload.insert( 0, offset )
             results.append( payload )
 
-
         return { 'data': results, 'dataset_type': self.dataset_type, 'message': message }
+
 
 class GtfTabixDataProvider( TabixDataProvider ):
     """
@@ -1454,7 +1444,7 @@ class GtfTabixDataProvider( TabixDataProvider ):
         for count, intervals in enumerate( features.values() ):
             if count < start_val:
                 continue
-            if count-start_val >= max_vals:
+            if count - start_val >= max_vals:
                 message = self.error_max_vals % ( max_vals, "reads" )
                 break
 
@@ -1468,6 +1458,7 @@ class GtfTabixDataProvider( TabixDataProvider ):
 #
 # -- ENCODE Peak data providers.
 #
+
 
 class ENCODEPeakDataProvider( GenomeDataProvider ):
     """
@@ -1484,7 +1475,7 @@ class ENCODEPeakDataProvider( GenomeDataProvider ):
         Provides
         """
 
-        ## FIXMEs:
+        # FIXMEs:
         # (1) should be able to unify some of this code with BedDataProvider.process_data
         # (2) are optional number of parameters supported?
 
@@ -1500,12 +1491,11 @@ class ENCODEPeakDataProvider( GenomeDataProvider ):
         for count, line in enumerate( iterator ):
             if count < start_val:
                 continue
-            if max_vals and count-start_val >= max_vals:
+            if max_vals and count - start_val >= max_vals:
                 message = self.error_max_vals % ( max_vals, "features" )
                 break
 
             feature = line.split()
-            length = len( feature )
 
             # Feature initialization.
             payload = [
@@ -1514,7 +1504,7 @@ class ENCODEPeakDataProvider( GenomeDataProvider ):
                 # Add start, end.
                 int( feature[1] ),
                 int( feature[2] )
-                        ]
+            ]
 
             if no_detail:
                 rval.append( payload )
@@ -1535,11 +1525,12 @@ class ENCODEPeakDataProvider( GenomeDataProvider ):
                 float( feature[6] ),
                 float( feature[7] ),
                 float( feature[8] )
-                ] )
+            ] )
 
             rval.append( payload )
 
         return { 'data': rval, 'message': message }
+
 
 class ENCODEPeakTabixDataProvider( TabixDataProvider, ENCODEPeakDataProvider ):
     """
@@ -1581,6 +1572,8 @@ class ENCODEPeakTabixDataProvider( TabixDataProvider, ENCODEPeakDataProvider ):
 #
 # -- ChromatinInteraction data providers --
 #
+
+
 class ChromatinInteractionsDataProvider( GenomeDataProvider ):
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
@@ -1592,12 +1585,11 @@ class ChromatinInteractionsDataProvider( GenomeDataProvider ):
         for count, line in enumerate( iterator ):
             if count < start_val:
                 continue
-            if max_vals and count-start_val >= max_vals:
+            if max_vals and count - start_val >= max_vals:
                 message = self.error_max_vals % ( max_vals, "interactions" )
                 break
 
             feature = line.split()
-            length = len( feature )
 
             s1 = int( feature[1] )
             e1 = int( feature[2] )
@@ -1619,7 +1611,8 @@ class ChromatinInteractionsDataProvider( GenomeDataProvider ):
         return { 'data': rval, 'message': message }
 
     def get_default_max_vals( self ):
-        return 100000;
+        return 100000
+
 
 class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinInteractionsDataProvider ):
     def get_iterator( self, chrom, start=0, end=sys.maxint, interchromosomal=False, **kwargs ):
@@ -1627,7 +1620,8 @@ class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinIntera
         """
         # Modify start as needed to get earlier interactions with start region.
         span = int( end ) - int( start )
-        filter_start = max( 0, int( start ) - span - span/2 )
+        filter_start = max( 0, int( start ) - span - span / 2 )
+
         def filter( iter ):
             for line in iter:
                 feature = line.split()
@@ -1647,6 +1641,7 @@ class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinIntera
 #
 # -- Helper methods. --
 #
+
 
 def package_gff_feature( feature, no_detail=False, filter_cols=[] ):
     """ Package a GFF feature in an array for data providers. """

@@ -42,9 +42,9 @@ class GroupManager( object ):
         try:
             group = id_query.one() if decoded_group_id else name_query.one()
         except MultipleResultsFound:
-            raise InconsistentDatabase( 'Multiple groups found with the same id.' )
+            raise InconsistentDatabase( 'Multiple groups found with the same identifier.' )
         except NoResultFound:
-            raise ObjectNotFound( 'No group found with the id provided.' )
+            raise ObjectNotFound( 'No group found with the identifier provided.' )
         except Exception:
             raise InternalServerError( 'Error loading from the database.' )
         return group

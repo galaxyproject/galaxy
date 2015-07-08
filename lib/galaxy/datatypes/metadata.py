@@ -122,6 +122,12 @@ class MetadataCollection( object ):
             else:
                 self.parent._metadata[name] = value
 
+    def remove_key( self, name ):
+        if name in self.parent._metadata:
+            del self.parent._metadata[name]
+        else:
+            log.info( "Attempted to delete invalid key '%s' from MetadataCollection" % name )
+
     def element_is_set( self, name ):
         return bool( self.parent._metadata.get( name, False ) )
 
@@ -720,7 +726,8 @@ class JobExternalOutputMetadataWrapper( object ):
                                  output_fnames=None, config_root=None,
                                  config_file=None, datatypes_config=None,
                                  job_metadata=None, compute_tmp_dir=None,
-                                 include_command=True, kwds=None ):
+                                 include_command=True, max_metadata_value_size=0,
+                                 kwds=None):
         kwds = kwds or {}
         if tmp_dir is None:
             tmp_dir = MetadataTempFile.tmp_dir
@@ -819,9 +826,10 @@ class JobExternalOutputMetadataWrapper( object ):
                 sa_session.add( metadata_files )
                 sa_session.flush()
             metadata_files_list.append( metadata_files )
-        args = "%s %s %s" % ( datatypes_config,
+        args = "%s %s %s %s" % ( datatypes_config,
                               job_metadata,
-                              " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
+                              " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ),
+                              max_metadata_value_size)
         if include_command:
             # return command required to build
             fd, fp = tempfile.mkstemp( suffix='.py', dir=tmp_dir, prefix="set_metadata_" )

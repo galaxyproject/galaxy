@@ -2,9 +2,9 @@
 Classes encapsulating Galaxy tool parameters.
 """
 
-from basic import *
-from grouping import *
-from galaxy.util.json import *
+from basic import DataCollectionToolParameter, DataToolParameter, SelectToolParameter
+from grouping import Conditional, Repeat, Section, UploadDataset
+from galaxy.util.json import dumps, json_fix, loads
 
 
 def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="" ):
@@ -119,7 +119,7 @@ def params_to_incoming( incoming, inputs, input_values, app, name_prefix="", to_
     """
     for input in inputs.itervalues():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
-            for i, d in enumerate( input_values[ input.name ] ):
+            for d in input_values[ input.name ]:
                 index = d['__index__']
                 new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
                 params_to_incoming( incoming, input.inputs, d, app, new_name_prefix, to_html=to_html)

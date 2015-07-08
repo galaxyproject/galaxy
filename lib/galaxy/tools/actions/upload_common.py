@@ -6,7 +6,6 @@ import subprocess
 from cgi import FieldStorage
 from galaxy import datatypes, util
 from galaxy.util.odict import odict
-from galaxy.datatypes import sniff
 from galaxy.util.json import dumps
 from galaxy.model.orm import eagerload_all
 from galaxy.exceptions import ObjectInvalid

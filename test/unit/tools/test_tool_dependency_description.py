@@ -41,4 +41,3 @@ def test_serialization():
     result_tool_shed_repository.name = "tophat"
     result_tool_shed_repository.owner = "devteam"
     result_tool_shed_repository.installed_changeset_revision = "abcdefghijk"
-

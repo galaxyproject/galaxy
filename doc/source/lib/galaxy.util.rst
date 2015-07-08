@@ -1,154 +1,7 @@
-util Package
-============
-
-:mod:`util` Package
--------------------
+galaxy.util package
+===================
 
 .. automodule:: galaxy.util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`aliaspickler` Module
---------------------------
-
-.. automodule:: galaxy.util.aliaspickler
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`bunch` Module
--------------------
-
-.. automodule:: galaxy.util.bunch
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`debugging` Module
------------------------
-
-.. automodule:: galaxy.util.debugging
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`expressions` Module
--------------------------
-
-.. automodule:: galaxy.util.expressions
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`hash_util` Module
------------------------
-
-.. automodule:: galaxy.util.hash_util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`heartbeat` Module
------------------------
-
-.. automodule:: galaxy.util.heartbeat
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`inflection` Module
-------------------------
-
-.. automodule:: galaxy.util.inflection
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`json` Module
-------------------
-
-.. automodule:: galaxy.util.json
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`lrucache` Module
-----------------------
-
-.. automodule:: galaxy.util.lrucache
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`memdump` Module
----------------------
-
-.. automodule:: galaxy.util.memdump
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`none_like` Module
------------------------
-
-.. automodule:: galaxy.util.none_like
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`odict` Module
--------------------
-
-.. automodule:: galaxy.util.odict
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`sanitize_html` Module
----------------------------
-
-.. automodule:: galaxy.util.sanitize_html
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`shed_util` Module
------------------------
-
-.. automodule:: galaxy.util.shed_util
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`shed_util_common` Module
-------------------------------
-
-.. automodule:: galaxy.util.shed_util_common
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`streamball` Module
-------------------------
-
-.. automodule:: galaxy.util.streamball
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`template` Module
-----------------------
-
-.. automodule:: galaxy.util.template
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`topsort` Module
----------------------
-
-.. automodule:: galaxy.util.topsort
     :members:
     :undoc-members:
     :show-inheritance:
@@ -160,4 +13,273 @@ Subpackages
 
     galaxy.util.backports
     galaxy.util.log
+    galaxy.util.pastescript
+
+Submodules
+----------
+
+galaxy.util.aliaspickler module
+-------------------------------
+
+.. automodule:: galaxy.util.aliaspickler
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.biostar module
+--------------------------
+
+.. automodule:: galaxy.util.biostar
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.bunch module
+------------------------
+
+.. automodule:: galaxy.util.bunch
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.dbkeys module
+-------------------------
+
+.. automodule:: galaxy.util.dbkeys
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.debugging module
+----------------------------
+
+.. automodule:: galaxy.util.debugging
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.dictobj module
+--------------------------
+
+.. automodule:: galaxy.util.dictobj
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.directory_hash module
+---------------------------------
+
+.. automodule:: galaxy.util.directory_hash
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.expressions module
+------------------------------
+
+.. automodule:: galaxy.util.expressions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.hash_util module
+----------------------------
+
+.. automodule:: galaxy.util.hash_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.heartbeat module
+----------------------------
+
+.. automodule:: galaxy.util.heartbeat
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.inflection module
+-----------------------------
+
+.. automodule:: galaxy.util.inflection
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.json module
+-----------------------
+
+.. automodule:: galaxy.util.json
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.jstree module
+-------------------------
+
+.. automodule:: galaxy.util.jstree
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.lazy_process module
+-------------------------------
+
+.. automodule:: galaxy.util.lazy_process
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.lrucache module
+---------------------------
+
+.. automodule:: galaxy.util.lrucache
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.none_like module
+----------------------------
+
+.. automodule:: galaxy.util.none_like
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.object_wrapper module
+---------------------------------
+
+.. automodule:: galaxy.util.object_wrapper
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.odict module
+------------------------
+
+.. automodule:: galaxy.util.odict
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.permutations module
+-------------------------------
+
+.. automodule:: galaxy.util.permutations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.plugin_config module
+--------------------------------
+
+.. automodule:: galaxy.util.plugin_config
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.properties module
+-----------------------------
+
+.. automodule:: galaxy.util.properties
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.sanitize_html module
+--------------------------------
+
+.. automodule:: galaxy.util.sanitize_html
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.simplegraph module
+------------------------------
+
+.. automodule:: galaxy.util.simplegraph
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.sleeper module
+--------------------------
+
+.. automodule:: galaxy.util.sleeper
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.sockets module
+--------------------------
+
+.. automodule:: galaxy.util.sockets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.specs module
+------------------------
+
+.. automodule:: galaxy.util.specs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.sqlite module
+-------------------------
+
+.. automodule:: galaxy.util.sqlite
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.streamball module
+-----------------------------
+
+.. automodule:: galaxy.util.streamball
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.submodules module
+-----------------------------
+
+.. automodule:: galaxy.util.submodules
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.template module
+---------------------------
+
+.. automodule:: galaxy.util.template
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.topsort module
+--------------------------
+
+.. automodule:: galaxy.util.topsort
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.validation module
+-----------------------------
+
+.. automodule:: galaxy.util.validation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.util.xml_macros module
+-----------------------------
+
+.. automodule:: galaxy.util.xml_macros
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

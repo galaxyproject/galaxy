@@ -1226,7 +1226,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         repository.times_downloaded += 1
         trans.sa_session.add( repository )
         trans.sa_session.flush()
-        download_url = common_util.url_join( '/',
+        tool_shed_url = web.url_for( '/', qualified=True )
+        download_url = common_util.url_join( tool_shed_url,
                                              'repos',
                                              str( repository.user.username ),
                                              str( repository.name ),
