@@ -1189,8 +1189,9 @@ class JobWrapper( object ):
                     # either use the metadata from originating output dataset, or call set_meta on the copies
                     # it would be quicker to just copy the metadata from the originating output dataset,
                     # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
-                         and self.app.config.retry_metadata_internally ):
+                    if ( not self.external_output_metadata.external_metadata_set_successfully(
+                            dataset, self.sa_session ) and
+                            self.app.config.retry_metadata_internally ):
                         # If Galaxy was expected to sniff type and didn't - do so.
                         if dataset.ext == "_sniff_":
                             extension = sniff.handle_uploaded_dataset_file( dataset.dataset.file_name, self.app.datatypes_registry )
@@ -1198,8 +1199,9 @@ class JobWrapper( object ):
 
                         # call datatype.set_meta directly for the initial set_meta call during dataset creation
                         dataset.datatype.set_meta( dataset, overwrite=False )
-                    elif ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
-                           and job.states.ERROR != final_job_state ):
+                    elif ( not self.external_output_metadata.external_metadata_set_successfully(
+                            dataset, self.sa_session ) and
+                            job.states.ERROR != final_job_state ):
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
                         # load metadata from file
@@ -1272,7 +1274,7 @@ class JobWrapper( object ):
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
         # is either incorrect or has the wrong semantics.
-        if None != tool_exit_code:
+        if tool_exit_code is not None:
             job.exit_code = tool_exit_code
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )

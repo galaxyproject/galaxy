@@ -2,6 +2,7 @@ import sys
 from galaxy.datatypes.tabular import Tabular
 from galaxy.util.json import loads
 
+
 class BaseDataProvider( object ):
     """
     Base class for data providers. Data providers (a) read and package data from datasets;
@@ -75,7 +76,7 @@ class ColumnDataProvider( BaseDataProvider ):
         if not columns:
             raise TypeError( 'parameter required: columns' )
 
-        #TODO: validate kwargs
+        # TODO: validate kwargs
         try:
             max_vals = int( max_vals )
             max_vals = min([ max_vals, self.max_lines_returned ])
@@ -90,19 +91,19 @@ class ColumnDataProvider( BaseDataProvider ):
 
         # skip comment lines (if any/avail)
         # pre: should have original_dataset and
-        if( skip_comments
-        and self.original_dataset.metadata.comment_lines
-        and start_val < self.original_dataset.metadata.comment_lines ):
+        if( skip_comments and
+                self.original_dataset.metadata.comment_lines and
+                start_val < self.original_dataset.metadata.comment_lines ):
             start_val = int( self.original_dataset.metadata.comment_lines )
 
         # columns is an array of ints for now (should handle column names later)
         columns = loads( columns )
         for column in columns:
-            assert( ( column < self.original_dataset.metadata.columns )
-            and     ( column >= 0 ) ),(
-                "column index (%d) must be positive and less" % ( column )
-              + " than the number of columns: %d" % ( self.original_dataset.metadata.columns ) )
-        #print columns, start_val, max_vals, skip_comments, kwargs
+            assert( ( column < self.original_dataset.metadata.columns ) and
+                    ( column >= 0 ) ), (
+                "column index (%d) must be positive and less" % ( column ) +
+                " than the number of columns: %d" % ( self.original_dataset.metadata.columns ) )
+        # print columns, start_val, max_vals, skip_comments, kwargs
 
         # set up the response, column lists
         response = {}
@@ -120,16 +121,20 @@ class ColumnDataProvider( BaseDataProvider ):
         def cast_val( val, type ):
             """ Cast value based on type. Return None if can't be cast """
             if type == 'int':
-                try: val = int( val )
-                except: return None
+                try:
+                    val = int( val )
+                except:
+                    return None
             elif type == 'float':
-                try: val = float( val )
-                except: return None
+                try:
+                    val = float( val )
+                except:
+                    return None
             return val
 
         returning_data = False
         f = open( self.original_dataset.file_name )
-        #TODO: add f.seek if given fptr in kwargs
+        # TODO: add f.seek if given fptr in kwargs
         for count, line in enumerate( f ):
 
             # check line v. desired start, end
@@ -142,20 +147,20 @@ class ColumnDataProvider( BaseDataProvider ):
 
             fields = line.split()
             fields_len = len( fields )
-            #NOTE: this will return None/null for abberrant column values (including bad indeces)
+            # NOTE: this will return None/null for abberrant column values (including bad indeces)
             for index, column in enumerate( columns ):
                 column_val = None
                 column_type = column_types[ index ]
                 if column < fields_len:
                     column_val = cast_val( fields[ column ], column_type )
-                    if column_val != None:
+                    if column_val is not None:
 
                         # if numeric, maintain min, max, sum
                         if( column_type == 'float' or column_type == 'int' ):
-                            if( ( meta[ index ][ 'min' ] == None ) or ( column_val < meta[ index ][ 'min' ] ) ):
+                            if( ( meta[ index ][ 'min' ] is None ) or ( column_val < meta[ index ][ 'min' ] ) ):
                                 meta[ index ][ 'min' ] = column_val
 
-                            if( ( meta[ index ][ 'max' ] == None ) or ( column_val > meta[ index ][ 'max' ] ) ):
+                            if( ( meta[ index ][ 'max' ] is None ) or ( column_val > meta[ index ][ 'max' ] ) ):
                                 meta[ index ][ 'max' ] = column_val
 
                             meta[ index ][ 'sum' ] += column_val
@@ -167,14 +172,14 @@ class ColumnDataProvider( BaseDataProvider ):
         response[ 'endpoint' ] = dict( last_line=( count - 1 ), file_ptr=f.tell() )
         f.close()
 
-        if not returning_data: return None
+        if not returning_data:
+            return None
 
         for index, meta in enumerate( response[ 'meta' ] ):
             column_type = column_types[ index ]
             count = meta[ 'count' ]
 
-            if( ( column_type == 'float' or column_type == 'int' )
-            and   count ):
+            if( ( column_type == 'float' or column_type == 'int' ) and count ):
                 meta[ 'mean' ] = float( meta[ 'sum' ] ) / count
 
                 sorted_data = sorted( response[ 'data' ][ index ] )

@@ -3,20 +3,10 @@ from galaxy.util import bunch
 import logging
 log = logging.getLogger( __name__ )
 
-#class Bunch( dict ):
-#    """
-#    Bunch based on a dict
-#    """
-#    def __getattr__( self, key ):
-#        if key not in self:
-#            raise AttributeError(key)
-#        return self[key]
-#
-#    def __setattr__( self, key, value ):
-#        self[key] = value
 
 def form( *args, **kwargs ):
     return FormBuilder( *args, **kwargs )
+
 
 class FormBuilder( object ):
     """
@@ -88,6 +78,6 @@ class FormData( object ):
     be combined with the tool form handling to build something more general.
     """
     def __init__( self ):
-#TODO: galaxy's two Bunchs are defined differently. Is this right?
+        # TODO: galaxy's two Bunchs are defined differently. Is this right?
         self.values = bunch.Bunch()
         self.errors = bunch.Bunch()

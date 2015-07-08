@@ -1,18 +1,22 @@
 """
 Queue for running deferred code via plugins.
 """
-import os, sys, logging, threading
-from Queue import Queue, Empty
+import logging
+import os
+import threading
+from Queue import Queue
 
 from galaxy import model
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger( __name__ )
 
+
 class DeferredJobQueue( object ):
-    job_states = Bunch( READY = 'ready',
-                        WAIT = 'wait',
-                        INVALID = 'invalid' )
+    job_states = Bunch( READY='ready',
+                        WAIT='wait',
+                        INVALID='invalid' )
+
     def __init__( self, app ):
         self.app = app
         self.sa_session = app.model.context.current
@@ -26,6 +30,7 @@ class DeferredJobQueue( object ):
         self.monitor_thread = threading.Thread( target=self.__monitor )
         self.monitor_thread.start()
         log.info( 'Deferred job queue started' )
+
     def _load_plugins( self ):
         for fname in os.listdir( os.path.dirname( __file__ ) ):
             if not fname.startswith( '_' ) and fname.endswith( '.py' ):
@@ -52,6 +57,7 @@ class DeferredJobQueue( object ):
                         self.plugins[obj] = plugin( self.app )
                         self.plugins[obj].job_states = self.job_states
                         log.debug( 'Loaded deferred job plugin: %s' % display_name )
+
     def __check_jobs_at_startup( self ):
         waiting_jobs = self.sa_session.query( model.DeferredJob ) \
                                       .filter( model.DeferredJob.state == model.DeferredJob.states.WAITING ).all()
@@ -64,6 +70,7 @@ class DeferredJobQueue( object ):
             # Pass the job ID as opposed to the job, since the monitor thread
             # needs to load it in its own threadlocal scoped session.
             self.waiting_jobs.append( job.id )
+
     def __monitor( self ):
         while self.running:
             try:
@@ -72,6 +79,7 @@ class DeferredJobQueue( object ):
                 log.exception( 'Exception in monitor_step' )
             self.sleeper.sleep( 1 )
         log.info( 'job queue stopped' )
+
     def __monitor_step( self ):
         # TODO: Querying the database with this frequency is bad, we need message passing
         new_jobs = self.sa_session.query( model.DeferredJob ) \
@@ -117,6 +125,7 @@ class DeferredJobQueue( object ):
             else:
                 new_waiting.append( job )
         self.waiting_jobs = new_waiting
+
     def __check_job_plugin( self, job ):
         if job.plugin not in self.plugins:
             log.error( 'Invalid deferred job plugin: %s' ) % job.plugin
@@ -125,15 +134,19 @@ class DeferredJobQueue( object ):
             self.sa_session.flush()
             return False
         return True
+
     def __check_if_ready_to_run( self, job ):
         return self.plugins[job.plugin].check_job( job )
+
     def __fail_job( self, job ):
         job.state = model.DeferredJob.states.ERROR
         self.sa_session.add( job )
         self.sa_session.flush()
+
     def shutdown( self ):
         self.running = False
         self.sleeper.wake()
+
 
 class Sleeper( object ):
     """
@@ -142,14 +155,17 @@ class Sleeper( object ):
     """
     def __init__( self ):
         self.condition = threading.Condition()
+
     def sleep( self, seconds ):
         self.condition.acquire()
         self.condition.wait( seconds )
         self.condition.release()
+
     def wake( self ):
         self.condition.acquire()
         self.condition.notify()
         self.condition.release()
+
 
 class FakeTrans( object ):
     """A fake trans for calling the external set metadata tool"""
@@ -169,15 +185,19 @@ class FakeTrans( object ):
         else:
             self.user = user
         self.model = app.model
+
     def get_galaxy_session( self ):
         return self.dummy
+
     def log_event( self, message, tool_id=None ):
         pass
+
     def get_current_user_roles( self ):
         if self.user:
             return self.user.all_roles()
         else:
             return []
+
     def db_dataset_for( self, dbkey ):
         if self.history is None:
             return None

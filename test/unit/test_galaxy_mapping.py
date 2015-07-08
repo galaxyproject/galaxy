@@ -163,7 +163,6 @@ class MappingTests( unittest.TestCase ):
 
         sw = model.StoredWorkflow()
         sw.user = u
-        #self.persist( sw )
         tag_and_test( sw, model.StoredWorkflowTagAssociation, "tagged_workflows" )
 
         h = model.History( name="History for Tagging", user=u)
@@ -217,11 +216,9 @@ class MappingTests( unittest.TestCase ):
         l = model.Library( name="Library1", root_folder=lf )
         ld1 = model.LibraryDataset( )
         ld2 = model.LibraryDataset( )
-        #self.persist( u, l, lf, ld1, ld2, expunge=False )
 
         ldda1 = model.LibraryDatasetDatasetAssociation( extension="txt", library_dataset=ld1 )
         ldda2 = model.LibraryDatasetDatasetAssociation( extension="txt", library_dataset=ld1 )
-        #self.persist(  ld1, ld2, ldda1, ldda2, expunge=False )
 
         c1 = model.DatasetCollection(collection_type="pair")
         dce1 = model.DatasetCollectionElement(collection=c1, element=ldda1)
@@ -229,9 +226,9 @@ class MappingTests( unittest.TestCase ):
         self.persist( u, l, lf, ld1, ld2, c1, ldda1, ldda2, dce1, dce2 )
 
         # TODO:
-        #loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
-        #self.assertEquals(len(loaded_dataset_collection.datasets), 2)
-        #assert loaded_dataset_collection.collection_type == "pair"
+        # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
+        # self.assertEquals(len(loaded_dataset_collection.datasets), 2)
+        # assert loaded_dataset_collection.collection_type == "pair"
 
     def test_basic( self ):
         model = self.model
@@ -242,15 +239,15 @@ class MappingTests( unittest.TestCase ):
         u = model.User( email="james@foo.bar.baz", password="password" )
         # gs = model.GalaxySession()
         h1 = model.History( name="History 1", user=u)
-        #h1.queries.append( model.Query( "h1->q1" ) )
-        #h1.queries.append( model.Query( "h1->q2" ) )
+        # h1.queries.append( model.Query( "h1->q1" ) )
+        # h1.queries.append( model.Query( "h1->q2" ) )
         h2 = model.History( name=( "H" * 1024 ) )
         self.persist( u, h1, h2 )
-        #q1 = model.Query( "h2->q1" )
+        # q1 = model.Query( "h2->q1" )
         metadata = dict( chromCol=1, startCol=2, endCol=3 )
         d1 = model.HistoryDatasetAssociation( extension="interval", metadata=metadata, history=h2, create_dataset=True, sa_session=model.session )
-        #h2.queries.append( q1 )
-        #h2.queries.append( model.Query( "h2->q2" ) )
+        # h2.queries.append( q1 )
+        # h2.queries.append( model.Query( "h2->q2" ) )
         self.persist( d1 )
 
         # Check
@@ -270,8 +267,8 @@ class MappingTests( unittest.TestCase ):
         assert hist1.user is None
         assert hist1.datasets[0].metadata.chromCol == 1
         # The filename test has moved to objecstore
-        #id = hist1.datasets[0].id
-        #assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
+        # id = hist1.datasets[0].id
+        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
         # Do an update and check
         hist1.name = "History 2b"
         self.expunge()

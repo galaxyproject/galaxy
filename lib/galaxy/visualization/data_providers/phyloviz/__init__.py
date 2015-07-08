@@ -6,6 +6,7 @@ from galaxy.visualization.data_providers.phyloviz.nexusparser import Nexus_Parse
 from galaxy.visualization.data_providers.phyloviz.newickparser import Newick_Parser
 from galaxy.visualization.data_providers.phyloviz.phyloxmlparser import Phyloxml_Parser
 
+
 class PhylovizDataProvider( BaseDataProvider ):
 
     dataset_type = "phylo"
@@ -25,13 +26,13 @@ class PhylovizDataProvider( BaseDataProvider ):
         jsonDicts = []
         rval = { 'dataset_type': self.dataset_type }
 
-        if file_ext == "nhx": # parses newick files
+        if file_ext == "nhx":  # parses newick files
             newickParser = Newick_Parser()
             jsonDicts, parseMsg = newickParser.parseFile( file_name )
-        elif file_ext == "phyloxml": # parses phyloXML files
+        elif file_ext == "phyloxml":  # parses phyloXML files
             phyloxmlParser = Phyloxml_Parser()
             jsonDicts, parseMsg = phyloxmlParser.parseFile( file_name )
-        elif file_ext == "nex": # parses nexus files
+        elif file_ext == "nex":  # parses nexus files
             nexusParser = Nexus_Parser()
             jsonDicts, parseMsg = nexusParser.parseFile( file_name )
             jsonDicts = jsonDicts[ int( tree_index ) ]

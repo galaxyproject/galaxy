@@ -7,6 +7,7 @@ from galaxy import web
 
 log = logging.getLogger( __name__ )
 
+
 class GroupUsersAPIController( BaseAPIController ):
 
     @web.expose_api
@@ -29,9 +30,9 @@ class GroupUsersAPIController( BaseAPIController ):
             for uga in group.users:
                 user = uga.user
                 encoded_id = trans.security.encode_id( user.id )
-                rval.append( dict( id = encoded_id,
-                                   email = user.email,
-                                   url = url_for( 'group_user', group_id=group_id, id=encoded_id, ) ) )
+                rval.append( dict( id=encoded_id,
+                                   email=user.email,
+                                   url=url_for( 'group_user', group_id=group_id, id=encoded_id, ) ) )
         except Exception, e:
             rval = "Error in group API at listing users"
             log.error( rval + ": %s" % str(e) )
@@ -47,16 +48,16 @@ class GroupUsersAPIController( BaseAPIController ):
         """
         user_id = id
         decoded_group_id = trans.security.decode_id( group_id )
-        decoded_user_id =  trans.security.decode_id( user_id )
+        decoded_user_id = trans.security.decode_id( user_id )
         item = None
         try:
             group = trans.sa_session.query( trans.app.model.Group ).get( decoded_group_id )
             user = trans.sa_session.query( trans.app.model.User ).get( decoded_user_id )
             for uga in group.users:
                 if uga.user == user:
-                    item = dict( id = user_id,
-                                   email = user.email,
-                                   url = url_for( 'group_user', group_id=group_id, id=user_id) ) # TODO Fix This
+                    item = dict( id=user_id,
+                                 email=user.email,
+                                 url=url_for( 'group_user', group_id=group_id, id=user_id) )  # TODO Fix This
             if not item:
                 item = "user %s not in group %s" % (user.email, group.name)
         except Exception, e:
@@ -73,24 +74,24 @@ class GroupUsersAPIController( BaseAPIController ):
         """
         user_id = id
         decoded_group_id = trans.security.decode_id( group_id )
-        decoded_user_id =  trans.security.decode_id( user_id )
+        decoded_user_id = trans.security.decode_id( user_id )
         item = None
         try:
             group = trans.sa_session.query( trans.app.model.Group ).get( decoded_group_id )
             user = trans.sa_session.query( trans.app.model.User ).get( decoded_user_id )
             for uga in group.users:
                 if uga.user == user:
-                    item = dict( id = user_id,
-                                   email = user.email,
-                                   url = url_for( 'group_user', group_id=group_id, id=user_id) )
+                    item = dict( id=user_id,
+                                 email=user.email,
+                                 url=url_for( 'group_user', group_id=group_id, id=user_id) )
             if not item:
                 uga = trans.app.model.UserGroupAssociation( user, group )
                 # Add UserGroupAssociations
                 trans.sa_session.add( uga )
                 trans.sa_session.flush()
-                item = dict( id = user_id,
-                             email = user.email,
-                             url = url_for( 'group_user', group_id=group_id, id=user_id) )
+                item = dict( id=user_id,
+                             email=user.email,
+                             url=url_for( 'group_user', group_id=group_id, id=user_id) )
         except Exception, e:
             item = "Error in group_user API Adding user %s to group %s" % (user.email, group.name)
             log.error(item + ": %s" % str(e))
@@ -105,7 +106,7 @@ class GroupUsersAPIController( BaseAPIController ):
         """
         user_id = id
         decoded_group_id = trans.security.decode_id( group_id )
-        decoded_user_id =  trans.security.decode_id( user_id )
+        decoded_user_id = trans.security.decode_id( user_id )
         try:
             group = trans.sa_session.query( trans.app.model.Group ).get( decoded_group_id )
             user = trans.sa_session.query( trans.app.model.User ).get( decoded_user_id )
@@ -113,9 +114,9 @@ class GroupUsersAPIController( BaseAPIController ):
                 if uga.user == user:
                     trans.sa_session.delete( uga )
                     trans.sa_session.flush()
-                    item = dict( id = user_id,
-                                 email = user.email,
-                                 url = url_for( 'group_user', group_id=group_id, id=user_id) )
+                    item = dict( id=user_id,
+                                 email=user.email,
+                                 url=url_for( 'group_user', group_id=group_id, id=user_id) )
             if not item:
                 item = "user %s not in group %s" % (user.email, group.name)
         except Exception, e:

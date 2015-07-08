@@ -17,7 +17,7 @@ class RoleAPIController( BaseAPIController ):
         Displays a collection (list) of roles.
         """
         rval = []
-        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == False ):
+        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == False ):  # noqa
             if trans.user_is_admin() or trans.app.security_agent.ok_to_display( trans.user, role ):
                 item = role.to_dict( value_mapper={ 'id': trans.security.encode_id } )
                 encoded_id = trans.security.encode_id( role.id )
