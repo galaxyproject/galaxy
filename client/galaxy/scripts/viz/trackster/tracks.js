@@ -2209,15 +2209,14 @@ extend(Track.prototype, Drawable.prototype, {
             title: "Tool parameter space visualization",
             css_class: "arrow-split",
             on_click_fn: function(track) {
-                var template =
-                    '<strong>Tool</strong>: <%= track.tool.get("name") %><br/>' +
-                    '<strong>Dataset</strong>: <%= track.config.get_value("name") %><br/>' +
+                var html =
+                    '<strong>Tool</strong>:' + track.tool.get("name") + '<br/>' +
+                    '<strong>Dataset</strong>:' + track.config.get_value("name") + '<br/>' +
                     '<strong>Region(s)</strong>: <select name="regions">' +
                     '<option value="cur">current viewing area</option>' +
                     '<option value="bookmarks">bookmarks</option>' +
                     '<option value="both">current viewing area and bookmarks</option>' +
-                    '</select>',
-                    html = _.template(template, { track: track });
+                    '</select>';
                 var cancel_fn = function() { Galaxy.modal.hide(); $(window).unbind("keypress.check_enter_esc"); },
                     ok_fn = function() {
                         var regions_to_use = $('select[name="regions"] option:selected').val(),
