@@ -198,7 +198,7 @@ class Registry( object ):
                                 if datatype_class is None:
                                     try:
                                         # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
-                                        fields = datatype_module.split( '.' )
+                                        fields = datatype_module.split( '.' )[1:]
                                         module = __import__( datatype_module )
                                         for mod in fields:
                                             module = getattr( module, mod )
