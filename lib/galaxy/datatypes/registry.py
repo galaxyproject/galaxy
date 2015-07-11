@@ -2,9 +2,7 @@
 Provides mapping between extensions and datatypes, mime-types, etc.
 """
 import os
-import sys
 import tempfile
-import threading
 import logging
 import imp
 import data
@@ -13,17 +11,10 @@ import interval
 import images
 import sequence
 import qualityscore
-import genetics
 import xml
 import coverage
 import tracks
-import chrominfo
 import binary
-import assembly
-import ngsindex
-import graph
-import text
-import msa
 import galaxy.util
 from galaxy.util.odict import odict
 from display_applications.application import DisplayApplication
@@ -157,10 +148,10 @@ class Registry( object ):
                             in_memory_display_in_upload = galaxy.util.string_as_bool( elem.get( 'display_in_upload', False ) )
                             in_memory_make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
                             if in_memory_dtype == dtype and \
-                                in_memory_type_extension == type_extension and \
-                                in_memory_mimetype == mimetype and \
-                                in_memory_display_in_upload == display_in_upload and \
-                                in_memory_make_subclass == make_subclass:
+                                    in_memory_type_extension == type_extension and \
+                                    in_memory_mimetype == mimetype and \
+                                    in_memory_display_in_upload == display_in_upload and \
+                                    in_memory_make_subclass == make_subclass:
                                 self.datatype_elems.remove( in_memory_elem )
                     if extension is not None and extension in self.datatypes_by_extension:
                         # We are deactivating or uninstalling an installed tool shed repository, so eliminate the datatype
@@ -183,7 +174,7 @@ class Registry( object ):
                                 fields = dtype.split( ':' )
                                 datatype_module = fields[ 0 ]
                                 datatype_class_name = fields[ 1 ]
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.exception( 'Error parsing datatype definition for dtype %s: %s' % ( str( dtype ), str( e ) ) )
                                 ok = False
                             if ok:
@@ -199,7 +190,7 @@ class Registry( object ):
                                             self.imported_modules.append( imported_module )
                                         if hasattr( imported_module, datatype_class_name ):
                                             datatype_class = getattr( imported_module, datatype_class_name )
-                                    except Exception, e:
+                                    except Exception as e:
                                         full_path = os.path.join( proprietary_path, proprietary_datatype_module )
                                         self.log.debug( "Exception importing proprietary code file %s: %s" % ( str( full_path ), str( e ) ) )
                                 # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
@@ -207,19 +198,19 @@ class Registry( object ):
                                 if datatype_class is None:
                                     try:
                                         # The datatype class name must be contained in one of the datatype modules in the Galaxy distribution.
-                                        fields = datatype_module.split( '.' )
+                                        fields = datatype_module.split( '.' )[1:]
                                         module = __import__( datatype_module )
                                         for mod in fields:
                                             module = getattr( module, mod )
                                         datatype_class = getattr( module, datatype_class_name )
                                         self.log.debug( 'Retrieved datatype module %s:%s from the datatype registry.' % ( str( datatype_module ), datatype_class_name ) )
-                                    except Exception, e:
+                                    except Exception as e:
                                         self.log.exception( 'Error importing datatype module %s: %s' % ( str( datatype_module ), str( e ) ) )
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[ type_extension ].__class__
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.exception( 'Error determining datatype_class for type_extension %s: %s' % ( str( type_extension ), str( e ) ) )
                                 ok = False
                         if ok:
@@ -230,8 +221,8 @@ class Registry( object ):
                                 if extension in self.datatypes_by_extension:
                                     # Because of the way that the value of can_process_datatype was set above, we know that the value of
                                     # override is True.
-                                    self.log.debug( "Overriding conflicting datatype with extension '%s', using datatype from %s." % \
-                                                      ( str( extension ), str( config ) ) )
+                                    self.log.debug( "Overriding conflicting datatype with extension '%s', using datatype from %s." %
+                                                    ( str( extension ), str( config ) ) )
                                 if make_subclass:
                                     datatype_class = type( datatype_class_name, ( datatype_class, ), {} )
                                     if edam_format:
@@ -364,7 +355,7 @@ class Registry( object ):
                         datatype_module = fields[ 0 ]
                         datatype_class_name = fields[ 1 ]
                         module = None
-                    except Exception, e:
+                    except Exception as e:
                         self.log.exception( 'Error determining datatype class or module for dtype %s: %s' % ( str( dtype ), str( e ) ) )
                         ok = False
                     if ok:
@@ -380,13 +371,13 @@ class Registry( object ):
                                 module = __import__( datatype_module )
                                 for comp in datatype_module.split( '.' )[ 1: ]:
                                     module = getattr( module, comp )
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.exception( "Error importing datatype class for '%s': %s" % ( str( dtype ), str( e ) ) )
                                 ok = False
                         if ok:
                             try:
                                 aclass = getattr( module, datatype_class_name )()
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.exception( 'Error calling method %s from class %s: %s', str( datatype_class_name ), str( module ), str( e ) )
                                 ok = False
                             if ok:
@@ -397,7 +388,7 @@ class Registry( object ):
                                         for index, s_e_c in enumerate( sniffer_elem_classes ):
                                             if sniffer_class == s_e_c:
                                                 del self.sniffer_elems[ index ]
-                                                sniffer_elem_classes = [ e.attrib[ 'type' ] for e in self.sniffer_elems ]
+                                                sniffer_elem_classes = [ elem.attrib[ 'type' ] for elem in self.sniffer_elems ]
                                                 self.log.debug( "Removed sniffer element for datatype '%s'" % str( dtype ) )
                                                 break
                                         for sniffer_class in self.sniff_order:
@@ -434,29 +425,27 @@ class Registry( object ):
         Return the datatype class where the datatype's `type` attribute
         (as defined in the datatype_conf.xml file) contains `name`.
         """
-        #TODO: too roundabout - would be better to generate this once as a map and store in this object
-        found_class = None
+        # TODO: too roundabout - would be better to generate this once as a map and store in this object
         for ext, datatype_obj in self.datatypes_by_extension.items():
             datatype_obj_class = datatype_obj.__class__
             datatype_obj_class_str = str( datatype_obj_class )
-            #print datatype_obj_class_str
             if name in datatype_obj_class_str:
                 return datatype_obj_class
         return None
         # these seem to be connected to the dynamic classes being generated in this file, lines 157-158
         #   they appear when a one of the three are used in inheritance with subclass="True"
-        #TODO: a possible solution is to def a fn in datatypes __init__ for creating the dynamic classes
+        # TODO: a possible solution is to def a fn in datatypes __init__ for creating the dynamic classes
 
-        #remap = {
+        # remap = {
         #    'galaxy.datatypes.registry.Tabular'   : galaxy.datatypes.tabular.Tabular,
         #    'galaxy.datatypes.registry.Text'      : galaxy.datatypes.data.Text,
         #    'galaxy.datatypes.registry.Binary'    : galaxy.datatypes.binary.Binary
-        #}
-        #datatype_str = str( datatype )
-        #if datatype_str in remap:
+        # }
+        # datatype_str = str( datatype )
+        # if datatype_str in remap:
         #    datatype = remap[ datatype_str ]
         #
-        #return datatype
+        # return datatype
 
     def get_available_tracks( self ):
         return self.available_tracks
@@ -466,7 +455,7 @@ class Registry( object ):
         try:
             mimetype = self.mimetypes_by_extension[ ext ]
         except KeyError:
-            #datatype was never declared
+            # datatype was never declared
             mimetype = default
             self.log.warning( 'unknown mimetype in data factory %s' % str( ext ) )
         return mimetype
@@ -539,7 +528,7 @@ class Registry( object ):
                         self.datatype_converters[ source_datatype ] = odict()
                     self.datatype_converters[ source_datatype ][ target_datatype ] = converter
                     self.log.debug( "Loaded converter: %s", converter.id )
-            except Exception, e:
+            except Exception as e:
                 if deactivate:
                     self.log.exception( "Error deactivating converter from (%s): %s" % ( converter_path, str( e ) ) )
                 else:
@@ -607,7 +596,7 @@ class Registry( object ):
                             if inherit and ( self.datatypes_by_extension[ extension ], display_app ) not in self.inherit_display_application_by_class:
                                 self.inherit_display_application_by_class.append( ( self.datatypes_by_extension[ extension ], display_app ) )
                             self.log.debug( "Loaded display application '%s' for datatype '%s', inherit=%s." % ( display_app.id, extension, inherit ) )
-                except Exception, e:
+                except Exception as e:
                     if deactivate:
                         self.log.exception( "Error deactivating display application (%s): %s" % ( config_path, str( e ) ) )
                     else:
@@ -635,7 +624,7 @@ class Registry( object ):
             try:
                 self.display_applications[ display_application_id ].reload()
                 reloaded.append( display_application_id )
-            except Exception, e:
+            except Exception as e:
                 self.log.debug( 'Requested to reload display application "%s", but failed: %s.', display_application_id, e  )
                 failed.append( display_application_id )
         return ( reloaded, failed )
@@ -781,7 +770,7 @@ class Registry( object ):
             converter_datatype = type( self.get_datatype_by_extension( ext2 ) )
             if issubclass( source_datatype, converter_datatype ):
                 converters.update( dict )
-        #Ensure ext-level converters are present
+        # Ensure ext-level converters are present
         if ext in self.datatype_converters.keys():
             converters.update( self.datatype_converters[ ext ] )
         return converters
@@ -822,7 +811,7 @@ class Registry( object ):
                         help_txt = ""
                     inputs.append( '<param type="text" name="%s" label="Set metadata value for &quot;%s&quot;" value="%s" help="%s"/>' % ( meta_name, meta_name, meta_spec.default, help_txt ) )
             rval[ ext ] = "\n".join( inputs )
-        if 'auto' not in rval and 'txt' in rval: #need to manually add 'auto' datatype
+        if 'auto' not in rval and 'txt' in rval:  # need to manually add 'auto' datatype
             rval[ 'auto' ] = rval[ 'txt' ]
         return rval
 
@@ -832,7 +821,7 @@ class Registry( object ):
         """
         mapping = {}
         for k, v in self.datatypes_by_extension.iteritems():
-            mapping[k]= v.edam_format
+            mapping[k] = v.edam_format
         return mapping
 
     @property
@@ -872,4 +861,4 @@ class Registry( object ):
         os.write( fd, '</sniffers>\n' )
         os.write( fd, '</datatypes>\n' )
         os.close( fd )
-        os.chmod( self.xml_filename, 0644 )
+        os.chmod( self.xml_filename, 0o644 )

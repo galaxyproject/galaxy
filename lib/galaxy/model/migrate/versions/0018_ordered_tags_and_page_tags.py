@@ -26,36 +26,36 @@ def display_migration_details():
     print "(b) tagging pages. This script deletes all existing tags."
 
 HistoryTagAssociation_table = Table( "history_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True),
-    Column( "value", TrimmedString(255), index=True),
-    Column( "user_value", TrimmedString(255), index=True) )
+                                     Column( "id", Integer, primary_key=True ),
+                                     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+                                     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                     Column( "user_tname", TrimmedString(255), index=True),
+                                     Column( "value", TrimmedString(255), index=True),
+                                     Column( "user_value", TrimmedString(255), index=True) )
 
 DatasetTagAssociation_table = Table( "dataset_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True),
-    Column( "value", TrimmedString(255), index=True),
-    Column( "user_value", TrimmedString(255), index=True) )
+                                     Column( "id", Integer, primary_key=True ),
+                                     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+                                     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                     Column( "user_tname", TrimmedString(255), index=True),
+                                     Column( "value", TrimmedString(255), index=True),
+                                     Column( "user_value", TrimmedString(255), index=True) )
 
 HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_association_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True),
-    Column( "value", TrimmedString(255), index=True),
-    Column( "user_value", TrimmedString(255), index=True) )
+                                                       Column( "id", Integer, primary_key=True ),
+                                                       Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+                                                       Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                                       Column( "user_tname", TrimmedString(255), index=True),
+                                                       Column( "value", TrimmedString(255), index=True),
+                                                       Column( "user_value", TrimmedString(255), index=True) )
 
 PageTagAssociation_table = Table( "page_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True),
-    Column( "value", TrimmedString(255), index=True),
-    Column( "user_value", TrimmedString(255), index=True) )
+                                  Column( "id", Integer, primary_key=True ),
+                                  Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
+                                  Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                  Column( "user_tname", TrimmedString(255), index=True),
+                                  Column( "value", TrimmedString(255), index=True),
+                                  Column( "user_value", TrimmedString(255), index=True) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

@@ -9,6 +9,7 @@ import sys, os
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+
 def compute_fasta_length( fasta_file, out_file, keep_first_char, keep_first_word=False ):
 
     infile = fasta_file

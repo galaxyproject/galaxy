@@ -318,11 +318,11 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
                 a.dataset_id == b.id,
                 b.deleted == False,
                 b.dataset_id == v
-            ) )
+            ) )  # noqa
 
         out = []
         for job in query.all():
             # check to make sure none of the output files have been deleted
-            if all( list( a.dataset.deleted == False for a in job.output_datasets ) ):
+            if all( list( a.dataset.deleted is False for a in job.output_datasets ) ):
                 out.append( self.encode_all_ids( trans, job.to_dict( 'element' ), True ) )
         return out

@@ -63,8 +63,8 @@ class XMLDataProvider( HierarchalDataProvider ):
         # TODO: add more flexibility here w/o re-implementing xpath
         # TODO: fails with '#' - browser thinks it's an anchor - use urlencode
         # TODO: need removal/replacement of etree namespacing here - then move to string match
-        return bool( ( selector is None )
-                  or ( isinstance( element, Element ) and selector in element.tag ) )
+        return bool( ( selector is None ) or
+                     ( isinstance( element, Element ) and selector in element.tag ) )
 
     def element_as_dict( self, element ):
         """
@@ -109,14 +109,13 @@ class XMLDataProvider( HierarchalDataProvider ):
                 self.namespaces[ ns ] = uri
 
             elif event == 'start':
-                if( ( selected_element is None )
-                and ( self.matches_selector( element, self.selector ) ) ):
+                if( ( selected_element is None ) and
+                        ( self.matches_selector( element, self.selector ) ) ):
                     # start tag of selected element - wait for 'end' to emit/yield
                     selected_element = element
 
             elif event == 'end':
-                if( ( selected_element is not None )
-                and ( element == selected_element ) ):
+                if( ( selected_element is not None ) and ( element == selected_element ) ):
                     self.num_valid_data_read += 1
 
                     # offset

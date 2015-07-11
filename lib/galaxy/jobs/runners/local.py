@@ -35,10 +35,10 @@ class LocalJobRunner( BaseJobRunner ):
     def __init__( self, app, nworkers ):
         """Start the job runner """
 
-        #create a local copy of os.environ to use as env for subprocess.Popen
+        # create a local copy of os.environ to use as env for subprocess.Popen
         self._environ = os.environ.copy()
 
-        #Set TEMP if a valid temp value is not already set
+        # Set TEMP if a valid temp value is not already set
         if not ( 'TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ ):
             self._environ[ 'TEMP' ] = os.path.abspath(tempfile.gettempdir())
 
@@ -50,8 +50,8 @@ class LocalJobRunner( BaseJobRunner ):
         """
         command_line = job_wrapper.runner_command_line
 
-        ## slots would be cleaner name, but don't want deployers to see examples and think it
-        ## is going to work with other job runners.
+        # slots would be cleaner name, but don't want deployers to see examples and think it
+        # is going to work with other job runners.
         slots = job_wrapper.job_destination.params.get( "local_slots", None )
         if slots:
             slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % ( int( slots ) )
@@ -69,7 +69,7 @@ class LocalJobRunner( BaseJobRunner ):
         }
         job_file_contents = self.get_job_file( job_wrapper, **job_script_props )
         open( job_file, 'w' ).write( job_file_contents )
-        os.chmod( job_file, 0755 )
+        os.chmod( job_file, 0o755 )
         return job_file, exit_code_path
 
     def queue_job( self, job_wrapper ):
@@ -132,7 +132,7 @@ class LocalJobRunner( BaseJobRunner ):
             job_wrapper.fail("Unable to finish job", exception=True)
 
     def stop_job( self, job ):
-        #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         job_ext_output_metadata = job.get_external_output_metadata()
         try:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
@@ -150,7 +150,7 @@ class LocalJobRunner( BaseJobRunner ):
         for sig in [ 15, 9 ]:
             try:
                 os.killpg( pid, sig )
-            except OSError, e:
+            except OSError as e:
                 log.warning( "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job.get_id(), errno.errorcode[e.errno], sig, pid, e.strerror ) )
                 return  # give up
             sleep( 2 )
@@ -168,7 +168,7 @@ class LocalJobRunner( BaseJobRunner ):
         try:
             os.kill( pid, 0 )
             return True
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 log.debug( "_check_pid(): PID %d is dead" % pid )
             else:

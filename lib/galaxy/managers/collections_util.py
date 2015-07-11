@@ -79,7 +79,7 @@ def dictify_dataset_collection_instance( dataset_collection_instance, parent, se
         collection = dataset_collection_instance.collection
         dict_value[ 'elements' ] = map( dictify_element, collection.elements )
         dict_value[ 'populated' ] = collection.populated
-    security.encode_all_ids( dict_value, recursive=True )  # TODO: Use Kyle's recusrive formulation of this.
+    security.encode_all_ids( dict_value, recursive=True )  # TODO: Use Kyle's recursive formulation of this.
     return dict_value
 
 

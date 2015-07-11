@@ -140,7 +140,7 @@ def test_distributed_store():
                 dataset = MockDataset(100 + i)
                 object_store.create(dataset)
 
-        ## Test distributes datasets between backends according to weights
+        # Test distributes datasets between backends according to weights
         backend_1_count = len([v for v in persisted_ids.values() if v == "files1"])
         backend_2_count = len([v for v in persisted_ids.values() if v == "files2"])
 
@@ -190,8 +190,8 @@ class MockDataset(object):
         self.object_store_id = None
 
 
-## Poor man's mocking. Need to get a real mocking library as real Galaxy development
-## dependnecy.
+# Poor man's mocking. Need to get a real mocking library as real Galaxy development
+# dependnecy.
 PERSIST_METHOD_NAME = "create_object_in_session"
 
 

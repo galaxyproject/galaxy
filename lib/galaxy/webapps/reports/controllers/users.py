@@ -122,11 +122,11 @@ class Users( BaseUIController, ReportQueryBuilder ):
         def name_to_num(name):
             num = None
 
-            if name != None and name.lower() == 'zero':
+            if name is not None and name.lower() == 'zero':
                 num = 0
             else:
                 num = 1
-                
+
             return num
 
         if order == "desc":
@@ -141,7 +141,7 @@ class Users( BaseUIController, ReportQueryBuilder ):
         users = []
         for user in trans.sa_session.query( galaxy.model.User ) \
                                     .filter( galaxy.model.User.table.c.deleted == False ) \
-                                    .order_by( galaxy.model.User.table.c.email ):
+                                    .order_by( galaxy.model.User.table.c.email ):  # noqa
             if user.galaxy_sessions:
                 last_galaxy_session = user.galaxy_sessions[ 0 ]
                 if last_galaxy_session.update_time < cutoff_time:
@@ -165,12 +165,12 @@ class Users( BaseUIController, ReportQueryBuilder ):
         sort_id = specs.sort_id
         order = specs.order
         arrow = specs.arrow
-        
+
         if order == "desc":
             _order = True
         else:
             _order = False
-        
+
         user_cutoff = int( kwd.get( 'user_cutoff', 60 ) )
         # disk_usage isn't indexed
         users = sorted( trans.sa_session.query( galaxy.model.User ).all(), key=operator.attrgetter( str(sort_id) ), reverse=_order )

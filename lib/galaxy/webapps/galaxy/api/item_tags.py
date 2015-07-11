@@ -49,7 +49,7 @@ class BaseItemTagsController( BaseAPIController, UsesTagsMixin ):
         deleted = self._remove_items_tag( trans, self.tagged_item_class, kwd[ self.tagged_item_id ], tag_name )
         if not deleted:
             raise exceptions.RequestParameterInvalidException( "Failed to delete specified tag." )
-        #TODO: ugh - 204 would be better
+        # TODO: ugh - 204 would be better
         return 'OK'
 
     def _api_value( self, tag, trans, view='element' ):

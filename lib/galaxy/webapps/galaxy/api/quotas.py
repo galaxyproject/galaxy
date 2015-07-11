@@ -14,6 +14,7 @@ from galaxy.exceptions import ActionInputError
 
 log = logging.getLogger( __name__ )
 
+
 class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin, QuotaParamParser ):
     @web.expose_api
     @web.require_admin
@@ -28,10 +29,10 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         query = trans.sa_session.query( trans.app.model.Quota )
         if deleted:
             route = 'deleted_quota'
-            query = query.filter( trans.app.model.Quota.table.c.deleted == True )
+            query = query.filter( trans.app.model.Quota.table.c.deleted == True )  # noqa
         else:
             route = 'quota'
-            query = query.filter( trans.app.model.Quota.table.c.deleted == False )
+            query = query.filter( trans.app.model.Quota.table.c.deleted == False )  # noqa
         for quota in query:
             item = quota.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id( quota.id )
@@ -116,7 +117,7 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         DELETE /api/quotas/{encoded_quota_id}
         Deletes a quota
         """
-        quota = self.get_quota( trans, id, deleted=False ) # deleted quotas are not technically members of this collection
+        quota = self.get_quota( trans, id, deleted=False )  # deleted quotas are not technically members of this collection
 
         # a request body is optional here
         payload = kwd.get( 'payload', {} )

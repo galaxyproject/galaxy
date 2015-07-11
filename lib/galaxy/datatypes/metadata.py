@@ -673,7 +673,7 @@ class MetadataTempFile( object ):
                 if isinstance( value, cls ) and os.path.exists( value.file_name ):
                     log.debug( 'Cleaning up abandoned MetadataTempFile file: %s' % value.file_name )
                     os.unlink( value.file_name )
-        except Exception, e:
+        except Exception as e:
             log.debug( 'Failed to cleanup MetadataTempFile temp files from %s: %s' % ( filename, e ) )
 
 
@@ -827,9 +827,9 @@ class JobExternalOutputMetadataWrapper( object ):
                 sa_session.flush()
             metadata_files_list.append( metadata_files )
         args = "%s %s %s %s" % ( datatypes_config,
-                              job_metadata,
-                              " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ),
-                              max_metadata_value_size)
+                                 job_metadata,
+                                 " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ),
+                                 max_metadata_value_size)
         if include_command:
             # return command required to build
             fd, fp = tempfile.mkstemp( suffix='.py', dir=tmp_dir, prefix="set_metadata_" )
@@ -863,7 +863,7 @@ class JobExternalOutputMetadataWrapper( object ):
                                 ( 'filename_override_metadata', metadata_files.filename_override_metadata ) ]:
                 try:
                     os.remove( fname )
-                except Exception, e:
+                except Exception as e:
                     log.debug( 'Failed to cleanup external metadata file (%s) for %s: %s' % ( key, dataset_key, e ) )
 
     def set_job_runner_external_pid( self, pid, sa_session ):

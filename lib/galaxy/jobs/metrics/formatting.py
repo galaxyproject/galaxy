@@ -7,7 +7,7 @@ class JobMetricFormatter( object ):
         return ( str( key ), str( value ) )
 
 
-## Formatting utilities
+# Formatting utilities
 
 def seconds_to_str( value ):
     if value < 60:

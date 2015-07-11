@@ -2,16 +2,18 @@
 Generic module for managing manual data transfer jobs using Galaxy's built-in file browser.
 This module can be used by various external services that are configured to transfer data manually.
 """
-import logging, urllib2, re, shutil
-from data_transfer import *
+import logging
+from data_transfer import DataTransfer
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'ManualDataTransferPlugin' ]
 
+
 class ManualDataTransferPlugin( DataTransfer ):
     def __init__( self, app ):
         super( ManualDataTransferPlugin, self ).__init__( app )
+
     def create_job( self, trans, **kwd ):
         if 'sample' in kwd and 'sample_datasets' in kwd and 'external_service' in kwd and 'external_service_type' in kwd:
             sample = kwd[ 'sample' ]
@@ -29,7 +31,7 @@ class ManualDataTransferPlugin( DataTransfer ):
             # but without a way for the user to associate stuff it's useless.  However, allowing the user this ability may
             # open a can of worms, so maybe we shouldn't do it???
             #
-            #for run_result_file_name, run_result_file_datatype in external_service_type.run_details[ 'results' ].items():
+            # for run_result_file_name, run_result_file_datatype in external_service_type.run_details[ 'results' ].items():
             #     # external_service_type.run_details[ 'results' ] looks something like: {'dataset1_name': 'dataset1_datatype'}
             #     if run_result_file_datatype in external_service.form_values.content:
             #         datatype = external_service.form_values.content[ run_result_file_datatype ]
@@ -41,13 +43,13 @@ class ManualDataTransferPlugin( DataTransfer ):
             sample_datasets_dict = {}
             for sample_dataset in sample_datasets:
                 sample_dataset_id = sample_dataset.id
-                sample_dataset_dict = dict( sample_id = sample_dataset.sample.id,
-                                            name = sample_dataset.name,
-                                            file_path = sample_dataset.file_path,
-                                            status = sample_dataset.status,
-                                            error_msg = sample_dataset.error_msg,
-                                            size = sample_dataset.size,
-                                            external_service_id = sample_dataset.external_service.id )
+                sample_dataset_dict = dict( sample_id=sample_dataset.sample.id,
+                                            name=sample_dataset.name,
+                                            file_path=sample_dataset.file_path,
+                                            status=sample_dataset.status,
+                                            error_msg=sample_dataset.error_msg,
+                                            size=sample_dataset.size,
+                                            external_service_id=sample_dataset.external_service.id )
                 sample_datasets_dict[ sample_dataset_id ] = sample_dataset_dict
             params = { 'type' : 'init_transfer',
                        'sample_id' : sample.id,
@@ -72,6 +74,7 @@ class ManualDataTransferPlugin( DataTransfer ):
         self.sa_session.flush()
         log.debug( 'Created a deferred job in the ManualDataTransferPlugin of type: %s' % params[ 'type' ] )
         # TODO: error reporting to caller (if possible?)
+
     def check_job( self, job ):
         if self._missing_params( job.params, [ 'type' ] ):
             return self.job_states.INVALID

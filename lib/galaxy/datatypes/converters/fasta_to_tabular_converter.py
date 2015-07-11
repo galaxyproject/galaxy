@@ -15,6 +15,7 @@ import sys, os
 
 seq_hash = {}
 
+
 def __main__():
     infile = sys.argv[1]
     outfile = sys.argv[2]

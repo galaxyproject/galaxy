@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-#Dan Blankenberg
+# Dan Blankenberg
 
 import sys
 
 assert sys.version_info[:2] >= ( 2, 5 )
 HEADER_STARTS_WITH = ( '@' )
+
 
 def __main__():
     input_name = sys.argv[1]
@@ -25,8 +26,8 @@ def __main__():
                     elems = line.split( '\t' )
                     if len( elems ) >= 5:
                         complete_interval = True
-                    out.write( '%s\t%s\t%s\t%s\t0\t%s\n' % ( elems[0], int(elems[1])-1, elems[2], elems[4], elems[3] ) )
-                except Exception, e:
+                    out.write( '%s\t%s\t%s\t%s\t0\t%s\n' % ( elems[0], int(elems[1]) - 1, elems[2], elems[4], elems[3] ) )
+                except Exception as e:
                     print e
                     skipped_lines += 1
                     if not first_skipped_line:

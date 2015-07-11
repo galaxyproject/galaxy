@@ -28,7 +28,7 @@ Additional errors may follow:
 try:
     pkg_resources.require( "pbs_python" )
     pbs = __import__( "pbs" )
-except Exception, e:
+except Exception as e:
     raise Exception( egg_message % str( e ) )
 
 log = logging.getLogger( __name__ )
@@ -189,11 +189,11 @@ class PBSJobRunner( AsynchronousJobRunner ):
             if arg == 'l':
                 resource_attrs = value.split(',')
                 for j, ( res, val ) in enumerate( [ a.split('=', 1) for a in resource_attrs ] ):
-                    rval.append( dict( name = pbs.ATTR_l, value = val, resource = res ) )
+                    rval.append( dict( name=pbs.ATTR_l, value=val, resource=res ) )
             else:
                 try:
-                    rval.append( dict( name = getattr( pbs, 'ATTR_' + arg ), value = value ) )
-                except AttributeError, e:
+                    rval.append( dict( name=getattr( pbs, 'ATTR_' + arg ), value=value ) )
+                except AttributeError as e:
                     raise Exception("Invalid parameter '%s': %s" % (arg, e))
         return rval
 
@@ -207,9 +207,6 @@ class PBSJobRunner( AsynchronousJobRunner ):
         # prepare the job
         if not self.prepare_job( job_wrapper, include_metadata=not( self.app.config.pbs_stage_path ) ):
             return
-
-        # command line has been added to the wrapper by prepare_job()
-        command_line = job_wrapper.runner_command_line
 
         job_destination = job_wrapper.job_destination
 
@@ -260,20 +257,20 @@ class PBSJobRunner( AsynchronousJobRunner ):
             stagein = self.get_stage_in_out( job_wrapper.get_input_fnames() + output_files, symlink=True )
             stageout = self.get_stage_in_out( output_files )
             attrs = [
-                dict( name = pbs.ATTR_o, value = pbs_ofile ),
-                dict( name = pbs.ATTR_e, value = pbs_efile ),
-                dict( name = pbs.ATTR_stagein, value = stagein ),
-                dict( name = pbs.ATTR_stageout, value = stageout ),
+                dict( name=pbs.ATTR_o, value=pbs_ofile ),
+                dict( name=pbs.ATTR_e, value=pbs_efile ),
+                dict( name=pbs.ATTR_stagein, value=stagein ),
+                dict( name=pbs.ATTR_stageout, value=stageout ),
             ]
         # If not, we're using NFS
         else:
             attrs = [
-                dict( name = pbs.ATTR_o, value = ofile ),
-                dict( name = pbs.ATTR_e, value = efile ),
+                dict( name=pbs.ATTR_o, value=ofile ),
+                dict( name=pbs.ATTR_e, value=efile ),
             ]
 
         # define PBS job options
-        attrs.append( dict( name = pbs.ATTR_N, value = str( "%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user ) ) ) )
+        attrs.append( dict( name=pbs.ATTR_N, value=str( "%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user ) ) ) )
         job_attrs = pbs.new_attropl( len( attrs ) + len( pbs_options ) )
         for i, attr in enumerate( attrs + pbs_options ):
             job_attrs[i].name = attr['name']
@@ -366,7 +363,6 @@ class PBSJobRunner( AsynchronousJobRunner ):
         ( failures, statuses ) = self.check_all_jobs()
         for pbs_job_state in self.watched:
             job_id = pbs_job_state.job_id
-            #galaxy_job_id = pbs_job_state.job_wrapper.job_id
             galaxy_job_id = pbs_job_state.job_wrapper.get_id_tag()
             old_state = pbs_job_state.old_state
             pbs_server_name = self.__get_pbs_server(pbs_job_state.job_destination.params)
@@ -547,7 +543,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
         for file in files:
             try:
                 os.unlink( file )
-            except Exception, e:
+            except Exception as e:
                 log.warning( "Unable to cleanup: %s" % str( e ) )
 
     def get_stage_in_out( self, fnames, symlink=False ):
@@ -578,22 +574,22 @@ class PBSJobRunner( AsynchronousJobRunner ):
             pbs_server_name = self.__get_pbs_server( job.destination_params )
             if pbs_server_name is None:
                 log.debug("(%s) Job queued but no destination stored in job params, cannot delete"
-                         % job_tag )
+                          % job_tag )
                 return
             c = pbs.pbs_connect( util.smart_str( pbs_server_name ) )
             if c <= 0:
                 log.debug("(%s) Connection to PBS server for job delete failed"
-                         % job_tag )
+                          % job_tag )
                 return
             pbs.pbs_deljob( c, job_id, '' )
             log.debug( "%s Removed from PBS queue before job completion"
-                     % job_tag )
+                       % job_tag )
         except:
             e = traceback.format_exc()
             log.debug( "%s Unable to stop job: %s" % ( job_tag, e ) )
         finally:
             # Cleanup: disconnect from the server.
-            if ( None != c ):
+            if ( None is not c ):
                 pbs.pbs_disconnect( c )
 
     def recover( self, job, job_wrapper ):

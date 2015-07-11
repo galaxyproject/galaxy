@@ -323,13 +323,13 @@ class Bam( Binary ):
         if exit_code == -6:
             # SIGABRT, most likely samtools 1.0+ which does not accept the index name parameter.
             dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
-                    '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+                                            '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
             os.symlink( dataset.file_name, dataset_symlink )
             try:
                 command = [ 'samtools', 'index', dataset_symlink ]
                 exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
                 shutil.move( dataset_symlink + '.bai', index_file.file_name )
-            except Exception, e:
+            except Exception as e:
                 open( stderr_name, 'ab+' ).write( 'Galaxy attempted to build the BAM index with samtools 1.0+ but failed: %s\n' % e)
             finally:
                 os.unlink( dataset_symlink )
@@ -494,7 +494,7 @@ class Bcf( Binary):
         # Usage: bcftools index <in.bcf>
 
         dataset_symlink = os.path.join( os.path.dirname( index_file.file_name ),
-                    '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
+                                        '__dataset_%d_%s' % ( dataset.id, os.path.basename( index_file.file_name ) ) )
         os.symlink( dataset.file_name, dataset_symlink )
 
         stderr_name = tempfile.NamedTemporaryFile( prefix="bcf_index_stderr" ).name
@@ -711,18 +711,18 @@ class SQlite ( Binary ):
                     cur = conn.cursor().execute(col_query)
                     cols = [col[0] for col in cur.description]
                     columns[table] = cols
-                except Exception, exc:
+                except Exception as exc:
                     log.warn( '%s, set_meta Exception: %s', self, exc )
             for table in tables:
                 try:
                     row_query = "SELECT count(*) FROM %s" % table
                     rowcounts[table] = c.execute(row_query).fetchone()[0]
-                except Exception, exc:
+                except Exception as exc:
                     log.warn( '%s, set_meta Exception: %s', self, exc )
             dataset.metadata.tables = tables
             dataset.metadata.table_columns = columns
             dataset.metadata.table_row_count = rowcounts
-        except Exception, exc:
+        except Exception as exc:
             log.warn( '%s, set_meta Exception: %s', self, exc )
 
     def sniff( self, filename ):
@@ -793,13 +793,13 @@ class GeminiSQLite( SQlite ):
             for version, in result:
                 dataset.metadata.gemini_version = version
             # TODO: Can/should we detect even more attributes, such as use of PED file, what was input annotation type, etc.
-        except Exception, e:
+        except Exception as e:
             log.warn( '%s, set_meta Exception: %s', self, e )
 
     def sniff( self, filename ):
         if super( GeminiSQLite, self ).sniff( filename ):
             gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
-                                  "variant_impacts", "variants", "version" ]
+                                   "variant_impacts", "variants", "version" ]
             try:
                 conn = sqlite.connect( filename )
                 c = conn.cursor()
@@ -810,7 +810,7 @@ class GeminiSQLite( SQlite ):
                     if table_name not in result:
                         return False
                 return True
-            except Exception, e:
+            except Exception as e:
                 log.warn( '%s, sniff Exception: %s', self, e )
         return False
 
