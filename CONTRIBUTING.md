@@ -135,7 +135,14 @@ Pull requests changing or clarifying the procedures governing this repository:
   pull request for each person added or removed.
 
 Any other pull request requires at least 1 *+1* binding vote from someone other
-than the author of the pull request.
+than the author of the pull request. A member of the committers group merging a
+pull request is considered an implicit +1.
+
+Pull requests marked *[WIP]* (i.e. work in progress) in the title by the
+author(s), or tagged WIP via GitHub tags, may *not* be merged without
+coordinating the removal of that tag with the pull request author(s), and
+completing the removal of that tag from wherever it is present in the open pull
+request.
 
 ### Timelines
 
@@ -145,16 +152,16 @@ open for comment. Subjectively speaking though - larger and more potentially
 controversial pull requests containing enhancements should remain open for a at
 least a few days to give everyone the opportunity to weigh in.
 
-### Vetos
+### Vetoes
 
-A note on vetos (*-1* votes) taken verbatim from the
+A note on vetoes (*-1* votes) taken verbatim from the
 [Apache Foundation](http://www.apache.org/foundation/voting.html):
 
 >"A code-modification proposal may be stopped dead in its tracks by a -1 vote
 by a qualified voter. This constitutes a veto, and it cannot be overruled nor
-overridden by anyone. Vetos stand until and unless withdrawn by their casters.
+overridden by anyone. Vetoes stand until and unless withdrawn by their casters.
 >
->To prevent vetos from being used capriciously, they must be accompanied by a
+>To prevent vetoes from being used capriciously, they must be accompanied by a
 technical justification showing why the change is bad (opens a security
 exposure, negatively affects performance, etc. ). A veto without a
 justification is invalid and has no weight."
@@ -162,6 +169,20 @@ justification is invalid and has no weight."
 For votes regarding non-coding issues such as procedure changes, the requirement
 that a veto is accompanied by a *technical* justification is relaxed somewhat,
 though a well reasoned justification must still be included.
+
+### Reversions
+
+A *-1* vote on any recently merged pull request is grounds for an immediate
+reversion of the merged pull request. The backout of such a pull request
+invokes a mandatory, minimum 72 hour, review period.
+
+- Recently merged pull requests are defined as a being within the past 168 hours (7
+  days), so as to not prevent forward progress, while allowing for reversions of
+  things merged without proper review and consensus.
+- The person issuing the -1 vote may, upon commenting *-1* with technical
+  justification per the vetoes section, immediately open and merge a pull request to
+  revert the original merge in question outside of the normal requirement for a
+  +1 from "someone other than the author", per "Handling Pull Requests"
 
 ### Direct Commit Access
 
