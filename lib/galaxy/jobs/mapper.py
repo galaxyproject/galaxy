@@ -3,11 +3,12 @@ import inspect
 import os
 import sys
 
+log = logging.getLogger( __name__ )
+
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
-from .rule_helper import RuleHelper
 
-log = logging.getLogger( __name__ )
+from .rule_helper import RuleHelper
 
 DYNAMIC_RUNNER_NAME = "dynamic"
 DYNAMIC_DESTINATION_ID = "dynamic_legacy_from_url"
@@ -56,8 +57,8 @@ class JobRunnerMapper( object ):
 
     def __get_rule_modules( self ):
         unsorted_module_names = self.__get_rule_module_names( )
-        # Load modules in reverse order to allow hierarchical overrides
-        # i.e. 000_galaxy_rules.py, 100_site_rules.py, 200_instance_rules.py
+        ## Load modules in reverse order to allow hierarchical overrides
+        ## i.e. 000_galaxy_rules.py, 100_site_rules.py, 200_instance_rules.py
         module_names = sorted( unsorted_module_names, reverse=True )
         modules = []
         for rule_module_name in module_names:

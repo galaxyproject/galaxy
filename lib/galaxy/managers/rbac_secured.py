@@ -6,10 +6,7 @@ from galaxy.managers import users
 import logging
 log = logging.getLogger( __name__ )
 
-
-class RBACPermissionFailedException( galaxy.exceptions.InsufficientPermissionsException ):
-    pass
-
+class RBACPermissionFailedException( galaxy.exceptions.InsufficientPermissionsException ): pass
 
 class RBACPermission( object ):
     """
@@ -58,7 +55,6 @@ class RBACPermission( object ):
     def _revoke_role( self, item, role, flush=True ):
         raise NotImplementedError( "abstract parent class" )
 
-
 class DatasetRBACPermission( RBACPermission ):
     """
     Base class for the manage and access RBAC permissions used by dataset security.
@@ -85,7 +81,7 @@ class DatasetRBACPermission( RBACPermission ):
         all_permissions = self._all_types_by_dataset( dataset )
         return filter( lambda p: p.action == self.action_name, all_permissions )
 
-    # TODO: list?
+#TODO: list?
     def by_roles( self, dataset, roles ):
         permissions = self.by_dataset( dataset )
         return filter( lambda p: p.role in roles, permissions )
@@ -130,7 +126,7 @@ class DatasetRBACPermission( RBACPermission ):
     # as a general rule, DatasetPermissions are considered disposable
     #   and there is no reason to update the models
 
-    # TODO: list?
+#TODO: list?
     def _delete( self, permissions, flush=True ):
         for permission in permissions:
             self.session().delete( permission )
@@ -149,8 +145,7 @@ def iterable_has_all( iterable, has_these ):
     return True
 
 
-class DatasetManagePermissionFailedException( RBACPermissionFailedException ):
-    pass
+class DatasetManagePermissionFailedException( RBACPermissionFailedException ): pass
 
 
 class ManageDatasetRBACPermission( DatasetRBACPermission ):
@@ -203,8 +198,7 @@ class ManageDatasetRBACPermission( DatasetRBACPermission ):
         return self._delete( [ permission ], flush=flush )
 
 
-class DatasetAccessPermissionFailedException( RBACPermissionFailedException ):
-    pass
+class DatasetAccessPermissionFailedException( RBACPermissionFailedException ): pass
 
 
 class AccessDatasetRBACPermission( DatasetRBACPermission ):
@@ -222,8 +216,8 @@ class AccessDatasetRBACPermission( DatasetRBACPermission ):
         current_roles = self._roles( dataset )
         # NOTE: that because of short circuiting this allows
         #   anonymous access to public datasets
-        return ( self._is_public_from_roles( current_roles ) or
-                 self._user_has_all_roles( user, current_roles ) )
+        return ( self._is_public_from_roles( current_roles )
+              or self._user_has_all_roles( user, current_roles ) )
 
     def grant( self, item, user ):
         pass
@@ -256,6 +250,6 @@ class AccessDatasetRBACPermission( DatasetRBACPermission ):
 
     def _role_is_permitted( self, dataset, role ):
         current_roles = self._roles( dataset )
-        return ( self._is_public_from_roles( current_roles ) or
-                 # if there's only one role and this is it, let em in
-                 ( ( len( current_roles ) == 1 ) and ( role == current_roles[0] ) ) )
+        return ( self._is_public_from_roles( current_roles )
+            # if there's only one role and this is it, let em in
+            or ( ( len( current_roles ) == 1 ) and ( role == current_roles[0] ) ) )

@@ -1,4 +1,3 @@
-import logging
 import os
 import re
 import string
@@ -8,8 +7,6 @@ import tempfile
 from galaxy import eggs
 eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
-eggs.require( "MarkupSafe" )
-from markupsafe import escape
 
 from galaxy.model.item_attrs import Dictifiable
 
@@ -34,7 +31,9 @@ from .filters import FilterFactory
 from .watcher import get_watcher
 
 from galaxy.web.form_builder import SelectField
+from galaxy.web.framework.helpers import escape
 
+import logging
 log = logging.getLogger( __name__ )
 
 

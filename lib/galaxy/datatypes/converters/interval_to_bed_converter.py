@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Dan Blankenberg
+#Dan Blankenberg
 
 import sys
 from galaxy import eggs
@@ -8,11 +8,9 @@ import bx.intervals.io
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
-
 def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
-
 
 def __main__():
     output_name = sys.argv[1]
@@ -39,7 +37,7 @@ def __main__():
         nameCol = -1
     skipped_lines = 0
     first_skipped_line = 0
-    out = open( output_name, 'w' )
+    out = open( output_name,'w' )
     count = 0
     for count, region in enumerate( bx.intervals.io.NiceReaderWrapper( open( input_name, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False ) ):
         try:

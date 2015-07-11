@@ -6,8 +6,12 @@ seek and read( N ).
 """
 import os
 import base64
+
 import base
 import exceptions
+
+_TODO = """
+"""
 
 import logging
 log = logging.getLogger( __name__ )
@@ -47,7 +51,8 @@ class ChunkDataProvider( base.DataProvider ):
         :raises InvalidDataProviderSource: if not.
         """
         source = super( ChunkDataProvider, self ).validate_source( source )
-        if( ( not hasattr( source, 'seek' ) ) or ( not hasattr( source, 'read' ) ) ):
+        if( ( not hasattr( source, 'seek' ) )
+        or ( not hasattr( source, 'read' ) ) ):
             raise exceptions.InvalidDataProviderSource( source )
         return source
 

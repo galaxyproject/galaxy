@@ -1,14 +1,7 @@
-# from sqlalchemy import *
-# from sqlalchemy.orm import *
-# from migrate import *
-import sys
-import logging
-
-from galaxy.model.custom_types import Index
-from galaxy.model.custom_types import MetaData
-from galaxy.model.custom_types import scoped_session
-from galaxy.model.custom_types import sessionmaker
-from galaxy.model.custom_types import Table
+from sqlalchemy import *
+from sqlalchemy.orm import *
+from migrate import *
+import sys, logging
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -20,20 +13,18 @@ log.addHandler( handler )
 
 metadata = MetaData()
 
-
 def upgrade(migrate_engine):
     db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
     metadata.bind = migrate_engine
     User_table = Table( "galaxy_user", metadata, autoload=True )
     HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
-
     def boolean_false():
-        if migrate_engine.name == 'postgresql' or migrate_engine.name == 'mysql':
-            return False
-        elif migrate_engine.name == 'sqlite':
-            return 0
-        else:
-            raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name)
+       if migrate_engine.name == 'postgresql' or migrate_engine.name == 'mysql':
+           return False
+       elif migrate_engine.name == 'sqlite':
+           return 0
+       else:
+           raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name)
     # Load existing tables
     metadata.reflect()
     # Add 2 indexes to the galaxy_user table
@@ -66,8 +57,6 @@ def upgrade(migrate_engine):
         i.create()
     except Exception, e:
         log.debug( "Adding index 'ix_hda_copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed: %s" % ( str( e ) ) )
-
-
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     pass

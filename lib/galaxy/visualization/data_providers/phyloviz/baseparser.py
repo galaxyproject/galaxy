@@ -1,6 +1,5 @@
 import json
 
-
 class Node(object):
     """Node class of PhyloTree, which represents a CLAUDE in a phylogenetic tree"""
     def __init__(self, nodeName, **kwargs):
@@ -24,8 +23,10 @@ class Node(object):
         else:
             self.children += child
 
+
     def __str__(self):
         return self.name + " id:" + str(self.id) + ", depth: " + str(self.depth)
+
 
     def toJson(self):
         """Converts the data in the node to a dict representation of json"""
@@ -47,13 +48,15 @@ class Node(object):
             jsonDict["children"] = children
         return jsonDict
 
+
     def addMiscToJson(self, jsonDict):
         """Adds other misc attributes to json if they are present"""
         if not self.events == "":
             jsonDict["events"] = self.events
-        if self.bootstrap is not None:
+        if not self.bootstrap == None:
             jsonDict["bootstrap"] = self.bootstrap
         return jsonDict
+
 
 
 class PhyloTree(object):
@@ -97,6 +100,7 @@ class PhyloTree(object):
         else:
             raise Exception("Root is not assigned!")
         return jsonTree
+
 
 
 class Base_Parser(object):

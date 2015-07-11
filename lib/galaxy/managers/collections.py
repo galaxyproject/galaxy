@@ -42,9 +42,7 @@ class DatasetCollectionManager( object ):
     def create(
         self,
         trans,
-        parent,
-        # PRECONDITION: security checks on ability to add to parent
-        # occurred during load.
+        parent,  # PRECONDITION: security checks on ability to add to parent occurred during load.
         name,
         collection_type,
         element_identifiers=None,
@@ -180,9 +178,7 @@ class DatasetCollectionManager( object ):
     def copy(
         self,
         trans,
-        parent,
-        # PRECONDITION: security checks on ability to add to parent
-        # occurred during load.
+        parent,  # PRECONDITION: security checks on ability to add to parent occurred during load.
         source,
         encoded_source_id,
     ):

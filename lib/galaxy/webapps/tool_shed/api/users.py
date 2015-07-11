@@ -1,4 +1,5 @@
 import logging
+import os
 
 from galaxy import util
 from galaxy import web
@@ -27,8 +28,8 @@ class UsersController( BaseAPIController ):
         :param password (required): the password of the user
         :param username (required): the public username of the user
         """
-        user_dict = dict( message='',
-                          status='ok' )
+        user_dict = dict( message = '',
+                          status = 'ok' )
         # Make sure the current user's API key proves he is an admin user in this Tool Shed.
         if trans.user_is_admin():
             # Get the information about the user to be created from the payload.
@@ -106,8 +107,8 @@ class UsersController( BaseAPIController ):
         # Example URL: http://localhost:9009/api/users/f9cad7b01a472135
         user = suc.get_user( trans.app, id )
         if user is None:
-            user_dict = dict( message='Unable to locate user record for id %s.' % ( str( id ) ),
-                              status='error' )
+            user_dict = dict( message = 'Unable to locate user record for id %s.' % ( str( id ) ),
+                              status = 'error' )
             return user_dict
         user_dict = user.to_dict( view='element',
                                   value_mapper=self.__get_value_mapper( trans ) )

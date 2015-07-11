@@ -3,7 +3,6 @@ Sample
 """
 from galaxy.model import SampleState
 
-
 class SampleStateFactory( object ):
     def new( self, request_type, name, description=None ):
         """
@@ -13,7 +12,6 @@ class SampleStateFactory( object ):
         if description is None:
             description = ''
         return SampleState( name=name, desc=description, request_type=request_type )
-
     def from_elem( self, request_type, elem ):
         """
         Return SampleState created from an xml string.

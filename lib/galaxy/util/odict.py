@@ -4,7 +4,6 @@ Ordered dictionary implementation.
 
 from UserDict import UserDict
 
-
 class odict(UserDict):
     """
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
@@ -13,7 +12,7 @@ class odict(UserDict):
     added. Calling keys(), values(), items(), etc. will return results in this
     order.
     """
-    def __init__( self, dict=None ):
+    def __init__( self, dict = None ):
         self._keys = []
         UserDict.__init__( self, dict )
 

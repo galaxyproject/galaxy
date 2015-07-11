@@ -77,7 +77,7 @@ class CycleError(Exception):
         succs = self.get_succs()
         answer = []
         for x in self.get_elements():
-            if x in succs:
+            if succs.has_key(x):
                 for y in succs[x]:
                     answer.append( (x, y) )
             else:
@@ -96,7 +96,7 @@ class CycleError(Exception):
         succs = self.get_succs()
 
         for x in remaining_elts:
-            if x in succs:
+            if succs.has_key(x):
                 for y in succs[x]:
                     preds[y].append(x)
 
@@ -121,7 +121,7 @@ class CycleError(Exception):
         index = OrderedDict()
         in_answer = index.has_key
         while not in_answer(x):
-            index[x] = len(answer)  # index of x in answer
+            index[x] = len(answer) # index of x in answer
             answer.append(x)
             x = choice(preds[x])
         answer.append(x)
@@ -129,15 +129,14 @@ class CycleError(Exception):
         answer.reverse()
         return answer
 
-
 def topsort(pairlist):
     numpreds = OrderedDict()   # elt -> # of predecessors
-    successors = OrderedDict()  # elt -> list of successors
+    successors = OrderedDict() # elt -> list of successors
     for first, second in pairlist:
         # make sure every elt is a key in numpreds
-        if first not in numpreds:
+        if not numpreds.has_key(first):
             numpreds[first] = 0
-        if second not in numpreds:
+        if not numpreds.has_key(second):
             numpreds[second] = 0
 
         # if they're the same, there's no real dependence
@@ -148,7 +147,7 @@ def topsort(pairlist):
         numpreds[second] = numpreds[second] + 1
 
         # ... and first gains a succ
-        if first in successors:
+        if successors.has_key(first):
             successors[first].append(second)
         else:
             successors[first] = [second]
@@ -162,7 +161,7 @@ def topsort(pairlist):
     for x in answer:
         assert numpreds[x] == 0
         del numpreds[x]
-        if x in successors:
+        if successors.has_key(x):
             for y in successors[x]:
                 numpreds[y] = numpreds[y] - 1
                 if numpreds[y] == 0:
@@ -180,15 +179,14 @@ def topsort(pairlist):
         raise CycleError(answer, numpreds, successors)
     return answer
 
-
 def topsort_levels(pairlist):
-    numpreds = OrderedDict()  # elt -> # of predecessors
-    successors = OrderedDict()  # elt -> list of successors
+    numpreds = OrderedDict()   # elt -> # of predecessors
+    successors = OrderedDict() # elt -> list of successors
     for first, second in pairlist:
         # make sure every elt is a key in numpreds
-        if first not in numpreds:
+        if not numpreds.has_key(first):
             numpreds[first] = 0
-        if second not in numpreds:
+        if not numpreds.has_key(second):
             numpreds[second] = 0
 
         # if they're the same, there's no real dependence
@@ -199,7 +197,7 @@ def topsort_levels(pairlist):
         numpreds[second] = numpreds[second] + 1
 
         # ... and first gains a succ
-        if first in successors:
+        if successors.has_key(first):
             successors[first].append(second)
         else:
             successors[first] = [second]
@@ -214,7 +212,7 @@ def topsort_levels(pairlist):
         answer.append( levparents )
         for levparent in levparents:
             del numpreds[levparent]
-            if levparent in successors:
+            if successors.has_key(levparent):
                 for levparentsucc in successors[levparent]:
                     numpreds[levparentsucc] -= 1
                 del successors[levparent]
