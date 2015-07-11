@@ -15,7 +15,6 @@ STEP_TYPE_ALIASES = {
     'input_collection': 'data_collection_input',
 }
 
-
 def yaml_to_workflow(has_yaml):
     as_python = yaml.load(has_yaml)
     return python_to_workflow(as_python)
@@ -85,7 +84,7 @@ def transform_input(context, step, default_name):
 
     __ensure_inputs_connections(step)
 
-    if "inputs" not in step:
+    if not "inputs" in step:
         step["inputs"] = [{}]
 
     step_inputs = step["inputs"][0]
@@ -115,7 +114,7 @@ def transform_pause(context, step, default_name="Pause for dataset review"):
 
     __ensure_inputs_connections(step)
 
-    if "inputs" not in step:
+    if not "inputs" in step:
         step["inputs"] = [{}]
 
     step_inputs = step["inputs"][0]

@@ -1,4 +1,5 @@
 import logging
+import os
 
 from sqlalchemy.sql.expression import func
 from tool_shed.util.web_util import escape
@@ -10,6 +11,7 @@ from galaxy.model.orm import and_
 from galaxy.util.odict import odict
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
+from galaxy.web.form_builder import SelectField
 
 from galaxy.webapps.tool_shed.util import ratings_util
 
@@ -154,8 +156,8 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                 else:
                     # See if there are any reviews for previous changeset revisions that the user can copy.
                     if not create_without_copying and \
-                            not previous_review_id and \
-                            review_util.has_previous_repository_reviews( trans.app, repository, changeset_revision ):
+                        not previous_review_id and \
+                        review_util.has_previous_repository_reviews( trans.app, repository, changeset_revision ):
                         return trans.response.send_redirect( web.url_for( controller='repository_review',
                                                                           action='select_previous_review',
                                                                           **kwd ) )
@@ -249,7 +251,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                     components_dict[ component_name ] = component_review_dict
         # Handle a Save button click.
         save_button_clicked = False
-        save_buttons = [ '%s%sreview_button' % ( comp_name, STRSEP ) for comp_name in components_dict.keys() ]
+        save_buttons = [ '%s%sreview_button' % ( component_name, STRSEP ) for component_name in components_dict.keys() ]
         save_buttons.append( 'revision_approved_button' )
         for save_button in save_buttons:
             if save_button in kwd:
@@ -294,9 +296,9 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                 if component_review:
                     # See if the existing component review should be updated.
                     if component_review.comment != comment or \
-                            component_review.private != private or \
-                            component_review.approved != approved or \
-                            component_review.rating != rating:
+                    component_review.private != private or \
+                    component_review.approved != approved or \
+                    component_review.rating != rating:
                         component_review.comment = comment
                         component_review.private = private
                         component_review.approved = approved
@@ -323,7 +325,7 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                                                      .filter( and_( trans.model.ComponentReview.table.c.repository_review_id == review.id,
                                                                     trans.model.ComponentReview.table.c.deleted == False,
                                                                     trans.model.ComponentReview.table.c.approved != trans.model.ComponentReview.approved_states.NA ) ) \
-                                                     .scalar()  # noqa
+                                                     .scalar()
                     if average_rating is not None:
                         review.rating = int( average_rating )
                     trans.sa_session.add( review )
@@ -407,6 +409,8 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
     @web.require_login( "manage repositories reviewed by me" )
     def manage_repositories_reviewed_by_me( self, trans, **kwd ):
         # The value of the received id is the encoded repository id.
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
         if 'operation' in kwd:
             kwd[ 'mine' ] = True
             return trans.response.send_redirect( web.url_for( controller='repository_review',
@@ -544,6 +548,8 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     @web.require_login( "repository reviews by user" )
     def repository_reviews_by_user( self, trans, **kwd ):
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
 
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
@@ -568,6 +574,8 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
     @web.expose
     @web.require_login( "reviewed repositories i own" )
     def reviewed_repositories_i_own( self, trans, **kwd ):
+        message = escape( kwd.get( 'message', '' ) )
+        status = kwd.get( 'status', 'done' )
         # The value of the received id is the encoded repository id.
         if 'operation' in kwd:
             operation = kwd['operation'].lower()

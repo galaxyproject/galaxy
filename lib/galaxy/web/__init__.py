@@ -1,9 +1,6 @@
 """
 The Galaxy web application framework
 """
-
-# flake8: noqa
-
 from framework import url_for
 from framework.decorators import error
 from framework.decorators import expose

@@ -15,7 +15,6 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from galaxy.datatypes.util.gff_util import *
 from bx.interval_index_file import Indexes
 
-
 def main():
     # Arguments
     input_fname, out_fname = sys.argv[1:]

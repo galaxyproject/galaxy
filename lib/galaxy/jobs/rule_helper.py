@@ -2,7 +2,10 @@ from datetime import datetime
 import hashlib
 import random
 
-from sqlalchemy import func
+from sqlalchemy import (
+    and_,
+    func
+)
 
 from galaxy import model
 from galaxy import util

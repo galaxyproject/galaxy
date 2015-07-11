@@ -18,7 +18,6 @@ __all__ = ['loadapp', 'loadserver', 'loadfilter', 'appconfig']
 
 """Python 2<->3 compatibility module"""
 
-
 def print_(template, *args, **kwargs):
     template = str(template)
     if args:
@@ -48,7 +47,6 @@ else:
 
 # ---- from paste.deploy.util ----------------------------------------
 
-
 def fix_type_error(exc_info, callable, varargs, kwargs):
     """
     Given an exception, this will test if the exception was due to a
@@ -66,8 +64,8 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
     if exc_info is None:
         exc_info = sys.exc_info()
     if (exc_info[0] != TypeError
-            or str(exc_info[1]).find('arguments') == -1
-            or getattr(exc_info[1], '_type_error_fixed', False)):
+        or str(exc_info[1]).find('arguments') == -1
+        or getattr(exc_info[1], '_type_error_fixed', False)):
         return exc_info
     exc_info[1]._type_error_fixed = True
     argspec = inspect.formatargspec(*inspect.getargspec(callable))
@@ -119,7 +117,7 @@ def lookup_object(spec):
 # ---- from paste.deploy.loadwsgi ------------------------------------
 
 ############################################################
-# Utility functions
+## Utility functions
 ############################################################
 
 
@@ -208,7 +206,7 @@ class NicerConfigParser(ConfigParser):
 
 
 ############################################################
-# Object types
+## Object types
 ############################################################
 
 
@@ -344,7 +342,7 @@ FILTER_WITH = _FilterWith()
 
 
 ############################################################
-# Loaders
+## Loaders
 ############################################################
 
 
@@ -436,7 +434,7 @@ _loaders['egg'] = _loadegg
 
 
 def _loadfunc(object_type, uri, spec, name, relative_to,
-              global_conf):
+             global_conf):
 
     loader = FuncLoader(spec)
     return loader.get_context(object_type, name, global_conf)
@@ -444,7 +442,7 @@ def _loadfunc(object_type, uri, spec, name, relative_to,
 _loaders['call'] = _loadfunc
 
 ############################################################
-# Loaders
+## Loaders
 ############################################################
 
 
@@ -492,7 +490,7 @@ class ConfigLoader(_Loader):
         defaults = {
             'here': os.path.dirname(os.path.abspath(filename)),
             '__file__': os.path.abspath(filename)
-        }
+            }
         self.parser = NicerConfigParser(filename, defaults=defaults)
         self.parser.optionxform = str  # Don't lower-case keys
         with open(filename) as f:
@@ -663,8 +661,8 @@ class ConfigLoader(_Loader):
         context.app_context = self.get_context(
             APP, pipeline[-1], global_conf)
         context.filter_contexts = [
-            self.get_context(FILTER, pname, global_conf)
-            for pname in pipeline[:-1]]
+            self.get_context(FILTER, name, global_conf)
+            for name in pipeline[:-1]]
         return context
 
     def find_config_section(self, object_type, name=None):
@@ -757,11 +755,11 @@ class EggLoader(_Loader):
                 "Entry point %r not found in egg %r (dir: %s; protocols: %s; "
                 "entry_points: %s)"
                 % (name, self.spec,
-                    dist.location,
-                    ', '.join(_flatten(object_type.egg_protocols)),
-                    ', '.join(_flatten([
-                        dictkeys(pkg_resources.get_entry_info(self.spec, prot, name) or {})
-                        for prot in protocol_options] or '(no entry points)'))))
+                   dist.location,
+                   ', '.join(_flatten(object_type.egg_protocols)),
+                   ', '.join(_flatten([
+                dictkeys(pkg_resources.get_entry_info(self.spec, prot, name) or {})
+                for prot in protocol_options] or '(no entry points)'))))
         if len(possible) > 1:
             raise LookupError(
                 "Ambiguous entry points for %r in egg %r (protocols: %s)"
@@ -779,7 +777,7 @@ class FuncLoader(_Loader):
     """
     def __init__(self, spec):
         self.spec = spec
-        if ':' not in spec:
+        if not ':' in spec:
             raise LookupError("Configuration not in format module:function")
 
     def get_context(self, object_type, name=None, global_conf=None):
@@ -787,11 +785,11 @@ class FuncLoader(_Loader):
         return LoaderContext(
             obj,
             object_type,
-            None,  # determine protocol from section type
+            None, # determine protocol from section type
             global_conf or {},
             {},
             self,
-        )
+            )
 
 
 class LoaderContext(object):
@@ -802,7 +800,7 @@ class LoaderContext(object):
         self.object = obj
         self.object_type = object_type
         self.protocol = protocol
-        # assert protocol in _flatten(object_type.egg_protocols), (
+        #assert protocol in _flatten(object_type.egg_protocols), (
         #    "Bad protocol %r; should be one of %s"
         #    % (protocol, ', '.join(map(repr, _flatten(object_type.egg_protocols)))))
         self.global_conf = global_conf

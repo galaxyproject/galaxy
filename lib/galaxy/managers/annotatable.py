@@ -29,6 +29,9 @@ class AnnotatableManagerMixin( object ):
         annotation_obj = item.add_item_annotation( self.session(), user, item, annotation )
         return annotation_obj.annotation
 
+    #def by_user( self, user, **kwargs ):
+    #    pass
+
 
 class AnnotatableSerializerMixin( object ):
 

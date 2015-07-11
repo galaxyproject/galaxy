@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from collections import namedtuple
 from galaxy import web
 from galaxy import util
@@ -12,7 +13,6 @@ from galaxy.exceptions import ConfigDoesNotAllowException
 
 log = logging.getLogger( __name__ )
 
-
 class ToolsController( BaseAPIController ):
     """RESTful controller for interactions with tools in the Tool Shed."""
 
@@ -23,7 +23,7 @@ class ToolsController( BaseAPIController ):
         Displays a collection of tools with optional criteria.
 
         :param q:        (optional)if present search on the given query will be performed
-        :type  q:        str
+        :type  q:        str 
 
         :param page:     (optional)requested page of the search
         :type  page:     int
@@ -97,5 +97,5 @@ class ToolsController( BaseAPIController ):
                                       page,
                                       page_size,
                                       boosts )
-        results[ 'hostname' ] = web.url_for( '/', qualified=True )
+        results[ 'hostname' ] = web.url_for( '/', qualified = True )
         return results

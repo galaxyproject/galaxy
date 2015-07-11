@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# code is same as ~/tools/stats/wiggle_to_simple.py
+#code is same as ~/tools/stats/wiggle_to_simple.py
 
 """
 Read a wiggle track and print out a series of lines containing
@@ -12,11 +12,9 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 import bx.wiggle
 from galaxy.tools.exception_handling import *
 
-
 def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
-
 
 def main():
     if len( sys.argv ) > 1:
@@ -35,7 +33,7 @@ def main():
     except UCSCLimitException:
         # Wiggle data was truncated, at the very least need to warn the user.
         print 'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
-    except ValueError as e:
+    except ValueError, e:
         in_file.close()
         out_file.close()
         stop_err( str( e ) )

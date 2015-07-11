@@ -30,14 +30,12 @@ def _save_orig_fn( wrapped, orig ):
         wrapped._orig = orig
     return wrapped
 
-
 def expose( func ):
     """
     Decorator: mark a function as 'exposed' and thus web accessible
     """
     func.exposed = True
     return func
-
 
 def json( func, **json_kwargs ):
     """
@@ -52,13 +50,11 @@ def json( func, **json_kwargs ):
         call_and_format._orig = func
     return expose( _save_orig_fn( call_and_format, func ) )
 
-
 def json_pretty( func ):
     """
     Indent and sort returned JSON.
     """
     return json( func, indent=4, sort_keys=True )
-
 
 def require_login( verb="perform this action", use_panels=False, webapp='galaxy' ):
     def argcatcher( func ):
@@ -72,7 +68,6 @@ def require_login( verb="perform this action", use_panels=False, webapp='galaxy'
                     % ( url_for( controller='user', action='login', webapp=webapp ), verb ), use_panels=use_panels )
         return decorator
     return argcatcher
-
 
 def require_admin( func ):
     @wraps(func)
@@ -150,7 +145,6 @@ def expose_api( func, to_json=True, user_required=True ):
             raise paste.httpexceptions.HTTPServerError()
     return expose( _save_orig_fn( decorator, func ) )
 
-
 def __extract_payload_from_request(trans, func, kwargs):
     content_type = trans.request.headers['content-type']
     if content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('multipart/form-data'):
@@ -179,7 +173,6 @@ def __extract_payload_from_request(trans, func, kwargs):
         payload = util.recursively_stringify_dictionary_keys( loads( trans.request.body ) )
     return payload
 
-
 def expose_api_raw( func ):
     """
     Expose this function via the API but don't dump the results
@@ -187,14 +180,12 @@ def expose_api_raw( func ):
     """
     return expose_api( func, to_json=False )
 
-
 def expose_api_raw_anonymous( func ):
     """
     Expose this function via the API but don't dump the results
     to JSON.
     """
     return expose_api( func, to_json=False, user_required=False )
-
 
 def expose_api_anonymous( func, to_json=True ):
     """
@@ -286,7 +277,6 @@ def _future_expose_api( func, to_json=True, user_required=True, user_or_session_
     decorator.exposed = True
     return decorator
 
-
 def __api_error_message( trans, **kwds ):
     exception = kwds.get( "exception", None )
     if exception:
@@ -317,7 +307,6 @@ def __api_error_message( trans, **kwds ):
         error_response[ "traceback" ] = traceback_string
     return error_response
 
-
 def __api_error_response( trans, **kwds ):
     error_dict = __api_error_message( trans, **kwds )
     exception = kwds.get( "exception", None )
@@ -344,21 +333,17 @@ def _future_expose_api_anonymous( func, to_json=True ):
     """
     return _future_expose_api( func, to_json=to_json, user_required=False )
 
-
 def _future_expose_api_anonymous_and_sessionless( func, to_json=True ):
     """
     Expose this function via the API but don't require a user or a galaxy_session.
     """
     return _future_expose_api( func, to_json=to_json, user_required=False, user_or_session_required=False )
 
-
 def _future_expose_api_raw( func ):
     return _future_expose_api( func, to_json=False, user_required=True )
 
-
 def _future_expose_api_raw_anonymous( func ):
     return _future_expose_api( func, to_json=False, user_required=False )
-
 
 def _future_expose_api_raw_anonymous_and_sessionless( func ):
     return _future_expose_api( func, to_json=False, user_required=False, user_or_session_required=False )

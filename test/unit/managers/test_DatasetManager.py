@@ -18,7 +18,11 @@ from galaxy import exceptions
 from base import BaseTestCase
 
 from galaxy.managers.datasets import (
-    DatasetManager, DatasetSerializer, DatasetDeserializer )
+    DatasetManager, DatasetRBACPermissions, DatasetSerializer, DatasetDeserializer )
+
+from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.managers.histories import HistoryManager
+from galaxy.managers.hdas import HDAManager
 
 
 # =============================================================================
@@ -178,11 +182,8 @@ class DatasetRBACPermissionsTestCase( BaseTestCase ):
 
 # =============================================================================
 # web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return '(fake url): %s, %s' % ( a, k )
-
+testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
 DatasetSerializer.url_for = staticmethod( testable_url_for )
-
 
 class DatasetSerializerTestCase( BaseTestCase ):
 
@@ -199,14 +200,14 @@ class DatasetSerializerTestCase( BaseTestCase ):
         self.assertKeys( summary_view, self.dataset_serializer.views[ 'summary' ] )
 
         self.log( 'should have the summary view as default view' )
-        self.dataset_serializer.serialize_to_view( dataset, default_view='summary' )
+        default_view = self.dataset_serializer.serialize_to_view( dataset, default_view='summary' )
         self.assertKeys( summary_view, self.dataset_serializer.views[ 'summary' ] )
 
         self.log( 'should have a serializer for all serializable keys' )
         for key in self.dataset_serializer.serializable_keyset:
             instantiated_attribute = getattr( dataset, key, None )
-            if not ( ( key in self.dataset_serializer.serializers ) or
-                     ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
+            if not ( ( key in self.dataset_serializer.serializers )
+                  or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
                 self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
         else:
             self.assertTrue( True, 'all serializable keys have a serializer' )
@@ -226,11 +227,11 @@ class DatasetSerializerTestCase( BaseTestCase ):
         self.assertKeys( serialized, [ 'purgable', 'file_size' ] )
 
     def test_serialize_permissions( self ):
-        self.dataset_manager.create()
+        dataset = self.dataset_manager.create()
         self.log( 'serialized permissions should be well formed' )
 
     def test_serializers( self ):
-        self.user_manager.create( **user2_data )
+        user2 = self.user_manager.create( **user2_data )
         dataset = self.dataset_manager.create()
         all_keys = list( self.dataset_serializer.serializable_keyset )
         serialized = self.dataset_serializer.serialize( dataset, all_keys )

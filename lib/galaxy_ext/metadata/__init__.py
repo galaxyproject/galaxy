@@ -1,1 +1,2 @@
-""" Work with Galaxy metadata"""
+""" Work with Galaxy metadata
+"""

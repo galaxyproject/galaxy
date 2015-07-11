@@ -12,18 +12,15 @@ from markupsafe import escape
 
 log = logging.getLogger( __name__ )
 
-
 class LibraryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, library ):
             return library.name
-
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, library ):
             if library.description:
                 return library.description
             return ''
-
     class StatusColumn( grids.GridColumn ):
         def get_value( self, trans, grid, library ):
             if library.purged:
@@ -34,7 +31,7 @@ class LibraryListGrid( grids.Grid ):
     # Grid definition
     title = "Data Libraries"
     model_class = galaxy.model.Library
-    template = '/admin/library/grid.mako'
+    template='/admin/library/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Data library name",
@@ -70,7 +67,6 @@ class LibraryListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
-
 
 class LibraryAdmin( BaseUIController ):
 
@@ -150,7 +146,6 @@ class LibraryAdmin( BaseUIController ):
                                             status=escape( status ) )
         # Render the list view
         return self.library_list_grid( trans, **kwd )
-
     @web.expose
     @web.require_admin
     def create_library( self, trans, **kwd ):
@@ -175,7 +170,6 @@ class LibraryAdmin( BaseUIController ):
                                                               message=message,
                                                               status='done' ) )
         return trans.fill_template( '/admin/library/new_library.mako', message=message, status=escape( status ) )
-
     @web.expose
     @web.require_admin
     def delete_library( self, trans, id, **kwd  ):
@@ -186,7 +180,6 @@ class LibraryAdmin( BaseUIController ):
                                                           library_id=id,
                                                           item_id=id,
                                                           item_type='library' ) )
-
     @web.expose
     @web.require_admin
     def undelete_library( self, trans, id, **kwd  ):
@@ -197,7 +190,6 @@ class LibraryAdmin( BaseUIController ):
                                                           library_id=id,
                                                           item_id=id,
                                                           item_type='library' ) )
-
     @web.expose
     @web.require_admin
     def purge_library( self, trans, **kwd ):
@@ -205,7 +197,6 @@ class LibraryAdmin( BaseUIController ):
         # assuming we want the ability to purge libraries.
         # This function is currently only used by the functional tests.
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( kwd.get( 'id' ) ) )
-
         def purge_folder( library_folder ):
             for lf in library_folder.folders:
                 purge_folder( lf )
@@ -220,7 +211,7 @@ class LibraryAdmin( BaseUIController ):
                     # If the dataset is not associated with any additional undeleted folders, then we can delete it.
                     # We don't set dataset.purged to True here because the cleanup_datasets script will do that for
                     # us, as well as removing the file from disk.
-                    # if not dataset.deleted and len( dataset.active_library_associations ) <= 1: # This is our current ldda
+                    #if not dataset.deleted and len( dataset.active_library_associations ) <= 1: # This is our current ldda
                     dataset.deleted = True
                     ldda.deleted = True
                     trans.sa_session.add_all( ( dataset, ldda ) )
