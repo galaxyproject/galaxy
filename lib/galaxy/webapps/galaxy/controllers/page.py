@@ -391,13 +391,13 @@ class PageController( BaseUIController, SharableMixin,
             web.FormBuilder( web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit" )
             .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
             .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                              help="""A unique identifier that will be used for
-                                public links to this page. A default is generated
-                                from the page title, but can be edited. This field
-                                must contain only lowercase letters, numbers, and
-                                the '-' character.""" )
+                       help="""A unique identifier that will be used for
+                            public links to this page. A default is generated
+                            from the page title, but can be edited. This field
+                            must contain only lowercase letters, numbers, and
+                            the '-' character.""" )
             .add_text( "page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                              help="A description of the page; annotation is shown alongside published pages."),
+                       help="A description of the page; annotation is shown alongside published pages."),
             template="page/create.mako" )
 
     @web.expose
@@ -442,13 +442,13 @@ class PageController( BaseUIController, SharableMixin,
             web.FormBuilder( web.url_for(controller='page', action='edit', id=encoded_id ), "Edit page attributes", submit_text="Submit" )
             .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
             .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                              help="""A unique identifier that will be used for
-                                public links to this page. A default is generated
-                                from the page title, but can be edited. This field
-                                must contain only lowercase letters, numbers, and
-                                the '-' character.""" )
+                       help="""A unique identifier that will be used for
+                       public links to this page. A default is generated
+                       from the page title, but can be edited. This field
+                       must contain only lowercase letters, numbers, and
+                       the '-' character.""" )
             .add_text( "page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                              help="A description of the page; annotation is shown alongside published pages."),
+                       help="A description of the page; annotation is shown alongside published pages."),
             template="page/create.mako" )
 
     @web.expose

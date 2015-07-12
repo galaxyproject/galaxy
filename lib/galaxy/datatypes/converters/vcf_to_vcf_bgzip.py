@@ -7,10 +7,10 @@ Original ordering, which may be specifically needed  by tools or external displa
 
 usage: %prog in_file out_file
 """
-
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "pysam" )
-import ctabix, optparse
+import pkg_resources
+pkg_resources.require( "pysam" )
+import ctabix
+import optparse
 
 
 def main():

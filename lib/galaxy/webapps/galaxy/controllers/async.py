@@ -120,8 +120,8 @@ class ASync( BaseUIController ):
             try:
                 key = hmac_new( trans.app.config.tool_secret, "%d:%d" % ( data.id, data.history_id ) )
                 galaxy_url = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
-                params.update( { 'GALAXY_URL' :galaxy_url } )
-                params.update( { 'data_id' :data.id } )
+                params.update( { 'GALAXY_URL': galaxy_url } )
+                params.update( { 'data_id': data.id } )
                 # Use provided URL or fallback to tool action
                 url = URL or tool.action
                 # Does url already have query params?

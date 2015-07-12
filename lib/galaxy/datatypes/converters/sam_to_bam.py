@@ -5,8 +5,12 @@
 A wrapper script for converting SAM to BAM, with sorting.
 %prog input_filename.sam output_filename.bam
 """
-
-import sys, optparse, os, tempfile, subprocess, shutil
+import os
+import sys
+import optparse
+import tempfile
+import subprocess
+import shutil
 
 CHUNK_SIZE = 2 ** 20  # 1mb
 
@@ -67,4 +71,5 @@ def __main__():
 
     cleanup_before_exit( tmp_dir )
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

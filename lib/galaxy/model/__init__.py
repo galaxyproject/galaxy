@@ -1234,12 +1234,11 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
                       .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
                       .filter( not_( HistoryDatasetAssociation.deleted ) )
                       .order_by( HistoryDatasetAssociation.table.c.hid.asc() )
-                      .options(
-                        joinedload("children"),
-                        joinedload("dataset"),
-                        joinedload("dataset.actions"),
-                        joinedload("dataset.actions.role"),
-            ))
+                      .options( joinedload("children"),
+                                joinedload("dataset"),
+                                joinedload("dataset.actions"),
+                                joinedload("dataset.actions.role"),
+                                ))
             self._active_datasets_children_and_roles = query.all()
         return self._active_datasets_children_and_roles
 

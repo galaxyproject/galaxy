@@ -2,9 +2,11 @@
 # used for grr and eigenstrat - shellfish if we get around to it
 #
 
-import os, sys, tempfile, subprocess, time
-
-from galaxy import eggs
+import os
+import sys
+import tempfile
+import subprocess
+import time
 
 prog = "pbed_ldreduced_converter.py"
 
@@ -40,11 +42,11 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
         vcl = vclbase + task
         sto = file(plog, 'w')
         x = subprocess.Popen(' '.join(vcl), shell=True, stdout=sto, stderr=sto, cwd=cd)
-        retval = x.wait()
+        x.wait()
         sto.close()
         try:
             lplog = file(plog, 'r').readlines()
-            lplog = [x for x in lplog if x.find('Pruning SNP') == -1]
+            lplog = [elem for elem in lplog if elem.find('Pruning SNP') == -1]
             alog += lplog
             alog.append('\n')
             os.unlink(plog)  # no longer needed
@@ -57,22 +59,14 @@ def makeLDreduced(basename, infpath=None, outfpath=None, plinke='plink', forcere
                   winsize="60", winmove="40", r2thresh="0.1" ):
     """ not there so make and leave in output dir for post job hook to copy back into input extra files path for next time
     """
-    ldr = basename  # we store ld reduced and thinned data
-    ldreduced = os.path.join(outfpath, ldr)  # note where this is going
     outbase = os.path.join(outfpath, basename)
     inbase = os.path.join(infpath)
-    loglines = []
-    ldbedname = '%s.bed' % ldreduced
-    bedname = '%s.bed' % basename
-    ldbedfn = os.path.join(infpath, ldbedname)
-    bedfn = os.path.join(infpath, bedname)
-    bmap = os.path.join(infpath, '%s.bim' % basename)
     plinktasks = []
     vclbase = [plinke, '--noweb']
     plinktasks += [['--bfile', inbase, '--indep-pairwise %s %s %s' % (winsize, winmove, r2thresh), '--out %s' % outbase],
                    ['--bfile', inbase, '--extract %s.prune.in --make-bed --out %s' % (outbase, outbase)]]
     vclbase = [plinke, '--noweb']
-    loglines = pruneLD(plinktasks=plinktasks, cd=outfpath, vclbase=vclbase)
+    pruneLD(plinktasks=plinktasks, cd=outfpath, vclbase=vclbase)
 
 
 def main():
@@ -120,4 +114,4 @@ def main():
 
 
 if __name__ == "__main__":
-   main()
+    main()

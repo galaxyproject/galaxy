@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, gzip
+import sys
 from galaxy.datatypes.checkers import is_gzip
 
 
@@ -30,7 +30,7 @@ def main():
 
     in_file = open(input_fname)
 
-    out_file.write('{"sections" : [');
+    out_file.write('{"sections" : [')
 
     for line in in_file:
         current_line += 1

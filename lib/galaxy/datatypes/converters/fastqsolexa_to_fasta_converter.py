@@ -14,9 +14,7 @@ Usage:
 %python fastqsolexa_to_fasta_converter.py <your_fastqsolexa_filename> <output_seq_filename> <output_score_filename>
 """
 
-import sys, os
-from math import *
-
+import sys
 assert sys.version_info[:2] >= ( 2, 4 )
 
 
@@ -43,15 +41,14 @@ def __main__():
                 seq_title_startswith = line_startswith
             if seq_title_startswith != line_startswith:
                 stop_err( 'Invalid fastqsolexa format at line %d: %s.' % ( i + 1, line ) )
-            read_title = line[ 1: ]
             outfile.write( '>%s\n' % line[1:] )
         elif fastq_block_lines == 2:
             # line 2 is nucleotides
-            read_length = len( line )
             outfile.write( '%s\n' % line )
         else:
             pass
 
     outfile.close()
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

@@ -656,14 +656,14 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             .add_text( "visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err )
             .add_select( "visualization_type", "Type", options=viz_type_options, error=None )
             .add_text( "visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                              help="""A unique identifier that will be used for
-                                public links to this visualization. A default is generated
-                                from the visualization title, but can be edited. This field
-                                must contain only lowercase letters, numbers, and
-                                the '-' character.""" )
+                       help="""A unique identifier that will be used for
+                            public links to this visualization. A default is generated
+                            from the visualization title, but can be edited. This field
+                            must contain only lowercase letters, numbers, and
+                            the '-' character.""" )
             .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), error=None)
             .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                              help="A description of the visualization; annotation is shown alongside published visualizations."),
+                       help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako"
         )
 
@@ -723,13 +723,13 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             web.FormBuilder( web.url_for(controller='visualization', action='edit', id=id ), "Edit visualization attributes", submit_text="Submit" )
             .add_text( "visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err )
             .add_text( "visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
-                              help="""A unique identifier that will be used for
-                                public links to this visualization. A default is generated
-                                from the visualization title, but can be edited. This field
-                                must contain only lowercase letters, numbers, and
-                                the '-' character.""" )
+                       help="""A unique identifier that will be used for
+                            public links to this visualization. A default is generated
+                            from the visualization title, but can be edited. This field
+                            must contain only lowercase letters, numbers, and
+                            the '-' character.""" )
             .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
-                              help="A description of the visualization; annotation is shown alongside published visualizations."),
+                       help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako" )
 
     # ------------------------- registry.

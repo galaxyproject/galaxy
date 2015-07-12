@@ -7,10 +7,10 @@ Read a wiggle track and print out a series of lines containing
 and fixedStep wiggle lines.
 """
 import sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+import pkg_resources
+pkg_resources.require( "bx-python" )
 import bx.wiggle
-from galaxy.tools.exception_handling import *
+from galaxy.tools.exception_handling import UCSCOutWrapper, UCSCLimitException
 
 
 def stop_err( msg ):
@@ -43,4 +43,5 @@ def main():
     in_file.close()
     out_file.close()
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

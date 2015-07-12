@@ -2,8 +2,8 @@
 # Dan Blankenberg
 
 import sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+import pkg_resources
+pkg_resources.require( "bx-python" )
 import bx.align.maf
 from galaxy.tools.util import maf_utilities
 
@@ -30,4 +30,5 @@ def __main__():
     print "%i MAF blocks converted to FASTA." % ( count )
 
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

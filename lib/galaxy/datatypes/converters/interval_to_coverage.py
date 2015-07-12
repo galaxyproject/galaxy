@@ -6,14 +6,12 @@ usage: %prog bed_file out_file
     -1, --cols1=N,N,N,N: Columns for chrom, start, end, strand in interval file
     -2, --cols2=N,N,N,N: Columns for chrom, start, end, strand in coverage file
 """
-import sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+import pkg_resources
+pkg_resources.require( "bx-python" )
 from bx.intervals import io
 from bx.cookbook import doc_optparse
 import psyco_full
 import commands
-import os
 from os import environ
 import tempfile
 from bisect import bisect
@@ -41,7 +39,6 @@ def main( interval, coverage ):
     partitions = []
     forward_covs = []
     reverse_covs = []
-    offset = 0
     chrom = None
     lastchrom = None
     for record in interval:
@@ -114,7 +111,8 @@ class CoverageWriter( object ):
             self.template = "%(0)s\t%(1)s\t%(2)s\t%(3)s\n" % positions
 
     def write(self, **kwargs ):
-        if self.reverseCol < 0: kwargs['forward'] += kwargs['reverse']
+        if self.reverseCol < 0:
+            kwargs['forward'] += kwargs['reverse']
         posgen = kwargs['position']
         for position in posgen:
             kwargs['position'] = position

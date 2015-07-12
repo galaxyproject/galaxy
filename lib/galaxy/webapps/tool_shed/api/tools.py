@@ -52,7 +52,7 @@ class ToolsController( BaseAPIController ):
             page_size = kwd.get( 'page_size', 10 )
             try:
                 page = int( page )
-                page_size = int ( page_size )
+                page_size = int( page_size )
             except ValueError:
                 raise RequestParameterInvalidException( 'The "page" and "page_size" have to be integers.' )
             return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )

@@ -3,7 +3,9 @@
 # much slower so best to always
 # use numeric alleles internally
 
-import sys, os, time
+import sys
+import os
+import time
 
 
 prog = os.path.split(sys.argv[0])[-1]
