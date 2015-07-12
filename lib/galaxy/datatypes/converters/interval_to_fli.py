@@ -20,6 +20,7 @@ import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.tabular.io import Comment
 from galaxy.datatypes.util.gff_util import GFFReaderWrapper, read_unordered_gtf, convert_gff_coords_to_bed
 
+
 def main():
     # Process arguments.
     parser = optparse.OptionParser()
@@ -36,7 +37,7 @@ def main():
         # Create reader.
         if input_format == 'gff':
             in_reader = GFFReaderWrapper( open( in_fname, 'r' ) )
-        else: #input_format == 'gtf'
+        else:  # input_format == 'gtf'
             in_reader = read_unordered_gtf( open( in_fname, 'r' ) )
 
         for feature in in_reader:

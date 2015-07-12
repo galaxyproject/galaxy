@@ -1,4 +1,4 @@
-#Contains objects for accessing external services applications
+# Contains objects for accessing external services applications
 import logging
 from parameters import ExternalServiceParameter
 from actions import ExternalServiceAction
@@ -13,8 +13,9 @@ class ExternalServiceActionsGroup( object ):
         self.label = label
         self.parent = parent
         self.items = []
+
     @classmethod
-    def from_elem( self, elem, parent = None ):
+    def from_elem( self, elem, parent=None ):
         """
         Return ExternalServiceActionsGroup created from an xml element.
         """
@@ -26,6 +27,7 @@ class ExternalServiceActionsGroup( object ):
         else:
             rval = ExternalServiceActionsGroup( None, None )
         return rval
+
     def load_sub_elems( self, elem ):
         for sub_elem in elem:
             if sub_elem.tag == 'param':
@@ -38,10 +40,13 @@ class ExternalServiceActionsGroup( object ):
                 self.add_item( ExternalServiceActionsConditional( sub_elem, self ) )
             else:
                 raise ValueError( 'Unknown tag: %s' % sub_elem.tag )
+
     def add_item( self, item ):
         self.items.append( item )
-    def populate( self, service_instance, item = None, param_dict = None ):
+
+    def populate( self, service_instance, item=None, param_dict=None ):
         return PopulatedExternalService( self, service_instance, item, param_dict )
+
     def prepare_actions( self, param_dict, parent_dict, parent_section ):
         group = Bunch()
         group_section = ActionSection( self.name, self.label )
@@ -56,7 +61,7 @@ class ExternalServiceActionsGroup( object ):
                 group_section.append( item.populate_action( param_dict ) )
             elif isinstance( item, ExternalServiceActionsConditional ):
                 conditional_group = Bunch()
-                conditional_group_section = ActionSection( item.name, item.label )#[]
+                conditional_group_section = ActionSection( item.name, item.label )
                 group_section.append( conditional_group_section )
                 group[ item.name ] = conditional_group
                 for case in item.get_current_cases( param_dict ):
@@ -65,16 +70,20 @@ class ExternalServiceActionsGroup( object ):
                 raise TypeError( 'unknown item type found: %s' % item )
         return group
 
+
 class ExternalServiceActionsGroupWhen( ExternalServiceActionsGroup ):
-    type="when"
+    type = "when"
+
     @classmethod
     def from_elem( self, parent, elem ):
         """Loads the proper when by attributes of elem"""
         when_type = elem.get( 'type' )
         assert when_type in when_type_to_class, TypeError( "When type not implemented: %s" % when_type )
         return when_type_to_class[ when_type ].from_elem( parent, elem )
+
     def is_case( self, param_dict ):
         raise TypeError( "Abstract method" )
+
     def get_ref( self, param_dict ):
         ref = param_dict
         for ref_name in self.parent.ref:
@@ -82,57 +91,71 @@ class ExternalServiceActionsGroupWhen( ExternalServiceActionsGroup ):
             ref = ref.get( ref_name )
         return ref
 
+
 class ValueExternalServiceActionsGroupWhen( ExternalServiceActionsGroupWhen ):
     type = "value"
+
     def __init__( self, parent, name, value, label=None ):
         super( ValueExternalServiceActionsGroupWhen, self ).__init__( parent, name, label )
         self.value = value
+
     @classmethod
     def from_elem( self, parent, elem ):
         """Returns an instance of this when"""
         rval = ValueExternalServiceActionsGroupWhen( parent, elem.get( 'name' ), elem.get( 'value' ), elem.get( 'label' ) )
         rval.load_sub_elems( elem )
         return rval
+
     def is_case( self, param_dict ):
         ref = self.get_ref( param_dict )
         return bool( str( ref ) == self.value )
 
+
 class BooleanExternalServiceActionsGroupWhen( ExternalServiceActionsGroupWhen ):
     type = "boolean"
+
     def __init__( self, parent, name, value, label=None ):
         super( BooleanExternalServiceActionsGroupWhen, self ).__init__( parent, name, label )
         self.value = value
+
     @classmethod
     def from_elem( self, parent, elem ):
         """Returns an instance of this when"""
         rval = BooleanExternalServiceActionsGroupWhen( parent, elem.get( 'name' ), elem.get( 'label' ) )
         rval.load_sub_elems( elem )
         return rval
+
     def is_case( self, param_dict ):
         ref = self.get_ref( param_dict )
         return bool( ref )
 
+
 class ItemIsInstanceExternalServiceActionsGroupWhen( ExternalServiceActionsGroupWhen ):
     type = "item_type"
+
     def __init__( self, parent, name, value, label=None ):
         super( ItemIsInstanceExternalServiceActionsGroupWhen, self ).__init__( parent, name, label )
         self.value = value
+
     @classmethod
     def from_elem( self, parent, elem ):
         """Returns an instance of this when"""
         rval = ItemIsInstanceExternalServiceActionsGroupWhen( parent, elem.get( 'name' ), elem.get( 'value' ), elem.get( 'label' ) )
         rval.load_sub_elems( elem )
         return rval
+
     def is_case( self, param_dict ):
         ref = self.get_ref( param_dict )
-        return ref.__class__.__name__.lower() in map( lambda x: x.lower(), self.value.split( '.' ) ) #HACK!
+        return ref.__class__.__name__.lower() in map( lambda x: x.lower(), self.value.split( '.' ) )  # HACK!
 
 when_type_to_class = {}
 for class_type in [ ValueExternalServiceActionsGroupWhen, BooleanExternalServiceActionsGroupWhen, ItemIsInstanceExternalServiceActionsGroupWhen]:
     when_type_to_class[ class_type.type ] = class_type
 
+
 class ExternalServiceActionsConditional( object ):
     type = "conditional"
+
     def __init__( self, elem, parent ):
         self.parent = parent
         self.name = elem.get( 'name', None )
@@ -144,6 +167,7 @@ class ExternalServiceActionsConditional( object ):
         self.cases = []
         for when_elem in elem.findall( 'when' ):
             self.cases.append( ExternalServiceActionsGroupWhen.from_elem( self, when_elem ) )
+
     def get_current_cases( self, param_dict ):
         rval = []
         for case in self.cases:
@@ -151,11 +175,13 @@ class ExternalServiceActionsConditional( object ):
                 rval.append( case )
         return rval
 
+
 class ActionSection( list ):
     def __init__( self, name, label ):
         list.__init__( self )
         self.name = name
         self.label = label
+
     def has_action( self ):
         for item in self:
             if not isinstance( item, ActionSection ):
@@ -165,15 +191,18 @@ class ActionSection( list ):
                     return True
         return False
 
+
 class PopulatedExternalService( object ):
-    def __init__( self, service_group, service_instance, item, param_dict = None ):
+    def __init__( self, service_group, service_instance, item, param_dict=None ):
         self.service_group = service_group
         self.service_instance = service_instance
         self.item = item
         self.param_dict = param_dict
         self.populate()
+
     def __getattr__( self, name ):
-        return getattr( self.service_instance, name )#should .service or.service_instance should be here...
+        return getattr( self.service_instance, name )  # should .service or.service_instance should be here...
+
     def populate( self ):
         param_dict = {}
         param_dict['fields'] = Bunch( **self.service_instance.form_values.content )
@@ -192,13 +221,15 @@ class PopulatedExternalService( object ):
                 raise 'unknown item type found'
         self.param_dict = param_dict
         self.actions = action_list
+
     def perform_action_by_name( self, actions_list ):
         action = self.get_action_by_name( actions_list )
-        result = action.perform_action()
+        action.perform_action()
         return action
+
     def get_action_by_name( self, actions_list ):
         action = None
-        actions = self.actions #populated actions
+        actions = self.actions  # populated actions
         for name in actions_list:
             action_found = False
             for action in actions:

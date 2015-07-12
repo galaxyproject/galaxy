@@ -13,10 +13,10 @@ log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 JobToInputLibraryDatasetAssociation_table = Table( "job_to_input_library_dataset", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
-    Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
-    Column( "name", String(255) ) )
+                                                   Column( "id", Integer, primary_key=True ),
+                                                   Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+                                                   Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
+                                                   Column( "name", String(255) ) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

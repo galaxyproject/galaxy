@@ -65,6 +65,7 @@ def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds, dat
     for metadata_name, metadata_value in file_dict.get( 'metadata', {} ).iteritems():
         setattr( dataset_instance.metadata, metadata_name, metadata_value )
 
+
 def set_metadata():
     # locate galaxy_root for loading datatypes
     galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
@@ -109,7 +110,7 @@ def set_metadata():
         dataset_filename_override = fields.pop( 0 )
         # Need to be careful with the way that these parameters are populated from the filename splitting,
         # because if a job is running when the server is updated, any existing external metadata command-lines
-        #will not have info about the newly added override_metadata file
+        # will not have info about the newly added override_metadata file
         if fields:
             override_metadata = fields.pop( 0 )
         else:
@@ -149,7 +150,7 @@ def set_metadata():
         new_dataset.state = new_dataset.states.OK
         new_dataset_instance = galaxy.model.HistoryDatasetAssociation( id=-i, dataset=new_dataset, extension=file_dict.get( 'ext', 'data' ) )
         set_meta_with_tool_provided( new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry )
-        file_dict[ 'metadata' ] = json.loads( new_dataset_instance.metadata.to_JSON_dict() ) #storing metadata in external form, need to turn back into dict, then later jsonify
+        file_dict[ 'metadata' ] = json.loads( new_dataset_instance.metadata.to_JSON_dict() )  # storing metadata in external form, need to turn back into dict, then later jsonify
     if existing_job_metadata_dict or new_job_metadata_dict:
         with open( job_metadata, 'wb' ) as job_metadata_fh:
             for value in existing_job_metadata_dict.values() + new_job_metadata_dict.values():

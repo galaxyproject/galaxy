@@ -48,7 +48,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         self.app = weakref.ref( app )
         self.config_parser = config_parser.VisualizationsConfigParser()
         super( VisualizationsRegistry, self ).__init__( app, 'visualizations',
-            skip_bad_plugins=skip_bad_plugins, **kwargs )
+                                                        skip_bad_plugins=skip_bad_plugins, **kwargs )
 
     def is_plugin( self, plugin_path ):
         """

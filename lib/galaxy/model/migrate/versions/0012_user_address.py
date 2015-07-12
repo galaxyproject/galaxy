@@ -34,21 +34,21 @@ def display_migration_details():
     print "========================================"
 
 UserAddress_table = Table( "user_address", metadata,
-    Column( "id", Integer, primary_key=True),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "desc", TEXT),
-    Column( "name", TrimmedString( 255 ), nullable=False),
-    Column( "institution", TrimmedString( 255 )),
-    Column( "address", TrimmedString( 255 ), nullable=False),
-    Column( "city", TrimmedString( 255 ), nullable=False),
-    Column( "state", TrimmedString( 255 ), nullable=False),
-    Column( "postal_code", TrimmedString( 255 ), nullable=False),
-    Column( "country", TrimmedString( 255 ), nullable=False),
-    Column( "phone", TrimmedString( 255 )),
-    Column( "deleted", Boolean, index=True, default=False ),
-    Column( "purged", Boolean, index=True, default=False ) )
+                           Column( "id", Integer, primary_key=True),
+                           Column( "create_time", DateTime, default=now ),
+                           Column( "update_time", DateTime, default=now, onupdate=now ),
+                           Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                           Column( "desc", TEXT),
+                           Column( "name", TrimmedString( 255 ), nullable=False),
+                           Column( "institution", TrimmedString( 255 )),
+                           Column( "address", TrimmedString( 255 ), nullable=False),
+                           Column( "city", TrimmedString( 255 ), nullable=False),
+                           Column( "state", TrimmedString( 255 ), nullable=False),
+                           Column( "postal_code", TrimmedString( 255 ), nullable=False),
+                           Column( "country", TrimmedString( 255 ), nullable=False),
+                           Column( "phone", TrimmedString( 255 )),
+                           Column( "deleted", Boolean, index=True, default=False ),
+                           Column( "purged", Boolean, index=True, default=False ) )
 
 def upgrade(migrate_engine):
     #raise Exception

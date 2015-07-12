@@ -14,7 +14,7 @@ from galaxy.datatypes import data
 from galaxy.datatypes import metadata
 from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers, get_test_fname
+from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import dumps
 import dataproviders
 import re
@@ -84,8 +84,8 @@ class TabularData( data.Text ):
             else:
                 trans.response.set_content_type( "text/html" )
                 return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data=open( dataset.file_name ).read(max_peek_size),
-                                            data=dataset)
+                                                   truncated_data=open( dataset.file_name ).read(max_peek_size),
+                                                   data=dataset)
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -99,11 +99,11 @@ class TabularData( data.Text ):
             if column_number is None:
                 column_number = 'null'
             return trans.fill_template( "/dataset/tabular_chunked.mako",
-                        dataset=dataset,
-                        chunk=self.get_chunk(trans, dataset, 0),
-                        column_number=column_number,
-                        column_names=column_names,
-                        column_types=column_types )
+                                        dataset=dataset,
+                                        chunk=self.get_chunk(trans, dataset, 0),
+                                        column_number=column_number,
+                                        column_names=column_names,
+                                        column_types=column_types )
 
     def make_html_table( self, dataset, **kwargs ):
         """Create HTML table, used for displaying peek"""
@@ -113,7 +113,7 @@ class TabularData( data.Text ):
             out.append( self.make_html_peek_rows( dataset, **kwargs ) )
             out.append( '</table>' )
             out = "".join( out )
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create peek %s" % str( exc )
         return out
 
@@ -158,7 +158,7 @@ class TabularData( data.Text ):
                     out.append( '%s.%s' % ( str( i + 1 ), escape( header ) ) )
                 out.append( '</th>' )
             out.append( '</tr>' )
-        except Exception, exc:
+        except Exception as exc:
             log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
             raise Exception( "Can't create peek header %s" % str( exc ) )
         return "".join( out )
@@ -186,7 +186,7 @@ class TabularData( data.Text ):
                         for elem in elems:
                             out.append( '<td>%s</td>' % escape( elem ) )
                         out.append( '</tr>' )
-        except Exception, exc:
+        except Exception as exc:
             log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
             raise Exception( "Can't create peek rows %s" % str( exc ) )
         return "".join( out )
@@ -438,6 +438,7 @@ class Sam( Tabular ):
             Columns 2 (FLAG), 4(POS), 5 (MAPQ), 8 (MPOS), and 9 (ISIZE) must be numbers (9 can be negative)
             We will only check that up to the first 5 alignments are correctly formatted.
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Sam().sniff( fname )
         False
@@ -459,11 +460,11 @@ class Sam( Tabular ):
                         if len(linePieces) < 11:
                             return False
                         try:
-                            check = int(linePieces[1])
-                            check = int(linePieces[3])
-                            check = int(linePieces[4])
-                            check = int(linePieces[7])
-                            check = int(linePieces[8])
+                            int(linePieces[1])
+                            int(linePieces[3])
+                            int(linePieces[4])
+                            int(linePieces[7])
+                            int(linePieces[8])
                         except ValueError:
                             return False
                         count += 1
@@ -614,6 +615,7 @@ class Pileup( Tabular ):
         the first three and last two columns are the same. We only check the
         first three to allow for some personalization of the format.
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'interval.interval' )
         >>> Pileup().sniff( fname )
         False
@@ -633,7 +635,7 @@ class Pileup( Tabular ):
                     try:
                         # chrom start in column 1 (with 0-based columns)
                         # and reference base is in column 2
-                        check = int( hdr[1] )
+                        int( hdr[1] )
                         assert hdr[2] in [ 'A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't', 'n' ]
                     except:
                         return False
@@ -742,7 +744,7 @@ class Eland( Tabular ):
             out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
             out.append( '</table>' )
             out = "".join( out )
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create peek %s" % exc
         return out
 
@@ -782,8 +784,8 @@ class Eland( Tabular ):
                             raise Exception('Out of range')
                         if long(linePieces[3]) < 0:
                             raise Exception('Out of range')
-                        check = int(linePieces[4])
-                        check = int(linePieces[5])
+                        int(linePieces[4])
+                        int(linePieces[5])
                         # can get a lot more specific
                     except ValueError:
                         fh.close()
@@ -810,12 +812,12 @@ class Eland( Tabular ):
             tiles = {}
             barcodes = {}
             reads = {}
-            #     # Should always read the entire file (until we devise a more clever way to pass metadata on)
+            # Should always read the entire file (until we devise a more clever way to pass metadata on)
             # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            #     # If the dataset is larger than optional_metadata, just count comment lines.
+            # If the dataset is larger than optional_metadata, just count comment lines.
             #     dataset.metadata.data_lines = None
             # else:
-            #     # Otherwise, read the whole thing and set num data lines.
+            # Otherwise, read the whole thing and set num data lines.
             for i, line in enumerate(dataset_fh):
                 if line:
                     linePieces = line.split('\t')

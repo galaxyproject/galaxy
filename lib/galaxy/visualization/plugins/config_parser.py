@@ -138,8 +138,8 @@ class VisualizationsConfigParser( object ):
         # render_target: where in the browser to open the rendered visualization
         # defaults to: galaxy_main
         render_target = xml_tree.find( 'render_target' )
-        if( ( render_target is not None and render_target.text )
-        and ( render_target.text in self.VALID_RENDER_TARGETS ) ):
+        if( ( render_target is not None and render_target.text ) and
+                ( render_target.text in self.VALID_RENDER_TARGETS ) ):
             returned[ 'render_target' ] = render_target.text
         else:
             returned[ 'render_target' ] = 'galaxy_main'
@@ -283,8 +283,8 @@ class DataSourceParser( object ):
             test_type = test_elem.get( 'type', 'eq' )
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
-                log.warn( 'Skipping test. Needs both type attribute and text node to be parsed: '
-                        + '%s, %s' % ( test_type, test_elem.text ) )
+                log.warn( 'Skipping test. Needs both type attribute and text node to be parsed: ' +
+                          '%s, %s' % ( test_type, test_elem.text ) )
                 continue
             test_result = test_result.strip()
 
@@ -304,23 +304,28 @@ class DataSourceParser( object ):
             if test_type == 'isinstance':
                 # is test_attr attribute an instance of result
                 # TODO: wish we could take this further but it would mean passing in the datatypes_registry
-                test_fn = lambda o, result: isinstance( getter( o ), result )
+                def test_fn(o, result):
+                    return isinstance( getter( o ), result )
 
             elif test_type == 'has_dataprovider':
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
-                test_fn = lambda o, result: (     hasattr( getter( o ), 'has_dataprovider' )
-                                              and getter( o ).has_dataprovider( result ) )
+                def test_fn(o, result):
+                    return (hasattr( getter( o ), 'has_dataprovider' ) and
+                            getter( o ).has_dataprovider( result ) )
 
             elif test_type == 'has_attribute':
                 # does the object itself have attr in 'result' (no equivalence checking)
-                test_fn = lambda o, result: hasattr( getter( o ), result )
+                def test_fn(o, result):
+                    return hasattr( getter( o ), result )
 
             elif test_type == 'not_eq':
-                test_fn = lambda o, result: str( getter( o ) ) != result
+                def test_fn(o, result):
+                    return str( getter( o ) ) != result
 
             else:
                 # default to simple (string) equilavance (coercing the test_attr to a string)
-                test_fn = lambda o, result: str( getter( o ) ) == result
+                def test_fn(o, result):
+                    return str( getter( o ) ) == result
 
             tests.append({
                 'type'          : test_type,

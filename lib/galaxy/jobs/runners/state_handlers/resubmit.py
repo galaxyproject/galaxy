@@ -1,23 +1,20 @@
 import logging
 
-from galaxy import model
-
-
 __all__ = ['failure']
 
 log = logging.getLogger(__name__)
 
 MESSAGES = dict(
-    walltime_reached = 'it reached the walltime',
-    memory_limit_reached = 'it exceeded the amount of allocated memory'
+    walltime_reached='it reached the walltime',
+    memory_limit_reached='it exceeded the amount of allocated memory'
 )
 
 
 def failure(app, job_runner, job_state):
     runner_state = getattr(job_state, 'runner_state', None)
-    if (not runner_state
-        or runner_state not in (job_state.runner_states.WALLTIME_REACHED,
-                                job_state.runner_states.MEMORY_LIMIT_REACHED)):
+    if (not runner_state or
+        runner_state not in (job_state.runner_states.WALLTIME_REACHED,
+                             job_state.runner_states.MEMORY_LIMIT_REACHED)):
         # not set or not a handleable runner state
         return
     # Intercept jobs that hit the walltime and have a walltime or

@@ -6,7 +6,6 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.util import generic_util
 import os
 
-
 import logging
 log = logging.getLogger(__name__)
 
@@ -162,7 +161,7 @@ class Stockholm_1_0( Text ):
                     stockholm_lines_accumulated = []
             if stockholm_lines_accumulated:
                 _write_part_stockholm_file( stockholm_lines_accumulated )
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             raise
     split = classmethod(split)

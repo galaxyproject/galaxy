@@ -9,4 +9,3 @@ def test_unused_free_port_unconstrained():
     # would throw exception if port was not free.
     s.bind(('localhost', port))
     s.close()
-

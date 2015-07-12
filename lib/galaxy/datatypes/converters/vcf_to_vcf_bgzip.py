@@ -12,6 +12,7 @@ from galaxy import eggs
 import pkg_resources; pkg_resources.require( "pysam" )
 import ctabix, optparse
 
+
 def main():
     # Read options, args.
     parser = optparse.OptionParser()

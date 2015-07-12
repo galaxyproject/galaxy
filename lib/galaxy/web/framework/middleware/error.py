@@ -22,10 +22,12 @@ from paste import request
 
 __all__ = ['ErrorMiddleware', 'handle_exception']
 
+
 class _NoDefault(object):
     def __repr__(self):
         return '<NoDefault>'
 NoDefault = _NoDefault()
+
 
 class ErrorMiddleware(object):
 
@@ -108,10 +110,10 @@ class ErrorMiddleware(object):
             show_exceptions_in_wsgi_errors = converters.asbool(global_conf.get('show_exceptions_in_wsgi_errors'))
         self.debug_mode = converters.asbool(debug)
         if error_email is None:
-            error_email = (global_conf.get('error_email')
-                           or global_conf.get('admin_email')
-                           or global_conf.get('webmaster_email')
-                           or global_conf.get('sysadmin_email'))
+            error_email = (global_conf.get('error_email') or
+                           global_conf.get('admin_email') or
+                           global_conf.get('webmaster_email') or
+                           global_conf.get('sysadmin_email'))
         self.error_email = converters.aslist(error_email)
         self.error_log = error_log
         self.show_exceptions_in_wsgi_errors = show_exceptions_in_wsgi_errors
@@ -193,6 +195,7 @@ class ErrorMiddleware(object):
             simple_html_error=simple_html_error,
             environ=environ)
 
+
 class ResponseStartChecker(object):
     def __init__(self, start_response):
         self.start_response = start_response
@@ -203,6 +206,7 @@ class ResponseStartChecker(object):
         # Return whatever the wrapped start_response would have
         # returned
         return self.start_response(*args)
+
 
 class CatchingIter(object):
 
@@ -250,8 +254,8 @@ class CatchingIter(object):
 
             if not self.start_checker.response_started:
                 self.start_checker('500 Internal Server Error',
-                               [('content-type', 'text/html')],
-                               exc_info)
+                                   [('content-type', 'text/html')],
+                                   exc_info)
 
             return response
 
@@ -322,7 +326,8 @@ class Supplement(object):
         (0, 1, 1): 'Multithread CGI (?)',
         (1, 0, 1): 'CGI',
         (1, 1, 1): 'Multi thread/process CGI (?)',
-        }
+    }
+
 
 def handle_exception(exc_info, error_stream, html=True,
                      debug_mode=False,
@@ -422,11 +427,12 @@ def handle_exception(exc_info, error_stream, html=True,
         return_error = None
     if not reported and error_stream:
         err_report = formatter.format_text(exc_data, show_hidden_frames=True)
-        err_report += '\n' + '-'*60 + '\n'
+        err_report += '\n' + '-' * 60 + '\n'
         error_stream.write(err_report)
     if extra_data:
         error_stream.write(extra_data)
     return return_error
+
 
 def send_report(rep, exc_data, html=True):
     try:
@@ -447,6 +453,7 @@ def send_report(rep, exc_data, html=True):
                 "%s report:\n%s" % (str(rep), output.getvalue()))
     else:
         return ''
+
 
 def error_template(head_html, exception, extra):
     return '''
@@ -474,6 +481,7 @@ def error_template(head_html, exception, extra):
     </div>
     </body>
     </html>''' % (head_html, exception, extra)
+
 
 def make_error_middleware(app, global_conf, **kw):
     return ErrorMiddleware(app, global_conf=global_conf, **kw)

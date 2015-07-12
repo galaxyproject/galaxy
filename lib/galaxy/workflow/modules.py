@@ -714,7 +714,7 @@ class ToolModule( WorkflowModule ):
     def get_config_form( self ):
         self.add_dummy_datasets()
         return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self,
-            tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
+                                         tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
 
     def encode_runtime_state( self, trans, state ):
         encoded = state.encode( self.tool, self.trans.app )
