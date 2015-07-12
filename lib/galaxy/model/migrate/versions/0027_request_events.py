@@ -36,12 +36,12 @@ def display_migration_details():
 
 
 RequestEvent_table = Table('request_event', metadata,
-                           Column( "id", Integer, primary_key=True),
-                           Column( "create_time", DateTime, default=now ),
-                           Column( "update_time", DateTime, default=now, onupdate=now ),
-                           Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ),
-                           Column( "state", TrimmedString( 255 ),  index=True ),
-                           Column( "comment", TEXT ) )
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ),
+    Column( "state", TrimmedString( 255 ),  index=True ),
+    Column( "comment", TEXT ) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
