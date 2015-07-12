@@ -10,7 +10,6 @@ import pkg_resources
 pkg_resources.require( "bx-python" )
 from bx.intervals import io
 from bx.cookbook import doc_optparse
-import psyco_full
 import commands
 from os import environ
 import tempfile
