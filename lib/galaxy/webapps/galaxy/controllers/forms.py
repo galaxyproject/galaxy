@@ -511,6 +511,8 @@ class Forms( BaseUIController ):
         This method adds a select_field option. The kwd dict searched for
         the field index which needs to be removed
         '''
+        message = ''
+        status = 'ok',
         index = -1
         for k, v in kwd.items():
             if v == 'Add':
@@ -532,6 +534,8 @@ class Forms( BaseUIController ):
         This method removes a select_field option. The kwd dict searched for
         the field index and option index which needs to be removed
         '''
+        message = ''
+        status = 'ok',
         option = -1
         for k, v in kwd.items():
             if v == 'Remove':
