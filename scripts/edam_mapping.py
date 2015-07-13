@@ -17,12 +17,14 @@ from __future__ import print_function
 
 import os
 import urllib2
-
+import sys
 from xml import etree
 
-# Setup model, paths, etc...
-import db_shell
+new_path = [ os.path.join( os.path.dirname( __file__ ), os.path.pardir, "lib" ) ]
+new_path.extend( sys.path[1:] )  # remove scripts/ from the path
+sys.path = new_path
 
+import galaxy.model
 import galaxy.datatypes.registry
 
 SCRIPTS_DIR = os.path.dirname(__file__)

@@ -2,7 +2,16 @@
 
 # Configure stdout logging
 
-import os, sys, logging, glob, zipfile, shutil
+import glob
+import HTMLParser
+import logging
+import os
+import re
+import shutil
+import sys
+import urllib
+import urllib2
+import zipfile
 
 log = logging.getLogger()
 log.setLevel( 10 )
@@ -10,21 +19,20 @@ log.addHandler( logging.StreamHandler( sys.stdout ) )
 
 # Fake pkg_resources
 
-import re
-
 macosVersionString = re.compile(r"macosx-(\d+)\.(\d+)-(.*)")
 darwinVersionString = re.compile(r"darwin-(\d+)\.(\d+)\.(\d+)-(.*)")
 solarisVersionString = re.compile(r"solaris-(\d)\.(\d+)-(.*)")
 
-def compatible_platforms(provided,required):
+
+def compatible_platforms(provided, required):
     """Can code for the `provided` platform run on the `required` platform?
 
     Returns true if either platform is ``None``, or the platforms are equal.
 
     XXX Needs compatibility checks for Linux and other unixy OSes.
     """
-    if provided is None or required is None or provided==required:
-        return True     # easy case
+    if provided is None or required is None or provided == required:
+        return True  # easy case
 
     # Mac OS X special cases
     reqMac = macosVersionString.match(required)
@@ -41,10 +49,10 @@ def compatible_platforms(provided,required):
                 dversion = int(provDarwin.group(1))
                 macosversion = "%s.%s" % (reqMac.group(1), reqMac.group(2))
                 if dversion == 7 and macosversion >= "10.3" or \
-                    dversion == 8 and macosversion >= "10.4":
+                        dversion == 8 and macosversion >= "10.4":
 
-                    #import warnings
-                    #warnings.warn("Mac eggs should be rebuilt to "
+                    # import warnings
+                    # warnings.warn("Mac eggs should be rebuilt to "
                     #    "use the macosx designation instead of darwin.",
                     #    category=DeprecationWarning)
                     return True
@@ -52,10 +60,8 @@ def compatible_platforms(provided,required):
 
         # are they the same major version and machine type?
         if provMac.group(1) != reqMac.group(1) or \
-            provMac.group(3) != reqMac.group(3):
+                provMac.group(3) != reqMac.group(3):
             return False
-
-
 
         # is the required OS major update >= the provided one?
         if int(provMac.group(2)) > int(reqMac.group(2)):
@@ -70,7 +76,7 @@ def compatible_platforms(provided,required):
         if not provSol:
             return False
         if provSol.group(1) != reqSol.group(1) or \
-            provSol.group(3) != reqSol.group(3):
+                provSol.group(3) != reqSol.group(3):
             return False
         if int(provSol.group(2)) > int(reqSol.group(2)):
             return False
@@ -85,6 +91,7 @@ EGG_NAME = re.compile(
     re.VERBOSE | re.IGNORECASE
 ).match
 
+
 class Distribution( object ):
     def __init__( self, egg_name, project_name, version, py_version, platform ):
         self._egg_name = egg_name
@@ -97,17 +104,20 @@ class Distribution( object ):
         self.py_version = py_version
         self.platform = platform
         self.location = os.path.join( tmpd, egg_name ) + '.egg'
+
     def egg_name( self ):
         return self._egg_name
+
     @classmethod
     def from_filename( cls, basename ):
-        project_name, version, py_version, platform = [None]*4
+        project_name, version, py_version, platform = [None] * 4
         basename, ext = os.path.splitext(basename)
         if ext.lower() == '.egg':
             match = EGG_NAME( basename )
             if match:
-                project_name, version, py_version, platform = match.group( 'name','ver','pyver','plat' )
+                project_name, version, py_version, platform = match.group( 'name', 'ver', 'pyver', 'plat' )
         return cls( basename, project_name, version, py_version, platform )
+
 
 class pkg_resources( object ):
     pass
@@ -117,25 +127,32 @@ pkg_resources.Distribution = Distribution
 # Fake galaxy.eggs
 
 env = None
+
+
 def get_env():
     return None
 
-import urllib, urllib2, HTMLParser
+
 class URLRetriever( urllib.FancyURLopener ):
     def http_error_default( *args ):
         urllib.URLopener.http_error_default( *args )
+
 
 class Egg( object ):
     def __init__( self, distribution ):
         self.url = url + '/' + distribution.project_name.replace( '-', '_' )
         self.dir = tmpd
         self.distribution = distribution
+
     def set_distribution( self ):
         pass
+
     def unpack_if_needed( self ):
         pass
+
     def remove_doppelgangers( self ):
         pass
+
     def fetch( self, requirement ):
         """
         fetch() serves as the install method to pkg_resources.working_set.resolve()
@@ -151,6 +168,7 @@ class Egg( object ):
                 def __init__( self ):
                     HTMLParser.HTMLParser.__init__( self )
                     self.links = []
+
                 def handle_starttag( self, tag, attrs ):
                     if tag == 'a' and 'href' in dict( attrs ):
                         self.links.append( dict( attrs )['href'] )
@@ -197,8 +215,9 @@ class Egg( object ):
         self.unpack_if_needed()
         self.remove_doppelgangers()
         global env
-        env = get_env() # reset the global Environment object now that we've obtained a new egg
+        env = get_env()  # reset the global Environment object now that we've obtained a new egg
         return self.distribution
+
 
 def create_zip():
     fname = 'galaxy_eggs-%s.zip' % platform
@@ -211,6 +230,7 @@ def create_zip():
     print "directory and unpack with:"
     print "  unzip %s" % fname
 
+
 def clean():
     shutil.rmtree( tmpd )
 
@@ -218,6 +238,8 @@ import tempfile
 tmpd = tempfile.mkdtemp()
 
 failures = []
+platform = None
+py = None
+url = None
 
 # Automatically generated egg definitions follow
-

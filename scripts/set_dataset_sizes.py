@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os, sys
+import os
+import sys
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
@@ -10,21 +11,18 @@ parser = OptionParser()
 parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config )
 ( options, args ) = parser.parse_args()
 
-def init():
 
+def init():
     options.config = os.path.abspath( options.config )
     sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
 
-    from galaxy import eggs
-    import pkg_resources
-
-    config = ConfigParser( dict( file_path = 'database/files',
-                                 database_connection = 'sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
+    config = ConfigParser( dict( file_path='database/files',
+                                 database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
     config.read( options.config )
 
     from galaxy.model import mapping
 
-    return mapping.init( config.get( 'app:main', 'file_path' ), config.get( 'app:main', 'database_connection' ), create_tables = False )
+    return mapping.init( config.get( 'app:main', 'file_path' ), config.get( 'app:main', 'database_connection' ), create_tables=False )
 
 if __name__ == '__main__':
     print 'Loading Galaxy model...'

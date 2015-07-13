@@ -2,19 +2,15 @@
 
 import os
 import sys
-
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
 sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
 
-from galaxy import eggs
-import pkg_resources
-
 import galaxy.config
 from galaxy.model.util import pgcalc
-from galaxy.util import nice_size
 from galaxy.objectstore import build_object_store_from_config
+from galaxy.util import nice_size
 
 
 default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'config/galaxy.ini') )
@@ -28,7 +24,6 @@ parser.add_option( '--dry-run', dest='dryrun', help='Dry run (show changes but d
 
 
 def init():
-
     options.config = os.path.abspath( options.config )
     if options.username == 'all':
         options.username = None

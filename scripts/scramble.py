@@ -1,4 +1,6 @@
-import os, sys, logging
+import logging
+import os
+import sys
 from optparse import OptionParser
 
 parser = OptionParser()

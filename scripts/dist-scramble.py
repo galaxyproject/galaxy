@@ -31,7 +31,9 @@ subdirectory of your Galaxy distribution. These eggs can then be copied to your
 distribution site.
 """
 
-import os, sys, logging
+import logging
+import os
+import sys
 from optparse import OptionParser
 
 parser = OptionParser()
