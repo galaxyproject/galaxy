@@ -2,6 +2,8 @@
 API operations on Group objects.
 """
 import logging
+from sqlalchemy import false
+
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
 
@@ -19,7 +21,7 @@ class GroupAPIController( BaseAPIController ):
         Displays a collection (list) of groups.
         """
         rval = []
-        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == False ):  # noqa
+        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == false() ):
             if trans.user_is_admin():
                 item = group.to_dict( value_mapper={ 'id': trans.security.encode_id } )
                 encoded_id = trans.security.encode_id( group.id )
