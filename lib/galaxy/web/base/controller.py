@@ -8,6 +8,8 @@ import re
 import pkg_resources
 pkg_resources.require("SQLAlchemy >= 0.4")
 
+from sqlalchemy import true
+
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError
 from paste.httpexceptions import HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException
@@ -556,7 +558,7 @@ class UsesVisualizationMixin( UsesLibraryMixinItems ):
         if not isinstance( order_by, list ):
             order_by = [ order_by ]
         query = trans.sa_session.query( model.Visualization )
-        query = query.filter( model.Visualization.published == True )  # noqa
+        query = query.filter( model.Visualization.published == true() )
         if exclude_user:
             query = query.filter( model.Visualization.user != exclude_user )
         if order_by:
