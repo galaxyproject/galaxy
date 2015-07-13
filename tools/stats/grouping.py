@@ -151,7 +151,7 @@ def main():
                     rval = round(rval)
                 else:
                     rval = '%g' % rval
-                        
+                rval = int(rval)
             out_str += "\t%s" % rval
         
         fout.write(out_str + "\n")
