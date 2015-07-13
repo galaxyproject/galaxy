@@ -44,7 +44,7 @@ from galaxy.model.orm import and_, or_
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import func
-from sqlalchemy import not_
+from sqlalchemy import not_, true
 
 log = logging.getLogger( __name__ )
 
@@ -1217,8 +1217,8 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         rval = db_session.query(
             func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
                     .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
-                    .filter( HistoryDatasetAssociation.purged != True )  # noqa
-                                            .filter( Dataset.purged != True )
+                    .filter( HistoryDatasetAssociation.purged != true() )
+                                            .filter( Dataset.purged != true() )
                                             .distinct().subquery().c.total_size ) ).first()[0]
         if rval is None:
             rval = 0
