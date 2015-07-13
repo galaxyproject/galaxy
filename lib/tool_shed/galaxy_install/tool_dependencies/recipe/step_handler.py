@@ -9,6 +9,7 @@ import time
 import urllib2
 import zipfile
 import hashlib
+import re
 
 from galaxy.util import asbool
 from galaxy.util.template import fill_template
@@ -193,28 +194,25 @@ class Download( object ):
                 dst.close()
 
         if checksums.has_key('sha256sum') or '#sha256#' in download_url:
-            downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
+            downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest().lower()
 
             # Determine expected value
             if checksums.has_key('sha256sum'):
-                expected = checksums['sha256sum']
+                expected = checksums['sha256sum'].lower()
             else:
-                expected = download_url.split('#sha256#')[1]
+                expected = download_url.split('#sha256#')[1].lower()
 
             if downloaded_checksum != expected:
                 raise Exception( 'Given sha256 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected) )
 
         if checksums.has_key('md5sum') or '#md5#' in download_url or '#md5=' in download_url:
-            downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest()
+            downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest().lower()
 
             # Determine expected value
             if checksums.has_key('md5sum'):
-                expected = checksums['md5sum']
+                expected = checksums['md5sum'].lower()
             else:
-                if '#md5=' in download_url:
-                    expected = download_url.split('#md5=')[1]
-                else:
-                    expected = download_url.split('#md5#')[1]
+                expected = re.split('#md5[#=]', download_url)[1].lower()
 
             if downloaded_checksum != expected:
                 raise Exception( 'Given md5 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected) )
@@ -924,8 +922,8 @@ class SetEnvironment( RecipeStep ):
     def handle_environment_variables( self, install_environment, tool_dependency, env_var_dict,
                                       set_prior_environment_commands ):
         """
-        This method works with with a combination of three tool dependency definition tag sets, which are defined
-        in the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
+        This method works with a combination of three tool dependency definition tag sets, which are defined in
+        the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
         tool_dependencies.xml file contained in the osra repository, which is available at:
 
         https://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
