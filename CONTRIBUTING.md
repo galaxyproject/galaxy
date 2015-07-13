@@ -172,14 +172,14 @@ though a well reasoned justification must still be included.
 
 ### Reversions
 
-A *-1* vote on any recently merged pull request is grounds for an immediate
+A *-1* vote on any recently merged pull request requires an immediate
 reversion of the merged pull request. The backout of such a pull request
 invokes a mandatory, minimum 72 hour, review period.
 
 - Recently merged pull requests are defined as a being within the past 168 hours (7
   days), so as to not prevent forward progress, while allowing for reversions of
   things merged without proper review and consensus.
-- The person issuing the -1 vote may, upon commenting *-1* with technical
+- The person issuing the -1 vote will, upon commenting *-1* with technical
   justification per the vetoes section, immediately open and merge a pull request to
   revert the original merge in question outside of the normal requirement for a
   +1 from "someone other than the author", per "Handling Pull Requests"
