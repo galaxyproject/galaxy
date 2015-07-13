@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime, timedelta
 from galaxy import util, web
-from galaxy.model.orm import and_, func, or_
+from galaxy.model.orm import and_, func, or_, false
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
 from string import punctuation as PUNCTUATION
@@ -195,12 +195,12 @@ class Admin( object ):
                                                            status='done' ) )
         if ok:
             for user in trans.sa_session.query( trans.app.model.User ) \
-                                        .filter( trans.app.model.User.table.c.deleted == False ) \
-                                        .order_by( trans.app.model.User.table.c.email ):  # noqa
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
                 out_users.append( ( user.id, user.email ) )
             for group in trans.sa_session.query( trans.app.model.Group ) \
-                                         .filter( trans.app.model.Group.table.c.deleted == False ) \
-                                         .order_by( trans.app.model.Group.table.c.name ):  # noqa
+                                         .filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                         .order_by( trans.app.model.Group.table.c.name ):
                 out_groups.append( ( group.id, group.name ) )
         return trans.fill_template( '/admin/dataset_security/role/role_create.mako',
                                     name=name,
@@ -298,15 +298,15 @@ class Admin( object ):
         in_groups = []
         out_groups = []
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == False ) \
-                                    .order_by( trans.app.model.User.table.c.email ):  # noqa
+                                    .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                    .order_by( trans.app.model.User.table.c.email ):
             if user in [ x.user for x in role.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
                 out_users.append( ( user.id, user.email ) )
         for group in trans.sa_session.query( trans.app.model.Group ) \
-                                     .filter( trans.app.model.Group.table.c.deleted == False ) \
-                                     .order_by( trans.app.model.Group.table.c.name ):  # noqa
+                                     .filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                     .order_by( trans.app.model.Group.table.c.name ):
             if group in [ x.group for x in role.groups ]:
                 in_groups.append( ( group.id, group.name ) )
             else:
@@ -540,15 +540,15 @@ class Admin( object ):
         in_users = []
         out_users = []
         for role in trans.sa_session.query(trans.app.model.Role ) \
-                                    .filter( trans.app.model.Role.table.c.deleted == False ) \
-                                    .order_by( trans.app.model.Role.table.c.name ):  # noqa
+                                    .filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                    .order_by( trans.app.model.Role.table.c.name ):
             if role in [ x.role for x in group.roles ]:
                 in_roles.append( ( role.id, role.name ) )
             else:
                 out_roles.append( ( role.id, role.name ) )
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == False ) \
-                                    .order_by( trans.app.model.User.table.c.email ):  # noqa
+                                    .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                    .order_by( trans.app.model.User.table.c.email ):
             if user in [ x.user for x in group.users ]:
                 in_users.append( ( user.id, user.email ) )
             else:
@@ -620,12 +620,12 @@ class Admin( object ):
                                                            status='done' ) )
         if ok:
             for user in trans.sa_session.query( trans.app.model.User ) \
-                                        .filter( trans.app.model.User.table.c.deleted == False ) \
-                                        .order_by( trans.app.model.User.table.c.email ):  # noqa
+                                        .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.User.table.c.email ):
                 out_users.append( ( user.id, user.email ) )
             for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( trans.app.model.Role.table.c.deleted == False ) \
-                                        .order_by( trans.app.model.Role.table.c.name ):  # noqa
+                                        .filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                        .order_by( trans.app.model.Role.table.c.name ):
                 out_roles.append( ( role.id, role.name ) )
         return trans.fill_template( '/admin/dataset_security/group/group_create.mako',
                                     name=name,
@@ -997,8 +997,8 @@ class Admin( object ):
         out_roles = []
         in_groups = []
         out_groups = []
-        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == False ) \
-                                                                  .order_by( trans.app.model.Role.table.c.name ):  # noqa
+        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == false() ) \
+                                                                  .order_by( trans.app.model.Role.table.c.name ):
             if role in [ x.role for x in user.roles ]:
                 in_roles.append( ( role.id, role.name ) )
             elif role.type != trans.app.model.Role.types.PRIVATE:
@@ -1007,8 +1007,8 @@ class Admin( object ):
                 # role, which should always be in in_roles.  The check above is added as an additional
                 # precaution, since for a period of time we were including private roles in the form fields.
                 out_roles.append( ( role.id, role.name ) )
-        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == False ) \
-                                                                    .order_by( trans.app.model.Group.table.c.name ):  # noqa
+        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == false() ) \
+                                                                    .order_by( trans.app.model.Group.table.c.name ):
             if group in [ x.group for x in user.groups ]:
                 in_groups.append( ( group.id, group.name ) )
             else:
