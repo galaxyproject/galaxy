@@ -5,6 +5,8 @@ from galaxy import eggs
 eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
+from sqlalchemy.sql.expression import false
+
 import galaxy.util
 from galaxy import exceptions
 from galaxy import managers
@@ -25,6 +27,7 @@ from galaxy.web.base.controller import ExportsHistoryMixin
 from galaxy.web.base.controller import ImportsHistoryMixin
 from galaxy.web.base.controller import SharableMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago
+
 
 log = logging.getLogger( __name__ )
 
@@ -639,7 +642,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         deleted_filter = None
         if not include_deleted_histories:
-            deleted_filter = model.History.deleted is False
+            deleted_filter = model.History.deleted == false()
 
         current_history = trans.get_history()
         current_history_id = trans.security.encode_id( current_history.id ) if current_history else None
