@@ -6,6 +6,7 @@ from galaxy import exceptions
 from galaxy.model.orm import and_, not_, or_
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy import true, false
 
 import logging
 log = logging.getLogger( __name__ )
@@ -112,9 +113,9 @@ class LibraryManager( object ):
                 #  Flag is not specified, do not filter on it.
                 pass
             elif deleted:
-                query = query.filter( trans.app.model.Library.table.c.deleted == True )  # noqa
+                query = query.filter( trans.app.model.Library.table.c.deleted == true() )
             else:
-                query = query.filter( trans.app.model.Library.table.c.deleted == False )  # noqa
+                query = query.filter( trans.app.model.Library.table.c.deleted == false() )
         else:
             #  Nonadmins can't see deleted libraries
             current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
