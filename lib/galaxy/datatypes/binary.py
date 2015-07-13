@@ -15,9 +15,6 @@ import re
 import warnings
 import zipfile
 
-from galaxy import eggs
-eggs.require( "bx-python" )
-
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
 from galaxy.util import sqlite
@@ -25,10 +22,7 @@ from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListPa
 from galaxy.datatypes import metadata
 import dataproviders
 
-with warnings.catch_warnings():
-    warnings.simplefilter( "ignore" )
-    eggs.require( "pysam" )
-    from pysam import csamtools
+from pysam import csamtools
 
 
 log = logging.getLogger(__name__)

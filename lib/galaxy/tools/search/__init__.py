@@ -2,10 +2,8 @@
 Module for building and searching the index of tools
 installed within this Galaxy.
 """
-from galaxy import eggs
 from galaxy.web.framework.helpers import to_unicode
 
-eggs.require( "Whoosh" )
 from whoosh.filedb.filestore import RamStorage
 from whoosh.fields import Schema, STORED, TEXT
 from whoosh.scoring import BM25F

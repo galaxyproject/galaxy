@@ -4,8 +4,6 @@
 
 import os,sys,tempfile,subprocess,time
 
-from galaxy import eggs
-
 prog="pbed_ldreduced_converter.py"
 
 galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>

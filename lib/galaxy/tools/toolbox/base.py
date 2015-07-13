@@ -4,8 +4,6 @@ import string
 import tarfile
 import tempfile
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
 
 from galaxy.model.item_attrs import Dictifiable

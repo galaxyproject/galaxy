@@ -7,8 +7,6 @@ usage: %prog bed_file out_file
     -2, --cols2=N,N,N,N: Columns for chrom, start, end, strand in coverage file
 """
 import sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
 from bx.intervals import io
 from bx.cookbook import doc_optparse
 import psyco_full

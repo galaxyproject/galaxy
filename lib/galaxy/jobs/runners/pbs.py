@@ -13,23 +13,7 @@ from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
 import pkg_resources
 
-egg_message = """
-
-The 'pbs' runner depends on 'pbs_python' which is not installed or not
-configured properly.  Galaxy's "scramble" system should make this installation
-simple, please follow the instructions found at:
-
-    http://wiki.galaxyproject.org/Admin/Config/Performance/Cluster
-
-Additional errors may follow:
-%s
-"""
-
-try:
-    pkg_resources.require( "pbs_python" )
-    pbs = __import__( "pbs" )
-except Exception, e:
-    raise Exception( egg_message % str( e ) )
+import pbs
 
 log = logging.getLogger( __name__ )
 

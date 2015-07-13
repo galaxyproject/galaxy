@@ -3,8 +3,6 @@ from tool_shed.repository_types.metadata import TipOnly
 import tool_shed.repository_types.util as rt_util
 from tool_shed.util import basic_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import hg
 from mercurial import ui
 

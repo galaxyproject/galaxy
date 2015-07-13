@@ -7,8 +7,6 @@ new_path.extend( sys.path[1:] )
 sys.path = new_path
 
 from galaxy.util import asbool
-from galaxy import eggs
-eggs.require( 'boto' )
 
 import boto
 

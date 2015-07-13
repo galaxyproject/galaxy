@@ -14,17 +14,8 @@ import subprocess
 
 from multiprocessing.pool import IMapIterator
 
-try:
-    from galaxy import eggs
-    eggs.require('boto')
-except ImportError:
-    pass
-
-try:
-    import boto
-    from boto.s3.connection import S3Connection
-except ImportError:
-    boto = None
+import boto
+from boto.s3.connection import S3Connection
 
 
 def map_wrap(f):

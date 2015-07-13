@@ -3,11 +3,9 @@ import datetime
 import os
 import logging
 from galaxy import exceptions
-from galaxy import eggs
 from galaxy import web
 from galaxy.webapps.tool_shed import model
 from galaxy.exceptions import ObjectNotFound
-eggs.require( "Whoosh" )
 import whoosh.index
 from whoosh import scoring
 from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT, STORED

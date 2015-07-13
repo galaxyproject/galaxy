@@ -15,17 +15,7 @@ from posixpath import dirname as path_dirname
 from galaxy.exceptions import ObjectNotFound
 from ..objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
 
-try:
-    import galaxy.eggs
-    galaxy.eggs.require( 'PyRods' )
-except Exception:
-    pass
-try:
-    import irods
-except ImportError:
-    irods = None
-
-NO_PYRODS_ERROR_MESSAGE = "IRODS object store configured, but no PyRods dependency available. Please install and properly configure PyRods or modify object store configuration."
+import irods
 
 log = logging.getLogger( __name__ )
 
@@ -35,8 +25,6 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
     Galaxy object store based on iRODS
     """
     def __init__( self, config, file_path=None, extra_dirs=None ):
-        if irods is None:
-            raise Exception(NO_PYRODS_ERROR_MESSAGE)
         super( IRODSObjectStore, self ).__init__( config, file_path=file_path, extra_dirs=extra_dirs )
         self.cache_path = config.object_store_cache_path
         self.default_resource = config.irods_default_resource or None

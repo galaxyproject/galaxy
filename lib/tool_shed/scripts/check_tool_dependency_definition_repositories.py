@@ -16,10 +16,6 @@ new_path = [ os.path.join( os.getcwd(), "lib" ), os.path.join( os.getcwd(), "tes
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
-eggs.require( 'mercurial' )
-
 from mercurial import __version__
 
 import galaxy.webapps.tool_shed.config as tool_shed_config

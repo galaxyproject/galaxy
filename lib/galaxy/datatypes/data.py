@@ -17,8 +17,6 @@ from galaxy.util.sanitize_html import sanitize_html
 
 import dataproviders
 
-from galaxy import eggs
-eggs.require( "Paste" )
 import paste
 
 XSS_VULNERABLE_MIME_TYPES = [

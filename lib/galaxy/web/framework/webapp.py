@@ -10,18 +10,11 @@ import string
 import time
 from Cookie import CookieError
 
-from galaxy import eggs
-eggs.require( "Cheetah" )
 from Cheetah.Template import Template
-eggs.require( "Mako" )
 import mako.runtime
 import mako.lookup
-# pytz is used by Babel.
-eggs.require( "pytz" )
-eggs.require( "Babel" )
 from babel.support import Translations
 from babel import Locale
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload

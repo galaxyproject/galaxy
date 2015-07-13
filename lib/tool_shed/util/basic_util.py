@@ -6,9 +6,6 @@ from string import Template
 
 from galaxy.util import unicodify, nice_size
 
-from galaxy import eggs
-
-eggs.require( 'MarkupSafe' )
 import markupsafe
 
 log = logging.getLogger( __name__ )

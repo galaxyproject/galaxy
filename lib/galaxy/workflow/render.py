@@ -1,6 +1,3 @@
-from galaxy import eggs
-
-eggs.require( "SVGFig" )
 import svgfig
 
 MARGIN = 5

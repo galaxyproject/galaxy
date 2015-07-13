@@ -3,7 +3,6 @@ Module for managing data transfer jobs.
 """
 import logging, urllib2, re, shutil
 
-from galaxy import eggs
 from sqlalchemy import and_
 
 from galaxy.util.odict import odict

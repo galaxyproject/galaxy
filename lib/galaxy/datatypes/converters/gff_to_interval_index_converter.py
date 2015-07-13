@@ -10,8 +10,6 @@ usage:
 from __future__ import division
 
 import sys, fileinput
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
 from galaxy.datatypes.util.gff_util import *
 from bx.interval_index_file import Indexes
 

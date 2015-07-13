@@ -6,12 +6,7 @@ import tempfile
 import traceback
 
 from galaxy import exceptions
-from galaxy import eggs
 from galaxy import util
-
-eggs.require( 'paramiko' )
-eggs.require( 'ssh' )
-eggs.require( 'Fabric' )
 
 from fabric.api import lcd
 

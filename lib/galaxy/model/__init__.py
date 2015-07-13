@@ -5,9 +5,6 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-from galaxy import eggs
-eggs.require("pexpect")
-
 import codecs
 import errno
 import logging

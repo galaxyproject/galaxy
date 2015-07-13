@@ -1,16 +1,8 @@
 """ Generic interface for reading YAML/INI/JSON config files into nested dictionaries.
 """
 
-try:
-    from galaxy import eggs
-    eggs.require('PyYAML')
-except Exception:
-    # If not in Galaxy, ignore this.
-    pass
-try:
-    import yaml
-except ImportError:
-    yaml = None
+import yaml
+
 try:
     from ConfigParser import ConfigParser
 except ImportError:
@@ -56,9 +48,6 @@ def __find_type(path, explicit_type, default_type):
 
 
 def __read_yaml(path):
-    if yaml is None:
-        raise ImportError("Attempting to read YAML configuration file - but PyYAML dependency unavailable.")
-
     with open(path, "rb") as f:
         return yaml.load(f)
 

@@ -27,8 +27,6 @@ assert sys.version_info[:2] >= ( 2, 6 ) and sys.version_info[:2] <= ( 2, 7 ), 'P
 new_path = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
 sys.path.insert( 0, new_path )
 
-from galaxy import eggs
-import pkg_resources
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
 from galaxy.model.custom_types import total_size
 

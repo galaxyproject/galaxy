@@ -8,8 +8,6 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 import galaxy.webapps.tool_shed.model.mapping as tool_shed_model
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.exc import OperationalError

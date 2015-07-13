@@ -24,8 +24,6 @@ from tool_shed.util import shed_util_common as suc
 from tool_shed.util import repository_content_util
 from tool_shed.util import xml_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import commands
 
 log = logging.getLogger( __name__ )

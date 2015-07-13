@@ -6,8 +6,6 @@ raven.middleware
 :license: BSD, see LICENSE for more details.
 """
 
-import galaxy.eggs; galaxy.eggs.require( "raven" )
-
 from raven import Client
 from raven.utils.wsgi import get_current_url, get_headers, \
   get_environ

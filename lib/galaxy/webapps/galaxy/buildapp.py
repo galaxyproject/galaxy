@@ -23,8 +23,6 @@ from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 
-from galaxy import eggs
-eggs.require('Paste')
 from paste import httpexceptions
 
 import logging
@@ -663,7 +661,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        eggs.require( "WebError" )
         from weberror import evalexception
         app = evalexception.EvalException( app, conf,
                                            templating_formatters=build_template_error_formatters() )

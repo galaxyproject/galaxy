@@ -8,10 +8,6 @@ new_path = [ os.path.join( os.getcwd(), "lib" ),
 new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
-eggs.require( 'mercurial' )
-
 import ConfigParser
 import galaxy.webapps.tool_shed.config as tool_shed_config
 from tool_shed.util import hg_util

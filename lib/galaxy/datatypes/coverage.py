@@ -6,7 +6,6 @@ Coverage datatypes
 import logging
 import math
 
-from galaxy import eggs
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
@@ -27,8 +26,6 @@ class LastzCoverage( Tabular ):
         Assumes we have a numpy file.
         """
         # Maybe if we import here people will still be able to use Galaxy when numpy kills it
-        eggs.require("numpy>=1.2.1")
-        #from numpy.lib import format
         import numpy
 
         range = end - start

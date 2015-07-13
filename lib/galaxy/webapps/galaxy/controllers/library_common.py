@@ -12,7 +12,6 @@ import urllib2
 import zipfile
 from galaxy import util, web
 from galaxy.web import url_for
-from galaxy.eggs import require
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
 from galaxy.util import inflector
@@ -23,20 +22,14 @@ from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, bu
 from markupsafe import escape
 from galaxy.model.orm import and_, eagerload_all
 
-# Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
-try:
-    require( "Whoosh" )
-    import whoosh.index
-    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
-    from whoosh.scoring import BM25F
-    from whoosh.qparser import MultifieldParser
-    whoosh_search_enabled = True
-    # The following must be defined exactly like the
-    # schema in ~/scripts/data_libraries/build_whoosh_index.py
-    schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT )
-except ImportError, e:
-    whoosh_search_enabled = False
-    schema = None
+import whoosh.index
+from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
+from whoosh.scoring import BM25F
+from whoosh.qparser import MultifieldParser
+whoosh_search_enabled = True
+# The following must be defined exactly like the
+# schema in ~/scripts/data_libraries/build_whoosh_index.py
+schema = Schema( id=STORED, name=TEXT, info=TEXT, dbkey=TEXT, message=TEXT )
 
 log = logging.getLogger( __name__ )
 

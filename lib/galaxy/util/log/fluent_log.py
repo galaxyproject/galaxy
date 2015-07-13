@@ -5,23 +5,11 @@ Provides a `TraceLogger` implementation that logs to a fluentd collector
 import time
 import threading
 
-try:
-    import galaxy.eggs
-    galaxy.eggs.require( "fluent-logger" )
-    galaxy.eggs.require( "msgpack_python" )
-except Exception:
-    pass
-
-try:
-    from fluent.sender import FluentSender
-except ImportError:
-    FluentSender = None
+from fluent.sender import FluentSender
 
 
 class FluentTraceLogger( object ):
     def __init__( self, name, host='localhost', port=24224 ):
-        if FluentSender is None:
-            raise Exception("Attempted to use FluentTraceLogger with not Fluent dependency available.")
         self.lock = threading.Lock()
         self.thread_local = threading.local()
         self.name = name

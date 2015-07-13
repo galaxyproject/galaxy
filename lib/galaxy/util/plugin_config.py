@@ -1,15 +1,6 @@
 from xml.etree import ElementTree
 
-try:
-    from galaxy import eggs
-    eggs.require('PyYAML')
-except Exception:
-    # If not in Galaxy, ignore this.
-    pass
-try:
-    import yaml
-except ImportError:
-    yaml = None
+import yaml
 
 from galaxy.util.submodules import submodules
 
@@ -78,8 +69,5 @@ def plugin_source_from_path(path):
 
 
 def __read_yaml(path):
-    if yaml is None:
-        raise ImportError("Attempting to read YAML configuration file - but PyYAML dependency unavailable.")
-
     with open(path, "rb") as f:
         return yaml.load(f)

@@ -45,9 +45,6 @@ import tool_shed.grids.util as grids_util
 
 import tool_shed.repository_types.util as rt_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
-
 from mercurial import mdiff
 from mercurial import patch
 

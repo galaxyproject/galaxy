@@ -4,9 +4,6 @@ Manage the OpenID consumer and related data stores.
 
 import os, pickle, logging
 
-from galaxy import eggs
-eggs.require( 'python-openid' )
-
 import openid
 from openid import oidutil
 from openid.store import filestore

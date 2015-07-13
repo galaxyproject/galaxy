@@ -6,8 +6,6 @@ from galaxy.model.orm import *
 from galaxy import model, util
 from galaxy.web.form_builder import *
 from .requests_common import RequestsGrid, invalid_id_redirect
-from galaxy import eggs
-eggs.require("amqp")
 import amqp
 import logging, os, pexpect, ConfigParser
 

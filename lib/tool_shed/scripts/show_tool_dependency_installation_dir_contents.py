@@ -6,9 +6,6 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
-
 import galaxy.model
 import galaxy.model.tool_shed_install.mapping as install_mapper
 import galaxy.config as galaxy_config

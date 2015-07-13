@@ -10,14 +10,11 @@ import subprocess
 import sys
 import time
 
-from galaxy import eggs
 from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.util import asbool
-
-eggs.require( "drmaa" )
 
 log = logging.getLogger( __name__ )
 

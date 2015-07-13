@@ -9,8 +9,6 @@ from time import strftime
 import tempfile
 
 from galaxy.util import listify
-from galaxy import eggs
-eggs.require( 'mercurial' )
 
 from mercurial import cmdutil
 from mercurial import commands

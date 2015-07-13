@@ -12,9 +12,6 @@ import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 from tool_shed.util import metadata_util
 
-from galaxy import eggs
-
-eggs.require('markupsafe')
 from markupsafe import escape as escape_html
 
 log = logging.getLogger( __name__ )

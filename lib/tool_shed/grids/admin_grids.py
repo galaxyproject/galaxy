@@ -9,9 +9,6 @@ from tool_shed.util import hg_util
 from tool_shed.grids.repository_grids import CategoryGrid
 from tool_shed.grids.repository_grids import RepositoryGrid
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
-
 from mercurial import commands
 from mercurial import hg
 from mercurial import ui

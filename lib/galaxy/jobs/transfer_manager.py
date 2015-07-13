@@ -4,7 +4,6 @@ IPC with multiple process configurations.
 """
 import os, subprocess, socket, logging, threading
 
-from galaxy import eggs
 from galaxy.util import listify, json
 
 log = logging.getLogger( __name__ )

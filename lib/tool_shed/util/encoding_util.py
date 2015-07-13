@@ -1,7 +1,6 @@
 import binascii
 import json
 import logging
-from galaxy import eggs
 from galaxy.util.hash_util import hmac_new
 from galaxy.util.json import json_fix
 

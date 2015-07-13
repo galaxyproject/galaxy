@@ -2,7 +2,7 @@ import logging
 import os
 import urllib
 
-from galaxy import datatypes, eggs, model, util, web
+from galaxy import datatypes, model, util, web
 from galaxy import managers
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
@@ -13,7 +13,6 @@ from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for
 from galaxy.web.framework.helpers import grids, iff, time_ago, to_unicode, escape
 from galaxy.tools.errors import EmailErrorReporter
 
-eggs.require( "Paste" )
 import paste.httpexceptions
 
 log = logging.getLogger( __name__ )

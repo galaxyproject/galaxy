@@ -9,13 +9,9 @@ import random
 import re
 import sys
 
-from galaxy import eggs
-eggs.require('numpy')  # noqa
-eggs.require('bx-python')  # noqa
 from bx.interval_index_file import Indexes
 from bx.bbi.bigbed_file import BigBedFile
 from bx.bbi.bigwig_file import BigWigFile
-eggs.require('pysam')  # noqa
 from pysam import csamtools, ctabix
 
 from galaxy.datatypes.interval import Bed, Gff, Gtf
