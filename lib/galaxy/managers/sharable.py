@@ -10,6 +10,7 @@ A sharable Galaxy object:
     can be rated
 """
 
+from sqlalchemy import true
 import re
 from galaxy import exceptions
 
@@ -117,7 +118,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         """
         Query all published items.
         """
-        published_filter = self.model_class.published == True  # noqa
+        published_filter = self.model_class.published == true()
         filters = self._munge_filters( published_filter, filters )
         return self.list( filters=filters, **kwargs )
 
