@@ -9,6 +9,7 @@ pkg_resources.require( "Paste" )
 
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy
+from sqlalchemy.sql.expression import true, false
 
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
@@ -122,8 +123,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         rval = []
         for history in histories:
-            history_dict = self.history_serializer.serialize_to_view( history,
-                                                                      user=trans.user, trans=trans, **serialization_params )
+            history_dict = self.history_serializer.serialize_to_view( history, user=trans.user, trans=trans, **serialization_params )
             rval.append( history_dict )
         return rval
 
@@ -141,7 +141,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         # the deleted string bool was also used as an 'include deleted' flag
         if deleted in ( 'True', 'true' ):
-            return [ self.app.model.History.deleted is True ]
+            return [ self.app.model.History.deleted == true() ]
 
         # the third option not handled here is 'return only deleted'
         #   if this is passed in (in the form below), simply return and let the filter system handle it
@@ -149,7 +149,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             return []
 
         # otherwise, do the default filter of removing the deleted histories
-        return [ self.app.model.History.deleted is False ]
+        return [ self.app.model.History.deleted == false() ]
 
     @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
