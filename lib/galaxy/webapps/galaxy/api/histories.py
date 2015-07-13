@@ -8,8 +8,7 @@ import pkg_resources
 pkg_resources.require( "Paste" )
 
 pkg_resources.require( "SQLAlchemy >= 0.4" )
-import sqlalchemy
-from sqlalchemy.sql.expression import true, false
+from sqlalchemy import true, false, desc
 
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
@@ -118,7 +117,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         filters += self.history_filters.parse_filters( filter_params )
 
         # TODO: eventually make order_by a param as well
-        order_by = sqlalchemy.desc( self.app.model.History.create_time )
+        order_by = desc( self.app.model.History.create_time )
         histories = self.history_manager.list( filters=filters, order_by=order_by, limit=limit, offset=offset )
 
         rval = []
@@ -178,7 +177,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         if history_id == "most_recently_used":
             history = self.history_manager.most_recent( trans.user,
-                filters=( self.app.model.History.deleted == False ), current_history=trans.history )  # noqa
+                filters=( self.app.model.History.deleted == false() ), current_history=trans.history )
         else:
             history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
 
