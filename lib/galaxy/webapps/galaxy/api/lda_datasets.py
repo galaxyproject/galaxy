@@ -542,8 +542,10 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         :param  format:      string representing requested archive format
         :type   format:      string
-        :param  ld_ids[]:      an array of encoded ids
+        :param  ld_ids[]:      an array of encoded dataset ids
         :type   ld_ids[]:      an array
+        :param  folder_ids[]:      an array of encoded folder ids
+        :type   folder_ids[]:      an array
 
         :rtype:   file
         :returns: either archive with the requested datasets packed inside or a single uncompressed dataset
@@ -566,8 +568,40 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
                     raise exceptions.InternalServerError( 'Internal error.' )
                 except Exception, e:
                     raise exceptions.InternalServerError( 'Unknown error.' )
-        else:
-            raise exceptions.RequestParameterMissingException( 'Request has to contain a list of dataset ids to download.' )
+
+        folders_to_download = kwd.get( 'folder_ids%5B%5D', None )
+        if folders_to_download is None:
+            folders_to_download = kwd.get( 'folder_ids', None )
+        if folders_to_download is not None:
+            folders_to_download = util.listify( folders_to_download )
+
+            current_user_roles = trans.get_current_user_roles()
+
+            def traverse( folder ):
+                admin = trans.user_is_admin()
+                rval = []
+                for subfolder in folder.active_folders:
+                    if not admin:
+                        can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
+                    if (admin or can_access) and not subfolder.deleted:
+                        rval.extend( traverse( subfolder ) )
+                for ld in folder.datasets:
+                    if not admin:
+                        can_access = trans.app.security_agent.can_access_dataset(
+                            current_user_roles,
+                            ld.library_dataset_dataset_association.dataset
+                        )
+                    if (admin or can_access) and not ld.deleted:
+                        rval.append( ld )
+                return rval
+
+            for encoded_folder_id in folders_to_download:
+                folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
+                folder = self.folder_manager.get( trans, folder_id )
+                library_datasets.extend( traverse( folder ) )
+
+        if not library_datasets:
+            raise exceptions.RequestParameterMissingException( 'Request has to contain a list of dataset ids or folder ids to download.' )
 
         if format in [ 'zip', 'tgz', 'tbz' ]:
             # error = False
