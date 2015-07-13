@@ -148,10 +148,10 @@ def main():
                     sys.exit( 1 )
                 rval = getattr(numpy, op)( data )
                 if round_val[i] == 'yes':
-                    rval = round(rval)
+                    rval = int(round(rval))
                 else:
                     rval = '%g' % rval
-                rval = int(rval)
+                rval = rval
             out_str += "\t%s" % rval
         
         fout.write(out_str + "\n")
