@@ -10,7 +10,7 @@ from galaxy.web.framework import url_for
 from galaxy.web.framework.helpers import iff
 from markupsafe import escape
 
-from sqlalchemy.sql.expression import and_, func, or_
+from sqlalchemy.sql.expression import and_, func, or_, null, false, true
 
 
 log = logging.getLogger( __name__ )
@@ -770,14 +770,14 @@ class SharingStatusColumn( GridColumn ):
             pass
         elif column_filter:
             if column_filter == "private":
-                query = query.filter( self.model_class.users_shared_with == None )  # noqa
-                query = query.filter( self.model_class.importable == False )  # noqa
+                query = query.filter( self.model_class.users_shared_with == null() )
+                query = query.filter( self.model_class.importable == false() )
             elif column_filter == "shared":
-                query = query.filter( self.model_class.users_shared_with != None )  # noqa
+                query = query.filter( self.model_class.users_shared_with != null() )
             elif column_filter == "accessible":
-                query = query.filter( self.model_class.importable == True )  # noqa
+                query = query.filter( self.model_class.importable == true() )
             elif column_filter == "published":
-                query = query.filter( self.model_class.published == True )  # noqa
+                query = query.filter( self.model_class.published == true() )
         return query
 
     def get_accepted_filters( self ):
