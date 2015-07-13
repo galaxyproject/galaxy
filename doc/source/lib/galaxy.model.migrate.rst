@@ -1,11 +1,20 @@
-migrate Package
-===============
+galaxy.model.migrate package
+============================
 
-:mod:`check` Module
--------------------
+.. automodule:: galaxy.model.migrate
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+galaxy.model.migrate.check module
+---------------------------------
 
 .. automodule:: galaxy.model.migrate.check
     :members:
     :undoc-members:
     :show-inheritance:
+
 

@@ -17,6 +17,7 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers, get_test_fname
 from galaxy.util.json import dumps
 import dataproviders
+import re
 
 log = logging.getLogger(__name__)
 
@@ -925,3 +926,110 @@ class CSV( TabularData ):
             dataset.metadata.columns = len(header_row)
             dataset.metadata.column_names = header_row
             dataset.metadata.delimiter = reader.dialect.delimiter
+
+class ConnectivityTable( Tabular ):
+    edam_format = "format_3309"
+    file_ext = "ct"
+    
+    header_regexp = re.compile( "^[0-9]+" + "(?:\t|[ ]+)" + ".*?" + "(?:ENERGY|energy|dG)" + "[ \t].*?=")
+    structure_regexp = re.compile( "^[0-9]+" + "(?:\t|[ ]+)" +  "[ACGTURYKMSWBDHVN]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+")
+    
+    def __init__(self, **kwd):
+        Tabular.__init__( self, **kwd )
+        
+        self.columns = 6
+        self.column_names = ['base_index', 'base', 'neighbor_left', 'neighbor_right', 'partner', 'natural_numbering']
+        self.column_types = ['int', 'str', 'int', 'int', 'int', 'int']
+
+    def set_meta( self, dataset, **kwd ):
+        data_lines = 0
+        
+        for line in file( dataset.file_name ):
+            data_lines += 1
+        
+        dataset.metadata.data_lines = data_lines
+    
+    def sniff(self, filename):
+        """
+        The ConnectivityTable (CT) is a file format used for describing
+        RNA 2D structures by tools including MFOLD, UNAFOLD and
+        the RNAStructure package. The tabular file format is defined as
+        follows:
+        
+5	energy = -12.3	sequence name
+1	G	0	2	0	1
+2	A	1	3	0	2
+3	A	2	4	0	3
+4	A	3	5	0	4
+5	C	4	6	1	5
+        
+        The links given at the edam ontology page do not indicate what
+        type of separator is used (space or tab) while different
+        implementations exist. The implementation that uses spaces as
+        separator (implemented in RNAStructure) is as follows:
+        
+   10    ENERGY = -34.8  seqname
+    1 G       0    2    9    1
+    2 G       1    3    8    2
+    3 G       2    4    7    3
+    4 a       3    5    0    4
+    5 a       4    6    0    5
+    6 a       5    7    0    6
+    7 C       6    8    3    7
+    8 C       7    9    2    8
+    9 C       8   10    1    9
+   10 a       9    0    0   10
+        """
+        
+        i = 0
+        j = 1
+        
+        try:
+            with open( filename ) as handle:
+                for line in handle:
+                    line = line.strip()
+                    
+                    if len(line) > 0:
+                        if i == 0:
+                            if not self.header_regexp.match(line):
+                                return False
+                            else:
+                                length = int(re.split('\W+', line,1)[0])
+                        else:
+                            if not self.structure_regexp.match(line.upper()):
+                                return False
+                            else:
+                                if j != int(re.split('\W+', line,1)[0]):
+                                    return False
+                                elif j == length:                       # Last line of first sequence has been recheached
+                                    return True
+                                else:
+                                    j += 1
+                        i += 1
+            return False
+        except:
+            return False
+    
+    def get_chunk(self, trans, dataset, chunk):
+        ck_index = int(chunk)
+        f = open(dataset.file_name)
+        f.seek(ck_index * trans.app.config.display_chunk_size)
+        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
+        if f.tell() != 0:
+            cursor = f.read(1)
+            while cursor and cursor != '\n':
+                cursor = f.read(1)
+        ck_data = f.read(trans.app.config.display_chunk_size)
+        cursor = f.read(1)
+        while cursor and ck_data[-1] != '\n':
+            ck_data += cursor
+            cursor = f.read(1)
+        
+        # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
+        # By converting these spaces back to tabs, chucks can still be interpreted by tab delimited file parsers
+        ck_data_header, ck_data_body = ck_data.split('\n', 1)
+        ck_data_header = re.sub('^([0-9]+)[ ]+',r'\1\t',ck_data_header)
+        ck_data_body = re.sub('\n[ \t]+','\n',ck_data_body)
+        ck_data_body = re.sub('[ ]+','\t',ck_data_body)
+        
+        return dumps( { 'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body ), 'ck_index': ck_index + 1 } )

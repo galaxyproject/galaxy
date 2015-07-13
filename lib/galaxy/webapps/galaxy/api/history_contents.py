@@ -16,6 +16,7 @@ from galaxy.web.base.controller import UsesTagsMixin
 
 from galaxy.managers import histories
 from galaxy.managers import hdas
+from galaxy.managers import folders
 from galaxy.managers.collections_util import api_payload_to_create_params
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.util import validation
@@ -31,6 +32,7 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         super( HistoryContentsController, self ).__init__( app )
         self.hda_manager = hdas.HDAManager( app )
         self.history_manager = histories.HistoryManager( app )
+        self.folder_manager = folders.FolderManager()
         self.hda_serializer = hdas.HDASerializer( app )
         self.hda_deserializer = hdas.HDADeserializer( app )
 
@@ -179,6 +181,10 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             'source'    = 'library'
             'content'   = [the encoded id from the library dataset]
 
+            copy from library folder
+            'source'    = 'library_folder'
+            'content'   = [the encoded id from the library folder]
+
             copy from history dataset (for type 'dataset'):
             'source'    = 'hda'
             'content'   = [the encoded id from the HDA]
@@ -219,7 +225,11 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
 
         type = payload.get( 'type', 'dataset' )
         if type == 'dataset':
-            return self.__create_dataset( trans, history, payload, **kwd )
+            source = payload.get( 'source', None )
+            if source == 'library_folder':
+                return self.__create_datasets_from_library_folder( trans, history, payload, **kwd )
+            else:
+                return self.__create_dataset( trans, history, payload, **kwd )
         elif type == 'dataset_collection':
             return self.__create_dataset_collection( trans, history, payload, **kwd )
         else:
@@ -259,6 +269,50 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             return None
         return self.hda_serializer.serialize_to_view( hda,
             user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+
+    def __create_datasets_from_library_folder( self, trans, history, payload, **kwd ):
+        rval = []
+
+        source = payload.get( 'source', None )
+        if source == 'library_folder':
+            content = payload.get( 'content', None )
+            if content is None:
+                raise exceptions.RequestParameterMissingException( "'content' id of lda or hda is missing" )
+
+            folder_id = self.folder_manager.cut_and_decode( trans, content )
+            folder = self.folder_manager.get( trans, folder_id )
+
+            current_user_roles = trans.get_current_user_roles()
+
+            def traverse( folder ):
+                admin = trans.user_is_admin()
+                rval = []
+                for subfolder in folder.active_folders:
+                    if not admin:
+                        can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
+                    if (admin or can_access) and not subfolder.deleted:
+                        rval.extend( traverse( subfolder ) )
+                for ld in folder.datasets:
+                    if not admin:
+                        can_access = trans.app.security_agent.can_access_dataset(
+                            current_user_roles,
+                            ld.library_dataset_dataset_association.dataset
+                        )
+                    if (admin or can_access) and not ld.deleted:
+                        rval.append( ld )
+                return rval
+
+            for ld in traverse( folder ):
+                hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
+                hda_dict = self.hda_serializer.serialize_to_view( hda,
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                rval.append( hda_dict )
+        else:
+            message = "Invalid 'source' parameter in request %s" % source
+            raise exceptions.RequestParameterInvalidException(message)
+
+        trans.sa_session.flush()
+        return rval
 
     def __create_dataset_collection( self, trans, history, payload, **kwd ):
         source = kwd.get("source", "new_collection")

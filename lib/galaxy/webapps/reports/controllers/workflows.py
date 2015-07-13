@@ -8,6 +8,7 @@ from galaxy.web.framework.helpers import grids
 eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+from galaxy.webapps.reports.controllers.jobs import sorter
 
 import logging
 log = logging.getLogger( __name__ )
@@ -146,10 +147,15 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def per_month_all( self, trans, **kwd ):
         message = ''
+        specs = sorter( 'date', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
         q = sa.select( ( self.select_month( model.StoredWorkflow.table.c.create_time ).label( 'date' ), sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
                        from_obj=[ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
                        group_by=self.group_by_month( model.StoredWorkflow.table.c.create_time ),
-                       order_by=[ sa.desc( 'date' ) ] )
+                       order_by=[ _order ] )
         workflows = []
         for row in q.execute():
             workflows.append( ( row.date.strftime( "%Y-%m" ),
@@ -157,27 +163,45 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                                 row.date.strftime( "%B" ),
                                 row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/workflows_per_month_all.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     workflows=workflows,
                                     message=message )
 
     @web.expose
     def per_user( self, trans, **kwd ):
         message = ''
+        specs = sorter( 'user_email', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
         workflows = []
         q = sa.select( ( model.User.table.c.email.label( 'user_email' ),
                          sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
                        from_obj=[ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
                        group_by=[ 'user_email' ],
-                       order_by=[ sa.desc( 'total_workflows' ), 'user_email' ] )
+                       order_by=[ _order ] )
         for row in q.execute():
             workflows.append( ( row.user_email,
                                 row.total_workflows ) )
-        return trans.fill_template( '/webapps/reports/workflows_per_user.mako', workflows=workflows, message=message )
+        return trans.fill_template( '/webapps/reports/workflows_per_user.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    workflows=workflows,
+                                    message=message )
 
     @web.expose
     def user_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
+        specs = sorter( 'date', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
         email = util.restore_text( params.get( 'email', '' ) )
         user_id = trans.security.decode_id( params.get( 'id', '' ) )
         q = sa.select( ( self.select_month( model.StoredWorkflow.table.c.create_time ).label( 'date' ),
@@ -185,7 +209,7 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                        whereclause=model.StoredWorkflow.table.c.user_id == user_id,
                        from_obj=[ model.StoredWorkflow.table ],
                        group_by=self.group_by_month( model.StoredWorkflow.table.c.create_time ),
-                       order_by=[ sa.desc( 'date' ) ] )
+                       order_by=[ _order ] )
         workflows = []
         for row in q.execute():
             workflows.append( ( row.date.strftime( "%Y-%m" ),
@@ -194,6 +218,9 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                                 row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/workflows_user_per_month.mako',
                                     email=util.sanitize_text( email ),
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     workflows=workflows,
                                     message=message )
 

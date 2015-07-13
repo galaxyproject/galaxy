@@ -1,21 +1,27 @@
 #!/usr/bin/env python
-#Processes uploads from the user.
+# Processes uploads from the user.
 
 # WARNING: Changes in this tool (particularly as related to parsing) may need
 # to be reflected in galaxy.web.controllers.tool_runner and galaxy.tools
 
-import urllib, sys, os, gzip, tempfile, shutil, re, gzip, zipfile, codecs, binascii
-from galaxy import eggs
-# need to import model before sniff to resolve a circular import dependency
-import galaxy.model
-from galaxy.datatypes.checkers import *
-from galaxy.datatypes import sniff
-from galaxy.datatypes.binary import *
-from galaxy.datatypes.images import Pdf
-from galaxy.datatypes.registry import Registry
+import codecs
+import gzip
+import os
+import shutil
+import sys
+import tempfile
+import urllib
+import zipfile
+
 from galaxy import util
-from galaxy.datatypes.util.image_util import *
-from galaxy.util.json import *
+# need to import model before sniff to resolve a circular import dependency
+import galaxy.model  # noqa
+from galaxy.datatypes import sniff
+from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.checkers import check_binary, check_bz2, check_gzip, check_html, check_image, check_zip
+from galaxy.datatypes.registry import Registry
+from galaxy.datatypes.util.image_util import get_image_ext
+from galaxy.util.json import dumps, loads
 
 try:
     import Image as PIL
@@ -32,14 +38,17 @@ except:
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+
 def stop_err( msg, ret=1 ):
     sys.stderr.write( msg )
     sys.exit( ret )
+
+
 def file_err( msg, dataset, json_file ):
-    json_file.write( dumps( dict( type = 'dataset',
-                                           ext = 'data',
-                                           dataset_id = dataset.dataset_id,
-                                           stderr = msg ) ) + "\n" )
+    json_file.write( dumps( dict( type='dataset',
+                                  ext='data',
+                                  dataset_id=dataset.dataset_id,
+                                  stderr=msg ) ) + "\n" )
     # never remove a server-side upload
     if dataset.type in ( 'server_dir', 'path_paste' ):
         return
@@ -47,23 +56,29 @@ def file_err( msg, dataset, json_file ):
         os.remove( dataset.path )
     except:
         pass
+
+
 def safe_dict(d):
     """
     Recursively clone json structure with UTF-8 dictionary keys
     http://mellowmachines.com/blog/2009/06/exploding-dictionary-with-unicode-keys-as-python-arguments/
     """
     if isinstance(d, dict):
-        return dict([(k.encode('utf-8'), safe_dict(v)) for k,v in d.iteritems()])
+        return dict([(k.encode('utf-8'), safe_dict(v)) for k, v in d.iteritems()])
     elif isinstance(d, list):
         return [safe_dict(x) for x in d]
     else:
         return d
+
+
 def parse_outputs( args ):
     rval = {}
     for arg in args:
         id, files_path, path = arg.split( ':', 2 )
         rval[int( id )] = ( path, files_path )
     return rval
+
+
 def add_file( dataset, registry, json_file, output_path ):
     data_type = None
     line_count = None
@@ -80,7 +95,7 @@ def add_file( dataset, registry, json_file, output_path ):
 
     if dataset.type == 'url':
         try:
-            page = urllib.urlopen( dataset.path ) #page will be .close()ed by sniff methods
+            page = urllib.urlopen( dataset.path )  # page will be .close()ed by sniff methods
             temp_name, dataset.is_multi_byte = sniff.stream_to_file( page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers( page.headers ) )
         except Exception, e:
             file_err( 'Unable to fetch %s\n%s' % ( dataset.path, str( e ) ), dataset, json_file )
@@ -133,7 +148,7 @@ def add_file( dataset, registry, json_file, output_path ):
             elif is_gzipped and is_valid:
                 if link_data_only == 'copy_files':
                     # We need to uncompress the temp_name file, but BAM files must remain compressed in the BGZF format
-                    CHUNK_SIZE = 2**20 # 1Mb
+                    CHUNK_SIZE = 2 ** 20  # 1Mb
                     fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_gunzip_' % dataset.dataset_id, dir=os.path.dirname( output_path ), text=False )
                     gzipped_file = gzip.GzipFile( dataset.path, 'rb' )
                     while 1:
@@ -166,7 +181,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 elif is_bzipped and is_valid:
                     if link_data_only == 'copy_files':
                         # We need to uncompress the temp_name file
-                        CHUNK_SIZE = 2**20 # 1Mb
+                        CHUNK_SIZE = 2 ** 20  # 1Mb
                         fd, uncompressed = tempfile.mkstemp( prefix='data_id_%s_upload_bunzip2_' % dataset.dataset_id, dir=os.path.dirname( output_path ), text=False )
                         bzipped_file = bz2.BZ2File( dataset.path, 'rb' )
                         while 1:
@@ -195,7 +210,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 is_zipped = check_zip( dataset.path )
                 if is_zipped:
                     if link_data_only == 'copy_files':
-                        CHUNK_SIZE = 2**20 # 1Mb
+                        CHUNK_SIZE = 2 ** 20  # 1Mb
                         uncompressed = None
                         uncompressed_name = None
                         unzipped = False
@@ -255,7 +270,7 @@ def add_file( dataset, registry, json_file, output_path ):
                 if check_binary( dataset.path ) or Binary.is_ext_unsniffable(dataset.file_type):
                     # We have a binary dataset, but it is not Bam, Sff or Pdf
                     data_type = 'binary'
-                    #binary_ok = False
+                    # binary_ok = False
                     parts = dataset.name.split( "." )
                     if len( parts ) > 1:
                         ext = parts[-1].strip().lower()
@@ -318,12 +333,12 @@ def add_file( dataset, registry, json_file, output_path ):
         shutil.move( dataset.path, output_path )
     # Write the job info
     stdout = stdout or 'uploaded %s file' % data_type
-    info = dict( type = 'dataset',
-                 dataset_id = dataset.dataset_id,
-                 ext = ext,
-                 stdout = stdout,
-                 name = dataset.name,
-                 line_count = line_count )
+    info = dict( type='dataset',
+                 dataset_id=dataset.dataset_id,
+                 ext=ext,
+                 stdout=stdout,
+                 name=dataset.name,
+                 line_count=line_count )
     if dataset.get('uuid', None) is not None:
         info['uuid'] = dataset.get('uuid')
     json_file.write( dumps( info ) + "\n" )
@@ -331,6 +346,7 @@ def add_file( dataset, registry, json_file, output_path ):
     if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):
         # Groom the dataset content if necessary
         datatype.groom_dataset_content( output_path )
+
 
 def add_composite_file( dataset, registry, json_file, output_path, files_path ):
         if dataset.composite_files:
@@ -342,15 +358,15 @@ def add_composite_file( dataset, registry, json_file, output_path, files_path ):
                     break
                 elif dataset.composite_file_paths[value.name] is not None:
                     dp = dataset.composite_file_paths[value.name][ 'path' ]
-                    isurl = dp.find('://') <> -1 # todo fixme
+                    isurl = dp.find('://') != -1  # todo fixme
                     if isurl:
-                       try:
-                           temp_name, dataset.is_multi_byte = sniff.stream_to_file( urllib.urlopen( dp ), prefix='url_paste' )
-                       except Exception, e:
-                           file_err( 'Unable to fetch %s\n%s' % ( dp, str( e ) ), dataset, json_file )
-                           return
-                       dataset.path = temp_name
-                       dp = temp_name
+                        try:
+                            temp_name, dataset.is_multi_byte = sniff.stream_to_file( urllib.urlopen( dp ), prefix='url_paste' )
+                        except Exception, e:
+                            file_err( 'Unable to fetch %s\n%s' % ( dp, str( e ) ), dataset, json_file )
+                            return
+                        dataset.path = temp_name
+                        dp = temp_name
                     if not value.is_binary:
                         tmpdir = output_adjacent_tmpdir( output_path )
                         tmp_prefix = 'data_id_%s_convert_' % dataset.dataset_id
@@ -362,9 +378,9 @@ def add_composite_file( dataset, registry, json_file, output_path, files_path ):
         # Move the dataset to its "real" path
         shutil.move( dataset.primary_file, output_path )
         # Write the job info
-        info = dict( type = 'dataset',
-                     dataset_id = dataset.dataset_id,
-                     stdout = 'uploaded %s file' % dataset.file_type )
+        info = dict( type='dataset',
+                     dataset_id=dataset.dataset_id,
+                     stdout='uploaded %s file' % dataset.file_type )
         json_file.write( dumps( info ) + "\n" )
 
 

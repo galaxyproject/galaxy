@@ -3,7 +3,7 @@ Execute an external process to set_meta() on a provided list of pickled datasets
 
 This was formerly scripts/set_metadata.py and expects these arguments:
 
-    %prog datatypes_conf.xml job_metadata_file metadata_in,metadata_kwds,metadata_out,metadata_results_code,output_filename_override,metadata_override...
+    %prog datatypes_conf.xml job_metadata_file metadata_in,metadata_kwds,metadata_out,metadata_results_code,output_filename_override,metadata_override... max_metadata_value_size
 
 Galaxy should be importable on sys.path and output_filename_override should be
 set to the path of the dataset on which metadata is being set
@@ -30,6 +30,8 @@ sys.path.insert( 0, new_path )
 from galaxy import eggs
 import pkg_resources
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
+from galaxy.model.custom_types import total_size
+
 galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 from galaxy.util import stringify_dictionary_keys
 from sqlalchemy.orm import clear_mappers
@@ -67,6 +69,16 @@ def set_metadata():
     # locate galaxy_root for loading datatypes
     galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
     galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
+
+    # This is ugly, but to transition from existing jobs without this parameter
+    # to ones with, smoothly, it has to be the last optional parameter and we
+    # have to sniff it.
+    try:
+        max_metadata_value_size = int(sys.argv[-1])
+        sys.argv = sys.argv[:-1]
+    except ValueError:
+        max_metadata_value_size = 0
+        # max_metadata_value_size is unspecified and should be 0
 
     # Set up datatypes registry
     datatypes_config = sys.argv.pop( 1 )
@@ -119,6 +131,11 @@ def set_metadata():
                     setattr( dataset.metadata, metadata_name, metadata_file_override )
             file_dict = existing_job_metadata_dict.get( dataset.dataset.id, {} )
             set_meta_with_tool_provided( dataset, file_dict, set_meta_kwds, datatypes_registry )
+            if max_metadata_value_size:
+                for k, v in dataset.metadata.items():
+                    if total_size(v) > max_metadata_value_size:
+                        log.info("Key %s too large for metadata, discarding" % k)
+                        dataset.metadata.remove_key(k)
             dataset.metadata.to_JSON_dict( filename_out )  # write out results of set_meta
             json.dump( ( True, 'Metadata has been set successfully' ), open( filename_results_code, 'wb+' ) )  # setting metadata has succeeded
         except Exception, e:

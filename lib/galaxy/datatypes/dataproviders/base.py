@@ -96,8 +96,8 @@ class DataProvider( object ):
             raise exceptions.InvalidDataProviderSource( source )
         return source
 
-    #TODO: (this might cause problems later...)
-    #TODO: some providers (such as chunk's seek and read) rely on this... remove
+    # TODO: (this might cause problems later...)
+    # TODO: some providers (such as chunk's seek and read) rely on this... remove
     def __getattr__( self, name ):
         if name == 'source':
             # if we're inside this fn, source hasn't been set - provide some safety just for this attr
@@ -111,13 +111,15 @@ class DataProvider( object ):
     # write methods should not be allowed
     def truncate( self, size ):
         raise NotImplementedError( 'Write methods are purposely disabled' )
+
     def write( self, string ):
         raise NotImplementedError( 'Write methods are purposely disabled' )
+
     def writelines( self, sequence ):
         raise NotImplementedError( 'Write methods are purposely disabled' )
 
-    #TODO: route read methods through next?
-    #def readline( self ):
+    # TODO: route read methods through next?
+    # def readline( self ):
     #    return self.next()
     def readlines( self ):
         return [ line for line in self ]
@@ -128,6 +130,7 @@ class DataProvider( object ):
         with self as source:
             for datum in self.source:
                 yield datum
+
     def next( self ):
         return self.source.next()
 
@@ -137,6 +140,7 @@ class DataProvider( object ):
         if hasattr( self.source, '__enter__' ):
             self.source.__enter__()
         return self
+
     def __exit__( self, *args ):
         # make the source's context manager interface optional, call on source if there
         if hasattr( self.source, '__exit__' ):
@@ -153,7 +157,7 @@ class DataProvider( object ):
         """
         # we need to protect against recursion (in __getattr__) if self.source hasn't been set
         source_str = str( self.source ) if hasattr( self, 'source' ) else ''
-        return '%s(%s)' %( self.__class__.__name__, str( source_str ) )
+        return '%s(%s)' % ( self.__class__.__name__, str( source_str ) )
 
 
 class FilteredDataProvider( DataProvider ):
@@ -167,7 +171,7 @@ class FilteredDataProvider( DataProvider ):
         - `num_data_returned`: how many data has this provider yielded.
     """
     # not useful here - we don't want functions over the query string
-    #settings.update({ 'filter_fn': 'function' })
+    # settings.update({ 'filter_fn': 'function' })
 
     def __init__( self, source, filter_fn=None, **kwargs ):
         """
@@ -189,12 +193,12 @@ class FilteredDataProvider( DataProvider ):
         for datum in parent_gen:
             self.num_data_read += 1
             datum = self.filter( datum )
-            if datum != None:
+            if datum is not None:
                 self.num_valid_data_read += 1
                 self.num_data_returned += 1
                 yield datum
 
-    #TODO: may want to squash this into DataProvider
+    # TODO: may want to squash this into DataProvider
     def filter( self, datum ):
         """
         When given a datum from the provider's source, return None if the datum
@@ -224,7 +228,7 @@ class LimitedOffsetDataProvider( FilteredDataProvider ):
         'offset': 'int'
     }
 
-    #TODO: may want to squash this into DataProvider
+    # TODO: may want to squash this into DataProvider
     def __init__( self, source, offset=0, limit=None, **kwargs ):
         """
         :param offset:  the number of data to skip before providing.
@@ -238,7 +242,7 @@ class LimitedOffsetDataProvider( FilteredDataProvider ):
 
         # how many valid data to return - must be positive (None indicates no limit)
         self.limit = limit
-        if self.limit != None:
+        if self.limit is not None:
             self.limit = max( self.limit, 0 )
 
     def __iter__( self ):
@@ -247,32 +251,32 @@ class LimitedOffsetDataProvider( FilteredDataProvider ):
         `offset`, begin providing datat, and stop when `num_data_returned`
         is greater than `offset`.
         """
-        if self.limit != None and self.limit <= 0:
+        if self.limit is not None and self.limit <= 0:
             return
             yield
 
         parent_gen = super( LimitedOffsetDataProvider, self ).__iter__()
         for datum in parent_gen:
             self.num_data_returned -= 1
-            #print 'self.num_data_returned:', self.num_data_returned
-            #print 'self.num_valid_data_read:', self.num_valid_data_read
+            # print 'self.num_data_returned:', self.num_data_returned
+            # print 'self.num_valid_data_read:', self.num_valid_data_read
 
             if self.num_valid_data_read > self.offset:
                 self.num_data_returned += 1
                 yield datum
 
-            if self.limit != None and self.num_data_returned >= self.limit:
+            if self.limit is not None and self.num_data_returned >= self.limit:
                 break
 
-    #TODO: skipping lines is inefficient - somehow cache file position/line_num pair and allow provider
+    # TODO: skipping lines is inefficient - somehow cache file position/line_num pair and allow provider
     #   to seek to a pos/line and then begin providing lines
     # the important catch here is that we need to have accurate pos/line pairs
     #   in order to preserve the functionality of limit and offset
-    #if file_seek and len( file_seek ) == 2:
+    # if file_seek and len( file_seek ) == 2:
     #    seek_pos, new_line_num = file_seek
     #    self.seek_and_set_curr_line( seek_pos, new_line_num )
 
-    #def seek_and_set_curr_line( self, file_seek, new_curr_line_num ):
+    # def seek_and_set_curr_line( self, file_seek, new_curr_line_num ):
     #    self.seek( file_seek, os.SEEK_SET )
     #    self.curr_line_num = new_curr_line_num
 
@@ -302,9 +306,9 @@ class MultiSourceDataProvider( DataProvider ):
                 continue
             try:
                 self.source = self.validate_source( source )
-            except exceptions.InvalidDataProviderSource, invalid_source:
+            except exceptions.InvalidDataProviderSource:
                 continue
 
             parent_gen = super( MultiSourceDataProvider, self ).__iter__()
             for datum in parent_gen:
-                 yield datum
+                yield datum

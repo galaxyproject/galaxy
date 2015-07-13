@@ -121,7 +121,14 @@ class ASync( BaseUIController ):
                 galaxy_url  = trans.request.base + '/async/%s/%s/%s' % ( tool_id, data.id, key )
                 params.update( { 'GALAXY_URL' :galaxy_url } )
                 params.update( { 'data_id' :data.id } )
-                url  = tool.action + '?' + urllib.urlencode( params.flatten() )
+                # Use provided URL or fallback to tool action
+                url = URL or tool.action
+                # Does url already have query params?
+                if '?' in url:
+                    url_join_char = '&'
+                else:
+                    url_join_char = '?'
+                url = "%s%s%s" % ( url, url_join_char, urllib.urlencode( params.flatten() ) )
                 log.debug("connecting to -> %s" % url)
                 trans.log_event( "Async connecting to -> %s" % url )
                 text =  urllib.urlopen(url).read(-1)

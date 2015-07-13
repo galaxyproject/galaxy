@@ -69,3 +69,13 @@ version, you'll need to use the full, local path when calling it:
     ./node_modules/.bin/grunt
     # or
     ./node_modules/.bin/grunt watch
+
+
+The Toolshed Client Build
+=========================
+
+The commands mentioned above in 'Rebuilding' and 'Grunt watch' also can be applied to toolshed scripts by using the
+`--app=toolshed` option:
+
+	grunt watch --app=toolshed
+	grunt --app=toolshed
