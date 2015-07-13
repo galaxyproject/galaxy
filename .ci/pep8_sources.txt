@@ -1,9 +1,6 @@
 contrib/
 doc/patch.py
 doc/source/conf.py
-lib/galaxy/datatypes/converters/lped_to_fped_converter.py
-lib/galaxy/datatypes/converters/lped_to_pbed_converter.py
-lib/galaxy/datatypes/converters/pbed_ldreduced_converter.py
 lib/galaxy/model/mapping.py
 lib/galaxy/model/migrate/versions/
 lib/galaxy/model/tool_shed_install/migrate/versions/

@@ -33,31 +33,31 @@ def timenow():
 
 
 def getMissval(inped=''):
-   """
-   read some lines...ugly hack - try to guess missing value
-   should be N or 0 but might be . or -
-   """
-   commonmissvals = {'N': 'N', '0': '0', 'n': 'n', '9': '9', '-': '-', '.': '.'}
-   try:
-       f = file(inped, 'r')
-   except:
-       return None  # signal no in file
-   missval = None
-   while missval == None:  # doggedly continue until we solve the mystery
+    """
+    read some lines...ugly hack - try to guess missing value
+    should be N or 0 but might be . or -
+    """
+    commonmissvals = {'N': 'N', '0': '0', 'n': 'n', '9': '9', '-': '-', '.': '.'}
+    try:
+        f = file(inped, 'r')
+    except:
+        return None  # signal no in file
+    missval = None
+    while missval is None:  # doggedly continue until we solve the mystery
         try:
-          l = f.readline()
+            l = f.readline()
         except:
-          break
+            break
         ll = l.split()[6:]  # ignore pedigree stuff
         for c in ll:
             if commonmissvals.get(c, None):
-               missval = c
-               f.close()
-               return missval
-   if not missval:
-       missval = 'N'  # punt
-   f.close()
-   return missval
+                missval = c
+                f.close()
+                return missval
+    if not missval:
+        missval = 'N'  # punt
+    f.close()
+    return missval
 
 
 def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
@@ -72,9 +72,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
         missval = '0'
     cl = '%s --noweb --file %s --make-bed --out %s --missing-genotype %s' % (plink, inpedfilepath, outroot, missval)
     p = subprocess.Popen(cl, shell=True, cwd=outfilepath)
-    retval = p.wait()  # run plink
-
-
+    p.wait()  # run plink
 
 
 def main():
@@ -110,6 +108,5 @@ def main():
     f.close()
 
 
-
 if __name__ == "__main__":
-   main()
+    main()
