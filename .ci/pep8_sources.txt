@@ -1,7 +1,6 @@
 contrib/
 doc/patch.py
 doc/source/conf.py
-lib/galaxy/model/mapping.py
 lib/galaxy/model/migrate/versions/
 lib/galaxy/model/tool_shed_install/migrate/versions/
 lib/galaxy/util/pastescript/serve.py
