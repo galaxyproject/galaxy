@@ -50,11 +50,13 @@ class DatasetCollectionManager( object ):
         element_identifiers=None,
         elements=None,
         implicit_collection_info=None,
+        trusted_identifiers=None,  # Trust preloaded element objects
     ):
         """
         """
         # Trust embedded, newly created objects created by tool subsystem.
-        trusted_identifiers = implicit_collection_info is not None
+        if trusted_identifiers is None:
+            trusted_identifiers = implicit_collection_info is not None
 
         if element_identifiers and not trusted_identifiers:
             validate_input_element_identifiers( element_identifiers )
