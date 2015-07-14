@@ -6,6 +6,7 @@ import stat
 from string import Template
 import sys
 import tarfile
+import tempfile
 import time
 import urllib2
 import zipfile
@@ -913,13 +914,24 @@ class RegexReplace( RecipeStep ):
                 return tool_dependency, None, None
         else:
             filename = os.path.abspath( os.path.join( current_dir, action_dict[ 'filename' ] ) )
-        regex = re.compile( action_dict[ 'regex' ], flags=re.MULTILINE )
+        regex = re.compile( action_dict[ 'regex' ] )
         replacement = action_dict[ 'replacement' ]
-        haystack = file( filename, 'r' ).read()
-        altered_text, replacement_count = re.subn( regex, replacement, haystack )
-        file( filename, 'w' ).write( altered_text )
+        temp_fh = tempfile.NamedTemporaryFile( dir=current_dir )
+        ofh = temp_fh.file
+        line = 'placeholder'
+        total_replacements = 0
+        with open( filename, 'r' ) as haystack:
+            while len( line ) > 0:
+                line = haystack.readline()
+                altered_text, replacement_count = re.subn( regex, replacement, line )
+                if replacement_count > 0:
+                    ofh.write( altered_text )
+                    total_replacements += replacement_count
+                else:
+                    ofh.write( line )
+        shutil.copyfile( temp_fh.name, filename )
         log_text = 'Successfully replaced pattern %s with text %s in file %s: %s replacements made\n'
-        log_text = log_text % ( action_dict[ 'regex' ], action_dict[ 'replacement' ], filename, replacement_count )
+        log_text = log_text % ( action_dict[ 'regex' ], action_dict[ 'replacement' ], filename, total_replacements )
         log.debug( log_text )
         logfile.write( log_text )
         logfile.close()
