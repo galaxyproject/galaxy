@@ -49,6 +49,7 @@ class StepManager( object ):
                                       make_install=step_handler.MakeInstall( self.app ),
                                       move_directory_files=step_handler.MoveDirectoryFiles( self.app ),
                                       move_file=step_handler.MoveFile( self.app ),
+                                      regex_replace=step_handler.RegexReplace( self.app ),
                                       set_environment=step_handler.SetEnvironment( self.app ),
                                       set_environment_for_install=step_handler.SetEnvironmentForInstall( self.app ),
                                       setup_perl_environment=step_handler.SetupPerlEnvironment( self.app ),

@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 import stat
 from string import Template
@@ -869,6 +870,52 @@ class MoveFile( RecipeStep ):
         action_dict[ 'source' ] = basic_util.evaluate_template( action_elem.find( 'source' ).text, install_environment )
         action_dict[ 'destination' ] = basic_util.evaluate_template( action_elem.find( 'destination' ).text, install_environment )
         action_dict[ 'rename_to' ] = action_elem.get( 'rename_to' )
+        return action_dict
+
+
+class RegexReplace( RecipeStep ):
+
+    def __init__( self, app ):
+        self.app = app
+        self.type = 'regex_replace'
+
+    def execute_step( self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
+                      install_environment, work_dir, current_dir=None, initial_download=False ):
+        """
+        Search and replace text in a file using regular expressions. Since this class is not used in the initial
+        download stage, no recipe step filtering is performed here, and None values are always returned for
+        filtered_actions and dir.
+        """
+        log_file = os.path.join( install_environment.install_dir, basic_util.INSTALLATION_LOG )
+        if os.path.exists( log_file ):
+            logfile = open( log_file, 'ab' )
+        else:
+            logfile = open( log_file, 'wb' )
+        if os.path.isabs( action_dict[ 'filename' ] ):
+            filename = action_dict[ 'filename' ]
+            if not ( filename.startswith( current_dir ) or filename.startswith( install_environment.install_dir ) ):
+                return tool_dependency, None, None
+        else:
+            filename = os.path.abspath( os.path.join( current_dir, action_dict[ 'filename' ] ) )
+        regex = re.compile( action_dict[ 'regex' ], flags=re.MULTILINE )
+        replacement = action_dict[ 'replacement' ]
+        haystack = file( filename, 'r' ).read()
+        altered_text, replacement_count = re.subn( regex, replacement, haystack )
+        file( filename, 'w' ).write( altered_text )
+        log_text = 'Successfully replaced pattern %s with text %s in file %s: %s replacements made\n'
+        log_text = log_text % ( action_dict[ 'regex' ], action_dict[ 'replacement' ], filename, replacement_count )
+        log.debug( log_text )
+        logfile.write( log_text )
+        logfile.close()
+        return tool_dependency, None, None
+
+    def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
+        '''
+        Populate action_dict with the provided filename, regex, and replacement text.
+        '''
+        action_dict[ 'filename' ] = basic_util.evaluate_template( action_elem.get( 'filename' ), install_environment )
+        action_dict[ 'regex' ] = basic_util.evaluate_template( action_elem.find( 'regex' ).text, install_environment )
+        action_dict[ 'replacement' ] = basic_util.evaluate_template( action_elem.find( 'replacement' ).text, install_environment )
         return action_dict
 
 
