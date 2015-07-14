@@ -38,7 +38,7 @@ config_arg = ''
 if config_set:
     config_arg = '-c %s' % config
 
-lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "lib" ) )
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, "lib" ) )
 sys.path.insert( 1, lib )
 
 from galaxy.eggs import Crate

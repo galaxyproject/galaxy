@@ -21,7 +21,7 @@ if "DEBUG" in os.environ:
 else:
     debug = False
 scripts_dir = os.path.abspath( os.path.dirname( sys.argv[0] ) )
-test_data_dir = os.path.join( scripts_dir, "..", "test-data" )
+test_data_dir = os.path.join( scripts_dir, os.pardir, "test-data" )
 # what tools to run - not so pretty
 tools = {
     "gops_intersect_1" :
@@ -98,7 +98,7 @@ except:
 ( username, password ) = f.readline().split()
 
 # find/import twill
-lib_dir = os.path.join( scripts_dir, "..", "lib" )
+lib_dir = os.path.join( scripts_dir, os.pardir, "lib" )
 sys.path.insert( 1, lib_dir )
 from galaxy import eggs
 eggs.require( "twill" )

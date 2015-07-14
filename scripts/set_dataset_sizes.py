@@ -5,7 +5,7 @@ import sys
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
-default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'config/galaxy.ini') )
+default_config = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'config/galaxy.ini') )
 
 parser = OptionParser()
 parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config )
@@ -14,7 +14,7 @@ parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config 
 
 def init():
     options.config = os.path.abspath( options.config )
-    sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
+    sys.path.insert( 1, os.path.join( os.path.dirname( __file__ ), os.pardir, 'lib' ) )
 
     config = ConfigParser( dict( file_path='database/files',
                                  database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )

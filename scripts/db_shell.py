@@ -16,7 +16,7 @@ import os.path
 import sys
 
 db_shell_path = __file__
-new_path = [ os.path.join( os.path.dirname( db_shell_path ), os.path.pardir, "lib" ) ]
+new_path = [ os.path.join( os.path.dirname( db_shell_path ), os.pardir, "lib" ) ]
 new_path.extend( sys.path[1:] )  # remove scripts/ from the path
 sys.path = new_path
 

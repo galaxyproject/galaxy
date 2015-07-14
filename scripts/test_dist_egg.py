@@ -16,7 +16,7 @@ except:
     print __doc__
     sys.exit( 1 )
 
-lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'lib' ) )
 sys.path.insert( 0, lib )
 
 if sys.argv[1].endswith( '.egg' ):

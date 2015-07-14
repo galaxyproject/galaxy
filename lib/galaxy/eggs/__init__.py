@@ -19,7 +19,7 @@ log = logging.getLogger( __name__ )
 log.addHandler( logging.NullHandler() )
 
 
-galaxy_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', '..', '..' ) )
+galaxy_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 eggs_dir = os.environ.get( 'GALAXY_EGGS_PATH', os.path.join( galaxy_dir, 'eggs' ) )
 py = 'py%s' % sys.version[:3]
 
