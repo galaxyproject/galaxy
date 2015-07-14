@@ -885,6 +885,22 @@ class RegexReplace( RecipeStep ):
         Search and replace text in a file using regular expressions. Since this class is not used in the initial
         download stage, no recipe step filtering is performed here, and None values are always returned for
         filtered_actions and dir.
+
+        This step supports the full range of python's regular expression engine, including backreferences in
+        the replacement text.
+
+        Example:
+        <action type="regex_replace" filename="Makefile">
+            <regex>^CFLAGS(\s*)=\s*-g\s*-Wall\s*-O2\s*$$</regex>
+            <replacement>CFLAGS\1= -g -Wall -O2 -I$$(NCURSES_INCLUDE_PATH)/ncurses/ -I$$(NCURSES_INCLUDE_PATH) -L$$(NCURSES_LIB_PATH)</replacement>
+        </action>
+
+        Before:
+        CFLAGS  = -g -Wall -O2
+
+        After:
+        CFLAGS  = -g -Wall -O2 -I$(NCURSES_INCLUDE_PATH)/ncurses/ -I$(NCURSES_INCLUDE_PATH) -L$(NCURSES_LIB_PATH)
+
         """
         log_file = os.path.join( install_environment.install_dir, basic_util.INSTALLATION_LOG )
         if os.path.exists( log_file ):
