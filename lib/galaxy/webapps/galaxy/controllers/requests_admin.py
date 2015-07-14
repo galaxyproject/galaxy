@@ -1,16 +1,15 @@
 from __future__ import absolute_import
+import logging
+import os
 
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
-from galaxy.web.framework.helpers import time_ago, grids
-# from galaxy.model.orm import *
 from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
 from galaxy.web.form_builder import build_select_field
+from galaxy.web.framework.helpers import time_ago, grids
 from .requests_common import RequestsGrid, invalid_id_redirect
 from galaxy import eggs
 eggs.require("amqp")
 import amqp
-import logging
-import os
 import pexpect
 
 log = logging.getLogger( __name__ )

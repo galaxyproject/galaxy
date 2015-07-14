@@ -22,8 +22,8 @@ from sqlalchemy.orm import eagerload
 
 import galaxy.config
 import galaxy.model.mapping
-from galaxy.objectstore import build_object_store_from_config
 from galaxy.exceptions import ObjectNotFound
+from galaxy.objectstore import build_object_store_from_config
 
 log = logging.getLogger()
 log.setLevel( 10 )

@@ -3,19 +3,23 @@ Details of how the data model objects are mapped onto the relational database
 are encapsulated here.
 """
 import logging
-log = logging.getLogger( __name__ )
 
-from galaxy.webapps.tool_shed.model import *
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, MetaData, not_, String, Table, TEXT, true, UniqueConstraint
+from sqlalchemy.orm import backref, mapper, relation
+
 import galaxy.webapps.tool_shed.model
-from galaxy.model.orm import *
-from galaxy.model.custom_types import *
+import galaxy.webapps.tool_shed.util.hgweb_config
+import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
+from galaxy.model.base import ModelMapping
+from galaxy.model.custom_types import JSONType, TrimmedString
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.model.base import ModelMapping
-import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
-import galaxy.webapps.tool_shed.util.hgweb_config
+from galaxy.webapps.tool_shed.model import APIKeys, Category, Component, ComponentReview, GalaxySession, Group, GroupRoleAssociation, PasswordResetToken, Repository, RepositoryCategoryAssociation, RepositoryMetadata, RepositoryRatingAssociation, RepositoryReview, RepositoryRoleAssociation, Role, SkipToolTest, Tag, User, UserGroupAssociation, UserRoleAssociation
 from galaxy.webapps.tool_shed.security import CommunityRBACAgent
 
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 
@@ -94,11 +98,10 @@ GalaxySession.table = Table( "galaxy_session", metadata,
                              Column( "remote_host", String( 255 ) ),
                              Column( "remote_addr", String( 255 ) ),
                              Column( "referer", TEXT ),
-                             Column( "session_key", TrimmedString( 255 ), index=True, unique=True ), # unique 128 bit random number coerced to a string
+                             Column( "session_key", TrimmedString( 255 ), index=True, unique=True ),  # unique 128 bit random number coerced to a string
                              Column( "is_valid", Boolean, default=False ),
-                             Column( "prev_session_id", Integer ), # saves a reference to the previous session so we have a way to chain them together
-                             Column( "last_action", DateTime)
-    )
+                             Column( "prev_session_id", Integer ),  # saves a reference to the previous session so we have a way to chain them together
+                             Column( "last_action", DateTime) )
 
 Repository.table = Table( "repository", metadata,
                           Column( "id", Integer, primary_key=True ),
@@ -213,42 +216,41 @@ mapper( User, User.table,
 mapper( PasswordResetToken, PasswordResetToken.table,
         properties=dict( user=relation( User, backref="reset_tokens") ) )
 
-mapper( APIKeys, APIKeys.table,
-        properties = {} )
+mapper( APIKeys, APIKeys.table, properties={} )
 
 mapper( Group, Group.table,
         properties=dict( users=relation( UserGroupAssociation ) ) )
 
 mapper( Role, Role.table,
         properties=dict(
-        repositories=relation( RepositoryRoleAssociation,
-                               primaryjoin=( ( Role.table.c.id == RepositoryRoleAssociation.table.c.role_id ) & ( RepositoryRoleAssociation.table.c.repository_id == Repository.table.c.id ) ) ),
-        users=relation( UserRoleAssociation,
-                        primaryjoin=( ( Role.table.c.id == UserRoleAssociation.table.c.role_id ) & ( UserRoleAssociation.table.c.user_id == User.table.c.id ) ) ),
-        groups=relation( GroupRoleAssociation,
-                         primaryjoin=( ( Role.table.c.id == GroupRoleAssociation.table.c.role_id ) & ( GroupRoleAssociation.table.c.group_id == Group.table.c.id ) ) ) ) )
+            repositories=relation( RepositoryRoleAssociation,
+                                   primaryjoin=( ( Role.table.c.id == RepositoryRoleAssociation.table.c.role_id ) & ( RepositoryRoleAssociation.table.c.repository_id == Repository.table.c.id ) ) ),
+            users=relation( UserRoleAssociation,
+                            primaryjoin=( ( Role.table.c.id == UserRoleAssociation.table.c.role_id ) & ( UserRoleAssociation.table.c.user_id == User.table.c.id ) ) ),
+            groups=relation( GroupRoleAssociation,
+                             primaryjoin=( ( Role.table.c.id == GroupRoleAssociation.table.c.role_id ) & ( GroupRoleAssociation.table.c.group_id == Group.table.c.id ) ) ) ) )
 
 mapper( RepositoryRoleAssociation, RepositoryRoleAssociation.table,
         properties=dict(
-        repository=relation( Repository ),
-        role=relation( Role ) ) )
+            repository=relation( Repository ),
+            role=relation( Role ) ) )
 
 mapper( UserGroupAssociation, UserGroupAssociation.table,
-        properties=dict( user=relation( User, backref = "groups" ),
-                         group=relation( Group, backref = "members" ) ) )
+        properties=dict( user=relation( User, backref="groups" ),
+                         group=relation( Group, backref="members" ) ) )
 
 mapper( UserRoleAssociation, UserRoleAssociation.table,
         properties=dict(
-        user=relation( User, backref="roles" ),
-        non_private_roles=relation( User,
-                                    backref="non_private_roles",
-                                    primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.name == User.table.c.email ) ) ),
-        role=relation( Role ) ) )
+            user=relation( User, backref="roles" ),
+            non_private_roles=relation( User,
+                                        backref="non_private_roles",
+                                        primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.name == User.table.c.email ) ) ),
+            role=relation( Role ) ) )
 
 mapper( GroupRoleAssociation, GroupRoleAssociation.table,
         properties=dict(
-        group=relation( Group, backref="roles" ),
-        role=relation( Role ) ) )
+            group=relation( Group, backref="roles" ),
+            role=relation( Role ) ) )
 
 mapper( GalaxySession, GalaxySession.table,
         properties=dict( user=relation( User ) ) )
@@ -263,22 +265,22 @@ mapper( Category, Category.table,
                                                 secondaryjoin=( RepositoryCategoryAssociation.table.c.repository_id == Repository.table.c.id ) ) ) )
 
 mapper( Repository, Repository.table,
-        properties = dict(
-        categories=relation( RepositoryCategoryAssociation ),
-        ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
-        user=relation( User ),
-        downloadable_revisions=relation( RepositoryMetadata,
-                                         primaryjoin=( ( Repository.table.c.id == RepositoryMetadata.table.c.repository_id ) & ( RepositoryMetadata.table.c.downloadable == True ) ),
+        properties=dict(
+            categories=relation( RepositoryCategoryAssociation ),
+            ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
+            user=relation( User ),
+            downloadable_revisions=relation( RepositoryMetadata,
+                                             primaryjoin=( ( Repository.table.c.id == RepositoryMetadata.table.c.repository_id ) & ( RepositoryMetadata.table.c.downloadable == true() ) ),
+                                             order_by=desc( RepositoryMetadata.table.c.update_time ) ),
+            metadata_revisions=relation( RepositoryMetadata,
                                          order_by=desc( RepositoryMetadata.table.c.update_time ) ),
-        metadata_revisions=relation( RepositoryMetadata,
-                                     order_by=desc( RepositoryMetadata.table.c.update_time ) ),
-        roles=relation( RepositoryRoleAssociation ),
-        reviews=relation( RepositoryReview,
-                          primaryjoin=( ( Repository.table.c.id == RepositoryReview.table.c.repository_id ) ) ),
-        reviewers=relation( User,
-                            secondary=RepositoryReview.table,
-                            primaryjoin=( Repository.table.c.id == RepositoryReview.table.c.repository_id ),
-                            secondaryjoin=( RepositoryReview.table.c.user_id == User.table.c.id ) ) ) )
+            roles=relation( RepositoryRoleAssociation ),
+            reviews=relation( RepositoryReview,
+                              primaryjoin=( ( Repository.table.c.id == RepositoryReview.table.c.repository_id ) ) ),
+            reviewers=relation( User,
+                                secondary=RepositoryReview.table,
+                                primaryjoin=( Repository.table.c.id == RepositoryReview.table.c.repository_id ),
+                                secondaryjoin=( RepositoryReview.table.c.user_id == User.table.c.id ) ) ) )
 
 mapper( RepositoryMetadata, RepositoryMetadata.table,
         properties=dict( repository=relation( Repository ),
@@ -302,9 +304,9 @@ mapper( RepositoryReview, RepositoryReview.table,
                                                        backref='review' ),
                          user=relation( User, backref="repository_reviews" ),
                          component_reviews=relation( ComponentReview,
-                                                     primaryjoin=( ( RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id ) & ( ComponentReview.table.c.deleted == False ) ) ),
+                                                     primaryjoin=( ( RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id ) & ( ComponentReview.table.c.deleted == false() ) ) ),
                          private_component_reviews=relation( ComponentReview,
-                                                             primaryjoin=( ( RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id ) & ( ComponentReview.table.c.deleted == False ) & ( ComponentReview.table.c.private == True ) ) ) ) )
+                                                             primaryjoin=( ( RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id ) & ( ComponentReview.table.c.deleted == false() ) & ( ComponentReview.table.c.private == true() ) ) ) ) )
 
 mapper( ComponentReview, ComponentReview.table,
         properties=dict( repository_review=relation( RepositoryReview ),
@@ -318,8 +320,8 @@ mapper( RepositoryRatingAssociation, RepositoryRatingAssociation.table,
 
 mapper( RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
         properties=dict(
-        category=relation( Category ),
-        repository=relation( Repository ) ) )
+            category=relation( Category ),
+            repository=relation( Repository ) ) )
 
 
 def init( file_path, url, engine_options={}, create_tables=False ):

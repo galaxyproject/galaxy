@@ -10,6 +10,14 @@ import tempfile
 import urllib
 import urllib2
 import zipfile
+
+from galaxy import eggs
+eggs.require('MarkupSafe')
+from markupsafe import escape
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false
+from sqlalchemy.orm import eagerload_all
+
 from galaxy import util, web
 from galaxy.eggs import require
 from galaxy.security import Action
@@ -19,8 +27,6 @@ from galaxy.util.json import dumps, loads
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
-from markupsafe import escape
-from galaxy.model.orm import and_, eagerload_all
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
@@ -614,14 +620,14 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         if is_admin and show_associated_hdas_and_lddas:
             # Get all associated hdas and lddas that use the same disk file.
             associated_hdas = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
-                                              .filter( and_( trans.model.HistoryDatasetAssociation.deleted == False,
+                                              .filter( and_( trans.model.HistoryDatasetAssociation.deleted == false(),
                                                              trans.model.HistoryDatasetAssociation.dataset_id == ldda.dataset_id ) ) \
-                                              .all()  # noqa
+                                              .all()
             associated_lddas = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ) \
-                                               .filter( and_( trans.model.LibraryDatasetDatasetAssociation.deleted == False,
+                                               .filter( and_( trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
                                                               trans.model.LibraryDatasetDatasetAssociation.dataset_id == ldda.dataset_id,
                                                               trans.model.LibraryDatasetDatasetAssociation.id != ldda.id ) ) \
-                                               .all()  # noqa
+                                               .all()
         else:
             associated_hdas = []
             associated_lddas = []
@@ -2303,8 +2309,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             target_libraries = []
             if is_admin:
                 for library in trans.sa_session.query( trans.model.Library ) \
-                                               .filter( trans.model.Library.deleted == False ) \
-                                               .order_by( trans.model.Library.table.c.name ):  # noqa
+                                               .filter( trans.model.Library.deleted == false() ) \
+                                               .order_by( trans.model.Library.table.c.name ):
                     if source_library is None or library.id != source_library.id:
                         target_libraries.append( library )
             else:
@@ -2653,10 +2659,10 @@ def datasets_for_lddas( trans, lddas ):
 def active_folders_and_library_datasets( trans, folder ):
     folders = active_folders( trans, folder )
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ).filter(
-        and_( trans.model.LibraryDataset.table.c.deleted == False,
+        and_( trans.model.LibraryDataset.table.c.deleted == false(),
         trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
         .order_by( trans.model.LibraryDataset.table.c._name ) \
-        .all()  # noqa
+        .all()
     return folders, library_datasets
 
 
@@ -2668,9 +2674,9 @@ def activatable_folders_and_library_datasets( trans, folder ):
                                                 trans.model.LibraryDataset.table.c.library_dataset_dataset_association_id == trans.model.LibraryDatasetDatasetAssociation.table.c.id ) ) \
                                        .join( ( trans.model.Dataset.table,
                                                 trans.model.LibraryDatasetDatasetAssociation.table.c.dataset_id == trans.model.Dataset.table.c.id ) ) \
-                                       .filter( trans.model.Dataset.table.c.deleted == False ) \
+                                       .filter( trans.model.Dataset.table.c.deleted == false() ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
-                                       .all()  # noqa
+                                       .all()
     return folders, library_datasets
 
 
@@ -2690,8 +2696,8 @@ def get_containing_library_from_library_dataset( trans, library_dataset ):
         folder = folder.parent
     # We have folder set to the library's root folder, which has the same name as the library
     for library in trans.sa_session.query( trans.model.Library ).filter(
-        and_( trans.model.Library.table.c.deleted == False,
-            trans.model.Library.table.c.name == folder.name ) ):  # noqa
+        and_( trans.model.Library.table.c.deleted == false(),
+            trans.model.Library.table.c.name == folder.name ) ):
         # Just to double-check
         if library.root_folder == folder:
             return library

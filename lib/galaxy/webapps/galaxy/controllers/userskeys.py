@@ -7,6 +7,8 @@ import logging
 from galaxy import eggs
 eggs.require( "MarkupSafe" )
 from markupsafe import escape
+eggs.require('SQLAlchemy')
+from sqlalchemy import false
 
 from galaxy import web
 from galaxy import util
@@ -63,8 +65,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         status = params.get( 'status', 'done' )
         users = []
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted == False ) \
-                                    .order_by( trans.app.model.User.table.c.email ):  # noqa
+                                    .filter( trans.app.model.User.table.c.deleted == false() ) \
+                                    .order_by( trans.app.model.User.table.c.email ):
                 uid = int(user.id)
                 userkey = ""
                 for api_user in trans.sa_session.query(trans.app.model.APIKeys) \

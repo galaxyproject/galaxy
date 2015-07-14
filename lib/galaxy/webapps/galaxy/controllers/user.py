@@ -14,11 +14,12 @@ from datetime import datetime, timedelta
 from galaxy import eggs
 eggs.require( "MarkupSafe" )
 from markupsafe import escape
+eggs.require('sqlalchemy')
+from sqlalchemy import and_, or_
 
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.model.orm import and_, or_
 from galaxy.security.validate_user_input import (transform_publicname,
                                                  validate_email,
                                                  validate_password,

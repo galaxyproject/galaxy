@@ -7,6 +7,8 @@ eggs.require( "MarkupSafe" )
 from markupsafe import escape
 eggs.require( "Paste" )
 import paste.httpexceptions
+eggs.require('SQLAlchemy')
+from sqlalchemy import false, true
 
 from galaxy import datatypes, model, util, web
 from galaxy import managers
@@ -90,9 +92,9 @@ class HistoryDatasetAssociationListGrid( grids.Grid ):
         # primary table for the query.
         return trans.sa_session.query( self.model_class ).select_from( self.model_class.table.join( model.History.table ) ) \
             .filter( model.History.user == trans.user ) \
-            .filter( self.model_class.deleted == False ) \
-            .filter( model.History.deleted == False ) \
-            .filter( self.model_class.visible == True )  # noqa
+            .filter( self.model_class.deleted == false() ) \
+            .filter( model.History.deleted == false() ) \
+            .filter( self.model_class.visible == true() )
 
 
 class DatasetInterface( BaseUIController, UsesAnnotations, UsesItemRatings, UsesExtendedMetadataMixin ):

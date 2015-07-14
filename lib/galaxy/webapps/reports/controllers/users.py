@@ -1,16 +1,20 @@
-from datetime import datetime, date, timedelta
 import calendar
+import logging
 import operator
-from galaxy.web.base.controller import BaseUIController, web
+from datetime import datetime, date, timedelta
+
+from galaxy import eggs
+eggs.require('MarkupSafe')
+from markupsafe import escape
+eggs.require( "SQLAlchemy >= 0.4" )
+import sqlalchemy as sa
+from sqlalchemy import false
+
 import galaxy.model
 from galaxy import util
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-import sqlalchemy as sa
-from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+from galaxy.web.base.controller import BaseUIController, web
 from galaxy.webapps.reports.controllers.jobs import sorter
-import logging
-from markupsafe import escape
+from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
 log = logging.getLogger( __name__ )
 
@@ -140,8 +144,8 @@ class Users( BaseUIController, ReportQueryBuilder ):
         cutoff_time = datetime.utcnow() - timedelta( days=int( days_not_logged_in ) )
         users = []
         for user in trans.sa_session.query( galaxy.model.User ) \
-                                    .filter( galaxy.model.User.table.c.deleted == False ) \
-                                    .order_by( galaxy.model.User.table.c.email ):  # noqa
+                                    .filter( galaxy.model.User.table.c.deleted == false() ) \
+                                    .order_by( galaxy.model.User.table.c.email ):
             if user.galaxy_sessions:
                 last_galaxy_session = user.galaxy_sessions[ 0 ]
                 if last_galaxy_session.update_time < cutoff_time:

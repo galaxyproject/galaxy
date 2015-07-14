@@ -1,14 +1,16 @@
 """
 Manager and Serializer for libraries.
 """
+import logging
 
-from galaxy import exceptions
-from galaxy.model.orm import and_, not_, or_
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, not_, or_, true
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy import true, false
 
-import logging
+from galaxy import exceptions
+
 log = logging.getLogger( __name__ )
 
 

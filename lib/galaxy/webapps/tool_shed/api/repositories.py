@@ -3,43 +3,42 @@ import logging
 import os
 import tarfile
 import StringIO
-from time import strftime
-from collections import namedtuple
 from cgi import FieldStorage
+from collections import namedtuple
+from time import strftime
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false
 
 from galaxy import util
 from galaxy import web
-from galaxy.exceptions import RequestParameterMissingException
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.exceptions import InsufficientPermissionsException
-from galaxy.exceptions import ActionInputError
-from galaxy.exceptions import ObjectNotFound
-from galaxy.exceptions import MalformedId
-from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.datatypes import checkers
-from galaxy.model.orm import and_
+from galaxy.exceptions import ActionInputError
+from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.exceptions import InsufficientPermissionsException
+from galaxy.exceptions import MalformedId
+from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import RequestParameterMissingException
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
 from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
-
 from tool_shed.capsule import capsule_manager
+from tool_shed.dependencies import attribute_handlers
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
-
-from tool_shed.dependencies import attribute_handlers
-
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import repository_util
 from tool_shed.util import repository_content_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
-
 
 log = logging.getLogger( __name__ )
 
@@ -372,8 +371,8 @@ class RepositoriesController( BaseAPIController ):
                 response = json.dumps( search_results )
             return response
 
-        clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == False,
-                              trans.app.model.Repository.table.c.deleted == deleted ) ]  # noqa
+        clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == false(),
+                              trans.app.model.Repository.table.c.deleted == deleted ) ]
         if owner is not None:
             clause_list.append( and_( trans.app.model.User.table.c.username == owner,
                                       trans.app.model.Repository.table.c.user_id == trans.app.model.User.table.c.id ) )

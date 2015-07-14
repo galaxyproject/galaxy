@@ -1,13 +1,17 @@
 import datetime
 import logging
-from tool_shed.util import metadata_util
-from galaxy import web
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, not_, select
+
+import tool_shed.util.shed_util_common as suc
 from galaxy import util
-from galaxy.model.orm import and_, not_, select
+from galaxy import web
 from galaxy.web.base.controller import BaseAPIController, HTTPBadRequest
 from tool_shed.capsule import capsule_manager
 from tool_shed.util import hg_util
-import tool_shed.util.shed_util_common as suc
+from tool_shed.util import metadata_util
 
 log = logging.getLogger( __name__ )
 

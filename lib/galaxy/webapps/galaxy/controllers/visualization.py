@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 
-from sqlalchemy import desc, or_, and_
+import logging
+
+from sqlalchemy import and_, desc, false, or_, true
 from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
 from galaxy import eggs
 eggs.require( "MarkupSafe" )
@@ -24,7 +26,6 @@ from galaxy.web.framework.helpers import grids, time_ago
 
 from .library import LibraryListGrid
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -155,8 +156,8 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
             self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
         return query.filter( model.HistoryDatasetAssociation.extension.in_(self.available_tracks) ) \
                     .filter( model.Dataset.state == model.Dataset.states.OK ) \
-                    .filter( model.HistoryDatasetAssociation.deleted == False ) \
-                    .filter( model.HistoryDatasetAssociation.visible == True )  # noqa
+                    .filter( model.HistoryDatasetAssociation.deleted == false() ) \
+                    .filter( model.HistoryDatasetAssociation.visible == true() )
 
 
 class TracksterSelectionGrid( grids.Grid ):
@@ -175,7 +176,7 @@ class TracksterSelectionGrid( grids.Grid ):
     ]
 
     def build_initial_query( self, trans, **kwargs ):
-        return trans.sa_session.query( self.model_class ).filter( self.model_class.deleted == False )  # noqa
+        return trans.sa_session.query( self.model_class ).filter( self.model_class.deleted == false() )
 
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter( self.model_class.user_id == trans.user.id )
@@ -265,7 +266,7 @@ class VisualizationAllPublishedGrid( grids.Grid ):
         return trans.sa_session.query( self.model_class ).join( model.User.table )
 
     def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter( self.model_class.deleted == False ).filter( self.model_class.published == True )  # noqa
+        return query.filter( self.model_class.deleted == false() ).filter( self.model_class.published == true() )
 
 
 class VisualizationController( BaseUIController, SharableMixin, UsesVisualizationMixin,
@@ -381,9 +382,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
             .query( model.VisualizationUserShareAssociation ) \
             .filter_by( user=trans.get_user() ) \
             .join( model.Visualization.table ) \
-            .filter( model.Visualization.deleted == False ) \
+            .filter( model.Visualization.deleted == false() ) \
             .order_by( desc( model.Visualization.update_time ) ) \
-            .all()  # noqa
+            .all()
 
         kwargs[ 'embedded' ] = True
         grid = self._user_list_grid( trans, *args, **kwargs )
@@ -530,8 +531,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesVisualizatio
         if email:
             other = trans.sa_session.query( model.User ) \
                                     .filter( and_( model.User.table.c.email == email,
-                                                   model.User.table.c.deleted == False ) ) \
-                                    .first()  # noqa
+                                                   model.User.table.c.deleted == false() ) ) \
+                                    .first()
             if not other:
                 mtype = "error"
                 msg = ( "User '%s' does not exist" % escape( email ) )

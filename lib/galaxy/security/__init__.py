@@ -3,12 +3,17 @@ Galaxy Security
 
 """
 import logging
-import socket
 import operator
+import socket
 from datetime import datetime, timedelta
-from galaxy.util.bunch import Bunch
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, or_, not_
+from sqlalchemy.orm import eagerload_all
+
 from galaxy.util import listify
-from galaxy.model.orm import and_, or_, not_, eagerload_all, false
+from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
 

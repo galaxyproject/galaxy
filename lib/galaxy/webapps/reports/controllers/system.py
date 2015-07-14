@@ -1,10 +1,16 @@
-import os
 import logging
+import os
 from datetime import datetime, timedelta
-from galaxy.web.base.controller import BaseUIController, web
 from decimal import Decimal
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, desc, false, null, true
+from sqlalchemy.orm import eagerload
+
+from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model, util
-from galaxy.model.orm import and_, desc, eagerload
+
 log = logging.getLogger( __name__ )
 
 
@@ -54,9 +60,9 @@ class System( BaseUIController ):
             history_count = 0
             dataset_count = 0
             for history in trans.sa_session.query( model.History ) \
-                    .filter( and_( model.History.table.c.user_id == None,
-                    model.History.table.c.deleted == True,
-                    model.History.table.c.update_time < cutoff_time ) ):  # noqa
+                    .filter( and_( model.History.table.c.user_id == null(),
+                    model.History.table.c.deleted == true(),
+                    model.History.table.c.update_time < cutoff_time ) ):
                 for dataset in history.datasets:
                     if not dataset.deleted:
                         dataset_count += 1
@@ -80,10 +86,10 @@ class System( BaseUIController ):
             dataset_count = 0
             disk_space = 0
             histories = trans.sa_session.query( model.History ) \
-                .filter( and_( model.History.table.c.deleted == True,
-                    model.History.table.c.purged == False,
+                .filter( and_( model.History.table.c.deleted == true(),
+                    model.History.table.c.purged == false(),
                     model.History.table.c.update_time < cutoff_time ) ) \
-                .options( eagerload( 'datasets' ) )  # noqa
+                .options( eagerload( 'datasets' ) )
 
             for history in histories:
                 for hda in history.datasets:
@@ -110,9 +116,9 @@ class System( BaseUIController ):
             dataset_count = 0
             disk_space = 0
             for dataset in trans.sa_session.query( model.Dataset ) \
-                .filter( and_( model.Dataset.table.c.deleted == True,
-                    model.Dataset.table.c.purged == False,
-                    model.Dataset.table.c.update_time < cutoff_time ) ):  # noqa
+                .filter( and_( model.Dataset.table.c.deleted == true(),
+                    model.Dataset.table.c.purged == false(),
+                    model.Dataset.table.c.update_time < cutoff_time ) ):
                 dataset_count += 1
                 try:
                     disk_space += dataset.file_size
@@ -130,13 +136,13 @@ class System( BaseUIController ):
         dataset = trans.sa_session.query( model.Dataset ).get( trans.security.decode_id( kwd.get( 'id', '' ) ) )
         # Get all associated hdas and lddas that use the same disk file.
         associated_hdas = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
-            .filter( and_( trans.model.HistoryDatasetAssociation.deleted == False,
+            .filter( and_( trans.model.HistoryDatasetAssociation.deleted == false(),
             trans.model.HistoryDatasetAssociation.dataset_id == dataset.id ) ) \
-            .all()  # noqa
+            .all()
         associated_lddas = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ) \
-            .filter( and_( trans.model.LibraryDatasetDatasetAssociation.deleted == False,
+            .filter( and_( trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
             trans.model.LibraryDatasetDatasetAssociation.dataset_id == dataset.id ) ) \
-            .all()  # noqa
+            .all()
         return trans.fill_template( '/webapps/reports/dataset_info.mako',
                                     dataset=dataset,
                                     associated_hdas=associated_hdas,
@@ -182,9 +188,9 @@ class System( BaseUIController ):
         min_file_size = 2 ** 32  # 4 Gb
         file_size_str = nice_size( min_file_size )
         datasets = trans.sa_session.query( model.Dataset ) \
-                                   .filter( and_( model.Dataset.table.c.purged == False,
+                                   .filter( and_( model.Dataset.table.c.purged == false(),
                                                   model.Dataset.table.c.file_size > min_file_size ) ) \
-                                   .order_by( desc( model.Dataset.table.c.file_size ) )  # noqa
+                                   .order_by( desc( model.Dataset.table.c.file_size ) )
         return file_path, disk_usage, datasets, file_size_str
 
 

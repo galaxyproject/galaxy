@@ -1,14 +1,15 @@
 import logging
 
+from galaxy import eggs
+eggs.require('MarkupSafe')
+from markupsafe import escape
+
 import galaxy.model
 import galaxy.util
-
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.framework.helpers import grids, time_ago
 from library_common import get_comptypes, lucene_search, whoosh_search
-from markupsafe import escape
-# from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 

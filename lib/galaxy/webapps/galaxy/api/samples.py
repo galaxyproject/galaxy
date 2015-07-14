@@ -2,11 +2,11 @@
 API operations for samples in the Galaxy sample tracking system.
 """
 import logging
+
 from galaxy import util
-from galaxy.web.base.controller import BaseAPIController, web
-# from galaxy.model.orm import *
 from galaxy.util.bunch import Bunch
 from galaxy.web import url_for
+from galaxy.web.base.controller import BaseAPIController, web
 
 log = logging.getLogger( __name__ )
 

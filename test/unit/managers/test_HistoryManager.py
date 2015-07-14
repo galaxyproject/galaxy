@@ -12,6 +12,7 @@ import galaxy_mock
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
 import sqlalchemy
+from sqlalchemy import true
 
 from galaxy import model
 from galaxy import exceptions
@@ -665,7 +666,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.log( "negative offset should return full list" )
         self.assertEqual( self.history_manager.list( offset=-1 ), all_histories )
 
-        filters = [ model.History.deleted == True ]  # noqa
+        filters = [ model.History.deleted == true() ]
         self.log( "orm filtered, no offset, no limit should work" )
         found = self.history_manager.list( filters=filters )
         self.assertEqual( found, [ history1, history2, history3 ] )

@@ -4,8 +4,9 @@ import urllib
 from galaxy import eggs
 eggs.require( "MarkupSafe" )
 from markupsafe import escape
-
-from sqlalchemy.sql.expression import false
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, func, null, true
+from sqlalchemy.orm import eagerload_all
 
 import galaxy.util
 from galaxy import exceptions
@@ -16,7 +17,6 @@ from galaxy import web
 from galaxy.datatypes.data import nice_size
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.model.orm import and_, eagerload_all, func
 from galaxy.util import Params
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
@@ -209,7 +209,7 @@ class HistoryAllPublishedGrid( grids.Grid ):
 
     def apply_query_filter( self, trans, query, **kwargs ):
         # A public history is published, has a slug, and is not deleted.
-        return query.filter( self.model_class.published == True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )  # noqa
+        return query.filter( self.model_class.published == true() ).filter( self.model_class.slug != null() ).filter( self.model_class.deleted == false() )
 
 
 class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings,
@@ -920,7 +920,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             if '@' in string:
                 email_address = string
                 send_to_user = self.user_manager.by_email( email_address,
-                    filters=[ trans.app.model.User.table.c.deleted == False ] )  # noqa
+                    filters=[ trans.app.model.User.table.c.deleted == false() ] )
 
             else:
                 try:

@@ -1,14 +1,13 @@
-from sqlalchemy import desc, and_
-from galaxy import model, web
-from galaxy import managers
-from galaxy.web import error, url_for
+from markupsafe import escape
+from sqlalchemy import and_, desc, false, true
+
+from galaxy import managers, model, util, web
 from galaxy.model.item_attrs import UsesItemRatings
+from galaxy.util.json import loads
+from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
+from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids
-from galaxy import util
-from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
-from galaxy.util.json import loads
-from markupsafe import escape
 
 
 def format_bool( b ):
@@ -87,7 +86,7 @@ class PageAllPublishedGrid( grids.Grid ):
         return trans.sa_session.query( self.model_class ).join( model.User.table )
 
     def apply_query_filter( self, trans, query, **kwargs ):
-        return query.filter( self.model_class.deleted == False ).filter( self.model_class.published == True )  # noqa
+        return query.filter( self.model_class.deleted == false() ).filter( self.model_class.published == true() )
 
 
 class ItemSelectionGrid( grids.Grid ):
@@ -332,9 +331,9 @@ class PageController( BaseUIController, SharableMixin,
             .query( model.PageUserShareAssociation ) \
             .filter_by( user=trans.get_user() ) \
             .join( model.Page.table ) \
-            .filter( model.Page.deleted == False ) \
+            .filter( model.Page.deleted == false() ) \
             .order_by( desc( model.Page.update_time ) ) \
-            .all()  # noqa
+            .all()
 
         # Render grid wrapped in panels
         return trans.fill_template( "page/index.mako", embedded_grid=grid, shared_by_others=shared_by_others )
@@ -507,8 +506,8 @@ class PageController( BaseUIController, SharableMixin,
         if email:
             other = trans.sa_session.query( model.User ) \
                                     .filter( and_( model.User.table.c.email == email,
-                                                   model.User.table.c.deleted == False ) ) \
-                                    .first()  # noqa
+                                                   model.User.table.c.deleted == false() ) ) \
+                                    .first()
             if not other:
                 mtype = "error"
                 msg = ( "User '%s' does not exist" % escape( email ) )

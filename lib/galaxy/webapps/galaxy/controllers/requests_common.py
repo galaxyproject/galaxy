@@ -1,8 +1,12 @@
 import csv
 import logging
 import re
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, func, select
+
 from galaxy import model, util, web
-from galaxy.model.orm import and_, func, select
 from galaxy.security.validate_user_input import validate_email
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import build_select_field, CheckboxField, SelectField, TextField
@@ -760,27 +764,27 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             samples = []
             if search_type == 'bar_code':
                 samples = trans.sa_session.query( trans.model.Sample ) \
-                                          .filter( and_( trans.model.Sample.table.c.deleted == False,
+                                          .filter( and_( trans.model.Sample.table.c.deleted == false(),
                                                          func.lower( trans.model.Sample.table.c.bar_code ).like( "%" + search_string.lower() + "%" ) ) ) \
-                                          .order_by( trans.model.Sample.table.c.create_time.desc() )  # noqa
+                                          .order_by( trans.model.Sample.table.c.create_time.desc() )
             elif search_type == 'sample name':
                 samples = trans.sa_session.query( trans.model.Sample ) \
-                                          .filter( and_( trans.model.Sample.table.c.deleted == False,
+                                          .filter( and_( trans.model.Sample.table.c.deleted == false(),
                                                          func.lower( trans.model.Sample.table.c.name ).like( "%" + search_string.lower() + "%" ) ) ) \
-                                          .order_by( trans.model.Sample.table.c.create_time.desc() )  # noqa
+                                          .order_by( trans.model.Sample.table.c.create_time.desc() )
             elif search_type == 'dataset':
                 samples = trans.sa_session.query( trans.model.Sample ) \
-                                          .filter( and_( trans.model.Sample.table.c.deleted == False,
+                                          .filter( and_( trans.model.Sample.table.c.deleted == false(),
                                                          trans.model.SampleDataset.table.c.sample_id == trans.model.Sample.table.c.id,
                                                          func.lower( trans.model.SampleDataset.table.c.name ).like( "%" + search_string.lower() + "%" ) ) ) \
-                                          .order_by( trans.model.Sample.table.c.create_time.desc() )  # noqa
+                                          .order_by( trans.model.Sample.table.c.create_time.desc() )
             elif search_type == 'form value':
                 samples = []
                 if search_string.find('=') != -1:
                     field_label, field_value = search_string.split('=')
                     all_samples = trans.sa_session.query( trans.model.Sample ) \
-                        .filter( trans.model.Sample.table.c.deleted == False ) \
-                        .order_by( trans.model.Sample.table.c.create_time.desc() )  # noqa
+                        .filter( trans.model.Sample.table.c.deleted == false() ) \
+                        .order_by( trans.model.Sample.table.c.create_time.desc() )
                     for sample in all_samples:
                         # find the field in the sample form with the given label
                         for field in sample.request.type.sample_form.fields:
@@ -1096,13 +1100,13 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 # Get the library
                 library = trans.sa_session.query( trans.model.Library ) \
                                           .filter( and_( trans.model.Library.table.c.name == row[1],
-                                                    trans.model.Library.table.c.deleted == False ) ) \
-                                          .first()  # noqa
+                                                    trans.model.Library.table.c.deleted == false() ) ) \
+                                          .first()
                 if library:
                     # Get the folder
                     for folder in trans.sa_session.query( trans.model.LibraryFolder ) \
                                                   .filter( and_( trans.model.LibraryFolder.table.c.name == row[2],
-                                                                 trans.model.LibraryFolder.table.c.deleted == False ) ):  # noqa
+                                                                 trans.model.LibraryFolder.table.c.deleted == false() ) ):
                         if folder.parent_library == library:
                             break
                     if folder:
@@ -1119,9 +1123,9 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 # Get the history
                 history = trans.sa_session.query( trans.model.History ) \
                                           .filter( and_( trans.model.History.table.c.name == row[3],
-                                                         trans.model.History.table.c.deleted == False,
+                                                         trans.model.History.table.c.deleted == false(),
                                                          trans.model.History.user_id == trans.user.id ) ) \
-                                          .first()  # noqa
+                                          .first()
                 if history:
                     history_id = trans.security.encode_id( history.id )
                 else:
@@ -1133,9 +1137,9 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 # Get the workflow
                 workflow = trans.sa_session.query( trans.model.StoredWorkflow ) \
                                            .filter( and_( trans.model.StoredWorkflow.table.c.name == row[4],
-                                                          trans.model.StoredWorkflow.table.c.deleted == False,
+                                                          trans.model.StoredWorkflow.table.c.deleted == false(),
                                                           trans.model.StoredWorkflow.user_id == trans.user.id ) ) \
-                                           .first()  # noqa
+                                           .first()
                 if workflow:
                     workflow_id = trans.security.encode_id( workflow.id )
                 else:
@@ -1677,8 +1681,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
 
     def __build_user_id_select_field( self, trans, selected_value='none' ):
         active_users = trans.sa_session.query( trans.model.User ) \
-                                       .filter( trans.model.User.table.c.deleted == False ) \
-                                       .order_by( trans.model.User.email.asc() )  # noqa
+                                       .filter( trans.model.User.table.c.deleted == false() ) \
+                                       .order_by( trans.model.User.email.asc() )
         # A refresh_on_change is required so the user's set of addresses can be displayed.
         return build_select_field( trans, active_users, 'email', 'user_id', selected_value=selected_value, refresh_on_change=True )
 

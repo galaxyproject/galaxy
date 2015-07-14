@@ -4,7 +4,10 @@ are encapsulated here.
 """
 
 import logging
-from sqlalchemy import and_, asc, Boolean, Column, DateTime, desc, ForeignKey, Integer, MetaData, not_, Numeric, select, String, Table, TEXT, Unicode, UniqueConstraint
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, asc, Boolean, Column, DateTime, desc, false, ForeignKey, Integer, MetaData, not_, Numeric, select, String, Table, TEXT, true, Unicode, UniqueConstraint
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.types import BigInteger
@@ -1442,15 +1445,14 @@ simple_mapping( model.HistoryDatasetAssociation,
         backref=backref( "parent", primaryjoin=( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ), remote_side=[model.HistoryDatasetAssociation.table.c.id], uselist=False ) ),
     visible_children=relation(
         model.HistoryDatasetAssociation,
-        primaryjoin=( ( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ) & ( model.HistoryDatasetAssociation.table.c.visible == True ) ),  # noqa
+        primaryjoin=( ( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ) & ( model.HistoryDatasetAssociation.table.c.visible == true() ) ),
         remote_side=[model.HistoryDatasetAssociation.table.c.id] ),
     tags=relation( model.HistoryDatasetAssociationTagAssociation, order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id, backref='history_tag_associations' ),
     annotations=relation( model.HistoryDatasetAssociationAnnotationAssociation, order_by=model.HistoryDatasetAssociationAnnotationAssociation.table.c.id, backref="hdas" ),
     ratings=relation( model.HistoryDatasetAssociationRatingAssociation, order_by=model.HistoryDatasetAssociationRatingAssociation.table.c.id, backref="hdas" ),
     extended_metadata=relation(
-            model.ExtendedMetadata,
-            primaryjoin=( ( model.HistoryDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
-        ),
+        model.ExtendedMetadata,
+        primaryjoin=( ( model.HistoryDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) ) ),
     hidden_beneath_collection_instance=relation(
         model.HistoryDatasetCollectionAssociation,
         primaryjoin=( ( model.HistoryDatasetAssociation.table.c.hidden_beneath_collection_instance_id == model.HistoryDatasetCollectionAssociation.table.c.id ) ),
@@ -1465,16 +1467,16 @@ simple_mapping( model.Dataset,
         primaryjoin=( model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id ) ),
     active_history_associations=relation(
         model.HistoryDatasetAssociation,
-        primaryjoin=( ( model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id ) & ( model.HistoryDatasetAssociation.table.c.deleted == False ) & ( model.HistoryDatasetAssociation.table.c.purged == False ) ) ),  # noqa
+        primaryjoin=( ( model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id ) & ( model.HistoryDatasetAssociation.table.c.deleted == false() ) & ( model.HistoryDatasetAssociation.table.c.purged == false() ) ) ),
     purged_history_associations=relation(
         model.HistoryDatasetAssociation,
-        primaryjoin=( ( model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id ) & ( model.HistoryDatasetAssociation.table.c.purged == True ) ) ),
+        primaryjoin=( ( model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id ) & ( model.HistoryDatasetAssociation.table.c.purged == true() ) ) ),
     library_associations=relation(
         model.LibraryDatasetDatasetAssociation,
         primaryjoin=( model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),
     active_library_associations=relation(
         model.LibraryDatasetDatasetAssociation,
-        primaryjoin=( ( model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( model.LibraryDatasetDatasetAssociation.table.c.deleted == False ) ) ),
+        primaryjoin=( ( model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( model.LibraryDatasetDatasetAssociation.table.c.deleted == false() ) ) ),
     tags=relation(model.DatasetTagAssociation, order_by=model.DatasetTagAssociation.table.c.id, backref='datasets')
 )
 
@@ -1759,7 +1761,7 @@ mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoc
             backref=backref( "parent", primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id] ) ),
         visible_children=relation(
             model.LibraryDatasetDatasetAssociation,
-            primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( model.LibraryDatasetDatasetAssociation.table.c.visible == True ) ),  # noqa
+            primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( model.LibraryDatasetDatasetAssociation.table.c.visible == true() ) ),
             remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id]),
         extended_metadata=relation(
             model.ExtendedMetadata,

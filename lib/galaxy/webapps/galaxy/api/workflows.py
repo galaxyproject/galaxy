@@ -8,7 +8,7 @@ import uuid
 import logging
 import copy
 import urllib
-from sqlalchemy import desc, or_, and_
+from sqlalchemy import and_, desc, false, or_, true
 from galaxy import exceptions, util
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.managers import histories
@@ -46,9 +46,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
         if show_published:
-            filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == True ) )  # noqa
+            filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == true() ) )
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
-                filter1, trans.app.model.StoredWorkflow.table.c.deleted == False ).order_by(  # noqa
+                filter1, trans.app.model.StoredWorkflow.table.c.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
             item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf.id)
@@ -57,7 +57,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
-                trans.app.model.StoredWorkflow.deleted == False ).order_by(  # noqa -- sqlalchemy comparison
+                trans.app.model.StoredWorkflow.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
             item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)

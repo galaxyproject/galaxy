@@ -1,12 +1,12 @@
 from __future__ import absolute_import
 
-from galaxy.web.base.controller import BaseUIController, web, UsesFormDefinitionsMixin
-from galaxy.web.framework.helpers import time_ago, iff, grids
-# from galaxy.model.orm import *
-from galaxy import model, util
-from galaxy.web.form_builder import TextField, SelectField
-from .requests_common import invalid_id_redirect
 import logging
+
+from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, web, UsesFormDefinitionsMixin
+from galaxy.web.form_builder import TextField, SelectField
+from galaxy.web.framework.helpers import time_ago, iff, grids
+from .requests_common import invalid_id_redirect
 
 log = logging.getLogger( __name__ )
 

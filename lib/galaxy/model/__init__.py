@@ -4,24 +4,26 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
+import codecs
+import errno
+import json
+import logging
+import numbers
+import operator
+import os
+import socket
+import time
+from datetime import datetime, timedelta
+from itertools import ifilter
+from string import Template
+from uuid import UUID, uuid4
 
 from galaxy import eggs
 eggs.require("pexpect")
-
-import codecs
-import errno
-import logging
-import operator
-import os
 import pexpect
-import json
-import socket
-import time
-import numbers
-from datetime import datetime, timedelta
-from uuid import UUID, uuid4
-from string import Template
-from itertools import ifilter
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, func, not_, or_, true
+from sqlalchemy.orm import joinedload, object_session
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
@@ -40,11 +42,6 @@ from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
                                      WorkflowMappingField)
-from galaxy.model.orm import and_, or_
-from sqlalchemy.orm import object_session
-from sqlalchemy.orm import joinedload
-from sqlalchemy.sql.expression import func
-from sqlalchemy import not_, true
 
 log = logging.getLogger( __name__ )
 

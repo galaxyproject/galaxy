@@ -2,15 +2,18 @@
 API operations on Quota objects.
 """
 import logging
-from galaxy.web.base.controller import BaseAPIController, UsesQuotaMixin, url_for
-from galaxy.web.base.controllers.admin import Admin
-from galaxy import web, util
-
-from galaxy.web.params import QuotaParamParser
-from galaxy.actions.admin import AdminActions
 
 from paste.httpexceptions import HTTPBadRequest
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false, true
+
+from galaxy import web, util
+from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError
+from galaxy.web.base.controller import BaseAPIController, UsesQuotaMixin, url_for
+from galaxy.web.base.controllers.admin import Admin
+from galaxy.web.params import QuotaParamParser
 
 log = logging.getLogger( __name__ )
 
@@ -29,10 +32,10 @@ class QuotaAPIController( BaseAPIController, Admin, AdminActions, UsesQuotaMixin
         query = trans.sa_session.query( trans.app.model.Quota )
         if deleted:
             route = 'deleted_quota'
-            query = query.filter( trans.app.model.Quota.table.c.deleted == True )  # noqa
+            query = query.filter( trans.app.model.Quota.table.c.deleted == true() )
         else:
             route = 'quota'
-            query = query.filter( trans.app.model.Quota.table.c.deleted == False )  # noqa
+            query = query.filter( trans.app.model.Quota.table.c.deleted == false() )
         for quota in query:
             item = quota.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id( quota.id )

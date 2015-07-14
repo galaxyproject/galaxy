@@ -1,10 +1,10 @@
-from galaxy.web.base.controller import BaseUIController, web
-# from galaxy.model.orm import *
-from galaxy import model, util
+import copy
 import logging
 import re
+
+from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.form_builder import FileField, TextField, HiddenField, SelectField
-import copy
 from galaxy.web.framework.helpers import iff, grids
 
 log = logging.getLogger( __name__ )

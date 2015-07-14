@@ -1,12 +1,16 @@
 from __future__ import absolute_import
 
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
-from galaxy.web.framework.helpers import iff, grids
-# from galaxy.model.orm import *
-from galaxy import model, util
-from galaxy.web.form_builder import build_select_field, TextField
-from .requests_common import invalid_id_redirect
 import logging
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false
+
+from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
+from galaxy.web.form_builder import build_select_field, TextField
+from galaxy.web.framework.helpers import iff, grids
+from .requests_common import invalid_id_redirect
 
 log = logging.getLogger( __name__ )
 
@@ -429,8 +433,8 @@ class RequestType( BaseUIController, UsesFormDefinitionsMixin ):
         except:
             return invalid_id_redirect( trans, 'request_type', request_type_id, 'request type', action='browse_request_types' )
         roles = trans.sa_session.query( trans.model.Role ) \
-                                .filter( trans.model.Role.table.c.deleted == False ) \
-                                .order_by( trans.model.Role.table.c.name )  # noqa
+                                .filter( trans.model.Role.table.c.deleted == false() ) \
+                                .order_by( trans.model.Role.table.c.name )
         if params.get( 'update_roles_button', False ):
             permissions = {}
             for k, v in trans.model.RequestType.permitted_actions.items():
@@ -462,7 +466,7 @@ class RequestType( BaseUIController, UsesFormDefinitionsMixin ):
             selected_value = trans.security.encode_id( external_service.id )
         else:
             selected_value = 'none'
-        all_external_services = trans.sa_session.query( trans.model.ExternalService ).filter( trans.model.ExternalService.table.c.deleted == False ).all()  # noqa
+        all_external_services = trans.sa_session.query( trans.model.ExternalService ).filter( trans.model.ExternalService.table.c.deleted == false() ).all()
         for e in all_external_services:
             external_service_type = e.get_external_service_type( trans )
             e.label = '%s - %s' % ( e.name, external_service_type.name )

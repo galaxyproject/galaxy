@@ -2,11 +2,15 @@
 API operations on a sample tracking system.
 """
 import logging
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false
+
 from galaxy import web
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.model.orm import and_
 from galaxy.util.bunch import Bunch
 from galaxy.web import url_for
+from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger( __name__ )
 
@@ -24,13 +28,13 @@ class RequestsAPIController( BaseAPIController ):
         # if admin user then return all requests
         if trans.user_is_admin():
             query = trans.sa_session.query( trans.app.model.Request ) \
-                .filter(  trans.app.model.Request.table.c.deleted == False )\
-                .all()  # noqa
+                .filter(  trans.app.model.Request.table.c.deleted == false() )\
+                .all()
         else:
             query = trans.sa_session.query( trans.app.model.Request )\
                 .filter( and_( trans.app.model.Request.table.c.user_id == trans.user.id and
-                trans.app.model.Request.table.c.deleted == False ) ) \
-                .all()  # noqa
+                trans.app.model.Request.table.c.deleted == false() ) ) \
+                .all()
         rval = []
         for request in query:
             item = request.to_dict()

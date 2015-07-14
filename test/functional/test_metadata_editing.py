@@ -1,11 +1,10 @@
-from sqlalchemy.sql.expression import false
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, desc, false
+
+import galaxy.model
 from base.twilltestcase import TwillTestCase
 from functional import database_contexts
-import galaxy.model
-from galaxy.model.orm import (
-    and_,
-    desc,
-)
 
 
 class TestMetadataEdit( TwillTestCase ):

@@ -1,11 +1,14 @@
 from __future__ import absolute_import
 
+import logging
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false
+
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
-# from galaxy.model.orm import *
-# from galaxy.web.form_builder import *
 from .requests_common import RequestsGrid
-import logging
 
 log = logging.getLogger( __name__ )
 
@@ -76,8 +79,8 @@ class Requests( BaseUIController ):
         # If there are requests that have been rejected, show a message as a reminder to the user
         rejected = 0
         for request in trans.sa_session.query( trans.app.model.Request ) \
-                .filter( trans.app.model.Request.table.c.deleted == False ) \
-                .filter( trans.app.model.Request.table.c.user_id == trans.user.id ):  # noqa
+                .filter( trans.app.model.Request.table.c.deleted == false() ) \
+                .filter( trans.app.model.Request.table.c.user_id == trans.user.id ):
             if request.is_rejected:
                 rejected = rejected + 1
         if rejected:

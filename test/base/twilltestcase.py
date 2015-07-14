@@ -1924,7 +1924,7 @@ class TwillTestCase( unittest.TestCase ):
                         if control.type == "checkbox":
                             def is_checked( value ):
                                 # Copied from form_builder.CheckboxField
-                                if value == True:
+                                if value is True:
                                     return True
                                 if isinstance( value, list ):
                                     value = value[0]

@@ -1,8 +1,12 @@
 """Tool Shed Security"""
 import logging
-from galaxy.util.bunch import Bunch
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false
+
 from galaxy.util import listify
-from galaxy.model.orm import and_
+from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
 
@@ -239,8 +243,8 @@ class CommunityRBACAgent( RBACAgent ):
         # A member of the IUC is authorized to create new repositories that are owned by another user.
         iuc_group = self.sa_session.query( self.model.Group ) \
                                    .filter( and_( self.model.Group.table.c.name == 'Intergalactic Utilities Commission',
-                                                  self.model.Group.table.c.deleted == False ) ) \
-                                   .first()  # noqa
+                                                  self.model.Group.table.c.deleted == false() ) ) \
+                                   .first()
         if iuc_group is not None:
             for uga in iuc_group.users:
                 if uga.user.id == user.id:

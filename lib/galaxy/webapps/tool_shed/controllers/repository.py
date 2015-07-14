@@ -2,29 +2,34 @@ import logging
 import os
 import string
 import tempfile
+from datetime import date
 from time import gmtime
 from time import strftime
-from datetime import date
+
+from galaxy import eggs
+eggs.require( 'mercurial' )
+from mercurial import mdiff
+from mercurial import patch
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, null, true
+
+import tool_shed.grids.repository_grids as repository_grids
+import tool_shed.grids.util as grids_util
+import tool_shed.repository_types.util as rt_util
 
 from galaxy import util
 from galaxy import web
+from galaxy.util import json
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids
-from galaxy.util import json
-from galaxy.model.orm import and_
-
+from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
-
-from tool_shed.util.web_util import escape
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
-from tool_shed.utility_containers import ToolShedUtilityContainerManager
-
 from tool_shed.tools import tool_validator
 from tool_shed.tools import tool_version_manager
-
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -36,19 +41,8 @@ from tool_shed.util import search_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
-
-from galaxy.webapps.tool_shed.util import ratings_util
-
-import tool_shed.grids.repository_grids as repository_grids
-import tool_shed.grids.util as grids_util
-
-import tool_shed.repository_types.util as rt_util
-
-from galaxy import eggs
-eggs.require( 'mercurial' )
-
-from mercurial import mdiff
-from mercurial import patch
+from tool_shed.util.web_util import escape
+from tool_shed.utility_containers import ToolShedUtilityContainerManager
 
 log = logging.getLogger( __name__ )
 
@@ -1653,28 +1647,28 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             return 'No user found with username %s.' % owner
         if status == 'passed':
             # Return only metadata revisions where tools_functionally_correct is set to True.
-            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
-                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == True,
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )  # noqa
+            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == true(),
+                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == true(),
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
         elif status == 'failed':
             # Return only metadata revisions where tools_functionally_correct is set to False.
-            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
-                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == False,
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )  # noqa
+            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == true(),
+                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == false(),
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
         else:
             # Return all metadata entries for this user's repositories.
-            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )  # noqa
+            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == true(),
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
 
         tool_shed_url = web.url_for( '/', qualified=True )
         functional_test_results = []
         for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
                 .filter( metadata_filter ) \
                 .join( trans.model.Repository ) \
-                .filter( and_( trans.model.Repository.table.c.deleted == False,
-                    trans.model.Repository.table.c.private == False,
-                    trans.model.Repository.table.c.deprecated == False,
-                    trans.model.Repository.table.c.user_id == user.id ) ):  # noqa
+                .filter( and_( trans.model.Repository.table.c.deleted == false(),
+                    trans.model.Repository.table.c.private == false(),
+                    trans.model.Repository.table.c.deprecated == false(),
+                    trans.model.Repository.table.c.user_id == user.id ) ):
             repository = repository_metadata.repository
             repo = hg_util.get_repo_for_repository( trans.app, repository=repository, repo_path=None, create=False )
             latest_downloadable_changeset_revsion = suc.get_latest_downloadable_changeset_revision( trans.app, repository, repo )
@@ -2101,7 +2095,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     can_administer_repositories = True
                 else:
                     for repository in trans.sa_session.query( trans.model.Repository ) \
-                                                      .filter( trans.model.Repository.table.c.deleted == False ):  # noqa
+                                                      .filter( trans.model.Repository.table.c.deleted == false() ):
                         if trans.app.security_agent.user_can_administer_repository( current_user, repository ):
                             can_administer_repositories = True
                             break
@@ -2224,9 +2218,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
         new_repo_alert_check_box = CheckboxField( 'new_repo_alert', checked=checked )
         email_alert_repositories = []
         for repository in trans.sa_session.query( trans.model.Repository ) \
-                                          .filter( and_( trans.model.Repository.table.c.deleted == False,
-                                                         trans.model.Repository.table.c.email_alerts != None ) ) \
-                                          .order_by( trans.model.Repository.table.c.name ):  # noqa
+                                          .filter( and_( trans.model.Repository.table.c.deleted == false(),
+                                                         trans.model.Repository.table.c.email_alerts != null() ) ) \
+                                          .order_by( trans.model.Repository.table.c.name ):
             if user.email in repository.email_alerts:
                 email_alert_repositories.append( repository )
         return trans.fill_template( "/webapps/tool_shed/user/manage_email_alerts.mako",

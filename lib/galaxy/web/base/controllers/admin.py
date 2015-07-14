@@ -1,15 +1,18 @@
 import logging
 import os
 from datetime import datetime, timedelta
+from string import punctuation as PUNCTUATION
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, func, or_
+
+import galaxy.queue_worker
 from galaxy import util, web
-from galaxy.model.orm import and_, func, or_, false
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
-from string import punctuation as PUNCTUATION
-import galaxy.queue_worker
-from tool_shed.util.web_util import escape
-
 from tool_shed.util import shed_util_common as suc
+from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
 

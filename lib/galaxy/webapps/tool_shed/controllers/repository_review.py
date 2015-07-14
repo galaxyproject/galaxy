@@ -1,25 +1,22 @@
 import logging
 
-from sqlalchemy.sql.expression import func
-from tool_shed.util.web_util import escape
-
-from galaxy import util
-from galaxy import web
-
-from galaxy.model.orm import and_
-from galaxy.util.odict import odict
-from galaxy.web.base.controller import BaseUIController
-from galaxy.web.form_builder import CheckboxField
-
-from galaxy.webapps.tool_shed.util import ratings_util
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, func, false
 
 import tool_shed.grids.repository_review_grids as repository_review_grids
 import tool_shed.grids.util as grids_util
-
-from tool_shed.util.container_util import STRSEP
+from galaxy import util
+from galaxy import web
+from galaxy.util.odict import odict
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.form_builder import CheckboxField
+from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.util import hg_util
 from tool_shed.util import review_util
 from tool_shed.util import shed_util_common as suc
+from tool_shed.util.container_util import STRSEP
+from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
 
@@ -321,9 +318,9 @@ class RepositoryReviewController( BaseUIController, ratings_util.ItemRatings ):
                     # Update the repository rating value to be the average of all component review ratings.
                     average_rating = trans.sa_session.query( func.avg( trans.model.ComponentReview.table.c.rating ) ) \
                                                      .filter( and_( trans.model.ComponentReview.table.c.repository_review_id == review.id,
-                                                                    trans.model.ComponentReview.table.c.deleted == False,
+                                                                    trans.model.ComponentReview.table.c.deleted == false(),
                                                                     trans.model.ComponentReview.table.c.approved != trans.model.ComponentReview.approved_states.NA ) ) \
-                                                     .scalar()  # noqa
+                                                     .scalar()
                     if average_rating is not None:
                         review.rating = int( average_rating )
                     trans.sa_session.add( review )

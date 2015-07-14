@@ -50,7 +50,7 @@ def __main__():
             if organisms[orgs[j]]['name'] >  organisms[orgs[j + 1]]['name']:
                 orgs[j], orgs[j + 1] = orgs[j + 1], orgs[j]
             swap_test = True
-        if swap_test == False:
+        if swap_test is False:
             break
 
 
