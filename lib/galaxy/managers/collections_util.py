@@ -39,7 +39,7 @@ def validate_input_element_identifiers( element_identifiers ):
     identifier_names = set()
     for element_identifier in element_identifiers:
         if "__object__" in element_identifier:
-            message = ERROR_MESSAGE_INVALID_PARAMETER_FOUND % ( "__model_object__", element_identifier )
+            message = ERROR_MESSAGE_INVALID_PARAMETER_FOUND % ( "__object__", element_identifier )
             raise exceptions.RequestParameterInvalidException( message )
         if "name" not in element_identifier:
             message = ERROR_MESSAGE_NO_NAME % element_identifier
