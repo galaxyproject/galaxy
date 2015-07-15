@@ -3,7 +3,7 @@ import ConfigParser
 import os
 import random
 import tempfile
-import subprocess
+from subprocess import Popen, PIPE
 
 from galaxy.util.bunch import Bunch
 from galaxy import web
@@ -188,4 +188,9 @@ class InteractiveEnviornmentRequest(object):
             self.attr.viz_id,
             raw_cmd
         ))
-        subprocess.call(raw_cmd, shell=True)
+        p = Popen( raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        stdout, stderr = p.communicate()
+        if p.returncode != 0 or len(stderr):
+            log.error( "%s\n%s" % (stdout, stderr) )
+        else:
+            log.debug( "Container id: %s" % stdout)
