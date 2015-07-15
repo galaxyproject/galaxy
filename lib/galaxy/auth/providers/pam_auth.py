@@ -5,7 +5,6 @@ Author Peter van Heusden (pvh@sanbi.ac.za)
 """
 
 import logging
-from distutils import spawn
 from subprocess import Popen, PIPE
 import shlex
 
@@ -53,6 +52,7 @@ Configuration example (for internal authentication, use email for user details):
 </authenticator>
 """
 
+
 class PAM(AuthProvider):
 
     plugin_type = 'PAM'
@@ -65,7 +65,7 @@ class PAM(AuthProvider):
         log.debug("use username: {} use email {} email {} username {}".format(options.get('login-use-username'), options.get('login-use-email', False), email, username))
         # check email based login first because if email exists in Galaxy DB
         # we will be given the "public name" as username
-        if _get_bool(options, 'login-use-email', False) == True and email is not None:
+        if _get_bool(options, 'login-use-email', False) and email is not None:
             if '@' in email:
                 (email_user, email_domain) = email.split('@')
                 pam_username = email_user
