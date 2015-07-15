@@ -50,16 +50,15 @@ class InteractiveEnviornmentRequest(object):
         # the destination container.
         self.notebook_pw_salt = self.generate_password(length=12)
         self.notebook_pw = self.generate_password(length=24)
-        
+
         self.temp_dir = os.path.abspath( tempfile.mkdtemp() )
         if self.attr.viz_config.getboolean("docker", "wx_tempdir"):
             # Ensure permissions are set
             try:
                 os.chmod( self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH )
-            except Exception, e:
-                log.error( "Could not change permissions of tmpdir %s" % temp_dir )
+            except Exception:
+                log.error( "Could not change permissions of tmpdir %s" % self.temp_dir )
                 # continue anyway
-
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
