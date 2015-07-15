@@ -2,7 +2,6 @@
 
 <%
 import os
-import stat
 import shutil
 import hashlib
 
@@ -11,13 +10,6 @@ ie_request.load_deploy_config()
 ie_request.attr.docker_port = 6789
 # Create tempdir in galaxy
 temp_dir = ie_request.temp_dir
-if ie_request.attr.viz_config.getboolean("docker", "wx_tempdir"):
-   # Ensure permissions are set
-   try:
-	os.chmod( temp_dir, os.stat(temp_dir).st_mode | stat.S_IXOTH )
-   except Exception, e:
-   	ie_request.log.error( "Could not change permissions of tmpdir %s" % temp_dir )
-	# continue anyway
 
 if ie_request.attr.PASSWORD_AUTH:
     m = hashlib.sha1()
