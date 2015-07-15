@@ -13,7 +13,6 @@ import galaxy.exceptions
 from galaxy.web.base import pluginframework
 from galaxy.visualization.plugins import config_parser
 from galaxy.visualization.plugins import plugin as vis_plugins
-from galaxy.visualization.plugins import utils as vis_utils
 
 
 import logging
@@ -46,7 +45,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
     def __init__( self, app, skip_bad_plugins=True, **kwargs ):
         self.app = weakref.ref( app )
-        self.config_parser = config_parser.VisualizationsConfigParser()
+        self.config_parser = config_parser.VisualizationsConfigParser( app )
         super( VisualizationsRegistry, self ).__init__( app, 'visualizations',
             skip_bad_plugins=skip_bad_plugins, **kwargs )
 
@@ -144,32 +143,25 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         `None` if it's not.
         """
         # log.debug( 'VisReg.get_visualization: %s, %s', visualization_name, target_object )
+
         visualization = self.plugins.get( visualization_name, None )
         if not visualization:
             return None
 
         data_sources = visualization.config[ 'data_sources' ]
+
+        # build a link using the first applicable datasource
+        # NOTE: this implies more specific datasources should be listed first
         for data_source in data_sources:
-            # log.debug( 'data_source: %s', data_source )
-            # currently a model class is required
-            model_class = data_source[ 'model_class' ]
-            # log.debug( '\t model_class: %s', model_class )
-            if not isinstance( target_object, model_class ):
+            if not data_source.is_applicable( target_object ):
                 continue
-            # log.debug( '\t passed model_class' )
 
-            # TODO: not true: must have test currently
-            tests = data_source[ 'tests' ]
-            if tests and not self.is_object_applicable( trans, target_object, tests ):
-                continue
-            # log.debug( '\t passed tests' )
-
-            param_data = data_source[ 'to_params' ]
-            url = self.get_visualization_url( trans, target_object, visualization_name, param_data )
+            url_params = data_source.params( trans, target_object )
+            url = self.get_visualization_url( trans, visualization_name, target_object, url_params )
             display_name = visualization.config.get( 'name', None )
             render_target = visualization.config.get( 'render_target', 'galaxy_main' )
             embeddable = visualization.config.get( 'embeddable', False )
-            # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
+
             return {
                 'href'      : url,
                 'html'      : display_name,
@@ -179,85 +171,20 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
 
         return None
 
-    def is_object_applicable( self, trans, target_object, data_source_tests ):
-        """
-        Run a visualization's data_source tests to find out if
-        it can be applied to the target_object.
-        """
-        # log.debug( 'is_object_applicable( self, trans, %s, %s )', target_object, data_source_tests )
-        for test in data_source_tests:
-            test_type = test[ 'type' ]
-            result_type = test[ 'result_type' ]
-            test_result = test[ 'result' ]
-            test_fn = test[ 'fn' ]
-            # log.debug( '%s %s: %s, %s, %s, %s', str( target_object ), 'is_object_applicable',
-            #           test_type, result_type, test_result, test_fn )
-
-            if test_type == 'isinstance':
-                # parse test_result based on result_type (curr: only datatype has to do this)
-                if result_type == 'datatype':
-                    # convert datatypes to their actual classes (for use with isinstance)
-                    datatype_class_name = test_result
-                    test_result = trans.app.datatypes_registry.get_datatype_class_by_name( datatype_class_name )
-                    if not test_result:
-                        # but continue (with other tests) if can't find class by that name
-                        # if self.debug:
-                        #    log.warn( 'visualizations_registry cannot find class (%s)' +
-                        #              ' for applicability test on: %s, id: %s', datatype_class_name,
-                        #              target_object, getattr( target_object, 'id', '' ) )
-                        continue
-
-            # NOTE: tests are OR'd, if any test passes - the visualization can be applied
-            if test_fn( target_object, test_result ):
-                # log.debug( '\t test passed' )
-                return True
-
-        return False
-
-    def get_visualization_url( self, trans, target_object, visualization_name, param_data ):
+    def get_visualization_url( self, trans, visualization_name, target_object, url_params ):
         """
         Generates a url for the visualization with `visualization_name`
         for use with the given `target_object` with a query string built
         from the configuration data in `param_data`.
         """
-        # precondition: the target_object should be usable by the visualization (accrd. to data_sources)
-        # convert params using vis.data_source.to_params
-        params = self.get_url_params( trans, target_object, param_data )
-
         # we want existing visualizations to work as normal but still be part of the registry (without mod'ing)
         #   so generate their urls differently
         url = None
         if visualization_name in self.BUILT_IN_VISUALIZATIONS:
-            url = url_for( controller='visualization', action=visualization_name, **params )
+            url = url_for( controller='visualization', action=visualization_name, **url_params )
         else:
             url = url_for( controller='visualization', action='render',
-                           visualization_name=visualization_name, **params )
+                           visualization_name=visualization_name, **url_params )
 
         # TODO:?? not sure if embedded would fit/used here? or added in client...
         return url
-
-    def get_url_params( self, trans, target_object, param_data ):
-        """
-        Convert the applicable objects and assoc. data into a param dict
-        for a url query string to add to the url that loads the visualization.
-        """
-        params = {}
-        for to_param_name, to_param_data in param_data.items():
-            # TODO??: look into params as well? what is required, etc.
-            target_attr = to_param_data.get( 'param_attr', None )
-            assign = to_param_data.get( 'assign', None )
-            # one or the other is needed
-            # assign takes precedence (goes last, overwrites)?
-            # NOTE this is only one level
-
-            if target_attr and vis_utils.hasattr_recursive( target_object, target_attr ):
-                params[ to_param_name ] = vis_utils.getattr_recursive( target_object, target_attr )
-
-            if assign:
-                params[ to_param_name ] = assign
-
-        # NOTE!: don't expose raw ids: encode id, _id
-        # TODO: double encodes if from config
-        if params:
-            params = trans.security.encode_dict_ids( params )
-        return params
