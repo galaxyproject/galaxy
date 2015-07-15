@@ -918,17 +918,16 @@ class RegexReplace( RecipeStep ):
         replacement = action_dict[ 'replacement' ]
         temp_fh = tempfile.NamedTemporaryFile( dir=current_dir )
         ofh = temp_fh.file
-        line = 'placeholder'
         total_replacements = 0
         with open( filename, 'r' ) as haystack:
-            while len( line ) > 0:
-                line = haystack.readline()
+            for line in haystack:
                 altered_text, replacement_count = re.subn( regex, replacement, line )
                 if replacement_count > 0:
                     ofh.write( altered_text )
                     total_replacements += replacement_count
                 else:
                     ofh.write( line )
+            ofh.flush()
         shutil.copyfile( temp_fh.name, filename )
         log_text = 'Successfully replaced pattern %s with text %s in file %s: %s replacements made\n'
         log_text = log_text % ( action_dict[ 'regex' ], action_dict[ 'replacement' ], filename, total_replacements )
