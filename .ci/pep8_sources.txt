@@ -24,7 +24,7 @@ lib/galaxy/webapps/galaxy/__init__.py
 lib/galaxy/webapps/galaxy/api/{__init__,authenticate,dataset_collections,datatypes,folder_contents,folders,lda_datasets,job_files,libraries,library_contents,provenance,remote_files,search,users}.py
 lib/galaxy/webapps/galaxy/controllers/{__init__,admin,cloudlaunch,workflow}.py
 lib/galaxy/webapps/reports/app.py
-lib/galaxy/webapps/reports/controllers/{__init__,jobs,query,workflows}.py
+lib/galaxy/webapps/reports/controllers/{__init__,jobs,query,workflows,home}.py
 lib/galaxy/webapps/tool_shed/app.py
 lib/galaxy/webapps/tool_shed/controllers/__init__.py
 lib/galaxy/webapps/tool_shed/framework/__init__.py
