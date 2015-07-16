@@ -21,6 +21,20 @@
         #left {
             background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
         }
+        #reports_home {
+            content: url("/report/static/images/reports_webapp/home-icon-hov.png");
+            position: relative;
+            top: -6px;
+            left: 6px;
+            width: 26px;
+            float: right;
+        }
+        #reports_home:hover {
+            content: url("/report/static/images/reports_webapp/home-icon-hov.png");
+        }
+        #reports_home:active {
+            content: url("/report/static/images/reports_webapp/home-icon-active.png");
+        }
     </style>
 </%def>
 
@@ -34,7 +48,7 @@
         from time import mktime, strftime, localtime
     %>
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>Reports</div>
+        <div class='unified-panel-header-inner'>Reports<a target="galaxy_main" href="${h.url_for( controller='home', action='run_stats' )}"><img id="reports_home"/></a></div>
     </div>
     <div class="page-container reports-panel-container">
         <div class="toolMenu">

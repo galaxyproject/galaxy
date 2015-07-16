@@ -300,7 +300,6 @@ function create_histogram( inp_data, name, time, title ) {
     require( ["d3"], function (e) {
         //inp_data is an array of numbers that are the amount of minutes per run
         var data = inp_data;
-        console.log(d3.max(inp_data))
             // Formatters for counts and times (converting numbers to Dates).
         function click(d) {
             var classes = d3.select(this).attr("class")
@@ -321,14 +320,15 @@ function create_histogram( inp_data, name, time, title ) {
 
         var formatMinutes = function(d) {
                 hours = Math.floor( d / 60 )
-                minutes = d - (hours * 60)
+                minutes = Math.floor(d - (hours * 60))
 
                 if(hours < 10) {
                     hours = "0" + hours
                 }
                 if(minutes < 10) {
                     minutes = "0" + minutes
-                } 
+                }
+
                 return hours + ":" + minutes;
             };
 
@@ -382,7 +382,7 @@ function create_histogram( inp_data, name, time, title ) {
                 i = 0;
                 size = d.length;
 
-                while( size > 1) {
+                while( size >= 1) {
                     size = size / 10;
                     i++;
                 }
