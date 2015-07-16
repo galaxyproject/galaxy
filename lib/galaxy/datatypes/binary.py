@@ -3,6 +3,7 @@
 import binascii
 import data
 import gzip
+import json
 import logging
 import os
 import shutil
@@ -11,9 +12,10 @@ import subprocess
 import tempfile
 import warnings
 import zipfile
-
+import galaxy.model
 from galaxy import eggs
 eggs.require( "bx-python" )
+
 
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
@@ -193,6 +195,109 @@ class Bam( Binary ):
                 break
         return version
 
+    def split(cls, input_datasets, subdir_generator_function, split_params):
+
+        # 1) by_rname -> splits the bam into files based on the chromosome
+        # 2) by_interval -> splits the bam into files based on  a defined bp length, and does so across the entire genome present in the BAM file
+        # 3) by_read -> splits the bam into files based on the number of reads encountered (if multiple files, all other files match the interval as the first)
+
+        if split_params is None:
+            return
+        if len(input_datasets) > 1:
+            raise ValueError("BAM file splitting does not support multiple files")
+        input_file = input_datasets[0].file_name
+        
+        # Get chromosomes info through bam header
+        params = ["samtools", "view", "-H", input_file]
+        output = subprocess.Popen( params, stderr=subprocess.PIPE, stdout=subprocess.PIPE ).communicate()[0]
+        output = output.split("\n")
+        chr_list = []
+        for line in output:
+            fields = line.strip().split("\t")
+            if fields[0].startswith("@SQ"):
+                chr_item = []
+                if fields[1].startswith("SN:"):
+                    chr_item.append(fields[1].split("SN:")[1])
+                if fields[2].startswith("LN:"):
+                    chr_item.append(fields[2].split("LN:")[1])
+                chr_list.append(chr_item)
+
+        if 'split_mode' not in split_params:
+            raise Exception('Tool does not define a split mode')
+        elif split_params['split_mode'] == 'by_interval':
+            log.debug("Attempting to split BAM file %s by interval", input_file)
+            split_size = int(split_params['split_size'])
+            for chr_item in chr_list:
+                chr_name = chr_item[0]
+                chr_ln = int(chr_item[1])
+                chunks = chr_ln / split_size
+                chunks_mod = chr_ln % split_size
+                if chunks == 0:
+                    split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name, chr_start=1, chr_end=chr_ln)
+                    cls._create_task_dir( input_file, subdir_generator_function, split_data)
+                    continue
+
+                for i in range(chunks):
+                    # Calculate chunks/regions
+                    chunk_start = i * split_size + 1
+                    chunk_end = i * split_size + split_size
+                    split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name, chr_start=chunk_start, chr_end=chunk_end)
+                    cls._create_task_dir(input_file, subdir_generator_function, split_data)
+
+                chunk_start = chunks * split_size + 1
+                chunk_end = chunks * split_size + chunks_mod
+                split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name, chr_start=chunk_start, chr_end=chunk_end)
+                cls._create_task_dir(input_file, subdir_generator_function, split_data)
+
+        elif split_params['split_mode'] == 'by_rname':
+            log.debug("Attempting to split BAM file %s by chromosome", input_file)
+            for chr_item in chr_list:
+                chr_name = chr_item[0]
+                chr_ln = int(chr_item[1])
+                split_data = dict(split_mode=split_params['split_mode'], chr_name=chr_name, chr_start=1, chr_end=chr_ln)
+                cls._create_task_dir(input_file, subdir_generator_function, split_data)
+        else:
+            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+    split = classmethod(split)
+
+    def _create_task_dir(cls, input_file, subdir_generator_function, dict_args):
+        try:
+            part_dir = subdir_generator_function()
+            base_name = os.path.basename(input_file)
+            part_path = os.path.join(part_dir, base_name)
+
+            split_data = dict(class_name='%s.%s' % (cls.__module__, cls.__name__),
+                              output_name=part_path,
+                              input_name=input_file,
+                              args=dict(dict_args))
+            with open(os.path.join(part_dir, 'split_info_%s.json' % base_name), 'w') as f:
+                json.dump(split_data, f)
+            
+        except Exception, e:
+            log.error("Error: " + str(e))
+            raise
+    _create_task_dir = classmethod(_create_task_dir)
+
+    def process_split_file(data):
+
+        args = data['args']
+        input_name = data['input_name']
+        output_name = data['output_name']
+
+        chr_name = args['chr_name']
+        chr_start = args['chr_start']
+        chr_end = args['chr_end']
+        chr_region = chr_name + "\t" + str(chr_start) + "\t" + str(chr_end)
+
+        # Create region file
+        region_file = open(os.path.dirname(output_name)+"/regions.bed", "w")
+        region_file.write(chr_region + "\n")
+        region_file.close()
+        os.symlink(input_name, output_name)
+
+        return True
+    process_split_file = staticmethod(process_split_file)
+
     @staticmethod
     def merge(split_files, output_file):
 
@@ -211,6 +316,7 @@ class Bam( Binary ):
                 print stderr
         os.unlink(stderr_name)
         os.rmdir(tmp_dir)
+
 
     def _is_coordinate_sorted( self, file_name ):
         """See if the input BAM file is sorted from the header information."""
