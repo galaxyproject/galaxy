@@ -77,9 +77,24 @@
 </style>
 
 <script type="text/javascript">
+console.log(${jf_dy_data})
+console.log(${jc_dy_data})
+
 function type(d) {
     d = +d; // coerce to number
     return d;
+}
+
+function get_utc_time() {
+    var date = new Date()
+    return new Date(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    date.getUTCHours(),
+    date.getUTCMinutes(), 
+    date.getUTCSeconds()
+  )
 }
 
 function date_by_subtracting_days(date, days) {
@@ -124,7 +139,12 @@ function create_chart( inp_data, name, time, title ) {
         $(".charts").css("height", chart_height*1.55);
 
         var width = 300;
-        var barWidth = width / data.length;
+        var barWidth = 0;
+        if(time == "hours") {
+            barWidth = width / 24;
+        } else if(time == "days") {
+            barWidth = width / 30;
+        }
         var chart_width = width + margin.left + margin.right;
 
         var y = d3.scale.linear()
@@ -138,7 +158,7 @@ function create_chart( inp_data, name, time, title ) {
 
         if (time == "hours") {
             var x = d3.time.scale()
-                .domain([new Date(), date_by_subtracting_days(new Date(), 1)])
+                .domain([get_utc_time(), date_by_subtracting_days(get_utc_time(), 1)])
                 .rangeRound([0, width]);
 
             var xAxis = d3.svg.axis()
@@ -150,7 +170,7 @@ function create_chart( inp_data, name, time, title ) {
                 .tickPadding(8);
         } else if (time == "days") {
             var x = d3.time.scale()
-                .domain([new Date(), date_by_subtracting_days(new Date(), 30)])
+                .domain([get_utc_time(), date_by_subtracting_days(get_utc_time(), 30)])
                 .rangeRound([0, width]);
 
             var xAxis = d3.svg.axis()
@@ -204,7 +224,7 @@ function create_chart( inp_data, name, time, title ) {
                         .attr("width", "40px")
                         .attr("height", "15px")
                         .select("rect")
-                            .attr("transform", "translate( 20, " + ((height - (d * zoom)) + +margin.top) + " )" )
+                            .attr("transform", "translate( 19.5, " + ((height - (d * zoom)) + +margin.top) + " )" )
                             .attr("width", "40px")
                             .attr("height", "15px")
                             .attr("fill","#ebd9b2");
@@ -237,9 +257,9 @@ function create_chart( inp_data, name, time, title ) {
                 .selectAll("text")
                 .attr("transform", function() {
                     if(time == "hours") {
-                        return "translate( " + (-(barWidth/2) - 2) + ", 17)rotate(-90)";
+                        return "translate( " + (-(barWidth/2) - 1) + ", 17)rotate(-90)";
                     } else if(time == "days") {
-                        return "translate( " + (-(barWidth/2) - 7) + ", 13)rotate(-90)";
+                        return "translate( " + (-(barWidth/2) - 9) + ", 13)rotate(-90)";
                     }
                 });
 

@@ -16,7 +16,8 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
 	@web.expose
 	def run_stats( self, trans, **kwd ):
 		message = ''
-		end_date = datetime.now()
+		end_date = datetime.utcnow()
+		end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour)
 		start_hours = end_date - timedelta(1)
 		start_days_eta = end_date - timedelta(3)
 		start_days = end_date - timedelta(30)
@@ -43,9 +44,8 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
 					job.create_time < end_date ):
 					# Get the creation time for the jobs in the past day
 					time = end_date - job.create_time
-					hour = time.seconds // 3600
-					hours += (time.days * 24)
-					jc_hr_data[int(hour)] += 1
+					hours = time.total_seconds() // 3600
+					jc_hr_data[int(hours)] += 1
 				# Get the creation time for jobs in the past 30 days
 				day = (end_date - job.create_time).days
 				jc_dy_data[int(day)] += 1
@@ -55,7 +55,7 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
 				if( job.update_time >= start_hours and
 					job.update_time < end_date ):
 					# Get the time finishedfor the jobs in the past day
-					hour = (end_date - job.update_time).seconds // 3600
+					hour = (end_date - job.update_time).total_seconds() // 3600
 					jf_hr_data[int(hour)] += 1
 
 					# Get the Elapsed Time for said job
