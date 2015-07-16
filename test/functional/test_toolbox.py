@@ -209,8 +209,8 @@ class ToolTestCase( TwillTestCase ):
                     for element_identifier, ( element_outfile, element_attrib ) in element_tests.items():
                         element = get_element( element_objects, element_identifier )
                         if not element:
-                            template = "Failed to find identifier [%s] for testing, tool generated collection with identifiers [%s]"
-                            message = template % (element_identifier, ",".join(element_dict.keys()))
+                            template = "Failed to find identifier [%s] for testing, tool generated collection elements [%s]"
+                            message = template % (element_identifier, element_objects)
                             raise AssertionError(message)
 
                         element_type = element["element_type"]
