@@ -179,10 +179,12 @@ invokes a mandatory, minimum 72 hour, review period.
 - Recently merged pull requests are defined as a being within the past 168 hours (7
   days), so as to not prevent forward progress, while allowing for reversions of
   things merged without proper review and consensus.
-- The person issuing the -1 vote will, upon commenting *-1* with technical
-  justification per the vetoes section, immediately open and merge a pull request to
-  revert the original merge in question outside of the normal requirement for a
-  +1 from "someone other than the author", per "Handling Pull Requests"
+- The person issuing the -1 vote will, upon commenting `-1` with technical
+  justification per the vetoes section, immediately open a pull request to
+  revert the original merge in question. If any committer other than the -1
+  issuer deems the justification technical - regardless of whether they agree
+  with justification - that committer must then merge the pull request to
+  revert.
 
 ### Direct Commit Access
 
