@@ -159,6 +159,11 @@ class DatasetCollectionManager( object ):
 
         return dataset_collection
 
+    def collection_builder_for( self, dataset_collection ):
+        collection_type = dataset_collection.collection_type
+        collection_type_description = self.collection_type_descriptions.for_collection_type( collection_type )
+        return builder.BoundCollectionBuilder( dataset_collection, collection_type_description )
+
     def delete( self, trans, instance_type, id ):
         dataset_collection_instance = self.get_dataset_collection_instance( trans, instance_type, id, check_ownership=True )
         dataset_collection_instance.deleted = True
