@@ -19,21 +19,7 @@
     <style type="text/css">
         body { margin: 0; padding: 0; overflow: hidden; }
         #left {
-            background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
-        }
-        #reports_home {
-            content: url("/report/static/images/reports_webapp/home-icon-hov.png");
-            position: relative;
-            top: -6px;
-            left: 6px;
-            width: 26px;
-            float: right;
-        }
-        #reports_home:hover {
-            content: url("/report/static/images/reports_webapp/home-icon-hov.png");
-        }
-        #reports_home:active {
-            content: url("/report/static/images/reports_webapp/home-icon-active.png");
+            background: #C1C9E5 url("${h.url_for('/static/style/menu_bg.png')}") top repeat-x;
         }
     </style>
 </%def>

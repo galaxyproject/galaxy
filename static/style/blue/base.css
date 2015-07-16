@@ -1762,9 +1762,9 @@ body{background:#fff;color:#000;margin:10px}body.full-content{overflow:hidden;ma
 #left{left:0px;width:250px;z-index:200;border-right:solid #999 1px}
 #left-border{left:250px}
 .reports-panel-container{position:absolute;top:30px;bottom:10px;overflow:scroll;width:100%;padding:10px}
-#reports_home{content:url("/report/static/images/reports_webapp/home-icon.png");width:20px;float:right}
+#reports_home{content:url("/report/static/images/reports_webapp/home-icon-hov.png");position:relative;top:-6px;left:6px;width:26px;float:right}
 #reports_home:hover{content:url("/report/static/images/reports_webapp/home-icon-hov.png")}
-#reports_home:active{content:url("/report/static/images/reports_webapp/home-icon.png")}
+#reports_home:active{content:url("/report/static/images/reports_webapp/home-icon-active.png")}
 #center{left:250px;right:250px;overflow:hidden;z-index:1}
 #right-border{right:250px}
 #right{width:250px;right:0px;z-index:200;border-left:solid #999 1px}
