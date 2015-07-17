@@ -1,0 +1,2 @@
+define([],function(a){a={};var b=function(c){return b.cacheNonLocalized&&!a.hasOwnProperty(c)&&(b.nonLocalized||(b.nonLocalized={}),b.nonLocalized[c]=navigator.language),a[c]||c};return b.cacheNonLocalized=!1,b});
+//# sourceMappingURL=../../maps/utils/webpack-localization.js.map

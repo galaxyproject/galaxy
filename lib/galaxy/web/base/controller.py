@@ -242,6 +242,88 @@ class BaseAPIController( BaseController ):
         return dict( view=view, keys=keys, default_view=default_view )
 
 
+class JSAppLauncher( BaseUIController ):
+    """
+    A controller that launches JavaScript web applications.
+    """
+
+    #: path to js app template
+    JS_APP_MAKO_FILEPATH = "/js-app.mako"
+    #: window-scoped js function to call to start the app (will be passed options, bootstrapped)
+    DEFAULT_ENTRY_FN = "app"
+    #: keys used when serializing current user for bootstrapped data
+    USER_BOOTSTRAP_KEYS = ( 'id', 'email', 'username', 'is_admin', 'tags_used', 'requests',
+                            'total_disk_usage', 'nice_total_disk_usage', 'quota_percent' )
+
+    def __init__( self, app ):
+        super( JSAppLauncher, self ).__init__( app )
+        self.user_serializer = users.CurrentUserSerializer( app )
+
+    def _js_options( self, trans, **kwargs ):
+        """
+        Return a dictionary of options to jsonify and pass to the js app.
+
+        Defaults to `config` and the root url. Pass kwargs to update.
+        """
+        standard_options = {
+            'config'    : self._bootstrap_config( trans ),
+            'root'      : web.url_for( '/' )
+        }
+        standard_options.update( kwargs )
+        return standard_options
+
+    def _bootstrap_config( self, trans ):
+        """
+        Return a dictionary representing Galaxy's current configuration.
+        """
+        try:
+            config_dict = {}
+            config_controller = trans.webapp.api_controllers.get( 'configuration', None )
+            if config_controller:
+                config_dict = config_controller.get_config_dict( trans.app.config, trans.user_is_admin() )
+            return config_dict
+        except Exception, exc:
+            log.exception( exc )
+            return {}
+
+    def _bootstrap_current_user( self, trans ):
+        """
+        Return a dictionary representing this transaction's current user.
+        """
+        return self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans )
+
+    def _bootstrap_data( self, trans, **additional_data ):
+        """
+        Return a dictionary holding any bootstrapped data the app might need.
+
+        Defaults to `user` and can be updated using `additional_data` kwargs.
+        """
+        standard_bootstrapped = {
+            'user'  : self._bootstrap_current_user( trans )
+        }
+        standard_bootstrapped.update( additional_data )
+        return standard_bootstrapped
+
+    def web_app_template( self, trans, app_name, entry_fn='app', options=None, **additional_bootstrapped ):
+        """
+        Render and return the single page mako template that starts the app.
+
+        `app_name` (string): the first portion of the webpack bundle to as the app.
+        `entry_fn` (string): the name of the window-scope function that starts the
+            app. Defaults to 'app'.
+        `options` (dict): (optional) update to the options sent to the app.
+        `additional_bootstrapped` (dict): (optional) update containing any more data
+            the app may need.
+        """
+        options = options or {}
+        options = self._js_options( trans, **options )
+        bootstrapped = self._bootstrap_data( trans, **additional_bootstrapped )
+        return trans.fill_template( self.JS_APP_MAKO_FILEPATH,
+                                    js_app_name=app_name,
+                                    js_app_entry_fn=self.DEFAULT_ENTRY_FN,
+                                    options=options, bootstrapped=bootstrapped )
+
+
 class Datatype( object ):
     """Used for storing in-memory list of datatypes currently in the datatypes registry."""
 
