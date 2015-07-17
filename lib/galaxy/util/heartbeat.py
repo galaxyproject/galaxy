@@ -4,6 +4,7 @@ import traceback
 import os
 import sys
 
+
 def get_current_thread_object_dict():
     """
     Get a dictionary of all 'Thread' objects created via the threading
@@ -25,6 +26,7 @@ def get_current_thread_object_dict():
     threading._active_limbo_lock.release()
     return rval
 
+
 class Heartbeat( threading.Thread ):
     """
     Thread that periodically dumps the state of all threads to a file
@@ -42,11 +44,12 @@ class Heartbeat( threading.Thread ):
         self.pid = os.getpid()
         # Event to wait on when sleeping, allows us to interrupt for shutdown
         self.wait_event = threading.Event()
+
     def run( self ):
         self.file = open( self.fname, "a" )
         print >> self.file, "Heartbeat for pid %d thread started at %s" % ( self.pid, time.asctime() )
         print >> self.file
-        self.file_nonsleeping = open ( self.fname_nonsleeping, "a" )
+        self.file_nonsleeping = open( self.fname_nonsleeping, "a" )
         print >> self.file_nonsleeping, "Non-Sleeping-threads for pid %d thread started at %s" % ( self.pid, time.asctime() )
         print >> self.file_nonsleeping
         try:
@@ -83,38 +86,38 @@ class Heartbeat( threading.Thread ):
         self.wait_event.set()
         self.join()
 
-    def thread_is_sleeping ( self, last_stack_frame ):
+    def thread_is_sleeping( self, last_stack_frame ):
         """
         Returns True if the given stack-frame represents a known
         sleeper function (at least in python 2.5)
         """
         _filename = last_stack_frame[0]
-        _line     = last_stack_frame[1]
+        # _line = last_stack_frame[1]
         _funcname = last_stack_frame[2]
-        _text     = last_stack_frame[3]
-        ### Ugly hack to tell if a thread is supposedly sleeping or not
-        ### These are the most common sleeping functions I've found.
-        ### Is there a better way? (python interpreter internals?)
-        ### Tested only with python 2.5
-        if _funcname=="wait" and _text=="waiter.acquire()":
+        _text = last_stack_frame[3]
+        # Ugly hack to tell if a thread is supposedly sleeping or not
+        # These are the most common sleeping functions I've found.
+        # Is there a better way? (python interpreter internals?)
+        # Tested only with python 2.5
+        if _funcname == "wait" and _text == "waiter.acquire()":
             return True
-        if _funcname=="wait" and _text=="_sleep(delay)":
+        if _funcname == "wait" and _text == "_sleep(delay)":
             return True
-        if _funcname=="accept" and _text[-14:]=="_sock.accept()":
+        if _funcname == "accept" and _text[-14:] == "_sock.accept()":
             return True
-        if _funcname=="monitor" and _text.startswith("time.sleep( ") and _text.endswith(" )"):
+        if _funcname == "monitor" and _text.startswith("time.sleep( ") and _text.endswith(" )"):
             return True
-        if _funcname=="drain_events" and _text=="sleep(polling_interval)":
+        if _funcname == "drain_events" and _text == "sleep(polling_interval)":
             return True
-        #Ugly hack: always skip the heartbeat thread
-        #TODO: get the current thread-id in python
-        #      skip heartbeat thread by thread-id, not by filename
-        if _filename.find("/lib/galaxy/util/heartbeat.py")!=-1:
+        # Ugly hack: always skip the heartbeat thread
+        # TODO: get the current thread-id in python
+        #   skip heartbeat thread by thread-id, not by filename
+        if _filename.find("/lib/galaxy/util/heartbeat.py") != -1:
             return True
-        ## By default, assume the thread is not sleeping
+        # By default, assume the thread is not sleeping
         return False
 
-    def get_interesting_stack_frame ( self, stack_frames ):
+    def get_interesting_stack_frame( self, stack_frames ):
         """
         Scans a given backtrace stack frames, returns a single
         quadraple of [filename, line, function-name, text] of
@@ -127,7 +130,7 @@ class Heartbeat( threading.Thread ):
         """
         for _filename, _line, _funcname, _text in reversed(stack_frames):
             idx = _filename.find("/lib/galaxy/")
-            if idx!=-1:
+            if idx != -1:
                 relative_filename = _filename[idx:]
                 return ( relative_filename, _line, _funcname, _text )
         # no "/lib/galaxy" code found, return the innermost frame
@@ -153,15 +156,14 @@ class Heartbeat( threading.Thread ):
             if thread_id in self.nonsleeping_heartbeats:
                 self.nonsleeping_heartbeats[thread_id] += 1
             else:
-                self.nonsleeping_heartbeats[thread_id]=1
+                self.nonsleeping_heartbeats[thread_id] = 1
 
             good_frame = self.get_interesting_stack_frame(tb)
             print >> self.file_nonsleeping, "Thread %s\t%s\tnon-sleeping for %d heartbeat(s)\n  File %s:%d\n    Function \"%s\"\n      %s" % \
-                    ( thread_id, object, self.nonsleeping_heartbeats[thread_id], good_frame[0], good_frame[1], good_frame[2], good_frame[3] )
+                ( thread_id, object, self.nonsleeping_heartbeats[thread_id], good_frame[0], good_frame[1], good_frame[2], good_frame[3] )
             all_threads_are_sleeping = False
 
         if all_threads_are_sleeping:
             print >> self.file_nonsleeping, "All threads are sleeping."
         print >> self.file_nonsleeping
         self.file_nonsleeping.flush()
-

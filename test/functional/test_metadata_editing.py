@@ -1,10 +1,10 @@
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, desc, false
+
+import galaxy.model
 from base.twilltestcase import TwillTestCase
 from functional import database_contexts
-import galaxy.model
-from galaxy.model.orm import (
-    and_,
-    desc,
-)
 
 
 class TestMetadataEdit( TwillTestCase ):
@@ -15,18 +15,18 @@ class TestMetadataEdit( TwillTestCase ):
         self.logout()
         self.login( email='test@bx.psu.edu', username='admin-user' )
         admin_user = sa_session.query( galaxy.model.User ) \
-                              .filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ) \
-                              .one()
+            .filter( galaxy.model.User.table.c.email == 'test@bx.psu.edu' ) \
+            .one()
         self.new_history( name='Test Metadata Edit' )
         history1 = sa_session.query( galaxy.model.History ) \
-                            .filter( and_( galaxy.model.History.table.c.deleted == False,
-                                           galaxy.model.History.table.c.user_id == admin_user.id ) ) \
-                            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                            .first()
+            .filter( and_( galaxy.model.History.table.c.deleted == false(),
+                           galaxy.model.History.table.c.user_id == admin_user.id ) ) \
+            .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
+            .first()
         self.upload_file( '1.bed' )
         latest_hda = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                              .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
-                              .first()
+            .order_by( desc( galaxy.model.HistoryDatasetAssociation.table.c.create_time ) ) \
+            .first()
         # Due to twill not being able to handle the permissions forms, we'll eliminate
         # DefaultHistoryPermissions prior to uploading a dataset so that the permission
         # form will not be displayed on ted edit attributes page.

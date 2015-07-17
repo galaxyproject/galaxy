@@ -21,10 +21,10 @@ ldda_parent_col = Column( "ldda_parent_id", Integer, ForeignKey( "library_datase
 # Table to add.
 
 JobImportHistoryArchive_table = Table( "job_import_history_archive", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
-    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
-    Column( "archive_dir", TEXT )
+                                       Column( "id", Integer, primary_key=True ),
+                                       Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+                                       Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+                                       Column( "archive_dir", TEXT )
     )
 
 def upgrade(migrate_engine):

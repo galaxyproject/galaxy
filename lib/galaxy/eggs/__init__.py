@@ -19,7 +19,7 @@ log = logging.getLogger( __name__ )
 log.addHandler( logging.NullHandler() )
 
 
-galaxy_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', '..', '..' ) )
+galaxy_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 eggs_dir = os.environ.get( 'GALAXY_EGGS_PATH', os.path.join( galaxy_dir, 'eggs' ) )
 py = 'py%s' % sys.version[:3]
 
@@ -434,19 +434,27 @@ class GalaxyConfig( object ):
                 return True
         else:
             try:
-                return { "psycopg2":        lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres" ),
-                         "MySQL_python":    lambda: self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ),
-                         "DRMAA_python":    lambda: "sge" in self.config.get( "app:main", "start_job_runners" ).split(","),
-                         "drmaa":           lambda: "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(","),
-                         "pbs_python":      lambda: "pbs" in self.config.get( "app:main", "start_job_runners" ).split(","),
-                         "python_openid":   lambda: self.config.get( "app:main", "enable_openid" ),
-                         "python_daemon":   lambda: sys.version_info[:2] >= ( 2, 5 ),
-                         "pysam":           lambda: check_pysam(),
-                         "PyRods":          lambda: self.config.get( "app:main", "object_store" ) == "irods"
+                return { "psycopg2":
+                         lambda: self.config.get( "app:main", "database_connection" ).startswith( "postgres" ),
+                         "MySQL_python":
+                         lambda: self.config.get( "app:main", "database_connection" ).startswith( "mysql://" ),
+                         "DRMAA_python":
+                         lambda: "sge" in self.config.get( "app:main", "start_job_runners" ).split(","),
+                         "drmaa":
+                         lambda: "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(","),
+                         "pbs_python":
+                         lambda: "pbs" in self.config.get( "app:main", "start_job_runners" ).split(","),
+                         "python_openid":
+                         lambda: self.config.get( "app:main", "enable_openid" ),
+                         "python_daemon":
+                         lambda: sys.version_info[:2] >= ( 2, 5 ),
+                         "pysam":
+                         lambda: check_pysam(),
+                         "PyRods":
+                         lambda: self.config.get( "app:main", "object_store" ) == "irods"
                          }.get( egg_name, lambda: True )()
             except:
                 return False
-
 
 
 def string_as_bool( string ):
@@ -454,6 +462,7 @@ def string_as_bool( string ):
         return True
     else:
         return False
+
 
 def get_env():
     env = pkg_resources.Environment( search_path='', platform=pkg_resources.get_platform() )

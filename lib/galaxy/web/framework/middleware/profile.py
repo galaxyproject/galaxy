@@ -3,12 +3,8 @@ Middleware that profiles the request with cProfile and displays profiling
 information at the bottom of each page.
 """
 
-import sys
-import os
 import threading
 import cgi
-import time
-from cStringIO import StringIO
 from paste import response
 
 try:
@@ -51,6 +47,7 @@ show profile output: <a href="javascript:show_inline();">inline</a> | <a href="j
 </div>
 """
 
+
 class ProfileMiddleware(object):
 
     """
@@ -69,10 +66,12 @@ class ProfileMiddleware(object):
     def __call__(self, environ, start_response):
         catch_response = []
         body = []
+
         def replace_start_response(status, headers, exc_info=None):
             catch_response.extend([status, headers])
             start_response(status, headers, exc_info)
             return body.append
+
         def run_app():
             body.extend(self.app(environ, replace_start_response))
         # Run in profiler
@@ -92,6 +91,7 @@ class ProfileMiddleware(object):
         body += template % output
         return [body]
 
+
 def pstats_as_html( stats, *sel_list ):
     """
     Return an HTML representation of a pstats.Stats object.
@@ -99,7 +99,7 @@ def pstats_as_html( stats, *sel_list ):
     rval = []
     # Number of function calls, primitive calls, total time
     rval.append( "<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
-            % ( stats.total_calls, stats.prim_calls, stats.total_tt ) )
+                 % ( stats.total_calls, stats.prim_calls, stats.total_tt ) )
     # Extract functions that match 'sel_list'
     funcs, order_message, select_message = get_func_list( stats, sel_list )
     # Deal with any ordering or selection messages
@@ -127,12 +127,12 @@ def pstats_as_html( stats, *sel_list ):
                 ncalls = ncalls + '/' + str(cc)
             rval.append( "<td>%s</td>" % cgi.escape( ncalls ) )
             # tottime
-            rval.append( "<td>%0.8f</td>" %  tt )
+            rval.append( "<td>%0.8f</td>" % tt )
             # percall
             if nc == 0:
                 percall = ""
             else:
-                percall = "%0.8f" %  ( tt / nc )
+                percall = "%0.8f" % ( tt / nc )
             rval.append( "<td>%s</td>" % cgi.escape( percall ) )
             # cumtime
             rval.append( "<td>%0.8f</td>" % ct )
@@ -149,6 +149,7 @@ def pstats_as_html( stats, *sel_list ):
         rval.append( "</table>")
         # Concatenate result
         return "".join( rval )
+
 
 def get_func_list( stats, sel_list ):
     """
@@ -167,6 +168,7 @@ def get_func_list( stats, sel_list ):
         list, select_message = stats.eval_print_amount( selection, list, select_message )
     # Return the list of functions selected and the message
     return list, order_message, select_message
+
 
 def func_std_string( func_name ):
     """

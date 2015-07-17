@@ -43,7 +43,6 @@ class ToolData( BaseAPIController ):
                                                kwargs={'table_name': decoded_tool_data_id} )
         return self._data_table( decoded_tool_data_id ).to_dict( view='element' )
 
-
     @web.require_admin
     @expose_api
     def delete( self, trans, id, **kwd ):
@@ -60,7 +59,7 @@ class ToolData( BaseAPIController ):
                 * values:   <TAB> separated list of column contents, there must be a value for all the columns of the data table
         """
         decoded_tool_data_id = id
-        
+
         try:
             data_table = trans.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
         except:
@@ -68,7 +67,7 @@ class ToolData( BaseAPIController ):
         if not data_table:
             trans.response.status = 400
             return "Invalid data table id ( %s ) specified." % str( decoded_tool_data_id )
-        
+
         values = None
         if kwd.get( 'payload', None ):
             values = kwd['payload'].get( 'values', '' )
@@ -76,9 +75,9 @@ class ToolData( BaseAPIController ):
         if not values:
             trans.response.status = 400
             return "Invalid data table item ( %s ) specified." % str( values )
-        
+
         split_values = values.split("\t")
-        
+
         if len(split_values) != len(data_table.get_column_name_list()):
             trans.response.status = 400
             return "Invalid data table item ( %s ) specified. Wrong number of columns (%s given, %s required)." % ( str( values ), str(len(split_values)), str(len(data_table.get_column_name_list())))

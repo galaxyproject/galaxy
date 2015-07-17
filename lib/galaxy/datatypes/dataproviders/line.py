@@ -3,10 +3,11 @@ Dataproviders that iterate over lines from their sources.
 """
 
 import collections
-import os
 import re
-
 import base
+
+import logging
+log = logging.getLogger( __name__ )
 
 _TODO = """
 line offsets (skip to some place in a file) needs to work more efficiently than simply iterating till we're there
@@ -15,11 +16,7 @@ line offsets (skip to some place in a file) needs to work more efficiently than 
 a lot of the hierarchy here could be flattened since we're implementing pipes
 """
 
-import logging
-log = logging.getLogger( __name__ )
 
-
-# ----------------------------------------------------------------------------- text
 class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
     """
     Data provider that yields lines of data from its source allowing
@@ -70,8 +67,8 @@ class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
         :type line: str
         :returns: a line or `None`
         """
-        if line != None:
-            #??: shouldn't it strip newlines regardless, if not why not use on of the base.dprovs
+        if line is not None:
+            # ??: shouldn't it strip newlines regardless, if not why not use on of the base.dprovs
             if self.strip_lines:
                 line = line.strip()
             elif self.strip_newlines:
@@ -114,12 +111,12 @@ class RegexLineDataProvider( FilteredLineDataProvider ):
         self.regex_list = regex_list if isinstance( regex_list, list ) else []
         self.compiled_regex_list = [ re.compile( regex ) for regex in self.regex_list ]
         self.invert = invert
-        #NOTE: no support for flags
+        # NOTE: no support for flags
 
     def filter( self, line ):
-        #NOTE: filter_fn will occur BEFORE any matching
+        # NOTE: filter_fn will occur BEFORE any matching
         line = super( RegexLineDataProvider, self ).filter( line )
-        if line != None and self.compiled_regex_list:
+        if line is not None and self.compiled_regex_list:
             line = self.filter_by_regex( line )
         return line
 
@@ -154,7 +151,7 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         :type block_filter_fn: function
         """
         # composition - not inheritance
-        #TODO: not a fan of this:
+        # TODO: not a fan of this:
         ( filter_fn, limit, offset ) = ( kwargs.pop( 'filter_fn', None ),
                                          kwargs.pop( 'limit', None ), kwargs.pop( 'offset', 0 ) )
         line_provider = FilteredLineDataProvider( source, **kwargs )
@@ -180,7 +177,7 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
             yield block
 
         last_block = self.handle_last_block()
-        if last_block != None:
+        if last_block is not None:
             self.num_data_returned += 1
             yield last_block
 
@@ -194,9 +191,9 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         :returns: a block or `None`
         """
         line = super( BlockDataProvider, self ).filter( line )
-        #HACK
+        # TODO: HACK
         self.num_data_read -= 1
-        if line == None:
+        if line is None:
             return None
 
         block_to_return = None
@@ -260,15 +257,14 @@ class BlockDataProvider( base.LimitedOffsetDataProvider ):
         """
         Handle any blocks remaining after the main loop.
         """
-        if self.limit != None and self.num_data_returned >= self.limit:
+        if self.limit is not None and self.num_data_returned >= self.limit:
             return None
 
         last_block = self.assemble_current_block()
         self.num_data_read += 1
 
         last_block = self.filter_block( last_block )
-        if last_block != None:
+        if last_block is not None:
             self.num_valid_data_read += 1
 
         return last_block
-

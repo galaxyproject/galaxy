@@ -2,18 +2,13 @@
 API operations for for querying and recording user metrics from some client
 (typically a user's browser).
 """
-#TODO: facade or adapter to fluentd
+# TODO: facade or adapter to fluentd
 
 import datetime
 
-from galaxy import exceptions
-from galaxy.web import require_admin
-from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 
 from galaxy.web.base.controller import BaseAPIController
-
-from galaxy.util import json
 
 import logging
 log = logging.getLogger( __name__ )
@@ -26,34 +21,11 @@ class MetricsController( BaseAPIController ):
         #: set to true to send additional debugging info to the log
         self.debugging = True
 
-    #def _decode_id( self, trans, id ):
-    #    try:
-    #        return trans.security.decode_id( id )
-    #    except:
-    #        raise exceptions.MalformedId( "Malformed id ( %s ) specified, unable to decode"
-    #                                      % ( str( id ) ), type='error' )
-
     def _deserialize_isoformat_date( self, datestring ):
         """
         Convert ISO formatted date string into python datetime.
         """
         return datetime.datetime.strptime( datestring, "%Y-%m-%dT%H:%M:%S.%fZ" )
-
-    #@expose_api
-    #@require_admin
-    #def index( self, trans, **kwd ):
-    #    """
-    #    """
-    #    returned = []
-    #    return returned
-
-    #@expose_api
-    #@require_admin
-    #def show( self, trans, id, **kwd ):
-    #    """
-    #    """
-    #    returned = {}
-    #    return returned
 
     @expose_api_anonymous
     def create( self, trans, payload, **kwd ):
@@ -82,7 +54,7 @@ class MetricsController( BaseAPIController ):
         response = self._get_server_pong( trans )
         return response
 
-    #TODO: move the following to DAO/Manager object
+    # TODO: move the following to DAO/Manager object
     def _parse_metrics( self, metrics, user_id=None, session_id=None ):
         """
         Return a generator yielding the each given metric as a tuple:
@@ -127,4 +99,3 @@ class MetricsController( BaseAPIController ):
         For future use.
         """
         return {}
-

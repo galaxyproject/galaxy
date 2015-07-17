@@ -7,4 +7,3 @@ class ChromInfo( Tabular ):
     file_ext = "len"
     MetadataElement( name="chrom", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="length", default=2, desc="Length column", param=metadata.ColumnParameter )
-

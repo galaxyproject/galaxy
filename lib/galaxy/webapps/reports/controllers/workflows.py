@@ -1,6 +1,11 @@
 import calendar
 from datetime import datetime, date, timedelta
+import logging
 from galaxy import eggs
+eggs.require( "SQLAlchemy >= 0.4" )
+import sqlalchemy as sa
+from sqlalchemy import and_
+
 from galaxy import model, util
 from galaxy.model.orm import and_
 from math import floor
@@ -12,7 +17,6 @@ import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 from galaxy.webapps.reports.controllers.jobs import sorter, get_spark_time
 
-import logging
 log = logging.getLogger( __name__ )
 
 

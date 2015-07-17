@@ -4,12 +4,15 @@ Contains the user interface in the Universe class
 
 import logging
 
-from galaxy import web
-from galaxy import util, model
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
-from galaxy.web.framework.helpers import time_ago, grids, escape
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+eggs.require('SQLAlchemy')
+from sqlalchemy import false
 
-from inspect import getmembers
+from galaxy import web
+from galaxy import util
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
 
 log = logging.getLogger( __name__ )
 
@@ -62,14 +65,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         status = params.get( 'status', 'done' )
         users = []
         for user in trans.sa_session.query( trans.app.model.User ) \
-                                    .filter( trans.app.model.User.table.c.deleted==False ) \
+                                    .filter( trans.app.model.User.table.c.deleted == false() ) \
                                     .order_by( trans.app.model.User.table.c.email ):
                 uid = int(user.id)
                 userkey = ""
                 for api_user in trans.sa_session.query(trans.app.model.APIKeys) \
-                                      .filter( trans.app.model.APIKeys.user_id == uid):
+                        .filter( trans.app.model.APIKeys.user_id == uid):
                     userkey = api_user.key
-                users.append({'uid':uid, 'email':user.email, 'key':userkey})
+                users.append({'uid': uid, 'email': user.email, 'key': userkey})
         return trans.fill_template( 'webapps/galaxy/user/list_users.mako',
                                     cntrller=cntrller,
                                     users=users,

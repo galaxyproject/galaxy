@@ -67,7 +67,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 # Default: return dataset as dict.
                 if hda_ldda == 'hda':
                     return self.hda_serializer.serialize_to_view( dataset,
-                        view=kwd.get( 'view', 'detailed' ), user=trans.user, trans=trans )
+                                                                  view=kwd.get( 'view', 'detailed' ), user=trans.user, trans=trans )
                 else:
                     rval = dataset.to_dict()
 
@@ -111,7 +111,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         # If there is a chrom, check for data on the chrom.
         if chrom:
             data_provider = trans.app.data_provider_registry.get_data_provider( trans,
-                original_dataset=dataset, source='index' )
+                                                                                original_dataset=dataset, source='index' )
             if not data_provider.has_data( chrom ):
                 return dataset.conversion_messages.NO_DATA
 
@@ -286,7 +286,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             if raw:
                 if filename and filename != 'index':
                     file_path = trans.app.object_store.get_filename( hda.dataset,
-                        extra_dir=( 'dataset_%s_files' % hda.dataset.id ), alt_name=filename)
+                                                                     extra_dir=( 'dataset_%s_files' % hda.dataset.id ), alt_name=filename)
                 else:
                     file_path = hda.file_name
                 rval = open( file_path )

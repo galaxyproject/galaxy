@@ -10,17 +10,20 @@ eggs.require( "decorator" )  # Required by sqlalchemy-migrate
 eggs.require( "Tempita " )  # Required by sqlalchemy-migrate
 eggs.require( "sqlalchemy-migrate" )
 
-from sqlalchemy import *
-from sqlalchemy.exc import NoSuchTableError
 from migrate.versioning import repository, schema
 
+from sqlalchemy import create_engine
 from galaxy.model.orm import dialect_to_egg
+from sqlalchemy import MetaData
+from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy import Table
 
 log = logging.getLogger( __name__ )
 
 # path relative to galaxy
 migrate_repository_directory = os.path.abspath(os.path.dirname( __file__ )).replace( os.getcwd() + os.path.sep, '', 1 )
 migrate_repository = repository.Repository( migrate_repository_directory )
+
 
 def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=None ):
     """
@@ -65,7 +68,7 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
 
     # Try to load dataset table
     try:
-        dataset_table = Table( "dataset", meta, autoload=True )
+        Table( "dataset", meta, autoload=True )
     except NoSuchTableError:
         # No 'dataset' table means a completely uninitialized database.  If we have an app, we'll
         # set its new_installation setting to True so the tool migration process will be skipped.
@@ -94,12 +97,12 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
     # version. If the user has postion version 1 changes this could cause
     # problems
     try:
-        version_table = Table( "migrate_version", meta, autoload=True )
+        Table( "migrate_version", meta, autoload=True )
     except NoSuchTableError:
         # The database exists but is not yet under migrate version control, so init with version 1
         log.info( "Adding version control to existing database" )
         try:
-            metadata_file_table = Table( "metadata_file", meta, autoload=True )
+            Table( "metadata_file", meta, autoload=True )
             schema.ControlledSchema.create( engine, migrate_repository, version=2 )
         except NoSuchTableError:
             schema.ControlledSchema.create( engine, migrate_repository, version=1 )
@@ -110,9 +113,10 @@ def create_or_verify_database( url, galaxy_config_file, engine_options={}, app=N
         if os.path.abspath( os.path.join( os.getcwd(), 'config', 'galaxy.ini' ) ) != galaxy_config_file:
             config_arg = ' -c %s' % galaxy_config_file.replace( os.path.abspath( os.getcwd() ), '.' )
         raise Exception( "Your database has version '%d' but this code expects version '%d'.  Please backup your database and then migrate the schema by running 'sh manage_db.sh%s upgrade'."
-                            % ( db_schema.version, migrate_repository.versions.latest, config_arg ) )
+                         % ( db_schema.version, migrate_repository.versions.latest, config_arg ) )
     else:
         log.info( "At database version %d" % db_schema.version )
+
 
 def migrate_to_current_version( engine, schema ):
     # Changes to get to current version
@@ -121,11 +125,14 @@ def migrate_to_current_version( engine, schema ):
         nextver = ver + changeset.step
         log.info( 'Migrating %s -> %s... ' % ( ver, nextver ) )
         old_stdout = sys.stdout
+
         class FakeStdout( object ):
             def __init__( self ):
                 self.buffer = []
+
             def write( self, s ):
                 self.buffer.append( s )
+
             def flush( self ):
                 pass
         sys.stdout = FakeStdout()

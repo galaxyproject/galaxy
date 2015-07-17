@@ -5,7 +5,9 @@ If eggs for your platform are unavailable, fetch_eggs.py will direct you to run
 scramble.py.
 """
 
-import os, sys, logging
+import logging
+import os
+import sys
 from optparse import OptionParser
 
 parser = OptionParser()
@@ -31,21 +33,20 @@ root = logging.getLogger()
 root.setLevel( 10 )
 root.addHandler( logging.StreamHandler( sys.stdout ) )
 
-lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "lib" ) )
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, "lib" ) )
 sys.path.insert(1, lib)
 
 from galaxy.eggs import Crate, EggNotFetchable
-import pkg_resources
 
 if options.platform:
-    c = Crate( config, platform = options.platform )
+    c = Crate( config, platform=options.platform )
 else:
     c = Crate( config )
 try:
     if not options.egg_name:
-        c.resolve() # Only fetch eggs required by the config
+        c.resolve()  # Only fetch eggs required by the config
     elif options.egg_name == 'all':
-        c.resolve( all=True ) # Fetch everything
+        c.resolve( all=True )  # Fetch everything
     else:
         # Fetch a specific egg
         name = options.egg_name

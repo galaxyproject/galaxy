@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 from collections import namedtuple
 from galaxy import web
 from galaxy import util
@@ -13,6 +12,7 @@ from galaxy.exceptions import ConfigDoesNotAllowException
 
 log = logging.getLogger( __name__ )
 
+
 class ToolsController( BaseAPIController ):
     """RESTful controller for interactions with tools in the Tool Shed."""
 
@@ -23,10 +23,13 @@ class ToolsController( BaseAPIController ):
         Displays a collection of tools with optional criteria.
 
         :param q:        (optional)if present search on the given query will be performed
-        :type  q:        str 
+        :type  q:        str
 
         :param page:     (optional)requested page of the search
         :type  page:     int
+
+        :param page_size:     (optional)requested page_size of the search
+        :type  page_size:     int
 
         :param jsonp:    (optional)flag whether to use jsonp format response, defaults to False
         :type  jsonp:    bool
@@ -46,20 +49,22 @@ class ToolsController( BaseAPIController ):
             raise NotImplemented( 'Listing of all the tools is not implemented. Provide parameter "q" to search instead.' )
         else:
             page = kwd.get( 'page', 1 )
+            page_size = kwd.get( 'page_size', 10 )
             try:
                 page = int( page )
+                page_size = int( page_size )
             except ValueError:
-                raise RequestParameterInvalidException( 'The "page" requested has to be an integer.' )
+                raise RequestParameterInvalidException( 'The "page" and "page_size" have to be integers.' )
             return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )
             callback = kwd.get( 'callback', 'callback' )
-            search_results = self._search( trans, q, page )
+            search_results = self._search( trans, q, page, page_size )
             if return_jsonp:
                 response = str( '%s(%s);' % ( callback, json.dumps( search_results ) ) )
             else:
                 response = json.dumps( search_results )
             return response
 
-    def _search( self, trans, q, page=1 ):
+    def _search( self, trans, q, page=1, page_size=10 ):
         """
         Perform the search over TS tools index.
         Note that search works over the Whoosh index which you have
@@ -90,6 +95,7 @@ class ToolsController( BaseAPIController ):
         results = tool_search.search( trans,
                                       search_term,
                                       page,
+                                      page_size,
                                       boosts )
-        results[ 'hostname' ] = web.url_for( '/', qualified = True )
+        results[ 'hostname' ] = web.url_for( '/', qualified=True )
         return results

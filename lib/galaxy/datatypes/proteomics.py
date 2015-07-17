@@ -9,7 +9,10 @@ from galaxy.datatypes import data
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.xml import GenericXml
 from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.binary import SQlite
 from galaxy.datatypes.tabular import Tabular
+from galaxy.util import sqlite
+
 
 log = logging.getLogger(__name__)
 
@@ -398,3 +401,28 @@ class XHunterAslFormat(Binary):
 class Sf3(Binary):
     """Class describing a Scaffold SF3 files"""
     file_ext = "sf3"
+
+
+class MzSQlite( SQlite ):
+    """Class describing a Proteomics Sqlite database """
+    file_ext = "mz.sqlite"
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( MzSQlite, self ).set_meta( dataset, overwrite=overwrite, **kwd )
+
+    def sniff( self, filename ):
+        if super( MzSQlite, self ).sniff( filename ):
+            mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            try:
+                conn = sqlite.connect( filename )
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute( tables_query ).fetchall()
+                result = map( lambda x: x[0], result )
+                for table_name in mz_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception, e:
+                log.warn( '%s, sniff Exception: %s', self, e )
+        return False

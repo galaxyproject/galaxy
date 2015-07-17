@@ -1,7 +1,16 @@
 #!/usr/bin/env python
 
-import os, sys, logging, shutil
+import logging
+import os
+import shutil
+import sys
 from optparse import OptionParser
+
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, "lib" ) )
+sys.path.insert( 1, lib )
+
+from galaxy.eggs import Crate, py
+import pkg_resources
 
 parser = OptionParser()
 parser.add_option( '-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default='config/galaxy.ini' )
@@ -16,16 +25,10 @@ root = logging.getLogger()
 root.setLevel( 10 )
 root.addHandler( logging.StreamHandler( sys.stdout ) )
 
-lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "lib" ) )
-sys.path.insert( 1, lib )
-
-from galaxy.eggs import Crate, EggNotFetchable, py
-import pkg_resources
-
 try:
     assert options.platform
     platform = options.platform
-    c = Crate( options.config, platform = platform )
+    c = Crate( options.config, platform=platform )
     print "Platform forced to '%s'" % platform
 except:
     platform = '-'.join( ( py, pkg_resources.get_platform() ) )
@@ -63,7 +66,7 @@ if failures:
 else:
     create_zip()
 clean()
-""" ) 
+""" )
 
 print "Completed packager is 'egg_packager-%s.py'.  To" % platform
 print "fetch eggs, please copy this file to a system with internet access and run"

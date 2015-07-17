@@ -13,6 +13,7 @@ from galaxy.datatypes.tabular import Tabular
 
 log = logging.getLogger(__name__)
 
+
 class LastzCoverage( Tabular ):
     file_ext = "coverage"
 
@@ -28,7 +29,6 @@ class LastzCoverage( Tabular ):
         """
         # Maybe if we import here people will still be able to use Galaxy when numpy kills it
         eggs.require("numpy>=1.2.1")
-        #from numpy.lib import format
         import numpy
 
         range = end - start
@@ -55,5 +55,3 @@ class LastzCoverage( Tabular ):
         resolution = min( resolution, 10000 )
         resolution = max( resolution, 1 )
         return resolution
-
-

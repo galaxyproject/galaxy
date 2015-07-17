@@ -5,37 +5,39 @@ pgcleanup.py - A script for cleaning up datasets in Galaxy efficiently, by
     PostgreSQL 9.1 or greater is required.
 """
 
-import os
-import sys
-import shutil
-import logging
-import inspect
 import datetime
+import inspect
+import logging
+import os
+import shutil
+import sys
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 sys.path.insert(0, os.path.join(galaxy_root, 'lib'))
 
 from galaxy import eggs
 eggs.require('psycopg2')
-eggs.require('SQLAlchemy')
 import psycopg2
+eggs.require('SQLAlchemy')
 from sqlalchemy.engine.url import make_url
 
 import galaxy.config
-
 from galaxy.exceptions import ObjectNotFound
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger()
 
+
 class MetadataFile(Bunch):
     pass
 
+
 class Dataset(Bunch):
     pass
+
 
 class Cleanup(object):
     def __init__(self):
@@ -90,8 +92,8 @@ class Cleanup(object):
 
     def __load_config(self):
         log.info('Reading config from %s' % self.options.config)
-        config_parser = ConfigParser(dict(here = os.getcwd(),
-                                          database_connection = 'sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'))
+        config_parser = ConfigParser(dict(here=os.getcwd(),
+                                          database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'))
         config_parser.read(self.options.config)
 
         config_dict = {}
@@ -241,7 +243,7 @@ class Cleanup(object):
             filename = self.object_store.get_filename(metadata_file, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % id)
             self._log('Removing from disk: %s' % filename, action_name)
         except (ObjectNotFound, AttributeError), e:
-            log.error('Unable to get MetadataFile %s filename: %s' %  (id, e))
+            log.error('Unable to get MetadataFile %s filename: %s' % (id, e))
             return
 
         if not self.options.dry_run:
@@ -259,7 +261,7 @@ class Cleanup(object):
 
         This could probably be done more efficiently.
         """
-        log.info('Recalculating disk usage for users whose HistoryDatasetAssociations were purged') 
+        log.info('Recalculating disk usage for users whose HistoryDatasetAssociations were purged')
 
         for user_id in self.disk_accounting_user_ids:
 
@@ -341,7 +343,7 @@ class Cleanup(object):
         Mark deleted all "anonymous" Histories (not owned by a registered user) that are older than the specified number of days.
         """
         log.info('Marking deleted all userless Histories older than %i days' % self.options.days)
-        
+
         event_id = self._create_event()
 
         sql = """
@@ -405,7 +407,7 @@ class Cleanup(object):
                                 metadata_file.id AS id,
                                 metadata_file.object_store_id AS object_store_id),
                    deleted_icda_ids
-                AS (     UPDATE implicitly_converted_dataset_association 
+                AS (     UPDATE implicitly_converted_dataset_association
                             SET deleted = true%s
                            FROM purged_hda_ids
                           WHERE purged_hda_ids.id = implicitly_converted_dataset_association.hda_parent_id
@@ -515,7 +517,7 @@ class Cleanup(object):
                                 metadata_file.id AS id,
                                 metadata_file.object_store_id AS object_store_id),
                    deleted_icda_ids
-                AS (     UPDATE implicitly_converted_dataset_association 
+                AS (     UPDATE implicitly_converted_dataset_association
                             SET deleted = true%s
                            FROM purged_hda_ids
                           WHERE purged_hda_ids.id = implicitly_converted_dataset_association.hda_parent_id
@@ -741,7 +743,7 @@ class Cleanup(object):
             try:
                 filename = self.object_store.get_filename(dataset)
             except (ObjectNotFound, AttributeError), e:
-                log.error('Unable to get Dataset %s filename: %s' %  (tup[0], e))
+                log.error('Unable to get Dataset %s filename: %s' % (tup[0], e))
                 continue
 
             try:

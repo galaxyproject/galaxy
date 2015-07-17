@@ -19,6 +19,7 @@ __author__ = 'Joe Gregorio'
 __email__ = "joe@bitworking.org"
 __credits__ = ""
 
+
 def parse_mime_type(mime_type):
     """Carves up a mime-type and returns a tuple of the
        (type, subtype, params) where 'params' is a dictionary
@@ -29,14 +30,15 @@ def parse_mime_type(mime_type):
        ('application', 'xhtml', {'q', '0.5'})
        """
     parts = mime_type.split(";")
-    params = dict([tuple([s.strip() for s in param.split("=")])\
-            for param in parts[1:] ])
+    params = dict( [tuple([s.strip() for s in param.split("=")]) for param in parts[1:] ] )
     full_type = parts[0].strip()
     # Java URLConnection class sends an Accept header that includes a single "*"
     # Turn it into a legal wildcard.
-    if full_type == '*': full_type = '*/*'
+    if full_type == '*':
+        full_type = '*/*'
     (type, subtype) = full_type.split("/")
     return (type.strip(), subtype.strip(), params)
+
 
 def parse_media_range(range):
     r"""
@@ -55,11 +57,12 @@ def parse_media_range(range):
     in with a proper default if necessary.
     """
     (type, subtype, params) = parse_mime_type(range)
-    if not params.has_key('q') or not params['q'] or \
+    if 'q' not in params or not params['q'] or \
             not float(params['q']) or float(params['q']) > 1\
             or float(params['q']) < 0:
         params['q'] = '1'
     return (type, subtype, params)
+
 
 def fitness_and_quality_parsed(mime_type, parsed_ranges):
     """Find the best match for a given mime-type against
@@ -72,13 +75,13 @@ def fitness_and_quality_parsed(mime_type, parsed_ranges):
     best_fitness = -1
     best_fit_q = 0
     (target_type, target_subtype, target_params) =\
-            parse_media_range(mime_type)
+        parse_media_range(mime_type)
     for (type, subtype, params) in parsed_ranges:
         if (type == target_type or type == '*' or target_type == '*') and \
                 (subtype == target_subtype or subtype == '*' or target_subtype == '*'):
-            param_matches = reduce(lambda x, y: x+y, [1 for (key, value) in \
-                    target_params.iteritems() if key != 'q' and \
-                    params.has_key(key) and value == params[key]], 0)
+            param_matches = reduce(lambda x, y: x + y, [1 for (key, value) in
+                                   target_params.iteritems() if key != 'q' and
+                                   key in params and value == params[key]], 0)
             fitness = (type == target_type) and 100 or 0
             fitness += (subtype == target_subtype) and 10 or 0
             fitness += param_matches
@@ -87,6 +90,7 @@ def fitness_and_quality_parsed(mime_type, parsed_ranges):
                 best_fit_q = params['q']
 
     return best_fitness, float(best_fit_q)
+
 
 def quality_parsed(mime_type, parsed_ranges):
     """Find the best match for a given mime-type against
@@ -97,6 +101,7 @@ def quality_parsed(mime_type, parsed_ranges):
     except that 'parsed_ranges' must be a list of
     parsed media ranges. """
     return fitness_and_quality_parsed(mime_type, parsed_ranges)[1]
+
 
 def quality(mime_type, ranges):
     """Returns the quality 'q' of a mime-type when compared
@@ -109,6 +114,7 @@ def quality(mime_type, ranges):
     parsed_ranges = [parse_media_range(r) for r in ranges.split(",")]
     return quality_parsed(mime_type, parsed_ranges)
 
+
 def best_match(supported, header):
     """Takes a list of supported mime-types and finds the best
     match for all the media-ranges listed in header. The value of
@@ -120,8 +126,8 @@ def best_match(supported, header):
     'text/xml'
     """
     parsed_header = [parse_media_range(r) for r in header.split(",")]
-    weighted_matches = [(fitness_and_quality_parsed(mime_type, parsed_header), mime_type)\
-            for mime_type in supported]
+    weighted_matches = [(fitness_and_quality_parsed(mime_type, parsed_header), mime_type)
+                        for mime_type in supported]
     weighted_matches.sort()
     return weighted_matches[-1][0][1] and weighted_matches[-1][1] or ''
 

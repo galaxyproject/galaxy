@@ -13,23 +13,23 @@ import time
 import unittest
 import urllib
 import zipfile
+from urlparse import urlparse
+
+from xml.etree import ElementTree
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+eggs.require( 'twill' )
+import twill
+import twill.commands as tc
+from twill.other_packages._mechanize_dist import ClientForm
 
 from base.asserts import verify_assertions
 from base.test_data import TestDataResolver
 from galaxy.util import asbool
 from galaxy.util.json import loads
 from galaxy.web import security
-from galaxy.web.framework.helpers import iff, escape
-from urlparse import urlparse
-
-from galaxy import eggs
-eggs.require( 'twill' )
-
-from xml.etree import ElementTree
-
-import twill
-import twill.commands as tc
-from twill.other_packages._mechanize_dist import ClientForm
+from galaxy.web.framework.helpers import iff
 
 #Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
 buffer = StringIO.StringIO()
@@ -1924,7 +1924,7 @@ class TwillTestCase( unittest.TestCase ):
                         if control.type == "checkbox":
                             def is_checked( value ):
                                 # Copied from form_builder.CheckboxField
-                                if value == True:
+                                if value is True:
                                     return True
                                 if isinstance( value, list ):
                                     value = value[0]
