@@ -305,16 +305,16 @@ class Bam( Binary ):
         # Remove temp file
         os.unlink( stderr_name )
         # Now use pysam with BAI index to determine additional metadata
-        try:
-            bam_file = csamtools.Samfile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
-            dataset.metadata.reference_names = list( bam_file.references )
-            dataset.metadata.reference_lengths = list( bam_file.lengths )
-            dataset.metadata.bam_header = bam_file.header
-            dataset.metadata.read_groups = [ read_group['ID'] for read_group in dataset.metadata.bam_header.get( 'RG', [] ) if 'ID' in read_group ]
-            dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
-            dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
-        except:
-            pass
+        #try:
+        #    bam_file = csamtools.Samfile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
+        #    dataset.metadata.reference_names = list( bam_file.references )
+        #    dataset.metadata.reference_lengths = list( bam_file.lengths )
+        #    dataset.metadata.bam_header = bam_file.header
+        #    dataset.metadata.read_groups = [ read_group['ID'] for read_group in dataset.metadata.bam_header.get( 'RG', [] ) if 'ID' in read_group ]
+        #    dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
+        #    dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
+        #except:
+        #    pass
 
     def sniff( self, filename ):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
