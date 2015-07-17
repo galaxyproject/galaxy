@@ -41,6 +41,7 @@ from galaxy.managers import tags
 from galaxy.managers import workflows
 from galaxy.managers import base as managers_base
 from galaxy.managers import users
+from galaxy.managers import configuration
 from galaxy.datatypes.metadata import FileParameter
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
@@ -257,7 +258,10 @@ class JSAppLauncher( BaseUIController ):
 
     def __init__( self, app ):
         super( JSAppLauncher, self ).__init__( app )
+        self.user_manager = users.UserManager( app )
         self.user_serializer = users.CurrentUserSerializer( app )
+        self.config_serializer = configuration.ConfigSerializer( app )
+        self.admin_config_serializer = configuration.AdminConfigSerializer( app )
 
     def _js_options( self, trans, **kwargs ):
         """
@@ -277,11 +281,10 @@ class JSAppLauncher( BaseUIController ):
         Return a dictionary representing Galaxy's current configuration.
         """
         try:
-            config_dict = {}
-            config_controller = trans.webapp.api_controllers.get( 'configuration', None )
-            if config_controller:
-                config_dict = config_controller.get_config_dict( trans.app.config, trans.user_is_admin() )
-            return config_dict
+            serializer = self.config_serializer
+            if self.user_manager.is_admin( trans.user ):
+                serializer = self.admin_config_serializer
+            return serializer.serialize_to_view( self.app.config, view='all' )
         except Exception, exc:
             log.exception( exc )
             return {}

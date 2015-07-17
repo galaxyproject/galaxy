@@ -53,13 +53,8 @@ GalaxyApp.prototype._init = function init( options ){
     self._initUser( options.user || bootstrapped.user || {} );
     self.debug( 'GalaxyApp.user: ', self.user );
 
-    //TODO: temp
-    self.trigger( 'ready', self );
-    //if( typeof options.onload === 'function' ){
-    //    options.onload();
-    //}
-
     self._setUpListeners();
+    self.trigger( 'ready', self );
 
     return self;
 };
