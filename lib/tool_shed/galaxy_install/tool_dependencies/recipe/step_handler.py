@@ -191,11 +191,11 @@ class Download( object ):
             if dst:
                 dst.close()
 
-        if checksums.has_key('sha256sum') or '#sha256#' in download_url:
+        if 'sha256sum' in checksums or '#sha256#' in download_url:
             downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest().lower()
 
             # Determine expected value
-            if checksums.has_key('sha256sum'):
+            if 'sha256sum' in checksums:
                 expected = checksums['sha256sum'].lower()
             else:
                 expected = download_url.split('#sha256#')[1].lower()
@@ -203,11 +203,11 @@ class Download( object ):
             if downloaded_checksum != expected:
                 raise Exception( 'Given sha256 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected) )
 
-        if checksums.has_key('md5sum') or '#md5#' in download_url or '#md5=' in download_url:
+        if 'md5sum' in checksums or '#md5#' in download_url or '#md5=' in download_url:
             downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest().lower()
 
             # Determine expected value
-            if checksums.has_key('md5sum'):
+            if 'md5sum' in checksums:
                 expected = checksums['md5sum'].lower()
             else:
                 expected = re.split('#md5[#=]', download_url)[1].lower()
@@ -234,7 +234,7 @@ class Download( object ):
         return rval
 
     def get_dict_checksums( self, dct ):
-        return dict(filter(lambda i:i[0] in ['md5sum','sha256sum'], dct.iteritems()))
+        return dict(filter(lambda i: i[0] in ['md5sum', 'sha256sum'], dct.iteritems()))
 
 
 class RecipeStep( object ):
@@ -461,9 +461,9 @@ class Autoconf( RecipeStep ):
             else:
                 pre_cmd = './configure --prefix=$INSTALL_DIR %s && make && make install' % configure_opts
             cmd = install_environment.build_command( basic_util.evaluate_template( pre_cmd, install_environment ) )
-            return_code = install_environment.handle_command( tool_dependency=tool_dependency,
-                                                              cmd=cmd,
-                                                              return_output=False )
+            install_environment.handle_command( tool_dependency=tool_dependency,
+                                                cmd=cmd,
+                                                return_output=False )
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
@@ -565,7 +565,7 @@ class DownloadBinary( Download, RecipeStep ):
     def download_binary( self, url, work_dir, checksums ):
         """Download a pre-compiled binary from the specified URL."""
         downloaded_filename = os.path.split( url )[ -1 ]
-        dir = self.url_download( work_dir, downloaded_filename, url, extract=False, checksums=checksums )
+        self.url_download( work_dir, downloaded_filename, url, extract=False, checksums=checksums )
         return downloaded_filename
 
     def filter_actions_after_binary_installation( self, actions ):
@@ -806,9 +806,9 @@ class MakeInstall( RecipeStep ):
         with settings( warn_only=True ):
             make_opts = action_dict.get( 'make_opts', '' )
             cmd = install_environment.build_command( 'make %s && make install' % make_opts )
-            return_code = install_environment.handle_command( tool_dependency=tool_dependency,
-                                                              cmd=cmd,
-                                                              return_output=False )
+            install_environment.handle_command( tool_dependency=tool_dependency,
+                                                cmd=cmd,
+                                                return_output=False )
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
@@ -924,7 +924,6 @@ class SetEnvironment( RecipeStep ):
             env_file_builder.append_line( **env_var_dict )
         # The caller should check the status of the returned tool_dependency since return_code is not
         # returned by this function.
-        return_code = env_file_builder.return_code
         return tool_dependency, None, None
 
     def handle_environment_variables( self, install_environment, tool_dependency, env_var_dict,
@@ -1783,9 +1782,9 @@ class ShellCommand( RecipeStep ):
         with settings( warn_only=True ):
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with return_code.
-            return_code = install_environment.handle_command( tool_dependency=tool_dependency,
-                                                              cmd=cmd,
-                                                              return_output=False )
+            install_environment.handle_command( tool_dependency=tool_dependency,
+                                                cmd=cmd,
+                                                return_output=False )
             if initial_download:
                 return tool_dependency, filtered_actions, dir
             return tool_dependency, None, None
@@ -1822,9 +1821,9 @@ class TemplateCommand( RecipeStep ):
                 cmd = fill_template( '#from fabric.api import env\n%s' % action_dict[ 'command' ], context=env_vars )
                 # The caller should check the status of the returned tool_dependency since this function
                 # does nothing with return_code.
-                return_code = install_environment.handle_command( tool_dependency=tool_dependency,
-                                                                  cmd=cmd,
-                                                                  return_output=False )
+                install_environment.handle_command( tool_dependency=tool_dependency,
+                                                    cmd=cmd,
+                                                    return_output=False )
             return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
