@@ -8,6 +8,7 @@ import logging
 import time
 import urllib
 
+
 class TransLogger(object):
     """
     This logging middleware will log all requests as they go through.
@@ -50,11 +51,12 @@ class TransLogger(object):
 
     def __call__(self, environ, start_response):
         start = time.localtime()
-        req_uri = urllib.quote(environ.get('SCRIPT_NAME', '')
-                               + environ.get('PATH_INFO', ''))
+        req_uri = urllib.quote(environ.get('SCRIPT_NAME', '') +
+                               environ.get('PATH_INFO', ''))
         if environ.get('QUERY_STRING'):
-            req_uri += '?'+environ['QUERY_STRING']
+            req_uri += '?' + environ['QUERY_STRING']
         method = environ['REQUEST_METHOD']
+
         def replacement_start_response(status, headers, exc_info=None):
             # @@: Ideally we would count the bytes going by if no
             # content-length header was provided; but that does add
@@ -89,17 +91,18 @@ class TransLogger(object):
             'bytes': bytes,
             'HTTP_REFERER': environ.get('HTTP_REFERER', '-'),
             'HTTP_USER_AGENT': environ.get('HTTP_USER_AGENT', '-'),
-            }
+        }
         message = self.format % d
         self.logger.log(self.logging_level, message)
 
+
 def make_filter(
-    app, global_conf,
-    logger_name='wsgi',
-    format=None,
-    logging_level=logging.INFO,
-    setup_console_handler=True,
-    set_logger_level=logging.DEBUG):
+        app, global_conf,
+        logger_name='wsgi',
+        format=None,
+        logging_level=logging.INFO,
+        setup_console_handler=True,
+        set_logger_level=logging.DEBUG):
     from paste.util.converters import asbool
     if isinstance(logging_level, basestring):
         logging_level = logging._levelNames[logging_level]

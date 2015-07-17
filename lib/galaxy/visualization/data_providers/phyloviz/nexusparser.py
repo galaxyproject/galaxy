@@ -14,7 +14,6 @@ class Nexus_Parser(Newick_Parser):
         """passes a file and extracts its Nexus content."""
         return self.parseNexus(filePath)
 
-
     def parseNexus(self, filename):
         """ Nexus data is stored in blocks between a line starting with begin and another line starting with end;
         Commends inside square brackets are to be ignored,
@@ -38,7 +37,7 @@ class Nexus_Parser(Newick_Parser):
 
             if rowCount > MAX_READLINES or (not nex_file) :
                 break
-            rowCount +=1
+            rowCount += 1
             # We are only interested in the tree block.
             if "begin" in lline and "tree" in lline and not inTreeBlock:
                 inTreeBlock = True
@@ -50,9 +49,6 @@ class Nexus_Parser(Newick_Parser):
             if inTreeBlock:
 
                 if "title" in lline:        # Adding title to the tree
-                    titleLoc = lline.find("title")
-                    title = line[titleLoc + 5:].replace(" ", "")
-
                     continue
 
                 if "translate" in lline:
@@ -62,7 +58,7 @@ class Nexus_Parser(Newick_Parser):
 
                 if intranslateBlock:
                     mappingLine = self.splitLinebyWhitespaces(line)
-                    key, value = mappingLine[1], mappingLine[2].replace(",", "").replace("'","")    #replacing illegal json characters
+                    key, value = mappingLine[1], mappingLine[2].replace(",", "").replace("'", "")    # replacing illegal json characters
                     self.nameMapping[key] = value
 
                 # Extracting newick Trees
@@ -84,11 +80,9 @@ class Nexus_Parser(Newick_Parser):
 
         return self.phyloTrees, treeNames
 
-
     def splitLinebyWhitespaces(self, line):
         """replace tabs and write spaces to a single write space, so we can properly split it."""
         return re.split(r"\s+", line)
-
 
     def checkComments(self, line):
         """Check to see if the line/lines is a comment."""

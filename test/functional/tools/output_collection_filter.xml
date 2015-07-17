@@ -1,0 +1,52 @@
+<tool id="output_collection_filter" name="output_collection_filter" version="1.0.0">
+  <command>
+    echo "AF" > af.txt;
+    echo "AR" > ar.txt;
+    echo "BF" > bf.txt;
+    echo "BR" > br.txt;
+  </command>
+  <inputs>
+    <param name="output_type" type="select" label="Output Type">
+      <option value="a">A</option>
+      <option value="b">B</option>
+    </param>
+  </inputs>
+  <outputs>
+    <collection name="a_paired_output" type="paired" label="A Pair">
+      <data name="forward" format="txt" from_work_dir="af.txt"  />
+      <data name="reverse" format="txt" from_work_dir="ar.txt"  />
+      <filter>output_type == "a"</filter>
+    </collection>
+    <collection name="b_paired_output" type="paired" label="B Pair">
+      <data name="forward" format="txt" from_work_dir="bf.txt"  />
+      <data name="reverse" format="txt" from_work_dir="br.txt"  />
+      <filter>output_type == "b"</filter>
+    </collection>
+  </outputs>
+  <tests>
+    <!-- TODO: Enhance test cases to actually verify other collection not 
+         created. -->
+    <test>
+      <param name="output_type" value="a" />
+      <output_collection name="a_paired_output" type="paired">
+        <element name="forward" ftype="txt">
+          <assert_contents><has_line line="AF" /></assert_contents>
+        </element>
+        <element name="reverse" ftype="txt">
+          <assert_contents><has_line line="AR" /></assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test>
+      <param name="output_type" value="b" />
+      <output_collection name="b_paired_output" type="paired">
+        <element name="forward" ftype="txt">
+          <assert_contents><has_line line="BF" /></assert_contents>
+        </element>
+        <element name="reverse" ftype="txt">
+          <assert_contents><has_line line="BR" /></assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

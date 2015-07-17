@@ -61,15 +61,18 @@ var DatasetCollectionElementMixin = {
 
     /** merge the attributes of the sub-object 'object' into this model */
     _mergeObject : function( attributes ){
-        _.extend( attributes, attributes.object );
+        // if we don't preserve and correct ids here, the element id becomes the object id
+        // and collision in backbone's _byId will occur and only
+        _.extend( attributes, attributes.object, { element_id: attributes.id });
         delete attributes.object;
         return attributes;
     },
 
     /** override to merge this.object into this */
     constructor : function( attributes, options ){
-        this.debug( '\t DatasetCollectionElement.constructor:', attributes, options );
+        // console.debug( '\t DatasetCollectionElement.constructor:', attributes, options );
         attributes = this._mergeObject( attributes );
+        this.idAttribute = 'element_id';
         Backbone.Model.apply( this, arguments );
     },
 

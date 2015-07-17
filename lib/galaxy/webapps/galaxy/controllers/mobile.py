@@ -1,5 +1,5 @@
 from galaxy import web
-from galaxy.web.base.controller import *
+from galaxy.web.base.controller import BaseUIController
 
 
 class Mobile( BaseUIController ):

@@ -12,7 +12,6 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
 class RoleManager( base.ModelManager ):
     """
     Business logic for roles.
@@ -40,7 +39,7 @@ class RoleManager( base.ModelManager ):
         """
         try:
             role = ( self.session().query( self.model_class )
-                        .filter( self.model_class.id == decoded_role_id ).one() )
+                     .filter( self.model_class.id == decoded_role_id ).one() )
         except sqlalchemy_exceptions.MultipleResultsFound:
             raise galaxy.exceptions.InconsistentDatabase( 'Multiple roles found with the same id.' )
         except sqlalchemy_exceptions.NoResultFound:

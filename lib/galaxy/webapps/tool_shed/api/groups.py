@@ -106,7 +106,14 @@ class GroupsController( BaseAPIController ):
                     .join( model.User.table ) \
                     .outerjoin( model.RepositoryCategoryAssociation.table ) \
                     .outerjoin( model.Category.table ):
+                categories = []
+                for rca in repo.categories:
+                    cat_dict = dict( name=rca.category.name, id=trans.app.security.encode_id( rca.category.id ) )
+                    categories.append( cat_dict )
+                time_repo_created_full = repo.create_time.strftime( "%Y-%m-%d %I:%M %p" )
+                time_repo_updated_full = repo.update_time.strftime( "%Y-%m-%d %I:%M %p" )
                 time_repo_created = pretty_print_time_interval( repo.create_time, True )
+                time_repo_updated = pretty_print_time_interval( repo.update_time, True )
                 approved = ''
                 ratings = []
                 for review in repo.reviews:
@@ -117,7 +124,17 @@ class GroupsController( BaseAPIController ):
                 # TODO add user ratings
                 ratings_mean = str( float( sum( ratings ) ) / len( ratings ) ) if len( ratings ) > 0 else ''
                 total_downloads += repo.times_downloaded
-                group_repos.append( { 'name': repo.name, 'times_downloaded': repo.times_downloaded, 'owner': repo.user.username, 'time_created': time_repo_created, 'description': repo.description, 'approved': approved, 'ratings_mean': ratings_mean, 'tools': 'unknown'  } )
+                group_repos.append( {   'name': repo.name,
+                                        'times_downloaded': repo.times_downloaded,
+                                        'owner': repo.user.username,
+                                        'time_created_full': time_repo_created_full,
+                                        'time_created': time_repo_created,
+                                        'time_updated_full': time_repo_updated_full,
+                                        'time_updated': time_repo_updated,
+                                        'description': repo.description,
+                                        'approved': approved,
+                                        'ratings_mean': ratings_mean,
+                                        'categories' : categories } )
                 user_repos_count += 1
             encoded_user_id = trans.app.security.encode_id( repo.user.id )
             user_repos_url = web.url_for( controller='repository', action='browse_repositories_by_user', user_id=encoded_user_id )

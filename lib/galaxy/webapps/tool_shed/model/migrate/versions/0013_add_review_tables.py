@@ -49,32 +49,32 @@ def boolean_false(migrate_engine):
        raise Exception( 'Unable to convert data for unknown database type: %s' % db )
 
 RepositoryReview_table = Table( "repository_review", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=NOW ),
-    Column( "update_time", DateTime, default=NOW, onupdate=NOW ),
-    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
-    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "approved", TrimmedString( 255 ) ),
-    Column( "rating", Integer, index=True ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+                                Column( "id", Integer, primary_key=True ),
+                                Column( "create_time", DateTime, default=NOW ),
+                                Column( "update_time", DateTime, default=NOW, onupdate=NOW ),
+                                Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+                                Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+                                Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+                                Column( "approved", TrimmedString( 255 ) ),
+                                Column( "rating", Integer, index=True ),
+                                Column( "deleted", Boolean, index=True, default=False ) )
 
 ComponentReview_table = Table( "component_review", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=NOW ),
-    Column( "update_time", DateTime, default=NOW, onupdate=NOW ),
-    Column( "repository_review_id", Integer, ForeignKey( "repository_review.id" ), index=True ),
-    Column( "component_id", Integer, ForeignKey( "component.id" ), index=True ),
-    Column( "comment", TEXT ),
-    Column( "private", Boolean, default=False ),
-    Column( "approved", TrimmedString( 255 ) ),
-    Column( "rating", Integer ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+                               Column( "id", Integer, primary_key=True ),
+                               Column( "create_time", DateTime, default=NOW ),
+                               Column( "update_time", DateTime, default=NOW, onupdate=NOW ),
+                               Column( "repository_review_id", Integer, ForeignKey( "repository_review.id" ), index=True ),
+                               Column( "component_id", Integer, ForeignKey( "component.id" ), index=True ),
+                               Column( "comment", TEXT ),
+                               Column( "private", Boolean, default=False ),
+                               Column( "approved", TrimmedString( 255 ) ),
+                               Column( "rating", Integer ),
+                               Column( "deleted", Boolean, index=True, default=False ) )
 
 Component_table = Table( "component", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "name", TrimmedString( 255 ) ),
-    Column( "description", TEXT ) )
+                         Column( "id", Integer, primary_key=True ),
+                         Column( "name", TrimmedString( 255 ) ),
+                         Column( "description", TEXT ) )
 
 def upgrade(migrate_engine):
     print __doc__

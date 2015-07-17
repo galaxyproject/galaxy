@@ -2,7 +2,7 @@
 Controller for integration with the Biostar application
 """
 
-from galaxy.web.base.controller import BaseUIController, url_for, error, web
+from galaxy.web.base.controller import BaseUIController, error, web
 from galaxy.util import biostar
 
 

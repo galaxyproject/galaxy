@@ -5,7 +5,6 @@ Owned models can be modified and deleted.
 """
 
 from galaxy import exceptions
-from galaxy.managers import base
 
 
 class AccessibleManagerMixin( object ):
@@ -112,7 +111,7 @@ class OwnableManagerMixin( object ):
         """
         raise exceptions.NotImplemented( "Abstract interface Method" )
         # just alias to by_user (easier/same thing)
-        #return self.by_user( trans, user, **kwargs )
+        # return self.by_user( trans, user, **kwargs )
 
     def filter_owned( self, user, **kwargs ):
         """

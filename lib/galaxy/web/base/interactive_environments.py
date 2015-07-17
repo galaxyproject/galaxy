@@ -25,11 +25,8 @@ class InteractiveEnviornmentRequest(object):
         self.attr = Bunch()
         self.attr.viz_id = plugin_config["name"].lower()
         self.attr.history_id = trans.security.encode_id( trans.history.id )
-        self.attr.proxy_request = trans.app.proxy_manager.setup_proxy( trans )
-        self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
         self.attr.galaxy_config = trans.app.config
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
-
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "plugins/visualizations/" + self.attr.viz_id + "/static/"
 
@@ -39,6 +36,13 @@ class InteractiveEnviornmentRequest(object):
         self.attr.our_config_dir = os.path.join(plugin_path, "config")
         self.attr.our_template_dir = os.path.join(plugin_path, "templates")
         self.attr.HOST = trans.request.host.rsplit(':', 1)[0]
+
+        self.load_deploy_config()
+        self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
+        self.attr.proxy_request = trans.app.proxy_manager.setup_proxy(
+            trans, host=self.attr.docker_hostname
+        )
+        self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
         self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
         # Generate per-request passwords the IE plugin can use to configure
@@ -54,6 +58,7 @@ class InteractiveEnviornmentRequest(object):
         # .get() that will ignore missing sections, so we must make use of
         # their defaults dictionary instead.
         default_dict['command_inject'] = '--sig-proxy=true'
+        default_dict['docker_hostname'] = 'localhost'
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
         if not os.path.exists( conf_path ):
@@ -169,12 +174,12 @@ class InteractiveEnviornmentRequest(object):
         volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
         return '%s run %s -d %s -p %s:%s -v "%s:/import/" %s %s' % \
             (self.attr.viz_config.get("docker", "command"),
-            env_str,
-            self.attr.viz_config.get("docker", "command_inject"),
-            self.attr.PORT, self.attr.docker_port,
-            temp_dir,
-            volume_str,
-            self.attr.viz_config.get("docker", "image"))
+             env_str,
+             self.attr.viz_config.get("docker", "command_inject"),
+             self.attr.PORT, self.attr.docker_port,
+             temp_dir,
+             volume_str,
+             self.attr.viz_config.get("docker", "image"))
 
     def launch(self, raw_cmd=None, env_override={}, volumes=[]):
         if raw_cmd is None:

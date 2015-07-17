@@ -1,40 +1,39 @@
 #!/usr/bin/env python
 
-# Script requires handlebars compiler be installed; use node package manager 
+# Script requires handlebars compiler be installed; use node package manager
 # to install handlebars.
 
 """%prog [options] [ specific .handlebars or .html template file to compile ]
     Compiles handlebars templates into javascript for better load times and performance.
-   
+
     Handlebars compilation errors will print to stderr.
     NOTE!: you will need node.js, npm, and handlebars (installed from npm) in order to compile templates
         See http://handlebarsjs.com/precompilation.html for more info.
-    
-    Should be called from the $GLX_ROOT/static/scripts/templates directory.   
+
+    Should be called from the $GLX_ROOT/static/scripts/templates directory.
     Compiled templates will be written to the compiled/ directory.
-    
+
     If the --multi-ext option is passed a file extension string, the script will:
         * search for *.<extension> in the current directory,
         * extract each '<script type="text/template"> from the file and write them into a new handlebars file
             named using the id of the script tag (eg. id="undeleteMsg" -> undeleteMsg.handlebars)
         * these new handlebars scripts will be compiled along with any other handlebars templates in the dir
-        
+
     additionally for each of those files, the script will:
         * extract each '<script type="text/javascript"> from the file and write them ALL into a single js file
             named using the prefix 'helpers-' and the basename of the enclosing file
             (eg. common-templates.html -> helpers-common-templates.js )
         * these new handlebars scripts will be compiled along with any other handlebars templates in the dir
             These files can be included as if they were templates (eg. h.templates( 'helpers-common-templates' ) )
-            
+
     This hopefully will allow both multiple templates and their associated Handlebars helper functions to be
         included in one file.
-        
+
     Currently, this works (best?) if:
         * the multiple templates are within one html file
         * each template is enclosed in a <script> tag with type="text/template" and some id attribute
         * each helper fn is enclosed in a <script> tag with type="text/javascript" and some id attribute
     e.g. <script type="text/template" id="history-deletedMsg" class="template">Deleted {{ msg }}</script>
-    
 """
 # ------------------------------------------------------------------------------
 
@@ -52,8 +51,8 @@ import re
 
 import logging as log
 log.basicConfig(
-    #level = log.DEBUG,
-    name = __name__
+    # level=log.DEBUG,
+    name=__name__
 )
 
 COMPILED_DIR = 'compiled'
@@ -67,7 +66,8 @@ HELPER_TYPE = 'text/javascript'
 
 # both of these are off by default for backward compat
 DEFAULT_MINIMIZATION = False
-DEFAULT_MULTI_EXT = None #'.html'
+DEFAULT_MULTI_EXT = None  # '.html'
+
 
 # ------------------------------------------------------------------------------
 def parse_html_tag_attrs( string ):
@@ -79,14 +79,16 @@ def parse_html_tag_attrs( string ):
         attrs[ key ] = val
     return attrs
 
+
 def split_on_html_tag( string, tag ):
     tag_pattern = r'<%s\s*(?P<attrs>.*?)>(?P<body>.*?)</%s>' % ( tag, tag )
     log.debug( tag_pattern )
     tag_pattern = re.compile( tag_pattern, re.MULTILINE | re.DOTALL )
-    
+
     found_list = re.findall( tag_pattern, string )
     for attrs, body in found_list:
         yield ( parse_html_tag_attrs( attrs ), body )
+
 
 def filter_on_tag_type( generator, type_attr_to_match ):
     for attrs, body in generator:
@@ -95,41 +97,41 @@ def filter_on_tag_type( generator, type_attr_to_match ):
         and ( attrs[ 'type' ] == type_attr_to_match ) ):
             yield attrs, body
 
-        
+
 # ------------------------------------------------------------------------------
 def break_multi_template( multi_template_filename ):
     """parse the multi template, writing each template into a new handlebars tmpl and returning their names"""
     template_filenames = []
-    
+
     # parse the multi template
     print "\nBreaking multi-template file %s into individual templates and helpers:" % ( multi_template_filename )
     with open( multi_template_filename, 'r' ) as multi_template_file:
         multi_template_file_text = multi_template_file.read()
-        
+
         # write a template file for each template (name based on id in tag)
         tag_generator = split_on_html_tag( multi_template_file_text, TEMPLATE_TAG )
         for attrs, template_text in filter_on_tag_type( tag_generator, TEMPLATE_TYPE ):
             if( 'id' not in attrs ):
-                log.warning( 'Template has no "id". attrs: %s' %( str( attrs ) ) )
+                log.warning( 'Template has no "id". attrs: %s' % ( str( attrs ) ) )
                 continue
-            
+
             template_id = attrs[ 'id' ]
             template_text = template_text.strip()
             handlebar_template_filename = template_id + '.handlebars'
             with open( handlebar_template_filename, 'w' ) as handlebar_template_file:
                 handlebar_template_file.write( template_text )
-                
+
             log.debug( "%s\n%s\n", template_id, template_text )
             template_filenames.append( handlebar_template_filename )
-            
-        ## write all helpers to a single 'helper-' prefixed js file in the compilation dir
+
+        # write all helpers to a single 'helper-' prefixed js file in the compilation dir
         helper_fns = []
         # same tag, different type
         tag_generator = split_on_html_tag( multi_template_file_text, TEMPLATE_TAG )
         for attrs, helper_text in filter_on_tag_type( tag_generator, HELPER_TYPE ):
             helper_text = helper_text.strip()
             print '(helper):', ( attrs[ 'id' ] if 'id' in attrs else '(No id)' )
-            
+
             helper_fns.append( helper_text )
 
         if helper_fns:
@@ -139,7 +141,7 @@ def break_multi_template( multi_template_filename ):
             with open( helper_filename, 'w' ) as helper_file:
                 helper_file.write( '\n'.join( helper_fns ) )
             print '(helper functions written to %s)' % helper_filename
-            
+
     print '\n'.join( template_filenames )
     return template_filenames
 
@@ -147,12 +149,12 @@ def break_multi_template( multi_template_filename ):
 # ------------------------------------------------------------------------------
 def compile_template( template_filename, minimize=False ):
     """compile the given template file (optionally minimizing the js) using subprocess.
-    
+
     Use the basename of the template file for the outputed js.
     """
     template_basename = os.path.splitext( os.path.split( template_filename )[1] )[0]
     compiled_filename = os.path.join( COMPILED_DIR, template_basename + COMPILED_EXT )
-    
+
     command_string = COMPILE_CMD_STR % ( template_filename, compiled_filename )
     if minimize:
         command_string += COMPILE_MINIMIZE_SWITCH
@@ -163,16 +165,16 @@ def compile_template( template_filename, minimize=False ):
 # ------------------------------------------------------------------------------
 def main( options, args ):
     """Break multi template files into single templates, compile all single templates.
-    
+
     If args, compile that as a list of specific handlebars and/or multi template files.
     """
     print "(Call this script with the '-h' option for more help)"
-    
+
     handlebars_templates = []
     # If specific scripts specified on command line, just compile them,
     if len( args ) >= 1:
         handlebars_templates = filter( lambda( x ): x.endswith( '.handlebars' ), args )
-        
+
     # otherwise compile all in the current dir
     else:
         handlebars_templates = glob( '*.handlebars' )
@@ -186,13 +188,13 @@ def main( options, args ):
             multi_templates = filter( lambda( x ): x.endswith( options.multi_ext ), args )
         else:
             multi_templates = glob( '*' + options.multi_ext )
-            
+
         for multi_template_filename in multi_templates:
             multi_template_template_filenames.extend( break_multi_template( multi_template_filename ) )
-            
+
     # unique filenames only (Q&D)
     handlebars_templates = list( set( handlebars_templates + multi_template_template_filenames ) )
-        
+
     # compile the templates
     print "\nCompiling templates:"
     filenames_w_possible_errors = []
@@ -200,7 +202,7 @@ def main( options, args ):
         shell_ret = compile_template( handlebars_template, options.minimize )
         if shell_ret:
             filenames_w_possible_errors.append( handlebars_template )
-    
+
     # report any possible errors
     if filenames_w_possible_errors:
         print "\nThere may have been errors on the following files:"
@@ -234,4 +236,3 @@ if __name__ == '__main__':
 
     ( options, args ) = optparser.parse_args()
     sys.exit( main( options, args ) )
-    

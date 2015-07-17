@@ -15,12 +15,12 @@ log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 RequestTypePermissions_table = Table( "request_type_permissions", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "action", TEXT ),
-    Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), nullable=True, index=True ),
-    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
+                                      Column( "id", Integer, primary_key=True ),
+                                      Column( "create_time", DateTime, default=now ),
+                                      Column( "update_time", DateTime, default=now, onupdate=now ),
+                                      Column( "action", TEXT ),
+                                      Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), nullable=True, index=True ),
+                                      Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

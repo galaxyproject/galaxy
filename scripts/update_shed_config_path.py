@@ -6,13 +6,13 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-import logging
-import galaxy.model.tool_shed_install
-import galaxy.model.tool_shed_install.mapping as mapping
-from galaxy.model.orm import *
 from galaxy import eggs
-eggs.require('sqlalchemy')
-import sqlalchemy
+eggs.require('SQLAlchemy')
+from sqlalchemy import create_engine, MetaData
+from sqlalchemy.orm import scoped_session, sessionmaker
+
+import galaxy.model.tool_shed_install.mapping as mapping
+
 
 def main( opts, session, model ):
     '''
@@ -25,6 +25,7 @@ def main( opts, session, model ):
                 session.add( row )
                 session.flush()
     return 0
+
 
 def create_database( config_file ):
     parser = ConfigParser.SafeConfigParser()
@@ -61,8 +62,8 @@ def create_database( config_file ):
 
     # Initialize the database connection.
     engine = create_engine( database_connection )
-    meta = MetaData( bind=engine )
-    install_session = Session = scoped_session( sessionmaker( bind=engine, autoflush=False, autocommit=True ) )
+    MetaData( bind=engine )
+    install_session = scoped_session( sessionmaker( bind=engine, autoflush=False, autocommit=True ) )
     model = mapping.init( database_connection )
     return install_session, model
 

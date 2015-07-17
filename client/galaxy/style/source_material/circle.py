@@ -12,6 +12,7 @@ from math import pi
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+
 def parse_css_color( color ):
     if color.startswith( '#' ):
         color = color[1:]
@@ -25,11 +26,10 @@ def parse_css_color( color ):
         b = int( color[4:6], 16 )
     else:
         raise Exception( "Color should be 3 hex numbers" )
-    return r/256, g/256, b/256
-                        
+    return r / 256, g / 256, b / 256
+
 size = int( sys.argv[1] )
 
-    
 surface = cairo.ImageSurface( cairo.FORMAT_ARGB32, size, size )
 c = cairo.Context( surface )
 
@@ -48,8 +48,8 @@ t = size / 4.0
 arrow = sys.argv[4]
 if arrow == 'right':
     c.move_to( t + 1, t )
-    c.line_to( 3*t - 1, 2*t )
-    c.line_to( t + 1, 3*t )
+    c.line_to( 3 * t - 1, 2 * t )
+    c.line_to( t + 1, 3 * t )
     c.stroke()
 
 surface.write_to_png( "/dev/stdout" )

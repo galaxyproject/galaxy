@@ -22,6 +22,13 @@
                 %for i in range( len(param_values[input.name]) ):
                     ${ inputs_recursive(input.inputs, param_values[input.name][i], depth=depth+1) }
                 %endfor
+            %elif input.type == "section":
+                <tr>
+                    ##<!-- Get the value of the current Section parameter -->
+                    ${inputs_recursive_indent( text=input.name, depth=depth )}
+                    <td></td>
+                </tr>
+                ${ inputs_recursive( input.inputs, param_values[input.name], depth=depth+1, upgrade_messages=upgrade_messages.get( input.name ) ) }
             %elif input.type == "conditional":
                 <%
                 try:

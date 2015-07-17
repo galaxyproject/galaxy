@@ -30,4 +30,3 @@ def to_float_or_none( value ):
 # Utility methods for specifing valid...
 def is_in( *args ):
     return functools.partial( operator.contains, args )
-

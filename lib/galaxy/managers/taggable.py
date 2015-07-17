@@ -2,9 +2,6 @@
 Mixins for Taggable model managers and serializers.
 """
 
-from galaxy import exceptions
-from galaxy import model
-
 import logging
 log = logging.getLogger( __name__ )
 
@@ -13,9 +10,9 @@ class TaggableManagerMixin( object ):
     #: class of TagAssociation (e.g. HistoryTagAssociation)
     tag_assoc = None
 
-    #TODO: most of this can be done by delegating to the TagManager?
+    # TODO: most of this can be done by delegating to the TagManager?
 
-    #def by_user( self, user, **kwargs ):
+    # def by_user( self, user, **kwargs ):
     #    pass
 
 
@@ -52,15 +49,16 @@ class TaggableDeserializerMixin( object ):
         Note: this will erase any previous tags.
         """
         new_tags_list = self.validate.basestring_list( key, val )
-        #TODO: have to assume trans.user here...
-        #TODO: duped from tags manager - de-dupe when moved to taggable mixin
+        # TODO: have to assume trans.user here...
+        # TODO: duped from tags manager - de-dupe when moved to taggable mixin
         tag_handler = self.app.tag_handler
         tag_handler.delete_item_tags( user, item )
         new_tags_str = ','.join( new_tags_list )
         tag_handler.apply_item_tags( user, item, unicode( new_tags_str.encode( 'utf-8' ), 'utf-8' ) )
 
-        #TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
+        # TODO:!! does the creation of new_tags_list mean there are now more and more unused tag rows in the db?
         return item.tags
+
 
 class TaggableFilterMixin( object ):
 
@@ -68,7 +66,7 @@ class TaggableFilterMixin( object ):
         """
         Return a list of strings built from the item's tags.
         """
-        #TODO: which user is this? all?
+        # TODO: which user is this? all?
         for tag in item.tags:
             tag_str = tag.user_tname
             if tag.value is not None:

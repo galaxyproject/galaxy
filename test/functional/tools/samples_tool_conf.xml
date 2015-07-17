@@ -5,6 +5,7 @@
   <tool file="inheritance_simple.xml" />
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
+  <tool file="environment_variables.xml" />
   <tool file="compare_bam_as_sam.xml" />
   <tool file="code_file.xml" />
   <tool file="disambiguate_cond.xml" />
@@ -26,6 +27,7 @@
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
   <tool file="disambiguate_repeats.xml" />
   <tool file="min_repeat.xml" />
