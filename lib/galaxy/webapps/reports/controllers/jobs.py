@@ -11,7 +11,6 @@ from sqlalchemy import and_, not_, or_
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
-from galaxy.model.orm import and_, not_, or_
 from math import ceil
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
