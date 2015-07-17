@@ -23,9 +23,11 @@
 
         <!--  Sample S3 Object Store
         <object_store type="s3">
-            <auth access_key="...." secret_key="....." />
-            <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-            <cache path="database/files/" size="1000" />
+             <auth access_key="...." secret_key="....." />
+             <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+             <cache path="database/object_store_cache" size="1000" />
+             <extra_dir type="job_work" path="database/job_working_directory_s3"/>
+             <extra_dir type="temp" path="database/tmp_s3"/>
         </object_store>
         -->
 
@@ -34,7 +36,9 @@
              <auth access_key="...." secret_key="....." />
              <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
              <connection host="" port="" is_secure="" conn_path="" multipart="True"/>
-             <cache path="database/files/" size="1000" />
+             <cache path="database/object_store_cache" size="1000" />
+             <extra_dir type="job_work" path="database/job_working_directory_swift"/>
+             <extra_dir type="temp" path="database/tmp_swift"/>
          </object_store>
          -->
 

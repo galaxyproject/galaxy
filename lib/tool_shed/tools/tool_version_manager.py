@@ -1,6 +1,8 @@
 import logging
 
-from galaxy.model.orm import and_
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_
 
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc

@@ -1,21 +1,27 @@
 from __future__ import absolute_import
 
-from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import grids
-from galaxy.model.orm import *
-from galaxy.web.form_builder import *
-from .requests_common import RequestsGrid
 import logging
 
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false
+
+from galaxy.web.base.controller import BaseUIController, web
+from galaxy.web.framework.helpers import grids
+from .requests_common import RequestsGrid
+
 log = logging.getLogger( __name__ )
+
 
 class UserRequestsGrid( RequestsGrid ):
     operations = [ operation for operation in RequestsGrid.operations ]
     operations.append( grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: item.is_unsubmitted and not item.deleted ) ) )
     operations.append( grids.GridOperation( "Delete", allow_multiple=True, condition=( lambda item: item.is_new and not item.deleted ) ) )
     operations.append( grids.GridOperation( "Undelete", allow_multiple=True, condition=( lambda item: item.deleted ) ) )
+
     def apply_query_filter( self, trans, query, **kwd ):
         return query.filter_by( user=trans.user )
+
 
 class Requests( BaseUIController ):
     request_grid = UserRequestsGrid()
@@ -24,10 +30,12 @@ class Requests( BaseUIController ):
     @web.require_login( "view sequencing requests" )
     def index( self, trans ):
         return trans.fill_template( "requests/index.mako" )
+
     @web.expose
     @web.require_login( "create/submit sequencing requests" )
     def find_samples_index( self, trans ):
         return trans.fill_template( "requests/find_samples_index.mako" )
+
     @web.expose
     def browse_requests( self, trans, **kwd ):
         if 'operation' in kwd:
@@ -71,8 +79,8 @@ class Requests( BaseUIController ):
         # If there are requests that have been rejected, show a message as a reminder to the user
         rejected = 0
         for request in trans.sa_session.query( trans.app.model.Request ) \
-                            .filter( trans.app.model.Request.table.c.deleted==False ) \
-                            .filter( trans.app.model.Request.table.c.user_id==trans.user.id ):
+                .filter( trans.app.model.Request.table.c.deleted == false() ) \
+                .filter( trans.app.model.Request.table.c.user_id == trans.user.id ):
             if request.is_rejected:
                 rejected = rejected + 1
         if rejected:
@@ -90,4 +98,3 @@ class Requests( BaseUIController ):
             self.request_grid.global_actions = []
         # Render the list view
         return self.request_grid( trans, **kwd )
-

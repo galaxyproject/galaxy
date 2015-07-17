@@ -10,7 +10,11 @@ eggs.require( "decorator" )  # Required by sqlalchemy-migrate
 eggs.require( "Tempita " )  # Required by sqlalchemy-migrate
 eggs.require( "sqlalchemy-migrate" )
 
-from sqlalchemy import *
+# from sqlalchemy import *
+from sqlalchemy import create_engine
+from sqlalchemy import MetaData
+from sqlalchemy import Table
+
 from sqlalchemy.exc import NoSuchTableError
 from migrate.versioning import repository, schema
 

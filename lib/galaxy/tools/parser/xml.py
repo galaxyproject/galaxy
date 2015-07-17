@@ -186,6 +186,7 @@ class XmlToolSource(ToolSource):
                 inherit_metadata = string_as_bool( collection_elem.get( "inherit_metadata", None ) )
             default_format_source = collection_elem.get( "format_source", None )
             default_metadata_source = collection_elem.get( "metadata_source", "" )
+            filters = collection_elem.findall( 'filter' )
 
             dataset_collectors = None
             if collection_elem.find( "discover_datasets" ) is not None:
@@ -199,6 +200,7 @@ class XmlToolSource(ToolSource):
                 name,
                 structure,
                 label=label,
+                filters=filters,
                 default_format=default_format,
                 inherit_format=inherit_format,
                 inherit_metadata=inherit_metadata,
@@ -582,17 +584,17 @@ class StdioParser(object):
                 # Each exit code has an optional description that can be
                 # part of the "desc" or "description" attributes:
                 exit_code.desc = exit_code_elem.get( "desc" )
-                if None == exit_code.desc:
+                if exit_code.desc is None:
                     exit_code.desc = exit_code_elem.get( "description" )
                 # Parse the error level:
                 exit_code.error_level = (
                     self.parse_error_level( exit_code_elem.get( "level" )))
                 code_range = exit_code_elem.get( "range", "" )
-                if None == code_range:
+                if code_range is None:
                     code_range = exit_code_elem.get( "value", "" )
-                if None == code_range:
-                    log.warning( "Tool stdio exit codes must have "
-                                 + "a range or value" )
+                if code_range is None:
+                    log.warning( "Tool stdio exit codes must have " +
+                                 "a range or value" )
                     continue
                 # Parse the range. We look for:
                 #   :Y
@@ -605,11 +607,11 @@ class StdioParser(object):
                 code_range = re.sub( "\s", "", code_range )
                 code_ranges = re.split( ":", code_range )
                 if ( len( code_ranges ) == 2 ):
-                    if ( None == code_ranges[0] or '' == code_ranges[0] ):
+                    if ( code_ranges[0] is None or '' == code_ranges[0] ):
                         exit_code.range_start = float( "-inf" )
                     else:
                         exit_code.range_start = int( code_ranges[0] )
-                    if ( None == code_ranges[1] or '' == code_ranges[1] ):
+                    if ( code_ranges[1] is None or '' == code_ranges[1] ):
                         exit_code.range_end = float( "inf" )
                     else:
                         exit_code.range_end = int( code_ranges[1] )
@@ -635,14 +637,14 @@ class StdioParser(object):
                 # So at least warn about this situation:
                 if ( isinf( exit_code.range_start ) and
                      isinf( exit_code.range_end ) ):
-                    log.warning( "Tool exit_code range %s will match on "
-                                 + "all exit codes" % code_range )
+                    log.warning( "Tool exit_code range %s will match on " +
+                                 "all exit codes" % code_range )
                 self.stdio_exit_codes.append( exit_code )
         except Exception:
-            log.error( "Exception in parse_stdio_exit_codes! "
-                       + str(sys.exc_info()) )
+            log.error( "Exception in parse_stdio_exit_codes! " +
+                       str(sys.exc_info()) )
             trace = sys.exc_info()[2]
-            if ( None != trace ):
+            if trace is not None:
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
 
@@ -662,13 +664,13 @@ class StdioParser(object):
                 # Each regex has an optional description that can be
                 # part of the "desc" or "description" attributes:
                 regex.desc = regex_elem.get( "desc" )
-                if None == regex.desc:
+                if regex.desc is None:
                     regex.desc = regex_elem.get( "description" )
                 # Parse the error level
                 regex.error_level = (
                     self.parse_error_level( regex_elem.get( "level" ) ) )
                 regex.match = regex_elem.get( "match", "" )
-                if None == regex.match:
+                if regex.match is None:
                     # TODO: Convert the offending XML element to a string
                     log.warning( "Ignoring tool's stdio regex element %s - "
                                  "the 'match' attribute must exist" )
@@ -679,11 +681,11 @@ class StdioParser(object):
                 # Look for a comma and then look for "err", "error", "out",
                 # and "output":
                 output_srcs = regex_elem.get( "src" )
-                if None == output_srcs:
+                if output_srcs is None:
                     output_srcs = regex_elem.get( "source" )
-                if None == output_srcs:
+                if output_srcs is None:
                     output_srcs = regex_elem.get( "sources" )
-                if None == output_srcs:
+                if output_srcs is None:
                     output_srcs = "output,error"
                 output_srcs = re.sub( "\s", "", output_srcs )
                 src_list = re.split( ",", output_srcs )
@@ -707,10 +709,10 @@ class StdioParser(object):
                         regex.stderr_match = True
                 self.stdio_regexes.append( regex )
         except Exception:
-            log.error( "Exception in parse_stdio_exit_codes! "
-                       + str(sys.exc_info()) )
+            log.error( "Exception in parse_stdio_exit_codes! " +
+                       str(sys.exc_info()) )
             trace = sys.exc_info()[2]
-            if ( None != trace ):
+            if trace is not None:
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
 
@@ -734,10 +736,10 @@ class StdioParser(object):
                     log.debug( "Tool %s: error level %s did not match log/warning/fatal" %
                                ( self.id, err_level ) )
         except Exception:
-            log.error( "Exception in parse_error_level "
-                       + str(sys.exc_info() ) )
+            log.error( "Exception in parse_error_level " +
+                       str(sys.exc_info() ) )
             trace = sys.exc_info()[2]
-            if ( None != trace ):
+            if trace is not None:
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
         return return_level

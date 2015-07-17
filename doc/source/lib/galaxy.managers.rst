@@ -1,92 +1,228 @@
-managers Package
-==================
-
-:mod:`managers` Package
--------------------------
+galaxy.managers package
+=======================
 
 .. automodule:: galaxy.managers
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
+Submodules
+----------
 
-:mod:`api_keys` Module
-------------------------------
+galaxy.managers.annotatable module
+----------------------------------
+
+.. automodule:: galaxy.managers.annotatable
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.api_keys module
+-------------------------------
 
 .. automodule:: galaxy.managers.api_keys
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-
-:mod:`base` Module
-------------------------------
+galaxy.managers.base module
+---------------------------
 
 .. automodule:: galaxy.managers.base
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-
-:mod:`citations` Module
-------------------------------
+galaxy.managers.citations module
+--------------------------------
 
 .. automodule:: galaxy.managers.citations
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-
-:mod:`collections` Module
-------------------------------
+galaxy.managers.collections module
+----------------------------------
 
 .. automodule:: galaxy.managers.collections
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-
-:mod:`collections_util` Module
-------------------------------
+galaxy.managers.collections_util module
+---------------------------------------
 
 .. automodule:: galaxy.managers.collections_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
+galaxy.managers.configuration module
+------------------------------------
 
-:mod:`context` Module
+.. automodule:: galaxy.managers.configuration
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.containers module
+---------------------------------
+
+.. automodule:: galaxy.managers.containers
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.context module
 ------------------------------
 
 .. automodule:: galaxy.managers.context
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
+galaxy.managers.datasets module
+-------------------------------
 
-:mod:`folders` Module
+.. automodule:: galaxy.managers.datasets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.deletable module
+--------------------------------
+
+.. automodule:: galaxy.managers.deletable
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.folders module
 ------------------------------
 
 .. automodule:: galaxy.managers.folders
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-
-:mod:`hdas` Module
-------------------------------
+galaxy.managers.hdas module
+---------------------------
 
 .. automodule:: galaxy.managers.hdas
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-
-:mod:`histories` Module
-------------------------------
+galaxy.managers.histories module
+--------------------------------
 
 .. automodule:: galaxy.managers.histories
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-
-:mod:`lddas` Module
-------------------------------
+galaxy.managers.lddas module
+----------------------------
 
 .. automodule:: galaxy.managers.lddas
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-
-:mod:`libraries` Module
-------------------------------
+galaxy.managers.libraries module
+--------------------------------
 
 .. automodule:: galaxy.managers.libraries
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
+galaxy.managers.pages module
+----------------------------
 
-:mod:`roles` Module
+.. automodule:: galaxy.managers.pages
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.ratable module
 ------------------------------
+
+.. automodule:: galaxy.managers.ratable
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.rbac_secured module
+-----------------------------------
+
+.. automodule:: galaxy.managers.rbac_secured
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.roles module
+----------------------------
 
 .. automodule:: galaxy.managers.roles
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
-
-:mod:`tags` Module
+galaxy.managers.secured module
 ------------------------------
+
+.. automodule:: galaxy.managers.secured
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.sharable module
+-------------------------------
+
+.. automodule:: galaxy.managers.sharable
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.taggable module
+-------------------------------
+
+.. automodule:: galaxy.managers.taggable
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.tags module
+---------------------------
 
 .. automodule:: galaxy.managers.tags
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
+galaxy.managers.users module
+----------------------------
 
-:mod:`workflows` Module
-------------------------------
+.. automodule:: galaxy.managers.users
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.visualizations module
+-------------------------------------
+
+.. automodule:: galaxy.managers.visualizations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.managers.workflows module
+--------------------------------
 
 .. automodule:: galaxy.managers.workflows
+    :members:
     :undoc-members:
+    :show-inheritance:
+
+

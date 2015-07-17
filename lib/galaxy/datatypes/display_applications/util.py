@@ -2,9 +2,10 @@ import pkg_resources
 pkg_resources.require( "pycrypto" )
 from Crypto.Cipher import Blowfish
 
+
 def encode_dataset_user( trans, dataset, user ):
-    #encode dataset id as usual
-    #encode user id using the dataset create time as the key
+    # encode dataset id as usual
+    # encode user id using the dataset create time as the key
     dataset_hash = trans.security.encode_id( dataset.id )
     if user is None:
         user_hash = 'None'
@@ -16,9 +17,10 @@ def encode_dataset_user( trans, dataset, user ):
         user_hash = cipher.encrypt( user_hash ).encode( 'hex' )
     return dataset_hash, user_hash
 
+
 def decode_dataset_user( trans, dataset_hash, user_hash ):
-    #decode dataset id as usual
-    #decode user id using the dataset create time as the key
+    # decode dataset id as usual
+    # decode user id using the dataset create time as the key
     dataset_id = trans.security.decode_id( dataset_hash )
     dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
     assert dataset, "Bad Dataset id provided to decode_dataset_user"

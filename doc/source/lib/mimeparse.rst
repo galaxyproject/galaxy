@@ -1,4 +1,4 @@
-mimeparse Module
+mimeparse module
 ================
 
 .. automodule:: mimeparse

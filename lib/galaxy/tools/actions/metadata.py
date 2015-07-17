@@ -83,6 +83,7 @@ class SetMetadataToolAction( ToolAction ):
                                                                       datatypes_config=app.datatypes_registry.integrated_datatypes_configs,
                                                                       job_metadata=None,
                                                                       include_command=False,
+                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
                                                                       kwds={ 'overwrite' : overwrite } )
         incoming[ '__SET_EXTERNAL_METADATA_COMMAND_LINE__' ] = cmd_line
         for name, value in tool.params_to_strings( incoming, app ).iteritems():

@@ -8,18 +8,19 @@ import urllib
 from time import gmtime
 from time import strftime
 
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false
+
+import tool_shed.repository_types.util as rt_util
 from galaxy import web
-from galaxy.model.orm import and_
 from galaxy.util import asbool
 from galaxy.util import CHUNK_SIZE
 from galaxy.util.odict import odict
-
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
 from tool_shed.metadata import repository_metadata_manager
-import tool_shed.repository_types.util as rt_util
-
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import common_util
@@ -206,14 +207,9 @@ class ExportRepositoryManager( object ):
         """
         for repository_name, repo_info_tup in repo_info_dict.items():
             # There should only be one entry in the received repo_info_dict.
-            description, \
-            repository_clone_url, \
-            changeset_revision, \
-            ctx_rev, \
-            repository_owner, \
-            repository_dependencies, \
-            tool_dependencies = \
-            suc.get_repo_info_tuple_contents( repo_info_tup )
+            description, repository_clone_url, changeset_revision, ctx_rev, \
+                repository_owner, repository_dependencies, tool_dependencies = \
+                suc.get_repo_info_tuple_contents( repo_info_tup )
             repository = suc.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
             repository_metadata = suc.get_current_repository_metadata_for_changeset_revision( self.app,
                                                                                               repository,
@@ -301,14 +297,10 @@ class ExportRepositoryManager( object ):
         repository_ids = []
         for repo_info_dict in repo_info_dicts:
             for repository_name, repo_info_tup in repo_info_dict.items():
-                description, \
-                repository_clone_url, \
-                changeset_revision, \
-                ctx_rev, \
-                repository_owner, \
-                repository_dependencies, \
-                tool_dependencies = \
-                suc.get_repo_info_tuple_contents( repo_info_tup )
+                description, repository_clone_url, changeset_revision, \
+                    ctx_rev, repository_owner, repository_dependencies, \
+                    tool_dependencies = \
+                    suc.get_repo_info_tuple_contents( repo_info_tup )
                 repository = suc.get_repository_by_name_and_owner( self.app, repository_name, repository_owner )
                 repository_ids.append( self.app.security.encode_id( repository.id ) )
         return repository_ids
@@ -560,8 +552,8 @@ class ImportRepositoryManager( object ):
         dependent_downloadable_revisions = []
         for repository in sa_session.query( self.app.model.Repository ) \
                                     .filter( and_( self.app.model.Repository.table.c.id != rm_repository.id,
-                                                   self.app.model.Repository.table.c.deleted == False,
-                                                   self.app.model.Repository.table.c.deprecated == False ) ):
+                                                   self.app.model.Repository.table.c.deleted == false(),
+                                                   self.app.model.Repository.table.c.deprecated == false() ) ):
             downloadable_revisions = repository.downloadable_revisions
             if downloadable_revisions:
                 for downloadable_revision in downloadable_revisions:
@@ -571,12 +563,9 @@ class ImportRepositoryManager( object ):
                             repository_dependencies_dict = metadata.get( 'repository_dependencies', {} )
                             repository_dependencies_tups = repository_dependencies_dict.get( 'repository_dependencies', [] )
                             for repository_dependencies_tup in repository_dependencies_tups:
-                                tool_shed, \
-                                name, \
-                                owner, \
-                                changeset_revision, \
-                                prior_installation_required, \
-                                only_if_compiling_contained_td = \
+                                tool_shed, name, owner, changeset_revision, \
+                                    prior_installation_required, \
+                                    only_if_compiling_contained_td = \
                                     common_util.parse_repository_dependency_tuple( repository_dependencies_tup )
                                 if name == rm_repository_name and owner == rm_repository_owner:
                                     # We've discovered a repository revision that depends upon the repository associated
@@ -662,7 +651,7 @@ class ImportRepositoryManager( object ):
                     repository_info_dict[ 'archive_file_name' ] = archive_file_name
                     items = archive_file_name.split( '-' )
                     changeset_revision = items[ 1 ].rstrip( '.tar.gz' )
-                    repository_info_dict [ 'changeset_revision' ] = changeset_revision
+                    repository_info_dict[ 'changeset_revision' ] = changeset_revision
                 elif repository_elem.tag == 'categories':
                     category_names = []
                     for category_elem in repository_elem:
@@ -724,7 +713,7 @@ class ImportRepositoryManager( object ):
         archive_file_path = os.path.join( file_path, archive_file_name )
         archive = tarfile.open( archive_file_path, 'r:*' )
         repo_dir = repository.repo_path( self.app )
-        repo = hg_util.get_repo_for_repository( self.app, repository=None, repo_path=repo_dir, create=False )
+        hg_util.get_repo_for_repository( self.app, repository=None, repo_path=repo_dir, create=False )
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
         ok, error_message = commit_util.check_archive( repository, archive )
@@ -801,7 +790,7 @@ class ImportRepositoryManager( object ):
                     results_dict[ 'ok' ] = False
                     results_dict[ 'error_message' ] += error_message
             except Exception, e:
-                log.debug( "Error setting metadata on repository %s created from imported archive %s: %s" % \
+                log.debug( "Error setting metadata on repository %s created from imported archive %s: %s" %
                     ( str( repository.name ), str( archive_file_name ), str( e ) ) )
         else:
             archive.close()
@@ -820,17 +809,15 @@ class ImportRepositoryManager( object ):
                             tar_archive=None,
                             uploaded_file=None,
                             capsule_file_name=None )
-        if file_data == '' and url == '':
-            message = 'No files were entered on the import form.'
-            status = 'error'
-        elif url:
+        if url:
             valid_url = True
             try:
                 stream = urllib.urlopen( url )
             except Exception, e:
                 valid_url = False
-                message = 'Error importing file via http: %s' % str( e )
-                status = 'error'
+                return_dict['error_message'] = 'Error importing file via http: %s' % str( e )
+                return_dict['status'] = 'error'
+                return return_dict
             if valid_url:
                 fd, uploaded_file_name = tempfile.mkstemp()
                 uploaded_file = open( uploaded_file_name, 'wb' )
@@ -841,14 +828,12 @@ class ImportRepositoryManager( object ):
                     uploaded_file.write( chunk )
                 uploaded_file.flush()
                 uploaded_file_filename = url.split( '/' )[ -1 ]
-                isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
         elif file_data not in ( '', None ):
             uploaded_file = file_data.file
             uploaded_file_name = uploaded_file.name
             uploaded_file_filename = os.path.split( file_data.filename )[ -1 ]
-            isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
         if uploaded_file is not None:
-            if isempty:
+            if os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0:
                 uploaded_file.close()
                 return_dict[ 'error_message' ] = 'Your uploaded capsule file is empty.'
                 return_dict[ 'status' ] = 'error'

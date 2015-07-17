@@ -7,8 +7,6 @@ from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_ap
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import require_admin
 from galaxy.web.base.controller import BaseAPIController
-
-from galaxy.managers import base
 from galaxy.managers import configuration
 
 import logging
@@ -55,7 +53,7 @@ class ConfigurationController( BaseAPIController ):
         """
         serializer = self.config_serializer
         if return_admin:
-            #TODO: this should probably just be under a different route: 'admin/configuration'
+            # TODO: this should probably just be under a different route: 'admin/configuration'
             serializer = self.admin_config_serializer
 
         serialized = serializer.serialize_to_view( self.app.config, view=view, keys=keys, default_view=default_view )

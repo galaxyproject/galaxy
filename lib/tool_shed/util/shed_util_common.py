@@ -5,20 +5,21 @@ import re
 import shutil
 import socket
 import string
+from urllib2 import HTTPError
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
 import sqlalchemy.orm.exc
+from sqlalchemy import and_, false, or_, true
 
 from galaxy import util
 from galaxy.web import url_for
 from galaxy.datatypes import checkers
-from galaxy.model.orm import and_
-from galaxy.model.orm import or_
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-
-from urllib2 import HTTPError
 
 log = logging.getLogger( __name__ )
 
@@ -219,7 +220,7 @@ def get_categories( app ):
     """Get all categories from the database."""
     sa_session = app.model.context.current
     return sa_session.query( app.model.Category ) \
-                     .filter( app.model.Category.table.c.deleted == False ) \
+                     .filter( app.model.Category.table.c.deleted == false() ) \
                      .order_by( app.model.Category.table.c.name ) \
                      .all()
 
@@ -661,11 +662,13 @@ def get_repository_in_tool_shed( app, id ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
 
+
 def get_repository_categories( app, id ):
     """Get categories of a repository on the tool shed side from the database via id"""
     sa_session = app.model.context.current
     return sa_session.query( app.model.RepositoryCategoryAssociation ) \
-        .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id==app.security.decode_id( id ))
+        .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id( id ))
+
 
 def get_repository_metadata_by_changeset_revision( app, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database."""
@@ -1018,8 +1021,8 @@ def handle_email_alerts( app, host, repository, content_alert_str='', new_repo_a
             subject = subject[ :80 ]
             email_alerts = []
             for user in sa_session.query( app.model.User ) \
-                                  .filter( and_( app.model.User.table.c.deleted == False,
-                                                 app.model.User.table.c.new_repo_alert == True ) ):
+                                  .filter( and_( app.model.User.table.c.deleted == false(),
+                                                 app.model.User.table.c.new_repo_alert == true() ) ):
                 if admin_only:
                     if user.email in admin_users:
                         email_alerts.append( user.email )

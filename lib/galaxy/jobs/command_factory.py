@@ -3,12 +3,12 @@ from os import chmod
 from os.path import join
 from os.path import abspath
 
+from logging import getLogger
+log = getLogger( __name__ )
+
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 DEFAULT_SHELL = "/bin/sh"
-
-from logging import getLogger
-log = getLogger( __name__ )
 
 
 def build_command(

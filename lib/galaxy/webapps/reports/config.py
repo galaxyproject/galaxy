@@ -1,9 +1,12 @@
 """Universe configuration builder."""
-import sys, os, logging, logging.config, ConfigParser
-from optparse import OptionParser
+import sys
+import os
+import logging
+import ConfigParser
 from galaxy.util import string_as_bool
 
 log = logging.getLogger( __name__ )
+
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
@@ -11,8 +14,10 @@ def resolve_path( path, root ):
         path = os.path.join( root, path )
     return path
 
+
 class ConfigurationError( Exception ):
     pass
+
 
 class Configuration( object ):
     def __init__( self, **kwargs ):
@@ -20,7 +25,7 @@ class Configuration( object ):
         self.root = kwargs.get( 'root_dir', '.' )
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/universe.sqlite" ), self.root )
-        self.database_connection =  kwargs.get( "database_connection", False )
+        self.database_connection = kwargs.get( "database_connection", False )
         self.database_engine_options = get_database_engine_options( kwargs )
         # Where dataset files are stored
         self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
@@ -30,7 +35,7 @@ class Configuration( object ):
         self.require_login = string_as_bool( kwargs.get( "require_login", "False" ) )
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates/reports" ), self.root )
-        self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
+        self.sendmail_path = kwargs.get('sendmail_path', "/usr/sbin/sendmail")
         self.allow_user_creation = string_as_bool( kwargs.get( "allow_user_creation", "True" ) )
         self.allow_user_deletion = string_as_bool( kwargs.get( "allow_user_deletion", "False" ) )
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
@@ -46,25 +51,28 @@ class Configuration( object ):
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         # Error logging with sentry
         self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
-        #Parse global_conf
+        # Parse global_conf
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
+
     def get( self, key, default ):
         return self.config_dict.get( key, default )
+
     def check( self ):
         # Check that required directories exist
         for path in self.root, self.file_path, self.template_path:
             if not os.path.isdir( path ):
                 raise ConfigurationError("Directory does not exist: %s" % path )
 
+
 def get_database_engine_options( kwargs ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
     """
-    conversions =  {
+    conversions = {
         'convert_unicode': string_as_bool,
         'pool_timeout': int,
         'echo': string_as_bool,
@@ -84,6 +92,7 @@ def get_database_engine_options( kwargs ):
                 value = conversions[key](value)
             rval[ key  ] = value
     return rval
+
 
 def configure_logging( config ):
     """
@@ -114,5 +123,3 @@ def configure_logging( config ):
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )
-
-

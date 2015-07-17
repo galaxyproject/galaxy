@@ -295,7 +295,7 @@ return Backbone.View.extend({
     _templateContainer: function(tag, width) {
         return  '<div class="charts-viewport-container" style="width:' + width + '%;">' +
                     '<div id="menu"/>' +
-                    '<' + tag + ' id="' + Utils.uuid() + '" class="charts-viewport-canvas">' +
+                    '<' + tag + ' id="' + Utils.uid() + '" class="charts-viewport-canvas">' +
                 '</div>';
     }
     

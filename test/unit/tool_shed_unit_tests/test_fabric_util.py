@@ -33,8 +33,8 @@ def test_env_file_builder():
         assert env_file_builder.return_code == 1
 
 
-## Poor man's mocking. Need to get a real mocking library as real Galaxy development
-## dependnecy.
+# Poor man's mocking. Need to get a real mocking library as real Galaxy development
+# dependnecy.
 @contextmanager
 def __mock_env_file_builder_method( env_file_builder, name, mock_method ):
     real_method = getattr( env_file_builder, name )

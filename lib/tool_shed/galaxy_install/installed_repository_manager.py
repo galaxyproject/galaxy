@@ -4,13 +4,17 @@ Class encapsulating the management of repositories installed into Galaxy from th
 import copy
 import logging
 import os
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, true
+
 from galaxy import util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import xml_util
-from galaxy.model.orm import and_
 
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
@@ -730,8 +734,8 @@ class InstalledRepositoryManager( object ):
     def load_proprietary_datatypes( self ):
         cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
         for tool_shed_repository in self.context.query( self.install_model.ToolShedRepository ) \
-                                                .filter( and_( self.install_model.ToolShedRepository.table.c.includes_datatypes==True,
-                                                               self.install_model.ToolShedRepository.table.c.deleted==False ) ) \
+                                                .filter( and_( self.install_model.ToolShedRepository.table.c.includes_datatypes == true(),
+                                                               self.install_model.ToolShedRepository.table.c.deleted == false() ) ) \
                                                 .order_by( self.install_model.ToolShedRepository.table.c.id ):
             relative_install_dir = self.get_repository_install_dir( tool_shed_repository )
             if relative_install_dir:

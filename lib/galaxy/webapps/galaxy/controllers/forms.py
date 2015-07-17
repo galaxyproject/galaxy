@@ -1,27 +1,31 @@
-from galaxy.web.base.controller import *
-from galaxy.model.orm import *
-from galaxy.datatypes import sniff
-from galaxy import model, util
-import logging, os, sys
-from galaxy.web.form_builder import *
-from galaxy.tools.parameters.basic import parameter_types
-from xml.etree.ElementTree import XML, Element
-from galaxy.util.odict import odict
 import copy
-from galaxy.web.framework.helpers import time_ago, iff, grids
+import logging
+import re
+
+from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, web
+from galaxy.web.form_builder import FileField, TextField, HiddenField, SelectField
+from galaxy.web.framework.helpers import iff, grids
 
 log = logging.getLogger( __name__ )
 
 VALID_FIELDNAME_RE = re.compile( "^[a-zA-Z0-9\_]+$" )
+
+# TODO: not used in this file
+from galaxy.tools.parameters.basic import parameter_types  # noqa
+from xml.etree.ElementTree import XML, Element  # noqa
+
 
 class FormsGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value(self, trans, grid, form):
             return form.latest_form.name
+
     class DescriptionColumn( grids.TextColumn ):
         def get_value(self, trans, grid, form):
             return form.latest_form.desc
+
     class TypeColumn( grids.TextColumn ):
         def get_value(self, trans, grid, form):
             return form.latest_form.type
@@ -48,9 +52,9 @@ class FormsGrid( grids.Grid ):
                            filterable="advanced" ),
         TypeColumn( "Type" ),
         grids.DeletedColumn( "Deleted",
-                       key="deleted",
-                       visible=False,
-                       filterable="advanced" )
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search",
                                                 cols_to_filter=[ columns[0], columns[1] ],
@@ -67,7 +71,8 @@ class FormsGrid( grids.Grid ):
     ]
 
     def build_initial_query( self, trans, **kwargs ):
-        return trans.sa_session.query( self.model_class ).join (model.FormDefinition, self.model_class.latest_form_id == model.FormDefinition.id)
+        return trans.sa_session.query( self.model_class ).join(model.FormDefinition, self.model_class.latest_form_id == model.FormDefinition.id)
+
 
 class Forms( BaseUIController ):
     # Empty TextField
@@ -101,6 +106,7 @@ class Forms( BaseUIController ):
             elif operation == "edit":
                 return self.edit_form_definition( trans, **kwd )
         return self.forms_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def view_latest_form_definition( self, trans, **kwd ):
@@ -116,6 +122,7 @@ class Forms( BaseUIController ):
                                                               status='error' ) )
         return trans.fill_template( '/admin/forms/view_form_definition.mako',
                                     form_definition=form_definition_current.latest_form )
+
     @web.expose
     @web.require_admin
     def create_form_definition( self, trans, **kwd ):
@@ -152,6 +159,7 @@ class Forms( BaseUIController ):
                                     inputs=inputs,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def edit_form_definition( self, trans, response_redirect=None, **kwd ):
@@ -229,6 +237,7 @@ class Forms( BaseUIController ):
                                                    status=status,
                                                    response_redirect=response_redirect,
                                                    **kwd )
+
     def get_saved_form( self, form_definition ):
         '''
         This retrieves the saved form and returns a dictionary containing the name,
@@ -260,7 +269,7 @@ class Forms( BaseUIController ):
         if form_type == trans.model.FormDefinition.types.SAMPLE:
             index = 0
             while True:
-                if kwd.has_key( 'grid_layout%i' % index ):
+                if 'grid_layout%i' % index in kwd:
                     grid_name = util.restore_text( params.get( 'grid_layout%i' % index, '' ) )
                     layout.append( grid_name )
                     index = index + 1
@@ -273,7 +282,7 @@ class Forms( BaseUIController ):
             # get the user entered fields
             index = 0
             while True:
-                if kwd.has_key( 'field_label_%i' % index ):
+                if 'field_label_%i' % index in kwd:
                     fields.append( self.__get_field( index, **kwd ) )
                     index = index + 1
                 else:
@@ -281,11 +290,12 @@ class Forms( BaseUIController ):
             fields = fields
         else:
             fields, layout = self.__import_fields(trans, csv_file, form_type)
-        return dict(name = name,
-                    desc = desc,
-                    type = form_type,
-                    layout = layout,
-                    fields = fields)
+        return dict(name=name,
+                    desc=desc,
+                    type=form_type,
+                    layout=layout,
+                    fields=fields)
+
     def save_form_definition( self, trans, form_definition_current_id=None, **kwd ):
         '''
         This method saves the current form
@@ -302,7 +312,7 @@ class Forms( BaseUIController ):
                 return None, "All the field labels must be completed."
             if not VALID_FIELDNAME_RE.match( field[ 'name' ] ):
                 return None, "'%s' is not a valid field name." % field[ 'name' ]
-            if field_names_dict.has_key( field[ 'name' ] ):
+            if field[ 'name' ] in field_names_dict:
                 return None, "Each field name must be unique in the form definition. '%s' is not unique." % field[ 'name' ]
             else:
                 field_names_dict[ field[ 'name' ] ] = 1
@@ -316,11 +326,11 @@ class Forms( BaseUIController ):
                                                           form_definition_current=None,
                                                           form_type=current_form[ 'type' ],
                                                           layout=current_form[ 'layout' ] )
-        if form_definition_current_id: # save changes to the existing form
+        if form_definition_current_id:  # save changes to the existing form
             # change the pointer in the form_definition_current table to point
             # to this new record
             form_definition_current = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( form_definition_current_id )
-        else: # create a new form
+        else:  # create a new form
             form_definition_current = trans.app.model.FormDefinitionCurrent()
         # create corresponding row in the form_definition_current table
         form_definition.form_definition_current = form_definition_current
@@ -329,13 +339,14 @@ class Forms( BaseUIController ):
         trans.sa_session.flush()
         message = "The new form named '%s' has been created. " % (form_definition.name)
         return form_definition, message
+
     def show_editable_form_definition( self, trans, form_definition, current_form, message='', status='done', response_redirect=None, **kwd ):
         """
         Displays the form and any of the changes made to it in edit mode. In this method
         all the widgets are build for all name, description and all the fields of a form
         definition.
         """
-        params = util.Params( kwd )
+        util.Params( kwd )
         # name & description
         form_details = [ ( 'Name', TextField( 'name', 40, current_form[ 'name' ] ) ),
                          ( 'Description', TextField( 'description', 40, current_form[ 'desc' ] ) ),
@@ -363,11 +374,11 @@ class Forms( BaseUIController ):
                                     current_form_type=current_form[ 'type' ],
                                     layout_grids=form_layout,
                                     response_redirect=response_redirect )
+
     @web.expose
     @web.require_admin
     def delete_form_definition( self, trans, **kwd ):
         id_list = util.listify( kwd['id'] )
-        delete_failed = []
         for id in id_list:
             try:
                 form_definition_current = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(id) )
@@ -383,11 +394,11 @@ class Forms( BaseUIController ):
                                                           action='browse_form_definitions',
                                                           message='%i forms have been deleted.' % len(id_list),
                                                           status='done') )
+
     @web.expose
     @web.require_admin
     def undelete_form_definition( self, trans, **kwd ):
         id_list = util.listify( kwd['id'] )
-        delete_failed = []
         for id in id_list:
             try:
                 form_definition_current = trans.sa_session.query( trans.app.model.FormDefinitionCurrent ).get( trans.security.decode_id(id) )
@@ -403,19 +414,20 @@ class Forms( BaseUIController ):
                                                           action='browse_form_definitions',
                                                           message='%i forms have been undeleted.' % len(id_list),
                                                           status='done') )
+
     def build_form_definition_field_widgets( self, trans, layout_grids, field_index, field, form_type ):
         '''
         This method returns a list of widgets which describes a form definition field. This
         includes the field label, helptext, type, selectfield options, required/optional & layout
         '''
         # field label
-        label = TextField( 'field_label_'+str( field_index ), 40, field['label'] )
+        label = TextField( 'field_label_' + str( field_index ), 40, field['label'] )
         # help text
-        helptext = TextField( 'field_helptext_'+str( field_index ), 40, field['helptext'] )
+        helptext = TextField( 'field_helptext_' + str( field_index ), 40, field['helptext'] )
         # field type
-        field_type_select_field = SelectField( 'field_type_'+str( field_index ),
-                                            refresh_on_change=True,
-                                            refresh_on_change_values=[ SelectField.__name__ ] )
+        field_type_select_field = SelectField( 'field_type_' + str( field_index ),
+                                               refresh_on_change=True,
+                                               refresh_on_change_values=[ SelectField.__name__ ] )
         # fill up the field type selectfield options
         field_type_options = []
         # if the form is for defining samples, then use the sample field types
@@ -424,28 +436,28 @@ class Forms( BaseUIController ):
             for supported_field_type in trans.model.Sample.supported_field_types:
                 if supported_field_type.__name__ == field[ 'type' ]:
                     field_type_select_field.add_option( supported_field_type.__name__,
-                                                     supported_field_type.__name__,
-                                                     selected=True )
+                                                        supported_field_type.__name__,
+                                                        selected=True )
                     if supported_field_type.__name__ == SelectField.__name__:
                         # when field type is Selectfield, add option Textfields
                         field_type_options = self.__build_field_type_select_field_options( field, field_index )
                 else:
                     field_type_select_field.add_option( supported_field_type.__name__,
-                                                     supported_field_type.__name__ )
+                                                        supported_field_type.__name__ )
         else:
             for supported_field_type in trans.model.FormDefinition.supported_field_types:
                 if supported_field_type.__name__ == field[ 'type' ]:
                     field_type_select_field.add_option( supported_field_type.__name__,
-                                                     supported_field_type.__name__,
-                                                     selected=True )
+                                                        supported_field_type.__name__,
+                                                        selected=True )
                     if supported_field_type.__name__ == SelectField.__name__:
                         # when field type is Selectfield, add option Textfields
                         field_type_options = self.__build_field_type_select_field_options( field, field_index )
                 else:
                     field_type_select_field.add_option( supported_field_type.__name__,
-                                                     supported_field_type.__name__ )
+                                                        supported_field_type.__name__ )
         # required/optional radio button
-        required = SelectField( 'field_required_'+str(field_index), display='radio' )
+        required = SelectField( 'field_required_' + str(field_index), display='radio' )
         if field[ 'required' ] == 'required':
             required.add_option( 'Required', 'required', selected=True )
             required.add_option( 'Optional', 'optional' )
@@ -454,15 +466,15 @@ class Forms( BaseUIController ):
             required.add_option( 'Optional', 'optional', selected=True )
         # layout grid option select_field
         if layout_grids and form_type == trans.model.FormDefinition.types.SAMPLE:
-            layout_select_field = SelectField( 'field_layout_'+str( field_index ) )
+            layout_select_field = SelectField( 'field_layout_' + str( field_index ) )
             for index, grid_name in enumerate( layout_grids ):
-                if str( field.get( 'layout', None ) ) == str( index ): #existing behavior: integer indexes are stored as strings.
+                if str( field.get( 'layout', None ) ) == str( index ):  # existing behavior: integer indexes are stored as strings.
                     grid_selected = True
                 else:
                     grid_selected = False
-                layout_select_field.add_option("%i. %s" %( index+1, grid_name ), index, selected=grid_selected )
+                layout_select_field.add_option("%i. %s" % ( index + 1, grid_name ), index, selected=grid_selected )
         # default value
-        default_value = TextField( 'field_default_'+str(field_index),
+        default_value = TextField( 'field_default_' + str(field_index),
                                    40,
                                    field.get( 'default', '' ) )
         # field name
@@ -482,6 +494,7 @@ class Forms( BaseUIController ):
                  ( 'Default value', default_value ),
                  ( '', required),
                  ( 'Field name', name, name_helptext ) ]
+
     def __build_field_type_select_field_options( self, field, field_index ):
         '''
         Returns a list of TextFields, one for each select field option
@@ -489,16 +502,17 @@ class Forms( BaseUIController ):
         field_type_options = []
         if field[ 'selectlist' ]:
             for ctr, option in enumerate( field[ 'selectlist' ] ):
-                option_textfield = TextField( 'field_'+str( field_index )+'_option_'+str( ctr ), 40, option )
-                field_type_options.append( ( 'Option '+str( ctr+1 ), option_textfield ) )
+                option_textfield = TextField( 'field_' + str( field_index ) + '_option_' + str( ctr ), 40, option )
+                field_type_options.append( ( 'Option ' + str( ctr + 1 ), option_textfield ) )
         return field_type_options
+
     def __add_select_field_option( self, trans, current_form, **kwd ):
         '''
         This method adds a select_field option. The kwd dict searched for
         the field index which needs to be removed
         '''
-        message=''
-        status='ok',
+        message = ''
+        status = 'ok',
         index = -1
         for k, v in kwd.items():
             if v == 'Add':
@@ -508,19 +522,20 @@ class Forms( BaseUIController ):
                 break
         if index == -1:
             # something wrong happened
-            message='Error in adding selectfield option',
-            status='error',
+            message = 'Error in adding selectfield option',
+            status = 'error',
             return current_form, status, message
         # add an empty option
         current_form[ 'fields' ][ index ][ 'selectlist' ].append( '' )
         return current_form, status, message
+
     def __remove_select_field_option( self, trans, current_form, **kwd ):
         '''
         This method removes a select_field option. The kwd dict searched for
         the field index and option index which needs to be removed
         '''
-        message=''
-        status='ok',
+        message = ''
+        status = 'ok',
         option = -1
         for k, v in kwd.items():
             if v == 'Remove':
@@ -531,27 +546,29 @@ class Forms( BaseUIController ):
                 break
         if option == -1:
             # something wrong happened
-            message='Error in removing selectfield option',
-            status='error',
+            message = 'Error in removing selectfield option',
+            status = 'error',
             return current_form, status, message
         # remove the option
         del current_form[ 'fields' ][ index ][ 'selectlist' ][ option ]
         return current_form, status, message
+
     def __get_select_field_options( self, index, **kwd ):
         '''
         This method gets all the options entered by the user for field when
         the fieldtype is SelectField
         '''
         params = util.Params( kwd )
-        ctr=0
+        ctr = 0
         sb_options = []
         while True:
-            if kwd.has_key( 'field_'+str(index)+'_option_'+str(ctr) ):
-                option = params.get( 'field_'+str(index)+'_option_'+str(ctr), None )
+            if 'field_%s_option_%s' % (index, ctr) in kwd:
+                option = params.get( 'field_%s_option_%s' % (index, ctr), None )
                 sb_options.append( util.restore_text( option ) )
-                ctr = ctr+1
+                ctr = ctr + 1
             else:
                 return sb_options
+
     def __get_field( self, index, **kwd ):
         '''
         This method retrieves all the user-entered details of a field and
@@ -561,7 +578,7 @@ class Forms( BaseUIController ):
         label = util.restore_text( params.get( 'field_label_%i' % index, '' ) )
         name = util.restore_text( params.get( 'field_name_%i' % index, '' ) )
         helptext = util.restore_text( params.get( 'field_helptext_%i' % index, '' ) )
-        required =  params.get( 'field_required_%i' % index, False )
+        required = params.get( 'field_required_%i' % index, False )
         field_type = util.restore_text( params.get( 'field_type_%i' % index, '' ) )
         layout = params.get( 'field_layout_%i' % index, '0' )
         default = util.restore_text( params.get( 'field_default_%i' % index, '' ) )
@@ -586,6 +603,7 @@ class Forms( BaseUIController ):
                  'type': field_type,
                  'layout': layout,
                  'default': default }
+
     def __import_fields( self, trans, csv_file, form_type ):
         '''
         "company","name of the company", "True", "required", "TextField",,
@@ -598,7 +616,7 @@ class Forms( BaseUIController ):
             reader = csv.reader(csv_file.file)
             index = 1
             for row in reader:
-                if len(row) < 7: # ignore bogus rows
+                if len(row) < 7:  # ignore bogus rows
                     continue
                 options = row[5].split(',')
                 if len(row) >= 8:
@@ -609,7 +627,7 @@ class Forms( BaseUIController ):
                                      'required': row[3],
                                      'type': row[4],
                                      'selectlist': options,
-                                     'layout':row[6],
+                                     'layout': row[6],
                                      'default': row[7] } )
                     layouts.add(row[6])
                 else:
@@ -629,6 +647,7 @@ class Forms( BaseUIController ):
                                                               message='Error in importing <b>%s</b> file' % csv_file.file))
         self.__imported_from_file = True
         return fields, list(layouts)
+
     def __validate_form( self, **kwd ):
         '''
         This method checks the following text inputs are filled out by the user
@@ -643,6 +662,7 @@ class Forms( BaseUIController ):
         if util.restore_text( params.form_type_select_field ) == 'none':
             return None, 'Form type must be selected.'
         return True, ''
+
     def __build_form_types_widget( self, trans, selected='none' ):
         form_type_select_field = SelectField( 'form_type_select_field' )
         if selected == 'none':
@@ -657,4 +677,3 @@ class Forms( BaseUIController ):
             else:
                 form_type_select_field.add_option( ft[1], ft[1] )
         return form_type_select_field
-

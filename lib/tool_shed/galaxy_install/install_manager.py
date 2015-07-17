@@ -5,18 +5,15 @@ import sys
 import tempfile
 import traceback
 
-from galaxy import exceptions
 from galaxy import eggs
-from galaxy import util
-
 eggs.require( 'paramiko' )
 eggs.require( 'ssh' )
 eggs.require( 'Fabric' )
-
 from fabric.api import lcd
+eggs.require('SQLAlchemy')
+from sqlalchemy import or_
 
-from galaxy.model.orm import or_
-
+from galaxy import exceptions, util
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util

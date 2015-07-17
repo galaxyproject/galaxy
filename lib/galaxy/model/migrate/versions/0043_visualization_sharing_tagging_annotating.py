@@ -15,29 +15,29 @@ metadata = MetaData()
 # Sharing visualizations.
 
 VisualizationUserShareAssociation_table = Table( "visualization_user_share_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
+                                                 Column( "id", Integer, primary_key=True ),
+                                                 Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
+                                                 Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
 
 # Tagging visualizations.
 
 VisualizationTagAssociation_table = Table( "visualization_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", Unicode(255), index=True),
-    Column( "value", Unicode(255), index=True),
-    Column( "user_value", Unicode(255), index=True) )
+                                           Column( "id", Integer, primary_key=True ),
+                                           Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
+                                           Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                           Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                           Column( "user_tname", Unicode(255), index=True),
+                                           Column( "value", Unicode(255), index=True),
+                                           Column( "user_value", Unicode(255), index=True) )
 
 # Annotating visualizations.
 
 VisualizationAnnotationAssociation_table = Table( "visualization_annotation_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "annotation", TEXT, index=False ) )
+                                                  Column( "id", Integer, primary_key=True ),
+                                                  Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
+                                                  Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                                  Column( "annotation", TEXT, index=False ) )
 
 
 def upgrade(migrate_engine):

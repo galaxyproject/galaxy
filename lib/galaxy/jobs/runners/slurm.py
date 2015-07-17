@@ -57,7 +57,7 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 elif job_info['JobState'] == 'NODE_FAIL':
                     log.warning( '(%s/%s) Job failed due to node failure, attempting resubmission', ajs.job_wrapper.get_id_tag(), ajs.job_id )
-                    ajs.job_wrapper.change_state( model.Job.states.QUEUED, info = 'Job was resubmitted due to node failure' )
+                    ajs.job_wrapper.change_state( model.Job.states.QUEUED, info='Job was resubmitted due to node failure' )
                     try:
                         self.queue_job( ajs.job_wrapper )
                         return
@@ -80,11 +80,11 @@ class SlurmJobRunner( DRMAAJobRunner ):
                     ajs.stop_job = False
                     self.work_queue.put( ( self.fail_job, ajs ) )
                     return
-            except Exception, e:
+            except Exception as e:
                 log.exception( '(%s/%s) Unable to inspect failed slurm job using scontrol, job will be unconditionally failed: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, e )
-                super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state = drmaa_state )
+                super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
         # by default, finish as if the job was successful.
-        super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state = drmaa_state )
+        super( SlurmJobRunner, self )._complete_terminal_job( ajs, drmaa_state=drmaa_state )
 
     def __check_memory_limit( self, efile_path ):
         """

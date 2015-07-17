@@ -1,4 +1,4 @@
-psyco_full Module
+psyco_full module
 =================
 
 .. automodule:: psyco_full

@@ -8,7 +8,7 @@ define( ["libs/underscore"], function( _ ) {
  */
 var BEFORE = 1001, CONTAINS = 1002, OVERLAP_START = 1003, OVERLAP_END = 1004, CONTAINED_BY = 1005, AFTER = 1006;
 var compute_overlap = function(first_region, second_region) {
-    var 
+    var
         first_start = first_region[0], first_end = first_region[1],
         second_start = second_region[0], second_end = second_region[1],
         overlap;
@@ -34,7 +34,7 @@ var compute_overlap = function(first_region, second_region) {
             overlap = OVERLAP_END;
         }
     }
-    
+
     return overlap;
 };
 
@@ -60,7 +60,7 @@ var dashedLine = function(ctx, x1, y1, x2, y2, dashLen) {
     var dashX = dX / dashes;
     var dashY = dY / dashes;
     var q;
-    
+
     for (q = 0; q < dashes; q++, x1 += dashX, y1 += dashY) {
         if (q % 2 !== 0) {
             continue;
@@ -74,11 +74,11 @@ var dashedLine = function(ctx, x1, y1, x2, y2, dashLen) {
  */
 var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y, side_len) {
     // Compute other two points of triangle.
-    var 
+    var
         x1 = down_vertex_x - side_len/2,
         x2 = down_vertex_x + side_len/2,
         y = down_vertex_y - Math.sqrt( side_len*3/2 );
-        
+
     // Draw and fill.
     ctx.beginPath();
     ctx.moveTo(x1, y);
@@ -198,16 +198,16 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         ctx.fillStyle = "#aaa";
         ctx.fillRect( 0, y_zero, width, 1 );
     }
-    
+
     ctx.beginPath();
     var x_scaled, y, delta_x_px;
     if (data.length > 1) {
         delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
-    } 
+    }
     else {
         delta_x_px = 10;
     }
-    
+
     // Painter color can be in either block_color (FeatureTrack) or color pref (LineTrack).
     var painter_color = this.prefs.block_color || this.prefs.color,
         // Extract RGB from preference color.
@@ -215,10 +215,10 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         pref_r = (pref_color & 0xff0000) >> 16,
         pref_g = (pref_color & 0x00ff00) >> 8,
         pref_b = pref_color & 0x0000ff,
-        top_overflow = false, 
+        top_overflow = false,
         bot_overflow = false;
-        
-    
+
+
     // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
         // Reset attributes for next point.
@@ -241,20 +241,20 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         if (y < min_value) {
             bot_overflow = true;
             y = min_value;
-        } 
+        }
         else if (y > max_value) {
             top_overflow = true;
             y = max_value;
         }
-    
+
         // Draw point.
         if (mode === "Histogram") {
             // y becomes the bar height in pixels, which is the negated for canvas coords
             y = Math.round( y / vertical_range * height_px );
             ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
-        } 
+        }
         else if (mode === "Intensity") {
-            var 
+            var
                 saturation = (y - min_value) / vertical_range,
                 // Range is [pref_color, 255] where saturation = 0 --> 255 and saturation = 1 --> pref color
                 new_r = Math.round( pref_r + (255 - pref_r) * (1 - saturation) ),
@@ -262,23 +262,23 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
                 new_b = Math.round( pref_b + (255 - pref_b) * (1 - saturation) );
             ctx.fillStyle = "rgb(" + new_r + "," + new_g + "," + new_b + ")";
             ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
-        } 
+        }
         else { // mode is Coverage/Line or Filled.
 
             // Scale Y value.
             y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
             if (in_path) {
                 ctx.lineTo(x_scaled, y);
-            } 
+            }
             else {
                 in_path = true;
                 if (mode === "Filled") {
                     ctx.moveTo(x_scaled, height_px);
                     ctx.lineTo(x_scaled, y);
-                } 
+                }
                 else {
                     ctx.moveTo(x_scaled, y);
-                    // Use this approach (note: same as for filled) to draw line from 0 to 
+                    // Use this approach (note: same as for filled) to draw line from 0 to
                     // first data point.
                     //ctx.moveTo(x_scaled, height_px);
                     //ctx.lineTo(x_scaled, y);
@@ -292,7 +292,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
             var overflow_x;
             if (mode === "Histogram" || mode === "Intensity") {
                 overflow_x = delta_x_px;
-            } 
+            }
             else { // Line and Filled, which are points
                 x_scaled -= 2; // Move it over to the left so it's centered on the point
                 overflow_x = 4;
@@ -312,11 +312,11 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
             ctx.lineTo( 0, y_zero );
         }
         ctx.fill();
-    } 
+    }
     else {
         ctx.stroke();
     }
-    
+
     ctx.restore();
 };
 
@@ -356,7 +356,7 @@ FeaturePositionMapper.prototype.get_feature_data = function(x, y) {
     if (!this.feature_positions[slot]) {
         return null;
     }
-    
+
     // Find feature using X.
     x += this.translation;
     for (var i = 0; i < this.feature_positions[slot].length; i++) {
@@ -404,8 +404,8 @@ _.extend(FeaturePainter.prototype, {
      * a FeaturePositionMapper object with information about where features were drawn.
      */
     draw: function(ctx, width, height, w_scale, slots) {
-        var data = this.data, 
-            view_start = this.view_start, 
+        var data = this.data,
+            view_start = this.view_start,
             view_end = this.view_end;
 
         ctx.save();
@@ -423,11 +423,11 @@ _.extend(FeaturePainter.prototype, {
                 feature_uid = feature[0],
                 feature_start = feature[1],
                 feature_end = feature[2],
-                // Slot valid only if features are slotted and this feature is slotted; 
+                // Slot valid only if features are slotted and this feature is slotted;
                 // feature may not be due to lack of space.
                 slot = (slots && slots[feature_uid] !== undefined ? slots[feature_uid].slot : null);
-                
-            // Draw feature if (a) mode is dense or feature is slotted (as it must be for all non-dense modes) and 
+
+            // Draw feature if (a) mode is dense or feature is slotted (as it must be for all non-dense modes) and
             // (b) there's overlap between the feature and drawing region.
             if ( (this.mode === "Dense" || slot !== null) && ( feature_start < view_end && feature_end > view_start ) ) {
                 x_draw_coords = this.draw_element(ctx, this.mode, feature, slot, view_start, view_end, w_scale, y_scale, width);
@@ -449,7 +449,7 @@ _.extend(FeaturePainter.prototype, {
         });
     },
 
-    /** 
+    /**
      * Abstract function for drawing an individual feature.
      */
     draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width ) {
@@ -486,7 +486,7 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
     get_row_height: function() {
         var mode = this.mode, height;
         if (mode === "Dense") {
-            height = DENSE_TRACK_HEIGHT;            
+            height = DENSE_TRACK_HEIGHT;
         }
         else if (mode === "no_detail") {
             height = NO_DETAIL_TRACK_HEIGHT;
@@ -520,20 +520,20 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             // For now, assume '.' === '+'
             block_color = (!feature_strand || feature_strand === "+" || feature_strand === "." ? this.prefs.block_color : this.prefs.reverse_strand_color);
             label_color = this.prefs.label_color;
-        
+
         // Set global alpha.
         ctx.globalAlpha = this.alpha_scaler.gen_val(feature);
-        
+
         // In dense mode, put all data in top slot.
         if (mode === "Dense") {
             slot = 1;
         }
-        
+
         if (mode === "no_detail") {
             // No details for feature, so only one way to display.
             ctx.fillStyle = block_color;
             ctx.fillRect(f_start, y_start + 5, f_end - f_start, NO_DETAIL_FEATURE_HEIGHT);
-        } 
+        }
         else { // Mode is either Squish or Pack:
             // Feature details.
             var feature_ts = feature[5],
@@ -541,12 +541,12 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 feature_blocks = feature[7],
                 // Whether we are drawing full height or squished features
                 full_height = true;
-            
+
             if (feature_ts && feature_te) {
                 thick_start = Math.floor( Math.max(0, (feature_ts - tile_low) * w_scale) );
                 thick_end = Math.ceil( Math.min(width, Math.max(0, (feature_te - tile_low) * w_scale)) );
             }
-            
+
             // Set vars that depend on mode.
             var thin_height, thick_height;
             if (mode === "Squish" ) {
@@ -560,7 +560,7 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 thin_height = 5;
                 thick_height = PACK_FEATURE_HEIGHT;
             }
-            
+
             // Draw feature/feature blocks + connectors.
             if (!feature_blocks) {
                 // If there are no blocks, treat the feature as one big exon.
@@ -575,15 +575,15 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                     }
                     ctx.fillRect(f_start, y_start + 1, f_end - f_start, thick_height);
                 }
-            } else { 
+            } else {
                 //
                 // There are feature blocks and mode is either Squish or Pack.
                 //
-                // Approach: (a) draw whole feature as connector/intron and (b) draw blocks as 
+                // Approach: (a) draw whole feature as connector/intron and (b) draw blocks as
                 // needed. This ensures that whole feature, regardless of whether it starts with
                 // a block, is visible.
                 //
-               
+
                 // Compute y axis start position and height
                 var cur_y_start, cur_height;
                 if (mode === "Squish" || mode === "Dense") {
@@ -620,7 +620,7 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                     }
                     ctx.fillRect(f_start, cur_y_start, f_end - f_start, cur_height);
                 }
-                
+
                 // Draw blocks.
                 var start_and_height;
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
@@ -630,7 +630,7 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                         block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low - 0.5) * w_scale)) ),
                         last_block_start, last_block_end;
 
-                    // Skip drawing if block not on tile.    
+                    // Skip drawing if block not on tile.
                     if (block_start > block_end) { continue; }
 
                     // Draw thin block.
@@ -666,15 +666,15 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                     last_block_start = block_start;
                     last_block_end = block_end;
                 }
-                                
+
                 // FIXME: Height scaling only works in Pack mode right now.
                 if (mode === "Pack") {
                     // Reset alpha so height scaling is not impacted by alpha scaling.
                     ctx.globalAlpha = 1;
-                    
+
                     // Height scaling: draw white lines to reduce height according to height scale factor.
                     ctx.fillStyle = "white"; // TODO: set this to background color.
-                    var 
+                    var
                         hscale_factor = this.height_scaler.gen_val(feature),
                         // Ceil ensures that min height is >= 1.
                         new_height = Math.ceil(thick_height * hscale_factor),
@@ -682,13 +682,13 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                     if (hscale_factor !== 1) {
                         ctx.fillRect(f_start, cur_y_start + 1, f_end - f_start, ws_height);
                         ctx.fillRect(f_start, cur_y_start + thick_height - ws_height + 1, f_end - f_start, ws_height);
-                    }   
-                }                
+                    }
+                }
             }
-            
+
             // Reset alpha so that label is not transparent.
             ctx.globalAlpha = 1;
-                        
+
             // Draw label for Pack mode.
             if (feature_name && mode === "Pack" && feature_start > tile_low) {
                 ctx.fillStyle = label_color;
@@ -705,10 +705,10 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 //ctx.fillStyle = block_color;
             }
         }
-        
+
         // Reset global alpha.
         ctx.globalAlpha = 1;
-        
+
         return [draw_start, draw_end];
     }
 });
@@ -726,7 +726,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
     get_row_height: function() {
         var height, mode = this.mode;
         if (mode === "Dense") {
-            height = DENSE_TRACK_HEIGHT;            
+            height = DENSE_TRACK_HEIGHT;
         }
         else if (mode === "Squish") {
             height = SQUISH_TRACK_HEIGHT;
@@ -821,7 +821,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             drawing_blocks = [],
             s_start,
             s_end;
-            
+
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
 
@@ -837,7 +837,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             if (is_overlap([feature_start + block[0], feature_start + block[1]], tile_region)) {
                 s_start = get_draw_coord(feature_start + block[0]);
                 s_end = get_draw_coord(feature_start + block[1]);
-                
+
                 // Make sure that block is drawn even if it too small to be rendered officially; in this case,
                 // read is drawn at 1px.
                 // TODO: need to ensure that s_start, s_end are calculated the same for both slotting
@@ -861,7 +861,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             var seq_start = feature_start + base_offset;
             s_start = get_draw_coord(seq_start);
             s_end = get_draw_coord(seq_start + cig_len);
-                
+
             // Skip feature if it's not in tile.
             if (!is_overlap([seq_start, seq_start + cig_len], tile_region)) {
                 // Update offsets.
@@ -869,7 +869,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 seq_offset = update_seq_offset(seq_offset, cig_op, cig_len);
                 continue;
             }
-            
+
             // Make sure that read is drawn even if it too small to be rendered officially; in this case,
             // read is drawn at 1px.
             // TODO: need to ensure that s_start, s_end are calculated the same for both slotting
@@ -877,8 +877,8 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             if (s_start === s_end) {
                 s_end += 1;
             }
-             
-            // Draw read feature.   
+
+            // Draw read feature.
             switch (cig_op) {
                 case "H": // Hard clipping.
                 case "S": // Soft clipping.
@@ -932,7 +932,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     // Move forward in sequence only if sequence used to get mismatches.
                     if (cig_op === 'X') { seq_offset += cig_len; }
                     base_offset += cig_len;
-                    
+
                     break;
                 case "N": // Skipped bases.
                     ctx.fillStyle = CONNECTOR_COLOR;
@@ -948,7 +948,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     // Check to see if sequence should be drawn at all by looking at the overlap between
                     // the sequence region and the tile region.
                     var insert_x_coord = s_start - gap;
-                    
+
                     if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
                         var seq = read_seq.slice(seq_offset, seq_offset + cig_len);
                         // Insertion point is between the sequence start and the previous base: (-gap) moves
@@ -992,7 +992,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                 // Draw block.
                                 ctx.fillStyle = "yellow";
                                 // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
-                                ctx.fillRect(x_center, y_start + (this.mode !== "Dense" ? 2 : 5), 
+                                ctx.fillRect(x_center, y_start + (this.mode !== "Dense" ? 2 : 5),
                                              s_end - s_start, (mode !== "Dense" ? SQUISH_FEATURE_HEIGHT : DENSE_FEATURE_HEIGHT));
                             }
                         }
@@ -1011,7 +1011,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     break;
             }
         }
-        
+
         //
         // Draw last items.
         //
@@ -1032,7 +1032,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             }
         }
     },
-    
+
     /**
      * Draw a complete read pair
      */
@@ -1048,7 +1048,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
             y_start = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             draw_height = (mode === 'Pack' ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT),
             label_color = this.prefs.label_color;
-        
+
         // Draw read.
         if (feature[5] instanceof Array) {
             // Read is paired.
@@ -1097,7 +1097,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 ctx.fillText(feature_name, f_start - LABEL_SPACING, y_start + 9, this.max_label_length);
             }
         }
-        
+
         // FIXME: provide actual coordinates for drawn read.
         return [0,0];
     }
@@ -1122,7 +1122,7 @@ _.extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeat
         return longest_feature_length;
     },
 
-    get_top_padding: function( width ) { 
+    get_top_padding: function( width ) {
         var view_range = this.view_end - this.view_start,
             w_scale = width / view_range;
         return Math.min( 128, Math.ceil( ( this.longest_feature_length / 2 ) * w_scale ) );
@@ -1131,7 +1131,7 @@ _.extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeat
     draw_connector: function( ctx, block1_start, block1_end, block2_start, block2_end, y_start ) {
         // Arc drawing -- from closest endpoints
         var x_center = ( block1_end + block2_start ) / 2,
-            radius = block2_start - x_center; 
+            radius = block2_start - x_center;
         // For full half circles
         var angle1 = Math.PI, angle2 = 0;
         if ( radius > 0 ) {
@@ -1290,32 +1290,33 @@ SplitRamp.prototype.map_value = function( value ) {
 var DiagonalHeatmapPainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
     var i, len;
+
     if ( this.prefs.min_value === undefined ) {
         var min_value = Infinity;
         for (i = 0, len = this.data.length; i < len; i++) {
-            min_value = Math.min( min_value, this.data[i][5] );
+            min_value = Math.min( min_value, this.data[i][6] );
         }
         this.prefs.min_value = min_value;
     }
     if ( this.prefs.max_value === undefined ) {
         var max_value = -Infinity;
         for (i = 0, len = this.data.length; i < len; i++) {
-            max_value = Math.max( max_value, this.data[i][5] );
+            max_value = Math.max( max_value, this.data[i][6] );
         }
         this.prefs.max_value = max_value;
     }
 };
 
-DiagonalHeatmapPainter.prototype.default_prefs = { 
-    min_value: undefined, 
-    max_value: undefined, 
-    mode: "Heatmap", 
+DiagonalHeatmapPainter.prototype.default_prefs = {
+    min_value: undefined,
+    max_value: undefined,
+    mode: "Heatmap",
     pos_color: "#FF8C00",
-    neg_color: "#4169E1" 
+    neg_color: "#4169E1"
 };
 
 DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
-    var 
+    var
         min_value = this.prefs.min_value,
         max_value = this.prefs.max_value,
         value_range = max_value - min_value,
@@ -1336,14 +1337,10 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
     // Draw into triangle, then rotate and scale
     ctx.rotate(-45 * Math.PI / 180);
     ctx.scale( invsqrt2, invsqrt2 );
-    
+
     // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
-
         d = data[i];
-
-        // Ensure the cell is visible
-        // if ( )
 
         s1 = scale( d[1] );
         e1 = scale( d[2] );
@@ -1352,10 +1349,9 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
         value = d[6];
 
         ctx.fillStyle = ( ramp.map_value( value ) );
-
         ctx.fillRect( s1, s2, ( e1 - s1 ), ( e2 - s2 ) );
     }
-    
+
     ctx.restore();
 };
 
@@ -1372,7 +1368,7 @@ var ReadPainterUtils = function(ctx, row_height, px_per_base, mode) {
 
 _.extend(ReadPainterUtils.prototype, {
     /**
-     * Draw deletion of base(s). 
+     * Draw deletion of base(s).
      * @param draw_detail if true, drawing in detail and deletion is drawn more subtly
      */
     draw_deletion: function(x, y, len) {
@@ -1399,7 +1395,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
     get_row_height: function() {
         var mode = this.mode, height;
         if (mode === "Dense") {
-            height = DENSE_TRACK_HEIGHT;            
+            height = DENSE_TRACK_HEIGHT;
         }
         else if (mode === "Squish") {
             height = SQUISH_TRACK_HEIGHT;
@@ -1431,8 +1427,8 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
     draw: function(ctx, width, height, w_scale) {
         ctx.save();
 
-        var 
-        /** 
+        var
+        /**
          * Returns dictionary of information about an indel; returns empty if there no indel. Assumes indel is left-aligned.
          * Dict attributes:
          *    -type: 'insertion' or 'deletion'
@@ -1485,7 +1481,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             row_height = (this.mode === 'Squish' ? SQUISH_TRACK_HEIGHT : PACK_TRACK_HEIGHT),
             // If zoomed out, fill the whole row with feature to make it easier to read;
             // when zoomed in, use feature height so that there are gaps in sample rows.
-            feature_height = (w_scale < 0.1 ? 
+            feature_height = (w_scale < 0.1 ?
                               row_height :
                               (this.mode === 'Squish' ? SQUISH_FEATURE_HEIGHT : PACK_FEATURE_HEIGHT)
                              ),
@@ -1495,7 +1491,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
 
         // If there's a single sample, update drawing variables.
         if (num_samples === 1) {
-            row_height = feature_height = 
+            row_height = feature_height =
                 (w_scale < ctx.canvas.manager.char_width_px ? this.prefs.summary_height : row_height);
             paint_utils.row_height = row_height;
             // No summary when there's a single sample.
@@ -1519,7 +1515,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             alt = [ locus_data[4].split(',') ];
             sample_gts = locus_data[7].split(',');
             allele_counts = locus_data.slice(8);
-            
+
             // Process alterate values to derive information about each alt.
             alt = _.map(_.flatten(alt), function(a) {
                 var alt_info = {
@@ -1528,7 +1524,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
                         start: 0
                     },
                     indel_info = get_indel_info(ref, a);
-                
+
                 return _.extend(alt_info, indel_info);
             });
 
@@ -1541,7 +1537,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             if (draw_summary) {
                 ctx.fillStyle = '#999999';
                 ctx.globalAlpha = 1;
-                for (j = 0; j < alt.length; j++) {    
+                for (j = 0; j < alt.length; j++) {
                     // Draw background for summary.
                     draw_x_start = this.get_start_draw_pos(pos + alt[j].start, w_scale);
                     ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
@@ -1564,7 +1560,7 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
             draw_y_start = (draw_summary ? this.prefs.summary_height + this.divider_height : 0);
             for (j = 0; j < sample_gts.length; j++, draw_y_start += row_height) {
                 genotype = (sample_gts[j] ? sample_gts[j].split(/\/|\|/) : ['0', '0']);
-                
+
                 // Get variant to draw and set drawing properties.
                 variant = null;
                 if (genotype[0] === genotype[1]) {

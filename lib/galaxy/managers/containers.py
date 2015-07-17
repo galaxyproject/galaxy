@@ -13,9 +13,6 @@ import operator
 from galaxy import model
 import galaxy.exceptions
 import galaxy.util
-
-from galaxy.managers import base
-
 import logging
 log = logging.getLogger( __name__ )
 
@@ -85,7 +82,7 @@ class HistoryAsContainerManagerMixin( ContainerManagerMixin ):
 
     def _content_manager( self, content ):
         # type sniffing is inevitable
-        if   isinstance( content, model.HistoryDatasetAssociation ):
+        if isinstance( content, model.HistoryDatasetAssociation ):
             return self.hda_manager
         elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
             return self.hdca_manager
@@ -108,7 +105,7 @@ class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
 
     def _content_manager( self, content ):
         # type snifffing is inevitable
-        if   isinstance( content, model.LibraryDataset ):
+        if isinstance( content, model.LibraryDataset ):
             return self.lda_manager
         elif isinstance( content, model.LibraryFolder ):
             return self.folder_manager
@@ -127,7 +124,7 @@ class DatasetCollectionAsContainerManagerMixin( ContainerManagerMixin ):
 
     def _content_manager( self, content ):
         # type snifffing is inevitable
-        if   isinstance( content, model.DatasetCollectionElement ):
+        if isinstance( content, model.DatasetCollectionElement ):
             return self.collection_manager
         elif isinstance( content, model.DatasetCollection ):
             return self.collection_manager

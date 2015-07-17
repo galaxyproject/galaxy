@@ -4,9 +4,7 @@ from json import dumps, loads
 import operator
 
 from .helpers import skip_without_tool
-from .helpers import wait_on_state
 from .test_workflows import BaseWorkflowsApiTestCase
-import yaml
 
 
 class WorkflowExtractionApiTestCase( BaseWorkflowsApiTestCase ):

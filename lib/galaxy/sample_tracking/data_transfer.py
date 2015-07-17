@@ -1,14 +1,16 @@
-import logging, sys
-
 class DataTransferFactory( object ):
     type = None
+
     def parse( self ):
         pass
 
+
 class ScpDataTransferFactory( DataTransferFactory ):
     type = 'scp'
+
     def __init__( self ):
         pass
+
     def parse( self, config_file, elem ):
         self.config = {}
         # TODO: The 'automatic_transfer' setting is for future use.  If set to True, we will need to
@@ -28,10 +30,13 @@ class ScpDataTransferFactory( DataTransferFactory ):
         for name, value in self.config.items():
             assert value, "'%s' attribute missing in 'data_transfer' element of type 'scp' in external_service_type xml config file: '%s'." % ( name, config_file )
 
+
 class HttpDataTransferFactory( DataTransferFactory ):
     type = 'http'
+
     def __init__( self ):
         pass
+
     def parse( self, config_file, elem ):
         self.config = {}
         self.config[ 'automatic_transfer' ] = elem.get( 'automatic_transfer' )
@@ -39,10 +44,13 @@ class HttpDataTransferFactory( DataTransferFactory ):
         for name, value in self.config.items():
             assert value, "'%s' attribute missing in 'data_transfer' element of type 'http' in external_service_type xml config file: '%s'." % ( name, config_file )
 
+
 class FtpDataTransferFactory( DataTransferFactory ):
     type = 'ftp'
+
     def __init__( self ):
         pass
+
     def parse( self, elem ):
         pass
 
