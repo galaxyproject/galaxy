@@ -12,7 +12,6 @@ from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
 eggs.require( "SQLAlchemy >= 0.4" )
 import re
-import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 from galaxy.webapps.reports.controllers.jobs import sorter, get_spark_time
 
