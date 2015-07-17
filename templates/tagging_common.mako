@@ -1,5 +1,5 @@
-<%! 
-    from cgi import escape 
+<%!
+    from cgi import escape
     from galaxy.web.framework.helpers import iff
     from random import random
     from sys import maxint
@@ -34,7 +34,7 @@
         %if use_toggle_link:
             <a class="toggle-link" href="#">${num_tags} Tag${iff( num_tags == 1, "", "s")}</a>
         %endif
-        <div class="tag-area 
+        <div class="tag-area
             %if tag_type == 'individual':
                 individual-tag-area
             %endif
@@ -50,7 +50,7 @@
                     elif isinstance( tag, ItemTagAssociation ):
                         tag_name = tag.user_tname
                         tag_value = tag.user_value
-                        
+
                     ## Convert tag name, value to unicode.
                     if isinstance( tag_name, str ):
                         tag_name = unicode( escape( tag_name ), 'utf-8' )
@@ -68,7 +68,7 @@
                     %endif
                 </span>
             %endfor
-            
+
             ## Add tag input field. If element is in form, tag input is a textarea; otherwise element is a input type=text.
             %if editable:
                 %if in_form:
@@ -103,15 +103,15 @@
 ## Render community tagging element.
 <%def name="render_community_tagging_element(tagged_item=None, elt_context=None, use_toggle_link=False, tag_click_fn='default_tag_click_fn')">
     ## Build HTML.
-    <% 
-        elt_id = int ( floor ( random()*maxint ) ) 
+    <%
+        elt_id = int ( floor ( random()*maxint ) )
         community_tags = trans.app.tag_handler.get_community_tags( item=tagged_item, limit=5 )
     %>
     ${self.render_tagging_element_html(elt_id=elt_id, \
                                         tags=community_tags, \
                                         use_toggle_link=use_toggle_link, \
                                         editable=False, tag_type="community")}
-    
+
     ## Set up tag click function.
     <script type="text/javascript">
         init_tag_click_function($('#${elt_id}'), ${tag_click_fn});
@@ -126,14 +126,14 @@
         # Useful ids.
         tagged_item_id = str( trans.security.encode_id ( tagged_item.id ) )
         elt_id = int ( floor ( random()*maxint ) )
-        
+
         # Get list of user's item tags. TODO: implement owner_tags for all taggable objects and use here.
         item_tags = [ tag for tag in tagged_item.tags if ( tag.user == user ) ]
     %>
-    
+
     ## Build HTML.
     ${self.render_tagging_element_html(elt_id=elt_id, tags=item_tags, editable=editable, use_toggle_link=use_toggle_link, input_size=input_size, in_form=in_form, render_add_tag_button=render_add_tag_button)}
-    
+
     ## Build script that augments tags using progressive javascript.
     <script type="text/javascript">
         //
@@ -153,7 +153,7 @@
                 /*
                 // Show first N tags; hide the rest.
                 var max_to_show = 1;
-    
+
                 // Build tag string.
                 var tag_strs = new Array();
                 var count = 0;
@@ -165,10 +165,10 @@
                       break;
                   }
                 tag_str = tag_strs.join(", ");
-            
+
                 // Finalize text.
                 var num_tags_hiding = num_tags - max_to_show;
-                text = "Tags: " + tag_str + 
+                text = "Tags: " + tag_str +
                   (num_tags_hiding != 0 ? " and " + num_tags_hiding + " more" : "");
                 */
               }
@@ -179,10 +179,10 @@
               }
             return text;
         };
-        
+
         // Default function to handle a tag click.
         var default_tag_click_fn = function(tag_name, tag_value) { };
-        
+
         <%
             ## Build dict of tag name, values.
             tag_names_and_values = dict()
@@ -212,10 +212,10 @@
             delete_tag_img_rollover: "${h.url_for('/static/images/delete_tag_icon_white.png')}",
             use_toggle_link: ${iff( use_toggle_link, 'true', 'false' )}
          };
-         
+
         $('#${elt_id}').autocomplete_tagging(options);
     </script>
-    
+
     ## Use style to hide/display the tag area.
     <style>
     .tag-area {
@@ -230,4 +230,78 @@
     }
     </style>
     </noscript>
+</%def>
+
+
+<%def name="community_tag_js( controller_name )">
+## set up comminity tag and rating handling - used for page start up / set up
+## controller_name: the model controller for the item being tagged - generally gotten with get_controller_name( item )
+<script type="text/javascript">
+    // Handle click on community tag.
+    function community_tag_click(tag_name, tag_value) {
+        var href = '${h.url_for ( controller='/' + controller_name , action='list_published')}';
+        href = href + "?f-tags=" + tag_name;
+        if (tag_value != undefined && tag_value != "") {
+            href = href + ":" + tag_value;
+        }
+        self.location = href;
+    }
+
+    // Map item rating to number of stars to show.
+    function map_rating_to_num_stars(rating) {
+        if (rating <= 0)
+            return 0;
+        else if (rating > 0 && rating <= 1.5)
+            return 1;
+        else if (rating > 1.5 && rating <= 2.5)
+            return 2;
+        else if (rating > 2.5 && rating <= 3.5)
+            return 3;
+        else if (rating > 3.5 && rating <= 4.5)
+            return 4;
+        else if (rating > 4.5)
+            return 5;
+    }
+
+    // Init. on document load.
+    $(function() {
+        // Set links to Galaxy screencasts to open in overlay.
+        $(this).find("a[href^='http://screencast.g2.bx.psu.edu/']").each( function() {
+            $(this).click( function() {
+                var href = $(this).attr('href');
+                show_in_overlay(
+                    {
+                        url: href,
+                        width: 640,
+                        height: 480,
+                        scroll: 'no'
+                    }
+                );
+                return false;
+            });
+        });
+
+        // Init user item rating.
+        $('.user_rating_star').rating({
+            callback: function(rating, link) {
+                $.ajax({
+                    type: "GET",
+                    url: "${h.url_for ( controller='/' + controller_name , action='rate_async' )}",
+                    data: { id : "${trans.security.encode_id( item.id )}", rating : rating },
+                    dataType: 'json',
+                    error: function() { alert( "Rating submission failed" ); },
+                    success: function( community_data ) {
+                        $('#rating_feedback').show();
+                        $('#num_ratings').text(Math.round(community_data[1]*10)/10);
+                        $('#ave_rating').text(community_data[0]);
+                        $('.community_rating_star').rating('readOnly', false);
+                        $('.community_rating_star').rating('select', map_rating_to_num_stars(community_data[0])-1);
+                        $('.community_rating_star').rating('readOnly', true);
+                    }
+                });
+            },
+            required: true // Hide cancel button.
+        });
+    });
+</script>
 </%def>

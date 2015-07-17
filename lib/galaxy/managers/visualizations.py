@@ -32,7 +32,7 @@ class VisualizationManager( sharable.SharableModelManager ):
         """
         super( VisualizationManager, self ).__init__( app, *args, **kwargs )
 
-    #def copy( self, trans, visualization, user, **kwargs ):
+    # def copy( self, trans, visualization, user, **kwargs ):
     #    """
     #    """
     #    pass

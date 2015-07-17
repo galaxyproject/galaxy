@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 
-# Import system subprocess now before twill so we don't get its
-# variant that breaks things.
-import subprocess
-
 import os
-import sys
-import shutil
-import tempfile
 import re
+import shutil
+import sys
+import tempfile
 from ConfigParser import SafeConfigParser
 
 # Assume we are run from the galaxy root directory, add lib to the python path
@@ -25,7 +21,6 @@ from galaxy.util.properties import load_app_properties
 eggs.require( "nose" )
 eggs.require( "NoseHTML" )
 eggs.require( "NoseTestDiff" )
-eggs.require( "twill==0.9" )
 eggs.require( "Paste" )
 eggs.require( "PasteDeploy" )
 eggs.require( "Cheetah" )
@@ -34,25 +29,18 @@ eggs.require( "Cheetah" )
 # http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
 
-import atexit
 import logging
 import os.path
-import twill
-import unittest
 import time
-import subprocess
 import threading
 import random
 import httplib
 import socket
 import urllib
 from paste import httpserver
-import galaxy.app
 from galaxy.app import UniverseApplication
 from galaxy.web import buildapp
 from galaxy import tools
-from galaxy.util import bunch
-from galaxy import util
 from galaxy.util.json import dumps
 
 from functional import database_contexts
@@ -101,6 +89,7 @@ job_conf_xml = '''<?xml version="1.0"?>
 </job_conf>
 '''
 
+
 def get_static_settings():
     """Returns dictionary of the settings necessary for a galaxy App
     to be wrapped in the static middleware.
@@ -110,9 +99,9 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from config/galaxy.ini
+    # TODO: these should be copied from config/galaxy.ini
     return dict(
-        #TODO: static_enabled needed here?
+        # TODO: static_enabled needed here?
         static_enabled=True,
         static_cache_time=360,
         static_dir=static_dir,
@@ -308,11 +297,11 @@ def main():
             except OSError:
                 pass
 
-    #Data Manager testing temp path
-    #For storing Data Manager outputs and .loc files so that real ones don't get clobbered
+    # Data Manager testing temp path
+    # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
     data_manager_test_tmp_path = tempfile.mkdtemp( prefix='data_manager_test_tmp', dir=galaxy_test_tmp_dir )
     galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
-    
+
     # ---- Build Application --------------------------------------------------
     master_api_key = get_master_api_key()
     app = None
@@ -348,8 +337,7 @@ def main():
                        use_tasked_jobs=True,
                        cleanup_job='onsuccess',
                        enable_beta_tool_formats=True,
-                       data_manager_config_file=data_manager_config_file,
-        )
+                       data_manager_config_file=data_manager_config_file )
         if install_database_connection is not None:
             kwargs[ 'install_database_connection' ] = install_database_connection
         if not database_connection.startswith( 'sqlite://' ):
@@ -448,7 +436,7 @@ def main():
             data_manager_test = __check_arg( '-data_managers', param=False )
             if data_manager_test:
                 import functional.test_data_managers
-                functional.test_data_managers.data_managers = app.data_managers #seems like a hack...
+                functional.test_data_managers.data_managers = app.data_managers  # seems like a hack...
                 functional.test_data_managers.build_tests(
                     tmp_dir=data_manager_test_tmp_path,
                     testing_shed_tools=testing_shed_tools,

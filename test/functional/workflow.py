@@ -93,7 +93,6 @@ class WorkflowTestCase( TwillTestCase ):
         # and GUI exports 0-indexed as of mid-november 2013.
 
         imported_workflow = galaxy_interactor.read_workflow( workflow_id )
-        #log.info("local %s\nimported%s" % (workflow, imported_workflow))
         step_id_map = {}
         local_steps_ids = sorted( [ int( step_id ) for step_id in workflow[ 'steps' ].keys() ] )
         imported_steps_ids = sorted( [ int( step_id ) for step_id in imported_workflow[ 'steps' ].keys() ] )

@@ -8,7 +8,7 @@
 #zoom-out{background:transparent url(../images/fugue/magnifier-zoom-out.png) center center no-repeat}
 #zoom-in{margin-left:10px;background:transparent url(../images/fugue/magnifier-zoom.png) center center no-repeat}
 .nav-input{font-size:12px;width:30em;z-index:2}
-.location{display:inline-block;width:15em;margin:0 10px}
+.location{display:inline-block;width:15em;margin:0 10px;white-space:nowrap}
 .intro{z-index:2;margin-left:auto;margin-right:auto;color:#555;text-align:center;font-size:16px}.intro .action-button{background-color:#CCC;margin-top:10px;padding:1em;text-decoration:underline}
 .overview{width:100%;margin:0px;color:white}
 .overview-viewport{position:relative;height:14px;background:white;margin:0}

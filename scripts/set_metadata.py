@@ -26,8 +26,6 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[ 1: ] )  # remove scripts/ from the path
 sys.path = new_path
 
-from galaxy import eggs
-import pkg_resources
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
 
 # This looks REAL stupid, but it is REQUIRED in order for SA to insert

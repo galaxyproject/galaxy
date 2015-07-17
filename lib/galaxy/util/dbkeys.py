@@ -1,7 +1,7 @@
 """
 Functionality for dealing with dbkeys.
 """
-#dbkeys read from disk using builds.txt
+# dbkeys read from disk using builds.txt
 from galaxy.util import read_dbnames
 from galaxy.util.json import loads
 from galaxy.util.object_wrapper import sanitize_lists_to_string
@@ -31,10 +31,10 @@ class GenomeBuilds( object ):
                 # This is a little bit Odd. We are adding every .len file in the current history to dbkey list,
                 # but this is previous behavior from trans.db_names, so we'll continue to do it.
                 # It does allow one-off, history specific dbkeys to be created by a user. But we are not filtering,
-                # so a len file will be listed twice (as the build name and again as dataset name), 
+                # so a len file will be listed twice (as the build name and again as dataset name),
                 # if custom dbkey creation/conversion occurred within the current history.
                 datasets = trans.sa_session.query( self._app.model.HistoryDatasetAssociation ) \
-                                          .filter_by( deleted=False, history_id=trans.history.id, extension="len" )
+                                .filter_by( deleted=False, history_id=trans.history.id, extension="len" )
                 for dataset in datasets:
                     rval.append( ( dataset.dbkey, "%s (%s) [History]" % ( dataset.name, dataset.dbkey ) ) )
             user = trans.user
@@ -44,7 +44,7 @@ class GenomeBuilds( object ):
                     rval.append( ( key, "%s (%s) [Custom]" % ( chrom_dict['name'], key ) ) )
         # Load old builds.txt static keys
         rval.extend( self._static_dbkeys )
-        #load dbkeys from dbkey data table
+        # load dbkeys from dbkey data table
         dbkey_table = self._app.tool_data_tables.get( self._data_table_name, None )
         if dbkey_table is not None:
             for field_dict in dbkey_table.get_named_fields_list():
@@ -52,7 +52,7 @@ class GenomeBuilds( object ):
         return rval
 
     def get_chrom_info( self, dbkey, trans=None, custom_build_hack_get_len_from_fasta_conversion=True ):
-        # FIXME: flag to turn off custom_build_hack_get_len_from_fasta_conversion should not be required 
+        # FIXME: flag to turn off custom_build_hack_get_len_from_fasta_conversion should not be required
         chrom_info = None
         db_dataset = None
         # Collect chromInfo from custom builds

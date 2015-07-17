@@ -51,22 +51,22 @@ def display_migration_details():
     print "========================================"
 
 LibraryInfoAssociation_table = Table( 'library_info_association', metadata,
-    Column( "id", Integer, primary_key=True),
-    Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
-    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
+                                      Column( "id", Integer, primary_key=True),
+                                      Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ),
+                                      Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+                                      Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
 
 LibraryFolderInfoAssociation_table = Table( 'library_folder_info_association', metadata,
-    Column( "id", Integer, primary_key=True),
-    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
-    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
+                                            Column( "id", Integer, primary_key=True),
+                                            Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), nullable=True, index=True ),
+                                            Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+                                            Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
 
 LibraryDatasetDatasetInfoAssociation_table = Table( 'library_dataset_dataset_info_association', metadata,
-    Column( "id", Integer, primary_key=True),
-    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
-    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
+                                                    Column( "id", Integer, primary_key=True),
+                                                    Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
+                                                    Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+                                                    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

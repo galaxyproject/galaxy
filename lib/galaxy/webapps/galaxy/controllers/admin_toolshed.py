@@ -2,16 +2,26 @@ import logging
 import os
 import shutil
 
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false, or_
+
+import tool_shed.repository_types.util as rt_util
 from admin import AdminGalaxy
 from galaxy import web
 from galaxy import util
-from galaxy.web.form_builder import CheckboxField
 from galaxy.util import json
-from galaxy.model.orm import or_
-
-import tool_shed.repository_types.util as rt_util
-from tool_shed.util.web_util import escape
-
+from galaxy.web.form_builder import CheckboxField
+from tool_shed.galaxy_install import dependency_display
+from tool_shed.galaxy_install import install_manager
+from tool_shed.galaxy_install.datatypes import custom_datatype_manager
+from tool_shed.galaxy_install.grids import admin_toolshed_grids
+from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
+from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
+from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
+from tool_shed.galaxy_install.tools import data_manager
+from tool_shed.galaxy_install.tools import tool_panel_manager
+from tool_shed.tools import tool_version_manager
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
@@ -21,19 +31,7 @@ from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
 from tool_shed.util import workflow_util
-
-from tool_shed.galaxy_install import dependency_display
-from tool_shed.galaxy_install import install_manager
-
-from tool_shed.galaxy_install.datatypes import custom_datatype_manager
-from tool_shed.galaxy_install.grids import admin_toolshed_grids
-from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
-from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
-from tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
-from tool_shed.galaxy_install.tools import data_manager
-from tool_shed.galaxy_install.tools import tool_panel_manager
-
-from tool_shed.tools import tool_version_manager
+from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
 
@@ -2012,7 +2010,7 @@ class AdminToolshed( AdminGalaxy ):
             repository_names_not_updated = []
             updated_count = 0
             for repository in trans.install_model.context.query( trans.install_model.ToolShedRepository ) \
-                                                         .filter( trans.install_model.ToolShedRepository.table.c.deleted == False ):
+                                                         .filter( trans.install_model.ToolShedRepository.table.c.deleted == false() ):
                 ok, updated = \
                     repository_util.check_or_update_tool_shed_status_for_installed_repository( trans.app, repository )
                 if ok:

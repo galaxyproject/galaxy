@@ -39,12 +39,13 @@ class WorkflowRunConfig( object ):
     :type param_map: dict
     """
 
-    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={} ):
+    def __init__( self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={}, allow_tool_state_corrections=False ):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
         self.inputs = inputs
         self.param_map = param_map
+        self.allow_tool_state_corrections = allow_tool_state_corrections
 
 
 def normalize_inputs(steps, inputs, inputs_by):
@@ -181,6 +182,7 @@ def build_workflow_run_config( trans, workflow, payload ):
 
     add_to_history = 'no_add_to_history' not in payload
     history_param = payload.get('history', '')
+    allow_tool_state_corrections = payload.get( 'allow_tool_state_corrections', False )
 
     # Sanity checks.
     if len( workflow.steps ) == 0:
@@ -271,6 +273,7 @@ def build_workflow_run_config( trans, workflow, payload ):
         replacement_dict=replacement_dict,
         inputs=normalized_inputs,
         param_map=param_map,
+        allow_tool_state_corrections=allow_tool_state_corrections
     )
     return run_config
 

@@ -9,6 +9,7 @@ from xml.etree.ElementTree import XML
 
 log = logging.getLogger( __name__ )
 
+
 class FormDefinitionAPIController( BaseAPIController ):
 
     @web.expose_api
@@ -20,7 +21,7 @@ class FormDefinitionAPIController( BaseAPIController ):
         if not trans.user_is_admin():
             trans.response.status = 403
             return "You are not authorized to view the list of forms."
-        query = trans.sa_session.query( trans.app.model.FormDefinition )#.filter( trans.app.model.FormDefinition.table.c.deleted == False )
+        query = trans.sa_session.query( trans.app.model.FormDefinition )
         rval = []
         for form_definition in query:
             item = form_definition.to_dict( value_mapper={ 'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id } )
@@ -64,7 +65,7 @@ class FormDefinitionAPIController( BaseAPIController ):
         if xml_text is None:
             trans.response.status = 400
             return "Missing required parameter 'xml_text'."
-            #enhance to allow creating from more than just xml
+            # enhance to allow creating from more than just xml
         form_definition = form_factory.from_elem( XML( xml_text ) )
         trans.sa_session.add( form_definition )
         trans.sa_session.flush()

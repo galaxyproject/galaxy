@@ -17,22 +17,22 @@ log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 StoredWorkflowTagAssociation_table = Table( "stored_workflow_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", Unicode(255), index=True),
-    Column( "value", Unicode(255), index=True),
-    Column( "user_value", Unicode(255), index=True) )
+                                            Column( "id", Integer, primary_key=True ),
+                                            Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
+                                            Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                            Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                            Column( "user_tname", Unicode(255), index=True),
+                                            Column( "value", Unicode(255), index=True),
+                                            Column( "user_value", Unicode(255), index=True) )
 
 WorkflowTagAssociation_table = Table( "workflow_tag_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "user_tname", Unicode(255), index=True),
-    Column( "value", Unicode(255), index=True),
-    Column( "user_value", Unicode(255), index=True) )
+                                      Column( "id", Integer, primary_key=True ),
+                                      Column( "workflow_id", Integer, ForeignKey( "workflow.id" ), index=True ),
+                                      Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                      Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                      Column( "user_tname", Unicode(255), index=True),
+                                      Column( "value", Unicode(255), index=True),
+                                      Column( "user_value", Unicode(255), index=True) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

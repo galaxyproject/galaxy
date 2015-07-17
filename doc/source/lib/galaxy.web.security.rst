@@ -1,8 +1,5 @@
-security Package
-================
-
-:mod:`security` Package
------------------------
+galaxy.web.security package
+===========================
 
 .. automodule:: galaxy.web.security
     :members:

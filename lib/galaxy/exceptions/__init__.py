@@ -5,7 +5,6 @@ Custom exceptions for Galaxy
 from galaxy import eggs
 eggs.require( "Paste" )
 
-from paste import httpexceptions
 from ..exceptions import error_codes
 
 
@@ -98,7 +97,7 @@ class AuthenticationFailed( MessageException ):
 
 class AuthenticationRequired( MessageException ):
     status_code = 403
-    #TODO: as 401 and send WWW-Authenticate: ???
+    # TODO: as 401 and send WWW-Authenticate: ???
     err_code = error_codes.USER_NO_API_KEY
 
 
@@ -132,12 +131,13 @@ class ObjectNotFound( MessageException ):
     status_code = 404
     err_code = error_codes.USER_OBJECT_NOT_FOUND
 
+
 class DeprecatedMethod( MessageException ):
     """
     Method (or a particular form/arg signature) has been removed and won't be available later
     """
     status_code = 404
-    #TODO:?? 410 Gone?
+    # TODO:?? 410 Gone?
     err_code = error_codes.DEPRECATED_API_CALL
 
 
@@ -149,6 +149,7 @@ class Conflict( MessageException ):
 class ConfigurationError( Exception ):
     status_code = 500
     err_code = error_codes.CONFIG_ERROR
+
 
 class InconsistentDatabase ( MessageException ):
     status_code = 500

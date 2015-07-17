@@ -1,8 +1,5 @@
-galaxyops Package
-=================
-
-:mod:`galaxyops` Package
-------------------------
+galaxy.tools.util.galaxyops package
+===================================
 
 .. automodule:: galaxy.tools.util.galaxyops
     :members:

@@ -3,6 +3,11 @@ Determine if installed tool shed repositories have updates available in their re
 """
 import logging
 import threading
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false
+
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -79,7 +84,7 @@ class UpdateRepositoryManager( object ):
             # the repository revision is the latest installable revision, and whether the repository
             # has been deprecated in the Tool Shed.
             for repository in self.context.query( self.app.install_model.ToolShedRepository ) \
-                                          .filter( self.app.install_model.ToolShedRepository.table.c.deleted == False ):
+                                          .filter( self.app.install_model.ToolShedRepository.table.c.deleted == false() ):
                 tool_shed_status_dict = suc.get_tool_shed_status_for_installed_repository( self.app, repository )
                 if tool_shed_status_dict:
                     if tool_shed_status_dict != repository.tool_shed_status:
