@@ -1,7 +1,5 @@
-// dependencies
+/** This renders the content of the ftp popup **/
 define(['utils/utils'], function(Utils) {
-
-// item view
 return Backbone.View.extend({
     // options
     options: {

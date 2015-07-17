@@ -1,10 +1,11 @@
-// dependencies
+/** Renders contents of the default upload viewer */
 define(['utils/utils',
         'mvc/upload/upload-model',
         'mvc/upload/upload-row',
         'mvc/upload/upload-ftp',
         'mvc/ui/ui-popover',
         'mvc/ui/ui-select',
+        'mvc/ui/ui-misc',
         'utils/uploadbox'],
 
         function(   Utils,
@@ -12,24 +13,11 @@ define(['utils/utils',
                     UploadItem,
                     UploadFtp,
                     Popover,
-                    Select
+                    Select,
+                    Ui
                 ) {
 
-// galaxy upload
 return Backbone.View.extend({
-    // default extension
-    default_extension : 'auto',
-
-    // default genome
-    default_genome : '?',
-
-    // datatype placeholder for auto-detection
-    auto: {
-        id          : 'auto',
-        text        : 'Auto-detect',
-        description : 'This system will try to detect the file type automatically. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.'
-    },
-
     // extension selector
     select_extension : null,
 
@@ -63,36 +51,34 @@ return Backbone.View.extend({
     },
 
     // initialize
-    initialize : function(app, options) {
+    initialize : function(app) {
+        // link app
+        this.app                = app;
+        this.options            = app.options;
+        this.list_extensions    = app.list_extensions;
+        this.list_genomes       = app.list_genomes;
+        this.ui_button          = app.ui_button;
+
         // link this
         var self = this;
-        
-        this.app = app;
-
 
         // set element
-        this.setElement(this._template('upload-box', 'upload-info'));
-        
-        /*this.modal = new Modal.View({
-            title   : 'Download data directly from web or upload files from your disk',
-            body    : ,
-            buttons : {
-                'Choose local file' : function() {self.uploadbox.select()},
-                'Choose FTP file'   : function() {self._eventFtp()},
-                'Paste/Fetch data'  : function() {self._eventCreate()},
-                'Start'             : function() {self._eventStart()},
-                'Pause'             : function() {self._eventStop()},
-                'Reset'             : function() {self._eventReset()},
-                'Close'             : function() {self.modal.hide()},
-            },
-            height              : '400',
-            width               : '900',
-            closing_events      : true
-        });*/
+        this.setElement(this._template());
 
+        // create button section
+        this.btnLocal    = new Ui.Button({ title: 'Choose local file',   onclick: function() { self.uploadbox.select(); } });
+        this.btnFtp      = new Ui.Button({ title: 'Choose FTP file',     onclick: function() { self._eventFtp(); } });
+        this.btnCreate   = new Ui.Button({ title: 'Paste/Fetch data',    onclick: function() { self._eventCreate(); } });
+        this.btnStart    = new Ui.Button({ title: 'Start',               onclick: function() { self._eventStart(); } });
+        this.btnStop     = new Ui.Button({ title: 'Pause',               onclick: function() { self._eventStop(); } });
+        this.btnReset    = new Ui.Button({ title: 'Reset',               onclick: function() { self._eventReset(); } });
+        this.btnClose    = new Ui.Button({ title: 'Close',               onclick: function() { self.app.modal.hide(); } });
 
-        // set element
-        //this.setElement('#upload-box');
+        // append buttons to dom
+        var buttons = [this.btnLocal, this.btnFtp, this.btnCreate, this.btnStart, this.btnStop, this.btnReset, this.btnClose];
+        for (var i in buttons) {
+            this.$('#upload-buttons').prepend(buttons[i].$el);
+        }
 
         // file upload
         var self = this;
@@ -105,40 +91,39 @@ return Backbone.View.extend({
             complete        : function() { self._eventComplete() }
         });
 
-        /*/ add ftp file viewer
-        var button = this.modal.getButton('Choose FTP file');
+        // add ftp file viewer
         this.ftp = new Popover.View({
             title       : 'FTP files',
-            container   : button
-        });*/
+            container   : this.btnFtp.$el
+        });
 
         // select extension
         this.select_extension = new Select.View({
-            css         : 'header-selection',
-            data        : this.app.list_extensions,
-            container   : this.$el.find('#header-extension'),
-            value       : this.default_extension,
+            css         : 'footer-selection',
+            container   : this.$('#footer-extension'),
+            data        : this.list_extensions,
+            value       : this.options.default_extension,
             onchange    : function(extension) {
                 self.updateExtension(extension);
             }
         });
 
         // handle extension info popover
-        self.$el.parent().find('#header-extension-info').on('click' , function(e) {
-            self._showExtensionInfo({
+        self.$('#footer-extension-info').on('click' , function(e) {
+            self.showExtensionInfo({
                 $el         : $(e.target),
                 title       : self.select_extension.text(),
                 extension   : self.select_extension.value(),
                 placement   : 'top'
             });
         }).on('mousedown', function(e) { e.preventDefault(); });
-        
+
         // genome extension
         this.select_genome = new Select.View({
-            css         : 'header-selection',
-            data        : this.app.list_genomes,
-            container   : this.$el.find('#header-genome'),
-            value       : this.default_genome,
+            css         : 'footer-selection',
+            container   : this.$('#footer-genome'),
+            data        : this.list_genomes,
+            value       : this.options.default_genome,
             onchange    : function(genome) {
                 self.updateGenome(genome);
             }
@@ -203,7 +188,7 @@ return Backbone.View.extend({
         this.collection.add(upload_item.model);
 
         // add upload item element to table
-        $(this.el).find('tbody:first').append(upload_item.$el);
+        this.$('#upload-table > tbody:first').append(upload_item.$el);
 
         // render
         upload_item.render();
@@ -351,8 +336,8 @@ return Backbone.View.extend({
     // events triggered by this view
     //
 
-    // display extension info popup
-    _showExtensionInfo : function(options) {
+    // [public] display extension info popup
+    showExtensionInfo : function(options) {
         // initialize
         var self = this;
         var $el = options.$el;
@@ -462,8 +447,8 @@ return Backbone.View.extend({
             this.uploadbox.reset();
 
             // reset value for universal type drop-down
-            this.select_extension.value(this.default_extension);
-            this.select_genome.value(this.default_genome);
+            this.select_extension.value(this.options.default_extension);
+            this.select_genome.value(this.options.default_genome);
 
             // reset button
             this.ui_button.set('percentage', 0);
@@ -474,7 +459,7 @@ return Backbone.View.extend({
     updateExtension: function(extension, defaults_only) {
         var self = this;
         this.collection.each(function(item) {
-            if (item.get('status') == 'init' && (item.get('extension') == self.default_extension || !defaults_only)) {
+            if (item.get('status') == 'init' && (item.get('extension') == self.options.default_extension || !defaults_only)) {
                 item.set('extension', extension);
             }
         });
@@ -484,7 +469,7 @@ return Backbone.View.extend({
     updateGenome: function(genome, defaults_only) {
         var self = this;
         this.collection.each(function(item) {
-            if (item.get('status') == 'init' && (item.get('genome') == self.default_genome || !defaults_only)) {
+            if (item.get('status') == 'init' && (item.get('genome') == self.options.default_genome || !defaults_only)) {
                 item.set('genome', genome);
             }
         });
@@ -510,7 +495,7 @@ return Backbone.View.extend({
         }
 
         // set html content
-        $('#upload-info').html(message);
+        this.$('#upload-info').html(message);
 
         /*
             update button status
@@ -550,14 +535,14 @@ return Backbone.View.extend({
             this.modal.showButton('Choose FTP file');
         } else {
             this.modal.hideButton('Choose FTP file');
-        }
+        }*/
 
         // table visibility
         if (this.counter.announce + this.counter.success + this.counter.error > 0) {
-            $(this.el).find('#upload-table').show();
+            this.$('#upload-table').show();
         } else {
-            $(this.el).find('#upload-table').hide();
-        }*/
+            this.$('#upload-table').hide();
+        }
     },
 
     // calculate percentage of all queued uploads
@@ -579,32 +564,35 @@ return Backbone.View.extend({
     },
 
     // load html template
-    _template: function(id, idInfo) {
-        return  '<div class="upload-top">' +
-                    '<h6 id="' + idInfo + '" class="upload-info"></h6>' +
-                '</div>' +
-                '<div id="' + id + '" class="upload-box">' +
-                    '<table id="upload-table" class="table table-striped" style="display: none;">' +
-                        '<thead>' +
-                            '<tr>' +
-                                '<th>Name</th>' +
-                                '<th>Size</th>' +
-                                '<th>Type</th>' +
-                                '<th>Genome</th>' +
-                                '<th>Settings</th>' +
-                                '<th>Status</th>' +
-                                '<th></th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody></tbody>' +
-                    '</table>' +
-                '</div>' +
-                '<div id="upload-header" class="upload-header">' +
-                    '<span class="header-title">Type (set all):</span>' +
-                    '<span id="header-extension"/>' +
-                    '<span id="header-extension-info" class="upload-icon-button fa fa-search"/> ' +
-                    '<span class="header-title">Genome (set all):</span>' +
-                    '<span id="header-genome"/>' +
+    _template: function() {
+        return  '<div class="upload-view-default">' +
+                    '<div class="upload-top">' +
+                        '<h6 id="upload-info" class="upload-info"></h6>' +
+                    '</div>' +
+                    '<div id="upload-box" class="upload-box">' +
+                        '<table id="upload-table" class="table table-striped" style="display: none;">' +
+                            '<thead>' +
+                                '<tr>' +
+                                    '<th>Name</th>' +
+                                    '<th>Size</th>' +
+                                    '<th>Type</th>' +
+                                    '<th>Genome</th>' +
+                                    '<th>Settings</th>' +
+                                    '<th>Status</th>' +
+                                    '<th></th>' +
+                                '</tr>' +
+                            '</thead>' +
+                            '<tbody></tbody>' +
+                        '</table>' +
+                    '</div>' +
+                    '<div id="upload-footer" class="upload-footer">' +
+                        '<span class="footer-title">Type (set all):</span>' +
+                        '<span id="footer-extension"/>' +
+                        '<span id="footer-extension-info" class="upload-icon-button fa fa-search"/> ' +
+                        '<span class="footer-title">Genome (set all):</span>' +
+                        '<span id="footer-genome"/>' +
+                    '</div>' +
+                    '<div id="upload-buttons" class="upload-buttons"/>' +
                 '</div>';
     }
 });

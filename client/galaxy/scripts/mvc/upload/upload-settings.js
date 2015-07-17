@@ -1,7 +1,5 @@
-// dependencies
+/** This renders the content of the settings popup, allowing users to specify flags i.e. for space-to-tabs conversion **/
 define(['utils/utils'], function(Utils) {
-
-// item view
 return Backbone.View.extend({
     // options
     options: {
@@ -9,7 +7,7 @@ return Backbone.View.extend({
         class_uncheck   : 'upload-icon-button fa fa-square-o'
     },
 
-    // render
+    // initialize
     initialize: function(app) {
         // link app
         this.app = app;
@@ -24,12 +22,12 @@ return Backbone.View.extend({
         this.model = this.app.model;
 
         // ui event: space to tabs
-        this.$el.find('#upload-space-to-tabs').on('click', function() {
+        this.$('#upload-space-to-tabs').on('click', function() {
             self._switchState('#upload-space-to-tabs', 'space_to_tabs');
         });
 
         // ui event: to posix
-        this.$el.find('#upload-to-posix-lines').on('click', function() {
+        this.$('#upload-to-posix-lines').on('click', function() {
             self._switchState('#upload-to-posix-lines', 'to_posix_lines');
         });
 
@@ -49,7 +47,7 @@ return Backbone.View.extend({
         this._renderState('#upload-to-posix-lines', this.model.get('to_posix_lines'));
 
         // disable options
-        var $cover = this.$el.find('#upload-settings-cover');
+        var $cover = this.$('#upload-settings-cover');
         if (this.model.get('status') != 'init') {
             $cover.show();
         } else {
@@ -69,7 +67,7 @@ return Backbone.View.extend({
     // render state
     _renderState: function (element_id, checked) {
         // swith icon class
-        var $it = this.$el.find(element_id);
+        var $it = this.$(element_id);
         $it.removeClass();
         if (checked) {
             $it.addClass(this.options.class_check);

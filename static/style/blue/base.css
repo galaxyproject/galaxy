@@ -1406,9 +1406,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close{left:auto;
 .upload-ftp .upload-ftp-row{cursor:pointer}.upload-ftp .upload-ftp-row .label{width:240px}.upload-ftp .upload-ftp-row .label p{width:inherit;word-wrap:break-word}
 .upload-ftp .upload-ftp-row .nonlabel{white-space:nowrap}
 .upload-settings .upload-settings-cover{position:absolute;width:100%;height:100%;top:0px;left:0px;background:#fff;opacity:0.4;cursor:no-drop}
-.upload-header{height:5%;text-align:left;max-height:20px;line-height:18px;margin-top:10px}.upload-header .header-title{font-weight:bold;padding-left:60px;padding-right:20px}
-.upload-header .header-selection{width:200px;min-width:200px;font-size:11px;padding-right:10px}
-.upload-header .select2-choice{max-height:20px;line-height:18px;background:transparent;text-align:center;font-weight:normal}.upload-header .select2-choice .select2-arrow b{background-position:0 -3px}
+.upload-footer{height:5%;text-align:left;max-height:20px;line-height:18px;margin-top:10px}.upload-footer .footer-title{font-weight:bold;padding-left:60px;padding-right:20px}
+.upload-footer .footer-selection{width:200px;min-width:200px;font-size:11px;padding-right:10px}
+.upload-footer .select2-choice{max-height:20px;line-height:18px;background:transparent;text-align:center;font-weight:normal}.upload-footer .select2-choice .select2-arrow b{background-position:0 -3px}
 .upload-top{height:5%;text-align:center}.upload-top .upload-info{margin-top:0px;font-weight:normal;text-align:center}
 .no-highlight,.ui-button-icon{-webkit-user-select:none;-moz-user-select:none;-khtml-user-select:none;-ms-user-select:none;}
 .no-padding{padding:0px !important}
