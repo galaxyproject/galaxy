@@ -136,6 +136,18 @@ var Button = Backbone.View.extend({
         $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
     },
 
+    // disable
+    disable: function() {
+        this.$el.addClass('disabled');
+        this.disabled = true;
+    },
+
+    // enable
+    enable: function() {
+        this.$el.removeClass('disabled');
+        this.disabled = false;
+    },
+
     // show spinner
     wait: function() {
         this.$el.removeClass(this.options.cls).addClass('btn btn-info').prop('disabled', true);

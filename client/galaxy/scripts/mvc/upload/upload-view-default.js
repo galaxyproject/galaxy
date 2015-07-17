@@ -82,7 +82,7 @@ return Backbone.View.extend({
 
         // file upload
         var self = this;
-        this.uploadbox = this.$el.uploadbox({
+        this.uploadbox = this.$('#upload-box').uploadbox({
             announce        : function(index, file, message) { self._eventAnnounce(index, file, message) },
             initialize      : function(index, file, message) { return self._eventInitialize(index, file, message) },
             progress        : function(index, file, message) { self._eventProgress(index, file, message) },
@@ -248,7 +248,7 @@ return Backbone.View.extend({
 
         // setup data
         data = {};
-        data['history_id'] = this.current_history;
+        data['history_id'] = this.app.current_history;
         data['tool_id'] = 'upload1';
         data['inputs'] = JSON.stringify(tool_input);
 
@@ -501,41 +501,44 @@ return Backbone.View.extend({
             update button status
         */
 
-        /*/ update reset button
-        if (this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0)
-            this.modal.enableButton('Reset');
-        else
-            this.modal.disableButton('Reset');
+        // update reset button
+        if (this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0) {
+            this.btnReset.enable();
+        } else {
+            this.btnReset.disable();
+        }
 
         // update upload button
-        if (this.counter.running == 0 && this.counter.announce > 0)
-            this.modal.enableButton('Start');
-        else
-            this.modal.disableButton('Start');
+        if (this.counter.running == 0 && this.counter.announce > 0) {
+            this.btnStart.enable();
+        } else {
+            this.btnStart.disable();
+        }
 
         // pause upload button
-        if (this.counter.running > 0)
-            this.modal.enableButton('Pause');
-        else
-            this.modal.disableButton('Pause');
+        if (this.counter.running > 0) {
+            this.btnStop.enable();
+        } else {
+            this.btnStop.disable();
+        }
 
         // select upload button
-        if (this.counter.running == 0){
-            this.modal.enableButton('Choose local file');
-            this.modal.enableButton('Choose FTP file');
-            this.modal.enableButton('Paste/Fetch data');
+        if (this.counter.running == 0) {
+            this.btnLocal.enable();
+            this.btnFtp.enable();
+            this.btnCreate.enable();
         } else {
-            this.modal.disableButton('Choose local file');
-            this.modal.disableButton('Choose FTP file');
-            this.modal.disableButton('Paste/Fetch data');
+            this.btnLocal.disable();
+            this.btnFtp.disable();
+            this.btnCreate.disable();
         }
 
         // ftp button
-        if (this.current_user && this.options.ftp_upload_dir && this.options.ftp_upload_site) {
-            this.modal.showButton('Choose FTP file');
+        if (this.app.current_user && this.options.ftp_upload_dir && this.options.ftp_upload_site) {
+            this.btnFtp.$el.show();
         } else {
-            this.modal.hideButton('Choose FTP file');
-        }*/
+            this.btnFtp.$el.hide();
+        }
 
         // table visibility
         if (this.counter.announce + this.counter.success + this.counter.error > 0) {

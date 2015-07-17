@@ -128,6 +128,9 @@ return Backbone.View.extend({
             return;
         }
 
+        // refresh
+        this.refresh();
+
         // create modal
         if (!this.modal) {
             // build tabs
@@ -149,9 +152,6 @@ return Backbone.View.extend({
                 width           : this.options.width,
                 closing_events  : true
             });
-
-            // refresh
-            this.refresh();
         }
 
         // show modal
