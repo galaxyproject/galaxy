@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
-import sys
-import os
 import logging
 import signal
+import sys
 
 log = logging.getLogger(__name__)
 
@@ -14,6 +13,7 @@ try:
 except ImportError:
     log.debug('PAM auth helper: Could not import pam module')
     sys.exit(1)
+
 
 def handle_timeout(signum, stack):
     raise IOError("Timed out reading input")
