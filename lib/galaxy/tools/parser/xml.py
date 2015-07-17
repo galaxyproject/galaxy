@@ -186,6 +186,7 @@ class XmlToolSource(ToolSource):
                 inherit_metadata = string_as_bool( collection_elem.get( "inherit_metadata", None ) )
             default_format_source = collection_elem.get( "format_source", None )
             default_metadata_source = collection_elem.get( "metadata_source", "" )
+            filters = collection_elem.findall( 'filter' )
 
             dataset_collectors = None
             if collection_elem.find( "discover_datasets" ) is not None:
@@ -199,6 +200,7 @@ class XmlToolSource(ToolSource):
                 name,
                 structure,
                 label=label,
+                filters=filters,
                 default_format=default_format,
                 inherit_format=inherit_format,
                 inherit_metadata=inherit_metadata,

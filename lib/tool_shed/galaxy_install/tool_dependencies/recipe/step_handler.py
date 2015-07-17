@@ -8,6 +8,7 @@ import time
 import urllib2
 import zipfile
 import hashlib
+import re
 
 from galaxy.util import asbool
 from galaxy.util.template import fill_template
@@ -149,30 +150,23 @@ class CompressedFile( object ):
 
 class Download( object ):
 
-    def url_download( self, install_dir, downloaded_file_name, download_url, extract=True ):
+    def url_download( self, install_dir, downloaded_file_name, download_url, extract=True, checksums={} ):
         """
-            The given download_url can have an extension like #md5# or #sha256#.
+            The given download_url can have an extension like #md5#, #sha256#, (or #md5= to support pypi defaults).
+
+                https://pypi.python.org/packages/source/k/khmer/khmer-1.0.tar.gz#md5#b60639a8b2939836f66495b9a88df757
+
+            Alternatively, to not break HTTP spec, you can specify md5 and
+            sha256 as keys in the <action /> element.
+
             This indicates a checksum which will be checked after download.
             If the checksum does not match an exception is thrown.
-
-            https://pypi.python.org/packages/source/k/khmer/khmer-1.0.tar.gz#md5#b60639a8b2939836f66495b9a88df757
         """
-
         file_path = os.path.join( install_dir, downloaded_file_name )
         src = None
         dst = None
-        checksum = None
-        sha256 = False
-        md5 = False
+
         # Set a timer so we don't sit here forever.
-
-        if '#md5#' in download_url:
-            md5 = True
-            download_url, checksum = download_url.split('#md5#')
-        elif '#sha256#' in download_url:
-            sha256 = True
-            download_url, checksum = download_url.split('#sha256#')
-
         start_time = time.time()
         try:
             src = urllib2.urlopen( download_url )
@@ -197,16 +191,29 @@ class Download( object ):
             if dst:
                 dst.close()
 
-        try:
-            if sha256:
-                downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
-            elif md5:
-                downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest()
+        if checksums.has_key('sha256sum') or '#sha256#' in download_url:
+            downloaded_checksum = hashlib.sha256(open(file_path, 'rb').read()).hexdigest().lower()
 
-            if checksum and downloaded_checksum != checksum:
-                raise Exception( 'Given checksum does not match with the one from the downloaded file (%s).' % (downloaded_checksum) )
-        except Exception, e:
-            raise
+            # Determine expected value
+            if checksums.has_key('sha256sum'):
+                expected = checksums['sha256sum'].lower()
+            else:
+                expected = download_url.split('#sha256#')[1].lower()
+
+            if downloaded_checksum != expected:
+                raise Exception( 'Given sha256 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected) )
+
+        if checksums.has_key('md5sum') or '#md5#' in download_url or '#md5=' in download_url:
+            downloaded_checksum = hashlib.md5(open(file_path, 'rb').read()).hexdigest().lower()
+
+            # Determine expected value
+            if checksums.has_key('md5sum'):
+                expected = checksums['md5sum'].lower()
+            else:
+                expected = re.split('#md5[#=]', download_url)[1].lower()
+
+            if downloaded_checksum != expected:
+                raise Exception( 'Given md5 checksum does not match with the one from the downloaded file (%s != %s).' % (downloaded_checksum, expected) )
 
         if extract:
             if tarfile.is_tarfile( file_path ) or ( zipfile.is_zipfile( file_path ) and not file_path.endswith( '.jar' ) ):
@@ -218,6 +225,16 @@ class Download( object ):
             extraction_path = os.path.abspath( install_dir )
 
         return extraction_path
+
+    def get_elem_checksums( self, elem ):
+        rval = {}
+        for hash_type in ('md5sum', 'sha256sum'):
+            if hash_type in elem.keys():
+                rval[hash_type] = elem.get(hash_type).lower()
+        return rval
+
+    def get_dict_checksums( self, dct ):
+        return dict(filter(lambda i:i[0] in ['md5sum','sha256sum'], dct.iteritems()))
 
 
 class RecipeStep( object ):
@@ -545,10 +562,10 @@ class DownloadBinary( Download, RecipeStep ):
         self.app = app
         self.type = 'download_binary'
 
-    def download_binary( self, url, work_dir ):
+    def download_binary( self, url, work_dir, checksums ):
         """Download a pre-compiled binary from the specified URL."""
         downloaded_filename = os.path.split( url )[ -1 ]
-        dir = self.url_download( work_dir, downloaded_filename, url, extract=False )
+        dir = self.url_download( work_dir, downloaded_filename, url, extract=False, checksums=checksums )
         return downloaded_filename
 
     def filter_actions_after_binary_installation( self, actions ):
@@ -575,7 +592,8 @@ class DownloadBinary( Download, RecipeStep ):
         log.debug( 'Attempting to download from %s to %s', url, str( target_directory ) )
         downloaded_filename = None
         try:
-            downloaded_filename = self.download_binary( url, work_dir )
+            checksums = self.get_dict_checksums( action_dict )
+            downloaded_filename = self.download_binary( url, work_dir, checksums )
             if initial_download:
                 # Filter out any actions that are not download_binary, chmod, or set_environment.
                 filtered_actions = self.filter_actions_after_binary_installation( actions[ 1: ] )
@@ -629,6 +647,7 @@ class DownloadBinary( Download, RecipeStep ):
             url_template_elem = url_template_elems[ 0 ]
         action_dict[ 'url' ] = Template( url_template_elem.text ).safe_substitute( platform_info_dict )
         action_dict[ 'target_directory' ] = action_elem.get( 'target_directory', None )
+        action_dict.update( self.get_elem_checksums( action_elem ) )
         return action_dict
 
 
@@ -659,7 +678,9 @@ class DownloadByUrl( Download, RecipeStep ):
             downloaded_filename = action_dict[ 'target_filename' ]
         else:
             downloaded_filename = os.path.split( url )[ -1 ]
-        dir = self.url_download( work_dir, downloaded_filename, url, extract=True )
+
+        checksums = self.get_dict_checksums( action_dict )
+        dir = self.url_download( work_dir, downloaded_filename, url, extract=True, checksums=checksums )
         if is_binary:
             log_file = os.path.join( install_environment.install_dir, basic_util.INSTALLATION_LOG )
             if os.path.exists( log_file ):
@@ -677,6 +698,10 @@ class DownloadByUrl( Download, RecipeStep ):
         # <action type="download_by_url">
         #     http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2
         # </action>
+        #
+        # <action type="download_by_url" md5sum="71dab132e21c0766f0de84c2371a9157" sha256sum="f3faaf34430d4782956562eb72906289e8e34d44d0c4d73837bdbeead7746b16">
+        #     http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2
+        # </action>
         if is_binary_download:
             action_dict[ 'is_binary' ] = True
         if action_elem.text:
@@ -684,6 +709,7 @@ class DownloadByUrl( Download, RecipeStep ):
             target_filename = action_elem.get( 'target_filename', None )
             if target_filename:
                 action_dict[ 'target_filename' ] = target_filename
+        action_dict.update( self.get_elem_checksums( action_elem ) )
         return action_dict
 
 
@@ -715,7 +741,8 @@ class DownloadFile( Download, RecipeStep ):
             filename = url.split( '/' )[ -1 ]
         if current_dir is not None:
             work_dir = current_dir
-        self.url_download( work_dir, filename, url, extract=action_dict[ 'extract' ] )
+        checksums = self.get_dict_checksums( action_dict )
+        self.url_download( work_dir, filename, url, extract=action_dict[ 'extract' ], checksums=checksums )
         if initial_download:
             dir = os.path.curdir
             return tool_dependency, filtered_actions, dir
@@ -729,6 +756,7 @@ class DownloadFile( Download, RecipeStep ):
             if target_filename:
                 action_dict[ 'target_filename' ] = target_filename
             action_dict[ 'extract' ] = asbool( action_elem.get( 'extract', False ) )
+        action_dict.update( self.get_elem_checksums( action_elem ) )
         return action_dict
 
 
@@ -902,8 +930,8 @@ class SetEnvironment( RecipeStep ):
     def handle_environment_variables( self, install_environment, tool_dependency, env_var_dict,
                                       set_prior_environment_commands ):
         """
-        This method works with with a combination of three tool dependency definition tag sets, which are defined
-        in the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
+        This method works with a combination of three tool dependency definition tag sets, which are defined in
+        the tool_dependencies.xml file in the order discussed here.  The example for this discussion is the
         tool_dependencies.xml file contained in the osra repository, which is available at:
 
         https://testtoolshed.g2.bx.psu.edu/view/bgruening/osra
@@ -1089,7 +1117,7 @@ class SetupPerlEnvironment( Download, RecipeStep ):
         #       </repository>
         #       <!-- allow downloading and installing an Perl package from cpan.org-->
         #       <package>XML::Parser</package>
-        #       <package>http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz</package>
+        #       <package sha256sum="da8a88112bff0224bd17b74eb28f605f96db6481ed5c8c00ca7e851522deee2b">http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz</package>
         # </action>
         dir = None
         if initial_download:
@@ -1109,7 +1137,8 @@ class SetupPerlEnvironment( Download, RecipeStep ):
         with lcd( current_dir ):
             with settings( warn_only=True ):
                 perl_packages = action_dict.get( 'perl_packages', [] )
-                for perl_package in perl_packages:
+                for perl_package_dict in perl_packages:
+                    perl_package = perl_package_dict['package']
                     # If set to a true value then MakeMaker's prompt function will always
                     # return the default without waiting for user input.
                     cmd = '''PERL_MM_USE_DEFAULT=1; export PERL_MM_USE_DEFAULT; '''
@@ -1119,7 +1148,8 @@ class SetupPerlEnvironment( Download, RecipeStep ):
                         # We assume a URL to a gem file.
                         url = perl_package
                         perl_package_name = url.split( '/' )[ -1 ]
-                        dir = self.url_download( work_dir, perl_package_name, url, extract=True )
+                        checksums = perl_package_dict.get('checksums', {})
+                        dir = self.url_download( work_dir, perl_package_name, url, extract=True, checksums=checksums )
                         # Search for Build.PL or Makefile.PL (ExtUtils::MakeMaker vs. Module::Build).
                         tmp_work_dir = os.path.join( work_dir, dir )
                         if os.path.exists( os.path.join( tmp_work_dir, 'Makefile.PL' ) ):
@@ -1197,7 +1227,8 @@ class SetupPerlEnvironment( Download, RecipeStep ):
                 #     http://search.cpan.org/CPAN/authors/id/C/CJ/CJFIELDS/BioPerl-1.6.922.tar.gz
                 # Unfortunately CPAN does not support versioning, so if you want real reproducibility you need to specify
                 # the tarball path and the right order of different tarballs manually.
-                perl_packages.append( env_elem.text.strip() )
+                perl_packages.append( dict( package=env_elem.text.strip(),
+                                            checksums=self.get_elem_checksums( env_elem ) ) )
         if perl_packages:
             action_dict[ 'perl_packages' ] = perl_packages
         return action_dict
@@ -1224,7 +1255,7 @@ class SetupREnvironment( Download, RecipeStep ):
         #           <package name="R" version="3.0.1" />
         #       </repository>
         #       <!-- allow installing an R packages -->
-        #       <package>https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
+        #       <package sha256sum="7056b06041fd96ebea9c74f445906f1a5cd784b2b1573c02fcaee86a40f3034d">https://github.com/bgruening/download_store/raw/master/DESeq2-1_0_18/BiocGenerics_0.6.0.tar.gz</package>
         # </action>
         dir = None
         if initial_download:
@@ -1240,10 +1271,12 @@ class SetupREnvironment( Download, RecipeStep ):
         log.debug( 'Handling setup_r_environment for tool dependency %s with install_environment.env_shell_file_paths:\n%s' %
                    ( str( tool_dependency.name ), str( install_environment.env_shell_file_paths ) ) )
         tarball_names = []
-        for url in action_dict[ 'r_packages' ]:
+        for r_package_dict in action_dict[ 'r_packages' ]:
+            url = r_package_dict['package']
             filename = url.split( '/' )[ -1 ]
             tarball_names.append( filename )
-            self.url_download( work_dir, filename, url, extract=False )
+            checksums = r_package_dict.get('checksums', {})
+            self.url_download( work_dir, filename, url, extract=False, checksums=checksums )
         dir = os.path.curdir
         current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
         with lcd( current_dir ):
@@ -1295,7 +1328,8 @@ class SetupREnvironment( Download, RecipeStep ):
         r_packages = list()
         for env_elem in action_elem:
             if env_elem.tag == 'package':
-                r_packages.append( env_elem.text.strip() )
+                r_packages.append( dict( package=env_elem.text.strip(),
+                                         checksums=self.get_elem_checksums( env_elem ) ) )
         if r_packages:
             action_dict[ 'r_packages' ] = r_packages
         return action_dict
@@ -1344,7 +1378,8 @@ class SetupRubyEnvironment( Download, RecipeStep ):
         with lcd( current_dir ):
             with settings( warn_only=True ):
                 ruby_package_tups = action_dict.get( 'ruby_package_tups', [] )
-                for ruby_package_tup in ruby_package_tups:
+                for ruby_package_tup_dict in ruby_package_tups:
+                    ruby_package_tup = ruby_package_tup_dict['package']
                     gem, gem_version, gem_parameters = ruby_package_tup
                     if gem_parameters:
                         gem_parameters = '-- %s' % gem_parameters
@@ -1358,7 +1393,8 @@ class SetupRubyEnvironment( Download, RecipeStep ):
                         # We assume a URL to a gem file.
                         url = gem
                         gem_name = url.split( '/' )[ -1 ]
-                        self.url_download( work_dir, gem_name, url, extract=False )
+                        checksums = ruby_package_tup_dict.get('checksums', {})
+                        self.url_download( work_dir, gem_name, url, extract=False, checksums=checksums )
                         cmd = '''PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
                                 gem install --local %s %s''' % ( gem_name, gem_parameters )
                     else:
@@ -1407,7 +1443,7 @@ class SetupRubyEnvironment( Download, RecipeStep ):
         #       <!-- allow downloading and installing an Ruby package from http://rubygems.org/ -->
         #       <package>protk</package>
         #       <package>protk=1.2.4</package>
-        #       <package>http://url-to-some-gem-file.de/protk.gem</package>
+        #       <package sha256sum="some_hash">http://url-to-some-gem-file.de/protk.gem</package>
         # </action>
         # Discover all child repository dependency tags and define the path to an env.sh file
         # associated with each repository.  This will potentially update the value of the
@@ -1430,11 +1466,13 @@ class SetupRubyEnvironment( Download, RecipeStep ):
                     # version string
                     gem_name = gem_token[ 0 ]
                     gem_version = gem_token[ 1 ]
-                    ruby_package_tups.append( ( gem_name, gem_version, gem_parameters ) )
+                    tup = ( gem_name, gem_version, gem_parameters )
                 else:
                     # gem name for rubygems.org without version number
                     gem = env_elem.text.strip()
-                    ruby_package_tups.append( ( gem, None, gem_parameters ) )
+                    tup = ( gem, None, gem_parameters )
+                ruby_package_tups.append( dict( package=tup,
+                                                checksums=self.get_elem_checksums( env_elem ) ) )
         if ruby_package_tups:
             action_dict[ 'ruby_package_tups' ] = ruby_package_tups
         return action_dict
@@ -1465,7 +1503,7 @@ class SetupPythonEnvironment( Download, RecipeStep ):
         #       </repository>
         #       <!-- allow downloading and installing a Python package from https://pypi.python.org/ -->
         #       <package>pysam.tar.gz</package>
-        #       <package>http://url-to-some-python-package.de/pysam.tar.gz</package>
+        #       <package sha256sum="some_hash">http://url-to-some-python-package.de/pysam.tar.gz</package>
         # </action>
         dir = None
         if initial_download:
@@ -1485,7 +1523,8 @@ class SetupPythonEnvironment( Download, RecipeStep ):
         with lcd( current_dir ):
             with settings( warn_only=True ):
                 python_package_tups = action_dict.get( 'python_package_tups', [] )
-                for python_package_tup in python_package_tups:
+                for python_package_tup_dict in python_package_tups:
+                    python_package_tup = python_package_tup_dict['package']
                     package, package_version = python_package_tup
                     package_path = os.path.join( install_environment.tool_shed_repository_install_dir, package )
                     if os.path.isfile( package_path ):
@@ -1499,7 +1538,8 @@ class SetupPythonEnvironment( Download, RecipeStep ):
                         # We assume a URL to a python package.
                         url = package
                         package_name = url.split( '/' )[ -1 ]
-                        self.url_download( work_dir, package_name, url, extract=False )
+                        checksums = python_package_tup_dict.get('checksums', {})
+                        self.url_download( work_dir, package_name, url, extract=False, checksums=checksums )
 
                         cmd = r'''PATH=$PATH:$PYTHONHOME/bin; export PATH;
                                 export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR;
@@ -1562,13 +1602,16 @@ class SetupPythonEnvironment( Download, RecipeStep ):
                     # version string
                     package_name = python_token[ 0 ]
                     package_version = python_token[ 1 ]
-                    python_package_tups.append( ( package_name, package_version ) )
+                    tup = ( package_name, package_version )
                 else:
                     # package name for pypi.org without version number
                     package = env_elem.text.strip()
-                    python_package_tups.append( ( package, None ) )
+                    tup = ( package, None )
+                python_package_tups.append( dict( package=tup,
+                                                  checksums=self.get_elem_checksums( env_elem ) ) )
         if python_package_tups:
             action_dict[ 'python_package_tups' ] = python_package_tups
+        action_dict.update( self.get_elem_checksums( action_elem ) )
         return action_dict
 
 
@@ -1701,9 +1744,9 @@ class SetupVirtualEnv( Download, RecipeStep ):
         # Use raw strings so that python won't automatically unescape the quotes before passing the command
         # to subprocess.Popen.
         for site_packages_command in [ r"""%s -c 'import site; site.getsitepackages()[0]'""" %
-                                    os.path.join( venv_directory, "bin", "python" ),
-                                    r"""%s -c 'import os, sys; print os.path.join( sys.prefix, "lib", "python" + sys.version[:3], "site-packages" )'""" %
-                                    os.path.join( venv_directory, "bin", "python" ) ]:
+                                       os.path.join( venv_directory, "bin", "python" ),
+                                       r"""%s -c 'import os, sys; print os.path.join( sys.prefix, "lib", "python" + sys.version[:3], "site-packages" )'""" %
+                                       os.path.join( venv_directory, "bin", "python" ) ]:
             output = install_environment.handle_command( tool_dependency=tool_dependency,
                                                          cmd=site_packages_command,
                                                          return_output=True )
