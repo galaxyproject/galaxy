@@ -12,7 +12,6 @@ from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
 from math import ceil
-import pkg_resources
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
 log = logging.getLogger( __name__ )
