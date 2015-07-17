@@ -1,3 +1,6 @@
+@import "sprite-history-states.less";
+@import "sprite-history-buttons.less";
+
 // ---------------------------------------------------------------------------- panel header buttons
 .history-panel-header {
     .panel-header-button {
@@ -862,14 +865,14 @@ div.historyItem-failed_metadata {
 div.historyItem-error {
     background: @state-danger-bg;
     .state-icon {
-        .sprite(@data_error);
+        .sprite(@data-error);
     }
 }
 
 div.historyItem-empty {
     background: @state-danger-bg;
     .state-icon {
-        .sprite(@data_empty);
+        .sprite(@data-empty);
     }
 }
 
@@ -897,7 +900,7 @@ div.historyItem-upload {
 div.historyItem-queued {
     background: @state-default-bg;
     .state-icon {
-        .sprite(@data_queued);
+        .sprite(@data-queued);
     }
 }
 
@@ -945,31 +948,31 @@ div.historyItemButtons {
     float: right;
 
     .icon-button.display {
-        .sprite(@eye_icon);
+        .sprite(@eye-icon);
     }
     .icon-button.display:hover {
-        .sprite(@eye_icon_dark);
+        .sprite(@eye-icon-dark);
     }
     .icon-button.display_disabled {
-        .sprite(@eye_icon_grey);
+        .sprite(@eye-icon-grey);
     }
     .icon-button.delete {
-        .sprite(@delete_icon);
+        .sprite(@delete-icon);
     }
     .icon-button.delete:hover {
-        .sprite(@delete_icon_dark);
+        .sprite(@delete-icon-dark);
     }
     .icon-button.delete_disabled {
-        .sprite(@delete_icon_grey);
+        .sprite(@delete-icon-grey);
     }
     .icon-button.edit {
-        .sprite(@pencil_icon);
+        .sprite(@pencil-icon);
     }
     .icon-button.edit:hover {
-        .sprite(@pencil_icon_dark);
+        .sprite(@pencil-icon-dark);
     }
     .icon-button.edit_disabled {
-        .sprite(@pencil_icon_grey);
+        .sprite(@pencil-icon-grey);
     }
 }
 
