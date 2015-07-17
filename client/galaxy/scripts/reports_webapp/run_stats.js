@@ -102,25 +102,6 @@ function create_chart( inp_data, name, time, title ) {
 
                 if(name == "jc_hr_chart" || name == "jc_dy_chart") {
                     wdth = chart_width * chart_zoom;
-                    d3.select("#hr_title")
-                        .attr("transform", function() {
-                            window.addEventListener("resize", function(e) {
-                                d3.select("#" + name)
-                                    .attr("transform", function() {
-                                        var title_DOM_left = d3.select("#" + name).node().getBoundingClientRect().left;
-                                        var frame_DOM_left = d3.select(".toolForm").node().getBoundingClientRect().left;
-
-                                        var relative_left = title_DOM_left;
-                                        return "translate( " + relative_left + ",0 )"
-                                    });
-                            }, true);
-
-                            var title_DOM_left = d3.select("#" + name).node().getBoundingClientRect().left;
-                            var frame_DOM_left = d3.select(".toolForm").node().getBoundingClientRect().left;
-
-                            var relative_left = title_DOM_left;
-                            return "translate( " + relative_left + ",0 )"
-                        });
                 } else {
                     wdth = chart_width;
                 }
