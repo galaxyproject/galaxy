@@ -1060,6 +1060,9 @@ class Tool( object, Dictifiable ):
         # If parameter depends on any other paramters, we must refresh the
         # form when it changes
         for name in param.get_dependencies():
+            # Let it throw exception, but give some hint what the problem might be
+            if name not in context:
+                log.error("Could not find dependency '%s' of parameter '%s' in tool %s" % (name, param.name, self.name) )
             context[ name ].refresh_on_change = True
         return param
 
