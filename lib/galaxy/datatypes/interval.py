@@ -11,14 +11,14 @@ import logging
 import tempfile
 import data
 from galaxy import util
-from galaxy.datatypes.sniff import *
 from galaxy.web import url_for
 import urllib
-from bx.intervals.io import *
+from bx.intervals.io import GenomicIntervalReader, ParseError
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff_attributes
+from galaxy.datatypes.sniff import get_headers
 import math
 import dataproviders
 
@@ -163,7 +163,7 @@ class Interval( Tabular ):
                 end_col = int( dataset.metadata.endCol ) - 1
             # Scan lines of file to find a reasonable chromosome and range
             chrom = None
-            start = sys.maxint
+            start = sys.maxsize
             end = 0
             max_col = max( chrom_col, start_col, end_col )
             fh = open( dataset.file_name )
@@ -263,9 +263,9 @@ class Interval( Tabular ):
             internal_url = url_for( controller='dataset', dataset_id=dataset.id,
                                     action='display_at', filename='ucsc_' + site_name )
             display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
-                    % (base_url, url_for( controller='root' ), dataset.id, type) )
+                                             % (base_url, url_for( controller='root' ), dataset.id, type) )
             redirect_url = urllib.quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s"
-                    % (site_url, dataset.dbkey, chrom, start, stop ) )
+                                              % (site_url, dataset.dbkey, chrom, start, stop ) )
             link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
             ret_val.append( ( site_name, link ) )
         return ret_val
@@ -286,7 +286,7 @@ class Interval( Tabular ):
         while True:
             try:
                 reader.next()
-            except ParseError, e:
+            except ParseError as e:
                 errors.append(e)
             except StopIteration:
                 infile.close()
@@ -303,6 +303,7 @@ class Interval( Tabular ):
         This format is mostly used by galaxy itself.  Valid interval files should include
         a valid header comment, but this seems to be loosely regulated.
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test_space.txt' )
         >>> Interval().sniff( fname )
         False
@@ -487,6 +488,7 @@ class Bed( Interval ):
 
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format1
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test_tab.bed' )
         >>> Bed().sniff( fname )
         True
@@ -648,7 +650,7 @@ class Gff( Tabular, _RemoteCallMixin ):
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'int', 'str', 'str', 'str'],
-        param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     MetadataElement( name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0 )
     MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[] )
@@ -729,7 +731,7 @@ class Gff( Tabular, _RemoteCallMixin ):
         if self.displayable( dataset ):
             try:
                 seqid = None
-                start = sys.maxint
+                start = sys.maxsize
                 stop = 0
                 fh = open( dataset.file_name )
                 while True:
@@ -741,14 +743,14 @@ class Gff( Tabular, _RemoteCallMixin ):
                             elems = line.rstrip( '\n\r' ).split()
                             if len( elems ) > 3:
                                 # line looks like:
-                                # ##sequence-region   ctg123 1 1497228
+                                # sequence-region   ctg123 1 1497228
                                 seqid = elems[1]  # IV
                                 start = int( elems[2] )  # 6000000
                                 stop = int( elems[3] )  # 6030000
                                 break  # use location declared in file
                             elif len( elems ) == 2 and elems[1].find( '..' ) > 0:
                                 # line looks like this:
-                                # ##sequence-region X:120000..140000
+                                # sequence-region X:120000..140000
                                 elems = elems[1].split( ':' )
                                 seqid = elems[0]
                                 start = int( elems[1].split( '..' )[0] )
@@ -791,7 +793,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                         break
                 if seqid is not None:
                     return ( seqid, str( start ), str( stop ) )  # Necessary to return strings?
-            except Exception, e:
+            except Exception as e:
                 # unexpected error
                 log.exception( str( e ) )
         return ( None, None, None )  # could not determine viewport
@@ -830,6 +832,7 @@ class Gff( Tabular, _RemoteCallMixin ):
 
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'gff_version_3.gff' )
         >>> Gff().sniff( fname )
         False
@@ -899,7 +902,7 @@ class Gff3( Gff ):
 
     """Add metadata elements"""
     MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
-        param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
@@ -956,6 +959,7 @@ class Gff3( Gff ):
 
         For complete details see http://song.sourceforge.net/gff3.shtml
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test.gff' )
         >>> Gff3().sniff( fname )
         False
@@ -1010,7 +1014,7 @@ class Gtf( Gff ):
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
-        param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     def sniff( self, filename ):
         """
@@ -1026,6 +1030,7 @@ class Gtf( Gff ):
 
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format4
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( '1.bed' )
         >>> Gtf().sniff( fname )
         False
@@ -1095,7 +1100,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         if self.displayable( dataset ):
             try:
                 chrom = None
-                start = sys.maxint
+                start = sys.maxsize
                 end = 0
                 span = 1
                 step = None
@@ -1148,7 +1153,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                         break
                 if chrom is not None:
                     return ( chrom, str( start ), str( end ) )  # Necessary to return strings?
-            except Exception, e:
+            except Exception as e:
                 # unexpected error
                 log.exception( str( e ) )
         return ( None, None, None )  # could not determine viewport
@@ -1222,6 +1227,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
 
         For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'interval1.bed' )
         >>> Wiggle().sniff( fname )
         False
@@ -1354,7 +1360,7 @@ class CustomTrack ( Tabular ):
                     if not max_line_count:
                         # exceeded viewport or total line count to check
                         break
-            except Exception, e:
+            except Exception as e:
                 # unexpected error
                 log.exception( str( e ) )
         return ( None, None, None )  # could not determine viewport
@@ -1381,6 +1387,7 @@ class CustomTrack ( Tabular ):
 
         track name="User Track" description="User Supplied Track (from Galaxy)" color=0,0,0 visibility=1
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'complete.bed' )
         >>> CustomTrack().sniff( fname )
         False

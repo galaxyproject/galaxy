@@ -10,8 +10,15 @@ import tempfile
 import urllib
 import urllib2
 import zipfile
+
+from galaxy import eggs
+eggs.require('MarkupSafe')
+from markupsafe import escape
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false
+from sqlalchemy.orm import eagerload_all
+
 from galaxy import util, web
-from galaxy.web import url_for
 from galaxy.eggs import require
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
@@ -20,14 +27,12 @@ from galaxy.util.json import dumps, loads
 from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
-from markupsafe import escape
-from galaxy.model.orm import and_, eagerload_all
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
     require( "Whoosh" )
     import whoosh.index
-    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
+    from whoosh.fields import Schema, STORED, TEXT
     from whoosh.scoring import BM25F
     from whoosh.qparser import MultifieldParser
     whoosh_search_enabled = True
@@ -56,7 +61,7 @@ for comptype in ( 'gz', 'bz2' ):
     except OSError:
         pass
 try:
-    import zlib
+    import zlib  # noqa
     comptypes.append( 'zip' )
 except ImportError:
     pass
@@ -65,6 +70,7 @@ try:
     os.rmdir( tmpd )
 except:
     pass
+
 
 class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMetadataMixin, UsesLibraryMixinItems ):
     @web.json
@@ -83,11 +89,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     job_ldda = data
                     while job_ldda.copied_from_library_dataset_dataset_association:
                         job_ldda = job_ldda.copied_from_library_dataset_dataset_association
-                    force_history_refresh = False
                     rval[id] = {
                         "state": data.state,
                         "html": unicode( trans.fill_template( "library/common/library_item_info.mako", ldda=data ), 'utf-8' )
-                        #"force_history_refresh": force_history_refresh
+                        # "force_history_refresh": force_history_refresh
                     }
         return rval
 
@@ -120,7 +125,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             created_ldda_ids = kwd.get( 'created_ldda_ids', '' )
             hidden_folder_ids = util.listify( kwd.get( 'hidden_folder_ids', '' ) )
             if created_ldda_ids and not message:
-                message = "%d datasets are uploading in the background to the library '%s' (each is selected).  "  % \
+                message = "%d datasets are uploading in the background to the library '%s' (each is selected).  " % \
                     ( len( created_ldda_ids.split( ',' ) ), escape( library.name ) )
                 message += "Don't navigate away from Galaxy or use the browser's \"stop\" or \"reload\" buttons (on this tab) until the "
                 message += "message \"This job is running\" is cleared from the \"Information\" column below for each selected dataset."
@@ -179,11 +184,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         self._check_access( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
         if kwd.get( 'library_info_button', False ):
             self._check_modify( trans, cntrller, is_admin, library, current_user_roles, use_panels, library_id, show_deleted )
-            old_name = library.name
             new_name = kwd.get( 'name', 'No name' )
             if not new_name:
                 message = 'Enter a valid name'
-                status='error'
+                status = 'error'
             else:
                 new_description = kwd.get( 'description', '' )
                 new_synopsis = kwd.get( 'synopsis', '' )
@@ -284,8 +288,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             parent_folder = None
         # Check the library which actually contains the user-supplied parent folder, not the user-supplied
         # library, which could be anything.
-        if parent_folder:
-            parent_library = parent_folder.parent_library
         self._check_access( trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted )
         self._check_add( trans, cntrller, is_admin, parent_folder, current_user_roles, use_panels, library_id, show_deleted )
         if kwd.get( 'new_folder_button', False ) or cntrller == 'api':
@@ -362,12 +364,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         self._check_access( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
         if kwd.get( 'rename_folder_button', False ):
             self._check_modify( trans, cntrller, is_admin, folder, current_user_roles, use_panels, library_id, show_deleted )
-            old_name = folder.name
             new_name = kwd.get( 'name', '' )
             new_description = kwd.get( 'description', '' )
             if not new_name:
                 message = 'Enter a valid name'
-                status='error'
+                status = 'error'
             else:
                 folder.name = new_name
                 folder.description = new_description
@@ -475,14 +476,15 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         file_formats.sort()
 
         def __ok_to_edit_metadata( ldda_id ):
-            #prevent modifying metadata when dataset is queued or running as input/output
-            #This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
-            for job_to_dataset_association in trans.sa_session.query( self.app.model.JobToInputLibraryDatasetAssociation ) \
-                                                              .filter_by( ldda_id=ldda_id ) \
-                                                              .all() \
-                                            + trans.sa_session.query( self.app.model.JobToOutputLibraryDatasetAssociation ) \
-                                                              .filter_by( ldda_id=ldda_id ) \
-                                                              .all():
+            # prevent modifying metadata when dataset is queued or running as input/output
+            # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+            for job_to_dataset_association in trans.sa_session.query(
+                    self.app.model.JobToInputLibraryDatasetAssociation ) \
+                    .filter_by( ldda_id=ldda_id ) \
+                    .all() \
+                    + trans.sa_session.query( self.app.model.JobToOutputLibraryDatasetAssociation ) \
+                    .filter_by( ldda_id=ldda_id ) \
+                    .all():
                 if job_to_dataset_association.job.state not in [ job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED ]:
                     return False
             return True
@@ -508,7 +510,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 status = "error"
         elif kwd.get( 'save', False ):
             # The user clicked the Save button on the 'Edit Attributes' form
-            old_name = ldda.name
             new_name = kwd.get( 'name', '' )
             new_info = kwd.get( 'info', '' )
             new_message = escape( kwd.get( 'message', ''  ) )
@@ -548,7 +549,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                             setattr( ldda.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
                 message = "Attributes have been queued to be updated for library dataset '%s'." % escape( ldda.name )
                 status = 'done'
-                trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':ldda } )
+                trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={ 'input1': ldda } )
             else:
                 message = "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them."
                 status = 'error'
@@ -559,7 +560,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 payload = None
                 try:
                     payload = loads(em_string)
-                except Exception, e:
+                except Exception:
                     message = 'Invalid JSON input'
                     status = 'error'
                 if payload is not None:
@@ -583,8 +584,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         self.delete_extended_metadata(trans, ex_obj)
                 message = "Deleted Extended metadata '%s'." % escape( ldda.name )
                 status = 'done'
-
-
 
         if "dbkey" in ldda.datatype.metadata_spec and not ldda.metadata.dbkey:
             # Copy dbkey into metadata, for backwards compatability
@@ -621,11 +620,11 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         if is_admin and show_associated_hdas_and_lddas:
             # Get all associated hdas and lddas that use the same disk file.
             associated_hdas = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
-                                              .filter( and_( trans.model.HistoryDatasetAssociation.deleted == False,
+                                              .filter( and_( trans.model.HistoryDatasetAssociation.deleted == false(),
                                                              trans.model.HistoryDatasetAssociation.dataset_id == ldda.dataset_id ) ) \
                                               .all()
             associated_lddas = trans.sa_session.query( trans.model.LibraryDatasetDatasetAssociation ) \
-                                               .filter( and_( trans.model.LibraryDatasetDatasetAssociation.deleted == False,
+                                               .filter( and_( trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
                                                               trans.model.LibraryDatasetDatasetAssociation.dataset_id == ldda.dataset_id,
                                                               trans.model.LibraryDatasetDatasetAssociation.id != ldda.id ) ) \
                                                .all()
@@ -709,7 +708,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
                 # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
                 # permission.  In this case, we'll reset this permission to the ldda user's private role.
-                #dataset_manage_permissions_roles = [ trans.app.security_agent.get_private_user_role( ldda.user ) ]
+                # dataset_manage_permissions_roles = [ trans.app.security_agent.get_private_user_role( ldda.user ) ]
                 permissions[ manage_permissions_action ] = [ trans.app.security_agent.get_private_user_role( ldda.user ) ]
             else:
                 permissions[ manage_permissions_action ] = ldda.get_manage_permissions_roles( trans )
@@ -747,7 +746,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     message = "Permissions updated for dataset '%s'." % escape( ldda.name )
                 else:
                     message = 'Permissions updated for %d datasets.' % len( lddas )
-                status= 'done'
+                status = 'done'
             return trans.fill_template( "/library/common/ldda_permissions.mako",
                                         cntrller=cntrller,
                                         use_panels=use_panels,
@@ -799,7 +798,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         ldda_message = escape( kwd.get( 'ldda_message', '' ) )
-        deleted = util.string_as_bool( kwd.get( 'deleted', False ) )
+        # deleted = util.string_as_bool( kwd.get( 'deleted', False ) )
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         replace_id = kwd.get( 'replace_id', None )
@@ -819,7 +818,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
         widgets = []
-        widget_fields_have_contents = False
         info_association, inherited = None, None
         template_id = "None"
         if replace_id not in [ '', None, 'None' ]:
@@ -831,7 +829,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             info_association, inherited = replace_dataset.library_dataset_dataset_association.get_info_association()
             if info_association and ( not( inherited ) or info_association.inheritable ):
                 widgets = replace_dataset.library_dataset_dataset_association.get_template_widgets( trans )
-                widget_fields_have_contents = self.widget_fields_have_contents( widgets )
             # The name is stored - by the time the new ldda is created, replace_dataset.name
             # will point to the new ldda, not the one it's replacing.
             replace_dataset_name = replace_dataset.name
@@ -935,7 +932,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         return 200, created_outputs_dict
                     total_added = len( created_outputs_dict.keys() )
                     ldda_id_list = [ str( v.id ) for k, v in created_outputs_dict.items() ]
-                    created_ldda_ids=",".join( ldda_id_list )
+                    created_ldda_ids = ",".join( ldda_id_list )
                     if replace_dataset:
                         message = "Added %d dataset versions to the library dataset '%s' in the folder '%s'." % ( total_added, escape( replace_dataset_name ), escape( folder.name ) )
                     else:
@@ -946,7 +943,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                             message = "Added %d datasets to the folder '%s' (each is selected).  " % ( total_added, escape( folder.name ) )
                         if cntrller == 'library_admin':
                             message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
-                            status='done'
+                            status = 'done'
                         else:
                             # Since permissions on all LibraryDatasetDatasetAssociations must be the same at this point, we only need
                             # to check one of them to see if the current user can manage permissions on them.
@@ -971,10 +968,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 else:
                     created_ldda_ids = ''
                     message = "Upload failed"
-                    status='error'
+                    status = 'error'
                     if cntrller == 'api':
                         return 400, message
-                    response_code = 400
                 trans.response.send_redirect( web.url_for( controller='library_common',
                                                            action='browse_library',
                                                            cntrller=cntrller,
@@ -1048,7 +1044,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
-        errors = tool.update_state( trans, tool.inputs_by_page[0], state.inputs, kwd )
+        tool.update_state( trans, tool.inputs_by_page[0], state.inputs, kwd )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
@@ -1057,7 +1053,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         # Library-specific params
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         server_dir = kwd.get( 'server_dir', '' )
         if replace_dataset not in [ None, 'None' ]:
             replace_id = trans.security.encode_id( replace_dataset.id )
@@ -1135,9 +1130,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
 
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         link_data_only = params.get( 'link_data_only', 'copy_files' )
-        uuid_str =  params.get( 'uuid', None )
+        uuid_str = params.get( 'uuid', None )
         file_type = params.get( 'file_type', None )
-        library_bunch.replace_dataset = None # not valid for these types of upload
+        library_bunch.replace_dataset = None  # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
         new_name = name
         # Remove compressed file extensions, if any, but only if
@@ -1292,8 +1287,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         roles = kwd.get( 'roles', '' )
         is_admin = trans.user_is_admin() and cntrller in ( 'library_admin', 'api' )
         current_user_roles = trans.get_current_user_roles()
-        widgets = []
-        widget_fields_have_contents = False
         info_association, inherited = None, None
         template_id = "None"
         if replace_id not in [ None, 'None' ]:
@@ -1308,8 +1301,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
             info_association, inherited = replace_dataset.library_dataset_dataset_association.get_info_association()
             if info_association and ( not( inherited ) or info_association.inheritable ):
-                widgets = replace_dataset.library_dataset_dataset_association.get_template_widgets( trans )
-                widget_fields_have_contents = self.widget_fields_have_contents( widgets )
                 template_id = str( info_association.template.id )
         else:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( trans.security.decode_id( folder_id ) )
@@ -1413,13 +1404,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                             # to check one of them to see if the current user can manage permissions on them.
                             check_ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id_list[0] )
                             if trans.app.security_agent.can_manage_library_item( current_user_roles, check_ldda ):
-                                if replace_dataset:
-                                    default_action = ''
-                                else:
+                                if not replace_dataset:
                                     message += "Click the Go button at the bottom of this page to edit the permissions on these datasets if necessary."
-                                    default_action = 'manage_permissions'
-                            else:
-                                default_action = 'import_to_current_history'
                     return trans.response.send_redirect( web.url_for( controller='library_common',
                                                                       action='browse_library',
                                                                       cntrller=cntrller,
@@ -1435,9 +1421,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 # Send list of data formats to the upload form so the "extension" select list can be populated dynamically
                 file_formats = trans.app.datatypes_registry.upload_file_formats
                 # Send list of genome builds to the form so the "dbkey" select list can be populated dynamically
+
                 def get_dbkey_options( last_used_build ):
                     for dbkey, build_name in trans.app.genome_builds.get_genome_build_names( trans=trans ):
-                        yield build_name, dbkey, ( dbkey==last_used_build )
+                        yield build_name, dbkey, ( dbkey == last_used_build )
                 dbkeys = get_dbkey_options( last_used_build )
                 # Send the current history to the form to enable importing datasets from history to library
                 history = trans.get_history()
@@ -1511,7 +1498,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 elif option_value == 'upload_paths':
                     if not is_admin or not trans.app.config.allow_library_path_paste:
                         continue
-                upload_option_select_list.add_option( option_label, option_value, selected=option_value==upload_option )
+                upload_option_select_list.add_option( option_label, option_value, selected=option_value == upload_option )
         return upload_option_select_list
 
     @web.expose
@@ -1532,7 +1519,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             # is composite - must return a zip of contents and the html file itself - ugh - should be reversible at upload!
             # use act_on_multiple_datasets( self, trans, cntrller, library_id, ldda_ids='', **kwd ) since it does what we need
             kwd['do_action'] = 'zip'
-            return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=[id,], **kwd )
+            return self.act_on_multiple_datasets( trans, cntrller, library_id, ldda_ids=[id, ], **kwd )
         else:
             trans.response.set_content_type( ldda.get_mime() )
             fStat = os.stat( ldda.file_name )
@@ -1569,7 +1556,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         self._check_access( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
         if kwd.get( 'edit_attributes_button', False ):
             self._check_modify( trans, cntrller, is_admin, library_dataset, current_user_roles, use_panels, library_id, show_deleted )
-            old_name = library_dataset.name
             new_name = kwd.get( 'name', '' )
             new_info = kwd.get( 'info', '' )
             if not new_name:
@@ -1704,8 +1690,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             def __init__( self, url_base ):
                 self.files = {}
                 self.url_base = url_base
+
             def add( self, file, relpath ):
                 self.files[file] = relpath
+
             def __str__( self ):
                 rval = ''
                 for fname, relpath in self.files.items():
@@ -1834,10 +1822,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     message += "Deleted %i %s." % ( num_valid_lddas, inflector.cond_plural( num_valid_lddas, "dataset" ) )
                 else:
                     message = "You are not authorized to delete any of the selected datasets."
-            elif action in [ 'zip','tgz','tbz','ngxzip' ]:
+            elif action in [ 'zip', 'tgz', 'tbz', 'ngxzip' ]:
                 error = False
                 killme = string.punctuation + string.whitespace
-                trantab = string.maketrans(killme,'_'*len(killme))
+                trantab = string.maketrans(killme, '_' * len(killme))
                 try:
                     outext = 'zip'
                     if action == 'zip':
@@ -1868,10 +1856,10 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                     message = "Unable to create archive for download, please report this error"
                     status = 'error'
                 except:
-                     error = True
-                     log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0] )
-                     message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
-                     status = 'error'
+                    error = True
+                    log.exception( "Unexpected error %s in create archive for download" % sys.exc_info()[0] )
+                    message = "Unable to create archive for download, please report - %s" % sys.exc_info()[0]
+                    status = 'error'
                 if not error:
                     composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
                     seen = []
@@ -1893,34 +1881,34 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         while path in seen:
                             path += '_'
                         seen.append( path )
-                        zpath = os.path.split(path)[-1] # comes as base_name/fname
-                        outfname,zpathext = os.path.splitext(zpath)
+                        zpath = os.path.split(path)[-1]  # comes as base_name/fname
+                        outfname, zpathext = os.path.splitext(zpath)
                         if is_composite:
                             # need to add all the components from the extra_files_path to the zip
                             if zpathext == '':
-                                zpath = '%s.html' % zpath # fake the real nature of the html file
+                                zpath = '%s.html' % zpath  # fake the real nature of the html file
                             try:
-                                archive.add(ldda.dataset.file_name,zpath) # add the primary of a composite set
+                                archive.add(ldda.dataset.file_name, zpath)  # add the primary of a composite set
                             except IOError:
                                 error = True
                                 log.exception( "Unable to add composite parent %s to temporary library download archive" % ldda.dataset.file_name)
                                 message = "Unable to create archive for download, please report this error"
                                 status = 'error'
                                 continue
-                            flist = glob.glob(os.path.join(ldda.dataset.extra_files_path,'*.*')) # glob returns full paths
+                            flist = glob.glob(os.path.join(ldda.dataset.extra_files_path, '*.*'))  # glob returns full paths
                             for fpath in flist:
-                                efp,fname = os.path.split(fpath)
+                                efp, fname = os.path.split(fpath)
                                 if fname > '':
                                     fname = fname.translate(trantab)
                                 try:
-                                    archive.add( fpath,fname )
+                                    archive.add( fpath, fname )
                                 except IOError:
                                     error = True
-                                    log.exception( "Unable to add %s to temporary library download archive %s" % (fname,outfname))
+                                    log.exception( "Unable to add %s to temporary library download archive %s" % (fname, outfname))
                                     message = "Unable to create archive for download, please report this error"
                                     status = 'error'
                                     continue
-                        else: # simple case
+                        else:  # simple case
                             try:
                                 archive.add( ldda.dataset.file_name, path )
                             except IOError:
@@ -1938,19 +1926,19 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         if action == 'zip':
                             archive.close()
                             trans.response.set_content_type( "application/x-zip-compressed" )
-                            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname,outext)
+                            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname, outext)
                             archive = util.streamball.ZipBall(tmpf, tmpd)
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                             return archive.stream
                         elif action == 'ngxzip':
                             trans.response.set_content_type( "application/zip" )
-                            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname,outext)
+                            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname, outext)
                             trans.response.headers[ "X-Archive-Files" ] = "zip"
                             return archive
                         else:
                             trans.response.set_content_type( "application/x-tar" )
-                            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname,outext)
+                            trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.%s"' % (fname, outext)
                             archive.wsgi_status = trans.response.wsgi_status()
                             archive.wsgi_headeritems = trans.response.wsgi_headeritems()
                             return archive.stream
@@ -2011,7 +1999,9 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             ldda_ids = map( trans.security.decode_id, ldda_ids )
         if target_history_ids:
             target_history_ids = util.listify( target_history_ids )
-            target_history_ids = set( [ trans.security.decode_id( target_history_id ) for target_history_id in target_history_ids if target_history_id ] )
+            target_history_ids = set(
+                [ trans.security.decode_id( thid )
+                    for thid in target_history_ids if thid ] )
         elif target_history_id:
             target_history_ids = [ trans.security.decode_id( target_history_id ) ]
         if kwd.get( 'import_datasets_to_histories_button', False ):
@@ -2051,7 +2041,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                         invalid_datasets += 1
                     else:
                         for target_history in target_histories:
-                            hda = ldda.to_history_dataset_association( target_history=target_history, add_to_history=True )
+                            ldda.to_history_dataset_association( target_history=target_history, add_to_history=True )
                             if not flush_needed:
                                 flush_needed = True
                 if flush_needed:
@@ -2087,7 +2077,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             message = 'You must have a history before you can import datasets.  You can do this by loading the analysis interface.'
             status = 'error'
         if user:
-           target_histories = user.active_histories
+            target_histories = user.active_histories
         if action == 'import_to_current_history' and library_id:
             # To streamline this as much as possible, go back to browsing the library.
             return trans.response.send_redirect( web.url_for( controller='library_common',
@@ -2116,7 +2106,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         is_admin = ( trans.user_is_admin() and cntrller == 'library_admin' )
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -2314,12 +2303,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                 if include:
                     filtered_folders.append( folder )
             target_library_folders = filtered_folders
+
         def __build_target_library_id_select_field( trans, selected_value='none' ):
             # Get all the libraries for which the current user can add items.
             target_libraries = []
             if is_admin:
                 for library in trans.sa_session.query( trans.model.Library ) \
-                                               .filter( trans.model.Library.deleted == False ) \
+                                               .filter( trans.model.Library.deleted == false() ) \
                                                .order_by( trans.model.Library.table.c.name ):
                     if source_library is None or library.id != source_library.id:
                         target_libraries.append( library )
@@ -2338,6 +2328,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
                                        select_field_name='target_library_id',
                                        selected_value=selected_value,
                                        refresh_on_change=True )
+
         def __build_target_folder_id_select_field( trans, folders, selected_value='none' ):
             for folder in folders:
                 if not folder.parent:
@@ -2516,7 +2507,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
             if not item:
                 message = "Invalid history dataset (%s) specified." % escape( str( item ) )
                 can_access = False
-            elif not trans.app.security_agent.can_access_dataset( current_user_roles, item.dataset ) and item.history.user==trans.user:
+            elif not trans.app.security_agent.can_access_dataset( current_user_roles, item.dataset ) and item.history.user == trans.user:
                 message = "You do not have permission to access the history dataset with id (%s)." % str( item.id )
                 can_access = False
         else:
@@ -2571,7 +2562,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
     def _check_manage( self, trans, cntrller, is_admin, item, current_user_roles, use_panels, library_id, show_deleted ):
         if isinstance( item, trans.model.LibraryDataset ):
             # Deny access if the user is not an admin and does not have the LIBRARY_MANAGE and DATASET_MANAGE_PERMISSIONS permissions.
-            if not ( is_admin or \
+            if not ( is_admin or
                      ( trans.app.security_agent.can_manage_library_item( current_user_roles, item ) and
                        trans.app.security_agent.can_manage_dataset( current_user_roles, item.library_dataset_dataset_association.dataset ) ) ):
                 message = "You are not authorized to manage permissions on library dataset (%s)." % escape( item.name )
@@ -2614,6 +2605,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
 
 # ---- Utility methods -------------------------------------------------------
 
+
 def active_folders( trans, folder ):
     # Much faster way of retrieving all active sub-folders within a given folder than the
     # performance of the mapper.  This query also eagerloads the permissions on each folder.
@@ -2623,12 +2615,14 @@ def active_folders( trans, folder ):
                            .order_by( trans.app.model.LibraryFolder.table.c.name ) \
                            .all()
 
+
 def activatable_folders( trans, folder ):
     return trans.sa_session.query( trans.app.model.LibraryFolder ) \
                            .filter_by( parent=folder, purged=False ) \
                            .options( eagerload_all( "actions" ) ) \
                            .order_by( trans.app.model.LibraryFolder.table.c.name ) \
                            .all()
+
 
 def map_library_datasets_to_lddas( trans, lib_datasets ):
     '''
@@ -2650,6 +2644,7 @@ def map_library_datasets_to_lddas( trans, lib_datasets ):
         ret_lddas[ldda.library_dataset_id] = ldda
     return ret_lddas
 
+
 def datasets_for_lddas( trans, lddas ):
     '''
     Given a list of LDDAs, return a list of Datasets for them.
@@ -2660,14 +2655,16 @@ def datasets_for_lddas( trans, lddas ):
                                .all()
     return datasets
 
+
 def active_folders_and_library_datasets( trans, folder ):
     folders = active_folders( trans, folder )
-    library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
-                                       .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
-                                                      trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
-                                       .order_by( trans.model.LibraryDataset.table.c._name ) \
-                                       .all()
+    library_datasets = trans.sa_session.query( trans.model.LibraryDataset ).filter(
+        and_( trans.model.LibraryDataset.table.c.deleted == false(),
+        trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
+        .order_by( trans.model.LibraryDataset.table.c._name ) \
+        .all()
     return folders, library_datasets
+
 
 def activatable_folders_and_library_datasets( trans, folder ):
     folders = activatable_folders( trans, folder )
@@ -2677,10 +2674,11 @@ def activatable_folders_and_library_datasets( trans, folder ):
                                                 trans.model.LibraryDataset.table.c.library_dataset_dataset_association_id == trans.model.LibraryDatasetDatasetAssociation.table.c.id ) ) \
                                        .join( ( trans.model.Dataset.table,
                                                 trans.model.LibraryDatasetDatasetAssociation.table.c.dataset_id == trans.model.Dataset.table.c.id ) ) \
-                                       .filter( trans.model.Dataset.table.c.deleted == False ) \
+                                       .filter( trans.model.Dataset.table.c.deleted == false() ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
     return folders, library_datasets
+
 
 def branch_deleted( folder ):
     # Return True if a folder belongs to a branch that has been deleted
@@ -2690,19 +2688,21 @@ def branch_deleted( folder ):
         return branch_deleted( folder.parent )
     return False
 
+
 def get_containing_library_from_library_dataset( trans, library_dataset ):
     """Given a library_dataset, get the containing library"""
     folder = library_dataset.folder
     while folder.parent:
         folder = folder.parent
     # We have folder set to the library's root folder, which has the same name as the library
-    for library in trans.sa_session.query( trans.model.Library ) \
-                                   .filter( and_( trans.model.Library.table.c.deleted == False,
-                                                  trans.model.Library.table.c.name == folder.name ) ):
+    for library in trans.sa_session.query( trans.model.Library ).filter(
+        and_( trans.model.Library.table.c.deleted == false(),
+            trans.model.Library.table.c.name == folder.name ) ):
         # Just to double-check
         if library.root_folder == folder:
             return library
     return None
+
 
 def get_comptypes( trans ):
     comptypes_t = comptypes
@@ -2717,6 +2717,7 @@ def get_comptypes( trans ):
             pass
     return comptypes_t
 
+
 def get_sorted_accessible_library_items( trans, cntrller, items, sort_attr ):
     is_admin = trans.user_is_admin() and cntrller == 'library_admin'
     if is_admin:
@@ -2730,6 +2731,7 @@ def get_sorted_accessible_library_items( trans, cntrller, items, sort_attr ):
                 accessible_items.append( item )
     # Sort by name
     return sort_by_attr( [ item for item in accessible_items ], sort_attr )
+
 
 def sort_by_attr( seq, attr ):
     """
@@ -2747,6 +2749,7 @@ def sort_by_attr( seq, attr ):
     intermed.sort()
     return map( operator.getitem, intermed, ( -1, ) * len( intermed ) )
 
+
 def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     """Return display of results from a full-text lucene search of data libraries."""
     message = escape( kwd.get( 'message', '' ) )
@@ -2757,6 +2760,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     response.close()
     lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
+
 
 def whoosh_search( trans, cntrller, search_term, **kwd ):
     """Return display of results from a full-text whoosh search of data libraries."""

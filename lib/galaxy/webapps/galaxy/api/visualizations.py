@@ -32,15 +32,15 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         rval = []
         user = trans.user
 
-        #TODO: search for: title, made by user, creation time range, type (vis name), dbkey, etc.
-        #TODO: limit, offset, order_by
-        #TODO: deleted
+        # TODO: search for: title, made by user, creation time range, type (vis name), dbkey, etc.
+        # TODO: limit, offset, order_by
+        # TODO: deleted
 
         # this is the default search - user's vis, vis shared with user, published vis
-        visualizations  = self.get_visualizations_by_user( trans, user )
+        visualizations = self.get_visualizations_by_user( trans, user )
         visualizations += self.get_visualizations_shared_with_user( trans, user )
         visualizations += self.get_published_visualizations( trans, exclude_user=user )
-        #TODO: the admin case - everything
+        # TODO: the admin case - everything
 
         for visualization in visualizations:
             item = self.get_visualization_summary_dict( visualization )
@@ -55,21 +55,21 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         """
         GET /api/visualizations/{viz_id}
         """
-        #TODO: revisions should be a contents/nested controller like viz/xxx/r/xxx)?
+        # TODO: revisions should be a contents/nested controller like viz/xxx/r/xxx)?
         # the important thing is the config
         rval = {}
-        #TODO:?? /api/visualizations/registry -> json of registry.listings?
+        # TODO:?? /api/visualizations/registry -> json of registry.listings?
 
         visualization = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         dictionary = trans.security.encode_dict_ids( self.get_visualization_dict( visualization ) )
         dictionary[ 'url' ] = web.url_for( controller='visualization',
-            action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug )
+                                           action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug )
         dictionary[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, trans.user, visualization )
 
         # need to encode ids in revisions as well
         encoded_revisions = []
         for revision in dictionary[ 'revisions' ]:
-            #NOTE: does not encode ids inside the configs
+            # NOTE: does not encode ids inside the configs
             encoded_revisions.append( trans.security.encode_id( revision ) )
         dictionary[ 'revisions' ] = encoded_revisions
         dictionary[ 'latest_revision' ] = trans.security.encode_dict_ids( dictionary[ 'latest_revision' ] )
@@ -123,19 +123,19 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         #   that needs to be handled clearly here
         # or alternately, using a different controller like PUT /api/visualizations/{id}/r/{id}
 
-        #TODO: consider allowing direct alteration of revisions title (without a new revision)
+        # TODO: consider allowing direct alteration of revisions title (without a new revision)
         #   only create a new revsion on a different config
 
         # only update owned visualizations
         visualization = self.get_visualization( trans, id, check_ownership=True )
-        title  = payload.get( 'title',  visualization.latest_revision.title )
-        dbkey  = payload.get( 'dbkey',  visualization.latest_revision.dbkey )
+        title = payload.get( 'title', visualization.latest_revision.title )
+        dbkey = payload.get( 'dbkey', visualization.latest_revision.dbkey )
         config = payload.get( 'config', visualization.latest_revision.config )
 
         latest_config = visualization.latest_revision.config
-        if( ( title != visualization.latest_revision.title )
-        or  ( dbkey != visualization.latest_revision.dbkey )
-        or  ( util.json.dumps( config ) != util.json.dumps( latest_config ) ) ):
+        if( ( title != visualization.latest_revision.title ) or
+                ( dbkey != visualization.latest_revision.dbkey ) or
+                ( util.json.dumps( config ) != util.json.dumps( latest_config ) ) ):
             revision = self.add_visualization_revision( trans, visualization, config, title, dbkey )
             rval = { 'id' : id, 'revision' : revision.id }
 
@@ -160,46 +160,46 @@ class VisualizationsController( BaseAPIController, UsesVisualizationMixin, Shara
         #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
         valid_but_uneditable_keys = (
             'id', 'model_class'
-            #TODO: fill out when we create to_dict, get_dict, whatevs
+            # TODO: fill out when we create to_dict, get_dict, whatevs
         )
-        #TODO: deleted
-        #TODO: importable
+        # TODO: deleted
+        # TODO: importable
         ValidationError = exceptions.RequestParameterInvalidException
 
         validated_payload = {}
         for key, val in payload.items():
-            #TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
-            if  key == 'type':
+            # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
+            if key == 'type':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValidationError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
+                    raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'config':
                 if not isinstance( val, dict ):
-                    raise ValidationError( '%s must be a dictionary: %s' %( key, str( type( val ) ) ) )
+                    raise ValidationError( '%s must be a dictionary: %s' % ( key, str( type( val ) ) ) )
 
             elif key == 'annotation':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValidationError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
+                    raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)
             elif key == 'title':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValidationError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
+                    raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'slug':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValidationError( '%s must be a string: %s' %( key, str( type( val ) ) ) )
+                    raise ValidationError( '%s must be a string: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'dbkey':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
-                    raise ValidationError( '%s must be a string or unicode: %s' %( key, str( type( val ) ) ) )
+                    raise ValidationError( '%s must be a string or unicode: %s' % ( key, str( type( val ) ) ) )
                 val = util.sanitize_html.sanitize_html( val, 'utf-8' )
 
             elif key not in valid_but_uneditable_keys:
                 continue
-                #raise AttributeError( 'unknown key: %s' %( str( key ) ) )
+                # raise AttributeError( 'unknown key: %s' %( str( key ) ) )
 
             validated_payload[ key ] = val
         return validated_payload

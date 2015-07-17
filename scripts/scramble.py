@@ -1,4 +1,6 @@
-import os, sys, logging
+import logging
+import os
+import sys
 from optparse import OptionParser
 
 parser = OptionParser()
@@ -14,7 +16,7 @@ root = logging.getLogger()
 root.setLevel( 10 )
 root.addHandler( logging.StreamHandler( sys.stdout ) )
 
-lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), "..", "lib" ) )
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, "lib" ) )
 sys.path.insert( 1, lib )
 
 from galaxy.eggs.scramble import ScrambleCrate, ScrambleFailure, EggNotFetchable

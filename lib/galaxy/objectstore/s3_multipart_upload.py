@@ -42,12 +42,12 @@ def mp_from_ids(s3server, mp_id, mp_keyname, mp_bucketname):
     """
     if s3server['host']:
         conn = boto.connect_s3(aws_access_key_id=s3server['access_key'],
-                                    aws_secret_access_key=s3server['secret_key'],
-                                    is_secure=s3server['is_secure'],
-                                    host=s3server['host'],
-                                    port=s3server['port'],
-                                    calling_format=boto.s3.connection.OrdinaryCallingFormat(),
-                                    path=s3server['conn_path'])
+                               aws_secret_access_key=s3server['secret_key'],
+                               is_secure=s3server['is_secure'],
+                               host=s3server['host'],
+                               port=s3server['port'],
+                               calling_format=boto.s3.connection.OrdinaryCallingFormat(),
+                               path=s3server['conn_path'])
     else:
         conn = S3Connection(s3server['access_key'], s3server['secret_key'])
 
@@ -75,7 +75,7 @@ def multipart_upload(s3server, bucket, s3_key_name, tarball, mb_size):
 
     def split_file(in_file, mb_size, split_num=5):
         prefix = os.path.join(os.path.dirname(in_file),
-                                "%sS3PART" % (os.path.basename(s3_key_name)))
+                              "%sS3PART" % (os.path.basename(s3_key_name)))
         max_chunk = s3server['max_chunk_size']
         # Split chunks so they are 5MB < chunk < 250MB(max_chunk_size)
         split_size = int(max(min(mb_size / (split_num * 2.0), max_chunk), 5))

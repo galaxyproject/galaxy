@@ -1,16 +1,18 @@
 import calendar
+import logging
 from collections import namedtuple
 from datetime import datetime, date, timedelta
-from galaxy.web.base.controller import BaseUIController, web
-from galaxy import model, util
-from galaxy.web.framework.helpers import grids
-from galaxy.model.orm import and_, not_, or_
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
+
+from galaxy import eggs
+eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
+from sqlalchemy import and_, not_, or_
+
+from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, web
+from galaxy.web.framework.helpers import grids
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
-import logging
 log = logging.getLogger( __name__ )
 
 

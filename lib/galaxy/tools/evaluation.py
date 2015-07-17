@@ -185,7 +185,7 @@ class ToolEvaluator( object ):
                         # Input that converter is based from has a value,
                         # but converted dataset does not exist
                         raise Exception( 'A path for explicit datatype conversion has not been found: %s --/--> %s'
-                            % ( input_values[ input.name ].extension, conversion_extensions ) )
+                                         % ( input_values[ input.name ].extension, conversion_extensions ) )
                     else:
                         # Trick wrapper into using target conv ext (when
                         # None) without actually being a tool parameter

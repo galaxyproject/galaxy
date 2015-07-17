@@ -1,16 +1,20 @@
-from datetime import datetime, date, timedelta
 import calendar
+import logging
 import operator
-from galaxy.web.base.controller import BaseUIController, web
+from datetime import datetime, date, timedelta
+
+from galaxy import eggs
+eggs.require('MarkupSafe')
+from markupsafe import escape
+eggs.require( "SQLAlchemy >= 0.4" )
+import sqlalchemy as sa
+from sqlalchemy import false
+
 import galaxy.model
 from galaxy import util
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-import sqlalchemy as sa
-from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+from galaxy.web.base.controller import BaseUIController, web
 from galaxy.webapps.reports.controllers.jobs import sorter
-import logging
-from markupsafe import escape
+from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
 log = logging.getLogger( __name__ )
 
@@ -122,11 +126,11 @@ class Users( BaseUIController, ReportQueryBuilder ):
         def name_to_num(name):
             num = None
 
-            if name != None and name.lower() == 'zero':
+            if name is not None and name.lower() == 'zero':
                 num = 0
             else:
                 num = 1
-                
+
             return num
 
         if order == "desc":
@@ -140,7 +144,7 @@ class Users( BaseUIController, ReportQueryBuilder ):
         cutoff_time = datetime.utcnow() - timedelta( days=int( days_not_logged_in ) )
         users = []
         for user in trans.sa_session.query( galaxy.model.User ) \
-                                    .filter( galaxy.model.User.table.c.deleted == False ) \
+                                    .filter( galaxy.model.User.table.c.deleted == false() ) \
                                     .order_by( galaxy.model.User.table.c.email ):
             if user.galaxy_sessions:
                 last_galaxy_session = user.galaxy_sessions[ 0 ]
@@ -165,12 +169,12 @@ class Users( BaseUIController, ReportQueryBuilder ):
         sort_id = specs.sort_id
         order = specs.order
         arrow = specs.arrow
-        
+
         if order == "desc":
             _order = True
         else:
             _order = False
-        
+
         user_cutoff = int( kwd.get( 'user_cutoff', 60 ) )
         # disk_usage isn't indexed
         users = sorted( trans.sa_session.query( galaxy.model.User ).all(), key=operator.attrgetter( str(sort_id) ), reverse=_order )

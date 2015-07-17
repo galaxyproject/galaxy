@@ -4,8 +4,10 @@
 # eg lped/eigen/fbat/snpmatrix all to pbed
 # and pbed to lped/eigen/fbat/snpmatrix ?
 # that's a lot of converters
-import sys,os,time,subprocess
-
+import sys
+import os
+import time
+import subprocess
 
 prog = os.path.split(sys.argv[0])[-1]
 myversion = 'Oct 10 2009'
@@ -23,53 +25,54 @@ galhtmlprefix = """<?xml version="1.0" encoding="utf-8" ?>
 <div class="document">
 """
 
+
 def timenow():
     """return current time as a string
     """
     return time.strftime('%d/%m/%Y %H:%M:%S', time.localtime(time.time()))
 
-def getMissval(inped=''):
-   """
-   read some lines...ugly hack - try to guess missing value
-   should be N or 0 but might be . or -
-   """
-   commonmissvals = {'N':'N','0':'0','n':'n','9':'9','-':'-','.':'.'}
-   try:
-       f = file(inped,'r')
-   except:
-       return None # signal no in file
-   missval = None
-   while missval == None: # doggedly continue until we solve the mystery
-        try:
-          l = f.readline()
-        except:
-          break
-        ll = l.split()[6:] # ignore pedigree stuff
-        for c in ll:
-            if commonmissvals.get(c,None):
-               missval = c
-               f.close()
-               return missval
-   if not missval:
-       missval = 'N' # punt
-   f.close()
-   return missval
 
-def rgConv(inpedfilepath,outhtmlname,outfilepath,plink):
+def getMissval(inped=''):
+    """
+    read some lines...ugly hack - try to guess missing value
+    should be N or 0 but might be . or -
+    """
+    commonmissvals = {'N': 'N', '0': '0', 'n': 'n', '9': '9', '-': '-', '.': '.'}
+    try:
+        f = file(inped, 'r')
+    except:
+        return None  # signal no in file
+    missval = None
+    while missval is None:  # doggedly continue until we solve the mystery
+        try:
+            l = f.readline()
+        except:
+            break
+        ll = l.split()[6:]  # ignore pedigree stuff
+        for c in ll:
+            if commonmissvals.get(c, None):
+                missval = c
+                f.close()
+                return missval
+    if not missval:
+        missval = 'N'  # punt
+    f.close()
+    return missval
+
+
+def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
     """
     """
     pedf = '%s.ped' % inpedfilepath
-    basename = os.path.split(inpedfilepath)[-1] # get basename
-    outroot = os.path.join(outfilepath,basename)
-    missval = getMissval(inped = pedf)
+    basename = os.path.split(inpedfilepath)[-1]  # get basename
+    outroot = os.path.join(outfilepath, basename)
+    missval = getMissval(inped=pedf)
     if not missval:
         print '### lped_to_pbed_converter.py cannot identify missing value in %s' % pedf
         missval = '0'
-    cl = '%s --noweb --file %s --make-bed --out %s --missing-genotype %s' % (plink,inpedfilepath,outroot,missval)
-    p = subprocess.Popen(cl,shell=True,cwd=outfilepath)
-    retval = p.wait() # run plink
-
-
+    cl = '%s --noweb --file %s --make-bed --out %s --missing-genotype %s' % (plink, inpedfilepath, outroot, missval)
+    p = subprocess.Popen(cl, shell=True, cwd=outfilepath)
+    p.wait()  # run plink
 
 
 def main():
@@ -82,7 +85,7 @@ def main():
     """
     nparm = 4
     if len(sys.argv) < nparm:
-        sys.stderr.write('## %s called with %s - needs %d parameters \n' % (prog,sys.argv,nparm))
+        sys.stderr.write('## %s called with %s - needs %d parameters \n' % (prog, sys.argv, nparm))
         sys.exit(1)
     inpedfilepath = sys.argv[1]
     outhtmlname = sys.argv[2]
@@ -92,19 +95,18 @@ def main():
     except:
         pass
     plink = sys.argv[4]
-    rgConv(inpedfilepath,outhtmlname,outfilepath,plink)
-    f = file(outhtmlname,'w')
+    rgConv(inpedfilepath, outhtmlname, outfilepath, plink)
+    f = file(outhtmlname, 'w')
     f.write(galhtmlprefix % prog)
     flist = os.listdir(outfilepath)
-    s = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog,timenow()) # becomes info
+    s = '## Rgenetics: http://rgenetics.org Galaxy Tools %s %s' % (prog, timenow())  # becomes info
     print s
     f.write('<div>%s\n<ol>' % (s))
     for i, data in enumerate( flist ):
-        f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1],os.path.split(data)[-1]))
+        f.write('<li><a href="%s">%s</a></li>\n' % (os.path.split(data)[-1], os.path.split(data)[-1]))
     f.write("</div></body></html>")
     f.close()
 
 
-
 if __name__ == "__main__":
-   main()
+    main()

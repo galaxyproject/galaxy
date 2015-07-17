@@ -1,10 +1,10 @@
 
 import inspect
-import pprint
 import time
 
 import logging
 log = logging.getLogger( __name__ )
+
 
 def stack_trace_string( max_depth=None, line_format="{index}:{file}:{function}:{line}" ):
     """
@@ -16,8 +16,10 @@ def stack_trace_string( max_depth=None, line_format="{index}:{file}:{function}:{
     stack_list = []
     for index, caller in enumerate( inspect.stack() ):
         # don't include this function
-        if index == 0: continue
-        if max_depth and index > max_depth: break
+        if index == 0:
+            continue
+        if max_depth and index > max_depth:
+            break
 
         caller_data = {
             'index'     : str( index ),
@@ -45,7 +47,7 @@ class SimpleProfiler( object ):
     def start( self, msg=None ):
         msg = msg or 'Start'
         self.start_time = time.time()
-        report = self.REPORT_FORMAT %( self.start_time, msg )
+        report = self.REPORT_FORMAT % ( self.start_time, msg )
         self.reports.append( report )
         if self.log:
             self.log( report )
@@ -54,7 +56,7 @@ class SimpleProfiler( object ):
         if not self.start_time:
             self.start()
         duration = time.time() - self.start_time
-        report = self.REPORT_FORMAT %( duration, msg )
+        report = self.REPORT_FORMAT % ( duration, msg )
         self.reports.append( report )
         if self.log:
             self.log( report )

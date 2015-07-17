@@ -24,15 +24,15 @@ log.addHandler( handler )
 metadata = MetaData()
 
 ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_id", String( 255 ) ),
-    Column( "tool_version", TEXT ),
-    Column( "tool_shed", TrimmedString( 255 ) ),
-    Column( "repository_owner", TrimmedString( 255 ) ),
-    Column( "repository_name", TrimmedString( 255 ) ),
-    Column( "guid", TEXT, index=True, unique=True ) )
+                             Column( "id", Integer, primary_key=True ),
+                             Column( "create_time", DateTime, default=now ),
+                             Column( "update_time", DateTime, default=now, onupdate=now ),
+                             Column( "tool_id", String( 255 ) ),
+                             Column( "tool_version", TEXT ),
+                             Column( "tool_shed", TrimmedString( 255 ) ),
+                             Column( "repository_owner", TrimmedString( 255 ) ),
+                             Column( "repository_name", TrimmedString( 255 ) ),
+                             Column( "guid", TEXT, index=True, unique=True ) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

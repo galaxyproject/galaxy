@@ -49,9 +49,6 @@ class CondorJobRunner( AsynchronousJobRunner ):
         if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
             return
 
-        # command line has been added to the wrapper by prepare_job()
-        command_line = job_wrapper.runner_command_line
-
         # get configured job destination
         job_destination = job_wrapper.job_destination
 
@@ -96,7 +93,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             fh = file( executable, "w" )
             fh.write( script )
             fh.close()
-            os.chmod( executable, 0750 )
+            os.chmod( executable, 0o750 )
         except:
             job_wrapper.fail( "failure preparing job script", exception=True )
             log.exception( "(%s) failure preparing job script" % galaxy_id_tag )
@@ -177,7 +174,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             if not job_running and cjs.running:
                 log.debug( "(%s/%s) job has stopped running" % ( galaxy_id_tag, job_id ) )
                 # Will switching from RUNNING to QUEUED confuse Galaxy?
-                #cjs.job_wrapper.change_state( model.Job.states.QUEUED )
+                # cjs.job_wrapper.change_state( model.Job.states.QUEUED )
             if job_complete:
                 if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
                     external_metadata = not asbool( cjs.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )

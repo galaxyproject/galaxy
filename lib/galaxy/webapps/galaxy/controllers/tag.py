@@ -12,6 +12,7 @@ from sqlalchemy.sql.expression import and_, func
 import logging
 log = logging.getLogger( __name__ )
 
+
 class TagsController ( BaseUIController, UsesTagsMixin ):
 
     @web.expose

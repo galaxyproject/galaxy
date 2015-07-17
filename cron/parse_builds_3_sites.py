@@ -3,23 +3,19 @@
 Connects to sites and determines which builds are available at each.
 """
 
-import sys
 import urllib
 import xml.etree.ElementTree as ElementTree
 
 sites = ['http://genome.ucsc.edu/cgi-bin/',
-        'http://archaea.ucsc.edu/cgi-bin/',
-        'http://genome-test.cse.ucsc.edu/cgi-bin/'
-]
-names = ['main',
-        'archaea',
-        'test'
-]
+         'http://archaea.ucsc.edu/cgi-bin/',
+         'http://genome-test.cse.ucsc.edu/cgi-bin/']
+names = ['main', 'archaea', 'test']
+
 
 def main():
     for i in range(len(sites)):
-        site = sites[i]+"das/dsn"
-        trackurl = sites[i]+"hgTracks?"
+        site = sites[i] + "das/dsn"
+        trackurl = sites[i] + "hgTracks?"
         builds = []
         try:
             page = urllib.urlopen(site)
@@ -32,17 +28,17 @@ def main():
         except:
             print "#Invalid xml passed back from " + site
             continue
-        print "#Harvested from",site
+        print "#Harvested from", site
 
         for dsn in tree:
             build = dsn.find("SOURCE").attrib['id']
             builds.append(build)
             build_dict = {}
         for build in builds:
-            build_dict[build]=0
+            build_dict[build] = 0
             builds = build_dict.keys()
-        yield [names[i],trackurl,builds]
+        yield [names[i], trackurl, builds]
 
 if __name__ == "__main__":
     for site in main():
-        print site[0]+"\t"+site[1]+"\t"+",".join(site[2])
+        print site[0] + "\t" + site[1] + "\t" + ",".join(site[2])

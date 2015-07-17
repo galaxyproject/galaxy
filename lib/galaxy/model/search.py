@@ -32,11 +32,11 @@ eggs.require("Parsley")
 import parsley
 
 from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation,
-History, Library, LibraryFolder, LibraryDataset, StoredWorkflowTagAssociation,
-StoredWorkflow, HistoryTagAssociation, HistoryDatasetAssociationTagAssociation,
-ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter,
-JobToInputLibraryDatasetAssociation, JobToInputDatasetAssociation, JobToOutputDatasetAssociation,
-Page, PageRevision)
+                          History, Library, LibraryFolder, LibraryDataset, StoredWorkflowTagAssociation,
+                          StoredWorkflow, HistoryTagAssociation, HistoryDatasetAssociationTagAssociation,
+                          ExtendedMetadata, ExtendedMetadataIndex, HistoryAnnotationAssociation, Job, JobParameter,
+                          JobToInputLibraryDatasetAssociation, JobToInputDatasetAssociation, JobToOutputDatasetAssociation,
+                          Page, PageRevision)
 from galaxy.model.tool_shed_install import ToolVersion
 
 from galaxy.util.json import dumps
@@ -317,11 +317,11 @@ class HistoryDatasetView(ViewQueryBaseClass):
         'history_id': ViewField('history_id', sqlalchemy_field=(HistoryDatasetAssociation, "history_id"), id_decode=True),
         'tag': ViewField("tag", handler=history_dataset_handle_tag),
         'copied_from_ldda_id': ViewField("copied_from_ldda_id",
-            sqlalchemy_field=(HistoryDatasetAssociation, "copied_from_library_dataset_dataset_association_id"),
-            id_decode=True),
+                                         sqlalchemy_field=(HistoryDatasetAssociation, "copied_from_library_dataset_dataset_association_id"),
+                                         id_decode=True),
         'copied_from_hda_id': ViewField("copied_from_hda_id",
-            sqlalchemy_field=(HistoryDatasetAssociation, "copied_from_history_dataset_association_id"),
-            id_decode=True),
+                                        sqlalchemy_field=(HistoryDatasetAssociation, "copied_from_history_dataset_association_id"),
+                                        id_decode=True),
         'deleted': ViewField('deleted', sqlalchemy_field=(HistoryDatasetAssociation, "deleted")),
         'extended_metadata': ViewField('extended_metadata', handler=history_dataset_extended_metadata_filter)
     }

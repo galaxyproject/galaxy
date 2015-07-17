@@ -20,10 +20,10 @@ def merge():
     parser = ConfigParser()
     for conf_file in conf_files:
         parser.read([join(conf_directory, conf_file)])
-    ## TODO: Expand enviroment variables here, that would
-    ## also make Galaxy much easier to configure. 
+    # TODO: Expand enviroment variables here, that would
+    # also make Galaxy much easier to configure.
 
-    destination= "config/galaxy.ini"
+    destination = "config/galaxy.ini"
     if len(argv) > 2:
         destination = argv[2]
 

@@ -7,7 +7,6 @@ import logging
 import os
 import string
 import subprocess
-import sys
 import time
 
 from galaxy import eggs
@@ -41,11 +40,11 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         global drmaa
 
         runner_param_specs = dict(
-            drmaa_library_path = dict( map = str, default = os.environ.get( 'DRMAA_LIBRARY_PATH', None ) ),
-            invalidjobexception_state = dict( map = str, valid = lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default = model.Job.states.OK ),
-            invalidjobexception_retries = dict( map = int, valid = lambda x: int >= 0, default = 0 ),
-            internalexception_state = dict( map = str, valid = lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default = model.Job.states.OK ),
-            internalexception_retries = dict( map = int, valid = lambda x: int >= 0, default = 0 ) )
+            drmaa_library_path=dict( map=str, default=os.environ.get( 'DRMAA_LIBRARY_PATH', None ) ),
+            invalidjobexception_state=dict( map=str, valid=lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default=model.Job.states.OK ),
+            invalidjobexception_retries=dict( map=int, valid=lambda x: int >= 0, default=0 ),
+            internalexception_state=dict( map=str, valid=lambda x: x in ( model.Job.states.OK, model.Job.states.ERROR ), default=model.Job.states.OK ),
+            internalexception_retries=dict( map=int, valid=lambda x: int >= 0, default=0 ) )
 
         if 'runner_param_specs' not in kwargs:
             kwargs[ 'runner_param_specs' ] = dict()
@@ -151,7 +150,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             fh = file( ajs.job_file, "w" )
             fh.write( script )
             fh.close()
-            os.chmod( ajs.job_file, 0755 )
+            os.chmod( ajs.job_file, 0o755 )
         except:
             job_wrapper.fail( "failure preparing job script", exception=True )
             log.exception( "(%s) failure writing job script" % galaxy_id_tag )
@@ -179,7 +178,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 try:
                     external_job_id = self.ds.runJob(jt)
                     break
-                except ( drmaa.InternalException, drmaa.DeniedByDrmException ), e:
+                except ( drmaa.InternalException, drmaa.DeniedByDrmException ) as e:
                     trynum += 1
                     log.warning( '(%s) drmaa.Session.runJob() failed, will retry: %s', galaxy_id_tag, e )
                     fail_msg = "Unable to run this job due to a cluster error, please retry it later"
@@ -208,7 +207,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 pwent = job_wrapper.galaxy_system_pwent
             log.debug( '(%s) submitting with credentials: %s [uid: %s]' % ( galaxy_id_tag, pwent[0], pwent[2] ) )
             filename = self.store_jobtemplate(job_wrapper, jt)
-            self.userid =  pwent[2]
+            self.userid = pwent[2]
             external_job_id = self.external_runjob(filename, pwent[2]).strip()
         log.info( "(%s) queued as %s" % ( galaxy_id_tag, external_job_id ) )
 
@@ -257,7 +256,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             try:
                 assert external_job_id not in ( None, 'None' ), '(%s/%s) Invalid job id' % ( galaxy_id_tag, external_job_id )
                 state = self.ds.jobStatus( external_job_id )
-            except ( drmaa.InternalException, drmaa.InvalidJobException ), e:
+            except ( drmaa.InternalException, drmaa.InvalidJobException ) as e:
                 if isinstance( e , drmaa.InvalidJobException ):
                     ecn = "InvalidJobException".lower()
                 else:
@@ -279,11 +278,11 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 else:
                     raise Exception( "%s is set to an invalid value (%s), this should not be possible. See galaxy.jobs.drmaa.__init__()", state_param, self.runner_params[ state_param ] )
                 continue
-            except drmaa.DrmCommunicationException, e:
+            except drmaa.DrmCommunicationException as e:
                 log.warning( "(%s/%s) unable to communicate with DRM: %s", galaxy_id_tag, external_job_id, e )
                 new_watched.append( ajs )
                 continue
-            except Exception, e:
+            except Exception as e:
                 # so we don't kill the monitor thread
                 log.exception( "(%s/%s) Unable to check job status: %s" % ( galaxy_id_tag, external_job_id, str( e ) ) )
                 log.warning( "(%s/%s) job will now be errored" % ( galaxy_id_tag, external_job_id ) )
@@ -296,7 +295,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 ajs.running = True
                 ajs.job_wrapper.change_state( model.Job.states.RUNNING )
             if state in ( drmaa.JobState.FAILED, drmaa.JobState.DONE ):
-                self._complete_terminal_job( ajs, drmaa_state = state )
+                self._complete_terminal_job( ajs, drmaa_state=state )
                 continue
             if ajs.check_limits():
                 self.work_queue.put( ( self.fail_job, ajs ) )
@@ -319,7 +318,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), ext_id ) )
         except drmaa.InvalidJobException:
             log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.get_id(), ext_id ) )
-        except Exception, e:
+        except Exception as e:
             log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.get_id(), ext_id, e ) )
 
     def recover( self, job, job_wrapper ):
@@ -357,7 +356,6 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 ajs.exit_code_file = "%s.drmec" % os.path.join(os.getcwd(), ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
                 ajs.job_file = job_file
 
-
     def store_jobtemplate(self, job_wrapper, jt):
         """ Stores the content of a DRMAA JobTemplate object in a file as a JSON string.
         Path is hard-coded, but it's no worse than other path in this module.
@@ -370,7 +368,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             except:
                 pass
         s = json.dumps(data)
-        f = open(filename,'w+')
+        f = open(filename, 'w+')
         f.write(s)
         f.close()
         log.debug( '(%s) Job script for external submission is: %s' % ( job_wrapper.job_id, filename ) )
@@ -390,10 +388,10 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         command.extend( [ str(username), jobtemplate_filename ] )
         log.info("Running command %s" % command)
         p = subprocess.Popen(command,
-                shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                             shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdoutdata, stderrdata) = p.communicate()
         exitcode = p.returncode
-        #os.unlink(jobtemplate_filename)
+        # os.unlink(jobtemplate_filename)
         if exitcode != 0:
             # There was an error in the child process
             raise RuntimeError("External_runjob failed (exit code %s)\nChild process reported error:\n%s" % (str(exitcode), stderrdata))
@@ -404,5 +402,3 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # the DRMAA job-ID. If not the case, will throw an error.
         jobId = stdoutdata
         return jobId
-
-

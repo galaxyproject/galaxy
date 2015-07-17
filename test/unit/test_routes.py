@@ -1,5 +1,3 @@
-#import routes
-
 # Unused but adds some stuff to routes.Mapper.
 from galaxy.web.framework.webapp import WebApplication
 from galaxy.webapps.galaxy import buildapp as galaxy_buildapp

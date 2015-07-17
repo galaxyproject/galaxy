@@ -217,7 +217,7 @@ class Browser:
         for item in self.history_contents:
             self.get(item['url'])
             hda = json.loads(tc.browser.get_html())
-            if hda['deleted'] == False:
+            if hda['deleted'] is False:
                 rval.append(hda)
         return rval
 

@@ -25,28 +25,28 @@ from galaxy.model.custom_types import *
 metadata = MetaData()
 
 Repository_table = Table( "repository", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "name", TrimmedString( 255 ), index=True ),
-    Column( "description", TEXT ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "private", Boolean, default=False ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+                          Column( "id", Integer, primary_key=True ),
+                          Column( "create_time", DateTime, default=now ),
+                          Column( "update_time", DateTime, default=now, onupdate=now ),
+                          Column( "name", TrimmedString( 255 ), index=True ),
+                          Column( "description", TEXT ),
+                          Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                          Column( "private", Boolean, default=False ),
+                          Column( "deleted", Boolean, index=True, default=False ) )
 
 RepositoryRatingAssociation_table = Table( "repository_rating_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "rating", Integer, index=True ),
-    Column( "comment", TEXT ) )
+                                           Column( "id", Integer, primary_key=True ),
+                                           Column( "create_time", DateTime, default=now ),
+                                           Column( "update_time", DateTime, default=now, onupdate=now ),
+                                           Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+                                           Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                           Column( "rating", Integer, index=True ),
+                                           Column( "comment", TEXT ) )
 
 RepositoryCategoryAssociation_table = Table( "repository_category_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
-    Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
+                                             Column( "id", Integer, primary_key=True ),
+                                             Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+                                             Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
 
 def upgrade(migrate_engine):
     print __doc__
