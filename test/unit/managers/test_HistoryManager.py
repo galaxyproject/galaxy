@@ -12,6 +12,7 @@ import galaxy_mock
 from galaxy import eggs
 eggs.require( 'SQLAlchemy >= 0.4' )
 import sqlalchemy
+from sqlalchemy import true
 
 from galaxy import model
 from galaxy import exceptions
@@ -20,19 +21,15 @@ from base import BaseTestCase
 
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.histories import HistorySerializer
-from galaxy.managers.histories import HistoryDeserializer
 from galaxy.managers.histories import HistoryFilters
 from galaxy.managers import hdas
 
-
-# =============================================================================
 default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
 user3_data = dict( email='user3@user3.user3', username='user3', password=default_password )
 user4_data = dict( email='user4@user4.user4', username='user4', password=default_password )
 
 
-# =============================================================================
 class HistoryManagerTestCase( BaseTestCase ):
 
     def set_up_managers( self ):
@@ -89,7 +86,7 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         item1 = self.history_manager.create( user=owner )
         item2 = self.history_manager.create( user=owner )
-        item3 = self.history_manager.create( user=non_owner )
+        self.history_manager.create( user=non_owner )
 
         self.log( "should be able to list items by user" )
         user_histories = self.history_manager.by_user( owner )
@@ -312,7 +309,9 @@ class HistoryManagerTestCase( BaseTestCase ):
 
 # =============================================================================
 # web.url_for doesn't work well in the framework
-testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
+def testable_url_for(*a, **k):
+    return '(fake url): %s, %s' % ( a, k )
+
 HistorySerializer.url_for = staticmethod( testable_url_for )
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 
@@ -344,8 +343,8 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.log( 'should have a serializer for all serializable keys' )
         for key in self.history_serializer.serializable_keyset:
             instantiated_attribute = getattr( history1, key, None )
-            if not ( ( key in self.history_serializer.serializers )
-                  or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
+            if not ( ( key in self.history_serializer.serializers ) or
+                    ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
                 self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
         else:
             self.assertTrue( True, 'all serializable keys have a serializer' )
@@ -404,39 +403,6 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.log( 'everything serialized should be of the proper type' )
         self.assertIsInstance( serialized[ 'size' ], int )
         self.assertIsInstance( serialized[ 'nice_size' ], basestring )
-
-        self.log( 'serialized should jsonify well' )
-        self.assertIsJsonifyable( serialized )
-
-    def test_contents( self ):
-        user2 = self.user_manager.create( **user2_data )
-        history1 = self.history_manager.create( name='history1', user=user2 )
-
-        self.log( 'a history with no contents should be properly reflected in empty, etc.' )
-        keys = [ 'empty', 'count', 'state_ids', 'state_details', 'state', 'hdas' ]
-        serialized = self.history_serializer.serialize( history1, keys )
-        self.assertEqual( serialized[ 'state' ], 'new' )
-        self.assertEqual( serialized[ 'empty' ], True )
-        self.assertEqual( serialized[ 'count' ], 0 )
-        self.assertEqual( sum( serialized[ 'state_details' ].values() ), 0 )
-        self.assertEqual( serialized[ 'state_ids' ][ 'ok' ], [] )
-        self.assertIsInstance( serialized[ 'hdas' ], list )
-
-        self.log( 'a history with contents should be properly reflected in empty, etc.' )
-        hda1 = self.hda_manager.create( history=history1, hid=1 )
-        self.hda_manager.update( hda1, dict( state='ok' ) )
-
-        serialized = self.history_serializer.serialize( history1, keys )
-        self.assertEqual( serialized[ 'state' ], 'ok' )
-        self.assertEqual( serialized[ 'empty' ], False )
-        self.assertEqual( serialized[ 'count' ], 1 )
-        self.assertEqual( serialized[ 'state_details' ][ 'ok' ], 1 )
-        self.assertIsInstance( serialized[ 'state_ids' ][ 'ok' ], list )
-        self.assertIsInstance( serialized[ 'hdas' ], list )
-        self.assertIsInstance( serialized[ 'hdas' ][0], basestring )
-
-        serialized = self.history_serializer.serialize( history1, [ 'contents' ] )
-        self.assertHasKeys( serialized[ 'contents' ][0], [ 'id', 'name', 'peek', 'create_time' ])
 
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )
@@ -700,7 +666,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.log( "negative offset should return full list" )
         self.assertEqual( self.history_manager.list( offset=-1 ), all_histories )
 
-        filters = [ model.History.deleted == True ]
+        filters = [ model.History.deleted == true() ]
         self.log( "orm filtered, no offset, no limit should work" )
         found = self.history_manager.list( filters=filters )
         self.assertEqual( found, [ history1, history2, history3 ] )

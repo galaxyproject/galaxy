@@ -17,16 +17,18 @@ from __future__ import print_function
 
 import os
 import urllib2
-
+import sys
 from xml import etree
 
-# Setup model, paths, etc...
-import db_shell
+new_path = [ os.path.join( os.path.dirname( __file__ ), os.pardir, "lib" ) ]
+new_path.extend( sys.path[1:] )  # remove scripts/ from the path
+sys.path = new_path
 
+import galaxy.model
 import galaxy.datatypes.registry
 
 SCRIPTS_DIR = os.path.dirname(__file__)
-PROJECT_DIR = os.path.abspath(os.path.join(SCRIPTS_DIR, ".."))
+PROJECT_DIR = os.path.abspath(os.path.join(SCRIPTS_DIR, os.pardir))
 CONFIG_FILE = os.path.join(PROJECT_DIR, "config", "datatypes_conf.xml.sample")
 
 datatypes_registry = galaxy.datatypes.registry.Registry()

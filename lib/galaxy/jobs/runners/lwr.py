@@ -320,7 +320,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
 
     def get_client( self, job_destination_params, job_id, env=[] ):
         # Cannot use url_for outside of web thread.
-        #files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
+        # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
 
         encoded_job_id = self.app.security.encode_id(job_id)
         job_key = self.app.security.encode_id( job_id, kind="jobs_files" )
@@ -392,7 +392,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         try:
             os.kill( pid, 0 )
             return True
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 log.debug( "check_pid(): PID %d is dead" % pid )
             else:
@@ -400,7 +400,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             return False
 
     def stop_job( self, job ):
-        #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         job_ext_output_metadata = job.get_external_output_metadata()
         if job_ext_output_metadata:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
@@ -414,7 +414,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             for sig in [ 15, 9 ]:
                 try:
                     os.killpg( pid, sig )
-                except OSError, e:
+                except OSError as e:
                     log.warning( "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job.id, errno.errorcode[e.errno], sig, pid, e.strerror ) )
                     return  # give up
                 sleep( 2 )

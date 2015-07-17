@@ -1,12 +1,16 @@
+import datetime
+import json
+import logging
 import os
 import shutil
-import logging
 import tempfile
-import json
-import datetime
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy.orm import eagerload, eagerload_all
+
 from galaxy import model
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.json import dumps, loads
 from galaxy.web.framework.helpers import to_unicode

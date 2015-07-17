@@ -13,7 +13,7 @@ class StreamBall( object ):
     def __init__( self, mode, members=None ):
         self.members = members
         if members is None:
-            self.members = {}
+            self.members = []
         self.mode = mode
         self.wsgi_status = None
         self.wsgi_headeritems = None
@@ -23,9 +23,9 @@ class StreamBall( object ):
             if not os.path.isfile(file):
                 raise ObjectNotFound
             else:
-                self.members[file] = relpath
+                self.members.append( ( file, relpath ) )
         else:
-            self.members[file] = relpath
+            self.members.append( ( file, relpath ) )
 
     def stream( self, environ, start_response ):
         response_write = start_response( self.wsgi_status, self.wsgi_headeritems )
@@ -34,7 +34,7 @@ class StreamBall( object ):
             def write( self, *args, **kwargs ):
                 response_write( *args, **kwargs )
         tf = tarfile.open( mode=self.mode, fileobj=tarfileobj() )
-        for file, rel in self.members.items():
+        for (file, rel) in self.members:
             tf.add( file, arcname=rel )
         tf.close()
         return []

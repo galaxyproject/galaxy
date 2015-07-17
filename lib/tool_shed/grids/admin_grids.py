@@ -1,32 +1,25 @@
 import logging
-import os
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_
+
 from galaxy.web.framework.helpers import grids
 from galaxy.web.framework.helpers import time_ago
 from galaxy.webapps.tool_shed import model
-from galaxy.model.orm import and_
-import tool_shed.util.shed_util_common as suc
-from tool_shed.util import hg_util
 from tool_shed.grids.repository_grids import CategoryGrid
 from tool_shed.grids.repository_grids import RepositoryGrid
-
-from galaxy import eggs
-eggs.require( 'mercurial' )
-
-from mercurial import commands
-from mercurial import hg
-from mercurial import ui
+from tool_shed.util import hg_util
 
 log = logging.getLogger( __name__ )
 
 
 class UserGrid( grids.Grid ):
 
-
     class UserLoginColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, user ):
             return user.email
-
 
     class UserNameColumn( grids.TextColumn ):
 
@@ -35,14 +28,12 @@ class UserGrid( grids.Grid ):
                 return user.username
             return 'not set'
 
-
     class GroupsColumn( grids.GridColumn ):
 
         def get_value( self, trans, grid, user ):
             if user.groups:
                 return len( user.groups )
             return 0
-
 
     class RolesColumn( grids.GridColumn ):
 
@@ -51,7 +42,6 @@ class UserGrid( grids.Grid ):
                 return len( user.roles )
             return 0
 
-
     class ExternalColumn( grids.GridColumn ):
 
         def get_value( self, trans, grid, user ):
@@ -59,14 +49,12 @@ class UserGrid( grids.Grid ):
                 return 'yes'
             return 'no'
 
-
     class LastLoginColumn( grids.GridColumn ):
 
         def get_value( self, trans, grid, user ):
             if user.galaxy_sessions:
                 return self.format( user.galaxy_sessions[ 0 ].update_time )
             return 'never'
-
 
     class StatusColumn( grids.GridColumn ):
 
@@ -76,7 +64,6 @@ class UserGrid( grids.Grid ):
             elif user.deleted:
                 return "deleted"
             return ""
-
 
     class EmailColumn( grids.GridColumn ):
 
@@ -88,7 +75,7 @@ class UserGrid( grids.Grid ):
 
     title = "Users"
     model_class = model.User
-    template='/admin/user/grid.mako'
+    template = '/admin/user/grid.mako'
     default_sort_key = "email"
     columns = [
         UserLoginColumn( "Email",
@@ -145,12 +132,10 @@ class UserGrid( grids.Grid ):
 
 class RoleGrid( grids.Grid ):
 
-
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, role ):
             return str( role.name )
-
 
     class DescriptionColumn( grids.TextColumn ):
 
@@ -159,11 +144,9 @@ class RoleGrid( grids.Grid ):
                 return str( role.description )
             return ''
 
-
     class TypeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, role ):
             return str( role.type )
-
 
     class StatusColumn( grids.GridColumn ):
 
@@ -172,7 +155,6 @@ class RoleGrid( grids.Grid ):
                 return "deleted"
             return ""
 
-
     class GroupsColumn( grids.GridColumn ):
 
         def get_value( self, trans, grid, role ):
@@ -180,14 +162,12 @@ class RoleGrid( grids.Grid ):
                 return len( role.groups )
             return 0
 
-
     class RepositoriesColumn( grids.GridColumn ):
 
         def get_value( self, trans, grid, role ):
             if role.repositories:
                 return len( role.repositories )
             return 0
-
 
     class UsersColumn( grids.GridColumn ):
 
@@ -198,7 +178,7 @@ class RoleGrid( grids.Grid ):
 
     title = "Roles"
     model_class = model.Role
-    template='/admin/dataset_security/role/grid.mako'
+    template = '/admin/dataset_security/role/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -261,12 +241,10 @@ class RoleGrid( grids.Grid ):
 
 class GroupGrid( grids.Grid ):
 
-
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, group ):
             return str( group.name )
-
 
     class StatusColumn( grids.GridColumn ):
 
@@ -275,14 +253,12 @@ class GroupGrid( grids.Grid ):
                 return "deleted"
             return ""
 
-
     class RolesColumn( grids.GridColumn ):
 
         def get_value( self, trans, grid, group ):
             if group.roles:
                 return len( group.roles )
             return 0
-
 
     class UsersColumn( grids.GridColumn ):
 
@@ -293,7 +269,7 @@ class GroupGrid( grids.Grid ):
 
     title = "Groups"
     model_class = model.Group
-    template='/admin/dataset_security/group/grid.mako'
+    template = '/admin/dataset_security/group/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -359,7 +335,6 @@ class ManageCategoryGrid( CategoryGrid ):
 
 class AdminRepositoryGrid( RepositoryGrid ):
 
-
     class DeletedColumn( grids.BooleanColumn ):
 
         def get_value( self, trans, grid, repository ):
@@ -404,18 +379,15 @@ class AdminRepositoryGrid( RepositoryGrid ):
 
 class RepositoryMetadataGrid( grids.Grid ):
 
-
     class IdColumn( grids.IntegerColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
             return repository_metadata.id
 
-
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
             return repository_metadata.repository.name
-
 
     class OwnerColumn( grids.TextColumn ):
 
@@ -432,7 +404,6 @@ class RepositoryMetadataGrid( grids.Grid ):
                                                include_date=True,
                                                include_hash=True )
 
-
     class ToolsColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
@@ -442,11 +413,10 @@ class RepositoryMetadataGrid( grids.Grid ):
                 if metadata:
                     if 'tools' in metadata:
                         # We used to display the following, but grid was too cluttered.
-                        #for tool_metadata_dict in metadata[ 'tools' ]:
+                        # for tool_metadata_dict in metadata[ 'tools' ]:
                         #    tools_str += '%s <b>%s</b><br/>' % ( tool_metadata_dict[ 'id' ], tool_metadata_dict[ 'version' ] )
                         return '%d' % len( metadata[ 'tools' ] )
             return tools_str
-
 
     class DatatypesColumn( grids.TextColumn ):
 
@@ -457,11 +427,10 @@ class RepositoryMetadataGrid( grids.Grid ):
                 if metadata:
                     if 'datatypes' in metadata:
                         # We used to display the following, but grid was too cluttered.
-                        #for datatype_metadata_dict in metadata[ 'datatypes' ]:
+                        # for datatype_metadata_dict in metadata[ 'datatypes' ]:
                         #    datatypes_str += '%s<br/>' % datatype_metadata_dict[ 'extension' ]
                         return '%d' % len( metadata[ 'datatypes' ] )
             return datatypes_str
-
 
     class WorkflowsColumn( grids.TextColumn ):
 
@@ -472,16 +441,15 @@ class RepositoryMetadataGrid( grids.Grid ):
                 if metadata:
                     if 'workflows' in metadata:
                         # We used to display the following, but grid was too cluttered.
-                        #workflows_str += '<b>Workflows:</b><br/>'
+                        # workflows_str += '<b>Workflows:</b><br/>'
                         # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
                         # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
-                        #workflow_tups = metadata[ 'workflows' ]
-                        #workflow_metadata_dicts = [ workflow_tup[1] for workflow_tup in workflow_tups ]
-                        #for workflow_metadata_dict in workflow_metadata_dicts:
+                        # workflow_tups = metadata[ 'workflows' ]
+                        # workflow_metadata_dicts = [ workflow_tup[1] for workflow_tup in workflow_tups ]
+                        # for workflow_metadata_dict in workflow_metadata_dicts:
                         #    workflows_str += '%s<br/>' % workflow_metadata_dict[ 'name' ]
                         return '%d' % len( metadata[ 'workflows' ] )
             return workflows_str
-
 
     class DeletedColumn( grids.BooleanColumn ):
 
@@ -490,14 +458,12 @@ class RepositoryMetadataGrid( grids.Grid ):
                 return 'yes'
             return ''
 
-
     class DeprecatedColumn( grids.BooleanColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
             if repository_metadata.repository.deprecated:
                 return 'yes'
             return ''
-
 
     class MaliciousColumn( grids.BooleanColumn ):
 
@@ -509,7 +475,7 @@ class RepositoryMetadataGrid( grids.Grid ):
     # Grid definition
     title = "Repository Metadata"
     model_class = model.RepositoryMetadata
-    template='/webapps/tool_shed/repository/grid.mako'
+    template = '/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "name"
     use_hide_message = False
     columns = [

@@ -4,18 +4,22 @@ API operations on a jobs.
 .. seealso:: :class:`galaxy.model.Jobs`
 """
 
-from sqlalchemy import or_, and_
-from sqlalchemy.orm import aliased
 import json
+import logging
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, or_
+from sqlalchemy.orm import aliased
+
+from galaxy import exceptions
+from galaxy import managers
+from galaxy import model
+from galaxy import util
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixinItems
-from galaxy import exceptions
-from galaxy import util
-from galaxy import model
-from galaxy import managers
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -316,13 +320,13 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
             query = query.filter( and_(
                 trans.app.model.Job.id == a.job_id,
                 a.dataset_id == b.id,
-                b.deleted == False,
+                b.deleted == false(),
                 b.dataset_id == v
             ) )
 
         out = []
         for job in query.all():
             # check to make sure none of the output files have been deleted
-            if all( list( a.dataset.deleted == False for a in job.output_datasets ) ):
+            if all( list( a.dataset.deleted is False for a in job.output_datasets ) ):
                 out.append( self.encode_all_ids( trans, job.to_dict( 'element' ), True ) )
         return out

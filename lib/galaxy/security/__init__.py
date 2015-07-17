@@ -3,12 +3,17 @@ Galaxy Security
 
 """
 import logging
-import socket
 import operator
+import socket
 from datetime import datetime, timedelta
-from galaxy.util.bunch import Bunch
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, or_, not_
+from sqlalchemy.orm import eagerload_all
+
 from galaxy.util import listify
-from galaxy.model.orm import *
+from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
 
@@ -186,14 +191,14 @@ class GalaxyRBACAgent( RBACAgent ):
         roles = set()
         if not trans.user:
             return trans.sa_session.query( trans.app.model.Role ) \
-                                   .filter( and_( self.model.Role.table.c.deleted == False,
+                                   .filter( and_( self.model.Role.table.c.deleted == false(),
                                                   self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
                                                   self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                    .order_by( self.model.Role.table.c.name )
         if admin_controller:
             # The library is public and the user is an admin, so all roles are legitimate
             for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( self.model.Role.table.c.deleted == False ) \
+                                        .filter( self.model.Role.table.c.deleted == false() ) \
                                         .order_by( self.model.Role.table.c.name ):
                 roles.add( role )
         else:
@@ -204,7 +209,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 roles.add( role )
             # Add all remaining non-private, non-sharing roles
             for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( and_( self.model.Role.table.c.deleted == False,
+                                        .filter( and_( self.model.Role.table.c.deleted == false(),
                                                        self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
                                                        self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                         .order_by( self.model.Role.table.c.name ):
@@ -245,7 +250,7 @@ class GalaxyRBACAgent( RBACAgent ):
             limit = page * page_limit
         else:
             paginated = False
-        
+
         total_count = None
 
         if isinstance( item, self.model.Library ) and self.library_is_public( item ):
@@ -260,7 +265,7 @@ class GalaxyRBACAgent( RBACAgent ):
         # For public items and for library access admins can choose from all roles
         if trans.user_is_admin() and ( is_public_item or is_library_access ):
             # Add all non-deleted roles that fit the query
-            db_query = trans.sa_session.query( trans.app.model.Role ).filter( self.model.Role.table.c.deleted == False )
+            db_query = trans.sa_session.query( trans.app.model.Role ).filter( self.model.Role.table.c.deleted == false() )
             if query is not None:
                 db_query = db_query.filter( self.model.Role.table.c.name.like( search_query, escape='/' ) )
             total_count = db_query.count()
@@ -286,7 +291,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 roles.append( role )
             # Add all remaining non-private, non-sharing roles
             for role in trans.sa_session.query( trans.app.model.Role ) \
-                                        .filter( and_( self.model.Role.table.c.deleted == False,
+                                        .filter( and_( self.model.Role.table.c.deleted == false(),
                                                        self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
                                                        self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                                         .order_by( self.model.Role.table.c.name ):
@@ -347,7 +352,7 @@ class GalaxyRBACAgent( RBACAgent ):
         admin_controller = cntrller in [ 'library_admin' ]
         roles = set()
         if ( isinstance( item, self.model.Library ) and self.library_is_public( item ) ) or \
-            ( isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ) ):
+                ( isinstance( item, self.model.Dataset ) and self.dataset_is_public( item ) ):
             return self.get_all_roles( trans, cntrller )
         # If item has roles associated with the access permission, we need to start with them.
         access_roles = item.get_access_roles( trans )
@@ -488,12 +493,12 @@ class GalaxyRBACAgent( RBACAgent ):
                         # TODO: Fix this failure message:
                         else:
                             log.debug( "Error: dataset %d; originally: %s; now: %s"
-                                     % ( item.library_dataset_id,
-                                         base_result, new_result ) )
+                                       % ( item.library_dataset_id,
+                                           base_result, new_result ) )
                     else:
                         log.debug( "Error: dataset %d: had %d entries, now %d entries"
-                                 % ( item.library_dataset_id, len( base_result ),
-                                     len( new_result ) ) )
+                                   % ( item.library_dataset_id, len( base_result ),
+                                       len( new_result ) ) )
                 log.debug( "get_actions_for_items: Test end" )
             except Exception, e:
                 log.debug( "Exception in test code: %s" % e )
@@ -549,7 +554,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     log.debug( "Item %d: success" % item.id )
                 else:
                     log.debug( "Item %d: fail: original: %s; new: %s"
-                             % ( item.id, orig_value, ret_allow_action[ item.id ] ) )
+                               % ( item.id, orig_value, ret_allow_action[ item.id ] ) )
             log.debug( "allow_action_for_items: test end" )
         return ret_allow_action
 
@@ -624,16 +629,16 @@ class GalaxyRBACAgent( RBACAgent ):
         accessible_libraries = []
         current_user_role_ids = [ role.id for role in user.all_roles() ]
         library_access_action = self.permitted_actions.LIBRARY_ACCESS.action
-        restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
-                                                                           .filter( trans.model.LibraryPermissions.table.c.action == library_access_action ) \
-                                                                           .distinct() ]
-        accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions ) \
-                                                                                      .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
-                                                                                                     trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
+        restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query( trans.model.LibraryPermissions )
+                                   .filter( trans.model.LibraryPermissions.table.c.action == library_access_action ).distinct() ]
+        accessible_restricted_library_ids = [ lp.library_id for lp in trans.sa_session.query(
+                                              trans.model.LibraryPermissions ).filter(
+                                              and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
+                                              trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
         # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
         for library in trans.sa_session.query( trans.model.Library ) \
-                                       .filter( and_( trans.model.Library.table.c.deleted == False,
+                                       .filter( and_( trans.model.Library.table.c.deleted == false(),
                                                       ( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ),
                                                              trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) ) ) ) \
                                        .order_by( trans.app.model.Library.name ):
@@ -642,9 +647,9 @@ class GalaxyRBACAgent( RBACAgent ):
 
     def has_accessible_folders( self, trans, folder, user, roles, search_downward=True ):
         if self.has_accessible_library_datasets( trans, folder, user, roles, search_downward=search_downward ) or \
-            self.can_add_library_item( roles, folder ) or \
-            self.can_modify_library_item( roles, folder ) or \
-            self.can_manage_library_item( roles, folder ):
+                self.can_add_library_item( roles, folder ) or \
+                self.can_modify_library_item( roles, folder ) or \
+                self.can_manage_library_item( roles, folder ):
             return True
         if search_downward:
             for folder in folder.active_folders:
@@ -653,8 +658,8 @@ class GalaxyRBACAgent( RBACAgent ):
 
     def has_accessible_library_datasets( self, trans, folder, user, roles, search_downward=True ):
         for library_dataset in trans.sa_session.query( trans.model.LibraryDataset ) \
-                                               .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
-                                                              trans.app.model.LibraryDataset.table.c.folder_id == folder.id ) ):
+                .filter( and_( trans.model.LibraryDataset.table.c.deleted == false(),
+                               trans.app.model.LibraryDataset.table.c.folder_id == folder.id ) ):
             if self.can_access_library_item( roles, library_dataset, user ):
                 return True
         if search_downward:
@@ -793,9 +798,9 @@ class GalaxyRBACAgent( RBACAgent ):
         if user is None:
             return None
         if not permissions:
-            #default permissions
+            # default permissions
             permissions = { self.permitted_actions.DATASET_MANAGE_PERMISSIONS : [ self.get_private_user_role( user, auto_create=True ) ] }
-            #new_user_dataset_access_role_default_private is set as True in config file
+            # new_user_dataset_access_role_default_private is set as True in config file
             if default_access_private:
                 permissions[ self.permitted_actions.DATASET_ACCESS ] = permissions.values()[ 0 ]
         # Delete all of the current default permissions for the user
@@ -944,19 +949,21 @@ class GalaxyRBACAgent( RBACAgent ):
         accessible_request_types = []
         current_user_role_ids = [ role.id for role in user.all_roles() ]
         request_type_access_action = self.permitted_actions.REQUEST_TYPE_ACCESS.action
-        restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query( trans.model.RequestTypePermissions ) \
-                                                                                        .filter( trans.model.RequestTypePermissions.table.c.action == request_type_access_action ) \
-                                                                                        .distinct() ]
-        accessible_restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query( trans.model.RequestTypePermissions ) \
-                                                                                      .filter( and_( trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
-                                                                                                     trans.model.RequestTypePermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
+        restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query(
+                                        trans.model.RequestTypePermissions ).filter(
+                                        trans.model.RequestTypePermissions.table.c.action == request_type_access_action ).distinct()
+                                        ]
+        accessible_restricted_request_type_ids = [ rtp.request_type_id for rtp in trans.sa_session.query(
+                                                   trans.model.RequestTypePermissions ).filter(
+                                                   and_( trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
+                                                         trans.model.RequestTypePermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
         # Filter to get libraries accessible by the current user.  Get both
         # public libraries and restricted libraries accessible by the current user.
         for request_type in trans.sa_session.query( trans.model.RequestType ) \
-                                            .filter( and_( trans.model.RequestType.table.c.deleted == False,
+                                            .filter( and_( trans.model.RequestType.table.c.deleted == false(),
                                                            ( or_( not_( trans.model.RequestType.table.c.id.in_( restricted_request_type_ids ) ),
                                                                   trans.model.RequestType.table.c.id.in_( accessible_restricted_request_type_ids ) ) ) ) ) \
-                                       .order_by( trans.app.model.RequestType.name ):
+                                            .order_by( trans.app.model.RequestType.name ):
             accessible_request_types.append( request_type )
         return accessible_request_types
 
@@ -1018,7 +1025,6 @@ class GalaxyRBACAgent( RBACAgent ):
                             # Well this looks like a bug, this should be looked at.
                             # Default permissions above is single hash that keeps getting reeditted here
                             # because permission is being defined instead of permissions. -John
-                            permission = {}
                             permissions[ self.permitted_actions.DATASET_MANAGE_PERMISSIONS ] = [ trans.app.security_agent.get_private_user_role( library_item.user ) ]
                             self.set_dataset_permission( library_item.dataset, permissions )
                         if action == self.permitted_actions.LIBRARY_MANAGE.action and roles:
@@ -1050,7 +1056,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 for item_permission in [ self.model.LibraryDatasetPermissions( action, library_item, role ) for role in roles ]:
                     self.sa_session.add( item_permission )
                     flush_needed = True
-            elif isinstance ( library_item, self.model.LibraryPermissions):
+            elif isinstance( library_item, self.model.LibraryPermissions):
                 for item_permission in [ self.model.LibraryPermissions( action, library_item, role ) for role in roles ]:
                     self.sa_session.add( item_permission )
                     flush_needed = True
@@ -1185,7 +1191,7 @@ class GalaxyRBACAgent( RBACAgent ):
         accessible = False
         # legitimate will be True only if all roles in DATASET_ACCESS_in are in the set of roles returned from
         # get_legitimate_roles()
-        legitimate = False
+        # legitimate = False # TODO: not used
         # private_role_found will be true only if more than 1 role is being associated with the DATASET_ACCESS
         # permission on item, and at least 1 of the roles is private.
         private_role_found = False
@@ -1200,22 +1206,22 @@ class GalaxyRBACAgent( RBACAgent ):
                 if ( library and not self.library_is_public( item ) ) or ( not library and not self.dataset_is_public( item ) ):
                     # Ensure that roles being associated with DATASET_ACCESS are a subset of the legitimate roles
                     # derived from the roles associated with the access permission on item if it's not public.  This
-                    # will keep ill-legitimate roles from being associated with the DATASET_ACCESS permission on the
+                    # will keep illegitimate roles from being associated with the DATASET_ACCESS permission on the
                     # dataset (i.e., in the case where item is .a library, if Role1 is associated with LIBRARY_ACCESS,
                     # then only those users that have Role1 should be associated with DATASET_ACCESS.
                     legitimate_roles = self.get_legitimate_roles( trans, item, cntrller )
-                    ill_legitimate_roles = []
+                    illegitimate_roles = []
                     for role in in_roles:
                         if role not in legitimate_roles:
-                            ill_legitimate_roles.append( role )
-                    if ill_legitimate_roles:
-                        # This condition should never occur since ill-legitimate roles are filtered out of the set of
+                            illegitimate_roles.append( role )
+                    if illegitimate_roles:
+                        # This condition should never occur since illegitimate roles are filtered out of the set of
                         # roles displayed on the forms, but just in case there is a bug somewhere that incorrectly
                         # filters, we'll display this message.
                         error = True
                         msg += "The following roles are not associated with users that have the 'access' permission on this "
                         msg += "item, so they were incorrectly displayed: "
-                        for role in ill_legitimate_roles:
+                        for role in illegitimate_roles:
                             msg += "%s, " % role.name
                         msg = msg.rstrip( ", " )
                         new_in_roles = []
@@ -1223,8 +1229,6 @@ class GalaxyRBACAgent( RBACAgent ):
                             if role in legitimate_roles:
                                 new_in_roles.append( role )
                         in_roles = new_in_roles
-                    else:
-                        legitimate = True
                 if len( in_roles ) > 1:
                     # At least 1 user must have every role associated with the access
                     # permission on this dataset, or the dataset is not accessible.
@@ -1314,7 +1318,7 @@ class GalaxyRBACAgent( RBACAgent ):
                 [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
         """
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
-                                        .filter( trans.app.model.Library.table.c.deleted == False ) \
+                                        .filter( trans.app.model.Library.table.c.deleted == false() ) \
                                         .order_by( trans.app.model.Library.name )
         roles = user.all_roles()
         actions_to_check = actions
@@ -1516,7 +1520,7 @@ class HostAgent( RBACAgent ):
     # TODO: Make sites user configurable
     sites = Bunch(
         ucsc_main=( 'hgw1.cse.ucsc.edu', 'hgw2.cse.ucsc.edu', 'hgw3.cse.ucsc.edu', 'hgw4.cse.ucsc.edu',
-                      'hgw5.cse.ucsc.edu', 'hgw6.cse.ucsc.edu', 'hgw7.cse.ucsc.edu', 'hgw8.cse.ucsc.edu' ),
+                    'hgw5.cse.ucsc.edu', 'hgw6.cse.ucsc.edu', 'hgw7.cse.ucsc.edu', 'hgw8.cse.ucsc.edu' ),
         ucsc_test=( 'hgwdev.cse.ucsc.edu', ),
         ucsc_archaea=( 'lowepub.cse.ucsc.edu', )
     )

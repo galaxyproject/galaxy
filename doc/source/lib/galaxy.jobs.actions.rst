@@ -1,19 +1,20 @@
-actions Package
-===============
-
-:mod:`actions` Package
-----------------------
+galaxy.jobs.actions package
+===========================
 
 .. automodule:: galaxy.jobs.actions
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`post` Module
-------------------
+Submodules
+----------
+
+galaxy.jobs.actions.post module
+-------------------------------
 
 .. automodule:: galaxy.jobs.actions.post
     :members:
     :undoc-members:
     :show-inheritance:
+
 

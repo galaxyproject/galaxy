@@ -28,6 +28,7 @@ var FolderListView = Backbone.View.extend({
     events: {
         'click #select-all-checkboxes'  : 'selectAll',
         'click .dataset_row'            : 'selectClickedRow',
+        'click .folder_row'             : 'selectClickedRow',
         'click .sort-folder-link'       : 'sortColumnClicked'
     },
 
@@ -175,7 +176,7 @@ var FolderListView = Backbone.View.extend({
      */
     postRender: function(){
         var fetched_metadata = this.folderContainer.attributes.metadata;
-        fetched_metadata.contains_file = typeof this.collection.findWhere({type: 'file'}) !== 'undefined';
+        fetched_metadata.contains_file_or_folder = typeof this.collection.findWhere({type: 'file'}) !== 'undefined' || typeof this.collection.findWhere({type: 'folder'}) !== 'undefined';
         Galaxy.libraries.folderToolbarView.configureElements(fetched_metadata);
         $('.library-row').hover(function() {
           $(this).find('.show_on_hover').show();
@@ -201,10 +202,10 @@ var FolderListView = Backbone.View.extend({
      * @param {Item or FolderAsModel} model of the view that will be rendered
      */
     renderOne: function(model){
-        if (model.get('type') !== 'folder'){
-            this.options.contains_file = true;
+        this.options.contains_file_or_folder = true;
+        //if (model.get('type') !== 'folder'){
             // model.set('readable_size', this.size_to_string(model.get('file_size')));
-          }
+        //}
         model.set('folder_id', this.id);
         var rowView = new mod_library_folderrow_view.FolderRowView(model);
 
@@ -329,12 +330,14 @@ var FolderListView = Backbone.View.extend({
         $row.removeClass('light').addClass('dark');
         $row.find('a').removeClass('light').addClass('dark');
         $row.find('.fa-file-o').removeClass('fa-file-o').addClass('fa-file');
+        $row.find('.fa-folder-o').removeClass('fa-folder-o').addClass('fa-folder');
     },
 
     makeWhiteRow: function($row){
         $row.removeClass('dark').addClass('light');
         $row.find('a').removeClass('dark').addClass('light');
         $row.find('.fa-file').removeClass('fa-file').addClass('fa-file-o');
+        $row.find('.fa-folder').removeClass('fa-folder').addClass('fa-folder-o');
     },
 
     renderSortIcon: function(){

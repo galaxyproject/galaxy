@@ -1,14 +1,12 @@
-import os
 import logging
 
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, or_
+
 import tool_shed.repository_types.util as rt_util
-
-from galaxy.model.orm import and_
-from galaxy.model.orm import or_
 from galaxy.webapps.tool_shed import model
-
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
 from tool_shed.util import shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -145,8 +143,8 @@ class Registry( object ):
         certified_level_one_tuples = []
         clause_list = []
         for repository in self.sa_session.query( model.Repository ) \
-                                         .filter( and_( model.Repository.table.c.deleted == False,
-                                                        model.Repository.table.c.deprecated == False ) ):
+                                         .filter( and_( model.Repository.table.c.deleted == false(),
+                                                        model.Repository.table.c.deprecated == false() ) ):
             certified_level_one_tuple = self.get_certified_level_one_tuple( repository )
             latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
             if is_level_one_certified:
@@ -269,10 +267,10 @@ class Registry( object ):
             self.load_certified_level_one_repository_and_suite_tuple( repository )
         # Load self.repository_and_suite_tuples and self.suite_tuples
         for repository in self.sa_session.query( model.Repository ) \
-                                         .filter( and_( model.Repository.table.c.deleted == False,
-                                                        model.Repository.table.c.deprecated == False ) ) \
+                                         .filter( and_( model.Repository.table.c.deleted == false(),
+                                                        model.Repository.table.c.deprecated == false() ) ) \
                                          .join( model.User.table ):
-           self.load_repository_and_suite_tuple( repository )
+            self.load_repository_and_suite_tuple( repository )
 
     def load_viewable_repositories_and_suites_by_category( self ):
         # Clear all dictionaries just in case they were previously loaded.

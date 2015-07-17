@@ -1,23 +1,26 @@
-import os, re, sys, glob, logging
+import logging
+import os
+import re
+import sys
 from bx.seq.twobit import TwoBitFile
-from galaxy.util.json import loads
-from galaxy import model, util
 from galaxy.util.bunch import Bunch
+from galaxy.util.json import loads
 
 log = logging.getLogger( __name__ )
 
 # FIXME: copied from tracks.py
 # Message strings returned to browser
 messages = Bunch(
-    PENDING = "pending",
-    NO_DATA = "no data",
-    NO_CHROMOSOME = "no chromosome",
-    NO_CONVERTER = "no converter",
-    NO_TOOL = "no tool",
-    DATA = "data",
-    ERROR = "error",
-    OK = "ok"
+    PENDING="pending",
+    NO_DATA="no data",
+    NO_CHROMOSOME="no chromosome",
+    NO_CONVERTER="no converter",
+    NO_TOOL="no tool",
+    DATA="data",
+    ERROR="error",
+    OK="ok"
 )
+
 
 def decode_dbkey( dbkey ):
     """ Decodes dbkey and returns tuple ( username, dbkey )"""
@@ -26,12 +29,13 @@ def decode_dbkey( dbkey ):
     else:
         return None, dbkey
 
+
 class GenomeRegion( object ):
     """
     A genomic region on an individual chromosome.
     """
 
-    def __init__( self, chrom = None, start = 0, end = 0, sequence=None ):
+    def __init__( self, chrom=None, start=0, end=0, sequence=None ):
         self.chrom = chrom
         self.start = int( start )
         self.end = int( end )
@@ -42,9 +46,9 @@ class GenomeRegion( object ):
 
     @staticmethod
     def from_dict( obj_dict ):
-        return GenomeRegion( chrom = obj_dict[ 'chrom' ],
-                             start = obj_dict[ 'start' ],
-                             end   = obj_dict[ 'end' ] )
+        return GenomeRegion( chrom=obj_dict[ 'chrom' ],
+                             start=obj_dict[ 'start' ],
+                             end=obj_dict[ 'end' ] )
 
     @staticmethod
     def from_str( obj_str ):
@@ -57,12 +61,13 @@ class GenomeRegion( object ):
 
             # check length
             if (len(gene_interval) == 2):
-                return GenomeRegion(chrom = gene_region[0],
-                                    start = gene_interval[0],
-                                    end   = gene_interval[1])
+                return GenomeRegion(chrom=gene_region[0],
+                                    start=gene_interval[0],
+                                    end=gene_interval[1])
 
         # return genome region instance
         return GenomeRegion()
+
 
 class Genome( object ):
     """
@@ -126,7 +131,7 @@ class Genome( object ):
                     count += 1
                 elif name == chrom:
                     # Found starting chrom.
-                    chroms[ name ] = int ( len )
+                    chroms[ name ] = int( len )
                     count += 1
                     found = True
                     start_index = line_num
@@ -163,7 +168,7 @@ class Genome( object ):
             pass
 
         to_sort = [{ 'chrom': chrm, 'len': length } for chrm, length in chroms.iteritems()]
-        to_sort.sort(lambda a,b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
+        to_sort.sort(lambda a, b: cmp( split_by_number(a['chrom']), split_by_number(b['chrom']) ))
         return {
             'id': self.key,
             'reference': self.twobit_file is not None,
@@ -171,7 +176,8 @@ class Genome( object ):
             'prev_chroms' : prev_chroms,
             'next_chroms' : next_chroms,
             'start_index' : start_index
-            }
+        }
+
 
 class Genomes( object ):
     """
@@ -193,14 +199,15 @@ class Genomes( object ):
             table = self.app.tool_data_tables.get( table_name, None )
             if table is not None:
                 self._table_versions[ table_name ] = table._loaded_content_version
-        
+
         twobit_table = self.app.tool_data_tables.get( 'twobit', None )
         twobit_fields = {}
         if twobit_table is None:
             # Add genome data (twobit files) to genomes, directly from twobit.loc
             try:
                 for line in open( os.path.join( self.app.config.tool_data_path, "twobit.loc" ) ):
-                    if line.startswith("#"): continue
+                    if line.startswith("#"):
+                        continue
                     val = line.split()
                     if len( val ) == 2:
                         key, path = val
@@ -220,14 +227,13 @@ class Genomes( object ):
                 self.genomes[ key ].twobit_file = twobit_table.get_entry( 'value', key, 'path', default=None )
             elif key in twobit_fields:
                 self.genomes[ key ].twobit_file = twobit_fields[ key ]
-                
 
     def check_and_reload( self ):
         # Check if tables have been modified, if so reload
         for table_name, table_version in self._table_versions.iteritems():
             table = self.app.tool_data_tables.get( table_name, None )
             if table is not None and not table.is_current_version( table_version ):
-                return self.reload_genomes()  
+                return self.reload_genomes()
 
     def get_build( self, dbkey ):
         """ Returns build for the given key. """
@@ -261,7 +267,6 @@ class Genomes( object ):
         dbkeys.extend( [ ( genome.description, genome.key ) for key, genome in self.genomes.items() if filter_fn( genome ) ] )
 
         return dbkeys
-
 
     def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
         """
@@ -304,7 +309,6 @@ class Genomes( object ):
                 if len_file:
                     genome = Genome( dbkey, dbkey_name, len_file=len_file, twobit_file=twobit_file )
 
-
         # Look in history and system builds.
         if not genome:
             # Look in history for chromosome len file.
@@ -323,7 +327,6 @@ class Genomes( object ):
             log.exception( 'genome not found for key %s' % dbkey )
 
         return rval
-
 
     def has_reference_data( self, dbkey, dbkey_owner=None ):
         """

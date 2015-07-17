@@ -18,6 +18,7 @@ import parse_builds
 import urllib
 import fileinput
 
+
 def getchrominfo(url, db):
     tableURL = "http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?"
     URL = tableURL + urllib.urlencode({
@@ -28,13 +29,14 @@ def getchrominfo(url, db):
         "hgta_group" : "allTables",
         "hgta_table" : "chromInfo",
         "hgta_track" : db,
-        "hgta_regionType":"",
-        "position":"",
-        "hgta_doTopSubmit" : "get info"})
+        "hgta_regionType": "",
+        "position": "",
+        "hgta_doTopSubmit": "get info"})
     page = urllib.urlopen(URL)
     for line in page:
         line = line.rstrip( "\r\n" )
-        if line.startswith("#"): continue
+        if line.startswith("#"):
+            continue
         fields = line.split("\t")
         if len(fields) > 1:
             yield [fields[0], fields[1]]
@@ -49,7 +51,8 @@ if __name__ == "__main__":
         try:
             buildfile = fileinput.FileInput(sys.argv[2])
             for line in buildfile:
-                if line.startswith("#"): continue
+                if line.startswith("#"):
+                    continue
                 builds.append(line.split("\t")[0])
         except:
             print "Bad input file."
@@ -62,9 +65,10 @@ if __name__ == "__main__":
             print "Unable to retrieve builds."
             sys.exit(1)
     for build in builds:
-        if build == "?":continue # no lengths for unspecified chrom
+        if build == "?":
+            continue  # no lengths for unspecified chrom
         outfile = open(dbpath + build + ".len", "w")
-        print "Retrieving "+build
-        for chrominfo in getchrominfo("http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?",build):
-            print >> outfile,"\t".join(chrominfo)
+        print "Retrieving " + build
+        for chrominfo in getchrominfo("http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?", build):
+            print >> outfile, "\t".join(chrominfo)
         outfile.close()

@@ -1,19 +1,28 @@
-migrate Package
-===============
+tool_shed.galaxy_install.migrate package
+========================================
 
-:mod:`check` Module
--------------------
+.. automodule:: tool_shed.galaxy_install.migrate
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+tool_shed.galaxy_install.migrate.check module
+---------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.migrate.check
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`common` Module
---------------------
+tool_shed.galaxy_install.migrate.common module
+----------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.migrate.common
     :members:
     :undoc-members:
     :show-inheritance:
+
 

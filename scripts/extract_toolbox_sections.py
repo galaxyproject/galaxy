@@ -1,22 +1,21 @@
 import os
-import sys
-from xml.etree import ElementTree as ET
 from collections import defaultdict
+from xml.etree import ElementTree as ET
 
 # Todo: ""
 # execute from galaxy root dir
 
 tooldict = defaultdict(list)
 
+
 def main():
     doc = ET.parse("tool_conf.xml")
     root = doc.getroot()
-    
-    
+
     # index range 1-1000, current sections/tools divided between 250-750
     sectionindex = 250
     sectionfactor = int( 500 / len( root.getchildren() ) )
-    
+
     for rootchild in root.getchildren():
         currentsectionlabel = ""
         if ( rootchild.tag == "section" ):
@@ -24,27 +23,26 @@ def main():
             # per section tool index range 1-1000, current labels/tools
             # divided between 20 and 750
             toolindex = 250
-            toolfactor = int( 500 / len( rootchild.getchildren() ) ) 
+            toolfactor = int( 500 / len( rootchild.getchildren() ) )
             currentlabel = ""
             for sectionchild in rootchild.getchildren():
                 if ( sectionchild.tag == "tool" ):
                     addToToolDict(sectionchild, sectionname, sectionindex, toolindex, currentlabel)
                     toolindex += toolfactor
                 elif ( sectionchild.tag == "label" ):
-                    currentlabel = sectionchild.attrib["text"]                
-            sectionindex += sectionfactor       
+                    currentlabel = sectionchild.attrib["text"]
+            sectionindex += sectionfactor
         elif ( rootchild.tag == "tool" ):
             addToToolDict(rootchild, "", sectionindex, None, currentsectionlabel)
-            sectionindex += sectionfactor            
-    	elif ( rootchild.tag == "label" ):
-    	    currentsectionlabel = rootchild.attrib["text"]
-    	    sectionindex += sectionfactor
-    	    
-    	    
+            sectionindex += sectionfactor
+        elif ( rootchild.tag == "label" ):
+            currentsectionlabel = rootchild.attrib["text"]
+            sectionindex += sectionfactor
+
     # scan galaxy root tools dir for tool-specific xmls
     toolconffilelist = getfnl( os.path.join(os.getcwd(), "tools" ) )
-    
-    # foreach tool xml: 
+
+    # foreach tool xml:
     #   check if the tags element exists in the tool xml (as child of <tool>)
     #   if not, add empty tags element for later use
     #   if this tool is in the above tooldict, add the toolboxposition element to the tool xml
@@ -52,12 +50,12 @@ def main():
     for toolconffile in toolconffilelist:
         hastags = False
         hastoolboxpos = False
-        
-        #parse tool config file into a document structure as defined by the ElementTree
+
+        # parse tool config file into a document structure as defined by the ElementTree
         tooldoc = ET.parse(toolconffile)
         # get the root element of the toolconfig file
         tooldocroot = tooldoc.getroot()
-        #check tags element, set flag
+        # check tags element, set flag
         tagselement = tooldocroot.find("tags")
         if (tagselement):
             hastags = True
@@ -65,12 +63,12 @@ def main():
         toolboxposelement = tooldocroot.find("toolboxposition")
         if ( toolboxposelement ):
             hastoolboxpos = True
-        
+
         if ( not ( hastags and hastoolboxpos ) ):
             original = open( toolconffile, 'r' )
             contents = original.readlines()
             original.close()
-            
+
             # the new elements will be added directly below the root tool element
             addelementsatposition = 1
             # but what's on the first line? Root or not?
@@ -79,24 +77,22 @@ def main():
             newelements = []
             if ( not hastoolboxpos ):
                 if ( toolconffile in tooldict ):
-            	    for attributes in tooldict[toolconffile]:   	    
-					    # create toolboxposition element
-					    sectionelement = ET.Element("toolboxposition")
-					    sectionelement.attrib = attributes
-					    sectionelement.tail = "\n  "
-					    newelements.append( ET.tostring(sectionelement, 'utf-8') )
+                    for attributes in tooldict[toolconffile]:
+                        # create toolboxposition element
+                        sectionelement = ET.Element("toolboxposition")
+                        sectionelement.attrib = attributes
+                        sectionelement.tail = "\n  "
+                        newelements.append( ET.tostring(sectionelement, 'utf-8') )
 
             if ( not hastags ):
                 # create empty tags element
                 newelements.append( "<tags/>\n  " )
 
-            contents = (
-                    contents[ 0:addelementsatposition ] +
-                    newelements +
-                    contents[ addelementsatposition: ] )
-            
+            contents = ( contents[ 0:addelementsatposition ] + newelements +
+                         contents[ addelementsatposition: ] )
+
             # add .new for testing/safety purposes :P
-            newtoolconffile = open ( toolconffile, 'w' )
+            newtoolconffile = open( toolconffile, 'w' )
             newtoolconffile.writelines( contents )
             newtoolconffile.close()
 
@@ -104,9 +100,7 @@ def main():
 def addToToolDict(tool, sectionname, sectionindex, toolindex, currentlabel):
     toolfile = tool.attrib["file"]
     realtoolfile = os.path.join(os.getcwd(), "tools", toolfile)
-    toolxmlfile = ET.parse(realtoolfile)
-    localroot = toolxmlfile.getroot()
-    
+
     # define attributes for the toolboxposition xml-tag
     attribdict = {}
     if ( sectionname ):
@@ -118,6 +112,7 @@ def addToToolDict(tool, sectionname, sectionindex, toolindex, currentlabel):
     if ( toolindex ):
         attribdict[ "order" ] = str(toolindex)
     tooldict[ realtoolfile ].append(attribdict)
+
 
 # Build a list of all toolconf xml files in the tools directory
 def getfnl(startdir):

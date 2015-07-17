@@ -1,8 +1,5 @@
-importlib Package
-=================
-
-:mod:`importlib` Package
-------------------------
+galaxy.util.backports.importlib package
+=======================================
 
 .. automodule:: galaxy.util.backports.importlib
     :members:

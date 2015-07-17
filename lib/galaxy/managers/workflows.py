@@ -455,9 +455,10 @@ class WorkflowContentsManager(UsesAnnotations):
             if module.type == 'tool':
                 pja_dict = {}
                 for pja in step.post_job_actions:
-                    pja_dict[pja.action_type + pja.output_name] = dict( action_type=pja.action_type,
-                                                                        output_name=pja.output_name,
-                                                                        action_arguments=pja.action_arguments )
+                    pja_dict[pja.action_type + pja.output_name] = dict(
+                        action_type=pja.action_type,
+                        output_name=pja.output_name,
+                        action_arguments=pja.action_arguments )
                 step_dict[ 'post_job_actions' ] = pja_dict
             # Data inputs
             step_dict['inputs'] = module.get_runtime_input_dicts( annotation_str )

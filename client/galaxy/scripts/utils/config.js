@@ -4,7 +4,7 @@ define(['libs/underscore', 'viz/trackster/util', 'utils/config'], function(_, ut
  * A configuration setting. Currently key is used as id.
  */
 var ConfigSetting = Backbone.Model.extend({
-    
+
     initialize: function(options) {
         // Use key as id for now.
         var key = this.get('key');
@@ -16,8 +16,8 @@ var ConfigSetting = Backbone.Model.extend({
             this.set(_.extend({}, defaults, options));
         }
 
-        if (this.get('value') === undefined) {
-            // Use default to set value.
+        if (this.get('value') === undefined && this.get('default_value') !== undefined) {
+            // Use default to set value (if present).
             this.set_value(this.get('default_value'));
 
             // If no default value for color config, set random color.
@@ -134,7 +134,7 @@ var ConfigSettingCollection = Backbone.Collection.extend({
                 return _.extend({}, m, { value: saved_values[m.key] });
             });
         }
-        
+
         return new ConfigSettingCollection(models);
     }
 });
@@ -150,7 +150,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
      */
     render: function() {
         var container = this.$el;
-        
+
         this.collection.each(function(param, index) {
             // Hidden params have no representation in the form
             if (param.get('hidden')) { return; }
@@ -165,7 +165,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
             if ( type === 'bool' ) {
                 row.append( $('<input type="checkbox" />').attr("id", id ).attr("name", id ).attr( 'checked', value ) );
             }
-            // Draw parameter as textbox 
+            // Draw parameter as textbox
             else if ( type === 'text' ) {
                 row.append( $('<input type="text"/>').attr("id", id ).val(value).click( function() { $(this).select(); }));
             }
@@ -177,39 +177,39 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                 });
                 select.val( value );
                 row.append( select );
-            
+
             }
-            // Draw parameter as color picker 
+            // Draw parameter as color picker
             else if ( type === 'color' ) {
-                var 
+                var
                     container_div = $("<div/>").appendTo(row),
-                    input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")                  
+                    input = $('<input />').attr("id", id ).attr("name", id ).val( value ).css("float", "left")
                         .appendTo(container_div).click(function(e) {
                         // Hide other pickers.
                         $(".tooltip").removeClass( "in" );
-                        
+
                         // Show input's color picker.
                         var tip = $(this).siblings(".tooltip").addClass( "in" );
-                        tip.css( { 
+                        tip.css( {
                             // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                            // top: $(this).position().top + $(this.height) 
+                            // top: $(this).position().top + $(this.height)
                             left: $(this).position().left + $(this).width() + 5,
                             top: $(this).position().top - ( $(tip).height() / 2 ) + ( $(this).height() / 2 )
                             } ).show();
-                            
-                        // Click management: 
-                        
+
+                        // Click management:
+
                         // Keep showing tip if clicking in tip.
                         tip.click(function(e) {
                             e.stopPropagation();
                         });
-                        
+
                         // Hide tip if clicking outside of tip.
                         $(document).bind( "click.color-picker", function() {
                             tip.hide();
                             $(document).unbind( "click.color-picker" );
                         });
-                        
+
                         // No propagation to avoid triggering document click (and tip hiding) above.
                         e.stopPropagation();
                     }),
@@ -222,20 +222,20 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                     tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip),
                     tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip),
                     farb_obj = $.farbtastic(tip_inner, { width: 100, height: 100, callback: input, color: value });
-                
+
                 // Clear floating.
                 container_div.append( $("<div/>").css("clear", "both"));
-                
+
                 // Use function to fix farb_obj value.
                 (function(fixed_farb_obj) {
                     new_color_icon.click(function() {
                         fixed_farb_obj.setColor(util_mod.get_random_color());
-                    });  
+                    });
                 })(farb_obj);
-                  
-            } 
+
+            }
             else {
-                row.append( $('<input />').attr("id", id ).attr("name", id ).val( value ) ); 
+                row.append( $('<input />').attr("id", id ).attr("name", id ).val( value ) );
             }
             // Help text
             if ( param.help ) {

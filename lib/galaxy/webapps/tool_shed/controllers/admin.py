@@ -368,7 +368,6 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def undelete_repository( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             # Undeleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id.
@@ -406,7 +405,6 @@ class AdminController( BaseUIController, Admin ):
                 message = "No selected repositories were marked deleted, so they could not be undeleted."
         else:
             message = "No repository ids received for undeleting."
-            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='browse_repositories',
                                                    message=util.sanitize_text( message ),
@@ -419,7 +417,6 @@ class AdminController( BaseUIController, Admin ):
         # sense to mark a category as deleted (category names and descriptions can be changed instead).
         # If we do this, and the following 2 methods can be eliminated.
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )
@@ -434,7 +431,6 @@ class AdminController( BaseUIController, Admin ):
                 message += " %s " % escape( category.name )
         else:
             message = "No category ids received for deleting."
-            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
@@ -447,7 +443,6 @@ class AdminController( BaseUIController, Admin ):
         # Purging a deleted Category deletes all of the following from the database:
         # - RepoitoryCategoryAssociations where category_id == Category.id
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )
@@ -465,7 +460,6 @@ class AdminController( BaseUIController, Admin ):
             message = "Purged %d categories: %s" % ( count, escape( purged_categories ) )
         else:
             message = "No category ids received for purging."
-            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
@@ -475,7 +469,6 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def undelete_category( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )
@@ -494,7 +487,6 @@ class AdminController( BaseUIController, Admin ):
             message = "Undeleted %d categories: %s" % ( count, escape( undeleted_categories ) )
         else:
             message = "No category ids received for undeleting."
-            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
