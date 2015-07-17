@@ -7,7 +7,6 @@ import sqlalchemy as sa
 from sqlalchemy import and_
 
 from galaxy import model, util
-from galaxy.model.orm import and_
 from math import floor
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
