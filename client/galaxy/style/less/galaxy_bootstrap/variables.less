@@ -15,13 +15,13 @@
 // Default border bolor, this is between gray-light and gray-lighter -- classic Galaxy border color
 @border-default-color: lighten(black, 75%);
 
-// When making borders for components with other colors, how much to darken 
+// When making borders for components with other colors, how much to darken
 @border-darken-percent: 40%;
 
 // For making state colors, how much to darken and lighten
 @state-text-darken-percent: 15%;
-@state-bg-lighten-percent: 40%;
-@state-bg-saturate-percent: 30%;
+@state-bg-lighten-percent: 66%;
+@state-bg-saturate-percent: 22%;
 
 // Why bootstrap stopped defining these as variables I don't know
 @white: #fff;
@@ -422,19 +422,19 @@
 // -------------------------
 
 @state-warning-text:             darken(@brand-warning, @state-text-darken-percent);
-@state-warning-bg:               saturate(lighten(@brand-warning, @state-bg-lighten-percent),@state-bg-saturate-percent);
+@state-warning-bg:               saturate(lighten(@brand-warning, @state-bg-lighten-percent),@state-bg-saturate-percent, relative);
 @state-warning-border:           darken(@state-warning-bg, @border-darken-percent);
 
 @state-danger-text:              darken(@brand-danger, @state-text-darken-percent);
-@state-danger-bg:                saturate(lighten(@brand-danger, @state-bg-lighten-percent),@state-bg-saturate-percent);
+@state-danger-bg:                saturate(lighten(@brand-danger, @state-bg-lighten-percent),@state-bg-saturate-percent, relative);
 @state-danger-border:            darken(@state-danger-bg, @border-darken-percent);
 
 @state-success-text:             darken(@brand-success, @state-text-darken-percent);
-@state-success-bg:               saturate(lighten(@brand-success, @state-bg-lighten-percent),@state-bg-saturate-percent);
+@state-success-bg:               saturate(lighten(@brand-success, @state-bg-lighten-percent, relative),@state-bg-saturate-percent, relative);
 @state-success-border:           darken(@state-success-bg, @border-darken-percent);
 
 @state-info-text:                darken(@brand-info, @state-text-darken-percent);
-@state-info-bg:                  saturate(lighten(@brand-info, @state-bg-lighten-percent),@state-bg-saturate-percent);
+@state-info-bg:                  saturate(lighten(@brand-info, @state-bg-lighten-percent),@state-bg-saturate-percent, relative);
 @state-info-border:              darken(@state-info-bg, @border-darken-percent);
 
 
