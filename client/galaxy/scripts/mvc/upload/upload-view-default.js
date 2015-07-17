@@ -75,7 +75,7 @@ return Backbone.View.extend({
         this.btnClose    = new Ui.Button({ title: 'Close',               onclick: function() { self.app.modal.hide(); } });
 
         // append buttons to dom
-        var buttons = [this.btnLocal, this.btnFtp, this.btnCreate, this.btnStart, this.btnStop, this.btnReset, this.btnClose];
+        var buttons = [ this.btnLocal, this.btnFtp, this.btnCreate, this.btnStart, this.btnStop, this.btnReset, this.btnClose ];
         for (var i in buttons) {
             this.$('#upload-buttons').prepend(buttons[i].$el);
         }
@@ -83,8 +83,8 @@ return Backbone.View.extend({
         // file upload
         var self = this;
         this.uploadbox = this.$('#upload-box').uploadbox({
-            announce        : function(index, file, message) { self._eventAnnounce(index, file, message) },
             initialize      : function(index, file, message) { return self._eventInitialize(index, file, message) },
+            announce        : function(index, file, message) { self._eventAnnounce(index, file, message) },
             progress        : function(index, file, message) { self._eventProgress(index, file, message) },
             success         : function(index, file, message) { self._eventSuccess(index, file, message) },
             error           : function(index, file, message) { self._eventError(index, file, message) },
@@ -109,7 +109,7 @@ return Backbone.View.extend({
         });
 
         // handle extension info popover
-        self.$('#footer-extension-info').on('click' , function(e) {
+        self.$('#footer-extension-info').on('click', function(e) {
             self.showExtensionInfo({
                 $el         : $(e.target),
                 title       : self.select_extension.text(),

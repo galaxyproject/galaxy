@@ -35,12 +35,12 @@ var View = Backbone.View.extend({
         if (this.options.height){
             this.$body.css('height', this.options.height);
             this.$body.css('overflow', 'hidden');
-        } else{
+        } else {
             this.$body.css('max-height', $(window).height() / 2);
         }
 
         // fix width
-        if (this.options.width){
+        if (this.options.width) {
             this.$dialog.css('width', this.options.width);
         }
 
@@ -180,7 +180,7 @@ var View = Backbone.View.extend({
                             '<div class="modal-header">' +
                                 '<button type="button" class="close" style="display: none;">&times;</button>' +
                                 '<h4 class="title">' + title + '</h4>' +
-                                '</div>' +
+                            '</div>' +
                             '<div class="modal-body" style="position: static;"></div>' +
                             '<div class="modal-footer">' +
                                 '<div class="buttons" style="float: right;"></div>' +

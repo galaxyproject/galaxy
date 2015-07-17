@@ -25,7 +25,7 @@ var Image = Backbone.View.extend({
     initialize : function(options) {
         // get options
         this.options = Utils.merge(options, this.optionsDefault);
-            
+
         // create new element
         this.setElement(this._template(this.options));
     },

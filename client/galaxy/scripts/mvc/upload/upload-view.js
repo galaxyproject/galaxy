@@ -16,7 +16,7 @@ return Backbone.View.extend({
         ftp_upload_site     : 'n/a',
         default_genome      : '?',
         default_extension   : 'auto',
-        height              : 400,
+        height              : 480,
         width               : 900,
         auto                : {
             id          : 'auto',
