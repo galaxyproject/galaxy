@@ -1698,7 +1698,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     try:
                         trans.app.object_store.create( new_len.dataset )
                     except ObjectInvalid:
-                        raise Exception('Unable to create output dataset: object store is full')
+                        raise Exception( 'Unable to create output dataset: object store is full' )
                     trans.sa_session.flush()
                     counter = 0
                     f = open(new_len.file_name, "w")
