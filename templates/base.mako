@@ -52,7 +52,6 @@
         "libs/underscore",
         "libs/backbone/backbone",
         "libs/handlebars.runtime",
-        "libs/snap.svg",
         "galaxy.base",
         'libs/require'
     )}

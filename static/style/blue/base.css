@@ -2380,3 +2380,13 @@ div.toolTitleNoSection{padding-bottom:5px;font-weight:bold}
 .icon-button.chevron-expand:hover{background-image:url(sprite-fugue.png);background-position:0px -336px;width:16px;height:16px;height:16px}
 .icon-button.chevron-expand{background-image:url(sprite-fugue.png);background-position:0px -320px;width:16px;height:16px;height:16px}
 #for_bears{display:none}
+.chart{position:relative;z-index:2}
+.chart rect{fill:steelblue}
+.chart text{fill:white;font:7px sans-serif;text-anchor:end}
+.tick text{fill:black;font-family:Arial,sans-serif;font-size:7px}
+.axis path,.axis line{fill:none;stroke:#000;shape-rendering:crispEdges}
+.chart .title{fill:black;font-size:15px;font-family:"Lucida Grande",verdana,arial,helvetica,sans-serif;font-weight:800;line-height:1.1}
+.chart .ax_title{fill:black}
+.hr_container,.dy_container{position:relative;z-index:2;display:inline-block;vertical-align:top}
+.charts{margin-top:10px;margin-left:0;margin-right:0;text-align:center;position:relative;display:block;overflow-x:auto;overflow-y:hidden;white-space:nowrap}
+.trim{position:relative;height:10px;top:50px;background:#ebd9b2;color:#000;border-top:solid #d6b161 1px;border-bottom:solid #d6b161 1px}
