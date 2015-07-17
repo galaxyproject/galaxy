@@ -13,8 +13,6 @@ from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
 from math import ceil
 import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
 log = logging.getLogger( __name__ )
