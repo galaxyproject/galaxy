@@ -16,7 +16,7 @@ return Backbone.View.extend({
         ftp_upload_site     : 'n/a',
         default_genome      : '?',
         default_extension   : 'auto',
-        height              : 480,
+        height              : 500,
         width               : 900,
         auto                : {
             id          : 'auto',
@@ -151,6 +151,10 @@ return Backbone.View.extend({
                 height          : this.options.height,
                 width           : this.options.width,
                 closing_events  : true
+            });
+            this.modal.$el.find('.modal-header').css({
+                'border': 'none',
+                'padding-bottom' : '0px'
             });
         }
 
