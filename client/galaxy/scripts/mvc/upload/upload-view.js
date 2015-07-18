@@ -139,7 +139,7 @@ return Backbone.View.extend({
             // add tab
             this.default_view = new UploadViewDefault(this);
             this.tabs.add({
-                id      : 'default',
+                id      : 'regular',
                 title   : 'Regular',
                 $el     : this.default_view.$el
             });
