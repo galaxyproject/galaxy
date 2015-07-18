@@ -140,8 +140,14 @@ return Backbone.View.extend({
             this.default_view = new UploadViewDefault(this);
             this.tabs.add({
                 id      : 'default',
-                title   : 'Default',
+                title   : 'Regular',
                 $el     : this.default_view.$el
+            });
+
+            this.tabs.add({
+                id      : 'composite',
+                title   : 'Composite',
+                $el     : $('<div>Composite upload panel</div>')
             });
 
             // make modal
