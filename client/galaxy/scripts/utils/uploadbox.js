@@ -30,35 +30,38 @@
 
     // file queue
     var queue = {};
-  
+
     // queue index counter
     var queue_index = 0;
-  
+
     // queue length
     var queue_length = 0;
-  
+
     // indicates if queue is currently running
     var queue_running = false;
     var queue_stop = false;
-  
+
     // element
     var el = null;
-  
+
     // xml request element
     var xhr = null;
-  
+
+    // uploadbox input dom
+    var $uploadbox_input = null;
+
     // attach to element
     $.fn.uploadbox = function(options) {
         // parse options
         opts = $.extend({}, default_opts, options);
-  
+
         // element
         el = this;
-  
+
         // append upload button
-        var $uploadbox_input = $('<input id="uploadbox_input" type="file" style="display: none" multiple/>');
+        $uploadbox_input = $('<input id="uploadbox_input" type="file" style="display: none" multiple/>');
         el.append($uploadbox_input);
-  
+
         // attach events
         el.on('drop', drop);
         el.on('dragover',  dragover);
@@ -68,7 +71,7 @@
         $uploadbox_input.change(function(e) {
             // add files to queue
             add(e.target.files);
-            
+
             // reset
             $(this).val('');
         });
@@ -78,13 +81,13 @@
             // check if it's a file transfer
             if(!e.dataTransfer)
                 return;
-            
+
             // add files to queue
             add(e.dataTransfer.files);
-      
+
             // prevent default
             e.preventDefault();
-            
+
             // return
             return false;
         }
@@ -104,35 +107,36 @@
         // progress
         function progress(e) {
             // get percentage
-            if (e.lengthComputable)
+            if (e.lengthComputable) {
                 opts.progress(this.index, this.file, Math.round((e.loaded * 100) / e.total));
+            }
         }
 
         // respond to an upload request
         function add(files) {
             // only allow adding file if current batch is complete
-            if (queue_running)
+            if (queue_running) {
                 return;
-  
+            }
+
             // backup queue index
             var current_index = queue_index;
-  
+
             // add files to queue
             for (var i = 0; i < files.length; i++) {
-
                 // new identifier
                 var index = String(queue_index++);
-  
+
                 // add to queue
                 queue[index] = files[i];
-  
+
                 // announce
                 opts.announce(index, queue[index], '');
-  
+
                 // increase counter
                 queue_length++;
             }
-  
+
             // return
             return current_index;
         }
@@ -142,12 +146,12 @@
             if (queue[index]) {
                 // remove from queue
                 delete queue[index];
-  
+
                 // update counter
                 queue_length--;
             }
         }
-  
+
         // process an upload, recursive
         function process() {
             // validate
@@ -166,20 +170,20 @@
                 index = key;
                 break;
             }
-  
+
             // get current file from queue
             var file = queue[index];
-  
+
             // remove from queue
             remove(index)
-  
+
             // collect file details
             var filesize = file.size;
             var filemode = file.mode;
-  
+
             // identify maximum file size
             var maxfilesize = 1048576 * opts.maxfilesize;
-  
+
             // check file size, unless it's an ftp file
             if (filesize < maxfilesize || file.mode == 'ftp') {
                 // get parameters
@@ -195,7 +199,7 @@
                 error(index, file, opts.error_filesize);
             }
         }
-  
+
         // send file
         function send (index, file, data) {
             // construct form data
@@ -203,19 +207,19 @@
             for (var key in data) {
                 formData.append(key, data[key]);
             }
-  
+
             // check file size
             if (file.size > 0 && opts.paramname) {
                 formData.append(opts.paramname, file, file.name);
             }
-  
+
             // prepare request
             xhr = new XMLHttpRequest();
             xhr.open('POST', opts.url, true);
             xhr.setRequestHeader('Accept', 'application/json');
             xhr.setRequestHeader('Cache-Control', 'no-cache');
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-            
+
             // captures state changes
             xhr.onreadystatechange = function() {
                 // check for request completed, server connection closed
@@ -232,7 +236,7 @@
                         response = xhr.responseText;
                     }
                 }
-  
+
                 // pass any error to the error option
                 if (xhr.status < 200 || xhr.status > 299) {
                     // format status
@@ -260,7 +264,7 @@
             // send request
             xhr.send(formData);
         }
-  
+
         // success
         function success (index, file, msg) {
             // parse message
@@ -269,31 +273,31 @@
             // restart process after success
             process();
         }
-  
+
         // error
         function error (index, file, err) {
             // parse error
             opts.error(index, file, err);
-  
+
             // restart process after error
             process();
         }
-  
+
         /*
             public interface
         */
-    
+
         // open file browser for selection
         function select() {
             $uploadbox_input.trigger('click');
         }
-  
+
         // remove all entries from queue
         function reset(index) {
             for (index in queue)
                 remove(index);
         }
-  
+
         // initiate upload process
         function start() {
             if (!queue_running) {
@@ -301,27 +305,27 @@
                 process();
             }
         }
-  
+
         // stop upload process
         function stop() {
             // request stop
             queue_stop = true;
         }
-  
+
         // set options
         function configure(options) {
             // update current configuration
             opts = $.extend({}, opts, options);
-  
+
             // return new configuration
             return opts;
         }
-  
+
         // verify browser compatibility
         function compatible() {
             return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
         }
-  
+
         // export functions
         return {
             'select'        : select,
