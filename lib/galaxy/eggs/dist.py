@@ -63,14 +63,14 @@ class DistScrambleCrate( ScrambleCrate ):
 
     def get_platforms( self, wanted ):
         # find all the members of a group and process them
-        if self.groups in wanted:
+        if wanted in self.groups:
             platforms = []
             for name in self.groups[wanted].split():
                 for platform in self.get_platforms( name ):
                     if platform not in platforms:
                         platforms.append( platform )
             return platforms
-        elif self.hosts in wanted:
+        elif wanted in self.hosts:
             return [ wanted ]
         else:
             raise Exception( "unknown platform: %s" % wanted )
