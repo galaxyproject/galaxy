@@ -8,7 +8,7 @@ import logging
 import threading
 from Queue import Queue, Empty
 
-from sqlalchemy.sql.expression import and_, or_, select, func, true
+from sqlalchemy.sql.expression import and_, or_, select, func, true, null
 
 from galaxy import model
 from galaxy.util.sleeper import Sleeper
