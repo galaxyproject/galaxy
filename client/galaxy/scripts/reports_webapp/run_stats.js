@@ -27,7 +27,8 @@ function create_chart( inp_data, name, time, title ) {
         var data = inp_data;
         var margin = {top: 60, right: 30, bottom: 50, left: 60};
         var chart_zoom = 1.8;
-        function click(d) {
+
+        function click() {
             var classes = d3.select(this).attr("class");
             classes = classes.split(" ");
             d3.selectAll("." + classes[0]).filter("." + classes[1])
@@ -67,7 +68,7 @@ function create_chart( inp_data, name, time, title ) {
         var yAxis = d3.svg.axis()
             .scale(y)
             .orient("left")
-            .tickFormat( function(d) { return d3.round( d*d3.max(data), 1 ) });
+            .tickFormat( function(d) { return d3.round( d*d3.max(data), 0 ) });
 
 
         if (time == "hours") {
@@ -97,28 +98,8 @@ function create_chart( inp_data, name, time, title ) {
         }
 
         var chart = d3.select("#" + name)
-            .attr("width", function(d) {
-                var wdth = 0;
-
-                if(name == "jc_hr_chart" || name == "jc_dy_chart") {
-                    wdth = chart_width * chart_zoom;
-                } else {
-                    wdth = chart_width;
-                }
-
-                return wdth;
-            })
-            .attr("height", function(d) {
-                var hght = 0;
-                
-                if(name == "jc_hr_chart" || name == "jc_dy_chart") {
-                    hght = chart_height * chart_zoom;
-                } else {
-                    hght = chart_height;
-                }
-
-                return hght;
-            })
+            .attr("width", chart_width)
+            .attr("height", chart_width)
             .attr("preserveAspectRatio", "xMidYMin")
             .attr("viewBox", "0 0 " + chart_width + " " + chart_height)
             .on("click", click);
@@ -132,18 +113,27 @@ function create_chart( inp_data, name, time, title ) {
                     return "translate(" + curr_margin + "," + margin.top + ")";
                 })
                 .on("mouseenter", function(d) {
+                    var i = 0;
+                    var size = d;
+
+                    while( size >= 1) {
+                        size = size / 10;
+                        i++;
+                    }
+
+                    var wdth = (i * 4) + 10;
                     d3.select(d3.event.path[1]).select(".tool_tip")
                         .select("text")
-                            .attr("transform", "translate( 45, " + ((height - (d * zoom))  + +margin.top + 10) + " )" )
+                            .attr("transform", "translate( " + (margin.left - 5) + ", " + ((height - (d * zoom)) + +margin.top + 10) + " )" )
                             .attr("visibility", "visible")
                             .text(d);
 
                     d3.select(d3.event.path[1]).select(".tool_tip")
-                        .attr("width", "40px")
+                        .attr("width", wdth + "px")
                         .attr("height", "15px")
                         .select("rect")
-                            .attr("transform", "translate( 19.5, " + ((height - (d * zoom)) + +margin.top) + " )" )
-                            .attr("width", "40px")
+                            .attr("transform", "translate( " + ((+margin.left) - wdth) + ", " + ((height - (d * zoom)) + +margin.top) + " )" )
+                            .attr("width", wdth + "px")
                             .attr("height", "15px")
                             .attr("fill","#ebd9b2");
                 })
@@ -170,14 +160,15 @@ function create_chart( inp_data, name, time, title ) {
 
         chart.append("g")
             .attr("class", "x axis")
+            .attr("id", ("x_" + name))
             .attr("transform", "translate(" + margin.left + "," + (+height + +margin.top )+ ")")
             .call(xAxis)
                 .selectAll("text")
                 .attr("transform", function() {
                     if(time == "hours") {
-                        return "translate( " + (-(barWidth/2) - 1) + ", 17)rotate(-90)";
+                        return "translate( 0, 17)rotate(-90)";
                     } else if(time == "days") {
-                        return "translate( " + (-(barWidth/2) - 9) + ", 13)rotate(-90)";
+                        return "translate( 0, 13)rotate(-90)";
                     }
                 });
 
@@ -185,26 +176,11 @@ function create_chart( inp_data, name, time, title ) {
             .append("text")
                 .attr("class", "ax_title")
                 .attr("transform", function(e) {
-                    var trans = "";
-                    if(time == "hours") {
-                        trans = "translate(" + (+margin.left/2) + "," + margin.top + ")rotate(-90)";
-                    } else if(time == "days") {
-                        trans = "translate(" + (+margin.left/4) + "," + margin.top + ")rotate(-90)";
-                    }
-                    return trans;
-                })
-                .text("Number of Jobs");
+                    var axis = d3.select("#x_" + name).node()
+                    var left_pad = +margin.left + (axis.getBoundingClientRect().width/2) + 30;
+                    var top_pad = +margin.top + height + axis.getBoundingClientRect().height + 10
+                    var trans = "translate(" + left_pad + "," + top_pad + ")";
 
-        chart.append("g")
-            .append("text")
-                .attr("class", "ax_title")
-                .attr("transform", function(e) {
-                    var trans = "";
-                    if(time == "hours") {
-                        trans = trans = "translate(" + (+margin.left*2 + 20) + "," + (+chart_height - 7) + ")";
-                    } else if(time == "days") {
-                        trans = "translate(" + (+margin.left*2 ) + "," + (+chart_height - 7) + ")";
-                    }
                     return trans;
                 })
                 .text(function(d) {
@@ -219,8 +195,23 @@ function create_chart( inp_data, name, time, title ) {
 
         chart.append("g")
             .attr("class", "y axis")
+            .attr("id", ("y_" + name))
             .attr("transform", "translate( " + margin.left + "," + margin.top + ")")
             .call(yAxis);
+
+        chart.append("g")
+            .append("text")
+                .attr("class", "ax_title")
+                .attr("transform", function(e) {
+                    var axis = d3.select("#y_" + name).node()
+                    var left_pad = +margin.left - axis.getBoundingClientRect().width - 5;
+                    var top_pad = +margin.top + (axis.getBoundingClientRect().height/2) - 30
+                    var trans = "translate(" + left_pad + "," + top_pad + ")rotate(-90)";
+
+                    return trans;
+                })
+                .text("Number of Jobs");
+
         bar.append("rect")
             .attr("y", function(d) { return height - (d * zoom); })
             .attr("height", function(d) { return (d * zoom); })
@@ -231,6 +222,12 @@ function create_chart( inp_data, name, time, title ) {
             .append("rect");
         chart.select(".tool_tip")
             .append("text");
+
+        if(name == "jc_dy_chart" || name == "jc_hr_chart") {
+            d3.select("#" + name)
+                .attr("height", chart_height * chart_zoom)
+                .attr("width", chart_width * chart_zoom)
+        }
     });
 }
 
@@ -280,6 +277,8 @@ function create_histogram( inp_data, name, time, title ) {
         var width = 300;
         var chart_width = width + margin.left + margin.right;
 
+        var lengths = []
+
         var x = d3.scale.linear()
             .domain([0, d3.max(data)])
             .range([0, width]);
@@ -289,14 +288,19 @@ function create_histogram( inp_data, name, time, title ) {
             .bins(x.ticks(20))
             (data);
 
+        for(var i = 0; i < data.length; i ++) {
+            lengths.push(data[i].length)
+        }
+
+        if(d3.max(data) != 0) {
+            var zoom = height / d3.max(lengths);
+        } else {
+            var zoom = 1.0;
+        }
+
         var y = d3.scale.linear()
             .domain([0, d3.max(data, function(d) { return d.y; })])
             .range([height, 0]);
-
-        var xAxis = d3.svg.axis()
-            .scale(x)
-            .orient("bottom")
-            .tickFormat(formatMinutes);
 
         var chart = d3.select("#" + name)
             .attr("viewBox", "0 0 " + chart_width + " " + chart_height)
@@ -329,7 +333,7 @@ function create_histogram( inp_data, name, time, title ) {
                 var wdth = (i * 4) + 10;
                 d3.select(d3.event.path[1]).select(".tool_tip")
                     .select("text")
-                        .attr("transform", "translate( " + (margin.left - 5) + ", " + (height + +margin.top - 5) + " )" )
+                        .attr("transform", "translate( " + (margin.left - 5) + ", " + (height - (d.length * zoom) + +margin.top + 10) + " )" )
                         .attr("visibility", "visible")
                         .text(d.length);
 
@@ -337,7 +341,7 @@ function create_histogram( inp_data, name, time, title ) {
                     .attr("width", wdth + "px")
                     .attr("height", "15px")
                     .select("rect")
-                        .attr("transform", "translate( " + ((+margin.left) - wdth) + ", " + (height + +margin.top - 15) + " )")
+                        .attr("transform", "translate( " + ((+margin.left) - wdth) + ", " + (height - (d.length * zoom) + +margin.top) + " )")
                         .attr("width", wdth + "px")
                         .attr("height", "15px")
                         .attr("fill","#ebd9b2");
@@ -366,10 +370,52 @@ function create_histogram( inp_data, name, time, title ) {
             .attr("width", bar_x - 1)
             .attr("height", function(d) { return height - y(d.y); });
 
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom")
+            .tickFormat(formatMinutes);
+
         chart.append("g")
             .attr("class", "x axis")
+            .attr("id", "x_" + name)
             .attr("transform", "translate( " + margin.left + "," + (+height + +margin.top) + ")")
             .call(xAxis);
+
+        chart.append("g")
+            .append("text")
+                .attr("class", "ax_title")
+                .attr("transform", function(e) {
+                    var axis = d3.select("#x_" + name).node()
+                    var left_pad = +margin.left + (axis.getBoundingClientRect().width/2) + 30;
+                    var top_pad = +margin.top + height + axis.getBoundingClientRect().height + 10
+                    var trans = "translate(" + left_pad + "," + top_pad + ")";
+
+                    return trans;
+                })
+                .text("ETA - hrs:mins");
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left");
+
+        chart.append("g")
+            .attr("class", "y axis")
+            .attr("id", ("y_" + name))
+            .attr("transform", "translate( " + margin.left + "," + margin.top + ")")
+            .call(yAxis);
+
+        chart.append("g")
+            .append("text")
+                .attr("class", "ax_title")
+                .attr("transform", function(e) {
+                    var axis = d3.select("#y_" + name).node()
+                    var left_pad = +margin.left - axis.getBoundingClientRect().width - 5;
+                    var top_pad = +margin.top + (axis.getBoundingClientRect().height/2) - 30
+                    var trans = "translate(" + left_pad + "," + top_pad + ")rotate(-90)";
+
+                    return trans;
+                })
+                .text("Number of Jobs");
 
         chart.append("g")
             .attr("class", "tool_tip")

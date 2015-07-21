@@ -58,25 +58,16 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
 
                     # Get the Elapsed Time for said job
                     time = (job.update_time - job.create_time)
-                    sec = time.seconds
-                    hours, remainder = divmod(sec, 3600)
-                    minutes, seconds = divmod(remainder, 60)
-                    hours += (time.days * 24)
-                    minutes += (hours * 60)
-                    time = minutes
-                    et_hr_data.append(time)
+                    seconds = time.seconds
+                    minutes = seconds // 60
+                    et_hr_data.append(minutes)
                 # Get the elapsed time for the jobs in the past 3 days
                 if(job.update_time >= start_days_eta and
                    job.update_time < end_date ):
                     time = (job.update_time - job.create_time)
-                    sec = time.seconds
-                    hours, remainder = divmod(sec, 3600)
-                    minutes, seconds = divmod(remainder, 60)
-                    hours += (time.days * 24)
-                    minutes += (hours * 60)
-                    time = minutes
-                    if time <= 7200:
-                        et_dy_data.append(time)
+                    seconds = time.seconds
+                    minutes = seconds // 60
+                    et_dy_data.append(minutes)
 
                 # Get the time the job finished in the 30 days
                 day = (end_date - job.update_time).days
