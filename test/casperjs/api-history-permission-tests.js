@@ -155,9 +155,11 @@ spaceghost.test.begin( 'Test permissions for accessible, published, and inaccess
         this.api.assertRaises( function(){
             this.api.hdas.index( history.id );
         }, 403, 'History is not accessible by user', 'hda index failed with error' );
-        this.api.assertRaises( function(){
-            this.api.hdas.show( history.id, hdas[0].id );
-        }, 403, 'History is not accessible by user', 'hda show failed with error' );
+        // 150721: accessible hdas in an inaccessible history are considered accessible (since api/datasets does)
+        // this.api.assertRaises( function(){
+        //     this.api.hdas.show( history.id, hdas[0].id );
+        // }, 403, 'History is not accessible by user', 'hda show failed with error' );
+        this.test.assertTrue( utils.isObject( this.api.hdas.show( history.id, hdas[0].id ) ) );
 
         this.test.comment( 'Attempting to copy an accessible hda (default is accessible)'
                          + ' from an inaccessible history should fail for: ' + history.name );
