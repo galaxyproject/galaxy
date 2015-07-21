@@ -15,7 +15,7 @@ module.exports = function( grunt ){
                 expand : true,
                 cwd : paths.srcSymlink + '/templates',
                 src : '**/*.handlebars',
-                dest : paths.dist + '/templates/compiled',
+                dest : paths.srcSymlink + '/templates/compiled',
                 ext : '.js'
             }],
             options : {
@@ -28,6 +28,18 @@ module.exports = function( grunt ){
                 wrapped : true
             }
         }
+    });
+
+    grunt.registerTask( 'templates', function(){
+        // compile then compress
+        grunt.task.run( 'handlebars' );
+        grunt.config( 'uglify.target.files', [{
+            expand : true,
+            cwd : paths.srcSymlink + '/templates/compiled',
+            src : '**/*.js',
+            dest : paths.dist + '/templates/compiled'
+        }]);
+        grunt.task.run( 'uglify' );
     });
 
     // -------------------------------------------------------------------------- watch & compile
