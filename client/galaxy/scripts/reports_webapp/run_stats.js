@@ -166,9 +166,9 @@ function create_chart( inp_data, name, time, title ) {
                 .selectAll("text")
                 .attr("transform", function() {
                     if(time == "hours") {
-                        return "translate( 0, 17)rotate(-90)";
+                        return "translate( -7, 17)rotate(-90)";
                     } else if(time == "days") {
-                        return "translate( 0, 13)rotate(-90)";
+                        return "translate( -14, 13)rotate(-90)";
                     }
                 });
 
