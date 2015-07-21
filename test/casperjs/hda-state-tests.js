@@ -27,7 +27,7 @@ spaceghost.test.begin( 'Test the form of various HDA states', 0, function suite(
         filepathToUpload = '../../test-data/' + filenameToUpload,
         uploadId = null,
         //TODO: get from the api module - that doesn't exist yet
-        summaryShouldBeArray = [ '10 lines', 'format', 'txt' ],
+        summaryShouldBeArray = [ '10 lines' ],
         infoShouldBe = 'uploaded txt file',
         metadataFiles = null,
         peekShouldBeArray = [];
@@ -35,7 +35,11 @@ spaceghost.test.begin( 'Test the form of various HDA states', 0, function suite(
     // ------------------------------------------------------------------- set up
     // start a new user and upload a file
     spaceghost.user.loginOrRegisterUser( email, password );
-    spaceghost.api.tools.thenUploadToCurrent({ filepath: filepathToUpload }, function upload( id, json ){
+    spaceghost.api.tools.thenUploadToCurrent({
+        filepath: filepathToUpload,
+        ext: 'txt'
+
+    }, function upload( id, json ){
         uploadId = id;
     });
     spaceghost.openHomePage();
