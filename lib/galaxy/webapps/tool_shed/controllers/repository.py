@@ -1649,16 +1649,16 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             # Return only metadata revisions where tools_functionally_correct is set to True.
             metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == true(),
                                     trans.model.RepositoryMetadata.table.c.tools_functionally_correct == true(),
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested != null() )
         elif status == 'failed':
             # Return only metadata revisions where tools_functionally_correct is set to False.
             metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == true(),
                                     trans.model.RepositoryMetadata.table.c.tools_functionally_correct == false(),
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested != null() )
         else:
             # Return all metadata entries for this user's repositories.
             metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == true(),
-                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested != null() )
 
         tool_shed_url = web.url_for( '/', qualified=True )
         functional_test_results = []
