@@ -16,9 +16,9 @@
     "grunt-contrib-watch": "^0.6.1",
     "grunt-exec": "^0.4.6",
     "grunt-spritesmith": "~1.7.0",
-    "grunt-webpack": "^1.0.8",
+    "grunt-webpack": "^1.0.11",
     "i18n-webpack-plugin": "^0.2.7",
-    "webpack": "^1.5.1",
+    "webpack": "^1.10.1",
     "webpack-dev-server": "^1.7.0"
   }
 }
