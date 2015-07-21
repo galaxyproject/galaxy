@@ -1,5 +1,5 @@
 /**
- * Grunt task to compile handlebars templates.
+ * Grunt task to compile templates.
  * @param  {Object} grunt main grunt file
  * @return {Function} callback to build this task
  */
@@ -15,9 +15,17 @@ module.exports = function( grunt ){
                 expand : true,
                 cwd : paths.srcSymlink + '/templates',
                 src : '**/*.handlebars',
-                dest : paths.dist + '/templates'
+                dest : paths.dist + '/templates/compiled',
+                ext : '.js'
             }],
             options : {
+                namespace : 'Handlebars.templates',
+                // generates the key under the namespace above where the template fns are accessed
+                processName : function( filepath ){
+                    filepath = filepath.match( /.*\/(\w+)\.handlebars/ ).pop();
+                    return filepath;
+                },
+                wrapped : true
             }
         }
     });
