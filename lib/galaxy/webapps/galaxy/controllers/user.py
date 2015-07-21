@@ -15,7 +15,7 @@ from galaxy import eggs
 eggs.require( "MarkupSafe" )
 from markupsafe import escape
 eggs.require('sqlalchemy')
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, true
 
 from galaxy import model
 from galaxy import util
@@ -1153,7 +1153,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     # Invalidate all other sessions
                     for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
                                                      .filter( and_( trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                                    trans.app.model.GalaxySession.table.c.is_valid is True,
+                                                                    trans.app.model.GalaxySession.table.c.is_valid == true(),
                                                                     trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id ) ):
                         other_galaxy_session.is_valid = False
                         trans.sa_session.add( other_galaxy_session )
