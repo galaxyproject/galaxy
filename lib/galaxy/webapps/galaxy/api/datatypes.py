@@ -38,6 +38,7 @@ class DatatypesController( BaseAPIController ):
                     dictionary = {}
                     for key in keys:
                         dictionary[key] = elem.get(key)
+                    print elem
                     rval.append(dictionary)
                 return rval
         except Exception as exception:

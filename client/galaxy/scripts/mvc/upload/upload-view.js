@@ -3,12 +3,14 @@ define(['utils/utils',
         'mvc/ui/ui-modal',
         'mvc/ui/ui-tabs',
         'mvc/upload/upload-button',
-        'mvc/upload/upload-view-default'],
+        'mvc/upload/upload-view-default',
+        'mvc/upload/upload-view-composite'],
         function(   Utils,
                     Modal,
                     Tabs,
                     UploadButton,
-                    UploadViewDefault ) {
+                    UploadViewDefault,
+                    UploadViewComposite ) {
 return Backbone.View.extend({
     // default options
     options : {
@@ -144,10 +146,11 @@ return Backbone.View.extend({
                 $el     : this.default_view.$el
             });
 
+            this.composite_view = new UploadViewComposite(this);
             this.tabs.add({
                 id      : 'composite',
                 title   : 'Composite',
-                $el     : $('<div>Composite upload panel</div>')
+                $el     : $(this.composite_view.$el)
             });
 
             // make modal
