@@ -212,7 +212,7 @@ class JobHandlerQueue( object ):
                 .join(model.LibraryDatasetDatasetAssociation) \
                 .join(model.Dataset) \
                 .filter(and_((model.Job.state == model.Job.states.NEW),
-                        or_((model.LibraryDatasetDatasetAssociation._state is not None),
+                        or_((model.LibraryDatasetDatasetAssociation._state != null()),
                             (model.LibraryDatasetDatasetAssociation.deleted == true()),
                             (model.Dataset.state != model.Dataset.states.OK),
                             (model.Dataset.deleted == true())))).subquery()
