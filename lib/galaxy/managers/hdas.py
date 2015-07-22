@@ -120,6 +120,9 @@ class HDAManager( datasets.DatasetAssociationManager,
         copy.copied_from_history_dataset_association = hda
         copy.set_size()
 
+        original_annotation = self.annotation( hda )
+        self.annotate( copy, original_annotation, user=history.user )
+
         # TODO: update from kwargs?
 
         # Need to set after flushed, as MetadataFiles require dataset.id
@@ -132,6 +135,11 @@ class HDAManager( datasets.DatasetAssociationManager,
             copy.set_peek()
 
         self.session().flush()
+
+        # these use a second session flush and need to be after the first
+        original_tags = self.get_tags( hda )
+        self.set_tags( copy, original_tags, user=history.user )
+
         return copy
 
     def copy_ldda( self, history, ldda, **kwargs ):
@@ -224,6 +232,11 @@ class HDAManager( datasets.DatasetAssociationManager,
         truncated = preview and os.stat( hda.file_name ).st_size > MAX_PEEK_SIZE
         hda_data = open( hda.file_name ).read( MAX_PEEK_SIZE )
         return truncated, hda_data
+
+    # .... annotatable
+    def annotation( self, hda ):
+        # override to scope to history owner
+        return self._user_annotation( hda, hda.history.user )
 
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
