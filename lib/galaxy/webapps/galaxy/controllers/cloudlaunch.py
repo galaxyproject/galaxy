@@ -60,13 +60,17 @@ class CloudController(BaseUIController):
         """
         Get EC2 Account Info
         """
-        account_info = {}
-        cml = cloudman.launch.CloudManLauncher(key_id, secret)
-        ec2_conn = cml.connect_ec2(key_id, secret)
-        kps = ec2_conn.get_all_key_pairs()
-        account_info['clusters'] = cml.get_clusters_pd()
-        account_info['keypairs'] = [akp.name for akp in kps]
-        return dumps(account_info)
+        try:
+            account_info = {}
+            cml = cloudman.launch.CloudManLauncher(key_id, secret)
+            ec2_conn = cml.connect_ec2(key_id, secret)
+            kps = ec2_conn.get_all_key_pairs()
+            account_info['clusters'] = cml.get_clusters_pd()
+            account_info['keypairs'] = [akp.name for akp in kps]
+            return dumps(account_info)
+        except EC2ResponseError as e:
+            trans.response.status = 400
+            return e.message
 
     @web.expose
     def launch_instance(self, trans, cluster_name, password, key_id, secret,
