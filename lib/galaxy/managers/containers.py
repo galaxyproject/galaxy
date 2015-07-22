@@ -3,10 +3,9 @@ Manager mixins to unify the interface into things that can contain: Datasets
 and other (nested) containers.
 
 (e.g. DatasetCollections, Histories, LibraryFolders)
-
-Histories should be DatasetCollections.
-Libraries should be DatasetCollections.
 """
+# Histories should be DatasetCollections.
+# Libraries should be DatasetCollections.
 
 import operator
 
@@ -28,6 +27,7 @@ class ContainerManagerMixin( object ):
     each of the methods below only work on the first level of
     nesting.
     """
+    # TODO: terminology is getting a bit convoluted and silly at this point: rename three public below?
     # TODO: this should be an open mapping (not just 2)
     #: the classes that can be contained
     contained_class = None
@@ -78,6 +78,7 @@ class HistoryAsContainerManagerMixin( ContainerManagerMixin ):
     order_contents_on = operator.attrgetter( 'hid' )
 
     def _filter_to_contained( self, container, content_class ):
+        # use the backref of the container on the contained
         return content_class.history == container
 
     def _content_manager( self, content ):

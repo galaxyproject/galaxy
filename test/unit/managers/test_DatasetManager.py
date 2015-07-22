@@ -112,7 +112,8 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, user3 ) )
 
     def test_create_public_dataset( self ):
-        self.log( "should be able to create a new Dataset and give it some permissions that actually, you know, might work if there's any justice in this universe" )
+        self.log( "should be able to create a new Dataset and give it some permissions that actually, you know, "
+            "might work if there's any justice in this universe" )
         owner = self.user_manager.create( **user2_data )
         owner_private_role = self.user_manager.private_role( owner )
         dataset = self.dataset_manager.create( manage_roles=[ owner_private_role ] )
@@ -134,7 +135,7 @@ class DatasetManagerTestCase( BaseTestCase ):
         self.assertTrue( self.dataset_manager.permissions.access.is_permitted( dataset, user3 ) )
 
     def test_create_private_dataset( self ):
-        self.log( "should be able to create a new Dataset and give it some permissions that actually, you know, might work if there's any justice in this universe" )
+        self.log( "should be able to create a new Dataset and give it private permissions" )
         owner = self.user_manager.create( **user2_data )
         owner_private_role = self.user_manager.private_role( owner )
         dataset = self.dataset_manager.create(
