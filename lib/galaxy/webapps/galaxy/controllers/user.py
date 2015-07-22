@@ -28,6 +28,7 @@ from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
 from galaxy.web.framework.helpers import escape, grids, time_ago
+from galaxy.exceptions import ObjectInvalid
 
 
 log = logging.getLogger( __name__ )
@@ -1694,6 +1695,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     new_len.visible = False
                     new_len.state = trans.app.model.Job.states.OK
                     new_len.info = "custom build .len file"
+                    try:
+                        trans.app.object_store.create( new_len.dataset )
+                    except ObjectInvalid:
+                        raise Exception( 'Unable to create output dataset: object store is full' )
                     trans.sa_session.flush()
                     counter = 0
                     f = open(new_len.file_name, "w")
