@@ -1760,8 +1760,7 @@ mapper( model.UserRoleAssociation, model.UserRoleAssociation.table, properties=d
         primaryjoin=(
             ( model.User.table.c.id == model.UserRoleAssociation.table.c.user_id ) &
             ( model.UserRoleAssociation.table.c.role_id == model.Role.table.c.id ) &
-            not_( model.Role.table.c.name == model.User.table.c.email ) )
-        ),
+            not_( model.Role.table.c.name == model.User.table.c.email ) ) ),
     role=relation( model.Role )
 ) )
 
