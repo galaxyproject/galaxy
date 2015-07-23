@@ -101,7 +101,7 @@ return Backbone.View.extend({
         this.select_extension = new Select.View({
             css         : 'footer-selection',
             container   : this.$('#footer-extension'),
-            data        : this.list_extensions,
+            data        : _.filter(this.list_extensions, function(ext) { return !ext.composite_files }),
             value       : this.options.default_extension,
             onchange    : function(extension) {
                 self.updateExtension(extension);

@@ -80,7 +80,8 @@ return Backbone.View.extend({
                         id              : datatypes[key].extension,
                         text            : datatypes[key].extension,
                         description     : datatypes[key].description,
-                        description_url : datatypes[key].description_url
+                        description_url : datatypes[key].description_url,
+                        composite_files : datatypes[key].composite_files
                     });
                 }
 
