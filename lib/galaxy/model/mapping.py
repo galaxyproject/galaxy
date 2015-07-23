@@ -301,8 +301,9 @@ model.LibraryDatasetDatasetAssociationPermissions.table = Table(
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "action", TEXT ),
-    Column( "library_dataset_dataset_association_id", Integer, ForeignKey(
-        "library_dataset_dataset_association.id" ), nullable=True, index=True ),
+    Column( "library_dataset_dataset_association_id", Integer,
+        ForeignKey("library_dataset_dataset_association.id" ),
+        nullable=True, index=True ),
     Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
 model.DefaultUserPermissions.table = Table(
@@ -324,8 +325,8 @@ model.LibraryDataset.table = Table(
     Column( "id", Integer, primary_key=True ),
     # current version of dataset, if null, there is not a current version selected
     Column( "library_dataset_dataset_association_id", Integer,
-        ForeignKey( "library_dataset_dataset_association.id", use_alter=True,
-                    name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),
+        ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ),
+        nullable=True, index=True ),
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
     # not currently being used, but for possible future use
     Column( "order_id", Integer ),
@@ -347,11 +348,11 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "state", TrimmedString( 64 ), index=True, key="_state" ),
     Column( "copied_from_history_dataset_association_id", Integer,
-        ForeignKey( "history_dataset_association.id", use_alter=True,
-                    name='history_dataset_association_dataset_id_fkey' ), nullable=True ),
+        ForeignKey( "history_dataset_association.id", use_alter=True, name='history_dataset_association_dataset_id_fkey' ),
+        nullable=True ),
     Column( "copied_from_library_dataset_dataset_association_id", Integer,
-        ForeignKey( "library_dataset_dataset_association.id", use_alter=True,
-                    name='library_dataset_dataset_association_id_fkey' ), nullable=True ),
+        ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name='library_dataset_dataset_association_id_fkey' ),
+        nullable=True ),
     Column( "name", TrimmedString( 255 ), index=True ),
     Column( "info", TrimmedString( 255 ) ),
     Column( "blurb", TrimmedString( 255 ) ),
