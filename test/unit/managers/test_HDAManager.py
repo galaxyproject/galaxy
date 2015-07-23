@@ -111,7 +111,7 @@ class HDAManagerTestCase( HDATestCase ):
         tags_to_set = [ u'tag-one', u'tag-two' ]
         self.hda_manager.set_tags( hda1, tags_to_set, user=owner )
         tag_str_array = self.hda_manager.get_tags( hda1 )
-        self.assertEqual( tags_to_set, tag_str_array )
+        self.assertEqual( sorted( tags_to_set ), sorted( tag_str_array ) )
 
     def test_hda_annotation( self ):
         owner = self.user_manager.create( **user2_data )
@@ -146,7 +146,7 @@ class HDAManagerTestCase( HDATestCase ):
 
         hda2 = self.hda_manager.copy( tagged, history=history1 )
         tag_str_array = self.hda_manager.get_tags( hda2 )
-        self.assertEqual( tags_to_set, tag_str_array )
+        self.assertEqual( sorted( tags_to_set ), sorted( tag_str_array ) )
 
         self.log( "annotations should be copied between HDAs" )
         annotated = self.hda_manager.create( history=history1, dataset=self.dataset_manager.create() )
