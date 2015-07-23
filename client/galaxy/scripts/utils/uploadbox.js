@@ -5,61 +5,53 @@
     // add event properties
     jQuery.event.props.push("dataTransfer");
 
-    // default options
-    var default_opts = {
-        url             : '',
-        paramname       : 'content',
-        maxfilesize     : 2048,
-        dragover        : function() {},
-        dragleave       : function() {},
-        announce        : function() {},
-        initialize      : function() {},
-        progress        : function() {},
-        success         : function() {},
-        error           : function(index, file, message) { alert(message); },
-        complete        : function() {},
-        error_filesize  : "File exceeds 2GB. Please use an FTP client.",
-        error_default   : "Please make sure the file is available.",
-        error_server    : "Upload request failed.",
-        error_login     : "Uploads require you to log in.",
-        error_missing   : "No upload content available."
-    }
-
-    // options
-    var opts = {};
-
-    // file queue
-    var queue = {};
-
-    // queue index counter
-    var queue_index = 0;
-
-    // queue length
-    var queue_length = 0;
-
-    // indicates if queue is currently running
-    var queue_running = false;
-    var queue_stop = false;
-
-    // element
-    var el = null;
-
-    // xml request element
-    var xhr = null;
-
-    // uploadbox input dom
-    var $uploadbox_input = null;
-
     // attach to element
     $.fn.uploadbox = function(options) {
+
+        // default options
+        var default_opts = {
+            url             : '',
+            paramname       : 'content',
+            maxfilesize     : 2048,
+            dragover        : function() {},
+            dragleave       : function() {},
+            announce        : function() {},
+            initialize      : function() {},
+            progress        : function() {},
+            success         : function() {},
+            error           : function(index, file, message) { alert(message); },
+            complete        : function() {},
+            error_filesize  : "File exceeds 2GB. Please use an FTP client.",
+            error_default   : "Please make sure the file is available.",
+            error_server    : "Upload request failed.",
+            error_login     : "Uploads require you to log in.",
+            error_missing   : "No upload content available."
+        }
+
+        // file queue
+        var queue = {};
+
+        // queue index counter
+        var queue_index = 0;
+
+        // queue length
+        var queue_length = 0;
+
+        // indicates if queue is currently running
+        var queue_running = false;
+        var queue_stop = false;
+
+        // xml request element
+        var xhr = null;
+
         // parse options
-        opts = $.extend({}, default_opts, options);
+        var opts = $.extend({}, default_opts, options);
 
         // element
-        el = this;
+        var el = this;
 
         // append upload button
-        $uploadbox_input = $('<input id="uploadbox_input" type="file" style="display: none" multiple/>');
+        var $uploadbox_input = $('<input id="uploadbox_input" type="file" style="display: none" multiple/>');
         el.append($uploadbox_input);
 
         // attach events
