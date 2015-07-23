@@ -1,3 +1,27 @@
+function date_by_subtracting_days(date, days) {
+    return new Date(
+        date.getFullYear(), 
+        date.getMonth(), 
+        date.getDate() - days,
+        date.getHours(),
+        date.getMinutes(),
+        date.getSeconds(),
+        date.getMilliseconds()
+    );
+}
+
+function date_by_adding_hours(date, hours) {
+    return new Date(
+        date.getFullYear(), 
+        date.getMonth(), 
+        date.getDate(),
+        date.getHours() + hours,
+        date.getMinutes(),
+        date.getSeconds(),
+        date.getMilliseconds()
+    );
+}
+
 function get_utc_time() {
     var date = new Date()
     return new Date(
@@ -10,17 +34,10 @@ function get_utc_time() {
   )
 }
 
-function date_by_subtracting_days(date, days) {
-    return new Date(
-        date.getFullYear(), 
-        date.getMonth(), 
-        date.getDate() - days,
-        date.getHours(),
-        date.getMinutes(),
-        date.getSeconds(),
-        date.getMilliseconds()
-    );
+function refresh() {
+    window.location.reload(true);
 }
+setTimeout(refresh, 900000); //15 minutes = 900000 ms
 
 function create_chart( inp_data, name, time, title ) {
     require( ["d3"], function (e) {
@@ -61,41 +78,6 @@ function create_chart( inp_data, name, time, title ) {
             barWidth = width / 30;
         }
         var chart_width = width + margin.left + margin.right;
-
-        var y = d3.scale.linear()
-            .range([height, 0]);
-
-        var yAxis = d3.svg.axis()
-            .scale(y)
-            .orient("left")
-            .tickFormat( function(d) { return d3.round( d*d3.max(data), 0 ) });
-
-
-        if (time == "hours") {
-            var x = d3.time.scale()
-                .domain([get_utc_time(), date_by_subtracting_days(get_utc_time(), 1)])
-                .rangeRound([0, width]);
-
-            var xAxis = d3.svg.axis()
-                .scale(x)
-                .tickFormat(d3.time.format('%b %d %H'))
-                .ticks(d3.time.hours, 1)
-                .orient("bottom")
-                .tickSize(0)
-                .tickPadding(8);
-        } else if (time == "days") {
-            var x = d3.time.scale()
-                .domain([get_utc_time(), date_by_subtracting_days(get_utc_time(), 30)])
-                .rangeRound([0, width]);
-
-            var xAxis = d3.svg.axis()
-                .scale(x)
-                .tickFormat(d3.time.format('%b %d'))
-                .ticks(d3.time.days, 1)
-                .orient("bottom")
-                .tickSize(0)
-                .tickPadding(8);
-        }
 
         var chart = d3.select("#" + name)
             .attr("width", chart_width)
@@ -152,24 +134,50 @@ function create_chart( inp_data, name, time, title ) {
         chart.append("g")
             .append("text")
             .attr("class", "title")
-            .attr("text-anchor", "middle")
+            .attr("text-anchor", "end")
             .attr("transform", function(e) {
                 return "translate( " + width + ",15 )";
             })
             .text(title);
 
+        if (time == "hours") {
+            var x = d3.time.scale.utc()
+                .domain([get_utc_time(), date_by_subtracting_days(get_utc_time(), 1)])
+                .rangeRound([0, width]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .tickPadding(0)
+                .tickFormat(d3.time.format('%b %d %H'))
+                .ticks(d3.time.hours, 1)
+                .orient("bottom")
+                .tickSize(0)
+                .outerTickSize(0);
+        } else if (time == "days") {
+            var x = d3.time.scale.utc()
+                .domain([get_utc_time(), date_by_subtracting_days(get_utc_time(), 28)])
+                .rangeRound([0, width])
+                .nice();
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .tickPadding(0)
+                .tickFormat(d3.time.format('%b %d'))
+                .ticks(d3.time.days, 1)
+                .orient("bottom")
+                .tickSize(0)
+                .outerTickSize(0);
+        }
+
         chart.append("g")
             .attr("class", "x axis")
             .attr("id", ("x_" + name))
-            .attr("transform", "translate(" + margin.left + "," + (+height + +margin.top )+ ")")
+            .attr("transform", "translate( " + (+margin.left) + "," + (+height + +margin.top )+ ")")
             .call(xAxis)
                 .selectAll("text")
+                .style("text-anchor", "end")
                 .attr("transform", function() {
-                    if(time == "hours") {
-                        return "translate( -7, 17)rotate(-90)";
-                    } else if(time == "days") {
-                        return "translate( -14, 13)rotate(-90)";
-                    }
+                    return "rotate(-60, 0, " + d3.select(this).node().getBBox().height + ")";
                 });
 
         chart.append("g")
@@ -193,11 +201,21 @@ function create_chart( inp_data, name, time, title ) {
                     return info;
                 });
 
+        var y = d3.scale.linear()
+            .range([height, 0]);
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left")
+            .tickFormat( function(d) { return d3.round( d*d3.max(data), 0 ) });
+
         chart.append("g")
             .attr("class", "y axis")
             .attr("id", ("y_" + name))
+            .attr("text-anchor", "end")
             .attr("transform", "translate( " + margin.left + "," + margin.top + ")")
-            .call(yAxis);
+            .call(yAxis)
+                .select(".domain");
 
         chart.append("g")
             .append("text")
@@ -285,8 +303,7 @@ function create_histogram( inp_data, name, time, title ) {
 
         // Generate a histogram using twenty uniformly-spaced bins.
         var data = d3.layout.histogram()
-            .bins(x.ticks(20))
-            (data);
+            .bins(x.ticks(20))(data);
 
         for(var i = 0; i < data.length; i ++) {
             lengths.push(data[i].length)

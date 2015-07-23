@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model
+import calendar
 import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
@@ -17,7 +18,6 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
         end_date = datetime.utcnow()
         end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour)
         start_hours = end_date - timedelta(1)
-        start_days_eta = end_date - timedelta(3)
         start_days = end_date - timedelta(30)
 
         jf_hr_data = [0] * 24
@@ -41,37 +41,78 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
                 if(job.create_time >= start_hours and
                    job.create_time < end_date ):
                     # Get the creation time for the jobs in the past day
-                    time = end_date - job.create_time
-                    hours = time.total_seconds() // 3600
-                    jc_hr_data[int(hours)] += 1
+                    end_day = end_date.day
+                    start_day = job.create_time.day
+                    end_hour = end_date.hour
+                    start_hour = job.create_time.hour
+
+                    if(end_day != start_day):
+                        hours = (end_hour + 24) - start_hour
+                    else:
+                        hours = end_hour - start_hour
+
+                    if(hours < 24):
+                        jc_hr_data[int(hours)] += 1
+                    else:
+                        jc_dy_data[23] += 1
                 # Get the creation time for jobs in the past 30 days
-                day = (end_date - job.create_time).days
-                jc_dy_data[int(day)] += 1
+                end_month = end_date.month
+                start_month = job.create_time.month
+                end_day = end_date.day
+                start_day = job.create_time.day
+
+                if(end_month != start_month):
+                    month_weekday, month_range = calendar.monthrange(job.create_time.year, job.create_time.month)
+                    day = (end_day + month_range) - start_day
+                else:
+                    day = end_day - start_day
+
+                if(day < 30):
+                    jc_dy_data[int(day)] += 1
 
             if(job.update_time >= start_days and
                job.update_time < end_date ):
                 if(job.update_time >= start_hours and
                    job.update_time < end_date ):
                     # Get the time finishedfor the jobs in the past day
-                    hour = (end_date - job.update_time).total_seconds() // 3600
-                    jf_hr_data[int(hour)] += 1
+                    end_day = end_date.day
+                    start_day = job.update_time.day
+                    end_hour = end_date.hour
+                    start_hour = job.update_time.hour
+
+                    if(end_day != start_day):
+                        hours = (end_hour + 24) - start_hour
+                    else:
+                        hours = end_hour - start_hour
+
+                    if(hours < 24):
+                        jf_hr_data[int(hours)] += 1
+
+                        # Get the Elapsed Time for said job
+                        time = (job.update_time - job.create_time)
+                        seconds = time.seconds
+                        minutes = seconds // 60
+                        et_hr_data.append(minutes)
+                # Get the time the job finished and run time in the 30 days
+                end_month = end_date.month
+                start_month = job.update_time.month
+                end_day = end_date.day
+                start_day = job.update_time.day
+
+                if(end_month != start_month):
+                    month_weekday, month_range = calendar.monthrange(job.update_time.year, job.update_time.month)
+                    day = (end_day + month_range) - start_day
+                else:
+                    day = end_day - start_day
+                    
+                if(day < 30):
+                    jf_dy_data[int(day)] += 1
 
                     # Get the Elapsed Time for said job
                     time = (job.update_time - job.create_time)
                     seconds = time.seconds
                     minutes = seconds // 60
-                    et_hr_data.append(minutes)
-                # Get the elapsed time for the jobs in the past 3 days
-                if(job.update_time >= start_days_eta and
-                   job.update_time < end_date ):
-                    time = (job.update_time - job.create_time)
-                    seconds = time.seconds
-                    minutes = seconds // 60
                     et_dy_data.append(minutes)
-
-                # Get the time the job finished in the 30 days
-                day = (end_date - job.update_time).days
-                jf_dy_data[int(day)] += 1
 
         return trans.fill_template( '/webapps/reports/run_stats.mako',
             jf_hr_data=jf_hr_data,
