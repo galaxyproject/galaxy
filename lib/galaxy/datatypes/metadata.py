@@ -754,7 +754,7 @@ class JobExternalOutputMetadataWrapper( object ):
                         if dataset_path.real_path == metadata_files.dataset.file_name:
                             return dataset_path.false_path or dataset_path.real_path
                 return ""
-            line = "%s,%s,%s,%s,%s,%s" % (
+            line = '"%s,%s,%s,%s,%s,%s"' % (
                 metadata_path_on_compute(metadata_files.filename_in),
                 metadata_path_on_compute(metadata_files.filename_kwds),
                 metadata_path_on_compute(metadata_files.filename_out),
@@ -826,16 +826,16 @@ class JobExternalOutputMetadataWrapper( object ):
                 sa_session.add( metadata_files )
                 sa_session.flush()
             metadata_files_list.append( metadata_files )
-        args = "%s %s %s %s" % ( datatypes_config,
-                                 job_metadata,
-                                 " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ),
-                                 max_metadata_value_size)
+        args = '"%s" "%s" %s %s' % ( datatypes_config,
+                                     job_metadata,
+                                     " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ),
+                                     max_metadata_value_size)
         if include_command:
             # return command required to build
             fd, fp = tempfile.mkstemp( suffix='.py', dir=tmp_dir, prefix="set_metadata_" )
             metadata_script_file = abspath( fp )
             os.fdopen( fd, 'w' ).write( 'from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()' )
-            return "python %s %s" % ( metadata_path_on_compute(metadata_script_file), args )
+            return 'python "%s" %s' % ( metadata_path_on_compute(metadata_script_file), args )
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return args
