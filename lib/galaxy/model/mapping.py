@@ -1755,12 +1755,14 @@ mapper( model.Role, model.Role.table, properties=dict(
 
 mapper( model.UserRoleAssociation, model.UserRoleAssociation.table, properties=dict(
     user=relation( model.User, backref="roles" ),
-    non_private_roles=relation( model.User,
+    non_private_roles=relation(
+        model.User,
         backref="non_private_roles",
         primaryjoin=(
             ( model.User.table.c.id == model.UserRoleAssociation.table.c.user_id ) &
             ( model.UserRoleAssociation.table.c.role_id == model.Role.table.c.id ) &
-            not_( model.Role.table.c.name == model.User.table.c.email ) ) ),
+            not_( model.Role.table.c.name == model.User.table.c.email ) )
+    ),
     role=relation( model.Role )
 ) )
 
