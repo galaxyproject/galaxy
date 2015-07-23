@@ -217,9 +217,10 @@ class DatasetSerializerTestCase( BaseTestCase ):
 
         self.log( 'should be able to use keys with views' )
         serialized = self.dataset_serializer.serialize_to_view( dataset,
-            view='summary', keys=[ 'permissions' ] )
+            # file_name is exposed using app.config.expose_dataset_path = True
+            view='summary', keys=[ 'file_name' ] )
         self.assertKeys( serialized,
-            self.dataset_serializer.views[ 'summary' ] + [ 'permissions' ] )
+            self.dataset_serializer.views[ 'summary' ] + [ 'file_name' ] )
 
         self.log( 'should be able to use keys on their own' )
         serialized = self.dataset_serializer.serialize_to_view( dataset,
