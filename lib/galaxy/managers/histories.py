@@ -27,6 +27,10 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
     annotation_assoc = model.HistoryAnnotationAssociation
     rating_assoc = model.HistoryRatingAssociation
 
+    contained_class = model.HistoryDatasetAssociation
+    subcontainer_class = model.HistoryDatasetCollectionAssociation
+    order_contents_on = operator.attrgetter( 'hid' )
+
     # TODO: incorporate imp/exp (or alias to)
 
     def __init__( self, app, *args, **kwargs ):
@@ -166,12 +170,7 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         return { 'history': history_dictionary,
                  'contents': contents_dictionaries }
 
-# class HistoryAsContainerManagerMixin( ContainerManagerMixin ):
-
-    contained_class = model.HistoryDatasetAssociation
-    subcontainer_class = model.HistoryDatasetCollectionAssociation
-    order_contents_on = operator.attrgetter( 'hid' )
-
+    # container interface
     def _filter_to_contained( self, container, content_class ):
         return content_class.history == container
 
@@ -182,7 +181,6 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
             return self.hdca_manager
         raise TypeError( 'Unknown contents class: ' + str( content ) )
-
 
 
 class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSerializerMixin ):

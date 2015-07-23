@@ -71,25 +71,6 @@ class ContainerManagerMixin( object ):
         raise galaxy.exceptions.NotImplemented( 'Abstract class' )
 
 
-class HistoryAsContainerManagerMixin( ContainerManagerMixin ):
-
-    contained_class = model.HistoryDatasetAssociation
-    subcontainer_class = model.HistoryDatasetCollectionAssociation
-    order_contents_on = operator.attrgetter( 'hid' )
-
-    def _filter_to_contained( self, container, content_class ):
-        # use the backref of the container on the contained
-        return content_class.history == container
-
-    def _content_manager( self, content ):
-        # type sniffing is inevitable
-        if isinstance( content, model.HistoryDatasetAssociation ):
-            return self.hda_manager
-        elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-            return self.hdca_manager
-        raise TypeError( 'Unknown contents class: ' + str( content ) )
-
-
 class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
     # can contain two types of subcontainer: LibraryFolder, LibraryDatasetCollectionAssociation
     # has as the top level container: Library
