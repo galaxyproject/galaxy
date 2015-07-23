@@ -419,7 +419,7 @@ class HDASerializerTestCase( HDATestCase ):
     def test_serializers( self ):
         hda = self._create_vanilla_hda()
         all_keys = list( self.hda_serializer.serializable_keyset )
-        serialized = self.hda_serializer.serialize( hda, all_keys )
+        serialized = self.hda_serializer.serialize( hda, all_keys, user=hda.history.user )
 
         self.log( 'everything serialized should be of the proper type' )
         # base
@@ -433,7 +433,6 @@ class HDASerializerTestCase( HDATestCase ):
         self.assertUUID( serialized[ 'uuid' ] )
         self.assertIsInstance( serialized[ 'file_name' ], basestring )
         self.assertIsInstance( serialized[ 'extra_files_path' ], basestring )
-        self.assertIsInstance( serialized[ 'permissions' ], dict )
         self.assertIsInstance( serialized[ 'size' ], int )
         self.assertIsInstance( serialized[ 'file_size' ], int )
         self.assertIsInstance( serialized[ 'nice_size' ], basestring )
