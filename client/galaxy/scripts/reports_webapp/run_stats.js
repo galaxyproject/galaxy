@@ -43,7 +43,7 @@ function create_chart( inp_data, name, time, title ) {
     require( ["d3"], function (e) {
         var data = inp_data;
         var margin = {top: 60, right: 30, bottom: 50, left: 60};
-        var chart_zoom = 1.8;
+        var chart_zoom = 1.75;
 
         function click() {
             var classes = d3.select(this).attr("class");
@@ -255,7 +255,7 @@ function create_histogram( inp_data, name, time, title ) {
     require( ["d3"], function (e) {
         //inp_data is an array of numbers that are the amount of minutes per run
         var data = inp_data;
-        var chart_zoom = 1.8;
+        var chart_zoom = 1.75;
             // Formatters for counts and times (converting numbers to Dates).
         function click(d) {
             var classes = d3.select(this).attr("class")

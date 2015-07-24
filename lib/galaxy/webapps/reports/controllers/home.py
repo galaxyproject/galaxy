@@ -104,7 +104,7 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
                     day = (end_day + month_range) - start_day
                 else:
                     day = end_day - start_day
-                    
+
                 if(day < 30):
                     jf_dy_data[int(day)] += 1
 

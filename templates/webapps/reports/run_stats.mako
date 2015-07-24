@@ -16,7 +16,7 @@
             create_chart( ${jc_hr_data}, "jc_hr_chart", "hours", "Jobs Created per Hour" );
             create_chart( ${jc_dy_data}, "jc_dy_chart", "days", "Jobs Created per Day" );
             create_histogram( ${et_hr_data}, "et_hr_chart", "delta-hours", "Job Run Times (past day)" );
-            create_histogram( ${et_dy_data}, "et_dy_chart", "days", "Job Run Time (past 3 days)" );
+            create_histogram( ${et_dy_data}, "et_dy_chart", "days", "Job Run Time (past 30 days)" );
         });
         </script>
     </head>
