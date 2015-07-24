@@ -353,7 +353,7 @@ class Request( webob.Request ):
 
     @lazy_property
     def path( self ):
-        return self.environ['SCRIPT_NAME'] + self.environ['PATH_INFO']
+        return self.environ.get('SCRIPT_NAME', '') + self.environ['PATH_INFO']
 
     @lazy_property
     def browser_url( self ):
