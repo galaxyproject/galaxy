@@ -191,13 +191,13 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'published',
             'annotation',
             'tags',
+            'user_id',
         ])
         self.add_view( 'detailed', [
             'contents_url',
             # 'hdas',
             'empty',
             'size', 'nice_size',
-            'user_id',
             'create_time', 'update_time',
             'importable', 'slug', 'username_and_slug',
             'genome_build',

@@ -643,7 +643,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         history_dictionaries = []
         for history in self.history_manager.by_user( trans.user, filters=deleted_filter ):
             history_dictionary = self.history_serializer.serialize_to_view( history,
-                view='detailed', user=trans.user, trans=trans )
+                view='summary', user=trans.user, trans=trans )
             history_dictionaries.append( history_dictionary )
 
         return trans.fill_template_mako( "history/view_multiple.mako",
