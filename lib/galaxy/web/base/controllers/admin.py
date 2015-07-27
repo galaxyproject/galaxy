@@ -1125,11 +1125,13 @@ class Admin( object ):
 
     @web.expose
     @web.require_admin
-    def sanitize_whitelist( self, trans, submit_whitelist=False, tools_to_whitelist=None ):
+    def sanitize_whitelist( self, trans, submit_whitelist=False, tools_to_whitelist=[]):
         if submit_whitelist:
-            # write config/sanitize_whitelist.txt file with new whitelist and update in-memory list.
-            new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
             with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
+                if isinstance(tools_to_whitelist, basestring):
+                    tools_to_whitelist = [tools_to_whitelist]
+                # write config/sanitize_whitelist.txt file with new whitelist and update in-memory list.
+                new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))
             trans.app.config.sanitize_whitelist = new_whitelist
             # dispatch a message to reload list for other processes
