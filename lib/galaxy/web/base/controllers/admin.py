@@ -1129,7 +1129,7 @@ class Admin( object ):
         if submit_whitelist:
             # write config/sanitize_whitelist.txt file with new whitelist and update in-memory list.
             new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
-            with open(os.path.join('config', 'sanitize_whitelist.txt'), 'wt') as f:
+            with open(trans.app.config.sanitize_whitelist_file, 'wt') as f:
                 f.write("\n".join(new_whitelist))
             trans.app.config.sanitize_whitelist = new_whitelist
             # dispatch a message to reload list for other processes
