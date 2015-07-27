@@ -643,6 +643,11 @@ nglims_config_file = tool-data/nglims.yaml
 # make the Galaxy instance susceptible to XSS attacks initiated by your users.
 #sanitize_all_html = True
 
+# Whitelist sanitization for these particular tools.  Datasets created by these
+# tools are trusted and will not have their HTML sanitized on display.  This is
+# a comma separated list of tool ids.
+#sanitize_whitelist =
+
 # By default Galaxy will serve non-HTML tool output that may potentially
 # contain browser executable JavaScript content as plain text.  This will for
 # instance cause SVG datasets to not render properly and so may be disabled
