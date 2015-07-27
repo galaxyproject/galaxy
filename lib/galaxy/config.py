@@ -252,7 +252,8 @@ class Configuration( object ):
         self.log_actions = string_as_bool( kwargs.get( 'log_actions', 'False' ) )
         self.log_events = string_as_bool( kwargs.get( 'log_events', 'False' ) )
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
-        self.sanitize_whitelist = [ x.strip() for x in kwargs.get('sanitize_whitelist', '').split(',')]
+        self.sanitize_whitelist_file = resolve_path( kwargs.get( 'sanitize_whitelist_file', "config/sanitize_whitelist.txt" ), self.root )
+        self.reload_sanitize_whitelist()
         self.serve_xss_vulnerable_mimetypes = string_as_bool( kwargs.get( 'serve_xss_vulnerable_mimetypes', False ) )
         self.trust_ipython_notebook_conversion = string_as_bool( kwargs.get( 'trust_ipython_notebook_conversion', False ) )
         self.enable_old_display_applications = string_as_bool( kwargs.get( "enable_old_display_applications", "True" ) )
@@ -470,6 +471,16 @@ class Configuration( object ):
             return re.sub( r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn )
         else:
             return None
+
+    def reload_sanitize_whitelist( self ):
+        self.sanitize_whitelist = []
+        try:
+            with open(self.sanitize_whitelist_file, 'rt') as f:
+                for line in f.readlines():
+                    if not line.startswith("#"):
+                        self.sanitize_whitelist.append(line.strip())
+        except IOError:
+            log.warning("Sanitize log file %s does not exist, continuing with no tools whitelisted.")
 
     def __parse_config_file_options( self, kwargs ):
         """

@@ -1123,6 +1123,20 @@ class Admin( object ):
                                     job=job,
                                     message="<a href='jobs'>Back</a>" )
 
+    @web.expose
+    @web.require_admin
+    def sanitize_whitelist( self, trans, submit_whitelist=False, tools_to_whitelist=None ):
+        if submit_whitelist:
+            # write config/sanitize_whitelist.txt file with new whitelist and update in-memory list.
+            new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
+            with open(os.path.join('config', 'sanitize_whitelist.txt'), 'wt') as f:
+                f.write("\n".join(new_whitelist))
+            trans.app.config.sanitize_whitelist = new_whitelist
+            # dispatch a message to reload list for other processes
+        return trans.fill_template( '/webapps/galaxy/admin/sanitize_whitelist.mako',
+                                    tools=trans.app.toolbox.tools_by_id )
+
+
 # ---- Utility methods -------------------------------------------------------
 
 
