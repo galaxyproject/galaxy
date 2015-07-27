@@ -1382,31 +1382,33 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close{left:auto;
 .upload-button .progress-bar-info{background:#ffc}
 .upload-button .progress-bar-notransition{-webkit-transition:none;-moz-transition:none;-ms-transition:none;-o-transition:none;transition:none}
 .upload-button .label{position:absolute;top:2px;width:inherit;text-align:center;line-height:19px;font-size:1.2em}
-.upload-icon{font-size:1.2em;width:1.2em}
-.upload-icon-button{font-size:1.2em;width:1.2em;cursor:pointer}
-.upload-box{width:100%;height:310px;text-align:center;overflow:scroll;font-size:12px;line-height:1.33;-moz-border-radius:5px;border-radius:5px;border:1px dashed #bfbfbf;padding:10px;overflow-x:hidden;-ms-overflow-style:none}.upload-box .table{width:100%}
-.upload-box .table th{text-align:center;white-space:nowrap}
-.upload-box .table td{margin:0px}
-.upload-box .upload-item .select2-arrow b{background-position:0 -3px}
-.upload-box .upload-item .select2-choice{max-height:20px;line-height:18px;background:transparent}
-.upload-box .upload-item .select2-container-disabled .select2-arrow{background:transparent}
-.upload-box .name-column{position:relative}
-.upload-box .mode{float:left;font-size:1.2em;width:1.2em;color:#555}
-.upload-box .title{width:130px;word-wrap:break-word;font-size:11px;float:left}
-.upload-box .text{position:absolute;display:none}.upload-box .text .text-content{font-size:11px;width:100%;height:50px;resize:none;background:inherit;color:#000}
-.upload-box .text .text-info{font-size:11px}
-.upload-box .extension{width:100px;min-width:100px;font-size:11px}
-.upload-box .genome{width:150px;min-width:150px;font-size:11px}
-.upload-box .size{width:60px;white-space:nowrap}
-.upload-box .info{width:130px;font-size:11px;line-height:1.2em}.upload-box .info .progress{top:1px;position:relative;width:100%;padding:0px;margin:0px;line-height:1.55em}.upload-box .info .progress .progress-bar{border-radius:inherit;-moz-border-radius:inherit}
-.upload-box .info .progress .percentage{position:absolute;text-align:center;width:100%;color:#fff}
+.upload-view-default .upload-box,.upload-view-composite .upload-box{width:100%;height:310px;text-align:center;overflow:scroll;font-size:12px;line-height:1.33;-moz-border-radius:5px;border-radius:5px;border:1px dashed #bfbfbf;padding:10px;overflow-x:hidden;-ms-overflow-style:none}.upload-view-default .upload-box .table,.upload-view-composite .upload-box .table{width:100%}
+.upload-view-default .upload-box .table th,.upload-view-composite .upload-box .table th{text-align:center;white-space:nowrap}
+.upload-view-default .upload-box .table td,.upload-view-composite .upload-box .table td{margin:0px}
+.upload-view-default .upload-box .upload-item .select2-arrow b,.upload-view-composite .upload-box .upload-item .select2-arrow b{background-position:0 -3px}
+.upload-view-default .upload-box .upload-item .select2-choice,.upload-view-composite .upload-box .upload-item .select2-choice{max-height:20px;line-height:18px;background:transparent}
+.upload-view-default .upload-box .upload-item .select2-container-disabled .select2-arrow,.upload-view-composite .upload-box .upload-item .select2-container-disabled .select2-arrow{background:transparent}
+.upload-view-default .upload-box .name-column,.upload-view-composite .upload-box .name-column{position:relative}
+.upload-view-default .upload-box .mode,.upload-view-composite .upload-box .mode{float:left;font-size:1.2em;width:1.2em;color:#555}
+.upload-view-default .upload-box .title,.upload-view-composite .upload-box .title{width:130px;word-wrap:break-word;font-size:11px;float:left}
+.upload-view-default .upload-box .text,.upload-view-composite .upload-box .text{position:absolute;display:none}.upload-view-default .upload-box .text .text-content,.upload-view-composite .upload-box .text .text-content{font-size:11px;width:100%;height:50px;resize:none;background:inherit;color:#000}
+.upload-view-default .upload-box .text .text-info,.upload-view-composite .upload-box .text .text-info{font-size:11px}
+.upload-view-default .upload-box .extension,.upload-view-composite .upload-box .extension{width:100px;min-width:100px;font-size:11px}
+.upload-view-default .upload-box .genome,.upload-view-composite .upload-box .genome{width:150px;min-width:150px;font-size:11px}
+.upload-view-default .upload-box .size,.upload-view-composite .upload-box .size{width:60px;white-space:nowrap}
+.upload-view-default .upload-box .info,.upload-view-composite .upload-box .info{width:130px;font-size:11px;line-height:1.2em}.upload-view-default .upload-box .info .progress,.upload-view-composite .upload-box .info .progress{top:1px;position:relative;width:100%;padding:0px;margin:0px;line-height:1.55em}.upload-view-default .upload-box .info .progress .progress-bar,.upload-view-composite .upload-box .info .progress .progress-bar{border-radius:inherit;-moz-border-radius:inherit}
+.upload-view-default .upload-box .info .progress .percentage,.upload-view-composite .upload-box .info .progress .percentage{position:absolute;text-align:center;width:100%;color:#fff}
+.upload-view-default .upload-buttons,.upload-view-composite .upload-buttons{padding-top:30px}.upload-view-default .upload-buttons button,.upload-view-composite .upload-buttons button{margin-left:5px}
+.upload-view-default .upload-icon,.upload-view-composite .upload-icon{font-size:1.2em;width:1.2em}
+.upload-view-default .upload-icon-button,.upload-view-composite .upload-icon-button{font-size:1.2em;width:1.2em;cursor:pointer}
+.upload-view-composite .upload-box{border:1px solid #bfbfbf;margin-top:10px;background:#fff}
+.upload-view-composite .upload-buttons{padding-top:20px}
 .upload-ftp{height:250px;width:500px;overflow:auto}.upload-ftp .upload-ftp-wait{font-size:1.2em;position:absolute;bottom:10px;right:10px}
 .upload-ftp .upload-ftp-help{margin-bottom:10px}
 .upload-ftp .upload-ftp-warning{text-align:center;margin-top:20px}
 .upload-ftp .upload-ftp-row{cursor:pointer}.upload-ftp .upload-ftp-row .label{width:240px}.upload-ftp .upload-ftp-row .label p{width:inherit;word-wrap:break-word}
 .upload-ftp .upload-ftp-row .nonlabel{white-space:nowrap}
 .upload-settings .upload-settings-cover{position:absolute;width:100%;height:100%;top:0px;left:0px;background:#fff;opacity:0.4;cursor:no-drop}
-.upload-buttons{padding-top:30px}.upload-buttons button{margin-left:5px}
 .upload-footer{height:5%;text-align:left;max-height:20px;line-height:18px;margin-top:10px}.upload-footer .footer-title{font-weight:bold;padding-left:60px;padding-right:20px}
 .upload-footer .footer-selection{width:200px;min-width:200px;font-size:11px;padding-right:10px}
 .upload-footer .select2-choice{max-height:20px;line-height:18px;background:transparent;text-align:center;font-weight:normal}.upload-footer .select2-choice .select2-arrow b{background-position:0 -3px}

@@ -6,23 +6,18 @@
     cursor: pointer;
     -moz-border-radius: @border-radius-base;
     border-radius: @border-radius-base;
-
     .progress {
         height: 21px;
     }
-
     .progress-bar-danger {
         background: @state-danger-bg;
     }
-
     .progress-bar-success {
         background: @state-success-bg;
     }
-
     .progress-bar-info {
         background: @state-running-bg;
     }
-
     .progress-bar-notransition {
         -webkit-transition: none;
         -moz-transition: none;
@@ -30,7 +25,6 @@
         -o-transition: none;
         transition: none;
     }
-    
     .label {
         position: absolute;
         top: 2px;
@@ -41,140 +35,139 @@
     }
 }
 
-.upload-icon {
-    font-size: 1.2em;
-    width: 1.2em;
-}
-
-.upload-icon-button {
-    font-size: 1.2em;
-    width: 1.2em;
-    cursor: pointer;
-}
-
-.upload-box {
-    width           : 100%;
-    height          : 310px;
-    text-align      : center;
-    overflow        : scroll;
-    font-size       : @font-size-base;
-    line-height     : @line-height-large;
-    -moz-border-radius: @border-radius-large;
-    border-radius   : @border-radius-large;
-    border          : 1px dashed @btn-default-border;
-    padding         : 10px;
-    overflow-x      : hidden;
-    -ms-overflow-style: none;
-
-    .table {
-        width : 100%;
-    }
-    
-    .table th {
-        text-align: center;
-        white-space: nowrap;
-    }
-    
-    .table td {
-        margin: 0px;
-    }
-
-    .upload-item {
-        .select2-arrow b {
-            background-position: 0 -3px;
+.upload-view-default {
+    .upload-box {
+        width           : 100%;
+        height          : 310px;
+        text-align      : center;
+        overflow        : scroll;
+        font-size       : @font-size-base;
+        line-height     : @line-height-large;
+        -moz-border-radius: @border-radius-large;
+        border-radius   : @border-radius-large;
+        border          : 1px dashed @btn-default-border;
+        padding         : 10px;
+        overflow-x      : hidden;
+        -ms-overflow-style: none;
+        .table {
+            width : 100%;
         }
-        
-        .select2-choice {
-            max-height: 20px;
-            line-height: 18px;
-            background: transparent;
+        .table th {
+            text-align: center;
+            white-space: nowrap;
         }
-        
-        .select2-container-disabled {
-            .select2-arrow {
+        .table td {
+            margin: 0px;
+        }
+        .upload-item {
+            .select2-arrow b {
+                background-position: 0 -3px;
+            }
+            .select2-choice {
+                max-height: 20px;
+                line-height: 18px;
                 background: transparent;
             }
+            .select2-container-disabled {
+                .select2-arrow {
+                    background: transparent;
+                }
+            }
+        }
+        .name-column {
+            position: relative;
+        }
+        .mode {
+            float: left;
+            font-size: 1.2em;
+            width: 1.2em;
+            color: @gray;
+        }
+        .title {
+            width: 130px;
+            word-wrap: break-word;
+            font-size : @font-size-small;
+            float: left;
+        }
+        .text {
+            position: absolute;
+            display: none;
+            .text-content {
+                font-size : @font-size-small;
+                width: 100%;
+                height: 50px;
+                resize: none;
+                background: inherit;
+                color: @black;
+            }
+            .text-info {
+                font-size : @font-size-small;
+            }
+        }
+        .extension {
+            width: 100px;
+            min-width: 100px;
+            font-size : @font-size-small;
+        }
+        .genome {
+            width: 150px;
+            min-width: 150px;
+            font-size : @font-size-small;
+        }
+        .size {
+            width: 60px;
+            white-space: nowrap;
+        }
+        .info {
+            width: 130px;
+            font-size : @font-size-small;
+            line-height: 1.2em;
+            .progress {
+                top:1px;
+                position: relative;
+                width: 100%;
+                padding: 0px;
+                margin: 0px;
+                line-height: 1.55em;
+                .progress-bar {
+                    border-radius: inherit;
+                    -moz-border-radius: inherit;
+                }
+                .percentage {
+                    position: absolute;
+                    text-align: center;
+                    width: 100%;
+                    color: @white;
+                }
+            }
         }
     }
-
-    .name-column {
-        position: relative;
+    .upload-buttons {
+        padding-top: 30px;
+        button {
+            margin-left: 5px;
+        }
     }
-
-    .mode {
-        float: left;
+    .upload-icon {
         font-size: 1.2em;
         width: 1.2em;
-        color: @gray;
     }
+    .upload-icon-button {
+        font-size: 1.2em;
+        width: 1.2em;
+        cursor: pointer;
+    }
+}
 
-    .title {
-        width: 130px;
-        word-wrap: break-word;
-        font-size : @font-size-small;
-        float: left;
+.upload-view-composite {
+    &:extend(.upload-view-default all);
+    .upload-box {
+        border: 1px solid @btn-default-border;
+        margin-top: 10px;
+        background: lighten(@btn-default-border, 30%);
     }
-    
-    .text {
-        position: absolute;
-        display: none;
-        
-        .text-content {
-            font-size : @font-size-small;
-            width: 100%;
-            height: 50px;
-            resize: none;
-            background: inherit;
-            color: @black;
-        }
-        
-        .text-info {
-            font-size : @font-size-small;
-        }
-    }
-    
-    .extension {
-        width: 100px;
-        min-width: 100px;
-        font-size : @font-size-small;
-    }
-
-    .genome {
-        width: 150px;
-        min-width: 150px;
-        font-size : @font-size-small;
-    }
-
-    .size {
-        width: 60px;
-        white-space: nowrap;
-    }
-    
-    .info {
-        width: 130px;
-        font-size : @font-size-small;
-        line-height: 1.2em;
-
-        .progress {
-            top:1px;
-            position: relative;
-            width: 100%;
-            padding: 0px;
-            margin: 0px;
-            line-height: 1.55em;
-
-            .progress-bar {
-                border-radius: inherit;
-                -moz-border-radius: inherit;
-            }
-            
-            .percentage {
-                position: absolute;
-                text-align: center;
-                width: 100%;
-                color: @white;
-            }
-        }
+    .upload-buttons {
+        padding-top: 20px;
     }
 }
 
@@ -182,23 +175,19 @@
     height: 250px;
     width: 500px;
     overflow: auto;
-    
     .upload-ftp-wait {
         font-size: 1.2em;
         position: absolute;
         bottom: 10px;
         right: 10px;
     }
-    
     .upload-ftp-help {
         margin-bottom: 10px;
     }
-    
     .upload-ftp-warning {
         text-align: center;
         margin-top: 20px;
     }
-
     .upload-ftp-row {
         cursor: pointer;
         .label {
@@ -214,7 +203,6 @@
     }
 }
 
-
 .upload-settings {
     .upload-settings-cover {
         position: absolute;
@@ -225,13 +213,6 @@
         background: @white;
         opacity: 0.4;
         cursor: no-drop;
-    }
-}
-
-.upload-buttons {
-    padding-top: 30px;
-    button {
-        margin-left: 5px;
     }
 }
 

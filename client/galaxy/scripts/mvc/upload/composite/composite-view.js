@@ -485,7 +485,7 @@ return Backbone.View.extend({
         // check default message
         if(this.counter.announce == 0){
             if (this.uploadbox.compatible())
-                message = 'You can Drag & Drop files into this box.';
+                message = 'Please select a composite dataset type.';
             else
                 message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Some supported browsers are: Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
         } else {
@@ -569,9 +569,16 @@ return Backbone.View.extend({
 
     // load html template
     _template: function() {
-        return  '<div class="upload-view-default">' +
+        return  '<div class="upload-view-composite">' +
                     '<div class="upload-top">' +
                         '<h6 id="upload-info" class="upload-info"></h6>' +
+                    '</div>' +
+                    '<div id="upload-footer" class="upload-footer">' +
+                        '<span class="footer-title">Composite Type:</span>' +
+                        '<span id="footer-extension"/>' +
+                        '<span id="footer-extension-info" class="upload-icon-button fa fa-search"/> ' +
+                        '<span class="footer-title">Genome/Build:</span>' +
+                        '<span id="footer-genome"/>' +
                     '</div>' +
                     '<div id="upload-box" class="upload-box">' +
                         '<table id="upload-table" class="table table-striped" style="display: none;">' +
@@ -588,13 +595,6 @@ return Backbone.View.extend({
                             '</thead>' +
                             '<tbody></tbody>' +
                         '</table>' +
-                    '</div>' +
-                    '<div id="upload-footer" class="upload-footer">' +
-                        '<span class="footer-title">Type (set all):</span>' +
-                        '<span id="footer-extension"/>' +
-                        '<span id="footer-extension-info" class="upload-icon-button fa fa-search"/> ' +
-                        '<span class="footer-title">Genome (set all):</span>' +
-                        '<span id="footer-genome"/>' +
                     '</div>' +
                     '<div id="upload-buttons" class="upload-buttons"/>' +
                 '</div>';
