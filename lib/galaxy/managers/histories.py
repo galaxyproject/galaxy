@@ -17,7 +17,9 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMixin, containers.ContainerManagerMixin ):
+class HistoryManager( sharable.SharableModelManager,
+        deletable.PurgableManagerMixin,
+        containers.HistoryAsContainerManagerMixin ):
 
     model_class = model.History
     foreign_key_name = 'history'
@@ -26,10 +28,6 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
     tag_assoc = model.HistoryTagAssociation
     annotation_assoc = model.HistoryAnnotationAssociation
     rating_assoc = model.HistoryRatingAssociation
-
-    contained_class = model.HistoryDatasetAssociation
-    subcontainer_class = model.HistoryDatasetCollectionAssociation
-    order_contents_on = operator.attrgetter( 'hid' )
 
     # TODO: incorporate imp/exp (or alias to)
 
@@ -169,18 +167,6 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
 
         return { 'history': history_dictionary,
                  'contents': contents_dictionaries }
-
-    # container interface
-    def _filter_to_contained( self, container, content_class ):
-        return content_class.history == container
-
-    def _content_manager( self, content ):
-        # type sniffing is inevitable
-        if isinstance( content, model.HistoryDatasetAssociation ):
-            return self.hda_manager
-        elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-            return self.hdca_manager
-        raise TypeError( 'Unknown contents class: ' + str( content ) )
 
 
 class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSerializerMixin ):
