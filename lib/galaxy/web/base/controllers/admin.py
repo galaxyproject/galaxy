@@ -1134,6 +1134,7 @@ class Admin( object ):
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))
             trans.app.config.sanitize_whitelist = new_whitelist
+            galaxy.queue_worker.send_control_task(trans.app, 'reload_sanitize_whitelist', noop_self=True)
             # dispatch a message to reload list for other processes
         return trans.fill_template( '/webapps/galaxy/admin/sanitize_whitelist.mako',
                                     sanitize_all=trans.app.config.sanitize_all_html,
