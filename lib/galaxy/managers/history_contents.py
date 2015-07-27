@@ -10,8 +10,6 @@ pkg_resources.require( "SQLAlchemy" )
 from sqlalchemy import literal
 
 from galaxy import model
-# import galaxy.exceptions
-import galaxy.util
 
 from galaxy.managers import containers
 from galaxy.managers import hdas
@@ -61,7 +59,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
             contents_query = contents_query.limit( limit )
         if offset is not None:
             contents_query = contents_query.offset( offset )
-        # if limit is not None:
+        # if order_by is not None:
         #     contents_query = contents_query.order_by( order_by )
         contents_results = contents_query.all()
 
@@ -79,7 +77,7 @@ class HistoryContentsManager( containers.ContainerManagerMixin ):
                 raise TypeError( 'Unknown contents type:', result_type )
         print id_map
 
-        # query the id_lists for each
+        # query the contained classes using the id_lists for each
         for subclass in subclasses:
             id_list = id_map[ subclass.__name__ ]
             id_map[ subclass.__name__ ] = self._by_ids( subclass, id_list )

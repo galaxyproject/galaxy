@@ -17,9 +17,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoryManager( sharable.SharableModelManager,
-        deletable.PurgableManagerMixin,
-        containers.HistoryAsContainerManagerMixin ):
+class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMixin ):
 
     model_class = model.History
     foreign_key_name = 'history'
