@@ -1136,6 +1136,7 @@ class Admin( object ):
             trans.app.config.sanitize_whitelist = new_whitelist
             # dispatch a message to reload list for other processes
         return trans.fill_template( '/webapps/galaxy/admin/sanitize_whitelist.mako',
+                                    sanitize_all=trans.app.config.sanitize_all_html,
                                     tools=trans.app.toolbox.tools_by_id )
 
 
