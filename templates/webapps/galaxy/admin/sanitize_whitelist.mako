@@ -6,11 +6,11 @@
 %endif
 
 %if not sanitize_all:
-    <div><p>You currently have sanitize_all_html set to False in your galaxy
-    configuration file.  This prevents Galaxy from sanitizing tool outputs,
-    which is an important security feature.  For improved security, we
-    recommend you disable the old-style blanket sanitization and manage it via
-    this whitelist instead.</p></div>
+    <div><p>You currently have <strong>sanitize_all_html</strong> set to False
+    in your galaxy configuration file.  This prevents Galaxy from sanitizing
+    tool outputs, which is an important security feature.  For improved
+    security, we recommend you disable the old-style blanket sanitization and
+    manage it via this whitelist instead.</p></div>
 %else:
     <div><p>This interface will allow you to mark particular tools as 'trusted'
     after which Galaxy will no longer attempt to sanitize any HTML contents of
