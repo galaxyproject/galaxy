@@ -18,7 +18,10 @@
     potential security implications of doing this -- bypassing sanitization
     using this whitelist disables Galaxy's security feature (for the indicated
     tools) that prevents Galaxy from displaying potentially malicious
-    Javascript.<br/></p></div>
+    Javascript.<br/>
+    Note that datasets originating from an archive import are still sanitized
+    even when their creating tool is whitelisted since it isn't possible to
+    validate the information supplied in the archive.</p></div>
     <form name="sanitize_whitelist" action="${h.url_for( controller='admin', action='sanitize_whitelist' )}">
     <div class="toolForm">
         <div class="toolFormTitle">Tool Sanitization Whitelist</div>
