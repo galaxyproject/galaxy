@@ -11,6 +11,7 @@ test_utils = imp.load_source( 'test_utils',
 from galaxy import model
 
 from base import BaseTestCase
+from base import CreatesCollectionsMixin
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.hdas import HDAManager
@@ -25,7 +26,7 @@ user3_data = dict( email='user3@user3.user3', username='user3', password=default
 
 
 # =============================================================================
-class DatasetCollectionManagerTestCase( BaseTestCase ):
+class DatasetCollectionManagerTestCase( BaseTestCase, CreatesCollectionsMixin ):
 
     def set_up_managers( self ):
         super( DatasetCollectionManagerTestCase, self ).set_up_managers()
@@ -33,18 +34,6 @@ class DatasetCollectionManagerTestCase( BaseTestCase ):
         self.hda_manager = HDAManager( self.app )
         self.history_manager = HistoryManager( self.app )
         self.collection_manager = DatasetCollectionManager( self.app )
-
-    def build_element_identifiers( self, elements ):
-        identifier_list = []
-        for element in elements:
-            src = 'hda'
-            # if isinstance( element, model.DatasetCollection ):
-            #    src = 'collection'#?
-            # elif isinstance( element, model.LibraryDatasetDatasetAssociation ):
-            #    src = 'ldda'#?
-            encoded_id = self.trans.security.encode_id( element.id )
-            identifier_list.append( dict( src=src, name=element.name, id=encoded_id ) )
-        return identifier_list
 
     def test_create_simple_list( self ):
         owner = self.user_manager.create( **user2_data )
