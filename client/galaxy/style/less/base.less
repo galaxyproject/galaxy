@@ -1724,12 +1724,12 @@ div.toolTitleNoSection
 }
 
 .chart rect {
-    shape-rendering: crispEdges;
     fill: steelblue;
+    shape-rendering: preserveAspectRatio;
 }
 
 .chart text {
-    fill: white;
+    fill: black;
     font: 7px sans-serif;
     text-anchor: end;
 }
@@ -1738,12 +1738,18 @@ div.toolTitleNoSection
     fill: black;
     font-family: Arial, sans-serif;
     font-size: 7px;
+    text-anchor: end;
 }
 
 .axis path, .axis line {
     fill: none;
     stroke: #000;
-    shape-rendering: crispEdges;
+    shape-rendering: preserveAspectRatio;
+}
+
+.x_path {
+    stroke: #000;
+    stroke-width: 1;
 }
 
 .chart .title {
@@ -1785,4 +1791,8 @@ div.toolTitleNoSection
     color: #000;
     border-top: solid #d6b161 1px;
     border-bottom: solid #d6b161 1px;
+}
+
+.tool_tip text {
+    fill: white;
 }

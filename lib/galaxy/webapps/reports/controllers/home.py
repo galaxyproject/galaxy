@@ -17,6 +17,7 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
         message = ''
         end_date = datetime.utcnow()
         end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour)
+        end_date_buffer = datetime(end_date.year, end_date.month, end_date.day, end_date.hour + 1)
         start_hours = end_date - timedelta(1)
         start_days = end_date - timedelta(30)
 
@@ -37,9 +38,9 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
 
         for job in recent_jobs.execute():
             if(job.create_time >= start_days and
-               job.create_time < end_date ):
+               job.create_time < end_date_buffer ):
                 if(job.create_time >= start_hours and
-                   job.create_time < end_date ):
+                   job.create_time < end_date_buffer ):
                     # Get the creation time for the jobs in the past day
                     end_day = end_date.day
                     start_day = job.create_time.day
@@ -71,9 +72,9 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
                     jc_dy_data[int(day)] += 1
 
             if(job.update_time >= start_days and
-               job.update_time < end_date ):
+               job.update_time < end_date_buffer ):
                 if(job.update_time >= start_hours and
-                   job.update_time < end_date ):
+                   job.update_time < end_date_buffer ):
                     # Get the time finishedfor the jobs in the past day
                     end_day = end_date.day
                     start_day = job.update_time.day
@@ -81,7 +82,7 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
                     start_hour = job.update_time.hour
 
                     if(end_day != start_day):
-                        hours = (end_hour + 24) - start_hour
+                        hours = (end_hour + 23) - start_hour
                     else:
                         hours = end_hour - start_hour
 
@@ -101,7 +102,7 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
 
                 if(end_month != start_month):
                     month_weekday, month_range = calendar.monthrange(job.update_time.year, job.update_time.month)
-                    day = (end_day + month_range) - start_day
+                    day = (end_day + (month_range-1)) - start_day
                 else:
                     day = end_day - start_day
 

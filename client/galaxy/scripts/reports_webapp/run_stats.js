@@ -1,3 +1,7 @@
+function days_in_month(month,year) {
+    return new Date(year, month, 0).getDate();
+}
+
 function date_by_subtracting_days(date, days) {
     return new Date(
         date.getFullYear(), 
@@ -10,28 +14,27 @@ function date_by_subtracting_days(date, days) {
     );
 }
 
-function date_by_adding_hours(date, hours) {
+function date_by_subtracting_hours(date, hours) {
     return new Date(
         date.getFullYear(), 
         date.getMonth(), 
         date.getDate(),
-        date.getHours() + hours,
+        date.getHours() - hours,
         date.getMinutes(),
         date.getSeconds(),
         date.getMilliseconds()
     );
 }
 
-function get_utc_time() {
-    var date = new Date()
+function get_utc_time_hours() {
+    var date = new Date();
     return new Date(
-    date.getUTCFullYear(),
-    date.getUTCMonth(),
-    date.getUTCDate(),
-    date.getUTCHours(),
-    date.getUTCMinutes(), 
-    date.getUTCSeconds()
-  )
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate(),
+        date.getUTCHours(),
+        0, 0
+    );
 }
 
 function refresh() {
@@ -44,6 +47,18 @@ function create_chart( inp_data, name, time, title ) {
         var data = inp_data;
         var margin = {top: 60, right: 30, bottom: 50, left: 60};
         var chart_zoom = 1.75;
+
+        var hours_array = []
+        var now = get_utc_time_hours()
+        for(var i = 0; i < 24; i++) {
+            hours_array.push(date_by_subtracting_hours(now, i));
+        }
+
+        var days_array = []
+        var now = get_utc_time_hours()
+        for(var i = 0; i < 30; i++) {
+            days_array.push(date_by_subtracting_days(now, i));
+        }
 
         function click() {
             var classes = d3.select(this).attr("class");
@@ -95,42 +110,43 @@ function create_chart( inp_data, name, time, title ) {
                     return "translate(" + curr_margin + "," + margin.top + ")";
                 })
                 .on("mouseenter", function(d) {
-                    var i = 0;
-                    var size = d;
+                var i = 1;
+                var size = d;
 
-                    while( size >= 1) {
-                        size = size / 10;
-                        i++;
-                    }
+                while( size >= 10) {
+                    size = size / 10;
+                    i++;
+                }
 
-                    var wdth = (i * 4) + 10;
-                    d3.select(d3.event.path[1]).select(".tool_tip")
-                        .select("text")
-                            .attr("transform", "translate( " + (margin.left - 5) + ", " + ((height - (d * zoom)) + +margin.top + 10) + " )" )
-                            .attr("visibility", "visible")
-                            .text(d);
+                var wdth = (i * 4) + 10;
+                d3.select(d3.event.path[1]).select(".tool_tip")
+                    .select("text")
+                        .attr("transform", "translate( " + (margin.left - 5) + ", " + ((height - (d * zoom)) + +margin.top + 10) + " )" )
+                        .attr("visibility", "visible")
+                        .text(d);
 
-                    d3.select(d3.event.path[1]).select(".tool_tip")
+                d3.select(d3.event.path[1]).select(".tool_tip")
+                    .attr("width", wdth + "px")
+                    .attr("height", "15px")
+                    .select("rect")
+                        .attr("transform", "translate( " + ((+margin.left) - wdth) + ", " + ((height - (d * zoom)) + +margin.top) + " )" )
                         .attr("width", wdth + "px")
                         .attr("height", "15px")
-                        .select("rect")
-                            .attr("transform", "translate( " + ((+margin.left) - wdth) + ", " + ((height - (d * zoom)) + +margin.top) + " )" )
-                            .attr("width", wdth + "px")
-                            .attr("height", "15px")
-                            .attr("fill","#ebd9b2");
-                })
-                .on("mouseleave", function(d) {
-                    d3.select(d3.event.path[1]).select(".tool_tip")
-                        .select("text")
-                            .attr("visibility", "hidden");
+                        .attr("fill","#ebd9b2");
+            })
+            .on("mouseleave", function(d) {
+                d3.select(d3.event.path[1]).select(".tool_tip")
+                    .select("text")
+                        .attr("visibility", "hidden");
 
-                    d3.select(d3.event.path[1]).select(".tool_tip")
-                        .select("rect")
-                            .attr("width", "0")
-                            .attr("height", "0")
-                            .attr("fill","")
-                            .text(d);
-                });
+                d3.select(d3.event.path[1]).select(".tool_tip")
+                    .select("rect")
+                        .attr("width", "0")
+                        .attr("height", "0")
+                        .attr("fill","")
+                        .text(d);
+            });
+
         chart.append("g")
             .append("text")
             .attr("class", "title")
@@ -140,65 +156,17 @@ function create_chart( inp_data, name, time, title ) {
             })
             .text(title);
 
-        if (time == "hours") {
-            var x = d3.time.scale.utc()
-                .domain([get_utc_time(), date_by_subtracting_days(get_utc_time(), 1)])
-                .rangeRound([0, width]);
-
-            var xAxis = d3.svg.axis()
-                .scale(x)
-                .tickPadding(0)
-                .tickFormat(d3.time.format('%b %d %H'))
-                .ticks(d3.time.hours, 1)
-                .orient("bottom")
-                .tickSize(0)
-                .outerTickSize(0);
-        } else if (time == "days") {
-            var x = d3.time.scale.utc()
-                .domain([get_utc_time(), date_by_subtracting_days(get_utc_time(), 28)])
-                .rangeRound([0, width])
-                .nice();
-
-            var xAxis = d3.svg.axis()
-                .scale(x)
-                .tickPadding(0)
-                .tickFormat(d3.time.format('%b %d'))
-                .ticks(d3.time.days, 1)
-                .orient("bottom")
-                .tickSize(0)
-                .outerTickSize(0);
-        }
-
         chart.append("g")
-            .attr("class", "x axis")
-            .attr("id", ("x_" + name))
-            .attr("transform", "translate( " + (+margin.left) + "," + (+height + +margin.top )+ ")")
-            .call(xAxis)
-                .selectAll("text")
-                .style("text-anchor", "end")
-                .attr("transform", function() {
-                    return "rotate(-60, 0, " + d3.select(this).node().getBBox().height + ")";
-                });
+            .attr("class", "axis")
+            .append("path")
+                .attr("class", "x")
+                .attr("d", function(d) {
+                    var m_x = margin.left;
+                    var m_y = +margin.top + height;
+                    var l_x = m_x + width;
+                    var l_y = m_y;
 
-        chart.append("g")
-            .append("text")
-                .attr("class", "ax_title")
-                .attr("transform", function(e) {
-                    var axis = d3.select("#x_" + name).node()
-                    var left_pad = +margin.left + (axis.getBoundingClientRect().width/2) + 30;
-                    var top_pad = +margin.top + height + axis.getBoundingClientRect().height + 10
-                    var trans = "translate(" + left_pad + "," + top_pad + ")";
-
-                    return trans;
-                })
-                .text(function(d) {
-                    var info = "";
-                    if(time == "hours") {
-                        info = "Date(month day hour)";
-                    } else if(time == "days") {
-                        info = "Date(month day)";
-                    }
-                    return info;
+                    return "M" + m_x + " " + m_y + " L " + l_x + " " + l_y;
                 });
 
         var y = d3.scale.linear()
@@ -234,6 +202,197 @@ function create_chart( inp_data, name, time, title ) {
             .attr("y", function(d) { return height - (d * zoom); })
             .attr("height", function(d) { return (d * zoom); })
             .attr("width", barWidth - 1);
+
+        // Append x axis
+        if(time == "hours") {
+            // Append hour lines
+            bar.append("line")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 0)
+                .attr("y2", 3)
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+                .attr("transform", function(d, i) {
+                    return "translate( " + (barWidth/2) + ", " + height + ")"
+                });
+
+            // Append hour numbers
+            bar.append("text")
+                .attr("fill", "rgb(0,0,0)")
+                .attr("transform", "translate( 10, " + (height + 10) + " )")
+                .text(function(d, i) {
+                    var time = "0000"
+
+                    if( hours_array[i].getHours() < 10 ) {
+                        time = "0" + String(hours_array[i].getHours());
+                    } else {
+                        time = hours_array[i].getHours();
+                    }
+
+                    return time;
+                });
+
+            // Append day lines
+            var curr_day = "";
+            var first = false;
+            bar.append("line")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 0)
+                .attr("y2", function(d, i) {
+                    var _y2 = 0;
+
+                    if(hours_array[i].getDate() != curr_day) {
+                        if(!first) {
+                            _y2 = 27;
+                            first = true;
+                        } else {
+                            _y2 = 20;
+                        }
+                        
+                        curr_day = hours_array[i].getDate();
+                    }
+
+                    return _y2;
+                })
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+                .attr("transform", function(d, i) {
+                    return "translate( 0, " + height + ")";
+                });
+
+            // Append day numbers
+            curr_day = "";
+            curr_day_text = "";
+            first = false;
+            bar.append("text")
+                .attr("fill", "rgb(0,0,0)")
+                .text(function(d, i) {
+                    var time = "";
+                    var locale = "en-us";
+
+                    if(hours_array[i].getDate() != curr_day_text) {
+                        time = String(hours_array[i].toLocaleString(locale, { month: "long" }));                  
+                        time += " " + String(hours_array[i].getDate())
+
+                        curr_day_text = hours_array[i].getDate();
+                    }
+
+                    return time;
+                })
+                .attr("transform", function(d, i) {
+                    var text_height = height;
+                    var this_width = d3.select(this).node().getBBox().width;
+
+                    if(hours_array[i].getDate() != curr_day) {
+                        if(!first) {
+                            text_height += 25;
+                            first = true;
+                        } else {
+                            text_height += 18;
+                        }
+                        
+                        curr_day = hours_array[i].getDate();
+                    }
+
+                    return "translate( " + (this_width + 2) + ", " + (text_height) + " )"
+                });
+        } else if(time == "days") {
+            // Append day lines
+            bar.append("line")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 0)
+                .attr("y2", 3)
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+                .attr("transform", function(d, i) {
+                    return "translate( " + (barWidth/2) + ", " + height + ")"
+                });
+
+            // Append day numbers
+            bar.append("text")
+                .attr("fill", "rgb(0,0,0)")
+                .attr("transform", "translate( 9, " + (height + 10) + " )")
+                .text(function(d, i) {
+                    var time = "0000"
+
+                    if( days_array[i].getDate() < 10 ) {
+                        time = "0" + String(days_array[i].getDate());
+                    } else {
+                        time = days_array[i].getDate();
+                    }
+
+                    return time;
+                });
+
+            // Append month lines
+            var curr_month = "";
+            var first = false;
+            bar.append("line")
+                .attr("x1", 0)
+                .attr("y1", 0)
+                .attr("x2", 0)
+                .attr("y2", function(d, i) {
+                    var _y2 = 0;
+
+                    if(days_array[i].getMonth() != curr_month) {
+                        if(!first) {
+                            _y2 = 27;
+                            first = true;
+                        } else {
+                            _y2 = 20;
+                        }
+                        
+                        curr_month = days_array[i].getMonth();
+                    }
+
+                    return _y2;
+                })
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+                .attr("transform", function(d, i) {
+                    return "translate( 0, " + height + ")";
+                });
+
+            // Append month numbers
+            curr_month = "";
+            curr_month_text = "";
+            first = false;
+            bar.append("text")
+                .attr("fill", "rgb(0,0,0)")
+                .text(function(d, i) {
+                    var time = "";
+                    var locale = "en-us";
+
+                    if(days_array[i].getMonth() != curr_month_text) {
+                        time = String(days_array[i].toLocaleString(locale, { month: "long" }));                  
+                        time += " " + String(days_array[i].getFullYear())
+
+                        curr_month_text = days_array[i].getMonth();
+                    }
+
+                    return time;
+                })
+                .attr("transform", function(d, i) {
+                    var text_height = height;
+                    var this_width = d3.select(this).node().getBBox().width;
+
+                    if(days_array[i].getMonth() != curr_month) {
+                        if(!first) {
+                            text_height += 25;
+                            first = true;
+                        } else {
+                            text_height += 18;
+                        }
+                        
+                        curr_month = days_array[i].getMonth();
+                    }
+
+                    return "translate( " + (this_width + 2) + ", " + (text_height) + " )"
+                });
+        }
 
         chart.append("g")
             .attr("class", "tool_tip")
