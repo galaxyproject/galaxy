@@ -2,7 +2,7 @@
 Mixins for Taggable model managers and serializers.
 """
 
-from galaxy import exceptions as galaxy_exceptions
+# from galaxy import exceptions as galaxy_exceptions
 
 import logging
 log = logging.getLogger( __name__ )
@@ -27,7 +27,10 @@ def _tags_to_strings( item ):
 def _tags_from_strings( item, tag_handler, new_tags_list, user=None ):
     # TODO: have to assume trans.user here...
     if not user:
-        raise galaxy_exceptions.RequestParameterMissingException( 'User required for tags on ' + str( item ) )
+        # raise galaxy_exceptions.RequestParameterMissingException( 'User required for tags on ' + str( item ) )
+        # TODO: this becomes a 'silent failure' - no tags are set. This is a questionable approach but
+        # I haven't found a better one for anon users copying items with tags
+        return
     # TODO: duped from tags manager - de-dupe when moved to taggable mixin
     tag_handler.delete_item_tags( user, item )
     new_tags_str = ','.join( new_tags_list )
