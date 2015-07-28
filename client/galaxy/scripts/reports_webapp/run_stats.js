@@ -410,7 +410,7 @@ function create_chart( inp_data, name, time, title ) {
 
 //============================================================================================================
 
-function create_histogram( inp_data, name, time, title ) {
+function create_histogram( inp_data, name, title ) {
     require( ["d3"], function (e) {
         //inp_data is an array of numbers that are the amount of minutes per run
         var data = inp_data;
