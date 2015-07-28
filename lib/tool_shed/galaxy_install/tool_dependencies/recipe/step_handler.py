@@ -248,7 +248,31 @@ class RecipeStep( object ):
         raise "Unimplemented Method"
 
 
-class AssertDirectoryExecutable( RecipeStep ):
+class DirectoryRecipeStep( RecipeStep ):
+    """
+    Class for handling recipe steps related to directory actions during the
+    installation process.  Recipes that use the TMP_WORK_DIR reserved word
+    enable sub-classes (e.g., MakeDirectory, ChangeDirectory, etc) to perform
+    actions via the subclass's execute_step() method within the temporary
+    working directory created by the InstallEnvironment.make_tmp_dir() method.
+    This mirrors the same behavior that results from the use of the $INSTALL_DIR
+    keyword, where the subclasses perform the same directory actions within
+    the installation environment rather than the working environment.
+    """
+
+    def set_directory_path( self, work_dir, current_dir, target_dir ):
+        """
+        This method currently replaces the TMP_WORK_DIR keyword with the path
+        to the temporary working directory.
+        """
+        if target_dir.startswith( 'TMP_WORK_DIR' ):
+            target_dir = target_dir.replace( 'TMP_WORK_DIR', os.path.realpath( work_dir ) )
+        elif current_dir is not None:
+            target_dir = os.path.join( current_dir, target_dir )
+        return os.path.normpath( target_dir )
+
+
+class AssertDirectoryExecutable( DirectoryRecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -277,10 +301,11 @@ class AssertDirectoryExecutable( RecipeStep ):
         Since this class is not used in the initial download stage, no recipe step filtering is
         performed here, and None values are always returned for filtered_actions and dir.
         """
-        if os.path.isabs( action_dict[ 'full_path' ] ):
-            full_path = action_dict[ 'full_path' ]
+        tmp_path = self.set_directory_path( work_dir, current_dir, action_dict[ 'full_path' ] )
+        if os.path.isabs( tmp_path ):
+            full_path = tmp_path
         else:
-            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+            full_path = os.path.join( current_dir, tmp_path )
         if not self.assert_directory_executable( full_path=full_path ):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             error_message = 'The path %s is not a directory or is not executable by the owner.' % str( full_path )
@@ -298,7 +323,7 @@ class AssertDirectoryExecutable( RecipeStep ):
         return action_dict
 
 
-class AssertDirectoryExists( RecipeStep ):
+class AssertDirectoryExists( DirectoryRecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -323,10 +348,11 @@ class AssertDirectoryExists( RecipeStep ):
         class is not used in the initial download stage, no recipe step filtering is performed
         here, and None values are always returned for filtered_actions and dir.
         """
-        if os.path.isabs( action_dict[ 'full_path' ] ):
-            full_path = action_dict[ 'full_path' ]
+        tmp_path = self.set_directory_path( work_dir, current_dir, action_dict[ 'full_path' ] )
+        if os.path.isabs( tmp_path ):
+            full_path = tmp_path
         else:
-            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+            full_path = os.path.join( current_dir, tmp_path )
         if not self.assert_directory_exists( full_path=full_path ):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             error_message = 'The path %s is not a directory or does not exist.' % str( full_path )
@@ -476,7 +502,7 @@ class Autoconf( RecipeStep ):
         return action_dict
 
 
-class ChangeDirectory( RecipeStep ):
+class ChangeDirectory( DirectoryRecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -489,15 +515,13 @@ class ChangeDirectory( RecipeStep ):
         no recipe step filtering is performed here and a None value is return for filtered_actions.  However,
         the new dir value is returned since it is needed for later steps.
         """
-        target_directory = os.path.realpath( os.path.normpath( os.path.join( current_dir, action_dict[ 'directory' ] ) ) )
-        if target_directory.startswith( os.path.realpath( current_dir ) ) and os.path.exists( target_directory ):
-            # Change directory to a directory within the current working directory.
-            dir = target_directory
-        elif target_directory.startswith( os.path.realpath( work_dir ) ) and os.path.exists( target_directory ):
-            # Change directory to a directory above the current working directory, but within the defined work_dir.
-            dir = target_directory.replace( os.path.realpath( work_dir ), '' ).lstrip( '/' )
+        target_directory = self.set_directory_path( work_dir, current_dir, action_dict[ 'directory' ] )
+        if target_directory.startswith( os.path.realpath( work_dir ) ) and os.path.exists( target_directory ):
+            # Change directory to a directory either above or within current_dir,
+            # which is within the defined work_dir.
+            dir = os.path.normpath( target_directory )
         else:
-            log.debug( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', target_directory )
+            log.debug( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.' % str( target_directory ) )
             dir = current_dir
         return tool_dependency, None, dir
 
@@ -760,7 +784,7 @@ class DownloadFile( Download, RecipeStep ):
         return action_dict
 
 
-class MakeDirectory( RecipeStep ):
+class MakeDirectory( DirectoryRecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -772,10 +796,11 @@ class MakeDirectory( RecipeStep ):
         Make a directory on disk.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
         """
-        if os.path.isabs( action_dict[ 'full_path' ] ):
-            full_path = action_dict[ 'full_path' ]
+        tmp_dir = self.set_directory_path( work_dir, current_dir, action_dict[ 'full_path' ] )
+        if os.path.isabs( tmp_dir ):
+            full_path = tmp_dir
         else:
-            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
+            full_path = os.path.join( current_dir, tmp_dir )
         self.make_directory( full_path=full_path )
         return tool_dependency, None, None
 
@@ -821,7 +846,7 @@ class MakeInstall( RecipeStep ):
         return action_dict
 
 
-class MoveDirectoryFiles( RecipeStep ):
+class MoveDirectoryFiles( DirectoryRecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -833,9 +858,15 @@ class MoveDirectoryFiles( RecipeStep ):
         Move a directory of files.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
         """
+        source_dir = self.set_directory_path( work_dir,
+                                              current_dir,
+                                              action_dict[ 'source_directory' ] )
+        destination_dir = self.set_directory_path( work_dir,
+                                                   current_dir,
+                                                   action_dict[ 'destination_directory' ] )
         self.move_directory_files( current_dir=current_dir,
-                                   source_dir=os.path.join( action_dict[ 'source_directory' ] ),
-                                   destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
+                                   source_dir=source_dir,
+                                   destination_dir=destination_dir )
         return tool_dependency, None, None
 
     def move_directory_files( self, current_dir, source_dir, destination_dir ):
