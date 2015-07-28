@@ -12,17 +12,18 @@ ross lazarus for rgenetics
 august 20 2007
 """
 
+import logging
 import os
 import sys
-import logging
-import data
-from cgi import escape
 import urllib
-from galaxy.web import url_for
+from cgi import escape
+
 from galaxy.datatypes import metadata
+from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.images import Html
+from galaxy.web import url_for
+from . import data
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
@@ -164,6 +165,7 @@ class GenomeGraphs( Tabular ):
         Determines whether the file is in gg format
         """
         f = open(filename, 'r')
+        f.readline()  # header
         rows = [f.readline().split()[1:] for x in range(3)]  # small sample
         # headers = get_headers( filename, '\t' )
         for row in rows:
