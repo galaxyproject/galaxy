@@ -275,8 +275,17 @@ def create_repository_admin_role( app, repository ):
 
 def get_installed_tool_shed_repository( app, id ):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
-    return app.install_model.context.query( app.install_model.ToolShedRepository ) \
-                                    .get( app.security.decode_id( id ) )
+    rval = []
+    if isinstance( id, list ):
+        return_list = True
+    else:
+        id = [ id ]
+        return_list = False
+    for i in id:
+        rval.append( app.install_model.context.query( app.install_model.ToolShedRepository ).get( app.security.decode_id( i ) ) )
+    if return_list:
+        return rval
+    return rval[0]
 
 
 def get_repo_info_dict( app, user, repository_id, changeset_revision ):
