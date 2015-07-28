@@ -102,7 +102,7 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
 
                 if(end_month != start_month):
                     month_weekday, month_range = calendar.monthrange(job.update_time.year, job.update_time.month)
-                    day = (end_day + (month_range-1)) - start_day
+                    day = (end_day + (month_range - 1)) - start_day
                 else:
                     day = end_day - start_day
 
