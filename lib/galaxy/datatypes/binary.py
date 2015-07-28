@@ -891,7 +891,7 @@ Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 
 class RData( Binary ):
     """Generic R Data file datatype implementation"""
-    file_ext = 'rdata'
+    file_ext = 'RData'
 
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
@@ -909,4 +909,4 @@ class RData( Binary ):
         except:
             return False
 
-Binary.register_sniffable_binary_format('rdata', 'rdata', RData)
+Binary.register_sniffable_binary_format('RData', 'RData', RData)
