@@ -727,52 +727,50 @@ class MetadataGenerator( object ):
         if tree is None:
             return metadata_dict, error_message
         root = tree.getroot()
-        tool_dependency_is_valid = True
-        valid_tool_dependencies_dict = {}
-        invalid_tool_dependencies_dict = {}
+        class RecurserValueStore( object ):
+            pass
+        rvs = RecurserValueStore()
+        rvs.valid_tool_dependencies_dict = {}
+        rvs.invalid_tool_dependencies_dict = {}
         valid_repository_dependency_tups = []
         invalid_repository_dependency_tups = []
-        tools_metadata = metadata_dict.get( 'tools', None )
         description = root.get( 'description' )
-        for elem in root:
-            if elem.tag == 'package':
-                valid_tool_dependencies_dict, \
-                invalid_tool_dependencies_dict, \
-                repository_dependency_tup, \
-                repository_dependency_is_valid, \
-                message = self.generate_package_dependency_metadata( elem,
-                                                                     valid_tool_dependencies_dict,
-                                                                     invalid_tool_dependencies_dict )
-                if repository_dependency_is_valid:
-                    if repository_dependency_tup and repository_dependency_tup not in valid_repository_dependency_tups:
-                        # We have a valid complex repository dependency.
-                        valid_repository_dependency_tups.append( repository_dependency_tup )
-                else:
-                    if repository_dependency_tup and repository_dependency_tup not in invalid_repository_dependency_tups:
-                        # We have an invalid complex repository dependency, so mark the tool dependency as invalid.
-                        tool_dependency_is_valid = False
-                        # Append the error message to the invalid repository dependency tuple.
-                        toolshed, \
-                        name, \
-                        owner, \
-                        changeset_revision, \
-                        prior_installation_required, \
-                        only_if_compiling_contained_td \
-                            = repository_dependency_tup
-                        repository_dependency_tup = \
-                            ( toolshed, \
-                              name, \
-                              owner, \
-                              changeset_revision, \
-                              prior_installation_required, \
-                              only_if_compiling_contained_td, \
-                              message )
-                        invalid_repository_dependency_tups.append( repository_dependency_tup )
-                        error_message = '%s  %s' % ( error_message, message )
-            elif elem.tag == 'set_environment':
-                valid_tool_dependencies_dict = \
-                    self.generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict )
-        if valid_tool_dependencies_dict:
+        def _check_elem_for_dep( elems ):
+            for elem in elems:
+                if elem.tag == 'package':
+                    rvs.valid_tool_dependencies_dict, rvs.invalid_tool_dependencies_dict, \
+                        repository_dependency_tup, repository_dependency_is_valid, \
+                        message = self.generate_package_dependency_metadata( elem,
+                                                                             rvs.valid_tool_dependencies_dict,
+                                                                             rvs.invalid_tool_dependencies_dict )
+                    if repository_dependency_is_valid:
+                        if repository_dependency_tup and repository_dependency_tup not in valid_repository_dependency_tups:
+                            # We have a valid complex repository dependency.
+                            valid_repository_dependency_tups.append( repository_dependency_tup )
+                    else:
+                        if repository_dependency_tup and repository_dependency_tup not in invalid_repository_dependency_tups:
+                            # We have an invalid complex repository dependency, so mark the tool dependency as invalid.
+                            # Append the error message to the invalid repository dependency tuple.
+                            toolshed, name, owner, changeset_revision, \
+                                prior_installation_required, \
+                                only_if_compiling_contained_td = \
+                                repository_dependency_tup
+                            repository_dependency_tup = \
+                                ( toolshed,
+                                  name,
+                                  owner,
+                                  changeset_revision,
+                                  prior_installation_required,
+                                  only_if_compiling_contained_td,
+                                  message )
+                            invalid_repository_dependency_tups.append( repository_dependency_tup )
+                            error_message = '%s  %s' % ( error_message, message )
+                elif elem.tag == 'set_environment':
+                    rvs.valid_tool_dependencies_dict = \
+                        self.generate_environment_dependency_metadata( elem, rvs.valid_tool_dependencies_dict )
+                _check_elem_for_dep( elem )
+        _check_elem_for_dep( root )
+        if rvs.valid_tool_dependencies_dict:
             if original_valid_tool_dependencies_dict:
                 # We're generating metadata on an update pulled to a tool shed repository installed
                 # into a Galaxy instance, so handle changes to tool dependencies appropriately.
@@ -780,10 +778,10 @@ class MetadataGenerator( object ):
                 updated_tool_dependency_names, deleted_tool_dependency_names = \
                     irm.handle_existing_tool_dependencies_that_changed_in_update( self.repository,
                                                                                   original_valid_tool_dependencies_dict,
-                                                                                  valid_tool_dependencies_dict )
-            metadata_dict[ 'tool_dependencies' ] = valid_tool_dependencies_dict
-        if invalid_tool_dependencies_dict:
-            metadata_dict[ 'invalid_tool_dependencies' ] = invalid_tool_dependencies_dict
+                                                                                  rvs.valid_tool_dependencies_dict )
+            metadata_dict[ 'tool_dependencies' ] = rvs.valid_tool_dependencies_dict
+        if rvs.invalid_tool_dependencies_dict:
+            metadata_dict[ 'invalid_tool_dependencies' ] = rvs.invalid_tool_dependencies_dict
         if valid_repository_dependency_tups:
             metadata_dict = \
                 self.update_repository_dependencies_metadata( metadata=metadata_dict,
