@@ -171,7 +171,8 @@ return Backbone.View.extend({
         // remove mode class
         it.find('#mode')
             .removeClass()
-            .addClass('mode');
+            .addClass('mode')
+            .addClass('text-primary');
 
         // activate text field if file is new
         if (file_mode == 'new') {
@@ -341,25 +342,25 @@ return Backbone.View.extend({
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
                         '<div class="name-column">' +
-                            '<div id="mode"></div>' +
-                            '<div id="title" class="title"></div>' +
+                            '<div id="mode"/>' +
+                            '<div id="title" class="title"/>' +
                             '<div id="text" class="text">' +
                                 '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
-                                '<textarea id="text-content" class="text-content form-control"></textarea>' +
+                                '<textarea id="text-content" class="text-content form-control"/>' +
                             '</div>' +
                         '</div>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="size" class="size"></div>' +
+                        '<div id="size" class="size"/>' +
                     '</td>' +
                     '<td>' +
                         '<div id="extension" class="extension" style="float: left;"/>&nbsp;&nbsp' +
                         '<div id="extension-info" class="upload-icon-button fa fa-search"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="genome" class="genome" />' +
+                        '<div id="genome" class="genome"/>' +
                     '</td>' +
-                    '<td><div id="settings" class="upload-icon-button fa fa-gear" /></td>' +
+                    '<td><div id="settings" class="upload-icon-button fa fa-gear"/></td>' +
                     '<td>' +
                         '<div id="info" class="info">' +
                             '<div class="progress">' +
@@ -369,7 +370,7 @@ return Backbone.View.extend({
                         '</div>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="symbol" class="' + this.status_classes.init + '"></div>' +
+                        '<div id="symbol" class="' + this.status_classes.init + '"/>' +
                     '</td>' +
                 '</tr>';
     }

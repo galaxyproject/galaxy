@@ -29,15 +29,14 @@ return Backbone.View.extend({
     },
 
     // source options
-    list_sources: [ { id: 'null', text: 'Select a source...' },
-                    { id: 'local', text: 'Choose local file' },
+    list_sources: [ { id: '', text: 'Choose local file' },
                     { id: 'ftp', text: 'Choose FTP file' },
                     { id: 'url', text: 'Paste/fetch data' } ],
 
     // source selector
     select_source : null,
 
-    // render
+    // initialize
     initialize: function(app, options) {
         // link app
         this.app = app;
@@ -69,7 +68,8 @@ return Backbone.View.extend({
                 //self.app.updateGenome(genome, true);
             },
             data: self.list_sources,
-            container: it.find('#source')
+            container: it.find('#source'),
+            placeholder: 'Select a source...'
         });
 
         //
@@ -113,17 +113,22 @@ return Backbone.View.extend({
     render: function() {
         // read model
         var file_name   = this.model.get('file_name');
+        var file_desc   = this.model.get('file_desc');
         var file_size   = this.model.get('file_size');
         var file_mode   = this.model.get('file_mode');
 
         // link item
         var it = this.$el;
 
-        // update title
+        // update title, description etc.
         it.find('#title').html(file_name);
-
-        // update info
+        it.find('#description').html(file_desc);
         it.find('#size').html(Utils.bytesToString (file_size));
+
+        // remove mode class
+        it.find('#mode')
+            .removeClass();
+            //.addClass('mode');
 
         // activate text field if file is new
         if (file_mode == 'new') {
@@ -145,6 +150,11 @@ return Backbone.View.extend({
             // show text field
             text.show();
         }
+
+        // file from ftp
+        //if (file_mode == 'ftp') {
+        it.find('#mode').addClass('fa fa-exclamation text-primary');
+        //}
     },
 
     // remove
@@ -246,7 +256,15 @@ return Backbone.View.extend({
     _template: function(options) {
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
+                        '<div id="mode"/>' +
+                    '</td>' +
+                    '<td>' +
                         '<div id="source" class="source"/>' +
+                    '</td>' +
+                    '<td>' +
+                        '<div class="name-column">' +
+                            '<div id="description" class="title"/>' +
+                        '</div>' +
                     '</td>' +
                     '<td>' +
                         '<div class="name-column">' +

@@ -135,7 +135,8 @@ return Backbone.View.extend({
         console.log(item);
         var upload_item = new UploadItem(this, {
             id          : this.collection.size(),
-            file_name   : item.get('description') || item.get('name') || 'Unavailable',
+            file_name   : '<b>-</b>',
+            file_desc   : item.get('description') || item.get('name') || 'Unavailable',
             //file_size   : file.size,
             //file_mode   : file.mode,
             //file_path   : file.path
@@ -458,8 +459,10 @@ return Backbone.View.extend({
                         '<table id="upload-table" class="table table-striped" style="display: none;">' +
                             '<thead>' +
                                 '<tr>' +
+                                    '<th/>' +
                                     '<th>Source</th>' +
                                     '<th>Description</th>' +
+                                    '<th>Name</th>' +
                                     '<th>Size</th>' +
                                     '<th>Settings</th>' +
                                     '<th>Status</th>' +
