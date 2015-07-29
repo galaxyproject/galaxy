@@ -719,10 +719,8 @@ class MetadataGenerator( object ):
             # Keep a copy of the original tool dependencies dictionary and the list of tool
             # dictionaries in the metadata.
             original_valid_tool_dependencies_dict = original_repository_metadata.get( 'tool_dependencies', None )
-            original_invalid_tool_dependencies_dict = original_repository_metadata.get( 'invalid_tool_dependencies', None )
         else:
             original_valid_tool_dependencies_dict = None
-            original_invalid_tool_dependencies_dict = None
         tree, error_message = xml_util.parse_xml( tool_dependencies_config )
         if tree is None:
             return metadata_dict, error_message
@@ -738,6 +736,7 @@ class MetadataGenerator( object ):
         description = root.get( 'description' )
 
         def _check_elem_for_dep( elems ):
+            error_messages = []
             for elem in elems:
                 if elem.tag == 'package':
                     rvs.valid_tool_dependencies_dict, rvs.invalid_tool_dependencies_dict, \
@@ -766,12 +765,13 @@ class MetadataGenerator( object ):
                                   only_if_compiling_contained_td,
                                   message )
                             invalid_repository_dependency_tups.append( repository_dependency_tup )
-                            error_message = '%s  %s' % ( error_message, message )
+                            error_messages.append('%s  %s' % ( error_message, message ) )
                 elif elem.tag == 'set_environment':
                     rvs.valid_tool_dependencies_dict = \
                         self.generate_environment_dependency_metadata( elem, rvs.valid_tool_dependencies_dict )
-                _check_elem_for_dep( elem )
-        _check_elem_for_dep( root )
+                error_messages += _check_elem_for_dep( elem )
+            return error_messages
+        error_message = "\n".join([error_message] + _check_elem_for_dep( root ))
         if rvs.valid_tool_dependencies_dict:
             if original_valid_tool_dependencies_dict:
                 # We're generating metadata on an update pulled to a tool shed repository installed
