@@ -143,17 +143,21 @@ var HistoryPanel = _super.extend(
      */
     _setUpListeners : function(){
         _super.prototype._setUpListeners.call( this );
-
-        this.on( 'error', function( model, xhr, options, msg, details ){
-            this.errorHandler( model, xhr, options, msg, details );
-        });
-
-        this.on( 'loading-done', function(){
-            //TODO:?? if( this.collection.length ){
-            if( !this.views.length ){
-                this.trigger( 'empty-history', this );
+        this.on({
+            error : function( model, xhr, options, msg, details ){
+                this.errorHandler( model, xhr, options, msg, details );
+            },
+            'loading-done' : function(){
+                //TODO:?? if( this.collection.length ){
+                if( !this.views.length ){
+                    this.trigger( 'empty-history', this );
+                }
+            },
+            'views:ready view:attached view:removed' : function( view ){
+                this._renderSelectButton();
             }
         });
+        // this.on( 'all', function(){ console.debug( arguments ); });
     },
 
     // ------------------------------------------------------------------------ loading history/hda models
@@ -304,20 +308,34 @@ var HistoryPanel = _super.extend(
     /** In this override, add a btn to toggle the selectors */
     _buildNewRender : function(){
         var $newRender = _super.prototype._buildNewRender.call( this );
-        //if( this.views.length && this.multiselectActions().length ){
-        if( this.multiselectActions().length ){
-            $newRender.find( '.controls .actions' ).prepend( this._renderSelectButton() );
-        }
+        this._renderSelectButton( $newRender );
         return $newRender;
     },
 
     /** button for starting select mode */
     _renderSelectButton : function( $where ){
+        $where = $where || this.$el;
+        // do not render selector option if no actions
+        if( !this.multiselectActions().length ){
+            return null;
+        }
+        // do not render (and remove even) if nothing to select
+        if( !this.views.length ){
+            this.hideSelectors();
+            $where.find( '.controls .actions .show-selectors-btn' ).remove();
+            return null;
+        }
+        // don't bother rendering if there's one already
+        var $existing = $where.find( '.controls .actions .show-selectors-btn' );
+        if( $existing.size() ){
+            return $existing;
+        }
+
         return faIconButton({
             title   : _l( 'Operations on multiple datasets' ),
             classes : 'show-selectors-btn',
             faIcon  : 'fa-check-square-o'
-        });
+        }).prependTo( $where.find( '.controls .actions' ) );
     },
 
     // ------------------------------------------------------------------------ sub-views
@@ -398,9 +416,9 @@ var HistoryPanel = _super.extend(
         if( store ){
             this.storage.set( 'show_deleted', show );
         }
-        this.trigger( 'show-hidden', show );
         //TODO:?? to events on storage('change:show_deleted')
         this.renderItems();
+        this.trigger( 'show-deleted', show );
         return this.showDeleted;
     },
 
@@ -416,9 +434,9 @@ var HistoryPanel = _super.extend(
         if( store ){
             this.storage.set( 'show_hidden', show );
         }
-        this.trigger( 'show-hidden', show );
         //TODO:?? to events on storage('change:show_deleted')
         this.renderItems();
+        this.trigger( 'show-hidden', show );
         return this.showHidden;
     },
 

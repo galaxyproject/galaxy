@@ -33,6 +33,19 @@ This will:
 2. generate source maps and place them in static/maps
 
 
+Templates
+=========
+
+You can change and recompile the templates by using:
+
+    grunt templates
+
+This will:
+
+1. recompile the templates in client/galaxy/scripts/templates to client/galaxy/scripts/templates/compiled
+2. minify and generate source maps for the compiled templates
+
+
 Changing Styles/CSS
 ===================
 

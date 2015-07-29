@@ -641,11 +641,13 @@ class Registry( object ):
                   <requirement type="package">samtools</requirement>
               </requirements>
               <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
-              <command>python $set_metadata $__SET_EXTERNAL_METADATA_COMMAND_LINE__</command>
+              <command>python "${set_metadata}" ${__SET_EXTERNAL_METADATA_COMMAND_LINE__}</command>
               <inputs>
                 <param format="data" name="input1" type="data" label="File to set metadata on."/>
                 <param name="__ORIGINAL_DATASET_STATE__" type="hidden" value=""/>
-                <param name="__SET_EXTERNAL_METADATA_COMMAND_LINE__" type="hidden" value=""/>
+                <param name="__SET_EXTERNAL_METADATA_COMMAND_LINE__" type="hidden" value="">
+                  <sanitizer sanitize="False"/>
+                </param>
               </inputs>
               <configfiles>
                 <configfile name="set_metadata">from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()</configfile>

@@ -4,6 +4,7 @@
 import os
 import imp
 import unittest
+import random
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
@@ -18,11 +19,13 @@ from galaxy import model
 from galaxy import exceptions
 
 from base import BaseTestCase
+from base import CreatesCollectionsMixin
 
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.histories import HistorySerializer
 from galaxy.managers.histories import HistoryFilters
 from galaxy.managers import hdas
+from galaxy.managers import collections
 
 default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
@@ -723,6 +726,69 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.log( "orm and fn filtered, negative offset should return full list" )
         found = self.history_manager.list( filters=filters, offset=-1 )
         self.assertEqual( found, deleted_and_annotated )
+
+
+# =============================================================================
+class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
+
+    def set_up_managers( self ):
+        super( HistoryAsContainerTestCase, self ).set_up_managers()
+        self.history_manager = HistoryManager( self.app )
+        self.hda_manager = hdas.HDAManager( self.app )
+        self.collection_manager = collections.DatasetCollectionManager( self.app )
+
+    def add_hda_to_history( self, history, **kwargs ):
+        dataset = self.hda_manager.dataset_manager.create()
+        hda = self.hda_manager.create( history=history, dataset=dataset, **kwargs )
+        return hda
+
+    def add_list_collection_to_history( self, history, hdas, name='test collection', **kwargs ):
+        hdca = self.collection_manager.create( self.trans, history, name, 'list',
+            element_identifiers=self.build_element_identifiers( hdas ) )
+        return hdca
+
+    def test_contents( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+
+        self.log( "calling contents on an empty history should return an empty list" )
+        self.assertEqual( [], list( self.history_manager.contents( history ) ) )
+
+        self.log( "calling contents on an history with hdas should return those in order of their hids" )
+        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
+        random.shuffle( hdas )
+        ordered_hda_contents = list( self.history_manager.contents( history ) )
+        self.assertEqual( map( lambda hda: hda.hid, ordered_hda_contents ), [ 1, 2, 3 ] )
+
+        self.log( "calling contents on an history with both hdas and collections should return both" )
+        hdca = self.add_list_collection_to_history( history, hdas )
+        all_contents = list( self.history_manager.contents( history ) )
+        self.assertEqual( all_contents, list( ordered_hda_contents ) + [ hdca ] )
+
+    def test_contained( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+
+        self.log( "calling contained on an empty history should return an empty list" )
+        self.assertEqual( [], list( self.history_manager.contained( history ) ) )
+
+        self.log( "calling contained on an history with both hdas and collections should return only hdas" )
+        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
+        self.add_list_collection_to_history( history, hdas )
+        self.assertEqual( list( self.history_manager.contained( history ) ), hdas )
+
+    def test_subcontainers( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+
+        self.log( "calling subcontainers on an empty history should return an empty list" )
+        self.assertEqual( [], list( self.history_manager.subcontainers( history ) ) )
+
+        self.log( "calling subcontainers on an history with both hdas and collections should return only collections" )
+        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
+        hdca = self.add_list_collection_to_history( history, hdas )
+        subcontainers = list( self.history_manager.subcontainers( history ) )
+        self.assertEqual( subcontainers, [ hdca ] )
 
 
 # =============================================================================

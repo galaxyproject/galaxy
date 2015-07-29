@@ -1180,7 +1180,7 @@ class BBIDataProvider( GenomeDataProvider ):
                     # Compute $\mu \pm 2\sigma$ to provide an estimate for upper and lower
                     # bounds that contain ~95% of the data.
                     mean = summary.sum_data[0] / valid_count
-                    var = summary.sum_squares[0] - mean
+                    var = max( summary.sum_squares[0] - mean, 0 )  # Prevent variance underflow.
                     if valid_count > 1:
                         var /= valid_count - 1
                     sd = math.sqrt( var )
