@@ -123,11 +123,6 @@ return Backbone.View.extend({
             self.model.set('file_size', $(e.target).val().length);
         });
 
-        // handle space to tabs button
-        it.find('#space_to_tabs').on('change', function(e) {
-            self.model.set('space_to_tabs', $(e.target).prop('checked'));
-        });
-
         //
         // model events
         //
@@ -284,7 +279,6 @@ return Backbone.View.extend({
 
             // default fields
             it.find('#text-content').attr('disabled', false);
-            it.find('#space_to_tabs').attr('disabled', false);
         } else {
             // select fields
             this.select_genome.disable();
@@ -292,7 +286,6 @@ return Backbone.View.extend({
 
             // default fields
             it.find('#text-content').attr('disabled', true);
-            it.find('#space_to_tabs').attr('disabled', true);
         }
 
         // success
@@ -366,11 +359,11 @@ return Backbone.View.extend({
                     '<td>' +
                         '<div id="genome" class="genome" />' +
                     '</td>' +
-                    '<td><div id="settings" class="upload-icon-button fa fa-gear"></div>' +
+                    '<td><div id="settings" class="upload-icon-button fa fa-gear" /></td>' +
                     '<td>' +
                         '<div id="info" class="info">' +
                             '<div class="progress">' +
-                                '<div class="progress-bar progress-bar-success"></div>' +
+                                '<div class="progress-bar progress-bar-success"/>' +
                                 '<div id="percentage" class="percentage">0%</div>' +
                             '</div>' +
                         '</div>' +

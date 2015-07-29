@@ -209,7 +209,7 @@ return Backbone.View.extend({
         var extension       = it.get('extension');
         var genome          = it.get('genome');
         var url_paste       = it.get('url_paste');
-        var space_to_tabs   = it.get('space_to_tabs');
+        var space_to_tab    = it.get('space_to_tab');
         var to_posix_lines  = it.get('to_posix_lines');
 
         // validate
@@ -243,7 +243,7 @@ return Backbone.View.extend({
         tool_input['dbkey'] = genome;
         tool_input['file_type'] = extension;
         tool_input['files_0|type'] = 'upload_dataset';
-        tool_input['files_0|space_to_tab'] = space_to_tabs && 'Yes' || null;
+        tool_input['files_0|space_to_tab'] = space_to_tab && 'Yes' || null;
         tool_input['files_0|to_posix_lines'] = to_posix_lines && 'Yes' || null;
 
         // setup data

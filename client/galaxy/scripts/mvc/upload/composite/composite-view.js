@@ -2,16 +2,13 @@
 define(['utils/utils',
         'mvc/upload/upload-model',
         'mvc/upload/composite/composite-row',
-        'mvc/upload/upload-ftp',
         'mvc/ui/ui-popover',
         'mvc/ui/ui-select',
-        'mvc/ui/ui-misc',
-        'utils/uploadbox'],
+        'mvc/ui/ui-misc'],
 
         function(   Utils,
                     UploadModel,
                     UploadItem,
-                    UploadFtp,
                     Popover,
                     Select,
                     Ui
@@ -24,31 +21,8 @@ return Backbone.View.extend({
     // genome selector
     select_genome: null,
 
-    // jquery uploadbox plugin
-    uploadbox: null,
-
-    // current upload size
-    upload_size: 0,
-
     // collection
     collection : new UploadModel.Collection(),
-
-    // ftp file viewer
-    ftp : null,
-
-    // counter
-    counter : {
-        // stats
-        announce    : 0,
-        success     : 0,
-        error       : 0,
-        running     : 0,
-
-        // reset stats
-        reset : function() {
-            this.announce = this.success = this.error = this.running = 0;
-        }
-    },
 
     // initialize
     initialize : function(app) {
@@ -66,13 +40,8 @@ return Backbone.View.extend({
         this.setElement(this._template());
 
         // create button section
-        this.btnLocal    = new Ui.Button({ title: 'Choose local file',   onclick: function() { self.uploadbox.select(); } });
-        this.btnFtp      = new Ui.Button({ title: 'Choose FTP file',     onclick: function() { self._eventFtp(); } });
-        this.btnCreate   = new Ui.Button({ title: 'Paste/Fetch data',    onclick: function() { self._eventCreate(); } });
-        this.btnStart    = new Ui.Button({ title: 'Start',               onclick: function() { self._eventStart(); } });
-        this.btnStop     = new Ui.Button({ title: 'Pause',               onclick: function() { self._eventStop(); } });
-        this.btnReset    = new Ui.Button({ title: 'Reset',               onclick: function() { self._eventReset(); } });
-        this.btnClose    = new Ui.Button({ title: 'Close',               onclick: function() { self.app.modal.hide(); } });
+        this.btnStart = new Ui.Button({ title: 'Start', onclick: function() { self._eventStart(); } });
+        this.btnClose = new Ui.Button({ title: 'Close', onclick: function() { self.app.modal.hide(); } });
 
         // append buttons to dom
         var buttons = [ this.btnStart, this.btnClose ];
@@ -80,36 +49,25 @@ return Backbone.View.extend({
             this.$('#upload-buttons').prepend(buttons[i].$el);
         }
 
-        // file upload
-        var self = this;
-        this.uploadbox = this.$('#upload-box').uploadbox({
-            initialize      : function(index, file, message) { return self._eventInitialize(index, file, message) },
-            announce        : function(index, file, message) { self._eventAnnounce(index, file, message) },
-            progress        : function(index, file, message) { self._eventProgress(index, file, message) },
-            success         : function(index, file, message) { self._eventSuccess(index, file, message) },
-            error           : function(index, file, message) { self._eventError(index, file, message) },
-            complete        : function() { self._eventComplete() }
-        });
-
-        // add ftp file viewer
-        this.ftp = new Popover.View({
-            title       : 'FTP files',
-            container   : this.btnFtp.$el
-        });
-
         // select extension
         this.select_extension = new Select.View({
             css         : 'footer-selection',
             container   : this.$('#footer-extension'),
             data        : _.filter(this.list_extensions, function(ext) { return ext.composite_files }),
-            value       : this.options.default_extension,
             onchange    : function(extension) {
-                self.updateExtension(extension);
+                // reset current collection
+                self.collection.reset();
+
+                // add new models
+                var details = _.findWhere(self.list_extensions, { id: extension });
+                if (details && details.composite_files) {
+                    self.collection.add(details.composite_files);
+                }
             }
         });
 
         // handle extension info popover
-        self.$('#footer-extension-info').on('click', function(e) {
+        this.$('#footer-extension-info').on('click', function(e) {
             self.showExtensionInfo({
                 $el         : $(e.target),
                 title       : self.select_extension.text(),
@@ -123,19 +81,23 @@ return Backbone.View.extend({
             css         : 'footer-selection',
             container   : this.$('#footer-genome'),
             data        : this.list_genomes,
-            value       : this.options.default_genome,
-            onchange    : function(genome) {
-                self.updateGenome(genome);
-            }
+            value       : this.options.default_genome
         });
 
-        // setup info
+        // listener for collection triggers on change in composite datatype
+        this.collection.on('add', function (item) {
+            self._eventAnnounce(item);
+        });
+
+        this.collection.on('reset', function() {
+            //self._eventReset();
+        });
+
+        // trigger initial onchange event
+        this.select_extension.options.onchange(this.select_extension.value());
+
+        // enable/disable buttons, update messages
         this._updateScreen();
-
-        // events
-        this.collection.on('remove', function(item) {
-            self._eventRemove(item);
-        });
     },
 
     //
@@ -167,35 +129,35 @@ return Backbone.View.extend({
     // events triggered by the upload box plugin
     //
 
-    // a new file has been dropped/selected through the uploadbox plugin
-    _eventAnnounce : function(index, file, message) {
-        // update counter
-        this.counter.announce++;
-
-        // update screen
-        this._updateScreen();
-
+    // builds the basic ui with placeholder rows for each composite data type file
+    _eventAnnounce: function(item) {
         // create view/model
+        console.log(item);
         var upload_item = new UploadItem(this, {
-            id          : index,
-            file_name   : file.name,
-            file_size   : file.size,
-            file_mode   : file.mode,
-            file_path   : file.path
+            id          : this.collection.size(),
+            file_name   : item.get('description') || item.get('name') || 'Unavailable',
+            //file_size   : file.size,
+            //file_mode   : file.mode,
+            //file_path   : file.path
         });
-
-        // add to collection
-        this.collection.add(upload_item.model);
 
         // add upload item element to table
         this.$('#upload-table > tbody:first').append(upload_item.$el);
 
         // render
         upload_item.render();
+
+        // table visibility
+        if (this.collection.size() > 0) {
+            this.$('#upload-table').show();
+        } else {
+            this.$('#upload-table').hide();
+        }
     },
 
     // the uploadbox plugin is initializing the upload for this file
     _eventInitialize : function(index, file, message) {
+        return;//
         // get element
         var it = this.collection.get(index);
 
@@ -209,7 +171,7 @@ return Backbone.View.extend({
         var extension       = it.get('extension');
         var genome          = it.get('genome');
         var url_paste       = it.get('url_paste');
-        var space_to_tabs   = it.get('space_to_tabs');
+        var space_to_tab    = it.get('space_to_tab');
         var to_posix_lines  = it.get('to_posix_lines');
 
         // validate
@@ -360,28 +322,6 @@ return Backbone.View.extend({
         this.extension_popup.show();
     },
 
-    _eventFtp: function() {
-        // check if popover is visible
-        if (!this.ftp.visible) {
-            // show popover
-            this.ftp.empty();
-            this.ftp.append((new UploadFtp(this)).$el);
-            this.ftp.show();
-        } else {
-            // hide popover
-            this.ftp.hide();
-        }
-    },
-
-    // create a new file
-    _eventCreate : function (){
-        this.uploadbox.add([{
-            name    : 'New File',
-            size    : 0,
-            mode    : 'new'
-        }]);
-    },
-
     // start upload process
     _eventStart : function() {
         // check
@@ -406,28 +346,10 @@ return Backbone.View.extend({
         this.ui_button.set('status', 'success');
 
         // update running
-        this.counter.running = this.counter.announce;
         this._updateScreen();
 
         // initiate upload procedure in plugin
         this.uploadbox.start();
-    },
-
-    // pause upload process
-    _eventStop : function() {
-        // check
-        if (this.counter.running == 0) {
-            return;
-        }
-
-        // show upload has paused
-        this.ui_button.set('status', 'info');
-
-        // request pause
-        this.uploadbox.stop();
-
-        // set html content
-        $('#upload-info').html('Queue will pause after completing the current file...');
     },
 
     // remove all
@@ -455,17 +377,6 @@ return Backbone.View.extend({
         }
     },
 
-    // update extension for all models
-    updateExtension: function(extension, defaults_only) {
-        console.log(_.findWhere(this.list_extensions, { id: extension }));
-        var self = this;
-        this.collection.each(function(item) {
-            if (item.get('status') == 'init' && (item.get('extension') == self.options.default_extension || !defaults_only)) {
-                item.set('extension', extension);
-            }
-        });
-    },
-
     // update genome for all models
     updateGenome: function(genome, defaults_only) {
         var self = this;
@@ -483,66 +394,29 @@ return Backbone.View.extend({
         */
 
         // check default message
-        if(this.counter.announce == 0){
-            if (this.uploadbox.compatible())
-                message = 'Please select a composite dataset type.';
-            else
+        //if (this.active) {
+        var message = 'Please select a composite datatype and specify its components.';
+        /*} else {
                 message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Some supported browsers are: Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
         } else {
             if (this.counter.running == 0)
                 message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Start\' to proceed.';
             else
                 message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
-        }
+        }*/
 
         // set html content
         this.$('#upload-info').html(message);
 
-        /*
-            update button status
-        */
-
-        // update reset button
-        if (this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0) {
-            this.btnReset.enable();
-        } else {
-            this.btnReset.disable();
-        }
-
-        // update upload button
+        /*/ update upload button
         if (this.counter.running == 0 && this.counter.announce > 0) {
             this.btnStart.enable();
         } else {
             this.btnStart.disable();
-        }
-
-        // pause upload button
-        if (this.counter.running > 0) {
-            this.btnStop.enable();
-        } else {
-            this.btnStop.disable();
-        }
-
-        // select upload button
-        if (this.counter.running == 0) {
-            this.btnLocal.enable();
-            this.btnFtp.enable();
-            this.btnCreate.enable();
-        } else {
-            this.btnLocal.disable();
-            this.btnFtp.disable();
-            this.btnCreate.disable();
-        }
-
-        // ftp button
-        if (this.app.current_user && this.options.ftp_upload_dir && this.options.ftp_upload_site) {
-            this.btnFtp.$el.show();
-        } else {
-            this.btnFtp.$el.hide();
-        }
+        }*/
 
         // table visibility
-        if (this.counter.announce + this.counter.success + this.counter.error > 0) {
+        if (this.collection.size() > 0) {
             this.$('#upload-table').show();
         } else {
             this.$('#upload-table').hide();
@@ -584,13 +458,11 @@ return Backbone.View.extend({
                         '<table id="upload-table" class="table table-striped" style="display: none;">' +
                             '<thead>' +
                                 '<tr>' +
-                                    '<th>Name</th>' +
+                                    '<th>Source</th>' +
+                                    '<th>Description</th>' +
                                     '<th>Size</th>' +
-                                    '<th>Type</th>' +
-                                    '<th>Genome</th>' +
                                     '<th>Settings</th>' +
                                     '<th>Status</th>' +
-                                    '<th></th>' +
                                 '</tr>' +
                             '</thead>' +
                             '<tbody></tbody>' +

@@ -1,4 +1,4 @@
-/** This renders the content of the settings popup, allowing users to specify flags i.e. for space-to-tabs conversion **/
+/** This renders the content of the settings popup, allowing users to specify flags i.e. for space-to-tab conversion **/
 define(['utils/utils'], function(Utils) {
 return Backbone.View.extend({
     // options
@@ -21,12 +21,12 @@ return Backbone.View.extend({
         // link model
         this.model = this.app.model;
 
-        // ui event: space to tabs
-        this.$('#upload-space-to-tabs').on('click', function() {
-            self._switchState('#upload-space-to-tabs', 'space_to_tabs');
+        // ui event: space-to-tab
+        this.$('#upload-space-to-tab').on('click', function() {
+            self._switchState('#upload-space-to-tab', 'space_to_tab');
         });
 
-        // ui event: to posix
+        // ui event: to-posix-lines
         this.$('#upload-to-posix-lines').on('click', function() {
             self._switchState('#upload-to-posix-lines', 'to_posix_lines');
         });
@@ -43,7 +43,7 @@ return Backbone.View.extend({
     // render
     render: function() {
         // render states
-        this._renderState('#upload-space-to-tabs', this.model.get('space_to_tabs'));
+        this._renderState('#upload-space-to-tab', this.model.get('space_to_tab'));
         this._renderState('#upload-to-posix-lines', this.model.get('to_posix_lines'));
 
         // disable options
@@ -83,7 +83,7 @@ return Backbone.View.extend({
                     '<table class="table table-striped">' +
                         '<tbody>' +
                             '<tr>' +
-                                '<td><div id="upload-space-to-tabs"/></td>' +
+                                '<td><div id="upload-space-to-tab"/></td>' +
                                 '<td>Convert spaces to tabs</td>' +
                             '</tr>' +
                             '<tr>' +

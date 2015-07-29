@@ -14,7 +14,7 @@ var Model = Backbone.Model.extend({
         file_type       : null,
         file_path       : '',
         percentage      : 0,
-        space_to_tabs   : false,
+        space_to_tab    : false,
         to_posix_lines  : true
     }
 });
