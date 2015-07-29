@@ -160,12 +160,10 @@ return Backbone.View.extend({
                 body            : this.tabs.$el,
                 height          : this.options.height,
                 width           : this.options.width,
-                closing_events  : true
+                closing_events  : true,
+                hide_separator  : true
             });
-            this.modal.$el.find('.modal-header').css({
-                'border': 'none',
-                'padding-bottom' : '0px'
-            });
+
         }
 
         // show modal

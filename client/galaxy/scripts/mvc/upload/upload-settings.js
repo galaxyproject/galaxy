@@ -66,7 +66,6 @@ return Backbone.View.extend({
 
     // render state
     _renderState: function (element_id, checked) {
-        // swith icon class
         var $it = this.$(element_id);
         $it.removeClass();
         if (checked) {

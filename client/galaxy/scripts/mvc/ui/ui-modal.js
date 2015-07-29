@@ -13,7 +13,8 @@ var View = Backbone.View.extend({
         height           : null,
         width            : null,
         closing_events   : false,
-        closing_callback : null
+        closing_callback : null,
+        hide_separator   : false
     },
 
     // button list
@@ -168,6 +169,14 @@ var View = Backbone.View.extend({
             
             // hide modal if background is clicked
             this.$el.find('.modal-backdrop').on('click', function() { self.hide(); });
+        }
+
+        // removes the default separator line
+        if (this.options.hide_separator) {
+            this.$('.modal-header').css({
+                'border': 'none',
+                'padding-bottom' : '0px'
+            });
         }
     },
     
