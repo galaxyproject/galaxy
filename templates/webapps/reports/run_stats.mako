@@ -7,7 +7,7 @@
 
 <!--run_stats.mako-->
 <html>
-    <head> 
+    <head>
         <script type="text/javascript" src="${h.url_for('/static/scripts/reports_webapp/run_stats.js')}"></script>
         <script type="text/javascript">
         $(document).ready( function(e) {
@@ -34,7 +34,6 @@
                 <div class="hr_container">
                     <svg class="chart hr" id="et_hr_chart"></svg>
                 </div>
-                
             </div>
             <div class="charts">
                 <div class="trim" id="tr_dy"></div>
@@ -47,7 +46,6 @@
                 <div class="dy_container">
                     <svg class="chart dy" id="et_dy_chart"></svg>
                 </div>
-                
             </div>
         </div>
     </body>
