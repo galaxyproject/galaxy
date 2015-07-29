@@ -127,8 +127,8 @@ return Backbone.View.extend({
 
         // remove mode class
         it.find('#mode')
-            .removeClass();
-            //.addClass('mode');
+            .removeClass()
+            .addClass('mode');
 
         // activate text field if file is new
         if (file_mode == 'new') {
@@ -152,9 +152,7 @@ return Backbone.View.extend({
         }
 
         // file from ftp
-        //if (file_mode == 'ftp') {
         it.find('#mode').addClass('fa fa-exclamation text-primary');
-        //}
     },
 
     // remove
