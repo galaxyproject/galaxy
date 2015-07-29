@@ -129,7 +129,7 @@ HistoryPanel.prototype.waitForHda = function waitForHda( hdaName, then, timeout,
                 hdaElement = this.elementInfoOrNull( wrapperXpath );
                 //NOTE: this will probably fail if the name was used on a previous HDA
                 if( !hdaElement ){ return false; }
-                
+
                 var state = hdaElement.attributes[ "class" ].match( /state\-([\w\-_]*)/ )[1];
                 if( state !== previousState ){
                     spaceghost.info( 'state: ' + state );
@@ -379,10 +379,11 @@ HistoryPanel.prototype.data = {
             title           : '.title',
             titleButtonArea : '.primary-actions',
             summary         : '.summary',
+            blurb           : '.blurb .value',
             dbkey           : '.dbkey .value',
-            info            : '.info',
+            info            : '.info .value',
             body            : '.details',
-            
+
             primaryActionButtons    : '.actions .left',
             secondaryActionButtons  : '.actions .right',
 

@@ -7,8 +7,8 @@
 
 <!--run_stats.mako-->
 <html>
-    <head> 
-        <script type="text/javascript" src="/report/static/scripts/reports_webapp/run_stats.js"></script>
+    <head>
+        <script type="text/javascript" src="${h.url_for('/static/scripts/reports_webapp/run_stats.js')}"></script>
         <script type="text/javascript">
         $(document).ready( function(e) {
             create_chart( ${jf_hr_data}, "jf_hr_chart", "hours", "Jobs Finished per Hour" );
@@ -34,7 +34,6 @@
                 <div class="hr_container">
                     <svg class="chart hr" id="et_hr_chart"></svg>
                 </div>
-                
             </div>
             <div class="charts">
                 <div class="trim" id="tr_dy"></div>
@@ -47,7 +46,6 @@
                 <div class="dy_container">
                     <svg class="chart dy" id="et_dy_chart"></svg>
                 </div>
-                
             </div>
         </div>
     </body>

@@ -256,14 +256,16 @@ class HistoryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             original = self.hda_manager.get_accessible( unencoded_hda_id, trans.user )
             # check for access on history that contains the original hda as well
             self.history_manager.error_unless_accessible( original.history, trans.user, current_history=trans.history )
-            data_copy = original.copy( copy_children=True )
-            hda = history.add_dataset( data_copy )
+            hda = self.hda_manager.copy( original, history=history )
+
+            # data_copy = original.copy( copy_children=True )
+            # hda = history.add_dataset( data_copy )
 
         trans.sa_session.flush()
         if not hda:
             return None
         return self.hda_serializer.serialize_to_view( hda,
-                                                      user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     def __create_datasets_from_library_folder( self, trans, history, payload, **kwd ):
         rval = []

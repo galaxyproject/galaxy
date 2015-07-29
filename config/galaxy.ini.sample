@@ -643,6 +643,12 @@ nglims_config_file = tool-data/nglims.yaml
 # make the Galaxy instance susceptible to XSS attacks initiated by your users.
 #sanitize_all_html = True
 
+# Whitelist sanitization file.
+# Datasets created by tools listed in this file are trusted and will not have
+# their HTML sanitized on display.  This can be manually edited or manipulated
+# through the Admin control panel -- see "Manage Display Whitelist"
+#sanitize_whitelist_file = config/sanitize_whitelist.txt
+
 # By default Galaxy will serve non-HTML tool output that may potentially
 # contain browser executable JavaScript content as plain text.  This will for
 # instance cause SVG datasets to not render properly and so may be disabled
@@ -973,9 +979,10 @@ use_interactive = True
 
 # Very large metadata values can cause Galaxy crashes.  This will allow
 # limiting the maximum metadata key size (in bytes used in memory, not the end
-# result database value size) Galaxy will attempt to save with a dataset.  0 to
-# disable this feature.  5000000 seems to be a reasonable size.
-#max_metadata_value_size = 0
+# result database value size) Galaxy will attempt to save with a dataset.  Use
+# 0 to disable this feature.  The default is 5MB, but as low as 1MB seems to be
+# a reasonable size.
+#max_metadata_value_size = 5242880
 
 # If (for example) you run on a cluster and your datasets (by default,
 # database/files/) are mounted read-only, this option will override tool output
