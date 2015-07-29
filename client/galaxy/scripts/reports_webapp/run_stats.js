@@ -287,10 +287,10 @@ function create_chart( inp_data, name, time, title ) {
 
                     if(hours_array[i].getDate() != curr_day) {
                         if(!first) {
-                            text_height += 25;
+                            text_height += 26;
                             first = true;
                         } else {
-                            text_height += 18;
+                            text_height += 19;
                         }
                         
                         curr_day = hours_array[i].getDate();
@@ -381,10 +381,10 @@ function create_chart( inp_data, name, time, title ) {
 
                     if(days_array[i].getMonth() != curr_month) {
                         if(!first) {
-                            text_height += 25;
+                            text_height += 26;
                             first = true;
                         } else {
-                            text_height += 18;
+                            text_height += 19;
                         }
                         
                         curr_month = days_array[i].getMonth();
