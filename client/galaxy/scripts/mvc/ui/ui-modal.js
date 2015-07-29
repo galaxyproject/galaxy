@@ -14,7 +14,7 @@ var View = Backbone.View.extend({
         width            : null,
         closing_events   : false,
         closing_callback : null,
-        hide_separator   : false
+        title_separator  : true
     },
 
     // button list
@@ -172,11 +172,8 @@ var View = Backbone.View.extend({
         }
 
         // removes the default separator line
-        if (this.options.hide_separator) {
-            this.$('.modal-header').css({
-                'border': 'none',
-                'padding-bottom' : '0px'
-            });
+        if (!this.options.title_separator) {
+            this.$('.modal-header').css({ 'border': 'none', 'padding-bottom': '0px' });
         }
     },
     

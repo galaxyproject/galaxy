@@ -161,9 +161,8 @@ return Backbone.View.extend({
                 height          : this.options.height,
                 width           : this.options.width,
                 closing_events  : true,
-                hide_separator  : true
+                title_separator : false
             });
-
         }
 
         // show modal
