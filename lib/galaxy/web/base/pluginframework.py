@@ -12,24 +12,24 @@ import os.path
 import sys
 import imp
 
-import pkg_resources
-pkg_resources.require( 'MarkupSafe' )
-pkg_resources.require( 'Mako' )
-import mako.lookup
-
 from galaxy import util
 from galaxy.util import odict
 from galaxy.util import bunch
 
-
+import pkg_resources
+pkg_resources.require( 'MarkupSafe' )
+pkg_resources.require( 'Mako' )
+import mako.lookup
 import logging
 log = logging.getLogger( __name__ )
 
-# ============================================================================= exceptions
+
 class PluginManagerException( Exception ):
     """Base exception for plugin frameworks.
     """
     pass
+
+
 class PluginManagerConfigException( PluginManagerException ):
     """Exception for plugin framework configuration errors.
     """
@@ -63,13 +63,11 @@ class PluginManager( object ):
         :param  skip_bad_plugins:    whether to skip plugins that cause
             exceptions when loaded or to raise that exception
         """
-        #log.debug( 'PluginManager.init: %s, %s', directories_setting, kwargs )
         self.directories = []
         self.skip_bad_plugins = skip_bad_plugins
         self.plugins = odict.odict()
 
         self.directories = self.parse_directories_setting( app.config.root, directories_setting )
-        #log.debug( '\t directories: %s', self.directories )
 
         self.load_configuration()
         self.load_plugins()
@@ -123,12 +121,12 @@ class PluginManager( object ):
                 if plugin and plugin.name not in self.plugins:
                     self.plugins[ plugin.name ] = plugin
                     log.info( '%s, loaded plugin: %s', self, plugin.name )
-                #NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
-                #TODO: overwriting may be desired
+                # NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
+                # TODO: overwriting may be desired
                 elif plugin and plugin.name in self.plugins:
                     log.warn( '%s, plugin with name already exists: %s. Skipping...', self, plugin.name )
 
-            except Exception, exc:
+            except Exception:
                 if not self.skip_bad_plugins:
                     raise
                 log.exception( 'Plugin loading raised exception: %s. Skipping...', plugin_path )
@@ -181,11 +179,11 @@ class PluginManager( object ):
         :returns:               the loaded plugin object
         """
         plugin = bunch.Bunch(
-            #TODO: need a better way to define plugin names
+            # TODO: need a better way to define plugin names
             #   pro: filesystem name ensures uniqueness
             #   con: rel. inflexible
-            name = os.path.split( plugin_path )[1],
-            path = plugin_path
+            name=os.path.split( plugin_path )[1],
+            path=plugin_path
         )
         return plugin
 
@@ -204,7 +202,7 @@ class HookPluginManager( PluginManager ):
     """
     #: the python file that will be imported - hook functions should be contained here
     loading_point_filename = 'plugin.py'
-    hook_fn_prefix  = 'hook_'
+    hook_fn_prefix = 'hook_'
 
     def is_plugin( self, plugin_path ):
         """
@@ -221,7 +219,7 @@ class HookPluginManager( PluginManager ):
         """
         if not super( HookPluginManager, self ).is_plugin( plugin_path ):
             return False
-        #TODO: possibly switch to <plugin.name>.py or __init__.py
+        # TODO: possibly switch to <plugin.name>.py or __init__.py
         if self.loading_point_filename not in os.listdir( plugin_path ):
             return False
         return True
@@ -262,10 +260,10 @@ class HookPluginManager( PluginManager ):
         :returns:                   the loaded plugin object
         """
         # add this name to import_as (w/ default to plugin.name) to prevent namespace pollution in sys.modules
-        import_as = '%s.%s' %( __name__, ( import_as or plugin.name ) )
+        import_as = '%s.%s' % ( __name__, ( import_as or plugin.name ) )
         module_file, pathname, description = imp.find_module( loading_point_name, [ plugin.path ] )
         try:
-            #TODO: hate this hack but only way to get package imports inside the plugin to work?
+            # TODO: hate this hack but only way to get package imports inside the plugin to work?
             sys.path.append( plugin.path )
             # sys.modules will now have import_as in its list
             module = imp.load_module( import_as, module_file, pathname, description )
@@ -289,8 +287,8 @@ class HookPluginManager( PluginManager ):
         :returns:           where keys are plugin.names and
             values return values from the hooks
         """
-        #TODO: is hook prefix necessary?
-        #TODO: could be made more efficient if cached by hook_name in the manager on load_plugin
+        # TODO: is hook prefix necessary?
+        # TODO: could be made more efficient if cached by hook_name in the manager on load_plugin
         #   (low maint. overhead since no dynamic loading/unloading of plugins)
         hook_fn_name = ''.join([ self.hook_fn_prefix, hook_name ])
         returned = {}
@@ -299,10 +297,9 @@ class HookPluginManager( PluginManager ):
 
             if hook_fn and hasattr( hook_fn, '__call__' ):
                 try:
-                    #log.debug( 'calling %s from %s(%s)', hook_fn.func_name, plugin.name, plugin.module )
                     fn_returned = hook_fn( *args, **kwargs )
                     returned[ plugin.name ] = fn_returned
-                except Exception, exc:
+                except Exception:
                     # fail gracefully and continue with other plugins
                     log.exception( 'Hook function "%s" failed for plugin "%s"', hook_name, plugin.name )
 
@@ -333,7 +330,7 @@ class HookPluginManager( PluginManager ):
                 try:
                     hook_arg = hook_fn( hook_arg, *args, **kwargs )
 
-                except Exception, exc:
+                except Exception:
                     # fail gracefully and continue with other plugins
                     log.exception( 'Filter hook function "%s" failed for plugin "%s"', hook_name, plugin.name )
 
@@ -341,11 +338,12 @@ class HookPluginManager( PluginManager ):
         return hook_arg
 
 
-# ============================================================================= exceptions
 class PluginManagerStaticException( PluginManagerException ):
     """Exception for plugin framework static directory set up errors.
     """
     pass
+
+
 class PluginManagerTemplateException( PluginManagerException ):
     """Exception for plugin framework template directory
     and template rendering errors.
@@ -364,12 +362,14 @@ class PageServingPluginManager( PluginManager ):
 
     A PageServingPluginManager sets up all the above components.
     """
-    #TODO: I'm unclear of the utility of this class - it prob. will only have one subclass (vis reg). Fold into?
+    # TODO: I'm unclear of the utility of this class - it prob. will only have one subclass (vis reg). Fold into?
 
+    #: default static url base
+    DEFAULT_BASE_URL = ''
     #: does the class need static files served?
-    serves_static          = True
+    serves_static = True
     #: does the class need template files served?
-    serves_templates       = True
+    serves_templates = True
     #: default number of templates to search for plugin template lookup
     DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
     #: default encoding of plugin templates
@@ -377,7 +377,7 @@ class PageServingPluginManager( PluginManager ):
     #: name of files to search for additional template lookup directories
     additional_template_paths_config_filename = 'additional_template_paths.xml'
 
-    def __init__( self, app, base_url, template_cache_dir=None, **kwargs ):
+    def __init__( self, app, base_url='', template_cache_dir=None, **kwargs ):
         """
         Set up the manager and load all plugins.
 
@@ -389,7 +389,9 @@ class PageServingPluginManager( PluginManager ):
         :param  template_cache_dir: filesytem path to the directory where cached
             templates are kept
         """
-        self.base_url = base_url
+        self.base_url = base_url or self.DEFAULT_BASE_URL
+        if not self.base_url:
+            raise PluginManagerException( 'base_url or DEFAULT_BASE_URL required' )
         self.template_cache_dir = template_cache_dir
         self.additional_template_paths = []
 
@@ -446,8 +448,7 @@ class PageServingPluginManager( PluginManager ):
             return False
         # reject only if we don't have either
         listdir = os.listdir( plugin_path )
-        if( ( 'templates' not in listdir )
-        and ( 'static'    not in listdir ) ):
+        if( ( 'templates' not in listdir ) and ( 'static' not in listdir ) ):
             return False
         return True
 
@@ -466,8 +467,8 @@ class PageServingPluginManager( PluginManager ):
         :returns:               the loaded plugin object
         """
         plugin = super( PageServingPluginManager, self ).load_plugin( plugin_path )
-        #TODO: urlencode?
-        plugin[ 'base_url' ]  = '/'.join([ self.base_url, plugin.name ])
+        # TODO: urlencode?
+        plugin[ 'base_url' ] = '/'.join([ self.base_url, plugin.name ])
         plugin = self._set_up_static_plugin( plugin )
         plugin = self._set_up_template_plugin( plugin )
 
@@ -556,24 +557,23 @@ class PageServingPluginManager( PluginManager ):
         template_lookup_paths = plugin.template_path
         if self.additional_template_paths:
             template_lookup_paths = [ template_lookup_paths ] + self.additional_template_paths
-        #log.debug( 'template_lookup_paths: %s', template_lookup_paths )
         template_lookup = self._create_mako_template_lookup( self.template_cache_dir, template_lookup_paths )
         return template_lookup
 
     def _create_mako_template_lookup( self, cache_dir, paths,
-            collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING ):
+                                      collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING ):
         """
         Create a ``TemplateLookup`` with defaults.
 
         :rtype:         ``Mako.lookup.TemplateLookup``
         :returns:       all urls and paths for each plugin serving static content
         """
-        #TODO: possible to add galaxy/templates into the lookup here?
+        # TODO: possible to add galaxy/templates into the lookup here?
         return mako.lookup.TemplateLookup(
-            directories      = paths,
-            module_directory = cache_dir,
-            collection_size  = collection_size,
-            output_encoding  = output_encoding )
+            directories=paths,
+            module_directory=cache_dir,
+            collection_size=collection_size,
+            output_encoding=output_encoding )
 
     def fill_template( self, trans, plugin, template_filename, **kwargs ):
         """
@@ -591,9 +591,9 @@ class PageServingPluginManager( PluginManager ):
         # defined here to be overridden
         return trans.fill_template( template_filename, template_lookup=plugin.template_lookup, **kwargs )
 
-    #TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
-    #TODO: add template helpers specific to the plugins
-    #TODO: some sort of url_for for these plugins
+    # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
+    # TODO: add template helpers specific to the plugins
+    # TODO: some sort of url_for for these plugins
 
 
 # =============================================================================

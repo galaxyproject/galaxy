@@ -16,8 +16,9 @@ log = logging.getLogger( __name__ )
 
 toolbox = None
 
-#Do not test Data Managers as part of the standard Tool Test Framework.
+# Do not test Data Managers as part of the standard Tool Test Framework.
 TOOL_TYPES_NO_TEST = ( DataManagerTool, )
+
 
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
@@ -253,7 +254,7 @@ def build_tests( app=None, testing_shed_tools=False, master_api_key=None, user_a
     for i, tool_id in enumerate( app.toolbox.tools_by_id ):
         tool = app.toolbox.get_tool( tool_id )
         if isinstance( tool, TOOL_TYPES_NO_TEST ):
-            #We do not test certain types of tools (e.g. Data Manager tools) as part of ToolTestCase 
+            # We do not test certain types of tools (e.g. Data Manager tools) as part of ToolTestCase
             continue
         if tool.tests:
             shed_tool_id = None if not testing_shed_tools else tool.id

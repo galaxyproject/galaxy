@@ -4,10 +4,12 @@ Manager and Serializer for histories.
 Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
+import operator
 
 from galaxy import model
 from galaxy.managers import sharable
 from galaxy.managers import deletable
+from galaxy.managers import containers
 from galaxy.managers import hdas
 from galaxy.managers import collections_util
 
@@ -15,7 +17,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 
-class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMixin ):
+class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMixin, containers.ContainerManagerMixin ):
 
     model_class = model.History
     foreign_key_name = 'history'
@@ -24,6 +26,10 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
     tag_assoc = model.HistoryTagAssociation
     annotation_assoc = model.HistoryAnnotationAssociation
     rating_assoc = model.HistoryRatingAssociation
+
+    contained_class = model.HistoryDatasetAssociation
+    subcontainer_class = model.HistoryDatasetCollectionAssociation
+    order_contents_on = operator.attrgetter( 'hid' )
 
     # TODO: incorporate imp/exp (or alias to)
 
@@ -129,13 +135,14 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         contents_dictionaries = []
         try:
             history_dictionary = history_serializer.serialize_to_view( history, view='detailed',
-                user=trans.user, trans=trans )
+                                                                       user=trans.user, trans=trans )
 
             for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
                 contents_dict = {}
                 if isinstance( content, model.HistoryDatasetAssociation ):
-                    contents_dict = hda_serializer.serialize_to_view( content, view='detailed',
-                        user=trans.user, trans=trans )
+                    contents_dict = hda_serializer.serialize_to_view(content, view='detailed', user=trans.user, trans=trans )
+                    hda_annotation = hda_serializer.serialize_annotation( content, 'annotation', user=history.user )
+                    contents_dict[ 'annotation' ] = hda_annotation
                 elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
                     try:
                         service = self.app.dataset_collections_service
@@ -163,6 +170,18 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
 
         return { 'history': history_dictionary,
                  'contents': contents_dictionaries }
+
+    # container interface
+    def _filter_to_contained( self, container, content_class ):
+        return content_class.history == container
+
+    def _content_manager( self, content ):
+        # type sniffing is inevitable
+        if isinstance( content, model.HistoryDatasetAssociation ):
+            return self.hda_manager
+        elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
+            return self.hdca_manager
+        raise TypeError( 'Unknown contents class: ' + str( content ) )
 
 
 class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSerializerMixin ):
@@ -224,7 +243,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
             'url'           : lambda i, k, **c: self.url_for( 'history', id=self.app.security.encode_id( i.id ) ),
             'contents_url'  : lambda i, k, **c: self.url_for( 'history_contents',
-                history_id=self.app.security.encode_id( i.id ) ),
+                                                              history_id=self.app.security.encode_id( i.id ) ),
 
             'empty'         : lambda i, k, **c: ( len( i.datasets ) + len( i.dataset_collections ) ) <= 0,
             'count'         : lambda i, k, **c: len( i.datasets ),
@@ -287,15 +306,15 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             state = states.NEW
 
         else:
-            if ( hda_state_counts[ states.RUNNING ] > 0
-              or hda_state_counts[ states.SETTING_METADATA ] > 0
-              or hda_state_counts[ states.UPLOAD ] > 0 ):
+            if (hda_state_counts[states.RUNNING] > 0 or
+                    hda_state_counts[states.SETTING_METADATA] > 0 or
+                    hda_state_counts[states.UPLOAD] > 0):
                 state = states.RUNNING
             # TODO: this method may be more useful if we *also* polled the histories jobs here too
             elif hda_state_counts[ states.QUEUED ] > 0:
                 state = states.QUEUED
-            elif ( hda_state_counts[ states.ERROR ] > 0
-                or hda_state_counts[ states.FAILED_METADATA ] > 0 ):
+            elif (hda_state_counts[states.ERROR] > 0 or
+                    hda_state_counts[states.FAILED_METADATA] > 0):
                 state = states.ERROR
             elif hda_state_counts[ states.OK ] == num_hdas:
                 state = states.OK
@@ -322,7 +341,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             id=self.app.security.encode_id( collection.id ),
         )
         return collections_util.dictify_dataset_collection_instance( dataset_collection_instance,
-            security=self.app.security, parent=dataset_collection_instance.history, view="element" )
+                                                                     security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
 
 class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.PurgableDeserializerMixin ):

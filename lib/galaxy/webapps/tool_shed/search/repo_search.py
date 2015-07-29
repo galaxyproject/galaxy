@@ -1,8 +1,6 @@
 """Module for searching the toolshed repositories"""
-import datetime
 from galaxy import exceptions
 from galaxy import eggs
-from galaxy.webapps.tool_shed import model
 from galaxy.exceptions import ObjectNotFound
 import logging
 log = logging.getLogger( __name__ )
@@ -10,25 +8,23 @@ log = logging.getLogger( __name__ )
 eggs.require( "Whoosh" )
 import whoosh.index
 from whoosh import scoring
-from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT, STORED
-from whoosh.scoring import BM25F
+from whoosh.fields import Schema, STORED, TEXT
 from whoosh.qparser import MultifieldParser
-from whoosh.index import Index
 
 schema = Schema(
-    id = STORED,
-    name = TEXT( field_boost = 1.7, stored = True ),
-    description = TEXT( field_boost = 1.5, stored = True ),
-    long_description = TEXT( stored = True ),
-    homepage_url = TEXT( stored = True ),
-    remote_repository_url = TEXT( stored = True ),
-    repo_owner_username = TEXT( stored = True ),
-    times_downloaded = STORED,
-    approved = STORED,
-    last_updated = STORED,
-    full_last_updated = STORED )
+    id=STORED,
+    name=TEXT( field_boost=1.7, stored=True ),
+    description=TEXT( field_boost=1.5, stored=True ),
+    long_description=TEXT( stored=True ),
+    homepage_url=TEXT( stored=True ),
+    remote_repository_url=TEXT( stored=True ),
+    repo_owner_username=TEXT( stored=True ),
+    times_downloaded=STORED,
+    approved=STORED,
+    last_updated=STORED,
+    full_last_updated=STORED )
 
-    
+
 class RepoWeighting( scoring.BM25F ):
     """
     Affect the BM25G scoring model through the final method.
@@ -78,14 +74,14 @@ class RepoSearch( object ):
                 # http://trec.nist.gov/pubs/trec13/papers/microsoft-cambridge.web.hard.pdf
                 # http://en.wikipedia.org/wiki/Okapi_BM25
                 # __Basically__ the higher number the bigger weight.
-                repo_weighting = RepoWeighting( field_B = { 'name_B' : boosts.repo_name_boost,
-                                                            'description_B' : boosts.repo_description_boost,
-                                                            'long_description_B' : boosts.repo_long_description_boost,
-                                                            'homepage_url_B' : boosts.repo_homepage_url_boost,
-                                                            'remote_repository_url_B' : boosts.repo_remote_repository_url_boost,
-                                                            'repo_owner_username' : boosts.repo_owner_username_boost } )
+                repo_weighting = RepoWeighting( field_B={ 'name_B' : boosts.repo_name_boost,
+                                                          'description_B' : boosts.repo_description_boost,
+                                                          'long_description_B' : boosts.repo_long_description_boost,
+                                                          'homepage_url_B' : boosts.repo_homepage_url_boost,
+                                                          'remote_repository_url_B' : boosts.repo_remote_repository_url_boost,
+                                                          'repo_owner_username' : boosts.repo_owner_username_boost } )
 
-                searcher = index.searcher( weighting = repo_weighting )
+                searcher = index.searcher( weighting=repo_weighting )
 
                 parser = MultifieldParser( [
                     'name',
@@ -93,17 +89,17 @@ class RepoSearch( object ):
                     'long_description',
                     'homepage_url',
                     'remote_repository_url',
-                    'repo_owner_username' ], schema = schema )
+                    'repo_owner_username' ], schema=schema )
 
                 user_query = parser.parse( '*' + search_term + '*' )
 
                 try:
-                    hits = searcher.search_page( user_query, page, pagelen = page_size, terms = True )
+                    hits = searcher.search_page( user_query, page, pagelen=page_size, terms=True )
                 except ValueError:
                     raise ObjectNotFound( 'The requested page does not exist.' )
 
-                log.debug( 'searching for: #' +  str( search_term ) )
-                log.debug( 'total hits: ' +  str( len( hits ) ) )
+                log.debug( 'searching for: #' + str( search_term ) )
+                log.debug( 'total hits: ' + str( len( hits ) ) )
                 log.debug( 'scored hits: ' + str( hits.scored_length() ) )
                 results = {}
                 results[ 'total_results'] = str( len( hits ) )
@@ -123,7 +119,7 @@ class RepoSearch( object ):
                     hit_dict[ 'full_last_updated' ] = hit.get( 'full_last_updated' )
                     hit_dict[ 'approved' ] = hit.get( 'approved' )
                     hit_dict[ 'times_downloaded' ] = hit.get( 'times_downloaded' )
-                    results[ 'hits' ].append( {'repository':  hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score } )
+                    results[ 'hits' ].append( {'repository': hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score } )
                 return results
             finally:
                 searcher.close()

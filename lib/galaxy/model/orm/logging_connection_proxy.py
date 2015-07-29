@@ -1,11 +1,12 @@
-import time
 import inspect
-import threading
-import os
-
-from galaxy.model.orm import ConnectionProxy
-
 import logging
+import os
+import threading
+import time
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy.interfaces import ConnectionProxy
 
 log = logging.getLogger( __name__ )
 

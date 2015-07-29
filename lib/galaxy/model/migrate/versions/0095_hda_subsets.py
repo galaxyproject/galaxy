@@ -15,10 +15,10 @@ metadata = MetaData()
 # Table to add.
 
 HistoryDatasetAssociationSubset_table = Table( "history_dataset_association_subset", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ) ),
-    Column( "history_dataset_association_subset_id", Integer, ForeignKey( "history_dataset_association.id" ) ),
-    Column( "location", Unicode(255), index=True)
+                                               Column( "id", Integer, primary_key=True ),
+                                               Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ) ),
+                                               Column( "history_dataset_association_subset_id", Integer, ForeignKey( "history_dataset_association.id" ) ),
+                                               Column( "location", Unicode(255), index=True)
 )
 
 def upgrade(migrate_engine):

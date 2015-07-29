@@ -1060,6 +1060,9 @@ class Tool( object, Dictifiable ):
         # If parameter depends on any other paramters, we must refresh the
         # form when it changes
         for name in param.get_dependencies():
+            # Let it throw exception, but give some hint what the problem might be
+            if name not in context:
+                log.error("Could not find dependency '%s' of parameter '%s' in tool %s" % (name, param.name, self.name) )
             context[ name ].refresh_on_change = True
         return param
 
@@ -1124,9 +1127,9 @@ class Tool( object, Dictifiable ):
                 # Each page has to rendered all-together because of backreferences allowed by rst
                 try:
                     self.__help_by_page = [ Template( rst_to_html( help_header + x + help_footer ),
-                                                    input_encoding='utf-8', output_encoding='utf-8',
-                                                    default_filters=[ 'decode.utf8' ],
-                                                    encoding_errors='replace' )
+                                                      input_encoding='utf-8', output_encoding='utf-8',
+                                                      default_filters=[ 'decode.utf8' ],
+                                                      encoding_errors='replace' )
                                             for x in self.__help_by_page ]
                 except:
                     log.exception( "error in multi-page help for tool %s" % self.name )
@@ -1464,10 +1467,10 @@ class Tool( object, Dictifiable ):
                     continue
                 if trans.user is None and trans.galaxy_session.current_history != data.history:
                     log.error( 'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)'
-                        % ( data.id, trans.galaxy_session.id ) )
+                               % ( data.id, trans.galaxy_session.id ) )
                 elif data.history.user != trans.user:
                     log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)'
-                        % ( data.id, trans.user.id ) )
+                               % ( data.id, trans.user.id ) )
                 else:
                     data.state = data.states.ERROR
                     data.info = 'Upload of this dataset was interrupted.  Please try uploading again or'
@@ -1475,8 +1478,8 @@ class Tool( object, Dictifiable ):
                     self.sa_session.flush()
         # It's unlikely the user will ever see this.
         return 'message.mako', dict( status='error',
-            message='Your upload was interrupted. If this was uninentional, please retry it.',
-            refresh_frames=[], cont=None )
+                                     message='Your upload was interrupted. If this was uninentional, please retry it.',
+                                     refresh_frames=[], cont=None )
 
     def populate_state( self, trans, inputs, state, incoming, history=None, source="html", prefix="", context=None ):
         errors = dict()
@@ -1502,13 +1505,13 @@ class Tool( object, Dictifiable ):
                         group_state.append( new_state )
                         group_errors.append( {} )
                         rep_errors = self.populate_state( trans,
-                                                    input.inputs,
-                                                    new_state,
-                                                    incoming,
-                                                    history,
-                                                    source,
-                                                    prefix=rep_name + "|",
-                                                    context=context )
+                                                          input.inputs,
+                                                          new_state,
+                                                          incoming,
+                                                          history,
+                                                          source,
+                                                          prefix=rep_name + "|",
+                                                          context=context )
                         if rep_errors:
                             any_group_errors = True
                             group_errors[rep_index].update( rep_errors )
@@ -1598,13 +1601,13 @@ class Tool( object, Dictifiable ):
                     rep_index = rep_state['__index__']
                     rep_prefix = "%s_%d|" % ( key, rep_index )
                     rep_errors = self.populate_state( trans,
-                                                    input.inputs,
-                                                    rep_state,
-                                                    incoming,
-                                                    history,
-                                                    source,
-                                                    prefix=rep_prefix,
-                                                    context=context)
+                                                      input.inputs,
+                                                      rep_state,
+                                                      incoming,
+                                                      history,
+                                                      source,
+                                                      prefix=rep_prefix,
+                                                      context=context)
                     if rep_errors:
                         any_group_errors = True
                         group_errors.append( rep_errors )

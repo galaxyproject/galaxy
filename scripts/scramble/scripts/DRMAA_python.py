@@ -10,7 +10,7 @@ if os.path.dirname( sys.argv[0] ) != "":
     os.chdir( os.path.dirname( sys.argv[0] ) )
 
 # find setuptools
-sys.path.insert( 1, os.path.join( '..', '..', '..', 'lib' ) )
+sys.path.insert( 1, os.path.join( os.pardir, os.pardir, os.pardir, 'lib' ) )
 from scramble_lib import *
 
 tag = get_tag() # get the tag

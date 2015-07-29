@@ -2,16 +2,23 @@
 API operations on a sample tracking system.
 """
 import logging
-from galaxy import util, web
-from galaxy.web.base.controller import *
-from galaxy.model.orm import *
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false
+
+from galaxy import web
 from galaxy.util.bunch import Bunch
+from galaxy.web import url_for
+from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger( __name__ )
 
+
 class RequestsAPIController( BaseAPIController ):
-    _update_types = Bunch( REQUEST = 'request_state' )
+    _update_types = Bunch( REQUEST='request_state' )
     _update_type_values = [v[1] for v in _update_types.items()]
+
     @web.expose_api
     def index( self, trans, **kwd ):
         """
@@ -20,14 +27,14 @@ class RequestsAPIController( BaseAPIController ):
         """
         # if admin user then return all requests
         if trans.user_is_admin():
-            query = trans.sa_session.query( trans.app.model.Request )\
-                                    .filter(  trans.app.model.Request.table.c.deleted == False )\
-                                    .all()
+            query = trans.sa_session.query( trans.app.model.Request ) \
+                .filter(  trans.app.model.Request.table.c.deleted == false() )\
+                .all()
         else:
             query = trans.sa_session.query( trans.app.model.Request )\
-                                    .filter( and_( trans.app.model.Request.table.c.user_id == trans.user.id \
-                                                   and trans.app.model.Request.table.c.deleted == False ) ) \
-                                    .all()
+                .filter( and_( trans.app.model.Request.table.c.user_id == trans.user.id and
+                trans.app.model.Request.table.c.deleted == false() ) ) \
+                .all()
         rval = []
         for request in query:
             item = request.to_dict()
@@ -37,6 +44,7 @@ class RequestsAPIController( BaseAPIController ):
                 item['user'] = request.user.email
             rval.append( item )
         return rval
+
     @web.expose_api
     def show( self, trans, id, **kwd ):
         """
@@ -47,7 +55,7 @@ class RequestsAPIController( BaseAPIController ):
             request_id = trans.security.decode_id( id )
         except TypeError:
             trans.response.status = 400
-            return "Malformed  %s id ( %s ) specified, unable to decode." % ( update_type, str( id ) )
+            return "Malformed id ( %s ) specified, unable to decode." % ( str( id ) )
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( request_id )
         except:
@@ -61,6 +69,7 @@ class RequestsAPIController( BaseAPIController ):
         item['user'] = request.user.email
         item['num_of_samples'] = len(request.samples)
         return item
+
     @web.expose_api
     def update( self, trans, id, key, payload, **kwd ):
         """
@@ -68,7 +77,6 @@ class RequestsAPIController( BaseAPIController ):
         Updates a request state, sample state or sample dataset transfer status
         depending on the update_type
         """
-        params = util.Params( kwd )
         update_type = None
         if 'update_type' not in payload:
             trans.response.status = 400

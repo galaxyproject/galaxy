@@ -4,6 +4,7 @@ from sys import argv
 REPLACE_PROPERTIES = ["file_path", "database_connection", "new_file_path"]
 MAIN_SECTION = "app:main"
 
+
 def sync():
     # Add or replace the relevant properites from galaxy.ini
     # into reports_wsgi.ini
@@ -17,7 +18,7 @@ def sync():
 
     parser = ConfigParser()
     parser.read(universe_config_file)
-    
+
     with open(reports_config_file, "r") as f:
         reports_config_lines = f.readlines()
 
@@ -38,6 +39,7 @@ def sync():
                     not (replacement_property in replaced_properties):
                 f.write(get_universe_line(replacement_property, parser))
 
+
 def get_synced_line(reports_line, universe_config):
     # Cycle through properties to replace and perform replacement on
     # this line if needed.
@@ -51,8 +53,9 @@ def get_synced_line(reports_line, universe_config):
             break
     return (synced_line, replaced_property)
 
+
 def get_universe_line(property_name, universe_config):
     return "%s=%s\n" % (property_name, universe_config.get(MAIN_SECTION, property_name))
-    
+
 if __name__ == '__main__':
     sync()

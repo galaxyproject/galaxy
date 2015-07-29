@@ -1,6 +1,5 @@
 import unittest
 
-import galaxy.model.mapping
 from galaxy import model
 from galaxy.workflow import extract
 

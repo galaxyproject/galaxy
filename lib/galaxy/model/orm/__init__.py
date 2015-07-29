@@ -1,13 +1,10 @@
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.interfaces import *
-
 import logging
-log = logging.getLogger( __name__ )
+import pkg_resources
 
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+
+log = logging.getLogger( __name__ )
 
 dialect_to_egg = {
     "sqlite": "pysqlite>=2",

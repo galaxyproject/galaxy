@@ -67,7 +67,7 @@ def unzip( zipf ):
             name = info.filename
             mode = (info.external_attr >> 16L) & 0777
             # don't extract absolute paths or ones with .. in them
-            if name.startswith('/') or '..' in name:
+            if name.startswith('/') or os.pardir in name:
                 continue
             if not name:
                 continue
@@ -137,7 +137,7 @@ def get_solaris_compiler():
         return 'gcc'
 
 # get galaxy eggs lib
-galaxy_lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', '..', '..', 'lib' ) )
+galaxy_lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, 'lib' ) )
 sys.path.insert( 0, galaxy_lib )
 from galaxy import eggs
 
@@ -152,7 +152,7 @@ except ImportError:
     import pkg_resources
 
 # some constants
-root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..' ) )
+root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
 archives = os.path.abspath( os.path.join( root, 'archives' ) )
 patches = os.path.abspath( os.path.join( root, 'patches' ) )
 platform_noucs = pkg_resources.get_platform().rsplit( '-', 1 )[0]

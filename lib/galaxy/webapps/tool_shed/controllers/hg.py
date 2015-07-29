@@ -1,4 +1,4 @@
-import os, logging
+import logging
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 
@@ -17,6 +17,7 @@ from mercurial import ui
 
 log = logging.getLogger(__name__)
 
+
 class HgController( BaseUIController ):
     @web.expose
     def handle_request( self, trans, **kwd ):
@@ -25,6 +26,7 @@ class HgController( BaseUIController ):
         hg_version = mercurial.__version__.version
         cmd = kwd.get( 'cmd', None )
         hgweb_config = trans.app.hgweb_config_manager.hgweb_config
+
         def make_web_app():
             hgwebapp = hgwebdir( hgweb_config )
             return hgwebapp
@@ -63,9 +65,9 @@ class HgController( BaseUIController ):
                                                                                      persist=False )
                         error_message, status = rmm.set_repository_metadata( trans.request.host )
                         if status == 'ok' and error_message:
-                            log.debug( "Successfully reset metadata on repository %s owned by %s, but encountered problem: %s" % \
+                            log.debug( "Successfully reset metadata on repository %s owned by %s, but encountered problem: %s" %
                                        ( str( repository.name ), str( repository.user.username ), error_message ) )
                         elif status != 'ok' and error_message:
-                            log.debug( "Error resetting metadata on repository %s owned by %s: %s" % \
+                            log.debug( "Error resetting metadata on repository %s owned by %s: %s" %
                                        ( str( repository.name ), str( repository.user.username ), error_message ) )
         return wsgi_app

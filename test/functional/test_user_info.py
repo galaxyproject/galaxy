@@ -1,5 +1,20 @@
-from base.twilltestcase import *
-from base.test_db_util import *
+from base.twilltestcase import TwillTestCase
+from base.test_db_util import get_user, \
+    get_private_role, \
+    get_form, \
+    get_user_info_form_definition, \
+    form_one, \
+    form_two, \
+    admin_user, \
+    refresh, \
+    delete_obj, \
+    regular_user11_private_role, \
+    regular_user12_private_role, \
+    regular_user11, \
+    regular_user12, \
+    delete_user_roles, \
+    form_checkbox_field3_string
+
 
 class TestUserInfo( TwillTestCase ):
 
@@ -107,14 +122,14 @@ class TestUserInfo( TwillTestCase ):
         email = 'test11@bx.psu.edu'
         password = 'testuser'
         username = 'test11'
-        user_info_values=[ ( 'affiliation', 'Educational' ), 
-                           ( 'name_of_oganization', 'Penn State' ), 
+        user_info_values = [ ( 'affiliation', 'Educational' ),
+                           ( 'name_of_oganization', 'Penn State' ),
                            ( 'contact_for_feedback', '1' ) ]
         self.create_user_with_info( cntrller='admin',
                                     email=email,
                                     password=password,
-                                    username=username, 
-                                    user_type_fd_id=self.security.encode_id( form_one.id ), 
+                                    username=username,
+                                    user_type_fd_id=self.security.encode_id( form_one.id ),
                                     user_info_values=user_info_values,
                                     strings_displayed=[ "Create account", "User type" ] )
         global regular_user11
@@ -145,14 +160,14 @@ class TestUserInfo( TwillTestCase ):
         email = 'test12@bx.psu.edu'
         password = 'testuser'
         username = 'test12'
-        user_info_values=[ ( 'affiliation', 'Educational' ), 
-                           ( 'name_of_oganization', 'Penn State' ), 
+        user_info_values = [ ( 'affiliation', 'Educational' ),
+                           ( 'name_of_oganization', 'Penn State' ),
                            ( 'contact_for_feedback', '1' ) ]
         self.create_user_with_info( cntrller='admin',
                                     email=email,
                                     password=password,
-                                    username=username, 
-                                    user_type_fd_id=self.security.encode_id( form_one.id ), 
+                                    username=username,
+                                    user_type_fd_id=self.security.encode_id( form_one.id ),
                                     user_info_values=user_info_values,
                                     strings_displayed=[ "Create account", "User type" ] )
         global regular_user12
@@ -184,18 +199,18 @@ class TestUserInfo( TwillTestCase ):
                              strings_displayed_after_submit=[ 'The login information has been updated with the changes' ] )
         # Since we changed the user's account. make sure the user's private role was changed accordingly
         if not get_private_role( regular_user12 ):
-            raise AssertionError, "The private role for %s was not correctly set when their account (email) was changed" % regular_user12.email
+            raise AssertionError( "The private role for %s was not correctly set when their account (email) was changed" % regular_user12.email )
         # Test changing password
         self.edit_user_info( cntrller='user',
                              password='testuser',
-                             new_password='testuser#',\
+                             new_password='testuser#',
                              strings_displayed_after_submit=[ 'The password has been changed' ] )
         self.logout()
         refresh( regular_user12 )
         # Test logging in with new email and password
         self.login( email=regular_user12.email, password='testuser#' )
         # Test editing the user info
-        new_user_info_values=[ ( 'affiliation', 'Educational' ), 
+        new_user_info_values = [ ( 'affiliation', 'Educational' ),
                                ( 'name_of_oganization', 'Penn State' ) ]
         self.edit_user_info( cntrller='user',
                              info_values=new_user_info_values,

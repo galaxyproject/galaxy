@@ -1,16 +1,19 @@
 import calendar
+import logging
 from collections import namedtuple
 from datetime import datetime, date, timedelta
-from galaxy.web.base.controller import BaseUIController, web
-from galaxy import model, util
-from galaxy.web.framework.helpers import grids
-from galaxy.model.orm import and_, not_, or_
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
+
+from galaxy import eggs
+eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
+from sqlalchemy import and_, not_, or_
+
+from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, web
+from galaxy.web.framework.helpers import grids
+from math import ceil
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -250,6 +253,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         Queries the DB for all jobs in given month, defaults to current month.
         """
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
@@ -258,6 +262,22 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 50
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -278,7 +298,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                      model.Job.table.c.create_time < end_date ),
                                 from_obj=[ model.Job.table ],
                                 group_by=[ 'date' ],
-                                order_by=[ _order ] )
+                                order_by=[ _order ],
+                                offset=offset,
+                                limit=limit)
 
         jobs = []
         for row in month_jobs.execute():
@@ -287,6 +309,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.total_jobs,
                            row.date
                            ) )
+
+        pages_found = ceil(len(jobs) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
         return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
                                     order=order,
                                     arrow=arrow,
@@ -294,6 +319,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     month_label=month_label,
                                     year_label=year_label,
                                     month=month,
+                                    page_specs=page_specs,
                                     jobs=jobs,
                                     is_user_jobs_only=monitor_user_id,
                                     message=message )
@@ -612,15 +638,6 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                               .get( trans.security.decode_id( kwd.get( 'id', '' ) ) )
         return trans.fill_template( '/webapps/reports/job_info.mako',
                                     job=job,
-                                    message=message )
-
-    @web.expose
-    def test( self, trans, **kwd ):
-        message = ''
-        order = "asc"
-
-        return trans.fill_template( '/webapps/reports/test.mako',
-                                    order=order,
                                     message=message )
 
 # ---- Utility methods -------------------------------------------------------

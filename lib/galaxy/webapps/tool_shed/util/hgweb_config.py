@@ -1,5 +1,8 @@
-import sys, os, ConfigParser, logging, shutil, threading
-from time import strftime
+import os
+import ConfigParser
+import logging
+import shutil
+import threading
 from datetime import date
 
 log = logging.getLogger( __name__ )
@@ -9,10 +12,12 @@ new_hgweb_config_template = """
 
 """
 
+
 class HgWebConfigManager( object ):
     def __init__( self ):
         self.hgweb_config_dir = None
         self.in_memory_config = None
+
     def add_entry( self, lhs, rhs ):
         """Add an entry in the hgweb.config file for a new repository."""
         lock = threading.Lock()
@@ -32,6 +37,7 @@ class HgWebConfigManager( object ):
             log.debug( "Exception in HgWebConfigManager.add_entry(): %s" % str( e ) )
         finally:
             lock.release()
+
     def change_entry( self, old_lhs, new_lhs, new_rhs ):
         """Change an entry in the hgweb.config file for a repository - this only happens when the owner changes the name of the repository."""
         lock = threading.Lock()
@@ -48,6 +54,7 @@ class HgWebConfigManager( object ):
             log.debug( "Exception in HgWebConfigManager.change_entry(): %s" % str( e ) )
         finally:
             lock.release()
+
     def get_entry( self, lhs ):
         """Return an entry in the hgweb.config file for a repository"""
         self.read_config()
@@ -61,6 +68,7 @@ class HgWebConfigManager( object ):
             except ConfigParser.NoOptionError:
                 raise Exception( "Entry for repository %s missing in file %s." % ( lhs, self.hgweb_config ) )
         return entry
+
     @property
     def hgweb_config( self ):
         hgweb_config = os.path.join( self.hgweb_config_dir, 'hgweb.config' )
@@ -73,6 +81,7 @@ class HgWebConfigManager( object ):
             hgweb_config_file.write( new_hgweb_config_template )
             hgweb_config_file.close()
         return os.path.abspath( hgweb_config )
+
     def make_backup( self ):
         # Make a backup of the hgweb.config file.
         today = date.today()
@@ -80,11 +89,13 @@ class HgWebConfigManager( object ):
         hgweb_config_backup_filename = 'hgweb.config_%s_backup' % backup_date
         hgweb_config_copy = os.path.join( self.hgweb_config_dir, hgweb_config_backup_filename )
         shutil.copy( os.path.abspath( self.hgweb_config ), os.path.abspath( hgweb_config_copy ) )
+
     def read_config( self, force_read=False ):
         if force_read or self.in_memory_config is None:
             config = ConfigParser.ConfigParser()
             config.read( self.hgweb_config )
             self.in_memory_config = config
+
     def write_config( self ):
         """Writing the in-memory configuration to the hgweb.config file on disk."""
         config_file = open( self.hgweb_config, 'wb' )

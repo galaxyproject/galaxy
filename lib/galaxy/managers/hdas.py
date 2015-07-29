@@ -11,8 +11,6 @@ import gettext
 from galaxy import model
 from galaxy import exceptions
 from galaxy import datatypes
-from galaxy import objectstore
-
 from galaxy.managers import datasets
 from galaxy.managers import secured
 from galaxy.managers import taggable
@@ -85,11 +83,11 @@ class HDAManager( datasets.DatasetAssociationManager,
         if not dataset:
             kwargs[ 'create_dataset' ] = True
         hda = model.HistoryDatasetAssociation( history=history, dataset=dataset,
-            sa_session=self.app.model.context, **kwargs )
+                                               sa_session=self.app.model.context, **kwargs )
 
         if history:
             history.add_dataset( hda, set_hid=( 'hid' not in kwargs ) )
-        #TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
+        # TODO:?? some internal sanity check here (or maybe in add_dataset) to make sure hids are not duped?
 
         self.session().add( hda )
         if flush:
@@ -103,17 +101,17 @@ class HDAManager( datasets.DatasetAssociationManager,
         # TODO:?? not using the following as this fn does not set history and COPIES hid (this doesn't seem correct)
         # return hda.copy()
         copy = model.HistoryDatasetAssociation(
-            name        = hda.name,
-            info        = hda.info,
-            blurb       = hda.blurb,
-            peek        = hda.peek,
-            tool_version= hda.tool_version,
-            extension   = hda.extension,
-            dbkey       = hda.dbkey,
-            dataset     = hda.dataset,
-            visible     = hda.visible,
-            deleted     = hda.deleted,
-            parent_id   = kwargs.get( 'parent_id', None ),
+            name=hda.name,
+            info=hda.info,
+            blurb=hda.blurb,
+            peek=hda.peek,
+            tool_version=hda.tool_version,
+            extension=hda.extension,
+            dbkey=hda.dbkey,
+            dataset=hda.dataset,
+            visible=hda.visible,
+            deleted=hda.deleted,
+            parent_id=kwargs.get( 'parent_id', None ),
         )
         # add_dataset will update the hid to the next avail. in history
         if history:
@@ -121,6 +119,9 @@ class HDAManager( datasets.DatasetAssociationManager,
 
         copy.copied_from_history_dataset_association = hda
         copy.set_size()
+
+        original_annotation = self.annotation( hda )
+        self.annotate( copy, original_annotation, user=history.user )
 
         # TODO: update from kwargs?
 
@@ -134,6 +135,11 @@ class HDAManager( datasets.DatasetAssociationManager,
             copy.set_peek()
 
         self.session().flush()
+
+        # these use a second session flush and need to be after the first
+        original_tags = self.get_tags( hda )
+        self.set_tags( copy, original_tags, user=history.user )
+
         return copy
 
     def copy_ldda( self, history, ldda, **kwargs ):
@@ -162,7 +168,7 @@ class HDAManager( datasets.DatasetAssociationManager,
         """
         Raise error if HDA is still uploading.
         """
-        #TODO: may be better added to an overridden get_accessible
+        # TODO: may be better added to an overridden get_accessible
         if hda.state == model.Dataset.states.UPLOAD:
             raise exceptions.Conflict( "Please wait until this dataset finishes uploading" )
         return hda
@@ -173,7 +179,7 @@ class HDAManager( datasets.DatasetAssociationManager,
         """
         job_states = model.Job.states
         query = ( self._job_state_history_query( hda )
-            .filter( model.JobStateHistory.state == job_states.RESUBMITTED ) )
+                  .filter( model.JobStateHistory.state == job_states.RESUBMITTED ) )
         return self.app.model.context.query( query.exists() ).scalar()
 
     def _job_state_history_query( self, hda ):
@@ -188,9 +194,9 @@ class HDAManager( datasets.DatasetAssociationManager,
         # NOTE: don't eagerload (JODA will load the hda were using!)
         hda_id = hda.id
         query = ( session.query( JobToOutputDatasetAssociation, JobStateHistory )
-            .filter( JobToOutputDatasetAssociation.dataset_id == hda_id )
-            .filter( JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id )
-            .enable_eagerloads( False ) )
+                  .filter( JobToOutputDatasetAssociation.dataset_id == hda_id )
+                  .filter( JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id )
+                  .enable_eagerloads( False ) )
         return query
 
     def data_conversion_status( self, hda ):
@@ -227,11 +233,16 @@ class HDAManager( datasets.DatasetAssociationManager,
         hda_data = open( hda.file_name ).read( MAX_PEEK_SIZE )
         return truncated, hda_data
 
+    # .... annotatable
+    def annotation( self, hda ):
+        # override to scope to history owner
+        return self._user_annotation( hda, hda.history.user )
 
-class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer,
-                     datasets.DatasetAssociationSerializer,
-                     taggable.TaggableSerializerMixin,
-                     annotatable.AnnotatableSerializerMixin ):
+
+class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
+        datasets.DatasetAssociationSerializer,
+        taggable.TaggableSerializerMixin,
+        annotatable.AnnotatableSerializerMixin ):
     # TODO: inherit from datasets.DatasetAssociationSerializer
     # TODO: move what makes sense into DatasetSerializer
 
@@ -256,7 +267,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
             'history_id', 'hid',
             # why include if model_class is there?
             'hda_ldda',
-            #TODO: accessible needs to go away
+            # TODO: accessible needs to go away
             'accessible',
 
             # remapped
@@ -265,7 +276,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
 
             'create_time', 'update_time',
             'resubmitted',
-             'metadata', 'meta_files', 'data_type',
+            'metadata', 'meta_files', 'data_type',
             'peek',
 
             'uuid',
@@ -276,7 +287,7 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
             'display_types',
             'visualizations',
 
-            #'url',
+            # 'url',
             'download_url',
 
             'annotation', 'tags',
@@ -324,14 +335,14 @@ class HDASerializer( # datasets._UnflattenedMetadataDatasetAssociationSerializer
             #   see also: https://trello.com/c/5d6j4X5y
             #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
             'url'           : lambda i, k, **c: self.url_for( 'history_content',
-                history_id=self.app.security.encode_id( i.history_id ),
-                id=self.app.security.encode_id( i.id ) ),
+                                                              history_id=self.app.security.encode_id( i.history_id ),
+                                                              id=self.app.security.encode_id( i.id ) ),
             'urls'          : self.serialize_urls,
 
             # TODO: backwards compat: need to go away
             'download_url'  : lambda i, k, **c: self.url_for( 'history_contents_display',
-                history_id=self.app.security.encode_id( i.history.id ),
-                history_content_id=self.app.security.encode_id( i.id ) ),
+                                                              history_id=self.app.security.encode_id( i.history.id ),
+                                                              history_content_id=self.app.security.encode_id( i.id ) ),
             'parent_id'     : self.serialize_id,
             'accessible'    : lambda *a, **c: True,
             'api_type'      : lambda *a, **c: 'file',
@@ -442,7 +453,7 @@ class HDADeserializer( datasets.DatasetAssociationDeserializer,
             # remapped
             'genome_build'  : lambda i, k, v, **c: self.deserialize_genome_build( i, 'dbkey', v ),
             'misc_info'     : lambda i, k, v, **c: self.deserialize_basestring( i, 'info', v,
-                convert_none_to_empty=True ),
+                                                                                convert_none_to_empty=True ),
         })
         self.deserializable_keyset.update( self.deserializers.keys() )
 

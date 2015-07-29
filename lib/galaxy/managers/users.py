@@ -22,20 +22,20 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
     model_class = model.User
     foreign_key_name = 'user'
 
-    #TODO: there is quite a bit of functionality around the user (authentication, permissions, quotas, groups/roles)
+    # TODO: there is quite a bit of functionality around the user (authentication, permissions, quotas, groups/roles)
     #   most of which it may be unneccessary to have here
 
-    #TODO: incorp BaseAPIController.validate_in_users_and_groups
-    #TODO: incorp CreatesUsersMixin
-    #TODO: incorp CreatesApiKeysMixin
-    #TODO: incorporate security/validate_user_input.py
-    #TODO: incorporate UsesFormDefinitionsMixin?
+    # TODO: incorp BaseAPIController.validate_in_users_and_groups
+    # TODO: incorp CreatesUsersMixin
+    # TODO: incorp CreatesApiKeysMixin
+    # TODO: incorporate security/validate_user_input.py
+    # TODO: incorporate UsesFormDefinitionsMixin?
 
     def create( self, webapp_name=None, **kwargs ):
         """
         Create a new user.
         """
-        #TODO: deserialize and validate here
+        # TODO: deserialize and validate here
         email = kwargs[ 'email' ]
         username = kwargs[ 'username' ]
         password = kwargs[ 'password' ]
@@ -53,7 +53,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         self.session().add( user )
         try:
             self.session().flush()
-            #TODO:?? flush needed for permissions below? If not, make optional
+            # TODO:?? flush needed for permissions below? If not, make optional
         except sqlalchemy.exc.IntegrityError, db_err:
             raise exceptions.Conflict( db_err.message )
 
@@ -72,7 +72,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
 
         :raises exceptions.Conflict: if any are found
         """
-        #TODO: remove this check when unique=True is added to the email column
+        # TODO: remove this check when unique=True is added to the email column
         if self.by_email( email ) is not None:
             raise exceptions.Conflict( 'Email must be unique', email=email )
 
@@ -83,9 +83,9 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         """
         filters = self._munge_filters( self.model_class.email == email, filters )
         try:
-#TODO: use one_or_none
+            # TODO: use one_or_none
             return super( UserManager, self ).one( filters=filters, **kwargs )
-        except exceptions.ObjectNotFound, not_found:
+        except exceptions.ObjectNotFound:
             return None
 
     def by_email_like( self, email_with_wildcards, filters=None, order_by=None, **kwargs ):
@@ -141,7 +141,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         Raise an error if `user` is anonymous.
         """
         if user is None:
-            #TODO: code is correct (401) but should be named AuthenticationRequired (401 and 403 are flipped)
+            # TODO: code is correct (401) but should be named AuthenticationRequired (401 and 403 are flipped)
             raise exceptions.AuthenticationFailed( msg, **kwargs )
         return user
 
@@ -156,24 +156,23 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         """
         Create and return an API key for `user`.
         """
-        #TODO: seems like this should return the model
+        # TODO: seems like this should return the model
         return api_keys.ApiKeyManager( self.app ).create_api_key( user )
 
-    #TODO: possibly move to ApiKeyManager
+    # TODO: possibly move to ApiKeyManager
     def valid_api_key( self, user ):
         """
         Return this most recent APIKey for this user or None if none have been created.
         """
         query = ( self.session().query( model.APIKeys )
-                    .filter_by( user=user )
-                    .order_by( sqlalchemy.desc( model.APIKeys.create_time ) ) )
+                  .filter_by( user=user )
+                  .order_by( sqlalchemy.desc( model.APIKeys.create_time ) ) )
         all = query.all()
         if len( all ):
             return all[0]
         return None
-        #return query.first()
 
-    #TODO: possibly move to ApiKeyManager
+    # TODO: possibly move to ApiKeyManager
     def get_or_create_valid_api_key( self, user ):
         """
         Return this most recent APIKey for this user or create one if none have been
@@ -185,8 +184,6 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         return self.create_api_key( self, user )
 
     # ---- preferences
-
-
     # ---- roles and permissions
     def private_role( self, user ):
         return self.app.security_agent.get_private_user_role( user )
@@ -198,7 +195,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         return self.app.security_agent.user_get_default_permissions( user )
 
     def quota( self, user ):
-        #TODO: use quota manager
+        # TODO: use quota manager
         return self.app.quota_agent.get_percent( user=user )
 
     def tags_used( self, user, tag_models=None ):
@@ -206,7 +203,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         Return a list of distinct 'user_tname:user_value' strings that the
         given user has used.
         """
-        #TODO: simplify and unify with tag manager
+        # TODO: simplify and unify with tag manager
         if self.is_anonymous( user ):
             return []
 
@@ -217,7 +214,7 @@ class UserManager( base.ModelManager, deletable.PurgableManagerMixin ):
         all_tags_query = None
         for tag_model in tag_models:
             subq = ( self.session().query( tag_model.user_tname, tag_model.user_value )
-                        .filter( tag_model.user == user ) )
+                     .filter( tag_model.user == user ) )
             all_tags_query = subq if all_tags_query is None else all_tags_query.union( subq )
 
         # if nothing init'd the query, bail
@@ -252,22 +249,22 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'id', 'email', 'username'
         ])
         self.add_view( 'detailed', [
-            #'update_time',
-            #'create_time',
+            # 'update_time',
+            # 'create_time',
 
             'total_disk_usage',
             'nice_total_disk_usage',
             'quota_percent',
 
-            #'deleted',
-            #'purged',
-            #'active',
+            # 'deleted',
+            # 'purged',
+            # 'active',
 
-            #'preferences',
-            # all tags
+            # 'preferences',
+            #  all tags
             'tags_used',
-            ## all annotations
-            #'annotations'
+            # all annotations
+            # 'annotations'
         ], include_keys_from='summary' )
 
     def add_serializers( self ):
@@ -284,7 +281,7 @@ class UserSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin ):
             'quota_percent' : lambda i, k, **c: self.user_manager.quota( i ),
 
             'tags_used'     : lambda i, k, **c: self.user_manager.tags_used( i ),
-            #TODO: 'has_requests' is more apt
+            # TODO: 'has_requests' is more apt
             'requests'      : lambda i, k, trans=None, **c: self.user_manager.has_requests( i, trans )
         })
 
@@ -295,7 +292,6 @@ class CurrentUserSerializer( UserSerializer ):
         """
         Override to return at least some usage info if user is anonymous.
         """
-# hmmm.
         kwargs[ 'current_user' ] = user
         if self.user_manager.is_anonymous( user ):
             return self.serialize_current_anonymous_user( user, keys, **kwargs )
@@ -303,10 +299,10 @@ class CurrentUserSerializer( UserSerializer ):
 
     def serialize_current_anonymous_user( self, user, keys, trans=None, **kwargs ):
         # use the current history if any to get usage stats for trans' anonymous user
-        #TODO: might be better as sep. Serializer class
+        # TODO: might be better as sep. Serializer class
         history = trans.history
         if not history:
-            raise exceptions.AuthenticationRequired( 'No history for anonymous user usage stats' );
+            raise exceptions.AuthenticationRequired( 'No history for anonymous user usage stats' )
 
         usage = self.app.quota_agent.get_usage( trans, history=trans.history )
         percent = self.app.quota_agent.get_percent( trans=trans, usage=usage )
@@ -332,7 +328,7 @@ class AdminUserFilterParser( base.ModelFilterParser, deletable.PurgableFiltersMi
         super( AdminUserFilterParser, self )._add_parsers()
         deletable.PurgableFiltersMixin._add_parsers( self )
 
-        #PRECONDITION: user making the query has been verified as an admin
+        # PRECONDITION: user making the query has been verified as an admin
         self.orm_filter_parsers.update({
             'email'         : { 'op': ( 'eq', 'contains', 'like' ) },
             'username'      : { 'op': ( 'eq', 'contains', 'like' ) },

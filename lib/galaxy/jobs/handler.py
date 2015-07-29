@@ -8,7 +8,7 @@ import logging
 import threading
 from Queue import Queue, Empty
 
-from sqlalchemy.sql.expression import and_, or_, select, func
+from sqlalchemy.sql.expression import and_, or_, select, func, true, null
 
 from galaxy import model
 from galaxy.util.sleeper import Sleeper
@@ -109,14 +109,14 @@ class JobHandlerQueue( object ):
                         model.Job.states.RUNNING )
         if self.app.config.user_activation_on:
                 jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
-                                  .outerjoin( model.User ) \
-                                  .filter( model.Job.state.in_( in_list ) \
-                                           & ( model.Job.handler == self.app.config.server_name ) \
-                                           & or_( ( model.Job.user_id == None ), ( model.User.active == True ) ) ).all()
+                    .outerjoin( model.User ) \
+                    .filter( model.Job.state.in_( in_list ) &
+                             ( model.Job.handler == self.app.config.server_name ) &
+                             or_( ( model.Job.user_id == null() ), ( model.User.active == true() ) ) ).all()
         else:
             jobs_at_startup = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
-                              .filter( model.Job.state.in_( in_list ) \
-                                       & ( model.Job.handler == self.app.config.server_name ) ).all()
+                .filter( model.Job.state.in_( in_list ) &
+                         ( model.Job.handler == self.app.config.server_name ) ).all()
 
         for job in jobs_at_startup:
             if not self.app.toolbox.has_tool( job.tool_id, job.tool_version, exact=True ):
@@ -199,32 +199,32 @@ class JobHandlerQueue( object ):
             self.sa_session.expunge_all()
             # Fetch all new jobs
             hda_not_ready = self.sa_session.query(model.Job.id).enable_eagerloads(False) \
-                    .join(model.JobToInputDatasetAssociation) \
-                    .join(model.HistoryDatasetAssociation) \
-                    .join(model.Dataset) \
-                    .filter(and_( (model.Job.state == model.Job.states.NEW ),
-                                 or_( ( model.HistoryDatasetAssociation._state == model.HistoryDatasetAssociation.states.FAILED_METADATA ),
-                                      ( model.HistoryDatasetAssociation.deleted == True ),
-                                      ( model.Dataset.state != model.Dataset.states.OK ),
-                                      ( model.Dataset.deleted == True) ) ) ).subquery()
+                .join(model.JobToInputDatasetAssociation) \
+                .join(model.HistoryDatasetAssociation) \
+                .join(model.Dataset) \
+                .filter(and_( (model.Job.state == model.Job.states.NEW ),
+                              or_( ( model.HistoryDatasetAssociation._state == model.HistoryDatasetAssociation.states.FAILED_METADATA ),
+                                   ( model.HistoryDatasetAssociation.deleted == true() ),
+                                   ( model.Dataset.state != model.Dataset.states.OK ),
+                                   ( model.Dataset.deleted == true() ) ) ) ).subquery()
             ldda_not_ready = self.sa_session.query(model.Job.id).enable_eagerloads(False) \
-                    .join(model.JobToInputLibraryDatasetAssociation) \
-                    .join(model.LibraryDatasetDatasetAssociation) \
-                    .join(model.Dataset) \
-                    .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 or_((model.LibraryDatasetDatasetAssociation._state != None),
-                                     (model.LibraryDatasetDatasetAssociation.deleted == True),
-                                     (model.Dataset.state != model.Dataset.states.OK),
-                                     (model.Dataset.deleted == True)))).subquery()
+                .join(model.JobToInputLibraryDatasetAssociation) \
+                .join(model.LibraryDatasetDatasetAssociation) \
+                .join(model.Dataset) \
+                .filter(and_((model.Job.state == model.Job.states.NEW),
+                        or_((model.LibraryDatasetDatasetAssociation._state != null()),
+                            (model.LibraryDatasetDatasetAssociation.deleted == true()),
+                            (model.Dataset.state != model.Dataset.states.OK),
+                            (model.Dataset.deleted == true())))).subquery()
             if self.app.config.user_activation_on:
                 jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                        .outerjoin( model.User ) \
-                        .filter(and_((model.Job.state == model.Job.states.NEW),
-                                    or_((model.Job.user_id == None), (model.User.active == True)),
-                                     (model.Job.handler == self.app.config.server_name),
-                                     ~model.Job.table.c.id.in_(hda_not_ready),
-                                     ~model.Job.table.c.id.in_(ldda_not_ready))) \
-                        .order_by(model.Job.id).all()
+                    .outerjoin( model.User ) \
+                    .filter(and_((model.Job.state == model.Job.states.NEW),
+                                 or_((model.Job.user_id == null()), (model.User.active == true())),
+                                 (model.Job.handler == self.app.config.server_name),
+                                 ~model.Job.table.c.id.in_(hda_not_ready),
+                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
+                    .order_by(model.Job.id).all()
             else:
                 jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
                     .filter(and_((model.Job.state == model.Job.states.NEW),
@@ -234,9 +234,9 @@ class JobHandlerQueue( object ):
                     .order_by(model.Job.id).all()
             # Fetch all "resubmit" jobs
             resubmit_jobs = self.sa_session.query(model.Job).enable_eagerloads(False) \
-                    .filter(and_((model.Job.state == model.Job.states.RESUBMITTED),
-                                (model.Job.handler == self.app.config.server_name))) \
-                    .order_by(model.Job.id).all()
+                .filter(and_((model.Job.state == model.Job.states.RESUBMITTED),
+                             (model.Job.handler == self.app.config.server_name))) \
+                .order_by(model.Job.id).all()
         else:
             # Get job objects and append to watch queue for any which were
             # previously waiting
@@ -428,11 +428,11 @@ class JobHandlerQueue( object ):
         # This could have been incremented by a previous job dispatched on this iteration, even if we're not caching
         rval = self.user_job_count.get(user_id, 0)
         if not self.app.config.cache_user_job_count:
-            result = self.sa_session.execute(select([func.count(model.Job.table.c.id)]) \
-                .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED,
+            result = self.sa_session.execute(select([func.count(model.Job.table.c.id)])
+                                             .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED,
                                                          model.Job.states.RUNNING,
                                                          model.Job.states.RESUBMITTED)),
-                            (model.Job.table.c.user_id == user_id))))
+                                                         (model.Job.table.c.user_id == user_id))))
             for row in result:
                 # there should only be one row
                 rval += row[0]
@@ -442,12 +442,12 @@ class JobHandlerQueue( object ):
         # Cache the job count if necessary
         if self.user_job_count is None and self.app.config.cache_user_job_count:
             self.user_job_count = {}
-            query = self.sa_session.execute(select([model.Job.table.c.user_id, func.count(model.Job.table.c.user_id)]) \
-                .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED,
-                                                         model.Job.states.RUNNING,
-                                                         model.Job.states.RESUBMITTED)),
-                            (model.Job.table.c.user_id is not None))) \
-                                .group_by(model.Job.table.c.user_id))
+            query = self.sa_session.execute(select([model.Job.table.c.user_id, func.count(model.Job.table.c.user_id)])
+                                            .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED,
+                                                                                     model.Job.states.RUNNING,
+                                                                                     model.Job.states.RESUBMITTED)),
+                                                        (model.Job.table.c.user_id != null())))
+                                            .group_by(model.Job.table.c.user_id))
             for row in query:
                 self.user_job_count[row[0]] = row[1]
         elif self.user_job_count is None:
@@ -465,9 +465,9 @@ class JobHandlerQueue( object ):
             # queue.
             rval = {}
             rval.update(cached)
-            result = self.sa_session.execute(select([model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label('job_count')]) \
-                                            .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)), (model.Job.table.c.user_id == user_id))) \
-                                            .group_by(model.Job.table.c.destination_id))
+            result = self.sa_session.execute(select([model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label('job_count')])
+                                             .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)), (model.Job.table.c.user_id == user_id)))
+                                             .group_by(model.Job.table.c.destination_id))
             for row in result:
                 # Add the count from the database to the cached count
                 rval[row['destination_id']] = rval.get(row['destination_id'], 0) + row['job_count']
@@ -477,9 +477,9 @@ class JobHandlerQueue( object ):
         # Cache the job count if necessary
         if self.user_job_count_per_destination is None and self.app.config.cache_user_job_count:
             self.user_job_count_per_destination = {}
-            result = self.sa_session.execute(select([model.Job.table.c.user_id, model.Job.table.c.destination_id, func.count(model.Job.table.c.user_id).label('job_count')]) \
-                                            .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)))) \
-                                            .group_by(model.Job.table.c.user_id, model.Job.table.c.destination_id))
+            result = self.sa_session.execute(select([model.Job.table.c.user_id, model.Job.table.c.destination_id, func.count(model.Job.table.c.user_id).label('job_count')])
+                                             .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
+                                             .group_by(model.Job.table.c.user_id, model.Job.table.c.destination_id))
             for row in result:
                 if row['user_id'] not in self.user_job_count_per_destination:
                     self.user_job_count_per_destination[row['user_id']] = {}
@@ -552,9 +552,9 @@ class JobHandlerQueue( object ):
         # Cache the job count if necessary
         if self.total_job_count_per_destination is None:
             self.total_job_count_per_destination = {}
-            result = self.sa_session.execute(select([model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label('job_count')]) \
-                                            .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)))) \
-                                            .group_by(model.Job.table.c.destination_id))
+            result = self.sa_session.execute(select([model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label('job_count')])
+                                             .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
+                                             .group_by(model.Job.table.c.destination_id))
             for row in result:
                 self.total_job_count_per_destination[row['destination_id']] = row['job_count']
 
@@ -663,8 +663,8 @@ class JobHandlerStopQueue( object ):
             self.sa_session.expunge_all()
             # Fetch all new jobs
             newly_deleted_jobs = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
-                                     .filter( ( model.Job.state == model.Job.states.DELETED_NEW ) \
-                                              & ( model.Job.handler == self.app.config.server_name ) ).all()
+                                     .filter( ( model.Job.state == model.Job.states.DELETED_NEW ) &
+                                              ( model.Job.handler == self.app.config.server_name ) ).all()
             for job in newly_deleted_jobs:
                 jobs_to_check.append( ( job, job.stderr ) )
         # Also pull from the queue (in the case of Administrative stopped jobs)
@@ -680,9 +680,10 @@ class JobHandlerStopQueue( object ):
         except Empty:
             pass
         for job, error_msg in jobs_to_check:
-            if ( job.state not in ( job.states.DELETED_NEW,
-                                    job.states.DELETED )
-                 and job.finished ):
+            if ( job.state not in
+                    ( job.states.DELETED_NEW,
+                      job.states.DELETED ) and
+                    job.finished ):
                 # terminated before it got here
                 log.debug('Job %s already finished, not deleting or stopping', job.id)
                 continue
@@ -750,7 +751,7 @@ class DefaultJobDispatcher( object ):
         runner_name = self.__get_runner_name( job_wrapper )
         try:
             if isinstance(job_wrapper, TaskWrapper):
-                #DBTODO Refactor
+                # DBTODO Refactor
                 log.debug( "(%s) Dispatching task %s to %s runner" % ( job_wrapper.job_id, job_wrapper.task_id, runner_name ) )
             else:
                 log.debug( "(%s) Dispatching to %s runner" % ( job_wrapper.job_id, runner_name ) )
@@ -772,20 +773,20 @@ class DefaultJobDispatcher( object ):
             log.debug( "Stopping job %d:", job.get_id() )
         elif( isinstance( job, model.Task ) ):
             log.debug( "Stopping job %d, task %d"
-                     % ( job.get_job().get_id(), job.get_id() ) )
+                       % ( job.get_job().get_id(), job.get_id() ) )
         else:
             log.debug( "Unknown job to stop" )
 
         # The runner name is not set until the job has started.
         # If we're stopping a task, then the runner_name may be
         # None, in which case it hasn't been scheduled.
-        if ( None != job.get_job_runner_name() ):
+        if ( job.get_job_runner_name() is not None ):
             runner_name = ( job.get_job_runner_name().split( ":", 1 ) )[ 0 ]
             if ( isinstance( job, model.Job ) ):
                 log.debug( "stopping job %d in %s runner" % ( job.get_id(), runner_name ) )
             elif ( isinstance( job, model.Task ) ):
                 log.debug( "Stopping job %d, task %d in %s runner"
-                         % ( job.get_job().get_id(), job.get_id(), runner_name ) )
+                           % ( job.get_job().get_id(), job.get_id(), runner_name ) )
             try:
                 self.job_runners[runner_name].stop_job( job )
             except KeyError:

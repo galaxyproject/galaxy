@@ -8,6 +8,9 @@ import urllib2
 
 from sqlalchemy import and_
 from sqlalchemy.sql import expression
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
 
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -22,7 +25,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
 from galaxy.web.framework.formbuilder import form
-from galaxy.web.framework.helpers import escape, grids, time_ago, to_unicode
+from galaxy.web.framework.helpers import grids, time_ago, to_unicode
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.extract import summarize
 from galaxy.workflow.modules import MissingToolException

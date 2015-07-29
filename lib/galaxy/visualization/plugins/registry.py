@@ -31,6 +31,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
         - validating and parsing params into resources (based on a context)
             used in the visualization template
     """
+    DEFAULT_BASE_URL = 'visualizations'
     # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
     # TODO: change/remove if/when they can be updated to use this system
     #: any built in visualizations that have their own render method in ctrls/visualization
@@ -47,8 +48,7 @@ class VisualizationsRegistry( pluginframework.PageServingPluginManager ):
     def __init__( self, app, skip_bad_plugins=True, **kwargs ):
         self.app = weakref.ref( app )
         self.config_parser = config_parser.VisualizationsConfigParser()
-        super( VisualizationsRegistry, self ).__init__( app, 'visualizations',
-            skip_bad_plugins=skip_bad_plugins, **kwargs )
+        super( VisualizationsRegistry, self ).__init__( app, skip_bad_plugins=skip_bad_plugins, **kwargs )
 
     def is_plugin( self, plugin_path ):
         """

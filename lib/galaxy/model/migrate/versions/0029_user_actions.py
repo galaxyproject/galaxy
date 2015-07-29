@@ -21,13 +21,13 @@ def display_migration_details():
 
 # New table to store user actions.
 UserAction_table = Table( "user_action", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
-    Column( "action", Unicode( 255 ) ),
-    Column( "context", Unicode( 512 ) ),
-    Column( "params", Unicode( 1024 ) ) )
+                          Column( "id", Integer, primary_key=True ),
+                          Column( "create_time", DateTime, default=now ),
+                          Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                          Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
+                          Column( "action", Unicode( 255 ) ),
+                          Column( "context", Unicode( 512 ) ),
+                          Column( "params", Unicode( 1024 ) ) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

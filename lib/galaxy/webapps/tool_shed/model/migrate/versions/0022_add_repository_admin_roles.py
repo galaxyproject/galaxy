@@ -25,11 +25,11 @@ NOW = datetime.datetime.utcnow
 ROLE_TYPE = 'system'
 
 RepositoryRoleAssociation_table = Table( "repository_role_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
-    Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
-    Column( "create_time", DateTime, default=NOW ),
-    Column( "update_time", DateTime, default=NOW, onupdate=NOW ) )
+                                         Column( "id", Integer, primary_key=True ),
+                                         Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+                                         Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ),
+                                         Column( "create_time", DateTime, default=NOW ),
+                                         Column( "update_time", DateTime, default=NOW, onupdate=NOW ) )
 
 def nextval( migrate_engine, table, col='id' ):
     if migrate_engine.name in [ 'postgresql', 'postgres' ]:
