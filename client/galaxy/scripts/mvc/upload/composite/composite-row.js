@@ -125,11 +125,6 @@ return Backbone.View.extend({
         // update info
         it.find('#size').html(Utils.bytesToString (file_size));
 
-        // remove mode class
-        it.find('#mode')
-            .removeClass()
-            .addClass('mode');
-
         // activate text field if file is new
         if (file_mode == 'new') {
             // get text component
@@ -149,21 +144,6 @@ return Backbone.View.extend({
 
             // show text field
             text.show();
-
-            // update icon
-            it.find('#mode').addClass('fa fa-pencil');
-        }
-
-        // file from local disk
-        if (file_mode == 'local') {
-            // update icon
-            it.find('#mode').addClass('fa fa-laptop');
-        }
-
-        // file from ftp
-        if (file_mode == 'ftp') {
-            // update icon
-            it.find('#mode').addClass('fa fa-code-fork');
         }
     },
 
