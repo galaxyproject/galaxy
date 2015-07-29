@@ -8,7 +8,7 @@
 <!--run_stats.mako-->
 <html>
     <head> 
-        <script type="text/javascript" src="/report/static/scripts/reports_webapp/run_stats.js"></script>
+        <script type="text/javascript" src="${h.url_for('/static/scripts/reports_webapp/run_stats.js')}"></script>
         <script type="text/javascript">
         $(document).ready( function(e) {
             create_chart( ${jf_hr_data}, "jf_hr_chart", "hours", "Jobs Finished per Hour" );
