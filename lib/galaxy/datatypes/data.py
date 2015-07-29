@@ -371,6 +371,10 @@ class Data( object ):
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.
+                # Check to see if this dataset's parent job is whitelisted
+                # We cannot currently trust imported datasets for rendering.
+                if not data.creating_job.imported and data.creating_job.tool_id in trans.app.config.sanitize_whitelist:
+                    return open(data.file_name).read()
                 return sanitize_html(open( data.file_name ).read())
             return open( data.file_name )
         else:

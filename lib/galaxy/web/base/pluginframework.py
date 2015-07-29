@@ -364,6 +364,8 @@ class PageServingPluginManager( PluginManager ):
     """
     # TODO: I'm unclear of the utility of this class - it prob. will only have one subclass (vis reg). Fold into?
 
+    #: default static url base
+    DEFAULT_BASE_URL = ''
     #: does the class need static files served?
     serves_static = True
     #: does the class need template files served?
@@ -375,7 +377,7 @@ class PageServingPluginManager( PluginManager ):
     #: name of files to search for additional template lookup directories
     additional_template_paths_config_filename = 'additional_template_paths.xml'
 
-    def __init__( self, app, base_url, template_cache_dir=None, **kwargs ):
+    def __init__( self, app, base_url='', template_cache_dir=None, **kwargs ):
         """
         Set up the manager and load all plugins.
 
@@ -387,7 +389,9 @@ class PageServingPluginManager( PluginManager ):
         :param  template_cache_dir: filesytem path to the directory where cached
             templates are kept
         """
-        self.base_url = base_url
+        self.base_url = base_url or self.DEFAULT_BASE_URL
+        if not self.base_url:
+            raise PluginManagerException( 'base_url or DEFAULT_BASE_URL required' )
         self.template_cache_dir = template_cache_dir
         self.additional_template_paths = []
 

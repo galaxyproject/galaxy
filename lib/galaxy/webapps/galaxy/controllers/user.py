@@ -15,7 +15,7 @@ from galaxy import eggs
 eggs.require( "MarkupSafe" )
 from markupsafe import escape
 eggs.require('sqlalchemy')
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, true
 
 from galaxy import model
 from galaxy import util
@@ -33,6 +33,7 @@ from galaxy.web.base.controller import (BaseUIController,
                                         UsesFormDefinitionsMixin)
 from galaxy.web.form_builder import build_select_field, CheckboxField
 from galaxy.web.framework.helpers import grids, time_ago
+from galaxy.exceptions import ObjectInvalid
 
 
 log = logging.getLogger( __name__ )
@@ -1153,7 +1154,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     # Invalidate all other sessions
                     for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \
                                                      .filter( and_( trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                                    trans.app.model.GalaxySession.table.c.is_valid is True,
+                                                                    trans.app.model.GalaxySession.table.c.is_valid == true(),
                                                                     trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id ) ):
                         other_galaxy_session.is_valid = False
                         trans.sa_session.add( other_galaxy_session )
@@ -1697,6 +1698,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     new_len.visible = False
                     new_len.state = trans.app.model.Job.states.OK
                     new_len.info = "custom build .len file"
+                    try:
+                        trans.app.object_store.create( new_len.dataset )
+                    except ObjectInvalid:
+                        raise Exception( 'Unable to create output dataset: object store is full' )
                     trans.sa_session.flush()
                     counter = 0
                     f = open(new_len.file_name, "w")

@@ -196,11 +196,18 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
             return dataset.extra_files_path
         self.skip()
 
-    def serialize_permissions( self, dataset, key, **context ):
+    def serialize_permissions( self, dataset, key, user=None, **context ):
         """
         """
-        permissions = {}
-# TODO: use rbac permissions?
+        if not user or not self.dataset_manager.permissions.manage.is_permitted( dataset, user ):
+            self.skip()
+
+        management_permissions = self.dataset_manager.permissions.manage.by_dataset( dataset )
+        access_permissions = self.dataset_manager.permissions.access.by_dataset( dataset )
+        permissions = {
+            'manage' : [ self.app.security.encode_id( perm.role.id ) for perm in management_permissions ],
+            'access' : [ self.app.security.encode_id( perm.role.id ) for perm in access_permissions ],
+        }
         return permissions
 
 

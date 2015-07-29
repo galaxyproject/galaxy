@@ -1,4 +1,7 @@
+.venv/
 contrib/
+client/
+database/
 doc/patch.py
 doc/source/conf.py
 lib/galaxy/model/migrate/versions/

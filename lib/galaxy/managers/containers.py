@@ -3,10 +3,9 @@ Manager mixins to unify the interface into things that can contain: Datasets
 and other (nested) containers.
 
 (e.g. DatasetCollections, Histories, LibraryFolders)
-
-Histories should be DatasetCollections.
-Libraries should be DatasetCollections.
 """
+# Histories should be DatasetCollections.
+# Libraries should be DatasetCollections.
 
 import operator
 
@@ -28,6 +27,7 @@ class ContainerManagerMixin( object ):
     each of the methods below only work on the first level of
     nesting.
     """
+    # TODO: terminology is getting a bit convoluted and silly at this point: rename three public below?
     # TODO: this should be an open mapping (not just 2)
     #: the classes that can be contained
     contained_class = None
@@ -69,24 +69,6 @@ class ContainerManagerMixin( object ):
 
     def _content_manager( self, content ):
         raise galaxy.exceptions.NotImplemented( 'Abstract class' )
-
-
-class HistoryAsContainerManagerMixin( ContainerManagerMixin ):
-
-    contained_class = model.HistoryDatasetAssociation
-    subcontainer_class = model.HistoryDatasetCollectionAssociation
-    order_contents_on = operator.attrgetter( 'hid' )
-
-    def _filter_to_contained( self, container, content_class ):
-        return content_class.history == container
-
-    def _content_manager( self, content ):
-        # type sniffing is inevitable
-        if isinstance( content, model.HistoryDatasetAssociation ):
-            return self.hda_manager
-        elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-            return self.hdca_manager
-        raise TypeError( 'Unknown contents class: ' + str( content ) )
 
 
 class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
