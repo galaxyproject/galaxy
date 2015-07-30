@@ -1,11 +1,58 @@
 /*
-    galaxy upload lib - uses FileReader, FormData and XMLHttpRequest
+    galaxy upload plugins - requires FormData and XMLHttpRequest
 */
 ;(function($){
     // add event properties
     jQuery.event.props.push("dataTransfer");
 
-    // attach to element
+    /**
+        Handles the upload events drag/drop etc.
+    */
+    $.fn.uploadinput = function(options) {
+        // initialize
+        var el = this;
+        var opts = $.extend({}, {
+            ondragover  : function() {},
+            ondragleave : function() {},
+            onchange    : function() {},
+            multiple    : false
+        }, options);
+
+        // append hidden upload field
+        var $input = $('<input type="file" style="display: none" ' + (opts.multiple && 'multiple' || '') + '/>');
+        el.append($input).change(function (e) {
+            opts.onchange(e.target.files);
+            $(this).val('');
+        });
+
+        // drag/drop events
+        el.on('drop', function (e) {
+            if(e.dataTransfer) {
+                opts.onchange(e.dataTransfer.files);
+                e.preventDefault();
+            }
+            return false;
+        });
+        el.on('dragover',  function (e) {
+            e.preventDefault();
+            opts.ondragover(e);
+        });
+        el.on('dragleave', function (e) {
+            e.stopPropagation();
+            opts.ondragleave(e);
+        });
+
+        // exports
+        return {
+            dialog: function () {
+                $input.trigger('click');
+            }
+        }
+    }
+
+    /**
+        Handles the upload queue and events such as drag/drop etc.
+    */
     $.fn.uploadbox = function(options) {
 
         // default options
@@ -48,53 +95,12 @@
         var opts = $.extend({}, default_opts, options);
 
         // element
-        var el = this;
-
-        // append upload button
-        var $uploadbox_input = $('<input id="uploadbox_input" type="file" style="display: none" multiple/>');
-        el.append($uploadbox_input);
-
-        // attach events
-        el.on('drop', drop);
-        el.on('dragover',  dragover);
-        el.on('dragleave', dragleave);
-
-        // attach change event
-        $uploadbox_input.change(function(e) {
-            // add files to queue
-            add(e.target.files);
-
-            // reset
-            $(this).val('');
+        var uploadinput = $(this).uploadinput({
+            multiple    : true,
+            onchange    : function(files) {
+                add(files);
+            }
         });
-
-        // drop event
-        function drop(e) {
-            // check if it's a file transfer
-            if(!e.dataTransfer)
-                return;
-
-            // add files to queue
-            add(e.dataTransfer.files);
-
-            // prevent default
-            e.preventDefault();
-
-            // return
-            return false;
-        }
-
-        // drag over
-        function dragover(e) {
-            e.preventDefault();
-            opts.dragover.call(e);
-        }
-
-        // drag leave
-        function dragleave(e) {
-            e.stopPropagation();
-            opts.dragleave.call(e);
-        }
 
         // progress
         function progress(e) {
@@ -281,7 +287,7 @@
 
         // open file browser for selection
         function select() {
-            $uploadbox_input.trigger('click');
+            uploadinput.dialog();
         }
 
         // remove all entries from queue

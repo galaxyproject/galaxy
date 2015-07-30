@@ -132,14 +132,10 @@ return Backbone.View.extend({
     // builds the basic ui with placeholder rows for each composite data type file
     _eventAnnounce: function(item) {
         // create view/model
-        console.log(item);
         var upload_item = new UploadItem(this, {
             id          : this.collection.size(),
             file_name   : '<b>-</b>',
-            file_desc   : item.get('description') || item.get('name') || 'Unavailable',
-            //file_size   : file.size,
-            //file_mode   : file.mode,
-            //file_path   : file.path
+            file_desc   : item.get('description') || item.get('name') || 'Unavailable'
         });
 
         // add upload item element to table

@@ -3,7 +3,8 @@ define(['utils/utils',
         'mvc/upload/upload-model',
         'mvc/upload/upload-settings',
         'mvc/ui/ui-popover',
-        'mvc/ui/ui-select'],
+        'mvc/ui/ui-select',
+        'utils/uploadbox'],
 
         function(   Utils,
                     UploadModel,
@@ -21,15 +22,16 @@ return Backbone.View.extend({
 
     // states
     status_classes : {
-        init    : 'upload-icon-button fa fa-trash-o',
+        init    : 'upload-icon fa fa-exclamation',
         queued  : 'upload-icon fa fa-spinner fa-spin',
         running : 'upload-icon fa fa-spinner fa-spin',
-        success : 'upload-icon-button fa fa-check',
-        error   : 'upload-icon-button fa fa-exclamation-triangle'
+        success : 'upload-icon fa fa-check',
+        error   : 'upload-icon fa fa-exclamation-triangle'
     },
 
     // source options
-    list_sources: [ { id: '', text: 'Choose local file' },
+    list_sources: [ { id: '', text: 'Select a source...' },
+                    { id: 'local', text: 'Choose local file' },
                     { id: 'ftp', text: 'Choose FTP file' },
                     { id: 'url', text: 'Paste/fetch data' } ],
 
@@ -53,6 +55,13 @@ return Backbone.View.extend({
         // link item
         var it = this.$el;
 
+        // build upload functions
+        var uploadinput = it.uploadinput({
+            onchange: function(value) {
+                console.log(value);
+            }
+        });
+
         // append popup to settings icon
         this.settings = new Popover.View({
             title       : 'Upload configuration',
@@ -64,6 +73,9 @@ return Backbone.View.extend({
         this.select_source = new Select.View({
             css: 'source',
             onchange : function(source) {
+                if (source == 'local') {
+                    uploadinput.dialog();
+                }
                 //self.model.set('genome', genome);
                 //self.app.updateGenome(genome, true);
             },

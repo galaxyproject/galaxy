@@ -570,7 +570,7 @@ return Backbone.View.extend({
     _template: function() {
         return  '<div class="upload-view-default">' +
                     '<div class="upload-top">' +
-                        '<h6 id="upload-info" class="upload-info"></h6>' +
+                        '<h6 id="upload-info" class="upload-info"/>' +
                     '</div>' +
                     '<div id="upload-box" class="upload-box">' +
                         '<table id="upload-table" class="table table-striped" style="display: none;">' +
@@ -582,10 +582,10 @@ return Backbone.View.extend({
                                     '<th>Genome</th>' +
                                     '<th>Settings</th>' +
                                     '<th>Status</th>' +
-                                    '<th></th>' +
+                                    '<th/>' +
                                 '</tr>' +
                             '</thead>' +
-                            '<tbody></tbody>' +
+                            '<tbody/>' +
                         '</table>' +
                     '</div>' +
                     '<div id="upload-footer" class="upload-footer">' +
