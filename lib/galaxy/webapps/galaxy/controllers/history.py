@@ -482,6 +482,27 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.fill_template( "history/citations.mako", history=history, history_id=history_id )
 
     @web.expose
+    def as_xml( self, trans, id=None, show_deleted=None, show_hidden=None ):
+        """
+        Return a history in xml format.
+        """
+        if trans.app.config.require_login and not trans.user:
+            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy histories.' )
+
+        if id:
+            history = self.history_manager.get_accessible( self.decode_id( id ), trans.user,
+                current_history=trans.history )
+        else:
+            history = trans.get_history( create=True )
+
+        trans.response.set_content_type( 'text/xml' )
+        return trans.fill_template_mako(
+            "history/as_xml.mako",
+            history=history,
+            show_deleted=galaxy.util.string_as_bool( show_deleted ),
+            show_hidden=galaxy.util.string_as_bool( show_hidden ) )
+
+    @web.expose
     def display_structured( self, trans, id=None ):
         """
         Display a history as a nested structure showing the jobs and workflow
@@ -590,10 +611,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """
         View a history. If a history is importable, then it is viewable by any user.
         """
-        # Get history to view.
-        if not id:
-            return trans.show_error_message( "You must specify a history you want to view." )
-
         show_deleted = galaxy.util.string_as_bool( show_deleted )
         show_hidden = galaxy.util.string_as_bool( show_hidden )
         use_panels = galaxy.util.string_as_bool( use_panels )
@@ -602,8 +619,15 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         hda_dictionaries = []
         user_is_owner = False
         try:
-            history_to_view = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
-            user_is_owner = history_to_view.user == trans.user
+            if id:
+                history_to_view = self.history_manager.get_accessible( self.decode_id( id ), trans.user,
+                    current_history=trans.history )
+                user_is_owner = history_to_view.user == trans.user
+                history_is_current = history_to_view == trans.history
+            else:
+                history_to_view = trans.history
+                user_is_owner = True
+                history_is_current = True
 
             # include all datasets: hidden, deleted, and purged
             history_data = self.history_manager._get_history_data( trans, history_to_view )
@@ -621,8 +645,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             return trans.show_error_message( error_msg, use_panels=use_panels )
 
         return trans.fill_template_mako( "history/view.mako",
-                                         history=history_dictionary, hdas=hda_dictionaries, user_is_owner=user_is_owner,
-                                         show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
+            history=history_dictionary, hdas=hda_dictionaries,
+            user_is_owner=user_is_owner, history_is_current=history_is_current,
+            show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
     @web.expose
     def view_multiple( self, trans, include_deleted_histories=False, order='update' ):

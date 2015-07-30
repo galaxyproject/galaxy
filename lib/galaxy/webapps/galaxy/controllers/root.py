@@ -93,51 +93,6 @@ class RootController( BaseUIController, UsesAnnotations ):
             yield "No additional help available for tool '%s'" % tool.name
         yield "</body></html>"
 
-    # ---- Root history display ---------------------------------------------
-    def history_as_xml( self, trans, show_deleted=None, show_hidden=None ):
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy histories.' )
-
-        history = trans.get_history( create=True )
-        trans.response.set_content_type('text/xml')
-        return trans.fill_template_mako(
-            "root/history_as_xml.mako",
-            history=history,
-            show_deleted=string_as_bool( show_deleted ),
-            show_hidden=string_as_bool( show_hidden ) )
-
-    @web.expose
-    def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, **kwd ):
-        """
-        Display the current history in its own page or as xml.
-        """
-        if as_xml:
-            return self.history_as_xml( trans,
-                                        show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
-
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy histories.' )
-
-        # get all datasets server-side, client-side will get flags and render appropriately
-        show_deleted = string_as_bool_or_none( show_deleted )
-
-        history_dictionary = {}
-        hda_dictionaries = []
-        try:
-            history_data = self.history_manager._get_history_data( trans, trans.get_history( create=True ) )
-            history_dictionary = history_data[ 'history' ]
-            hda_dictionaries = history_data[ 'contents' ]
-
-        except Exception, exc:
-            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
-            history_dictionary[ 'error' ] = ( 'An error occurred getting the history data from the server. ' +
-                                              'Please contact a Galaxy administrator if the problem persists.' )
-
-        return trans.fill_template_mako( "root/history.mako",
-                                         history=history_dictionary, hdas=hda_dictionaries,
-                                         show_deleted=show_deleted, show_hidden=show_hidden )
-
     # ---- Dataset display / editing ----------------------------------------
     @web.expose
     def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", encoded_id=None, **kwd ):
