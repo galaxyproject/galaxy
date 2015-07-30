@@ -3,16 +3,28 @@
 <%namespace file="/admin/tool_shed_repository/common.mako" import="*" />
 <%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
 
-${render_galaxy_repository_actions( repository )}
+<%
+repository = context.get( 'repository', None )
+if isinstance( repository, list ):
+    repositories = repository
+else:
+    repositories = [ repository ]
+%>
+
+%if len( repositories ) == 1:
+    ${render_galaxy_repository_actions( repositories[0] )}
+%endif
 
 %if message:
     ${render_msg( message, status )}
 %endif
 
 <div class="toolForm">
+<form name="deactivate_or_uninstall_repository" id="deactivate_or_uninstall_repository" action="${ h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository' ) }" method="post" >
+%for repository in repositories:
+    <input type="hidden" name="id" value="${ trans.security.encode_id( repository.id ) | h }" />
     <div class="toolFormTitle">${repository.name|h}</div>
     <div class="toolFormBody">
-        <form name="deactivate_or_uninstall_repository" id="deactivate_or_uninstall_repository" action="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <div class="form-row">
                 <label>Description:</label>
                 ${repository.description|h}
@@ -169,10 +181,12 @@ ${render_galaxy_repository_actions( repository )}
                     %endif
                 %endif
             </div>
+        </div>
+%endfor
             <div class="form-row">
                 <%
-                    can_deactivate_repository = repository.can_deactivate
-                    can_uninstall_repository = repository.can_uninstall
+                    can_deactivate_repository = True in map( lambda x: x.can_deactivate, repositories )
+                    can_uninstall_repository = True in map( lambda x: x.can_uninstall, repositories )
                 %>
                 %if can_deactivate_repository and can_uninstall_repository:
                     <% deactivate_uninstall_button_text = "Deactivate or Uninstall" %>
