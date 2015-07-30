@@ -26,6 +26,7 @@ class RootController( BaseUIController, UsesAnnotations ):
     def __init__( self, app ):
         super( RootController, self ).__init__( app )
         self.history_manager = managers.histories.HistoryManager( app )
+        self.history_serializer = managers.histories.HistorySerializer( self.app )
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -124,9 +125,11 @@ class RootController( BaseUIController, UsesAnnotations ):
         history_dictionary = {}
         hda_dictionaries = []
         try:
-            history_data = self.history_manager._get_history_data( trans, trans.get_history( create=True ) )
-            history_dictionary = history_data[ 'history' ]
-            hda_dictionaries = history_data[ 'contents' ]
+            history = trans.get_history( create=True )
+            history_dictionary = self.history_serializer.serialize_to_view( history,
+                view='detailed', user=trans.user, trans=trans )
+            hda_dictionaries = self.history_serializer.serialize_contents( history,
+                'contents', trans=trans, user=trans.user )
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'

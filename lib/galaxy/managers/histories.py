@@ -321,14 +321,21 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
         return state
 
-    def serialize_contents( self, history, *args, **context ):
+    def serialize_contents( self, history, key, trans=None, **context ):
         contents_dictionaries = []
         for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
             contents_dict = {}
+
             if isinstance( content, model.HistoryDatasetAssociation ):
-                contents_dict = self.hda_serializer.serialize_to_view( content, view='detailed', **context )
-            # elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-            #     contents_dict = self._serialize_collection( trans, content )
+                contents_dict = self.hda_serializer.serialize_to_view( content,
+                    view='detailed', trans=trans, **context )
+                # TODO: work out: shouldn't history annotations *always* use user=history.user? why anything else?
+                hda_annotation = self.hda_serializer.serialize_annotation( content, 'annotation', user=history.user )
+                contents_dict[ 'annotation' ] = hda_annotation
+
+            elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
+                contents_dict = self._serialize_collection( trans, content )
+
             contents_dictionaries.append( contents_dict )
         return contents_dictionaries
 
@@ -341,7 +348,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             id=self.app.security.encode_id( collection.id ),
         )
         return collections_util.dictify_dataset_collection_instance( dataset_collection_instance,
-                                                                     security=self.app.security, parent=dataset_collection_instance.history, view="element" )
+            security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
 
 class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.PurgableDeserializerMixin ):
