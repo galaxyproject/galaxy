@@ -123,12 +123,12 @@ class RootController( BaseUIController, UsesAnnotations ):
         show_deleted = string_as_bool_or_none( show_deleted )
 
         history_dictionary = {}
-        hda_dictionaries = []
+        content_dictionaries = []
         try:
             history = trans.get_history( create=True )
             history_dictionary = self.history_serializer.serialize_to_view( history,
                 view='detailed', user=trans.user, trans=trans )
-            hda_dictionaries = self.history_serializer.serialize_contents( history,
+            content_dictionaries = self.history_serializer.serialize_contents( history,
                 'contents', trans=trans, user=trans.user )
 
         except Exception, exc:
@@ -138,8 +138,8 @@ class RootController( BaseUIController, UsesAnnotations ):
                                               'Please contact a Galaxy administrator if the problem persists.' )
 
         return trans.fill_template_mako( "root/history.mako",
-                                         history=history_dictionary, hdas=hda_dictionaries,
-                                         show_deleted=show_deleted, show_hidden=show_hidden )
+            history=history_dictionary, contents=content_dictionaries,
+            show_deleted=show_deleted, show_hidden=show_hidden )
 
     # ---- Dataset display / editing ----------------------------------------
     @web.expose

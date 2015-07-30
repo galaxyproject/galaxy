@@ -167,7 +167,7 @@ a.btn {
     var hasMasthead  = ${ 'true' if use_panels else 'false' },
         userIsOwner  = ${ 'true' if user_is_owner else 'false' },
         historyJSON  = ${ h.dumps( history ) },
-        hdaJSON      = ${ h.dumps( hdas ) },
+        contentsJSON = ${ h.dumps( contents ) },
         panelToUse   = ( userIsOwner )?
 //TODO: change class names
             ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanelEdit' }):
@@ -190,11 +190,11 @@ a.btn {
             if( hasMasthead ){
                 $( '#center' ).css( 'overflow', 'auto' );
             }
-     
+
             var panelClass = panelMod[ panelToUse.className ],
                 // history module is already in the dpn chain from the panel. We can re-scope it here.
                 historyModel = require( 'mvc/history/history-model' ),
-                history = new historyModel.History( historyJSON, hdaJSON );
+                history = new historyModel.History( historyJSON, contentsJSON );
 
             window.historyPanel = new panelClass({
                 show_deleted    : ${show_deleted_json},

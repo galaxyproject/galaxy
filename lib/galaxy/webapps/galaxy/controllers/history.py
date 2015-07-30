@@ -562,7 +562,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         unencoded_history_id = trans.history.id
         if id:
             unencoded_history_id = self.decode_id( id )
-        history_to_view = self.history_manager.get_accessible( unencoded_history_id, trans.user, current_history=trans.history )
+        history_to_view = self.history_manager.get_accessible( unencoded_history_id, trans.user,
+            current_history=trans.history )
 
         history_dictionary = self.history_serializer.serialize_to_view( history_to_view,
             view='detailed', user=trans.user, trans=trans )
@@ -570,8 +571,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             'contents', trans=trans, user=trans.user )
 
         jobs = ( trans.sa_session.query( trans.app.model.Job )
-                 .filter( trans.app.model.Job.user == history_to_view.user )
-                 .filter( trans.app.model.Job.history_id == unencoded_history_id ) ).all()
+            .filter( trans.app.model.Job.user == history_to_view.user )
+            .filter( trans.app.model.Job.history_id == unencoded_history_id ) ).all()
         jobs = map( lambda j: self.encode_all_ids( trans, j.to_dict( 'element' ), True ), jobs )
 
         tools = {}
@@ -584,7 +585,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             tools[ tool_id ] = tool.to_dict( trans, io_details=True, link_details=True )
 
         return trans.fill_template( "history/structure.mako", historyId=history_dictionary[ 'id' ],
-                                    history=history_dictionary, hdas=contents, jobs=jobs, tools=tools, **kwargs )
+            history=history_dictionary, contents=contents, jobs=jobs, tools=tools, **kwargs )
 
     @web.expose
     def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):
@@ -624,7 +625,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             return trans.show_error_message( error_msg, use_panels=use_panels )
 
         return trans.fill_template_mako( "history/view.mako",
-            history=history_dictionary, hdas=contents, user_is_owner=user_is_owner,
+            history=history_dictionary, contents=contents, user_is_owner=user_is_owner,
             show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
     @web.expose
@@ -697,7 +698,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         #    dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
 
         return trans.stream_template_mako( "history/display.mako", item=history, item_data=[],
-            user_is_owner=user_is_owner, history_dict=history_dictionary, hda_dicts=contents,
+            user_is_owner=user_is_owner, history_dict=history_dictionary, content_dicts=contents,
             user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     # ......................................................................... sharing & publishing

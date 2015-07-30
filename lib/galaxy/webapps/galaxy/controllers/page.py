@@ -765,7 +765,7 @@ class PageController( BaseUIController, SharableMixin,
             item=history,
             user_is_owner=user_is_owner,
             history_dict=history_dictionary,
-            hda_dicts=contents )
+            content_dicts=contents )
         return filled
 
     def _get_embedded_visualization_html( self, trans, id ):
