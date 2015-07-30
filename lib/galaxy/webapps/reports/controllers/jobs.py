@@ -288,7 +288,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         if "entries" in kwd:
             entries = int(kwd.get( 'entries' ))
         else:
-            entries = 50
+            entries = 25
         limit = entries * 4
 
         if "offset" in kwd:

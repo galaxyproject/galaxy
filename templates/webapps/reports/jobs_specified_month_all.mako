@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline" />
+<%namespace file="/spark_base.mako" import="make_sparkline" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 <%namespace file="/page_base.mako" import="get_pages, get_entry_selector" />
 
@@ -8,7 +8,6 @@
     ${render_msg( message, 'done' )}
 %endif
 
-${jqs_style()}
 ${get_css()}
 
 <!--jobs_specified_month_all.mako-->

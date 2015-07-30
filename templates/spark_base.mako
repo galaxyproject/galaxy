@@ -1,13 +1,3 @@
-<%def name="jqs_style()">
-    <style>
-    .jqstooltip {
-        -webkit-box-sizing: content-box;
-        -moz-box-sizing: content-box;
-        box-sizing: content-box;
-    }
-    </style>
-</%def>
-
 <%def name="make_spark_settings( controller, action, limit, sort_id, order, time_period )">
     <div id="spark_time_select">
         <form method="post" controller=${controller} action=${action}>

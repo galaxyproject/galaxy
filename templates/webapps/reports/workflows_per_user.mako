@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/spark_base.mako" import="jqs_style, make_sparkline, make_spark_settings" />
+<%namespace file="/spark_base.mako" import="make_sparkline, make_spark_settings" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 <%!
     import re
@@ -11,7 +11,6 @@
     ${render_msg( message, 'done' )}
 %endif
 
-${jqs_style()}
 ${get_css()}
 
 <div class="toolForm">
