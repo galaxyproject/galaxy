@@ -31,7 +31,6 @@
                 opts.onchange(e.dataTransfer.files);
                 e.preventDefault();
             }
-            return false;
         });
         el.on('dragover',  function (e) {
             e.preventDefault();
@@ -54,7 +53,6 @@
         Handles the upload queue and events such as drag/drop etc.
     */
     $.fn.uploadbox = function(options) {
-
         // default options
         var default_opts = {
             url             : '',
@@ -306,7 +304,6 @@
 
         // stop upload process
         function stop() {
-            // request stop
             queue_stop = true;
         }
 
