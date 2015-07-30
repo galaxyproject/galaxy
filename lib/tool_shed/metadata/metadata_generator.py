@@ -39,7 +39,7 @@ class MetadataGenerator( object ):
                 self.changeset_revision = self.repository.changeset_revision
             else:
                 self.changeset_revision = changeset_revision
-                
+
             if repository_clone_url is None and self.repository is not None:
                 self.repository_clone_url = common_util.generate_clone_url_for_installed_repository( self.app, self.repository )
             else:
@@ -296,7 +296,7 @@ class MetadataGenerator( object ):
         always be self.repository.repo_path( self.app ) (it could be an absolute path to a temporary
         directory containing a clone).  If it is an absolute path, the value of self.relative_install_dir
         must contain repository.repo_path( self.app ).
-    
+
         The value of self.persist will be True when the installed repository contains a valid
         tool_data_table_conf.xml.sample file, in which case the entries should ultimately be
         persisted to the file referred to by self.app.config.shed_tool_data_table_config.
@@ -341,7 +341,7 @@ class MetadataGenerator( object ):
             files_dir = self.relative_install_dir
             if self.shed_config_dict.get( 'tool_path' ):
                 files_dir = os.path.join( self.shed_config_dict[ 'tool_path' ], files_dir )
-            self.app.config.tool_data_path = work_dir #FIXME: Thread safe?
+            self.app.config.tool_data_path = work_dir  # FIXME: Thread safe?
             self.app.config.tool_data_table_config_path = work_dir
         # Handle proprietary datatypes, if any.
         datatypes_config = hg_util.get_config_from_disk( suc.DATATYPES_CONFIG_FILENAME, files_dir )
@@ -471,7 +471,7 @@ class MetadataGenerator( object ):
                                                              data_manager_config,
                                                              metadata_dict,
                                                              shed_config_dict=self.shed_config_dict )
-    
+
         if readme_files:
             metadata_dict[ 'readme_files' ] = readme_files
         # This step must be done after metadata for tools has been defined.
@@ -484,7 +484,7 @@ class MetadataGenerator( object ):
             if error_message:
                 self.invalid_file_tups.append( ( rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME, error_message ) )
         if invalid_tool_configs:
-            metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
+            metadata_dict[ 'invalid_tools' ] = invalid_tool_configs
         self.metadata_dict = metadata_dict
         # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
         self.app.config.tool_data_path = original_tool_data_path
@@ -536,7 +536,7 @@ class MetadataGenerator( object ):
                                 # Since we're inside an <actions_group> tag set, inspect the actions_elem to see if a complex
                                 # repository dependency is defined.  By definition, complex repository dependency definitions
                                 # contained within the last <actions> tag set within an <actions_group> tag set will have the
-                                # value of "only_if_compiling_contained_td" set to True in 
+                                # value of "only_if_compiling_contained_td" set to True in
                                 for action_elem in actions_elem:
                                     if action_elem.tag == 'package':
                                         # <package name="libgtextutils" version="0.6">
@@ -696,7 +696,7 @@ class MetadataGenerator( object ):
                           name=tool.name,
                           version=tool.version,
                           description=tool.description,
-                          version_string_cmd = tool.version_string_cmd,
+                          version_string_cmd=tool.version_string_cmd,
                           tool_config=tool_config,
                           tool_type=tool.tool_type,
                           requirements=tool_requirements,
@@ -719,14 +719,13 @@ class MetadataGenerator( object ):
             # Keep a copy of the original tool dependencies dictionary and the list of tool
             # dictionaries in the metadata.
             original_valid_tool_dependencies_dict = original_repository_metadata.get( 'tool_dependencies', None )
-            original_invalid_tool_dependencies_dict = original_repository_metadata.get( 'invalid_tool_dependencies', None )
         else:
             original_valid_tool_dependencies_dict = None
-            original_invalid_tool_dependencies_dict = None
         tree, error_message = xml_util.parse_xml( tool_dependencies_config )
         if tree is None:
             return metadata_dict, error_message
         root = tree.getroot()
+
         class RecurserValueStore( object ):
             pass
         rvs = RecurserValueStore()
@@ -735,7 +734,9 @@ class MetadataGenerator( object ):
         valid_repository_dependency_tups = []
         invalid_repository_dependency_tups = []
         description = root.get( 'description' )
+
         def _check_elem_for_dep( elems ):
+            error_messages = []
             for elem in elems:
                 if elem.tag == 'package':
                     rvs.valid_tool_dependencies_dict, rvs.invalid_tool_dependencies_dict, \
@@ -764,12 +765,13 @@ class MetadataGenerator( object ):
                                   only_if_compiling_contained_td,
                                   message )
                             invalid_repository_dependency_tups.append( repository_dependency_tup )
-                            error_message = '%s  %s' % ( error_message, message )
+                            error_messages.append('%s  %s' % ( error_message, message ) )
                 elif elem.tag == 'set_environment':
                     rvs.valid_tool_dependencies_dict = \
                         self.generate_environment_dependency_metadata( elem, rvs.valid_tool_dependencies_dict )
-                _check_elem_for_dep( elem )
-        _check_elem_for_dep( root )
+                error_messages += _check_elem_for_dep( elem )
+            return error_messages
+        error_message = "\n".join([error_message] + _check_elem_for_dep( root ))
         if rvs.valid_tool_dependencies_dict:
             if original_valid_tool_dependencies_dict:
                 # We're generating metadata on an update pulled to a tool shed repository installed
@@ -960,7 +962,7 @@ class MetadataGenerator( object ):
                     user = self.sa_session.query( self.app.model.User ) \
                                           .filter( self.app.model.User.table.c.username == owner ) \
                                           .one()
-                except Exception, e:
+                except Exception:
                     error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, " % \
                         ( toolshed, name, owner )
                     error_message += "changeset revision %s because the owner is invalid.  " % changeset_revision
@@ -969,9 +971,9 @@ class MetadataGenerator( object ):
                     return repository_dependency_tup, is_valid, error_message
                 try:
                     repository = self.sa_session.query( self.app.model.Repository ) \
-                                                 .filter( and_( self.app.model.Repository.table.c.name == name,
-                                                                self.app.model.Repository.table.c.user_id == user.id ) ) \
-                                                 .one()
+                        .filter( and_( self.app.model.Repository.table.c.name == name,
+                                       self.app.model.Repository.table.c.user_id == user.id ) ) \
+                        .one()
                 except:
                     error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, " % \
                         ( toolshed, name, owner )
@@ -980,7 +982,7 @@ class MetadataGenerator( object ):
                     is_valid = False
                     return repository_dependency_tup, is_valid, error_message
                 repo = hg_util.get_repo_for_repository( self.app, repository=repository, repo_path=None, create=False )
-                
+
                 # The received changeset_revision may be None since defining it in the dependency definition is optional.
                 # If this is the case, the default will be to set its value to the repository dependency tip revision.
                 # This probably occurs only when handling circular dependency definitions.
@@ -1095,22 +1097,11 @@ class MetadataGenerator( object ):
             repository_dependencies_dict = metadata.get( 'invalid_repository_dependencies', None )
         for repository_dependency_tup in repository_dependency_tups:
             if is_valid:
-                tool_shed, \
-                name, \
-                owner, \
-                changeset_revision, \
-                prior_installation_required, \
-                only_if_compiling_contained_td \
-                    = repository_dependency_tup
+                ( tool_shed, name, owner, changeset_revision, prior_installation_required,
+                  only_if_compiling_contained_td) = repository_dependency_tup
             else:
-                tool_shed, \
-                name, \
-                owner, \
-                changeset_revision, \
-                prior_installation_required, \
-                only_if_compiling_contained_td, \
-                error_message \
-                    = repository_dependency_tup
+                ( tool_shed, name, owner, changeset_revision, prior_installation_required,
+                  only_if_compiling_contained_td, error_message ) = repository_dependency_tup
             if repository_dependencies_dict:
                 repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
                 for repository_dependency_tup in repository_dependency_tups:
