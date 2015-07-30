@@ -37,30 +37,25 @@ def reverse_complement( s ):
 def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
     # Checks for the presence of *.nib files matching the dbkey within alignseq.loc
     seq_file = "%s/alignseq.loc" % GALAXY_DATA_INDEX_DIR
-    seq_path = ''
-    for line in open( seq_file ):
+    for line in open(seq_file):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ) and line.startswith( 'seq' ):
             fields = line.split( '\t' )
             if len( fields) >= 3 and fields[1] == dbkey:
                 print "Using *.nib genomic reference files"
-                seq_path = fields[2].strip()
-                break
-
-    # If no entry in aligseq.loc was found, check for the presence of a *.2bit file in twobit.loc
-    if seq_path == '':
-        seq_file = "%s/twobit.loc" % GALAXY_DATA_INDEX_DIR
-        seq_path = ''
-        for line in open( seq_file ):
-            line = line.rstrip( '\r\n' )
-            if line and not line.startswith( "#" ) and line.endswith( '.2bit' ):
-                fields = line.split( '\t' )
-                if len(fields) >= 2 and fields[0] == dbkey:
-                    print "Using a *.2bit genomic reference file"
-                    seq_path = fields[1].strip()
-                    break
+                return fields[2].strip()
     
-    return seq_path
+    # If no entry in aligseq.loc was found, check for the presence of a *.2bit file in twobit.loc
+    seq_file = "%s/twobit.loc" % GALAXY_DATA_INDEX_DIR
+    for line in open( seq_file ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( "#" ) and line.endswith( '.2bit' ):
+            fields = line.split( '\t' )
+            if len(fields) >= 2 and fields[0] == dbkey:
+                print "Using a *.2bit genomic reference file"
+                return fields[1].strip()
+    
+    return ''
         
 def __main__():
     #
