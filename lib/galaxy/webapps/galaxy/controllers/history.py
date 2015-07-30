@@ -1076,21 +1076,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     # ......................................................................... actions/orig. async
     @web.expose
-    def delete_hidden_datasets( self, trans ):
-        """
-        This method deletes all hidden datasets in the current history.
-        """
-        count = 0
-        for hda in trans.history.datasets:
-            if not hda.visible and not hda.deleted and not hda.purged:
-                hda.mark_deleted()
-                count += 1
-                trans.sa_session.add( hda )
-                trans.log_event( "HDA id %s has been deleted" % hda.id )
-        trans.sa_session.flush()
-        return trans.show_ok_message( "%d hidden datasets have been deleted" % count, refresh_frames=['history'] )
-
-    @web.expose
     def purge_deleted_datasets( self, trans ):
         count = 0
         if trans.app.config.allow_user_dataset_purge:
@@ -1162,21 +1147,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         trans.get_or_create_default_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
-
-    @web.expose
-    def unhide_datasets( self, trans, current=False, ids=None ):
-        """Unhide the datasets in the active history -- this does not require a logged in user."""
-        if not ids and galaxy.util.string_as_bool( current ):
-            histories = [ trans.get_history() ]
-            refresh_frames = ['history']
-        else:
-            raise NotImplementedError( "You can currently only unhide all the datasets of the current history." )
-        for history in histories:
-            history.unhide_datasets()
-            trans.sa_session.add( history )
-        trans.sa_session.flush()
-        return trans.show_ok_message( "Your datasets have been unhidden.", refresh_frames=refresh_frames )
-        # TODO: used in index.mako
 
     @web.expose
     def resume_paused_jobs( self, trans, current=False, ids=None ):
@@ -1495,8 +1465,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.expose
     @web.require_login( "switch to a history" )
     def switch_to_history( self, trans, hist_id=None ):
-        """
-        """
+        """Change the current user's current history to one with `hist_id`."""
+        # remains for backwards compat
         self.set_as_current( trans, id=hist_id )
         return trans.response.send_redirect( url_for( "/" ) )
 
@@ -1505,16 +1475,14 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # TODO: override of base ui controller?
 
     def history_data( self, trans, history ):
-        """
-        """
+        """Return the given history in a serialized, dictionary form."""
         return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
 
     # TODO: combine these next two - poss. with a redirect flag
     # @web.require_login( "switch to a history" )
     @web.json
     def set_as_current( self, trans, id ):
-        """
-        """
+        """Change the current user's current history to one with `id`."""
         try:
             history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
             trans.set_history( history )
@@ -1525,15 +1493,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     @web.json
     def current_history_json( self, trans ):
-        """
-        """
+        """Return the current user's current history in a serialized, dictionary form."""
         history = trans.get_history( create=True )
         return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
 
     @web.json
     def create_new_current( self, trans, name=None ):
-        """
-        """
+        """Create a new, current history for the current user"""
         new_history = trans.new_history( name )
         return self.history_serializer.serialize_to_view( new_history, view='detailed', user=trans.user, trans=trans )
     # TODO: /history/current to do all of the above: if ajax, return json; if post, read id and set to current

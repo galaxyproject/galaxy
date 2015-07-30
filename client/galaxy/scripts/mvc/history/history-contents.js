@@ -134,11 +134,23 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
             return item.isVisible( show_deleted, show_hidden );
         }));
 
-        _.each( filters, function( filter_fn ){
-            if( !_.isFunction( filter_fn ) ){ return; }
-            filteredHdas = new HistoryContents( filteredHdas.filter( filter_fn ) );
+        _.each( filters, function( filterFn ){
+            if( !_.isFunction( filterFn ) ){ return; }
+            filteredHdas = new HistoryContents( filteredHdas.filter( filterFn ) );
         });
         return filteredHdas;
+    },
+
+    /** return a new contents collection of only hidden items */
+    hidden : function(){
+        function filterFn( c ){ return c.hidden(); }
+        return new HistoryContents( this.filter( filterFn ) );
+    },
+
+    /** return a new contents collection of only hidden items */
+    deleted : function(){
+        function filterFn( c ){ return c.get( 'deleted' ); }
+        return new HistoryContents( this.filter( filterFn ) );
     },
 
     /** return true if any contents don't have details */
