@@ -51,13 +51,10 @@ return Backbone.View.extend({
         // add upload item
         this.setElement(this._template(options));
 
-        // link item
-        var it = this.$el;
-
         // append popup to settings icon
         this.settings = new Popover.View({
             title       : 'Upload configuration',
-            container   : it.find('#settings'),
+            container   : this.$('#settings'),
             placement   : 'bottom'
         });
 
@@ -72,7 +69,7 @@ return Backbone.View.extend({
                 self.app.updateGenome(genome, true);
             },
             data: self.app.list_genomes,
-            container: it.find('#genome'),
+            container: this.$('#genome'),
             value: default_genome
         });
 
@@ -90,7 +87,7 @@ return Backbone.View.extend({
                 self.app.updateExtension(extension, true);
             },
             data: self.app.list_extensions,
-            container: it.find('#extension'),
+            container: this.$('#extension'),
             value: default_extension
         });
 
@@ -102,10 +99,10 @@ return Backbone.View.extend({
         //
 
         // handle click event
-        it.find('#symbol').on('click', function() { self._removeRow(); });
+        this.$('#symbol').on('click', function() { self._removeRow(); });
 
         // handle extension info popover
-        it.find('#extension-info').on('click' , function(e) {
+        this.$('#extension-info').on('click' , function(e) {
             self.app.showExtensionInfo({
                 $el         : $(e.target),
                 title       : self.select_extension.text(),
@@ -114,11 +111,11 @@ return Backbone.View.extend({
         }).on('mousedown', function(e) { e.preventDefault(); });
 
         // handle settings popover
-        it.find('#settings').on('click' , function(e) { self._showSettings(); })
+        this.$('#settings').on('click' , function(e) { self._showSettings(); })
                             .on('mousedown', function(e) { e.preventDefault(); });
 
         // handle text editing event
-        it.find('#text-content').on('keyup', function(e) {
+        this.$('#text-content').on('keyup', function(e) {
             self.model.set('url_paste', $(e.target).val());
             self.model.set('file_size', $(e.target).val().length);
         });
@@ -159,17 +156,14 @@ return Backbone.View.extend({
         var file_size   = this.model.get('file_size');
         var file_mode   = this.model.get('file_mode');
 
-        // link item
-        var it = this.$el;
-
         // update title
-        it.find('#title').html(file_name);
+        this.$('#title').html(file_name);
 
         // update info
-        it.find('#size').html(Utils.bytesToString (file_size));
+        this.$('#size').html(Utils.bytesToString (file_size));
 
         // remove mode class
-        it.find('#mode')
+        this.$('#mode')
             .removeClass()
             .addClass('mode')
             .addClass('text-primary');
@@ -177,37 +171,35 @@ return Backbone.View.extend({
         // activate text field if file is new
         if (file_mode == 'new') {
             // get text component
-            var text = it.find('#text');
+            var text = this.$('#text');
 
             // get padding
             var padding = this.options.padding;
 
             // get dimensions
-            var width = it.width() - 2 * padding;
-            var height = it.height() - padding;
+            var width = this.$el.width() - 2 * padding;
+            var height = this.$el.height() - padding;
 
             // set dimensions
             text.css('width', width + 'px');
             text.css('top', height + 'px');
-            it.height(height + text.height() + 2 * padding);
+            this.$el.height(height + text.height() + 2 * padding);
 
             // show text field
             text.show();
 
             // update icon
-            it.find('#mode').addClass('fa fa-pencil');
+            this.$('#mode').addClass('fa fa-pencil');
         }
 
         // file from local disk
         if (file_mode == 'local') {
-            // update icon
-            it.find('#mode').addClass('fa fa-laptop');
+            this.$('#mode').addClass('fa fa-laptop');
         }
 
         // file from ftp
         if (file_mode == 'ftp') {
-            // update icon
-            it.find('#mode').addClass('fa fa-code-fork');
+            this.$('#mode').addClass('fa fa-code-fork');
         }
     },
 
@@ -240,72 +232,59 @@ return Backbone.View.extend({
         // write error message
         var info = this.model.get('info');
         if (info) {
-            this.$el.find('#info').html('<strong>Failed: </strong>' + info).show();
+            this.$('#info').html('<strong>Failed: </strong>' + info).show();
         } else {
-            this.$el.find('#info').hide();
+            this.$('#info').hide();
         }
     },
 
     // progress
     _refreshPercentage : function() {
         var percentage = parseInt(this.model.get('percentage'));
-        this.$el.find('.progress-bar').css({ width : percentage + '%' });
+        this.$('.progress-bar').css({ width : percentage + '%' });
         if (percentage != 100)
-            this.$el.find('#percentage').html(percentage + '%');
+            this.$('#percentage').html(percentage + '%');
         else
-            this.$el.find('#percentage').html('Adding to history...');
+            this.$('#percentage').html('Adding to history...');
     },
 
     // status
     _refreshStatus : function() {
-        // get element
-        var it = this.$el;
-
         // identify new status
         var status = this.model.get('status');
-        var status_class = this.status_classes[status];
 
         // identify symbol and reset classes
-        var sy = this.$el.find('#symbol');
-        sy.removeClass();
+        this.$('#symbol').removeClass().addClass(this.status_classes[status]);
 
-        // set new status class
-        sy.addClass(status_class);
+        // default fields
+        this.$('#text-content').attr('disabled', status != 'init');
 
-        // enable form fields
+        // enable/disable row fields
         if (status == 'init') {
-            // select fields
             this.select_genome.enable();
             this.select_extension.enable();
-
-            // default fields
-            it.find('#text-content').attr('disabled', false);
         } else {
-            // select fields
             this.select_genome.disable();
             this.select_extension.disable();
-
-            // default fields
-            it.find('#text-content').attr('disabled', true);
         }
 
         // success
         if (status == 'success') {
-            it.addClass('success');
-            it.find('#percentage').html('100%');
+            this.$el.addClass('success');
+            this.$('#percentage').html('100%');
         }
 
         // error
         if (status == 'error') {
-            it.addClass('danger');
-            it.find('.progress').remove();
+            this.$el.addClass('danger');
+            this.$('.progress').remove();
         }
     },
 
     // refresh size
     _refreshFileSize: function() {
         var count = this.model.get('file_size');
-        this.$el.find('#size').html(Utils.bytesToString (count));
+        this.$('#size').html(Utils.bytesToString (count));
     },
 
     //
@@ -341,7 +320,7 @@ return Backbone.View.extend({
     _template: function(options) {
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
-                        '<div class="name-column">' +
+                        '<div class="title-column">' +
                             '<div id="mode"/>' +
                             '<div id="title" class="title"/>' +
                             '<div id="text" class="text">' +

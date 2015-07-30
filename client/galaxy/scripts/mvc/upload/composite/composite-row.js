@@ -22,11 +22,11 @@ return Backbone.View.extend({
 
     // states
     status_classes : {
-        init    : 'upload-icon fa fa-exclamation',
-        queued  : 'upload-icon fa fa-spinner fa-spin',
-        running : 'upload-icon fa fa-spinner fa-spin',
-        success : 'upload-icon fa fa-check',
-        error   : 'upload-icon fa fa-exclamation-triangle'
+        init    : 'status fa fa-exclamation text-primary',
+        ready   : 'status fa fa-check text-success',
+        running : 'status fa fa-spinner fa-spin',
+        success : 'status fa fa-check',
+        error   : 'status fa fa-exclamation-triangle'
     },
 
     // source options
@@ -57,8 +57,11 @@ return Backbone.View.extend({
 
         // build upload functions
         var uploadinput = it.uploadinput({
-            onchange: function(value) {
-                console.log(value);
+            onchange: function(files) {
+                if (files && files.length > 0) {
+                    self.model.set('file_name', files[0].name);
+                    self.model.set('file_size', files[0].size);
+                }
             }
         });
 
@@ -110,6 +113,9 @@ return Backbone.View.extend({
         this.model.on('change:info', function() {
             self._refreshInfo();
         });
+        this.model.on('change:file_name', function() {
+            self._refreshFileName();
+        });
         this.model.on('change:file_size', function() {
             self._refreshFileSize();
         });
@@ -129,42 +135,39 @@ return Backbone.View.extend({
         var file_size   = this.model.get('file_size');
         var file_mode   = this.model.get('file_mode');
 
-        // link item
-        var it = this.$el;
-
         // update title, description etc.
-        it.find('#title').html(file_name);
-        it.find('#description').html(file_desc);
-        it.find('#size').html(Utils.bytesToString (file_size));
+        this.$('#file_name').html(file_name);
+        this.$('#file_desc').html(file_desc);
+        this.$('#file_size').html(Utils.bytesToString (file_size));
 
         // remove mode class
-        it.find('#mode')
+        this.$('#status')
             .removeClass()
-            .addClass('mode');
+            .addClass('status');
 
         // activate text field if file is new
         if (file_mode == 'new') {
             // get text component
-            var text = it.find('#text');
+            var text = this.$('#text');
 
             // get padding
             var padding = this.options.padding;
 
             // get dimensions
-            var width = it.width() - 2 * padding;
-            var height = it.height() - padding;
+            var width = this.$el.width() - 2 * padding;
+            var height = this.$el.height() - padding;
 
             // set dimensions
             text.css('width', width + 'px');
             text.css('top', height + 'px');
-            it.height(height + text.height() + 2 * padding);
+            this.$el.height(height + text.height() + 2 * padding);
 
             // show text field
             text.show();
         }
 
         // file from ftp
-        it.find('#mode').addClass('fa fa-exclamation text-primary');
+        this.$('#status').removeClass().addClass(this.status_classes.init);
     },
 
     // remove
@@ -182,70 +185,57 @@ return Backbone.View.extend({
         // write error message
         var info = this.model.get('info');
         if (info) {
-            this.$el.find('#info').html('<strong>Failed: </strong>' + info).show();
+            this.$('#info').html('<strong>Failed: </strong>' + info).show();
         } else {
-            this.$el.find('#info').hide();
+            this.$('#info').hide();
         }
     },
 
     // progress
     _refreshPercentage : function() {
         var percentage = parseInt(this.model.get('percentage'));
-        this.$el.find('.progress-bar').css({ width : percentage + '%' });
-        if (percentage != 100)
-            this.$el.find('#percentage').html(percentage + '%');
-        else
-            this.$el.find('#percentage').html('Adding to history...');
+        this.$('.progress-bar').css({ width : percentage + '%' });
+        if (percentage != 100) {
+            this.$('#percentage').html(percentage + '%');
+        } else {
+            this.$('#percentage').html('Adding to history...');
+        }
     },
 
     // status
     _refreshStatus : function() {
-        // get element
-        var it = this.$el;
-
         // identify new status
         var status = this.model.get('status');
-        var status_class = this.status_classes[status];
 
         // identify symbol and reset classes
-        var sy = this.$el.find('#symbol');
-        sy.removeClass();
+        this.$('#status').removeClass().addClass(this.status_classes[status]);
 
-        // set new status class
-        sy.addClass(status_class);
-
-        // enable form fields
-        if (status == 'init') {
-            // select fields
-            this.select_source.enable();
-
-            // default fields
-            it.find('#text-content').attr('disabled', false);
-        } else {
-            // select fields
-            this.select_source.disable();
-
-            // default fields
-            it.find('#text-content').attr('disabled', true);
-        }
+        // enable/disable row fields
+        this.$('#text-content').attr('disabled', status != 'init');
 
         // success
         if (status == 'success') {
-            it.addClass('success');
-            it.find('#percentage').html('100%');
+            this.$el.addClass('success');
+            this.$('#percentage').html('100%');
         }
 
         // error
         if (status == 'error') {
-            it.addClass('danger');
-            it.find('.progress').remove();
+            this.$el.addClass('danger');
+            this.$('.progress').remove();
         }
+    },
+
+    // refresh file name
+    _refreshFileName: function() {
+        this.$('#file_name').html(this.model.get('file_name'));
     },
 
     // refresh size
     _refreshFileSize: function() {
-        var count = this.model.get('file_size');
-        this.$el.find('#size').html(Utils.bytesToString (count));
+        var file_size = this.model.get('file_size');
+        this.$('#file_size').html(Utils.bytesToString (file_size));
+        this.model.set('status', (file_size > 0 && 'ready') || 'init');
     },
 
     // attach file info popup
@@ -266,19 +256,17 @@ return Backbone.View.extend({
     _template: function(options) {
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
-                        '<div id="mode"/>' +
+                        '<div id="status"/>' +
                     '</td>' +
                     '<td>' +
                         '<div id="source" class="source"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div class="name-column">' +
-                            '<div id="description" class="title"/>' +
-                        '</div>' +
+                        '<div id="file_desc" class="title"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div class="name-column">' +
-                            '<div id="title" class="title"/>' +
+                        '<div class="title-column">' +
+                            '<div id="file_name" class="title"/>' +
                             '<div id="text" class="text">' +
                                 '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
                                 '<textarea id="text-content" class="text-content form-control"></textarea>' +
@@ -286,7 +274,7 @@ return Backbone.View.extend({
                         '</div>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="size" class="size"/>' +
+                        '<div id="file_size" class="size"/>' +
                     '</td>' +
                     '<td><div id="settings" class="upload-icon-button fa fa-gear"/></td>' +
                     '<td>' +
