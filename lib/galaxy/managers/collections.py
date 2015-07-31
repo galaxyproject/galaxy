@@ -50,11 +50,13 @@ class DatasetCollectionManager( object ):
         element_identifiers=None,
         elements=None,
         implicit_collection_info=None,
+        trusted_identifiers=None,  # Trust preloaded element objects
     ):
         """
         """
         # Trust embedded, newly created objects created by tool subsystem.
-        trusted_identifiers = implicit_collection_info is not None
+        if trusted_identifiers is None:
+            trusted_identifiers = implicit_collection_info is not None
 
         if element_identifiers and not trusted_identifiers:
             validate_input_element_identifiers( element_identifiers )
@@ -279,7 +281,9 @@ class DatasetCollectionManager( object ):
             raise MessageException( "Dataset collection element definition (%s) not dictionary-like." % element_identifier )
         encoded_id = element_identifier.get( 'id', None )
         if not src_type or not encoded_id:
-            raise RequestParameterInvalidException( "Problem decoding element identifier %s" % element_identifier )
+            message_template = "Problem decoding element identifier %s - must contain a 'src' and a 'id'."
+            message = message_template % element_identifier
+            raise RequestParameterInvalidException( message )
 
         if src_type == 'hda':
             decoded_id = int( trans.app.security.decode_id( encoded_id ) )
