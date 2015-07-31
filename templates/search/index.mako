@@ -19,7 +19,7 @@
         border-top: solid #999 1px;
         border-right: none;
         word-wrap: break-word;
-        background: @state-default-bg;
+        background: #EEE;
     }
     div.historyItem .state-icon {
         display: inline-block;
