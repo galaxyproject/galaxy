@@ -22,8 +22,8 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
+from galaxy.util import nice_size
 from galaxy.web import url_for
-from . import data
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
@@ -341,7 +341,7 @@ class SNPMatrix(Rgenetics):
     def set_peek( self, dataset, **kwd ):
         if not dataset.dataset.purged:
             dataset.peek = "Binary RGenetics file"
-            dataset.blurb = data.nice_size( dataset.get_size() )
+            dataset.blurb = nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
