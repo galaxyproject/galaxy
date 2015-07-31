@@ -1,8 +1,9 @@
 define([
     "mvc/history/history-contents",
+    "utils/utils",
     "mvc/base-mvc",
     "utils/localization"
-], function( HISTORY_CONTENTS, BASE_MVC, _l ){
+], function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
@@ -94,6 +95,26 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     errorHandler : function( model, xhr, options, msg, details ){
         // clear update timeout on model err
         this.clearUpdateTimeout();
+    },
+
+    /** convert size in bytes to a more human readable version */
+    nice_size : function(){
+        return UTILS.bytesToString( this.get( 'size' ), true, 2 );
+    },
+
+    /** override to add nice_size */
+    toJSON : function(){
+        return _.extend( Backbone.Model.prototype.toJSON.call( this ), {
+            nice_size : this.nice_size()
+        });
+    },
+
+    /** override to allow getting nice_size */
+    get : function( key ){
+        if( key === 'nice_size' ){
+            return this.nice_size();
+        }
+        return Backbone.Model.prototype.get.apply( this, arguments );
     },
 
     // ........................................................................ common queries
