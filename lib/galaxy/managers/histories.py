@@ -7,6 +7,7 @@ created (or copied) by users over the course of an analysis.
 import operator
 
 from galaxy import model
+from galaxy.model.orm.now import now as sql_now
 from galaxy.managers import sharable
 from galaxy.managers import deletable
 from galaxy.managers import containers
@@ -114,6 +115,8 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         """
         # TODO: trans
         trans.set_history( history )
+        # update/touch update_time when setting a history as current
+        self.update( history, dict( update_time=( sql_now() ) ) )
         return history
 
     def set_current_by_id( self, trans, history_id ):
