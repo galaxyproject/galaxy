@@ -70,8 +70,8 @@
             border-top: 4px solid #DDDDDD;
         }
 
-        ## Make sure that history items and workflow steps do not get too long.
-        .historyItemContainer, .toolForm {
+        ## Make sure that workflow steps do not get too long.
+        .toolForm {
             max-width: 500px;
         }
 
@@ -81,12 +81,6 @@
             margin-bottom: 10px;
         }
 
-        ## Add border to history item container.
-        .historyItemContainer {
-            padding-right: 3px;
-            border-right-style: solid;
-            border-right-color: #66AA66;
-        }
     </style>
 </%def>
 

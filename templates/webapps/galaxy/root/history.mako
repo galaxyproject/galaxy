@@ -5,6 +5,20 @@
     ${ _( 'Galaxy History' ) }
 </%def>
 
+<%def name="stylesheets()">
+${ parent.stylesheets() }
+<style>
+.historyPage {
+    background: #DFE5F9;
+    color: #333;
+    margin: 5px;
+    border: 0;
+    padding: 0;
+}
+
+</style>
+</%def>
+
 ## -----------------------------------------------------------------------------
 <%def name="javascripts()">
 ${ parent.javascripts() }
