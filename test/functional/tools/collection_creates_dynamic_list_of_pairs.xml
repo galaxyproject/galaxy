@@ -17,6 +17,11 @@
   </inputs>
   <outputs>
     <collection name="list_output" type="list:paired" label="Duplicate List">
+      <!-- Use named regex group to grab pattern
+           <identifier_0>_<identifier_1>.fq. Here identifier_0 is the list
+           identifier in the nested collection and identifier_1 is either
+           forward or reverse (for instance samp1_forward.fq).
+      -->
       <discover_datasets pattern="(?P&lt;identifier_0&gt;[^_]+)_(?P&lt;identifier_1&gt;[^_]+)\.fq" ext="fastqsanger" visible="true" />
     </collection>
   </outputs>

@@ -12,6 +12,11 @@
   </inputs>
   <outputs>
     <collection name="list_output" type="list:list" label="Duplicate List">
+      <!-- Use named regex group to grab pattern
+           <identifier_0>_<identifier_1>.fq. Here identifier_0 is the list
+           identifier of the outer list and identifier_1 is the list identifier
+           of the inner list (for instance oe1_ie2.fq in above example).
+      -->
       <discover_datasets pattern="(?P&lt;identifier_0&gt;[^_]+)_(?P&lt;identifier_1&gt;[^_]+)\.fq" ext="fastqsanger" visible="true" />
     </collection>
   </outputs>
