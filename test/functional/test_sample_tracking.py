@@ -1,11 +1,32 @@
 import galaxy.model
-from galaxy.model.orm import *
-from base.twilltestcase import *
-from base.test_db_util import *
+from base.twilltestcase import TwillTestCase
+from base.test_db_util import get_user, \
+    get_private_role, \
+    admin_user, \
+    regular_user1, \
+    regular_user3, \
+    get_library, \
+    get_role_by_name, \
+    library1, \
+    library2, request2, request1_sample1, \
+    delete_obj, library2_folder3, library2_folder4, \
+    email_notification_sample_states, \
+    role1, get_request_by_name, external_serviceexternal_service, \
+    mark_obj_deleted, delete_request_type_permissions, role2, group1, user_address2, \
+    get_folder, \
+    get_form, \
+    get_group_by_name, \
+    sample_form_layout_grid_name, \
+    request1, request_form_definition1, sample_form_definition1, \
+    request_type1, regular_user2, \
+    get_request_type_by_name, get_user_address, request_form_field_name1, \
+    request_form_field_name2, request_form_field_name3, \
+    request_field_label1, request_field_label2, request_field_label3, \
+    refresh, library1_folder1, user_address1, library2_folder1, library2_folder2
 
 
 class TestFormsAndSampleTracking( TwillTestCase ):
-    # ====== Setup Users, Groups & Roles required for this test suite ========= 
+    # ====== Setup Users, Groups & Roles required for this test suite =========
 
     def test_0000_initiate_users( self ):
         """Ensuring all required user accounts exist"""
@@ -66,7 +87,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         # Due to this bug in twill, we create the role, we bypass the page and visit the URL in the
         # associate_users_and_groups_with_role() method.
         #
-        #create role2
+        # create role2
         name = 'Role2'
         description = 'This is Role2'
         user_ids = [ str( admin_user.id ) ]
@@ -101,8 +122,8 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         # Set permissions on the library, sort for later testing.
         permissions_in = [ 'LIBRARY_ACCESS' ]
         permissions_out = []
-        # Role1 members are: admin_user, regular_user1, regular_user3.  
-        # Each of these users will be permitted for LIBRARY_ACCESS, LIBRARY_ADD on 
+        # Role1 members are: admin_user, regular_user1, regular_user3.
+        # Each of these users will be permitted for LIBRARY_ACCESS, LIBRARY_ADD on
         # library1 and library2.
         for library in [ library1, library2 ]:
             self.library_permissions( self.security.encode_id( library.id ),
@@ -161,9 +182,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         global library2_folder4
         library2_folder4 = get_folder( library2_folder3.id, name, description )
         assert library2_folder4 is not None, 'Problem retrieving library folder named "%s" from the database' % name
-        
+
     #
-    # ====== Form definition test methods ================================================ 
+    # ====== Form definition test methods ================================================
     #
 
     def test_0020_create_request_form_definition( self ):
@@ -203,18 +224,18 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         global request_form_field_name3
         request_form_field_name3 = 'request_form_field3'
         field_dicts = [ dict( label=request_field_label1,
-                              desc='Description of '+request_field_label1,
+                              desc='Description of ' + request_field_label1,
                               type='SelectField',
                               required='optional',
                               selectlist=[ 'option1', 'option2' ],
                               name=request_form_field_name1 ),
                         dict( label=request_field_label2,
-                              desc='Description of '+request_field_label2,
+                              desc='Description of ' + request_field_label2,
                               type='AddressField',
                               required='optional',
                               name=request_form_field_name2 ),
                         dict( label=request_field_label3,
-                              desc='Description of '+request_field_label3,
+                              desc='Description of ' + request_field_label3,
                               type='TextField',
                               required='required',
                               name=request_form_field_name3 ) ]
@@ -266,18 +287,18 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         global sample_field_label3
         sample_field_label3 = 'Sample form field3'
         field_dicts = [ dict( label=sample_field_label1,
-                              desc='Description of '+sample_field_label1,
+                              desc='Description of ' + sample_field_label1,
                               type='SelectField',
                               required='optional',
                               selectlist=[ 'option1', 'option2' ],
                               name='sample_form_field1' ),
                         dict( label=sample_field_label2,
-                              desc='Description of '+sample_field_label2,
+                              desc='Description of ' + sample_field_label2,
                               type='TextField',
                               required='optional',
                               name='sample_form_field2' ),
                         dict( label=sample_field_label3,
-                              desc='Description of '+sample_field_label3,
+                              desc='Description of ' + sample_field_label3,
                               type='TextField',
                               required='required',
                               name='sample_form_field3' ) ]
@@ -303,13 +324,13 @@ class TestFormsAndSampleTracking( TwillTestCase ):
     def test_0040_create_request_type( self ):
         """Testing creating a request_type"""
         name = 'Request type1'
-        sample_states = [  ( 'New', 'Sample entered into the system' ), 
+        sample_states = [  ( 'New', 'Sample entered into the system' ),
                            ( 'Received', 'Sample tube received' ),
-                           ( 'Library Started', 'Sample library preparation' ), 
-                           ( 'Run Started', 'Sequence run in progress' ), 
+                           ( 'Library Started', 'Sample library preparation' ),
+                           ( 'Run Started', 'Sequence run in progress' ),
                            ( 'Done', 'Sequence run complete' ) ]
         self.create_request_type( name,
-                                  name+" description",
+                                  name + " description",
                                   self.security.encode_id( request_form_definition1.id ),
                                   self.security.encode_id( sample_form_definition1.id ),
                                   sample_states,
@@ -341,12 +362,12 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.visit_url( '%s/requests_common/create_request?cntrller=requests&request_type=True' % self.url )
         try:
             self.check_page_for_string( 'There are no request types created for a new request.' )
-            raise AssertionError, 'The request_type %s is accessible by %s when it should be restricted' % ( request_type1.name, regular_user2.email )
+            raise AssertionError( 'The request_type %s is accessible by %s when it should be restricted' % ( request_type1.name, regular_user2.email ) )
         except:
             pass
         self.logout()
         self.login( email=admin_user.email )
-    # ====== Sequencing request test methods - regular user perspective ================ 
+    # ====== Sequencing request test methods - regular user perspective ================
 
     def test_0050_create_request( self ):
         """Testing creating a sequencing request as a regular user"""
@@ -369,9 +390,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         user_address1 = get_user_address( regular_user1, address_dict[ 'short_desc' ] )
         # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change
         # is required for that field.
-        field_value_tuples = [ ( request_form_field_name1, 'option1', False ), 
-                               ( request_form_field_name2, ( str( user_address1.id ), str( user_address1.id ) ), True ), 
-                               ( request_form_field_name3, 'field3 value', False ) ] 
+        field_value_tuples = [ ( request_form_field_name1, 'option1', False ),
+                               ( request_form_field_name2, ( str( user_address1.id ), str( user_address1.id ) ), True ),
+                               ( request_form_field_name3, 'field3 value', False ) ]
         # Create the request
         name = 'Request1'
         desc = 'Request1 Description'
@@ -401,7 +422,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                            strings_not_displayed=[ request1.states.SUBMITTED,
                                                    request1.states.COMPLETE,
                                                    request1.states.REJECTED,
-                                                   'Submit request' ] ) # this button should NOT show up as there are no samples yet
+                                                   'Submit request' ] )  # this button should NOT show up as there are no samples yet
         # check if the request is showing in the 'new' filter
         self.check_request_grid( cntrller='requests',
                                  state=request1.states.NEW,
@@ -418,15 +439,15 @@ class TestFormsAndSampleTracking( TwillTestCase ):
     def test_0060_edit_basic_request_info( self ):
         """Testing editing the basic information and email settings of a sequencing request"""
         # logged in as regular_user1
-        fields = [ ( request_form_field_name1, 'option2' ), 
-                   ( request_form_field_name2, str( user_address1.id ) ), 
+        fields = [ ( request_form_field_name1, 'option2' ),
+                   ( request_form_field_name2, str( user_address1.id ) ),
                    ( request_form_field_name3, 'field3 value (edited)' ) ]
-        new_name=request1.name + ' (Renamed)'
-        new_desc=request1.desc + ' (Re-described)'
+        new_name = request1.name + ' (Renamed)'
+        new_desc = request1.desc + ' (Re-described)'
         self.edit_basic_request_info( request_id=self.security.encode_id( request1.id ),
                                       cntrller='requests',
                                       name=request1.name,
-                                      new_name=new_name, 
+                                      new_name=new_name,
                                       new_desc=new_desc,
                                       new_fields=fields,
                                       strings_displayed=[ 'Edit sequencing request "%s"' % request1.name ],
@@ -434,7 +455,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         refresh( request1 )
         # define the sample states when we want an email notification
         global email_notification_sample_states
-        email_notification_sample_states = [ request1.type.states[2], request1.type.states[4] ] 
+        email_notification_sample_states = [ request1.type.states[2], request1.type.states[4] ]
         # check email notification settings
         check_sample_states = []
         for state in email_notification_sample_states:
@@ -444,18 +465,18 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         additional_emails = [ 'test@.bx.psu.edu', 'test2@.bx.psu.edu' ]
         strings_displayed_after_submit = [ "The changes made to the email notification settings have been saved",
                                            '\r\n'.join( additional_emails ) ]
-        self.edit_request_email_settings( cntrller='requests', 
-                                          request_id=self.security.encode_id( request1.id ), 
-                                          check_request_owner=True, 
-                                          additional_emails='\r\n'.join( additional_emails ), 
-                                          check_sample_states=check_sample_states, 
-                                          strings_displayed=strings_displayed, 
+        self.edit_request_email_settings( cntrller='requests',
+                                          request_id=self.security.encode_id( request1.id ),
+                                          check_request_owner=True,
+                                          additional_emails='\r\n'.join( additional_emails ),
+                                          check_sample_states=check_sample_states,
+                                          strings_displayed=strings_displayed,
                                           strings_displayed_after_submit=strings_displayed_after_submit )
         # lastly check the details in the request page
         strings_displayed = [ 'Sequencing request "%s"' % new_name,
                               new_desc ]
         for field in fields:
-            strings_displayed.append( field[1] )        
+            strings_displayed.append( field[1] )
         for state_name, id, is_checked in check_sample_states:
             strings_displayed.append( state_name )
         for email in additional_emails:
@@ -469,12 +490,12 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         """Testing adding samples to request"""
         # logged in as regular_user1
         # Sample fields - the tuple represents a sample name and a list of sample form field values
-        target_library_info = dict(library=self.security.encode_id(library2.id), 
+        target_library_info = dict(library=self.security.encode_id(library2.id),
                                    folder=self.security.encode_id(library2_folder1.id) )
         sample_value_tuples = \
-        [ ( 'Sample1', target_library_info, [ 'option1', 'sample1 field2 value', 'sample1 field3 value' ] ),
-          ( 'Sample2', target_library_info, [ 'option2', 'sample2 field2 value', 'sample2 field3 value' ] ),
-          ( 'Sample3', target_library_info, [ 'option1', 'sample3 field2 value', 'sample3 field3 value' ] ) ]
+            [ ( 'Sample1', target_library_info, [ 'option1', 'sample1 field2 value', 'sample1 field3 value' ] ),
+            ( 'Sample2', target_library_info, [ 'option2', 'sample2 field2 value', 'sample2 field3 value' ] ),
+            ( 'Sample3', target_library_info, [ 'option1', 'sample3 field2 value', 'sample3 field3 value' ] ) ]
         strings_displayed_after_submit = [ 'Unsubmitted' ]
         for sample_name, lib_info, field_values in sample_value_tuples:
             strings_displayed_after_submit.append( sample_name )
@@ -490,11 +511,11 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                           sample_value_tuples=sample_value_tuples,
                           folder_options=folder_options,
                           strings_displayed=[ 'Add samples to sequencing request "%s"' % request1.name,
-                                              '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
+                                              '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ],  # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
         # check the new sample field values on the request page
         strings_displayed = [ 'Sequencing request "%s"' % request1.name,
-                              'Submit request' ] # this button should appear now
+                              'Submit request' ]  # this button should appear now
         strings_displayed.extend( strings_displayed_after_submit )
         strings_displayed_count = []
         strings_displayed_count.append( ( library2.name, len( sample_value_tuples ) ) )
@@ -508,12 +529,12 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         """Testing editing the sample information of new request1"""
         # logged in as regular_user1
         # target data library - change it to library1
-        target_library_info = dict(library=self.security.encode_id( library1.id ), 
+        target_library_info = dict(library=self.security.encode_id( library1.id ),
                                    folder=self.security.encode_id( library1_folder1.id ) )
         new_sample_value_tuples = \
-        [ ( 'Sample1_renamed', target_library_info, [ 'option2', 'sample1 field2 value edited', 'sample1 field3 value edited' ] ),
-          ( 'Sample2_renamed', target_library_info, [ 'option1', 'sample2 field2 value edited', 'sample2 field3 value edited' ] ),
-          ( 'Sample3_renamed', target_library_info, [ 'option2', 'sample3 field2 value edited', 'sample3 field3 value edited' ] ) ]
+            [ ( 'Sample1_renamed', target_library_info, [ 'option2', 'sample1 field2 value edited', 'sample1 field3 value edited' ] ),
+            ( 'Sample2_renamed', target_library_info, [ 'option1', 'sample2 field2 value edited', 'sample2 field3 value edited' ] ),
+            ( 'Sample3_renamed', target_library_info, [ 'option2', 'sample3 field2 value edited', 'sample3 field3 value edited' ] ) ]
         strings_displayed_after_submit = [ 'Unsubmitted' ]
         for sample_name, lib_info, field_values in new_sample_value_tuples:
             strings_displayed_after_submit.append( sample_name )
@@ -521,10 +542,10 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             for values in field_values:
                 strings_displayed_after_submit.append( values )
         strings_displayed = [ 'Edit Current Samples of Sequencing Request "%s"' % request1.name,
-                              '<input type="text" name="sample_0_name" value="Sample1" size="10"/>', # sample name input field
-                              library2_folder1.name, # all the folders in library2 should show up in the folder selectlist 
-                              library2_folder2.name, 
-                              library2_folder3.name, 
+                              '<input type="text" name="sample_0_name" value="Sample1" size="10"/>',  # sample name input field
+                              library2_folder1.name,  # all the folders in library2 should show up in the folder selectlist
+                              library2_folder2.name,
+                              library2_folder3.name,
                               library2_folder4.name ]
         # Add samples to the request
         self.edit_samples( cntrller='requests',
@@ -560,7 +581,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             % ( request1.name, request1.states.SUBMITTED )
         # the sample state should appear once for each sample
         strings_displayed_count = [ ( request1.type.states[0].name, len( request1.samples ) ) ]
-        # after submission, these buttons should not appear 
+        # after submission, these buttons should not appear
         strings_not_displayed = [ 'Add sample', 'Submit request' ]
         # check the request page
         self.view_request( cntrller='requests',
@@ -568,7 +589,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                            strings_displayed=[ request1.states.SUBMITTED ],
                            strings_displayed_count=strings_displayed_count,
                            strings_not_displayed=strings_not_displayed )
-        strings_displayed=[ 'History of sequencing request "%s"' % request1.name,
+        strings_displayed = [ 'History of sequencing request "%s"' % request1.name,
                             'Sequencing request submitted by %s' % regular_user1.email,
                             'Sequencing request created' ]
         strings_displayed_count = [ ( request1.states.SUBMITTED, 1 ) ]
@@ -578,7 +599,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                    strings_displayed_count=strings_displayed_count,
                                    strings_not_displayed=[ request1.states.COMPLETE,
                                                            request1.states.REJECTED ] )
-    # ====== Sequencing request test methods - Admin perspective ================ 
+    # ====== Sequencing request test methods - Admin perspective ================
 
     def test_0080_receive_request_as_admin( self ):
         """Testing receiving a sequencing request and assigning it barcodes"""
@@ -609,7 +630,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                             strings_displayed_after_submit=strings_displayed_after_submit )
         # the second sample state should appear once for each sample
         strings_displayed_count = [ ( request1.type.states[1].name, len( request1.samples ) ),
-                                    ( request1.type.states[0].name, 0 ) ]        
+                                    ( request1.type.states[0].name, 0 ) ]
         # check the request page
         self.view_request( cntrller='requests_admin',
                            request_id=self.security.encode_id( request1.id ),
@@ -618,15 +639,15 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         # the sample state descriptions of the future states should not appear
         # here the state names are not checked as all of them appear at the top of
         # the page like: state1 > state2 > state3
-        strings_not_displayed=[ request1.type.states[2].desc,
+        strings_not_displayed = [ request1.type.states[2].desc,
                                 request1.type.states[3].desc,
                                 request1.type.states[4].desc ]
         # check history of each sample
         for sample in request1.samples:
             strings_displayed = [ 'History of sample "%s"' % sample.name,
                                   'Sequencing request submitted and sample state set to %s' % request1.type.states[0].name,
-                                   request1.type.states[0].name,
-                                   request1.type.states[1].name ]
+                                  request1.type.states[0].name,
+                                  request1.type.states[1].name ]
             self.view_sample_history( cntrller='requests_admin',
                                       sample_id=self.security.encode_id( sample.id ),
                                       strings_displayed=strings_displayed,
@@ -638,7 +659,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.check_request_grid( cntrller='requests_admin',
                                  state=request1.states.SUBMITTED,
                                  strings_displayed=[ request1.name ] )
-        strings_displayed=[ 'History of sequencing request "%s"' % request1.name ]
+        strings_displayed = [ 'History of sequencing request "%s"' % request1.name ]
         # Change the states of all the samples of this request to ultimately be COMPLETE
         for index, state in enumerate( request_type1.states ):
             # start from the second state onwards
@@ -647,7 +668,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                 if index == len( request_type1.states ) - 1:
                     status_msg = 'All samples of this sequencing request are in the final sample state (%s).' % state.name
                 else:
-                    status_msg = 'All samples of this sequencing request are in the (%s) sample state. ' % state.name 
+                    status_msg = 'All samples of this sequencing request are in the (%s) sample state. ' % state.name
                 # check email notification message
                 email_msg = ''
                 if state.id in [ email_state.id for email_state in email_notification_sample_states ]:
@@ -656,7 +677,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                           sample_ids=[ sample.id for sample in request1.samples ],
                                           new_sample_state_id=self.security.encode_id( state.id ),
                                           strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request1.name ],
-                                          strings_displayed_after_submit = [ status_msg, email_msg ] )
+                                          strings_displayed_after_submit=[ status_msg, email_msg ] )
                 # check request history page
                 if index == len( request_type1.states ) - 1:
                     strings_displayed.append( status_msg )
@@ -694,9 +715,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                  phone="007-007-0007" )
         # Set field values - the tuples in the field_values list include the field_value, and True if refresh_on_change
         # is required for that field.
-        field_value_tuples = [ ( request_form_field_name1, 'option2', False ), 
-                               ( request_form_field_name2, ( 'new', new_address_dict ) , True ), 
-                               ( request_form_field_name3, 'field_2_value', False ) ] 
+        field_value_tuples = [ ( request_form_field_name1, 'option2', False ),
+                               ( request_form_field_name2, ( 'new', new_address_dict ) , True ),
+                               ( request_form_field_name3, 'field_2_value', False ) ]
         self.create_request( cntrller='requests_admin',
                              request_type_id=self.security.encode_id( request_type1.id ),
                              other_users_id=self.security.encode_id( regular_user1.id ),
@@ -725,9 +746,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         target_library_info = dict( library=None, folder=None )
         # Sample fields - the tuple represents a sample name and a list of sample form field values
         sample_value_tuples = \
-        [ ( 'Sample1', target_library_info, [ 'option1', 'sample1 field2 value', 'sample1 field3 value' ] ),
-          ( 'Sample2', target_library_info, [ 'option2', 'sample2 field2 value', 'sample2 field3 value' ] ),
-          ( 'Sample3', target_library_info, [ 'option1', 'sample3 field2 value', 'sample3 field3 value' ] ) ]
+            [ ( 'Sample1', target_library_info, [ 'option1', 'sample1 field2 value', 'sample1 field3 value' ] ),
+            ( 'Sample2', target_library_info, [ 'option2', 'sample2 field2 value', 'sample2 field3 value' ] ),
+            ( 'Sample3', target_library_info, [ 'option1', 'sample3 field2 value', 'sample3 field3 value' ] ) ]
         strings_displayed_after_submit = [ 'Unsubmitted' ]
         for sample_name, lib_info, field_values in sample_value_tuples:
             strings_displayed_after_submit.append( sample_name )
@@ -738,7 +759,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                           request_id=self.security.encode_id( request2.id ),
                           sample_value_tuples=sample_value_tuples,
                           strings_displayed=[ 'Add samples to sequencing request "%s"' % request2.name,
-                                              '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ], # sample name input field
+                                              '<input type="text" name="sample_0_name" value="Sample_1" size="10"/>' ],  # sample name input field
                           strings_displayed_after_submit=strings_displayed_after_submit )
         # Submit the request
         self.submit_request( cntrller='requests_admin',
@@ -765,7 +786,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.change_sample_target_data_library( cntrller='requests',
                                                 request_id=self.security.encode_id( request2.id ),
                                                 sample_ids=[ sample.id for sample in request2.samples ],
-                                                new_library_id=self.security.encode_id( library2.id ), 
+                                                new_library_id=self.security.encode_id( library2.id ),
                                                 new_folder_id=self.security.encode_id( library2_folder1.id ),
                                                 folder_options=folder_options,
                                                 strings_displayed=[ 'Edit Current Samples of Sequencing Request "%s"' % request2.name ],
@@ -785,7 +806,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
     def test_0110_reject_request( self ):
         """Testing rejecting a request"""
         # Logged in as admin_user
-        rejection_reason="This is why the sequencing request was rejected."
+        rejection_reason = "This is why the sequencing request was rejected."
         self.reject_request( request_id=self.security.encode_id( request2.id ),
                              request_name=request2.name,
                              comment=rejection_reason,
@@ -801,7 +822,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
             % ( request2.name, request2.states.REJECTED )
         # The rejection reason should show up in the request page and the request history page
         rejection_message = 'Sequencing request marked rejected by %s. Reason: %s' % ( admin_user.email, rejection_reason )
-        strings_displayed = [ request2.states.REJECTED, 
+        strings_displayed = [ request2.states.REJECTED,
                               rejection_message ]
         self.view_request( cntrller='requests',
                            request_id=self.security.encode_id( request2.id ),
@@ -812,7 +833,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         # login as the regular user to make sure that the request2 is fully editable
         self.logout()
         self.login( email=regular_user1.email )
-        strings_displayed=[ 'Sequencing request "%s"' % request2.name,
+        strings_displayed = [ 'Sequencing request "%s"' % request2.name,
                             request1.states.REJECTED,
                             rejection_message ]
         visible_buttons = [ 'Add sample', 'Edit samples', 'Submit request' ]
@@ -830,18 +851,17 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         self.logout()
         self.login( email=admin_user.email )
         # Setup the dummy datasets for sample1 of request1
-        sample_datasets = [ '/path/to/sample1_dataset1', 
+        sample_datasets = [ '/path/to/sample1_dataset1',
                             '/path/to/sample1_dataset2',
-                            '/path/to/sample1_dataset3' ] 
+                            '/path/to/sample1_dataset3' ]
         sample_dataset_file_names = [ dataset.split( '/' )[-1] for dataset in sample_datasets ]
         global request1_sample1
         request1_sample1 = request1.get_sample( 'Sample1_renamed' )
-        external_service = request1_sample1.external_service
-        strings_displayed_after_submit = [ 'Datasets (%s) have been selected for sample (%s)' % \
+        strings_displayed_after_submit = [ 'Datasets (%s) have been selected for sample (%s)' %
                                            ( str( sample_dataset_file_names )[1:-1].replace( "'", "" ), request1_sample1.name ) ]
         strings_displayed = [ 'Select datasets to transfer from data directory configured for the sequencer' ]
         self.add_datasets_to_sample( request_id=self.security.encode_id( request2.id ),
-                                     sample_id= self.security.encode_id( request1_sample1.id ),
+                                     sample_id=self.security.encode_id( request1_sample1.id ),
                                      external_service_id=self.security.encode_id( external_serviceexternal_service.id ),
                                      sample_datasets=sample_datasets,
                                      strings_displayed=strings_displayed,
@@ -859,9 +879,9 @@ class TestFormsAndSampleTracking( TwillTestCase ):
         """Testing renaming, deleting and initiating transfer of sample datasets"""
         # Logged in as admin_user
         # Check renaming datasets
-        new_sample_dataset_names = [ ( 'path', request1_sample1.datasets[0].name ), 
-                                     ( 'to', request1_sample1.datasets[1].name+'/renamed' ),
-                                     ( 'none', request1_sample1.datasets[2].name+'_renamed' ) ] 
+        new_sample_dataset_names = [ ( 'path', request1_sample1.datasets[0].name ),
+                                     ( 'to', request1_sample1.datasets[1].name + '/renamed' ),
+                                     ( 'none', request1_sample1.datasets[2].name + '_renamed' ) ]
         sample_dataset_ids = [ self.security.encode_id( dataset.id ) for dataset in request1_sample1.datasets ]
         strings_displayed = [ 'Rename datasets for Sample "%s"' % request1_sample1.name ]
         strings_displayed_after_submit = [ 'Changes saved successfully.' ]
@@ -881,11 +901,11 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                      strings_displayed_after_submit=strings_displayed_after_submit,
                                      strings_not_displayed=strings_not_displayed )
         refresh( request1_sample1 )
-        assert len( request1_sample1.datasets ) == ( len( new_sample_dataset_names )-1 )
+        assert len( request1_sample1.datasets ) == ( len( new_sample_dataset_names ) - 1 )
         # Check data transfer
-        # In this test we only test transfer initiation. For data transfer to complete 
-        # successfully we need RabbitMQ setup. Since that is not possible in the functional 
-        # tests framework, this checks if correct error message is displayed and the transfer 
+        # In this test we only test transfer initiation. For data transfer to complete
+        # successfully we need RabbitMQ setup. Since that is not possible in the functional
+        # tests framework, this checks if correct error message is displayed and the transfer
         # status of the sample datasets remains at 'Not started' when the Transfer button is clicked.
         sample_dataset_ids = [ self.security.encode_id( dataset.id ) for dataset in request1_sample1.datasets ]
         strings_displayed = [ 'Manage "%s" datasets' % request1_sample1.name ]
@@ -923,7 +943,7 @@ class TestFormsAndSampleTracking( TwillTestCase ):
                                       self.security.encode_id( library.id ),
                                       library.name,
                                       item_type='library' )
-            self.purge_library( self.security.encode_id( library.id ), library.name )             
+            self.purge_library( self.security.encode_id( library.id ), library.name )
         ##################
         # Mark all requests deleted and delete all their samples
         ##################

@@ -113,7 +113,7 @@ class PagesController( BaseAPIController, SharableItemSecurityMixin, UsesAnnotat
         """
         page = self._get_page( trans, id )
 
-        #Mark a page as deleted
+        # Mark a page as deleted
         page.deleted = True
         trans.sa_session.flush()
         return ''  # TODO: Figure out what to return on DELETE, document in guidelines!

@@ -1,18 +1,22 @@
- <%namespace name="ie" file="ie.mako" />
+<%namespace name="ie" file="ie.mako" />
 
 <%
 import os
 import shutil
-import tempfile
-import subprocess
+import hashlib
 
 # Sets ID and sets up a lot of other variables
 ie_request.load_deploy_config()
 ie_request.attr.docker_port = 6789
 # Create tempdir in galaxy
-temp_dir = os.path.abspath( tempfile.mkdtemp() )
-# Write out conf file...needs work
-ie_request.write_conf_file(temp_dir)
+temp_dir = ie_request.temp_dir
+
+if ie_request.attr.PASSWORD_AUTH:
+    m = hashlib.sha1()
+    m.update( ie_request.notebook_pw + ie_request.notebook_pw_salt )
+    PASSWORD = 'sha1:%s:%s' % (ie_request.notebook_pw_salt, m.hexdigest())
+else:
+    PASSWORD = "none"
 
 ## IPython Specific
 # Prepare an empty notebook
@@ -22,6 +26,7 @@ with open( os.path.join( ie_request.attr.our_template_dir, 'notebook.ipynb' ), '
 empty_nb = empty_nb % notebook_id
 # Copy over default notebook, unless the dataset this viz is running on is a notebook
 empty_nb_path = os.path.join(temp_dir, 'ipython_galaxy_notebook.ipynb')
+
 if hda.datatype.__class__.__name__ != "Ipynb":
     with open( empty_nb_path, 'w+' ) as handle:
         handle.write( empty_nb )
@@ -34,9 +39,12 @@ else:
 notebook_access_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb')
 notebook_login_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/login?next=%2Fipython%2F${PORT}%2Ftree')
 
-docker_cmd = ie_request.docker_cmd(temp_dir)
-ie_request.log.info("Starting IPython docker container with command [%s]" % docker_cmd)
-subprocess.call(docker_cmd, shell=True)
+
+# Add all environment variables collected from Galaxy's IE infrastructure
+ie_request.launch(env_override={
+    'notebook_password': PASSWORD,
+})
+
 %>
 <html>
 <head>

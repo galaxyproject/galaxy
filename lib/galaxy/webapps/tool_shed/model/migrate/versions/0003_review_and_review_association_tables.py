@@ -25,13 +25,13 @@ from galaxy.model.custom_types import *
 metadata = MetaData()
 
 ToolRatingAssociation_table = Table( "tool_rating_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "rating", Integer, index=True ),
-    Column( "comment", TEXT ) )
+                                     Column( "id", Integer, primary_key=True ),
+                                     Column( "create_time", DateTime, default=now ),
+                                     Column( "update_time", DateTime, default=now, onupdate=now ),
+                                     Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
+                                     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                     Column( "rating", Integer, index=True ),
+                                     Column( "comment", TEXT ) )
 
 def upgrade(migrate_engine):
     print __doc__

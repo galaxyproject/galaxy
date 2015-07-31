@@ -36,6 +36,7 @@ errorpage = """
 </html>
 """
 
+
 class RemoteUser( object ):
     def __init__( self, app, maildomain=None, display_servers=None, admin_users=None, remote_user_secret_header=None ):
         self.app = app
@@ -47,7 +48,7 @@ class RemoteUser( object ):
     def __call__( self, environ, start_response ):
         environ[ 'webapp' ] = 'tool_shed'
         # Allow display servers
-        if self.display_servers and environ.has_key( 'REMOTE_ADDR' ):
+        if self.display_servers and 'REMOTE_ADDR' in environ:
             try:
                 host = socket.gethostbyaddr( environ[ 'REMOTE_ADDR' ] )[0]
             except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
@@ -59,7 +60,7 @@ class RemoteUser( object ):
 
         # If the secret header is enabled, we expect upstream to send along some key
         # in HTTP_GX_SECRET, so we'll need to compare that here to the correct value
-        # 
+        #
         # This is not an ideal location for this function.  The reason being
         # that because this check is done BEFORE the REMOTE_USER check,  it is
         # possible to attack the GX_SECRET key without having correct
@@ -74,8 +75,8 @@ class RemoteUser( object ):
                 title = "Access to Galaxy is denied"
                 message = """
                 Galaxy is configured to authenticate users via an external
-                method (such as HTTP authentication in Apache), but an 
-                incorrect shared secret key was provided by the 
+                method (such as HTTP authentication in Apache), but an
+                incorrect shared secret key was provided by the
                 upstream (proxy) server.</p>
                 <p>Please contact your local Galaxy administrator.  The
                 variable <code>remote_user_secret</code> and
@@ -87,7 +88,7 @@ class RemoteUser( object ):
         # Apache sets REMOTE_USER to the string '(null)' when using the Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
         path_info = environ.get('PATH_INFO', '')
-        if environ.has_key( 'HTTP_REMOTE_USER' ) and environ[ 'HTTP_REMOTE_USER' ] != '(null)':
+        if 'HTTP_REMOTE_USER' in environ and environ[ 'HTTP_REMOTE_USER' ] != '(null)':
             if not environ[ 'HTTP_REMOTE_USER' ].count( '@' ):
                 if self.maildomain is not None:
                     environ[ 'HTTP_REMOTE_USER' ] += '@' + self.maildomain

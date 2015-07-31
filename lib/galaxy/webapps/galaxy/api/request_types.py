@@ -41,7 +41,7 @@ class RequestTypeAPIController( BaseAPIController ):
             request_type = trans.sa_session.query( trans.app.model.RequestType ).get( decoded_request_type_id )
         except:
             request_type = None
-        if not request_type:# or not trans.user_is_admin():
+        if not request_type:  # or not trans.user_is_admin():
             trans.response.status = 400
             return "Invalid request_type id ( %s ) specified." % str( request_type_id )
         if not trans.app.security_agent.can_access_request_type( trans.user.all_roles(), request_type ):
@@ -81,19 +81,19 @@ class RequestTypeAPIController( BaseAPIController ):
             return "Missing required parameter 'external_service_id'."
         external_service = trans.sa_session.query( trans.app.model.ExternalService ).get( trans.security.decode_id( external_service_id ) )
         request_type = request_type_factory.from_elem( elem, request_form, sample_form, external_service )
-        #FIXME: move permission building/setting to separate abstract method call and
-        #allow setting individual permissions by role (currently only one action, so not strictly needed)
+        # FIXME: move permission building/setting to separate abstract method call and
+        # allow setting individual permissions by role (currently only one action, so not strictly needed)
         role_ids = payload.get( 'role_ids', [] )
-        roles = [ trans.sa_session.query( trans.model.Role ).get( trans.security.decode_id( i ) ) for i in role_ids ]# if trans.app.security_agent.ok_to_display( trans.user, i ) ]
+        roles = [ trans.sa_session.query( trans.model.Role ).get( trans.security.decode_id( i ) ) for i in role_ids ]  # if trans.app.security_agent.ok_to_display( trans.user, i ) ]
         permissions = {}
         if roles:
-            #yikes, there has to be a better way?
+            # yikes, there has to be a better way?
             for k, v in trans.model.RequestType.permitted_actions.items():
                 permissions[ trans.app.security_agent.get_action( v.action ) ] = roles
         if permissions:
             trans.app.security_agent.set_request_type_permissions( request_type, permissions )
 
-        #flush objects
+        # flush objects
         trans.sa_session.add( request_type )
         trans.sa_session.flush()
         encoded_id = trans.security.encode_id( request_type.id )

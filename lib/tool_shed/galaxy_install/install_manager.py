@@ -5,18 +5,15 @@ import sys
 import tempfile
 import traceback
 
-from galaxy import exceptions
 from galaxy import eggs
-from galaxy import util
-
 eggs.require( 'paramiko' )
 eggs.require( 'ssh' )
 eggs.require( 'Fabric' )
-
 from fabric.api import lcd
+eggs.require('SQLAlchemy')
+from sqlalchemy import or_
 
-from galaxy.model.orm import or_
-
+from galaxy import exceptions, util
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -1023,9 +1020,10 @@ def fetch_tool_versions( app, tool_shed_repository ):
         if text:
             return json.loads( text )
         else:
+            log.error("No content returned from tool shed repository version request to %s", url)
             failed_to_fetch = True
     except Exception:
         failed_to_fetch = True
+        log.exception("Failed to fetch tool shed repository version information.")
     if failed_to_fetch:
-        log.exception("Failed to fetch tool shed repository verion information.")
         return FAILED_TO_FETCH_VERSIONS

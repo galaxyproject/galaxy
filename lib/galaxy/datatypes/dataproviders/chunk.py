@@ -6,12 +6,8 @@ seek and read( N ).
 """
 import os
 import base64
-
 import base
 import exceptions
-
-_TODO = """
-"""
 
 import logging
 log = logging.getLogger( __name__ )
@@ -24,14 +20,14 @@ class ChunkDataProvider( base.DataProvider ):
 
     Note: this version does not account for lines and works with Binary datatypes.
     """
-    MAX_CHUNK_SIZE = 2**16
+    MAX_CHUNK_SIZE = 2 ** 16
     DEFAULT_CHUNK_SIZE = MAX_CHUNK_SIZE
     settings = {
         'chunk_index'   : 'int',
         'chunk_size'    : 'int'
     }
 
-    #TODO: subclass from LimitedOffsetDataProvider?
+    # TODO: subclass from LimitedOffsetDataProvider?
     # see web/framework/base.iterate_file, util/__init__.file_reader, and datatypes.tabular
     def __init__( self, source, chunk_index=0, chunk_size=DEFAULT_CHUNK_SIZE, **kwargs ):
         """
@@ -51,8 +47,7 @@ class ChunkDataProvider( base.DataProvider ):
         :raises InvalidDataProviderSource: if not.
         """
         source = super( ChunkDataProvider, self ).validate_source( source )
-        if( ( not hasattr( source, 'seek' ) )
-        or  ( not hasattr( source, 'read' ) ) ):
+        if( ( not hasattr( source, 'seek' ) ) or ( not hasattr( source, 'read' ) ) ):
             raise exceptions.InvalidDataProviderSource( source )
         return source
 

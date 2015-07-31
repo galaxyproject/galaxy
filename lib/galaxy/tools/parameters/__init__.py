@@ -2,9 +2,9 @@
 Classes encapsulating Galaxy tool parameters.
 """
 
-from basic import *
-from grouping import *
-from galaxy.util.json import *
+from basic import DataCollectionToolParameter, DataToolParameter, SelectToolParameter
+from grouping import Conditional, Repeat, Section, UploadDataset
+from galaxy.util.json import dumps, json_fix, loads
 
 
 def visit_input_values( inputs, input_values, callback, name_prefix="", label_prefix="" ):
@@ -47,7 +47,7 @@ def visit_input_values( inputs, input_values, callback, name_prefix="", label_pr
                 input_values[input.name] = new_value
 
 
-def check_param( trans, param, incoming_value, param_values, source='html' ):
+def check_param( trans, param, incoming_value, param_values, source='html', history=None ):
     """
     Check the value of a single parameter `param`. The value in
     `incoming_value` is converted from its HTML encoding and validated.
@@ -58,6 +58,8 @@ def check_param( trans, param, incoming_value, param_values, source='html' ):
     value = incoming_value
     error = None
     try:
+        if history is None:
+            history = trans.history
         if value is not None or isinstance( param, DataToolParameter ) or isinstance( param, DataCollectionToolParameter ):
             # Convert value from HTML representation
             if source == 'html':
@@ -67,10 +69,10 @@ def check_param( trans, param, incoming_value, param_values, source='html' ):
             # Allow the value to be converted if necessary
             filtered_value = param.filter_value( value, trans, param_values )
             # Then do any further validation on the value
-            param.validate( filtered_value, trans.history )
+            param.validate( filtered_value, history )
         elif value is None and isinstance( param, SelectToolParameter ):
             # An empty select list or column list
-            param.validate( value, trans.history )
+            param.validate( value, history )
     except ValueError, e:
         error = str( e )
     return value, error
@@ -117,7 +119,7 @@ def params_to_incoming( incoming, inputs, input_values, app, name_prefix="", to_
     """
     for input in inputs.itervalues():
         if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
-            for i, d in enumerate( input_values[ input.name ] ):
+            for d in input_values[ input.name ]:
                 index = d['__index__']
                 new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
                 params_to_incoming( incoming, input.inputs, d, app, new_name_prefix, to_html=to_html)

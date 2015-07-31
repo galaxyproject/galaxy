@@ -371,6 +371,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         } else {
             panel._renderEmptyMessage( $whereTo ).show();
         }
+        panel.trigger( 'views:ready', panel.views );
 
         return panel.views;
     },

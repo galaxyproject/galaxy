@@ -35,7 +35,7 @@ class DatasetMatcher( object ):
         accessible to user.
         """
         dataset = hda.dataset
-        state_valid = not dataset.state in INVALID_STATES
+        state_valid = dataset.state not in INVALID_STATES
         return state_valid and ( not check_security or self.__can_access_dataset( dataset ) )
 
     def valid_hda_match( self, hda, check_implicit_conversions=True, check_security=False ):

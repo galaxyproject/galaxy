@@ -287,13 +287,13 @@ var HistoryPanelEdit = _super.extend(
         var panel = this;
         return [
             {   html: _l( 'Build Dataset List' ), func: function() {
-                    LIST_COLLECTION_CREATOR.createListHDCA( panel.getSelectedModels() )
+                    LIST_COLLECTION_CREATOR.createListCollection( panel.getSelectedModels() )
                         .done( function(){ panel.model.refresh() });
                 }
             },
             // TODO: Only show quick pair if two things selected.
             {   html: _l( 'Build Dataset Pair' ), func: function() {
-                    PAIR_COLLECTION_CREATOR.createPairHDCA( panel.getSelectedModels() )
+                    PAIR_COLLECTION_CREATOR.createPairCollection( panel.getSelectedModels() )
                         .done( function(){ panel.model.refresh() });
                 }
             },
@@ -458,7 +458,6 @@ var HistoryPanelEdit = _super.extend(
         var dropTarget = this.$( '.history-drop-target' ).get(0);
         for( var evName in this._dropHandlers ){
             if( this._dropHandlers.hasOwnProperty( evName ) ){
-                console.debug( evName, this._dropHandlers[ evName ] );
                 dropTarget.off( evName, this._dropHandlers[ evName ] );
             }
         }

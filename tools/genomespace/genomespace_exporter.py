@@ -213,6 +213,7 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
     
 
 def send_file_to_genomespace( genomespace_site, username, token, source_filename, target_directory, target_filename, file_type, content_type, log_filename ):
+    target_filename = target_filename.replace( '/', '-' ) # Slashes no longer allowed in filenames
     url_opener = get_cookie_opener( username, token )
     genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
     dm_url = genomespace_site_dict['dmServer']

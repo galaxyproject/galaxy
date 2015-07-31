@@ -17,7 +17,7 @@ def stop_err( msg ):
     sys.exit()
 
 GALAXY_PARAM_PREFIX = 'GALAXY'
-GALAXY_ROOT_DIR = os.path.realpath( os.path.join( os.path.split( os.path.realpath( __file__ ) )[0], '..', '..' ) )
+GALAXY_ROOT_DIR = os.path.realpath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
 GALAXY_DATATYPES_CONF_FILE = os.path.join( GALAXY_ROOT_DIR, 'datatypes_conf.xml' )
 
 def load_input_parameters( filename, erase_file = True ):

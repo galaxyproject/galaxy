@@ -1,16 +1,18 @@
 #!/usr/bin/env python
-#Dan Blankenberg
+# Dan Blankenberg
 
 import sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+import pkg_resources
+pkg_resources.require( "bx-python" )
 import bx.intervals.io
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
+
 def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
+
 
 def force_bed_field_count( fields, region_count, force_num_columns ):
     if force_num_columns >= 4 and len( fields ) < 4:
@@ -32,6 +34,7 @@ def force_bed_field_count( fields, region_count, force_num_columns ):
     if force_num_columns >= 12 and len( fields ) < 12:
         fields.append( ',' )
     return fields[:force_num_columns]
+
 
 def __main__():
     output_name = sys.argv[1]
@@ -59,7 +62,7 @@ def __main__():
     try:
         extension = sys.argv[8]
     except:
-        extension = 'interval' #default extension
+        extension = 'interval'  # default extension
     try:
         force_num_columns = int( sys.argv[9] )
     except:
@@ -67,10 +70,10 @@ def __main__():
 
     skipped_lines = 0
     first_skipped_line = None
-    out = open( output_name,'w' )
+    out = open( output_name, 'w' )
     count = 0
-    #does file already conform to bed strict?
-    #if so, we want to keep extended columns, otherwise we'll create a generic 6 column bed file
+    # does file already conform to bed strict?
+    # if so, we want to keep extended columns, otherwise we'll create a generic 6 column bed file
     strict_bed = True
     if extension in [ 'bed', 'bedstrict', 'bed6', 'bed12' ] and ( chromCol, startCol, endCol) == ( 0, 1, 2) and ( nameCol < 0 or nameCol == 3 ) and ( strandCol < 0 or strandCol == 5 ):
         for count, line in enumerate( open( input_name ) ):
@@ -82,35 +85,35 @@ def __main__():
                 continue
             fields = line.split('\t')
             try:
-                assert len( fields ) >= 3, 'A BED file requires at least 3 columns' #we can't fix this
+                assert len( fields ) >= 3, 'A BED file requires at least 3 columns'  # we can't fix this
                 if len(fields) > 12:
                     strict_bed = False
                     break
-                #name (fields[3]) can be anything, no verification needed
+                # name (fields[3]) can be anything, no verification needed
                 if len( fields ) > 4:
-                    float( fields[4] ) #score - A score between 0 and 1000. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray in which this feature is displayed (higher numbers = darker gray).
+                    float( fields[4] )  # score - A score between 0 and 1000. If the track line useScore attribute is set to 1 for this annotation data set, the score value will determine the level of gray in which this feature is displayed (higher numbers = darker gray).
                     if len( fields ) > 5:
-                        assert fields[5] in [ '+', '-' ], 'Invalid strand' #strand - Defines the strand - either '+' or '-'.
+                        assert fields[5] in [ '+', '-' ], 'Invalid strand'  # strand - Defines the strand - either '+' or '-'.
                         if len( fields ) > 6:
-                            int( fields[6] ) #thickStart - The starting position at which the feature is drawn thickly (for example, the start codon in gene displays).
+                            int( fields[6] )  # thickStart - The starting position at which the feature is drawn thickly (for example, the start codon in gene displays).
                             if len( fields ) > 7:
-                                int( fields[7] ) #thickEnd - The ending position at which the feature is drawn thickly (for example, the stop codon in gene displays).
+                                int( fields[7] )  # thickEnd - The ending position at which the feature is drawn thickly (for example, the stop codon in gene displays).
                                 if len( fields ) > 8:
-                                    if fields[8] != '0': #itemRgb - An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb attribute is set to "On", this RBG value will determine the display color of the data contained in this BED line. NOTE: It is recommended that a simple color scheme (eight colors or less) be used with this attribute to avoid overwhelming the color resources of the Genome Browser and your Internet browser.
+                                    if fields[8] != '0':  # itemRgb - An RGB value of the form R,G,B (e.g. 255,0,0). If the track line itemRgb attribute is set to "On", this RBG value will determine the display color of the data contained in this BED line. NOTE: It is recommended that a simple color scheme (eight colors or less) be used with this attribute to avoid overwhelming the color resources of the Genome Browser and your Internet browser.
                                         fields2 = fields[8].split( ',' )
                                         assert len( fields2 ) == 3, 'RGB value must be 0 or have length of 3'
                                         for field in fields2:
-                                            int( field ) #rgb values are integers
+                                            int( field )  # rgb values are integers
                                     if len( fields ) > 9:
-                                        int( fields[9] ) #blockCount - The number of blocks (exons) in the BED line.
+                                        int( fields[9] )  # blockCount - The number of blocks (exons) in the BED line.
                                         if len( fields ) > 10:
-                                            if fields[10] != ',': #blockSizes - A comma-separated list of the block sizes. The number of items in this list should correspond to blockCount.
-                                                fields2 = fields[10].rstrip( "," ).split( "," ) #remove trailing comma and split on comma
+                                            if fields[10] != ',':  # blockSizes - A comma-separated list of the block sizes. The number of items in this list should correspond to blockCount.
+                                                fields2 = fields[10].rstrip( "," ).split( "," )  # remove trailing comma and split on comma
                                                 for field in fields2:
                                                     int( field )
                                             if len( fields ) > 11:
-                                                if fields[11] != ',': #blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount.
-                                                    fields2 = fields[11].rstrip( "," ).split( "," ) #remove trailing comma and split on comma
+                                                if fields[11] != ',':  # blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount.
+                                                    fields2 = fields[11].rstrip( "," ).split( "," )  # remove trailing comma and split on comma
                                                     for field in fields2:
                                                         int( field )
             except:
@@ -126,7 +129,7 @@ def __main__():
     if not strict_bed:
         skipped_lines = 0
         first_skipped_line = None
-        out = open( output_name,'w' )
+        out = open( output_name, 'w' )
         count = 0
         for count, region in enumerate( bx.intervals.io.NiceReaderWrapper( open( input_name, 'r' ), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False ) ):
             try:
@@ -150,4 +153,5 @@ def __main__():
     if skipped_lines > 0:
         print "Skipped %d blank or invalid lines starting with line # %d." % ( skipped_lines, first_skipped_line )
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

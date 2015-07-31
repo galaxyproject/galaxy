@@ -11,7 +11,6 @@
     "jquery": "~1.11.1",
     "traceKit": "*",
     "ravenjs": "~1.1.16",
-    "require": "*",
     "underscore": "~1.7.0",
     "backbone": "~1.1.2",
     "bootstrap": "~3.3.2",
@@ -31,10 +30,12 @@
     "jstree": "~3.0.9",
     "jquery-ui": "git://github.com/jquery/jquery-ui.git#~1.11.2",
     "threedubmedia.jquery.event": "*",
-    "handlebars": "~2.0.0",
-    "jquery-migrate": "~1.2.1"
+    "handlebars": "~3.0.0",
+    "jquery-migrate": "~1.2.1",
+    "requirejs": "~2.1.17"
   },
   "resolutions": {
     "jquery": "~1.11.1"
-  }
+  },
+  "devDependencies": {}
 }

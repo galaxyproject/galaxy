@@ -4,7 +4,7 @@ import sys
 import urllib
 import urllib2
 
-new_path = [ os.path.join( os.path.dirname( __file__ ), '..', '..', '..', '..', 'lib' ) ]
+new_path = [ os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, os.pardir, 'lib' ) ]
 new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
@@ -94,8 +94,10 @@ def display( url, api_key=None, return_formatted=True ):
         print 'Collection Members'
         print '------------------'
         for n, i in enumerate(r):
-            # All collection members should have a name and url in the response.
-            print '#%d: %s' % (n+1, i.pop( 'url' ) )
+            # All collection members should have a name in the response.
+            # url is optional
+            if 'url' in i:
+                print '#%d: %s' % (n+1, i.pop( 'url' ) )
             if 'name' in i:
                 print '  name: %s' % i.pop( 'name' )
             for k, v in i.items():

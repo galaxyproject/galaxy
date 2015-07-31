@@ -1,6 +1,7 @@
-(function() {
-  var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-templates['tool_form'] = template({"1":function(depth0,helpers,partials,data) {
+this["Handlebars"] = this["Handlebars"] || {};
+this["Handlebars"]["templates"] = this["Handlebars"]["templates"] || {};
+
+this["Handlebars"]["templates"]["tool_form"] = Handlebars.template({"1":function(depth0,helpers,partials,data) {
     var stack1, helper, alias1=helpers.helperMissing, alias2="function", alias3=this.escapeExpression;
 
   return "        <div class=\"form-row\">\n            <label for=\""
@@ -25,4 +26,3 @@ templates['tool_form'] = template({"1":function(depth0,helpers,partials,data) {
     + alias3(((helper = (helper = helpers.help || (depth0 != null ? depth0.help : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"help","hash":{},"data":data}) : helper)))
     + "</div>\n</div>";
 },"useData":true});
-})();

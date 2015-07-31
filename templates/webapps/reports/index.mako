@@ -36,7 +36,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Reports</div>
     </div>
-    <div class="page-container" style="padding: 10px;">
+    <div class="page-container reports-panel-container">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionPad"></div>
@@ -45,14 +45,15 @@
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', specified_date=datetime.utcnow().strftime( "%Y-%m-%d" ) )}">Today's jobs</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_month_all' )}">Jobs per day this month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_month_in_error' )}">Jobs in error per day this month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', operation='unfinished' )}">All unfinished jobs</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_all' )}">Jobs per month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_in_error' )}">Jobs in error per month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_user' )}">Jobs per user</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_tool' )}">Jobs per tool</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', specified_date=datetime.utcnow().strftime( "%Y-%m-%d" ), sort_id='default', order='default' )}">Today's jobs</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_month_all', sort_id='default', order='default' )}">Jobs per day this month</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_month_in_error', sort_id='default', order='default' )}">Jobs in error per day this month</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', operation='unfinished', sort_id='default', order='default' )}">All unfinished jobs</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_all', sort_id='default', order='default' )}">Jobs per month</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_in_error', sort_id='default', order='default' )}">Jobs in error per month</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_user', sort_id='default', order='default' )}">Jobs per user</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_tool', sort_id='default', order='default' )}">Jobs per tool</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='errors_per_tool', sort_id='default', order='default' )}">Errors per tool</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -73,8 +74,8 @@
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_month_all' )}">Workflows per month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_user' )}">Workflows per user</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_month_all', sort_id='default', order='default' )}">Workflows per month</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_user', sort_id='default', order='default' )}">Workflows per user</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -85,8 +86,8 @@
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='registered_users' )}">Registered users</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='last_access_date' )}">Date of last login</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='user_disk_usage' )}">User disk usage</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='last_access_date', sort_id='default', order='default' )}">Date of last login</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='users', action='user_disk_usage', sort_id='default', order='default' )}">User disk usage</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -105,6 +106,6 @@
 </%def>
 
 <%def name="center_panel()">
-    <% center_url = h.url_for( controller='jobs', action='specified_month_all' ) %>
+    <% center_url = h.url_for( controller='jobs', action='specified_month_all', sort_id='default', order='default' ) %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

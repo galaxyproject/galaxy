@@ -27,7 +27,7 @@ class DatasetManager( base.ModelManager, secured.AccessibleManagerMixin, deletab
     def __init__( self, app ):
         super( DatasetManager, self ).__init__( app )
         self.permissions = DatasetRBACPermissions( app )
-        # need for admin test
+        # needed for admin test
         self.user_manager = users.UserManager( app )
 
     def create( self, manage_roles=None, access_roles=None, flush=True, **kwargs ):
@@ -137,6 +137,8 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
     def __init__( self, app ):
         super( DatasetSerializer, self ).__init__( app )
         self.dataset_manager = DatasetManager( app )
+        # needed for admin test
+        self.user_manager = users.UserManager( app )
 
         self.default_view = 'summary'
         self.add_view( 'summary', [
@@ -173,32 +175,39 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
             'file_size'     : lambda i, k, **c: int( i.get_size() )
         })
 
-    def serialize_file_name( self, dataset, key, **context ):
+    def serialize_file_name( self, dataset, key, user=None, **context ):
         """
         If the config allows or the user is admin, return the file name
         of the file that contains this dataset's data.
         """
-        # TODO: allow admin
-        # conifg due to cost of operation
-        if not self.app.config.expose_dataset_path:
-            self.skip()
-        return dataset.file_name
+        is_admin = self.user_manager.is_admin( user )
+        # expensive: allow conifg option due to cost of operation
+        if is_admin or self.app.config.expose_dataset_path:
+            return dataset.file_name
+        self.skip()
 
-    def serialize_extra_files_path( self, dataset, key, **context ):
+    def serialize_extra_files_path( self, dataset, key, user=None, **context ):
         """
         If the config allows or the user is admin, return the file path.
         """
-        # TODO: allow admin
-        # conifg due to cost of operation
-        if not self.app.config.expose_dataset_path:
-            self.skip()
-        return dataset.extra_files_path
+        is_admin = self.user_manager.is_admin( user )
+        # expensive: allow conifg option due to cost of operation
+        if is_admin or self.app.config.expose_dataset_path:
+            return dataset.extra_files_path
+        self.skip()
 
-    def serialize_permissions( self, dataset, key, **context ):
+    def serialize_permissions( self, dataset, key, user=None, **context ):
         """
         """
-        permissions = {}
-# TODO: use rbac permissions?
+        if not user or not self.dataset_manager.permissions.manage.is_permitted( dataset, user ):
+            self.skip()
+
+        management_permissions = self.dataset_manager.permissions.manage.by_dataset( dataset )
+        access_permissions = self.dataset_manager.permissions.access.by_dataset( dataset )
+        permissions = {
+            'manage' : [ self.app.security.encode_id( perm.role.id ) for perm in management_permissions ],
+            'access' : [ self.app.security.encode_id( perm.role.id ) for perm in access_permissions ],
+        }
         return permissions
 
 
@@ -526,8 +535,8 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
         Is the `dataset_assoc` datatype equal to the registered datatype `class_str`?
         """
         comparison_class = self.app.datatypes_registry.get_datatype_class_by_name( class_str )
-        return ( comparison_class
-             and dataset_assoc.datatype.__class__ == comparison_class )
+        return ( comparison_class and
+                 dataset_assoc.datatype.__class__ == comparison_class )
 
     def isinstance_datatype( self, dataset_assoc, class_strs ):
         """
@@ -539,6 +548,6 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
         for class_str in class_strs.split( ',' ):
             datatype_class = parse_datatype_fn( class_str )
             if datatype_class:
-                comparison_classes.append( datatype_class )
-        return ( comparison_classes
-             and isinstance( dataset_assoc.datatype, comparison_classes ) )
+                comparison_classes.append(datatype_class)
+        return (comparison_classes and
+                isinstance(dataset_assoc.datatype, comparison_classes))

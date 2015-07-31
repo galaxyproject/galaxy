@@ -27,9 +27,8 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
 ## How to Contribute
 
 * All changes to the [core galaxy project](https://github.com/galaxyproject/galaxy)
-  should be made through pull requests to this repository except when
-  serious security vulnerabilities must simulatenously be made to multiple
-  previously released versions of Galaxy.
+  should be made through pull requests to this repository (with just two
+  exceptions outlined below).
 
 * If you are new to Git - please check out the very useful tutorials on the [GitHub training hub](https://training.github.com/kit/)
 
@@ -50,13 +49,12 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   * Most bug fixes to previously release components (things in galaxy-dist)
     should be made against the recent `release_XX.XX` branch (`git checkout release_XX.XX`).
 
-  * Serious security problems should not be fixed via pull request -
-    please responsibly disclose these by e-mailing them (with or
-    without patches) to galaxy-lab@bx.psu.edu. The Galaxy core
-    development team will issue patches to public servers before
-    announcing the issue to ensure there is time to patch and
-    highlight these fixes widely. We will provide you credit for the
-    discovery when publicly disclosing the issue.
+  * Serious security problems should not be fixed via pull request - please
+    responsibly disclose these by e-mailing them (with or without patches) to
+    galaxy-lab@lists.galaxyproject.org. The Galaxy core development team will
+    issue patches to public servers before announcing the issue to ensure there
+    is time to patch and highlight these fixes widely. We will provide you
+    credit for the discovery when publicly disclosing the issue.
 
 * If your changes modify code - please ensure the resulting files
   conform to Galaxy [style
@@ -103,3 +101,74 @@ developers.
 
   More information about tool development can be found [on the
   wiki](https://wiki.galaxyproject.org/Develop).
+
+## Handling Pull Requests
+
+Everyone is encouraged to express opinions and issue non-binding votes on pull
+requests, but only members of the *committers* group may issue binding votes
+on pull requests. Information on the *committers* group can be found in the
+[organization document](https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst)
+describing governance of the core Galaxy code base.
+
+Votes on pull requests should take the form of
+[+1, 0, -1, and fractions](http://www.apache.org/foundation/voting.html)
+as outlined by the Apache Foundation.
+
+Pull requests modifying pre-existing releases should be restricted to bug fixes
+and require at least 2 *+1* binding votes from someone other than the author of
+the pull request with no *-1* binding votes.
+
+Pull requests changing or clarifying the procedures governing this repository:
+
+- Must be made to the ``dev`` branch of this repository.
+- Must remain open for at least 192 hours (unless every qualified committer has
+  voted).
+- Require binding *+1* votes from at least 25% of qualified *committers* with no
+  *-1* binding votes.
+- Should be titled with the prefix *[PROCEDURES]* and tagged with
+  the *procedures* tag in Github.
+- Should not be modified once open. If changes are needed, the pull request
+  should be closed, re-opened with modifications, and votes reset.
+- Should be restricted to just modifying the procedures and generally should not
+  contain code modifications.
+- If the pull request adds or removes committers, there must be a separate
+  pull request for each person added or removed.
+
+Any other pull request requires at least 1 *+1* binding vote from someone other
+than the author of the pull request.
+
+### Timelines
+
+Except in the case of pull requests modifying governance procedures, there are
+generally no objective guidelines defining how long pull requests must remain
+open for comment. Subjectively speaking though - larger and more potentially
+controversial pull requests containing enhancements should remain open for a at
+least a few days to give everyone the opportunity to weigh in.
+
+### Vetos
+
+A note on vetos (*-1* votes) taken verbatim from the
+[Apache Foundation](http://www.apache.org/foundation/voting.html):
+
+>"A code-modification proposal may be stopped dead in its tracks by a -1 vote
+by a qualified voter. This constitutes a veto, and it cannot be overruled nor
+overridden by anyone. Vetos stand until and unless withdrawn by their casters.
+>
+>To prevent vetos from being used capriciously, they must be accompanied by a
+technical justification showing why the change is bad (opens a security
+exposure, negatively affects performance, etc. ). A veto without a
+justification is invalid and has no weight."
+
+For votes regarding non-coding issues such as procedure changes, the requirement
+that a veto is accompanied by a *technical* justification is relaxed somewhat,
+though a well reasoned justification must still be included.
+
+### Direct Commit Access
+
+The Galaxy *committers* group may only commit directly to Galaxy (i.e.  outside
+of a pull request and not following the procedures described here) the
+following two categories of patches:
+
+* Patches for serious security vulnerabilities.
+* Cherry-picking and/or merging of existing approved commits to other 
+branches.

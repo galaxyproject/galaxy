@@ -50,37 +50,11 @@ class RawObjectWrapper( ToolParameterValueWrapper ):
         try:
             return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
         except:
-            #Most likely None, which lacks __module__.
+            # Most likely None, which lacks __module__.
             return str( self.obj )
 
     def __getattr__( self, key ):
         return getattr( self.obj, key )
-
-
-class LibraryDatasetValueWrapper( ToolParameterValueWrapper ):
-    """
-    Wraps an input so that __str__ gives the "param_dict" representation.
-    """
-    def __init__( self, input, value, other_values={} ):
-        self.input = input
-        self.value = value
-        self._other_values = other_values
-        self.counter = 0
-
-    def __str__( self ):
-        return self.value
-
-    def __iter__( self ):
-        return self
-
-    def next( self ):
-        if self.counter >= len(self.value):
-            raise StopIteration
-        self.counter += 1
-        return self.value[ self.counter - 1 ]
-
-    def __getattr__( self, key ):
-        return getattr( self.value, key )
 
 
 class InputValueWrapper( ToolParameterValueWrapper ):
@@ -93,7 +67,18 @@ class InputValueWrapper( ToolParameterValueWrapper ):
         self._other_values = other_values
 
     def __str__( self ):
-        return self.input.to_param_dict_string( self.value, self._other_values )
+        to_param_dict_string = self.input.to_param_dict_string( self.value, self._other_values )
+        if isinstance( to_param_dict_string, list ):
+            return ','.join( to_param_dict_string )
+        else:
+            return to_param_dict_string
+
+    def __iter__( self ):
+        to_param_dict_string = self.input.to_param_dict_string( self.value, self._other_values )
+        if not isinstance( to_param_dict_string, list ):
+            return iter( [ to_param_dict_string ] )
+        else:
+            return iter( to_param_dict_string )
 
     def __getattr__( self, key ):
         return getattr( self.value, key )
@@ -174,7 +159,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
                 # again
                 setattr( self, name, rval )
             else:
-                #escape string value of non-defined metadata value
+                # escape string value of non-defined metadata value
                 rval = wrap_with_safe_string( rval )
             return rval
 
@@ -202,7 +187,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
                 ext = 'data'
             self.dataset = wrap_with_safe_string( NoneDataset( datatypes_registry=datatypes_registry, ext=ext ), no_wrap_classes=ToolParameterValueWrapper )
         else:
-            # Tool wrappers should not normally be accessing .dataset directly, 
+            # Tool wrappers should not normally be accessing .dataset directly,
             # so we will wrap it and keep the original around for file paths
             # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
             self.unsanitized = dataset
@@ -291,6 +276,7 @@ class DatasetListWrapper( list, ToolParameterValueWrapper, HasDatasets ):
             return self._dataset_wrapper( dataset, dataset_paths, **kwargs )
 
         list.__init__( self, map( to_wrapper, datasets ) )
+
     def __str__( self ):
         return ','.join( map( str, self ) )
 

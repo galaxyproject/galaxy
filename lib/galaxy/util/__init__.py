@@ -70,10 +70,10 @@ def is_multi_byte( chars ):
             # Probably binary
             return False
         if ( wchartype.is_asian( char ) or wchartype.is_full_width( char ) or
-             wchartype.is_kanji( char ) or wchartype.is_hiragana( char ) or
-             wchartype.is_katakana( char ) or wchartype.is_half_katakana( char )
-             or wchartype.is_hangul( char ) or wchartype.is_full_digit( char )
-             or wchartype.is_full_letter( char )):
+                wchartype.is_kanji( char ) or wchartype.is_hiragana( char ) or
+                wchartype.is_katakana( char ) or wchartype.is_half_katakana( char ) or
+                wchartype.is_hangul( char ) or wchartype.is_full_digit( char ) or
+                wchartype.is_full_letter( char )):
             return True
     return False
 
@@ -631,8 +631,8 @@ class Params( object ):
     0
     >>> par.symbols            # replaces unknown symbols with X
     ['alpha', '__lt____gt__', 'XrmX__pd__!']
-    >>> par.flatten()          # flattening to a list
-    [('status', 'on'), ('symbols', 'alpha'), ('symbols', '__lt____gt__'), ('symbols', 'XrmX__pd__!')]
+    >>> sorted(par.flatten())  # flattening to a list
+    [('status', 'on'), ('symbols', 'XrmX__pd__!'), ('symbols', '__lt____gt__'), ('symbols', 'alpha')]
     """
 
     # is NEVER_SANITIZE required now that sanitizing for tool parameters can be controlled on a per parameter basis and occurs via InputValueWrappers?

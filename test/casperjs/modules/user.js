@@ -50,7 +50,7 @@ User.prototype._submitRegistration = function _submitRegistration( email, passwo
 
         this.waitForNavigation( 'user/create', function beforeRegister(){
             this.withMainPanel( function mainBeforeRegister(){
-                spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') registering user:\n' + 
+                spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') registering user:\n' +
                     spaceghost.jsonStr( userInfo ) );
                 this.fill( spaceghost.data.selectors.registrationPage.form, userInfo, false );
                 // need manual submit (not a normal html form)
@@ -78,7 +78,7 @@ User.prototype._submitLogin = function _submitLogin( email, password ){
     var spaceghost = this.spaceghost,
         loginInfo = {
         //NOTE: keys are used as name selectors in the fill fn - must match the names of the inputs
-            email: email,
+            login: email,
             password: password
         };
 
@@ -122,7 +122,7 @@ User.prototype.registerUser = function registerUser( email, password, username )
             this.warning( 'Registration failed: ' + errorMessage.text );
             throw new spaceghost.GalaxyError( 'RegistrationError: ' + errorMessage.text );
         }
-        
+
         var messageInfo = this.elementInfoOrNull( spaceghost.data.selectors.messages.done );
         this.debug( 'post registration message:\n' + messageInfo.text );
 

@@ -22,17 +22,17 @@ log.addHandler( handler )
 metadata = MetaData()
 
 RepositoryDependency_table = Table( "repository_dependency", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ) )
+                                    Column( "id", Integer, primary_key=True ),
+                                    Column( "create_time", DateTime, default=now ),
+                                    Column( "update_time", DateTime, default=now, onupdate=now ),
+                                    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ) )
 
 RepositoryRepositoryDependencyAssociation_table = Table( "repository_repository_dependency_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True ),
-    Column( "repository_dependency_id", Integer, ForeignKey( "repository_dependency.id" ), index=True ) )
+                                                         Column( "id", Integer, primary_key=True ),
+                                                         Column( "create_time", DateTime, default=now ),
+                                                         Column( "update_time", DateTime, default=now, onupdate=now ),
+                                                         Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True ),
+                                                         Column( "repository_dependency_id", Integer, ForeignKey( "repository_dependency.id" ), index=True ) )
 
 def upgrade(migrate_engine):
     print __doc__

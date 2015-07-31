@@ -16,8 +16,9 @@ log = logging.getLogger( __name__ )
 
 toolbox = None
 
-#Do not test Data Managers as part of the standard Tool Test Framework.
+# Do not test Data Managers as part of the standard Tool Test Framework.
 TOOL_TYPES_NO_TEST = ( DataManagerTool, )
+
 
 class ToolTestCase( TwillTestCase ):
     """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`"""
@@ -253,7 +254,7 @@ def build_tests( app=None, testing_shed_tools=False, master_api_key=None, user_a
     for i, tool_id in enumerate( app.toolbox.tools_by_id ):
         tool = app.toolbox.get_tool( tool_id )
         if isinstance( tool, TOOL_TYPES_NO_TEST ):
-            #We do not test certain types of tools (e.g. Data Manager tools) as part of ToolTestCase 
+            # We do not test certain types of tools (e.g. Data Manager tools) as part of ToolTestCase
             continue
         if tool.tests:
             shed_tool_id = None if not testing_shed_tools else tool.id
@@ -263,13 +264,18 @@ def build_tests( app=None, testing_shed_tools=False, master_api_key=None, user_a
             baseclasses = ( ToolTestCase, )
             namespace = dict()
             for j, testdef in enumerate( tool.tests ):
+                test_function_name = 'test_tool_%06d' % j
+
                 def make_test_method( td ):
                     def test_tool( self ):
                         self.do_it( td )
+                    test_tool.__name__ = test_function_name
+
                     return test_tool
+
                 test_method = make_test_method( testdef )
                 test_method.__doc__ = "%s ( %s ) > %s" % ( tool.name, tool.id, testdef.name )
-                namespace[ 'test_tool_%06d' % j ] = test_method
+                namespace[ test_function_name ] = test_method
                 namespace[ 'shed_tool_id' ] = shed_tool_id
                 namespace[ 'master_api_key' ] = master_api_key
                 namespace[ 'user_api_key' ] = user_api_key

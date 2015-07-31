@@ -35,6 +35,8 @@ JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE = "Invalid job runner parameter for this pl
 JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = "Job runner parameter '%s' value '%s' could not be converted to the correct type"
 JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
 
+GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ]; then if [ -n "$PYTHONPATH" ]; then PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"; else PYTHONPATH="$GALAXY_LIB"; fi; export PYTHONPATH; fi;"""
+
 
 class RunnerParams( ParamsWithSpecs ):
 
@@ -80,7 +82,7 @@ class BaseJobRunner( object ):
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)
         """
-        while 1:
+        while True:
             ( method, arg ) = self.work_queue.get()
             if method is STOP_SIGNAL:
                 return
@@ -249,15 +251,17 @@ class BaseJobRunner( object ):
         Set metadata externally. Used by the local and lwr job runners where this
         shouldn't be attached to command-line to execute.
         """
-        #run the metadata setting script here
-        #this is terminate-able when output dataset/job is deleted
-        #so that long running set_meta()s can be canceled without having to reboot the server
+        # run the metadata setting script here
+        # this is terminate-able when output dataset/job is deleted
+        # so that long running set_meta()s can be canceled without having to reboot the server
         if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and job_wrapper.output_paths:
+            lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             external_metadata_script = job_wrapper.setup_external_metadata( output_fnames=job_wrapper.get_output_fnames(),
                                                                             set_extension=True,
                                                                             tmp_dir=job_wrapper.working_directory,
-                                                                            #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+                                                                            # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                                                                             kwds={ 'overwrite' : False } )
+            external_metadata_script = "%s %s" % (lib_adjust, external_metadata_script)
             if resolve_requirements:
                 dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands()
                 if dependency_shell_commands:
@@ -289,6 +293,7 @@ class BaseJobRunner( object ):
         env_setup_commands.extend( self._get_egg_env_opts() or [] )
         destination = job_wrapper.job_destination or {}
         envs = destination.get( "env", [] )
+        envs.extend( job_wrapper.environment_variables )
         for env in envs:
             env_setup_commands.append( env_to_statement( env ) )
         command_line = job_wrapper.runner_command_line
@@ -299,8 +304,8 @@ class BaseJobRunner( object ):
             working_directory=os.path.abspath( job_wrapper.working_directory ),
             command=command_line,
         )
-        ## Additional logging to enable if debugging from_work_dir handling, metadata
-        ## commands, etc... (or just peak in the job script.)
+        # Additional logging to enable if debugging from_work_dir handling, metadata
+        # commands, etc... (or just peak in the job script.)
         job_id = job_wrapper.job_id
         log.debug( '(%s) command is: %s' % ( job_id, command_line ) )
         options.update(**kwds)
@@ -356,11 +361,12 @@ class JobState( object ):
     Encapsulate state of jobs.
     """
     runner_states = Bunch(
-        WALLTIME_REACHED = 'walltime_reached',
-        MEMORY_LIMIT_REACHED = 'memory_limit_reached',
-        GLOBAL_WALLTIME_REACHED = 'global_walltime_reached',
-        OUTPUT_SIZE_LIMIT = 'output_size_limit'
+        WALLTIME_REACHED='walltime_reached',
+        MEMORY_LIMIT_REACHED='memory_limit_reached',
+        GLOBAL_WALLTIME_REACHED='global_walltime_reached',
+        OUTPUT_SIZE_LIMIT='output_size_limit'
     )
+
     def __init__( self ):
         self.runner_state_handled = False
 
@@ -448,7 +454,7 @@ class AsynchronousJobState( JobState ):
         for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
             try:
                 os.unlink( file )
-            except Exception, e:
+            except Exception as e:
                 log.debug( "(%s/%s) Unable to cleanup %s: %s" % ( self.job_wrapper.get_id_tag(), self.job_id, file, str( e ) ) )
 
     def register_cleanup_file_attribute( self, attribute ):
@@ -487,10 +493,10 @@ class AsynchronousJobRunner( BaseJobRunner ):
         Watches jobs currently in the monitor queue and deals with state
         changes (queued to running) and job completion.
         """
-        while 1:
+        while True:
             # Take any new watched jobs and put them on the monitor list
             try:
-                while 1:
+                while True:
                     async_job_state = self.monitor_queue.get_nowait()
                     if async_job_state is STOP_SIGNAL:
                         # TODO: This is where any cleanup would occur
@@ -554,7 +560,7 @@ class AsynchronousJobRunner( BaseJobRunner ):
                 stdout = shrink_stream_by_size( file( job_state.output_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
                 stderr = shrink_stream_by_size( file( job_state.error_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
                 which_try = (self.app.config.retry_job_output_collection + 1)
-            except Exception, e:
+            except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
                     stderr = 'Job output not returned from cluster'

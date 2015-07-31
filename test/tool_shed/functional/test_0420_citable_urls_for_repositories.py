@@ -53,8 +53,7 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
                                          description='Test 0400 Repository Citable URLs category' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        strings_displayed = [ 'Repository %s' % "'%s'" % repository_name, 
-                              'Repository %s has been created' % "<b>%s</b>" % repository_name ]
+        strings_displayed = self.expect_repo_created_strings(repository_name)
         repository = self.get_or_create_repository( name=repository_name, 
                                                     description=repository_description, 
                                                     long_description=repository_long_description, 
@@ -128,7 +127,7 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         strings_displayed = [ '/repository', 'view_repository', 'id=', encoded_repository_id ]
         strings_displayed_in_iframe = [ 'user1', 'filtering_0420', 'Galaxy filtering tool for test 0420' ]
         strings_displayed_in_iframe.append( self.get_repository_tip( repository ) )
-        strings_displayed_in_iframe.append( 'Sharable link to this repository:' )
+        strings_displayed_in_iframe.append( 'Link to this repository:' )
         strings_displayed_in_iframe.append( '%s/view/user1/filtering_0420' % self.url )
         self.load_citable_url( username='user1', 
                                repository_name='filtering_0420', 
@@ -154,7 +153,7 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         # The iframe should point to /repository/view_repository?id=<encoded repository ID>
         strings_displayed = [ '/repository', 'view_repository', 'id=' + encoded_repository_id ]
         strings_displayed_in_iframe = [ 'user1', 'filtering_0420', 'Galaxy filtering tool for test 0420', first_changeset_hash ]
-        strings_displayed_in_iframe.append( 'Sharable link to this repository revision:' )
+        strings_displayed_in_iframe.append( 'Link to this repository revision:' )
         strings_displayed_in_iframe.append( '%s/view/user1/filtering_0420/%s' % ( self.url, first_changeset_hash ) )
         strings_not_displayed_in_iframe = []
         self.load_citable_url( username='user1', 
@@ -179,7 +178,7 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         strings_displayed = [ '/repository', 'view_repository', 'id=' + encoded_repository_id ]
         strings_displayed.extend( [ 'The+change+log', 'does+not+include+revision', invalid_changeset_hash, 'status=error' ] )
         strings_displayed_in_iframe = [ 'user1', 'filtering_0420', 'Galaxy filtering tool for test 0420' ]
-        strings_displayed_in_iframe.append( 'Sharable link to this repository revision:' )
+        strings_displayed_in_iframe.append( 'Link to this repository revision:' )
         strings_displayed_in_iframe.append( '%s/view/user1/filtering_0420/%s' % ( self.url, invalid_changeset_hash ) )
         strings_not_displayed_in_iframe = []
         self.load_citable_url( username='user1', 

@@ -24,6 +24,7 @@ from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util import stringify_dictionary_keys
 from galaxy.util import string_as_bool
 from galaxy.util import in_directory
+from galaxy.util.json import safe_dumps
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
 
@@ -121,6 +122,12 @@ class MetadataCollection( object ):
             else:
                 self.parent._metadata[name] = value
 
+    def remove_key( self, name ):
+        if name in self.parent._metadata:
+            del self.parent._metadata[name]
+        else:
+            log.info( "Attempted to delete invalid key '%s' from MetadataCollection" % name )
+
     def element_is_set( self, name ):
         return bool( self.parent._metadata.get( name, False ) )
 
@@ -166,6 +173,8 @@ class MetadataCollection( object ):
                 # if the metadata value is not found in our externally set metadata but it has a value in the 'old'
                 # metadata associated with our dataset, we'll delete it from our dataset's metadata dict
                 del dataset._metadata[ name ]
+        if '__extension__' in JSONified_dict:
+            dataset.extension = JSONified_dict['__extension__']
 
     def to_JSON_dict( self, filename=None ):
         # galaxy.model.customtypes.json_encoder.encode()
@@ -174,6 +183,8 @@ class MetadataCollection( object ):
         for name, spec in self.spec.items():
             if name in dataset_meta_dict:
                 meta_dict[ name ] = spec.param.to_external_value( dataset_meta_dict[ name ] )
+        if '__extension__' in dataset_meta_dict:
+            meta_dict[ '__extension__' ] = dataset_meta_dict['__extension__']
         if filename is None:
             return json.dumps( meta_dict )
         json.dump( meta_dict, open( filename, 'wb+' ) )
@@ -503,7 +514,7 @@ class DictParameter( MetadataParameter ):
 
     def to_safe_string( self, value ):
         # We do not sanitize json dicts
-        return json.safe_dumps( value )
+        return safe_dumps( value )
 
 
 class PythonObjectParameter( MetadataParameter ):
@@ -662,7 +673,7 @@ class MetadataTempFile( object ):
                 if isinstance( value, cls ) and os.path.exists( value.file_name ):
                     log.debug( 'Cleaning up abandoned MetadataTempFile file: %s' % value.file_name )
                     os.unlink( value.file_name )
-        except Exception, e:
+        except Exception as e:
             log.debug( 'Failed to cleanup MetadataTempFile temp files from %s: %s' % ( filename, e ) )
 
 
@@ -683,11 +694,15 @@ class JobExternalOutputMetadataWrapper( object ):
     def get_output_filenames_by_dataset( self, dataset, sa_session ):
         if isinstance( dataset, galaxy.model.HistoryDatasetAssociation ):
             return sa_session.query( galaxy.model.JobExternalOutputMetadata ) \
-                             .filter_by( job_id=self.job_id, history_dataset_association_id=dataset.id ) \
+                             .filter_by( job_id=self.job_id,
+                                         history_dataset_association_id=dataset.id,
+                                         is_valid=True ) \
                              .first()  # there should only be one or None
         elif isinstance( dataset, galaxy.model.LibraryDatasetDatasetAssociation ):
             return sa_session.query( galaxy.model.JobExternalOutputMetadata ) \
-                             .filter_by( job_id=self.job_id, library_dataset_dataset_association_id=dataset.id ) \
+                             .filter_by( job_id=self.job_id,
+                                         library_dataset_dataset_association_id=dataset.id,
+                                         is_valid=True ) \
                              .first()  # there should only be one or None
         return None
 
@@ -696,12 +711,23 @@ class JobExternalOutputMetadataWrapper( object ):
         # need to make different keys for them, since ids can overlap
         return "%s_%d" % ( dataset.__class__.__name__, dataset.id )
 
+    def invalidate_external_metadata( self, datasets, sa_session ):
+        for dataset in datasets:
+            jeom = self.get_output_filenames_by_dataset( dataset, sa_session )
+            # shouldn't be more than one valid, but you never know
+            while jeom:
+                jeom.is_valid = False
+                sa_session.add( jeom )
+                sa_session.flush()
+                jeom = self.get_output_filenames_by_dataset( dataset, sa_session )
+
     def setup_external_metadata( self, datasets, sa_session, exec_dir=None,
                                  tmp_dir=None, dataset_files_path=None,
                                  output_fnames=None, config_root=None,
                                  config_file=None, datatypes_config=None,
                                  job_metadata=None, compute_tmp_dir=None,
-                                 include_command=True, kwds=None ):
+                                 include_command=True, max_metadata_value_size=0,
+                                 kwds=None):
         kwds = kwds or {}
         if tmp_dir is None:
             tmp_dir = MetadataTempFile.tmp_dir
@@ -728,7 +754,7 @@ class JobExternalOutputMetadataWrapper( object ):
                         if dataset_path.real_path == metadata_files.dataset.file_name:
                             return dataset_path.false_path or dataset_path.real_path
                 return ""
-            line = "%s,%s,%s,%s,%s,%s" % (
+            line = '"%s,%s,%s,%s,%s,%s"' % (
                 metadata_path_on_compute(metadata_files.filename_in),
                 metadata_path_on_compute(metadata_files.filename_kwds),
                 metadata_path_on_compute(metadata_files.filename_out),
@@ -758,8 +784,8 @@ class JobExternalOutputMetadataWrapper( object ):
             # so we will only populate the dictionary once
             metadata_files = self.get_output_filenames_by_dataset( dataset, sa_session )
             if not metadata_files:
-                metadata_files = galaxy.model.JobExternalOutputMetadata( dataset=dataset)
-                metadata_files.job_id = self.job_id
+                job = sa_session.query( galaxy.model.Job ).get( self.job_id )
+                metadata_files = galaxy.model.JobExternalOutputMetadata( job=job, dataset=dataset )
                 # we are using tempfile to create unique filenames, tempfile always returns an absolute path
                 # we will use pathnames relative to the galaxy root, to accommodate instances where the galaxy root
                 # is located differently, i.e. on a cluster node with a different filesystem structure
@@ -800,15 +826,16 @@ class JobExternalOutputMetadataWrapper( object ):
                 sa_session.add( metadata_files )
                 sa_session.flush()
             metadata_files_list.append( metadata_files )
-        args = "%s %s %s" % ( datatypes_config,
-                              job_metadata,
-                              " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
+        args = '"%s" "%s" %s %s' % ( datatypes_config,
+                                     job_metadata,
+                                     " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ),
+                                     max_metadata_value_size)
         if include_command:
             # return command required to build
             fd, fp = tempfile.mkstemp( suffix='.py', dir=tmp_dir, prefix="set_metadata_" )
             metadata_script_file = abspath( fp )
             os.fdopen( fd, 'w' ).write( 'from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()' )
-            return "python %s %s" % ( metadata_path_on_compute(metadata_script_file), args )
+            return 'python "%s" %s' % ( metadata_path_on_compute(metadata_script_file), args )
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return args
@@ -836,7 +863,7 @@ class JobExternalOutputMetadataWrapper( object ):
                                 ( 'filename_override_metadata', metadata_files.filename_override_metadata ) ]:
                 try:
                     os.remove( fname )
-                except Exception, e:
+                except Exception as e:
                     log.debug( 'Failed to cleanup external metadata file (%s) for %s: %s' % ( key, dataset_key, e ) )
 
     def set_job_runner_external_pid( self, pid, sa_session ):

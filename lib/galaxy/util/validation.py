@@ -29,8 +29,8 @@ def validate_boolean( key, val ):
     return val
 
 
-#TODO:
-#def validate_integer( self, key, val, min, max ):
-#def validate_float( self, key, val, min, max ):
-#def validate_number( self, key, val, min, max ):
-#def validate_genome_build( self, key, val ):
+# TODO:
+# def validate_integer( self, key, val, min, max ):
+# def validate_float( self, key, val, min, max ):
+# def validate_number( self, key, val, min, max ):
+# def validate_genome_build( self, key, val ):

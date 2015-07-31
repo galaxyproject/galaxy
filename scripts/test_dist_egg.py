@@ -6,7 +6,9 @@ for whatever egg you want to test.
 
 usage: test_dist_egg.py <egg_name>
 """
-import os, sys, logging, subprocess
+import os
+import subprocess
+import sys
 
 try:
     assert sys.argv[1]
@@ -14,7 +16,7 @@ except:
     print __doc__
     sys.exit( 1 )
 
-lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..', 'lib' ) )
+lib = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'lib' ) )
 sys.path.insert( 0, lib )
 
 if sys.argv[1].endswith( '.egg' ):
@@ -44,9 +46,9 @@ else:
     name = sys.argv[1]
 
     from galaxy.eggs.dist import DistScrambleCrate
-    
+
     c = DistScrambleCrate()
-    
+
     for egg in c[name]:
         print 'Checking %s %s for %s on %s' % ( name, egg.version, egg.platform, egg.build_host )
         p = subprocess.Popen( 'ssh %s %s %s %s %s' % ( egg.build_host, egg.python, os.path.abspath( __file__ ), egg.distribution.location, egg.platform ), shell=True )

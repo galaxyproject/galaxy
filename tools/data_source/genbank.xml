@@ -9,7 +9,7 @@
     </param>
     <param name="text" size="40" type="text" value="6273291">
       <label>with accession ID</label>
-    </param>   
+    </param>
   </inputs>
   <outputs>
     <data format="fasta" name="output" />

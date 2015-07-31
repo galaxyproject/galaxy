@@ -37,4 +37,3 @@ def requirements_to_recipe_contexts(requirements, brew_context):
             brew_context
         )
     return map(to_recipe_context, requirements_to_recipes(requirements))
-

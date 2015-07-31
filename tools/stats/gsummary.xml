@@ -11,7 +11,8 @@
     <data format="tabular" name="out_file1" />
   </outputs>
   <requirements>
-    <requirement type="python-module">rpy</requirement>
+    <requirement type="package" version="2.15.1">R</requirement>
+    <requirement type="package">rpy</requirement>
   </requirements>
   <tests>
     <test>

@@ -1,12 +1,12 @@
 <tool id="liftOver1" name="Convert genome coordinates" version="1.0.3">
   <description> between assemblies and genomes</description>
   <command interpreter="python">
-  liftOver_wrapper.py 
-  $input 
-  "$out_file1" 
-  "$out_file2" 
-  $dbkey 
-  $to_dbkey 
+  liftOver_wrapper.py
+  $input
+  "$out_file1"
+  "$out_file2"
+  $dbkey
+  $to_dbkey
   #if isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gff').__class__) or isinstance( $input.datatype, $__app__.datatypes_registry.get_datatype_by_extension('gtf').__class__):
         "gff"
   #else:
@@ -26,24 +26,24 @@
         <column name="dbkey" index="0"/>
         <filter type="data_meta" ref="input" key="dbkey" column="0" />
       </options>
-    </param> 
+    </param>
     <param name="minMatch" size="10" type="float" value="0.95" label="Minimum ratio of bases that must remap" help="Recommended values: same species = 0.95, different species = 0.10" />
     <conditional name="multiple">
-	    <param name="choice" type="select" label="Allow multiple output regions?" help="Recommended values: same species = No, different species = Yes">
-	    	<option value="0" selected="true">No</option>
-	    	<option value="1">Yes</option>
-		</param>
-		<when value="0">
-		    <param name="minSizeQ" type="hidden" value="0" />
-    		<param name="minChainQ" type="hidden" value="0" />
-    		<param name="minChainT" type="hidden" value="0" />
-    	</when>
-    	<when value="1">
-    	    <param name="minSizeQ" size="10" type="integer" value="0" label="Minimum matching region size in dataset" help="Recommended value: set to >= 300 bases for complete transcripts"/>
-    		<param name="minChainQ" size="10" type="integer" value="500" label="Minimum chain size in dataset"/>
-    		<param name="minChainT" size="10" type="integer" value="500" label="Minimum chain size in target"/>
-    	</when>
-	</conditional>
+        <param name="choice" type="select" label="Allow multiple output regions?" help="Recommended values: same species = No, different species = Yes">
+            <option value="0" selected="true">No</option>
+            <option value="1">Yes</option>
+        </param>
+        <when value="0">
+            <param name="minSizeQ" type="hidden" value="0" />
+            <param name="minChainQ" type="hidden" value="0" />
+            <param name="minChainT" type="hidden" value="0" />
+        </when>
+        <when value="1">
+            <param name="minSizeQ" size="10" type="integer" value="0" label="Minimum matching region size in dataset" help="Recommended value: set to >= 300 bases for complete transcripts"/>
+            <param name="minChainQ" size="10" type="integer" value="500" label="Minimum chain size in dataset"/>
+            <param name="minChainT" size="10" type="integer" value="500" label="Minimum chain size in target"/>
+        </when>
+    </conditional>
   </inputs>
   <outputs>
     <data format="input" name="out_file1" label="${tool.name} on ${on_string} [ MAPPED COORDINATES ]">
@@ -123,7 +123,7 @@ are present the tool will return empty output datasets.
 
 This tool is based on the LiftOver utility and Chain track from `the UC Santa Cruz Genome Browser`__.
 
-It converts coordinates and annotations between assemblies and genomes. It produces 2 files, one containing all the mapped coordinates and the other containing the unmapped coordinates, if any. 
+It converts coordinates and annotations between assemblies and genomes. It produces 2 files, one containing all the mapped coordinates and the other containing the unmapped coordinates, if any.
 
  .. __: http://genome.ucsc.edu/
 
