@@ -91,7 +91,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
                     at the Nth item
 
         The list returned can be ordered using the optional parameter:
-            order:  string containing one the valid ordering attributes followed
+            order:  string containing one of the valid ordering attributes followed
                     (optionally) by '-asc' or '-dsc' for ascending and descending
                     order respectively. Orders can be stacked as a comma-
                     separated list of values.
@@ -133,7 +133,6 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         # and any sent in from the query string
         filters += self.history_filters.parse_filters( filter_params )
 
-        # TODO: eventually make order_by a param as well
         order_by = self._parse_order_by( kwd.get( 'order', 'create_time-dsc' ) )
         histories = self.history_manager.list( filters=filters, order_by=order_by, limit=limit, offset=offset )
 
