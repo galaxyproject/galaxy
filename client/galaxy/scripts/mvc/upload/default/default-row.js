@@ -14,11 +14,6 @@ define(['utils/utils',
 
 // item view
 return Backbone.View.extend({
-    // options
-    options: {
-        padding : 8
-    },
-
     // states
     status_classes : {
         init    : 'upload-icon-button fa fa-trash-o',
@@ -170,25 +165,11 @@ return Backbone.View.extend({
 
         // activate text field if file is new
         if (file_mode == 'new') {
-            // get text component
-            var text = this.$('#text');
-
-            // get padding
-            var padding = this.options.padding;
-
-            // get dimensions
-            var width = this.$el.width() - 2 * padding;
-            var height = this.$el.height() - padding;
-
-            // set dimensions
-            text.css('width', width + 'px');
-            text.css('top', height + 'px');
-            this.$el.height(height + text.height() + 2 * padding);
-
-            // show text field
-            text.show();
-
-            // update icon
+            this.$('#text').css({
+                'width' : this.$el.width() - 2 * 8 + 'px',
+                'top'   : this.$el.height() - 8 + 'px'
+            }).show();
+            this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 2 * 8);
             this.$('#mode').addClass('fa fa-pencil');
         }
 
@@ -256,11 +237,13 @@ return Backbone.View.extend({
         // identify symbol and reset classes
         this.$('#symbol').removeClass().addClass(this.status_classes[status]);
 
-        // default fields
-        this.$('#text-content').attr('disabled', status != 'init');
+        // enable/disable model flag
+        this.model.set('enabled', status == 'init');
 
         // enable/disable row fields
-        if (status == 'init') {
+        var enabled = this.model.get('enabled');
+        this.$('#text-content').attr('disabled', !enabled);
+        if (enabled) {
             this.select_genome.enable();
             this.select_extension.enable();
         } else {

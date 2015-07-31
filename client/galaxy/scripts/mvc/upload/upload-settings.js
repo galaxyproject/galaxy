@@ -48,7 +48,7 @@ return Backbone.View.extend({
 
         // disable options
         var $cover = this.$('#upload-settings-cover');
-        if (this.model.get('status') != 'init') {
+        if (!this.model.get('enabled')) {
             $cover.show();
         } else {
             $cover.hide();
@@ -57,7 +57,7 @@ return Backbone.View.extend({
 
     // switch state
     _switchState: function (element_id, parameter_id) {
-        if (this.model.get('status') == 'init') {
+        if (this.model.get('enabled')) {
             var checked = !this.model.get(parameter_id);
             this.model.set(parameter_id, checked);
             this._renderState(element_id, checked);

@@ -180,7 +180,7 @@ return Backbone.View.extend({
             id          : index,
             file_name   : file.name,
             file_size   : file.size,
-            file_mode   : file.mode,
+            file_mode   : file.mode || 'local',
             file_path   : file.path
         });
 

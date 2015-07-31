@@ -111,7 +111,7 @@
         // respond to an upload request
         function add(files) {
             // only allow adding file if current batch is complete
-            if (queue_running) {
+            if (!files || !files.length || queue_running) {
                 return;
             }
 

@@ -141,7 +141,7 @@ return Backbone.View.extend({
 
     // refresh
     _refresh: function() {
-        var filtered = this.app.collection.where({file_mode : 'ftp'});
+        var filtered = this.app.collection.where({file_mode: 'ftp', enabled: true});
         this.$select_all.removeClass();
         if (filtered.length == 0) {
             this.$select_all.addClass(this.options.class_add);
@@ -158,8 +158,8 @@ return Backbone.View.extend({
     _find: function(ftp_file) {
         var item = this.app.collection.findWhere({
             file_path   : ftp_file.path,
-            status      : 'init',
-            file_mode   : 'ftp'
+            file_mode   : 'ftp',
+            enabled     : true
         });
         if (item) {
             return item.get('id');
