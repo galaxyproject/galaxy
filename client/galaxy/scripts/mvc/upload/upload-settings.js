@@ -79,7 +79,7 @@ return Backbone.View.extend({
     _template: function() {
         return  '<div class="upload-settings" style="position: relative;">' +
                     '<div id="upload-settings-cover" class="upload-settings-cover"/>' +
-                    '<table class="table table-striped">' +
+                    '<table class="ui-table-striped">' +
                         '<tbody>' +
                             '<tr>' +
                                 '<td><div id="upload-space-to-tab"/></td>' +
