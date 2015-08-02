@@ -27,6 +27,7 @@
 
         // drag/drop events
         el.on('drop', function (e) {
+            opts.ondragleave(e);
             if(e.dataTransfer) {
                 opts.onchange(e.dataTransfer.files);
                 e.preventDefault();
@@ -97,7 +98,9 @@
             multiple    : true,
             onchange    : function(files) {
                 add(files);
-            }
+            },
+            ondragover  : options.ondragover,
+            ondragleave : options.ondragleave
         });
 
         // progress
@@ -184,7 +187,7 @@
             if (filesize < maxfilesize || file.mode == 'ftp') {
                 // get parameters
                 var data = opts.initialize(index, file);
-  
+
                 // validate
                 if (data)
                     send(index, file, data);
@@ -243,7 +246,7 @@
                         text = opts.error_server;
                     else if (!text)
                         text = opts.error_default;
-  
+
                     // request error
                     error(index, file, text + " (" + xhr.status + ")");
                 } else {
@@ -265,7 +268,7 @@
         function success (index, file, msg) {
             // parse message
             opts.success(index, file, msg);
-  
+
             // restart process after success
             process();
         }

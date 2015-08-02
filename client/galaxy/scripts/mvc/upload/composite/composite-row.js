@@ -3,6 +3,7 @@ define(['utils/utils',
         'mvc/upload/upload-model',
         'mvc/upload/upload-settings',
         'mvc/ui/ui-popover',
+        'mvc/ui/ui-misc',
         'mvc/ui/ui-select',
         'utils/uploadbox'],
 
@@ -10,6 +11,7 @@ define(['utils/utils',
                     UploadModel,
                     UploadSettings,
                     Popover,
+                    Ui,
                     Select
                 ) {
 
@@ -23,9 +25,6 @@ return Backbone.View.extend({
         success : 'status fa fa-check',
         error   : 'status fa fa-exclamation-triangle'
     },
-
-    // source selector
-    select_source : null,
 
     // initialize
     initialize: function(app, options) {
@@ -43,10 +42,17 @@ return Backbone.View.extend({
 
         // build upload functions
         this.uploadinput = this.$el.uploadinput({
+            ondragover: function() {
+                self.$el.addClass('warning');
+            },
+            ondragleave: function() {
+                self.$el.removeClass('warning');
+            },
             onchange: function(files) {
                 if (files && files.length > 0) {
                     self.model.set('file_name', files[0].name);
                     self.model.set('file_size', files[0].size);
+                    self.model.set('file_mode', files[0].mode || 'local');
                 }
             }
         });
@@ -58,17 +64,17 @@ return Backbone.View.extend({
             placement   : 'bottom'
         });
 
-        // initialize source selection field
-        this.select_source = new Select.View({
-            container   : this.$('#source'),
-            placeholder : 'Select a source...',
-            css         : 'source',
-            data        : [ { id: '',       text: 'Select a source...' },
-                            { id: 'local',  text: 'Choose local file' },
-                            { id: 'ftp',    text: 'Choose FTP file' },
-                            { id: 'new',    text: 'Paste/fetch data' } ],
-            onchange    : function(file_mode) {
-                self.model.set('file_mode', file_mode);
+        // source selection popup
+        this.button_menu = new Ui.ButtonMenu({
+            icon        : 'fa-caret-down',
+            pull        : 'left'
+        });
+        this.$('#source').append(this.button_menu.$el);
+        this.button_menu.addMenu({
+            icon        : 'fa-laptop',
+            title       : 'Choose local file',
+            onclick     : function() {
+                self.uploadinput.dialog();
             }
         });
 
@@ -84,7 +90,7 @@ return Backbone.View.extend({
 
         // handle settings popover
         this.$('#settings').on('click' , function(e) { self._showSettings(); })
-                            .on('mousedown', function(e) { e.preventDefault(); });
+                           .on('mousedown', function(e) { e.preventDefault(); });
 
         //
         // model events
@@ -145,9 +151,6 @@ return Backbone.View.extend({
             this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 2 * 8);
         } else {
             this.$('#text').hide();
-        }
-        if (file_mode == 'local') {
-            this.uploadinput.dialog();
         }
     },
 
@@ -226,10 +229,10 @@ return Backbone.View.extend({
     _template: function(options) {
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
-                        '<div id="status"/>' +
+                        '<div id="source"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="source" class="source"/>' +
+                        '<div id="status"/>' +
                     '</td>' +
                     '<td>' +
                         '<div id="file_desc" class="title"/>' +

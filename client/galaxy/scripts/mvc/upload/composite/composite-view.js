@@ -392,7 +392,7 @@ return Backbone.View.extend({
 
         // check default message
         //if (this.active) {
-        var message = 'Please select a composite datatype and specify its components.';
+        var message = 'You can Drag & Drop files into the rows.';
         /*} else {
                 message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Some supported browsers are: Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
         } else {
@@ -452,11 +452,11 @@ return Backbone.View.extend({
                         '<span id="footer-genome"/>' +
                     '</div>' +
                     '<div id="upload-box" class="upload-box">' +
-                        '<table id="upload-table" class="table table-striped" style="display: none;">' +
+                        '<table id="upload-table" class="ui-table-striped" style="display: none;">' +
                             '<thead>' +
                                 '<tr>' +
                                     '<th/>' +
-                                    '<th>Source</th>' +
+                                    '<th/>' +
                                     '<th>Description</th>' +
                                     '<th>Name</th>' +
                                     '<th>Size</th>' +

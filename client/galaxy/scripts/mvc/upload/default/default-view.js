@@ -88,7 +88,9 @@ return Backbone.View.extend({
             progress        : function(index, file, message) { self._eventProgress(index, file, message) },
             success         : function(index, file, message) { self._eventSuccess(index, file, message) },
             error           : function(index, file, message) { self._eventError(index, file, message) },
-            complete        : function() { self._eventComplete() }
+            complete        : function() { self._eventComplete() },
+            ondragover      : function() { self.$('.upload-box').addClass('highlight'); },
+            ondragleave     : function() { self.$('.upload-box').removeClass('highlight'); }
         });
 
         // add ftp file viewer
@@ -573,7 +575,7 @@ return Backbone.View.extend({
                         '<h6 id="upload-info" class="upload-info"/>' +
                     '</div>' +
                     '<div id="upload-box" class="upload-box">' +
-                        '<table id="upload-table" class="table table-striped" style="display: none;">' +
+                        '<table id="upload-table" class="ui-table-striped" style="display: none;">' +
                             '<thead>' +
                                 '<tr>' +
                                     '<th>Name</th>' +
