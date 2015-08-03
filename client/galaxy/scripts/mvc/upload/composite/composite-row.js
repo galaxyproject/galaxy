@@ -1,6 +1,5 @@
 // dependencies
 define(['utils/utils',
-        'mvc/upload/upload-model',
         'mvc/upload/upload-settings',
         'mvc/ui/ui-popover',
         'mvc/ui/ui-misc',
@@ -8,7 +7,6 @@ define(['utils/utils',
         'utils/uploadbox'],
 
         function(   Utils,
-                    UploadModel,
                     UploadSettings,
                     Popover,
                     Ui,
@@ -35,10 +33,10 @@ return Backbone.View.extend({
         var self = this;
 
         // create model
-        this.model = new UploadModel.Model(options);
+        this.model = options.model;
 
         // add upload item
-        this.setElement(this._template(options));
+        this.setElement(this._template(options.model));
 
         // build upload functions
         this.uploadinput = this.$el.uploadinput({
@@ -260,7 +258,5 @@ return Backbone.View.extend({
                     '</td>' +
                 '</tr>';
     }
-
 });
-
 });

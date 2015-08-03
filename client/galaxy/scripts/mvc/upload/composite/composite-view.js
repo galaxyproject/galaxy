@@ -55,20 +55,25 @@ return Backbone.View.extend({
             container   : this.$('#footer-extension'),
             data        : _.filter(this.list_extensions, function(ext) { return ext.composite_files }),
             onchange    : function(extension) {
-                // reset current collection
+                // renew collection
                 self.collection.reset();
-
-                // add new models
-                var details = _.findWhere(self.list_extensions, { id: extension });
+                var details = _.findWhere(self.list_extensions, { id : extension });
                 if (details && details.composite_files) {
-                    self.collection.add(details.composite_files);
+                    for (var i in details.composite_files) {
+                        var item = details.composite_files[i];
+                        self.collection.add({
+                            id          : self.collection.size(),
+                            file_name   : '<b>-</b>',
+                            file_desc   : item['description'] || item['name'] || 'Unavailable'
+                        });
+                    }
                 }
             }
         });
 
         // handle extension info popover
         this.$('#footer-extension-info').on('click', function(e) {
-            self.showExtensionInfo({
+            self._showExtensionInfo({
                 $el         : $(e.target),
                 title       : self.select_extension.text(),
                 extension   : self.select_extension.value(),
@@ -88,55 +93,22 @@ return Backbone.View.extend({
         this.collection.on('add', function (item) {
             self._eventAnnounce(item);
         });
-
-        this.collection.on('reset', function() {
-            //self._eventReset();
+        this.collection.on('change add', function(item) {
+            self._updateScreen();
         });
 
         // trigger initial onchange event
         this.select_extension.options.onchange(this.select_extension.value());
-
-        // enable/disable buttons, update messages
-        this._updateScreen();
     },
 
     //
-    // events triggered by collection
-    //
-
-    // remove item from upload list
-    _eventRemove : function(item) {
-        // update status
-        var status = item.get('status');
-
-        // reduce counter
-        if (status == 'success') {
-            this.counter.success--;
-        } else if (status == 'error') {
-            this.counter.error--;
-        } else {
-            this.counter.announce--;
-        }
-
-        // show on screen info
-        this._updateScreen();
-
-        // remove from queue
-        this.uploadbox.remove(item.id);
-    },
-
-    //
-    // events triggered by the upload box plugin
+    // upload events / process pipeline
     //
 
     // builds the basic ui with placeholder rows for each composite data type file
     _eventAnnounce: function(item) {
         // create view/model
-        var upload_item = new UploadItem(this, {
-            id          : this.collection.size(),
-            file_name   : '<b>-</b>',
-            file_desc   : item.get('description') || item.get('name') || 'Unavailable'
-        });
+        var upload_item = new UploadItem(this, { model : item });
 
         // add upload item element to table
         this.$('#upload-table > tbody:first').append(upload_item.$el);
@@ -145,11 +117,41 @@ return Backbone.View.extend({
         upload_item.render();
 
         // table visibility
-        if (this.collection.size() > 0) {
+        if (this.collection.length > 0) {
             this.$('#upload-table').show();
         } else {
             this.$('#upload-table').hide();
         }
+    },
+
+    // start upload process
+    _eventStart : function() {
+        // check
+        if (this.counter.announce == 0 || this.counter.running > 0) {
+            return;
+        }
+
+        // reset current size
+        var self = this;
+        this.upload_size = 0;
+        this.upload_completed = 0;
+        // switch icons for new uploads
+        this.collection.each(function(item) {
+            if(item.get('status') == 'init') {
+                item.set('status', 'queued');
+                self.upload_size += item.get('file_size');
+            }
+        });
+
+        // reset progress
+        this.ui_button.set('percentage', 0);
+        this.ui_button.set('status', 'success');
+
+        // update running
+        this._updateScreen();
+
+        // initiate upload procedure in plugin
+        this.uploadbox.start();
     },
 
     // the uploadbox plugin is initializing the upload for this file
@@ -291,18 +293,14 @@ return Backbone.View.extend({
         this._updateScreen();
     },
 
-    //
-    // events triggered by this view
-    //
-
-    // [public] display extension info popup
-    showExtensionInfo : function(options) {
+    // display extension info popup
+    _showExtensionInfo : function(options) {
         // initialize
         var self = this;
         var $el = options.$el;
         var extension = options.extension;
         var title = options.title;
-        var description = _.findWhere(this.list_extensions, {'id': extension});
+        var description = _.findWhere(this.list_extensions, { id : extension });
 
         // create popup
         this.extension_popup && this.extension_popup.remove();
@@ -319,101 +317,20 @@ return Backbone.View.extend({
         this.extension_popup.show();
     },
 
-    // start upload process
-    _eventStart : function() {
-        // check
-        if (this.counter.announce == 0 || this.counter.running > 0) {
-            return;
-        }
-
-        // reset current size
-        var self = this;
-        this.upload_size = 0;
-        this.upload_completed = 0;
-        // switch icons for new uploads
-        this.collection.each(function(item) {
-            if(item.get('status') == 'init') {
-                item.set('status', 'queued');
-                self.upload_size += item.get('file_size');
-            }
-        });
-
-        // reset progress
-        this.ui_button.set('percentage', 0);
-        this.ui_button.set('status', 'success');
-
-        // update running
-        this._updateScreen();
-
-        // initiate upload procedure in plugin
-        this.uploadbox.start();
-    },
-
-    // remove all
-    _eventReset : function() {
-        // make sure queue is not running
-        if (this.counter.running == 0){
-            // reset collection
-            this.collection.reset();
-
-            // reset counter
-            this.counter.reset();
-
-            // show on screen info
-            this._updateScreen();
-
-            // remove from queue
-            this.uploadbox.reset();
-
-            // reset value for universal type drop-down
-            this.select_extension.value(this.options.default_extension);
-            this.select_genome.value(this.options.default_genome);
-
-            // reset button
-            this.ui_button.set('percentage', 0);
-        }
-    },
-
-    // update genome for all models
-    updateGenome: function(genome, defaults_only) {
-        var self = this;
-        this.collection.each(function(item) {
-            if (item.get('status') == 'init' && (item.get('genome') == self.options.default_genome || !defaults_only)) {
-                item.set('genome', genome);
-            }
-        });
-    },
-
     // set screen
     _updateScreen: function () {
-        /*
-            update on screen info
-        */
+        // show default message
+        this.$('#upload-info').html('You can Drag & Drop files into the rows.');
 
-        // check default message
-        //if (this.active) {
-        var message = 'You can Drag & Drop files into the rows.';
-        /*} else {
-                message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Some supported browsers are: Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
-        } else {
-            if (this.counter.running == 0)
-                message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Start\' to proceed.';
-            else
-                message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
-        }*/
-
-        // set html content
-        this.$('#upload-info').html(message);
-
-        /*/ update upload button
-        if (this.counter.running == 0 && this.counter.announce > 0) {
+        // show start button if components have been selected
+        if (this.collection.length == this.collection.where({ status : 'ready' }).length) {
             this.btnStart.enable();
         } else {
             this.btnStart.disable();
-        }*/
+        }
 
         // table visibility
-        if (this.collection.size() > 0) {
+        if (this.collection.length > 0) {
             this.$('#upload-table').show();
         } else {
             this.$('#upload-table').hide();
