@@ -20,8 +20,8 @@
 
 // For making state colors, how much to darken and lighten
 @state-text-darken-percent: 15%;
-@state-bg-lighten-percent: 66%;
-@state-bg-saturate-percent: 22%;
+@state-bg-lighten-percent: 40%;
+@state-bg-saturate-percent: 30%;
 
 // Why bootstrap stopped defining these as variables I don't know
 @white: #fff;
@@ -29,16 +29,16 @@
 
 // Bootstrap default colors for states, will be adjusted based on @base-color
 
-@bs-primary:		 #428bca;
-@bs-info:            #5bc0de;
+@bs-primary:         #428bca;
 @bs-success:         #5cb85c;
 @bs-warning:         #f0ad4e;
 @bs-danger:          #d9534f;
+@bs-info:            #5bc0de;
 
 // Derived variables used below
 
 @sat:   saturation(@base-color);
-@luma:  luma(@base-color);
+@luma:  luminance(@base-color);
 @light: lightness(@base-color);
 @tone:  desaturate(@base-color,100%);
 
@@ -64,13 +64,32 @@
 // Brand colors
 // -------------------------
 
-@brand-primary:         @base-color;
-// @brand-primary:         hsl(hue(@bs-primary),(saturation(@bs-info) + @sat + 20)/2,@luma - 10);
+@brand-primary:         hsl(
+                            hue(@bs-primary),
+                            (saturation(@bs-info) + @sat + 20)/2,
+                            @luma - 10
+                        );
 
-@brand-info:            hsl(hue(@bs-info),(saturation(@bs-info) + @sat + 20)/2,@luma);
-@brand-success:         hsl(hue(@bs-success),(saturation(@bs-success) + @sat + 20)/2,(luma(@bs-success) + @luma - 20)/2);
-@brand-warning:         hsl(hue(@bs-warning),(saturation(@bs-warning) + @sat + 20)/2,(luma(@bs-warning) + @luma - 20)/2);
-@brand-danger:          hsl(hue(@bs-danger),(saturation(@bs-danger) + @sat + 20)/2,(luma(@bs-danger) + @luma + 10)/2);
+@brand-info:            hsl(
+                            hue(@bs-info),
+                            (saturation(@bs-info) + @sat + 20)/2,
+                            @luma
+                        );
+@brand-success:         hsl(
+                            hue(@bs-success),
+                            (saturation(@bs-success) + @sat + 20)/2,
+                            (luminance(@bs-success) + @luma - 20)/2
+                        );
+@brand-warning:         hsl(
+                            hue(@bs-warning),
+                            (saturation(@bs-warning) + @sat + 20)/2,
+                            (luminance(@bs-warning) + @luma - 20)/2
+                        );
+@brand-danger:          hsl(
+                            hue(@bs-danger),
+                            (saturation(@bs-danger) + @sat + 20)/2,
+                            (luminance(@bs-danger) + @luma + 10)/2
+                        );
 
 // Scaffolding
 // -------------------------
@@ -422,19 +441,19 @@
 // -------------------------
 
 @state-warning-text:             darken(@brand-warning, @state-text-darken-percent);
-@state-warning-bg:               saturate(lighten(@brand-warning, @state-bg-lighten-percent),@state-bg-saturate-percent, relative);
+@state-warning-bg:               saturate(lighten(@brand-warning, @state-bg-lighten-percent),@state-bg-saturate-percent);
 @state-warning-border:           darken(@state-warning-bg, @border-darken-percent);
 
 @state-danger-text:              darken(@brand-danger, @state-text-darken-percent);
-@state-danger-bg:                saturate(lighten(@brand-danger, @state-bg-lighten-percent),@state-bg-saturate-percent, relative);
+@state-danger-bg:                saturate(lighten(@brand-danger, @state-bg-lighten-percent),@state-bg-saturate-percent);
 @state-danger-border:            darken(@state-danger-bg, @border-darken-percent);
 
 @state-success-text:             darken(@brand-success, @state-text-darken-percent);
-@state-success-bg:               saturate(lighten(@brand-success, @state-bg-lighten-percent, relative),@state-bg-saturate-percent, relative);
+@state-success-bg:               saturate(lighten(@brand-success, @state-bg-lighten-percent, relative),@state-bg-saturate-percent);
 @state-success-border:           darken(@state-success-bg, @border-darken-percent);
 
 @state-info-text:                darken(@brand-info, @state-text-darken-percent);
-@state-info-bg:                  saturate(lighten(@brand-info, @state-bg-lighten-percent),@state-bg-saturate-percent, relative);
+@state-info-bg:                  saturate(lighten(@brand-info, @state-bg-lighten-percent),@state-bg-saturate-percent);
 @state-info-border:              darken(@state-info-bg, @border-darken-percent);
 
 

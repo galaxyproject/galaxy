@@ -14,10 +14,9 @@ from galaxy import managers
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.datatypes.data import nice_size
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.util import Params
+from galaxy.util import nice_size, Params
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for

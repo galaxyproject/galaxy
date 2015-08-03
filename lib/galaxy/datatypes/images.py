@@ -2,14 +2,16 @@
 Image classes
 """
 
-import data
+import imghdr
 import logging
+import zipfile
+from urllib import quote_plus
+
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.util.image_util import check_image_type
-from urllib import quote_plus
-import zipfile
-import imghdr
+from galaxy.util import nice_size
+from . import data
 
 try:
     import Image as PIL
@@ -39,7 +41,7 @@ class Image( data.Data ):
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = 'Image in %s format' % dataset.extension
-            dataset.blurb = data.nice_size( dataset.get_size() )
+            dataset.blurb = nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -303,7 +305,7 @@ class Html( data.Text ):
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
             dataset.peek = "HTML file"
-            dataset.blurb = data.nice_size( dataset.get_size() )
+            dataset.blurb = nice_size( dataset.get_size() )
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
