@@ -14,10 +14,9 @@ from galaxy import managers
 from galaxy import model
 from galaxy import util
 from galaxy import web
-from galaxy.datatypes.data import nice_size
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.util import Params
+from galaxy.util import nice_size, Params
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
@@ -562,15 +561,17 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         unencoded_history_id = trans.history.id
         if id:
             unencoded_history_id = self.decode_id( id )
-        history_to_view = self.history_manager.get_accessible( unencoded_history_id, trans.user, current_history=trans.history )
+        history_to_view = self.history_manager.get_accessible( unencoded_history_id, trans.user,
+            current_history=trans.history )
 
-        history_data = self.history_manager._get_history_data( trans, history_to_view )
-        history_dictionary = history_data[ 'history' ]
-        hda_dictionaries = history_data[ 'contents' ]
+        history_dictionary = self.history_serializer.serialize_to_view( history_to_view,
+            view='detailed', user=trans.user, trans=trans )
+        contents = self.history_serializer.serialize_contents( history_to_view,
+            'contents', trans=trans, user=trans.user )
 
         jobs = ( trans.sa_session.query( trans.app.model.Job )
-                 .filter( trans.app.model.Job.user == history_to_view.user )
-                 .filter( trans.app.model.Job.history_id == unencoded_history_id ) ).all()
+            .filter( trans.app.model.Job.user == history_to_view.user )
+            .filter( trans.app.model.Job.history_id == unencoded_history_id ) ).all()
         jobs = map( lambda j: self.encode_all_ids( trans, j.to_dict( 'element' ), True ), jobs )
 
         tools = {}
@@ -583,7 +584,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             tools[ tool_id ] = tool.to_dict( trans, io_details=True, link_details=True )
 
         return trans.fill_template( "history/structure.mako", historyId=history_dictionary[ 'id' ],
-                                    history=history_dictionary, hdas=hda_dictionaries, jobs=jobs, tools=tools, **kwargs )
+            history=history_dictionary, contents=contents, jobs=jobs, tools=tools, **kwargs )
 
     @web.expose
     def view( self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True ):
@@ -599,16 +600,18 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         use_panels = galaxy.util.string_as_bool( use_panels )
 
         history_dictionary = {}
-        hda_dictionaries = []
+        contents = []
         user_is_owner = False
         try:
-            history_to_view = self.history_manager.get_accessible( self.decode_id( id ), trans.user, current_history=trans.history )
+            history_to_view = self.history_manager.get_accessible( self.decode_id( id ), trans.user,
+                current_history=trans.history )
             user_is_owner = history_to_view.user == trans.user
 
             # include all datasets: hidden, deleted, and purged
-            history_data = self.history_manager._get_history_data( trans, history_to_view )
-            history_dictionary = history_data[ 'history' ]
-            hda_dictionaries = history_data[ 'contents' ]
+            history_dictionary = self.history_serializer.serialize_to_view( history_to_view,
+                view='detailed', user=trans.user, trans=trans )
+            contents = self.history_serializer.serialize_contents( history_to_view,
+                'contents', trans=trans, user=trans.user )
 
         except Exception, exc:
             user_id = str( trans.user.id ) if trans.user else '(anonymous)'
@@ -621,8 +624,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             return trans.show_error_message( error_msg, use_panels=use_panels )
 
         return trans.fill_template_mako( "history/view.mako",
-                                         history=history_dictionary, hdas=hda_dictionaries, user_is_owner=user_is_owner,
-                                         show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
+            history=history_dictionary, contents=contents, user_is_owner=user_is_owner,
+            show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
     @web.expose
     def view_multiple( self, trans, include_deleted_histories=False, order='update' ):
@@ -683,19 +686,19 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         # create ownership flag for template, dictify models
         user_is_owner = trans.user == history.user
-        history_data = self.history_manager._get_history_data( trans, history )
-        history_dict = history_data[ 'history' ]
-        hda_dicts = history_data[ 'contents' ]
+        history_dictionary = self.history_serializer.serialize_to_view( history,
+            view='detailed', user=trans.user, trans=trans )
+        contents = self.history_serializer.serialize_contents( history, 'contents', trans=trans, user=trans.user )
 
-        history_dict[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, history )
+        history_dictionary[ 'annotation' ] = self.get_item_annotation_str( trans.sa_session, history.user, history )
         # note: adding original annotation since this is published - get_dict returns user-based annos
         # for hda_dict in hda_dicts:
         #    hda_dict[ 'annotation' ] = hda.annotation
         #    dataset.annotation = self.get_item_annotation_str( trans.sa_session, history.user, dataset )
 
         return trans.stream_template_mako( "history/display.mako", item=history, item_data=[],
-                                           user_is_owner=user_is_owner, history_dict=history_dict, hda_dicts=hda_dicts,
-                                           user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+            user_is_owner=user_is_owner, history_dict=history_dictionary, content_dicts=contents,
+            user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
 
     # ......................................................................... sharing & publishing
     @web.expose

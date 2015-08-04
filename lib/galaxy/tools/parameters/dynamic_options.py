@@ -127,9 +127,26 @@ class DataMetaFilter( Filter ):
             return file_value == dataset_value
         assert self.ref_name in other_values or ( trans is not None and trans.workflow_building_mode), "Required dependency '%s' not found in incoming values" % self.ref_name
         ref = other_values.get( self.ref_name, None )
-        if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not isinstance( ref, galaxy.tools.wrappers.DatasetFilenameWrapper ):
+        is_data = isinstance( ref, galaxy.tools.wrappers.DatasetFilenameWrapper )
+        is_data_list = isinstance( ref, galaxy.tools.wrappers.DatasetListWrapper ) or isinstance( ref, list )
+        is_data_or_data_list = is_data or is_data_list
+        if not isinstance( ref, self.dynamic_option.tool_param.tool.app.model.HistoryDatasetAssociation ) and not is_data_or_data_list:
             return []  # not a valid dataset
-        meta_value = ref.metadata.get( self.key, None )
+
+        if is_data_list:
+            meta_value = None
+            for single_ref in ref:
+                this_meta_value = single_ref.metadata.get( self.key, None )
+                if this_meta_value == meta_value:
+                    continue
+                elif meta_value is None:
+                    meta_value = this_meta_value
+                else:
+                    # Different values with mismatching metadata, return []
+                    return []
+        else:
+            meta_value = ref.metadata.get( self.key, None )
+
         if meta_value is None:  # assert meta_value is not None, "Required metadata value '%s' not found in referenced dataset" % self.key
             return [ ( disp_name, basic.UnvalidatedValue( optval ), selected ) for disp_name, optval, selected in options ]
 

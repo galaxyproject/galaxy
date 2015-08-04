@@ -206,7 +206,7 @@ class Configuration( object ):
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
         self.smtp_ssl = kwargs.get( 'smtp_ssl', None )
-        self.track_jobs_in_database = kwargs.get( 'track_jobs_in_database', 'None' )
+        self.track_jobs_in_database = string_as_bool( kwargs.get( 'track_jobs_in_database', 'True') )
         self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
         # External Service types used in sample tracking
@@ -384,13 +384,6 @@ class Configuration( object ):
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
         self.default_job_handlers = [ x.strip() for x in kwargs.get('default_job_handlers', ','.join( self.job_handlers ) ).split(',') ]
-        # Use database for job running IPC unless this is a standalone server or explicitly set in the config
-        if self.track_jobs_in_database == 'None':
-            self.track_jobs_in_database = False
-            if len(self.server_names) > 1:
-                self.track_jobs_in_database = True
-        else:
-            self.track_jobs_in_database = string_as_bool( self.track_jobs_in_database )
         # Store per-tool runner configs
         self.tool_handlers = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_handlers', 'name' )
         self.tool_runners = self.__read_tool_job_config( global_conf_parser, 'galaxy:tool_runners', 'url' )

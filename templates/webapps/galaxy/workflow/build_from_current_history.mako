@@ -12,8 +12,14 @@
         margin-top: 10px;
         margin-bottom: 10px;
     }
-    div.historyItem {
-        margin-right: 0;
+    .list-item.dataset.history-content {
+        padding: 8px 10px;
+    }
+    .list-item.dataset.history-content .title-bar {
+        cursor: auto;
+    }
+    input[type="checkbox"].as-input {
+        margin-left: 8px;
     }
     th {
         border-bottom: solid black 1px;
@@ -43,26 +49,26 @@
     %else:
         <% data_state = data.state %>
     %endif
-    <div class="historyItemWrapper historyItem historyItem-${data_state}" id="historyItem-$data.id">
-        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-            <tr>
-                %if data_state != 'ok':
-                    <td style="width: 20px;">
-                        <div style='padding-right: 5px;'><img src="${h.url_for( str( '/static/style/data_%s.png' % data_state ) )}" border="0" align="middle"></div>
-                    </td>
-                %endif
-                <td>
-                    <div style="overflow: hidden;">
-                        <span class="historyItemTitle"><b>${data.hid}: ${data.display_name()}</b></span>
+    <% encoded_id = trans.app.security.encode_id( data.id ) %>
+    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+            <td>
+                <div class="list-item dataset history-content state-${ data.state }" id="dataset-${ encoded_id }">
+                    <div class="title-bar clear">
+                        <div class="title">
+                            <span class="hid">${data.hid}</span>
+                            <span class="name">${data.display_name()}</span>
+                        </div>
                     </div>
-                </td>
-            </tr>
-        </table>
-        %if disabled:
-            <hr>
-            <div><input type="checkbox" name="${data.history_content_type}_ids" value="${data.hid}" checked="true" />${_('Treat as input dataset')}</div>
-        %endif
-    </div>
+                    %if disabled:
+                        <input type="checkbox" id="as-input-${ encoded_id }" class="as-input"
+                               name="${data.history_content_type}_ids" value="${data.hid}" checked="true" />
+                        <label for="as-input-${ encoded_id }" >${_('Treat as input dataset')}</label>
+                    %endif
+                </div>
+            </td>
+        </tr>
+    </table>
 </%def>
 
 <p>The following list contains each tool that was run to create the
@@ -88,7 +94,7 @@ into a workflow will be shown in gray.</p>
 </p>
 
 <table border="0" cellspacing="0">
-    
+
     <tr>
         <th style="width: 47.5%">${_('Tool')}</th>
         <th style="width: 5%"></th>
@@ -104,7 +110,7 @@ into a workflow will be shown in gray.</p>
         cls += " toolFormDisabled"
         disabled = True
         tool_name = getattr( job, 'name', tool_name )
-    else:    
+    else:
         tool = app.toolbox.get_tool( job.tool_id )
         if tool:
             tool_name = tool.name
@@ -120,7 +126,7 @@ into a workflow will be shown in gray.</p>
     if disabled:
         disabled_why = getattr( job, 'disabled_why', "This tool cannot be used in workflows" )
     %>
-    
+
     <tr>
         <td>
             <div class="${cls}">
@@ -143,7 +149,7 @@ into a workflow will be shown in gray.</p>
         </td>
         <td>
             %for _, data in datasets:
-                <div>${history_item( data, disabled )}</div>     
+                <div>${history_item( data, disabled )}</div>
             %endfor
         </td>
     </tr>

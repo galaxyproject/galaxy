@@ -2,6 +2,16 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/dataset/security_common.mako" import="render_permission_form" />
 
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    <style>
+    .ldda-title {
+        font-weight: bold;
+        line-height: 16px;
+    }
+    </style>
+</%def>
+
 <%
     if len( lddas ) > 1:
         name_str = '%d selected datasets' % len( lddas )
@@ -27,7 +37,7 @@
             <tr>
                 <td>
                     <div class="rowTitle">
-                        <span class="historyItemTitle"><b>${ldd_assoc.name | h}</b></span>
+                        <span class="ldda-title"><b>${ldd_assoc.name | h}</b></span>
                         <a id="ldda-${ldd_assoc.id | h}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                     </div>
                     <div popupmenu="ldd_assoc-${ldd_assoc.id | h}-popup">

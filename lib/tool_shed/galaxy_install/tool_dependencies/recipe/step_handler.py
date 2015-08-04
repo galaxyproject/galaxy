@@ -84,7 +84,7 @@ class CompressedFile( object ):
                 external_attributes = self.archive.getinfo( filename ).external_attr
                 # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
                 unix_permissions = external_attributes >> 16
-                if unix_permissions != 0:
+                if unix_permissions != 0 and os.path.exists( absolute_filepath ):
                     os.chmod( absolute_filepath, unix_permissions )
         return os.path.abspath( extraction_path )
 
