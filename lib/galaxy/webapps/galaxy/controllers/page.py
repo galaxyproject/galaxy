@@ -302,6 +302,7 @@ class PageController( BaseUIController, SharableMixin,
     def __init__( self, app ):
         super( PageController, self ).__init__( app )
         self.history_manager = managers.histories.HistoryManager( app )
+        self.history_serializer = managers.histories.HistorySerializer( self.app )
         self.hda_manager = managers.hdas.HDAManager( app )
 
     @web.expose
@@ -755,15 +756,16 @@ class PageController( BaseUIController, SharableMixin,
         history.annotation = self.get_item_annotation_str( trans.sa_session, history.user, history )
 
         # include all datasets: hidden, deleted, and purged
-        history_data = self.history_manager._get_history_data( trans, history )
-        history_dictionary = history_data[ 'history' ]
-        hda_dictionaries = history_data[ 'contents' ]
+        history_dictionary = self.history_serializer.serialize_to_view( history,
+            view='detailed', user=trans.user, trans=trans )
+        contents = self.history_serializer.serialize_contents( history, 'contents', trans=trans, user=trans.user )
         history_dictionary[ 'annotation' ] = history.annotation
 
-        filled = trans.fill_template( "history/embed.mako", item=history,
-                                      user_is_owner=user_is_owner,
-                                      history_dict=history_dictionary,
-                                      hda_dicts=hda_dictionaries )
+        filled = trans.fill_template( "history/embed.mako",
+            item=history,
+            user_is_owner=user_is_owner,
+            history_dict=history_dictionary,
+            content_dicts=contents )
         return filled
 
     def _get_embedded_visualization_html( self, trans, id ):
