@@ -25,7 +25,6 @@ eggs.require('SQLAlchemy')
 from sqlalchemy import and_, func, not_, or_, true
 from sqlalchemy.orm import joinedload, object_session
 from sqlalchemy import join, select
-from sqlalchemy.sql import label
 from sqlalchemy.ext import hybrid
 
 import galaxy.datatypes
