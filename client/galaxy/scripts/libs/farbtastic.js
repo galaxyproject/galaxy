@@ -1,6 +1,6 @@
-// Farbtastic 2.0 alpha
+// Farbtastic 2.0.0-alpha.1
 (function ($) {
-  
+
 var __debug = false;
 
 $.fn.farbtastic = function (options) {
@@ -15,7 +15,7 @@ $.farbtastic = function (container, options) {
 
 $._farbtastic = function (container, options) {
   var fb = this;
-  
+
   /////////////////////////////////////////////////////
 
   /**
@@ -98,7 +98,7 @@ $._farbtastic = function (container, options) {
       .find('div>*').css('position', 'absolute');
 
     // IE Fix: Recreate canvas elements with doc.createElement and excanvas.
-    navigator.userAgent.match(/msie/i) && $('canvas', container).each(function () {
+    $.browser.msie || false && $('canvas', container).each(function () {
       // Fetch info.
       var attr = { 'class': $(this).attr('class'), style: this.getAttribute('style') },
           e = document.createElement('canvas');
@@ -130,7 +130,7 @@ $._farbtastic = function (container, options) {
     fb.ctxOverlay = fb.cnvOverlay[0].getContext('2d');
     fb.ctxMask.translate(fb.mid, fb.mid);
     fb.ctxOverlay.translate(fb.mid, fb.mid);
-    
+
     // Draw widget base layers.
     fb.drawCircle();
     fb.drawMask();
@@ -166,7 +166,7 @@ $._farbtastic = function (container, options) {
           // New color
           color2 = fb.pack(fb.HSLToRGB([d2, 1, 0.5]));
       if (i > 0) {
-        if (navigator.userAgent.match(/msie/i)) {
+        if ($.browser.msie || false) {
           // IE's gradient calculations mess up the colors. Correct along the diagonals.
           var corr = (1 + Math.min(Math.abs(Math.tan(angle1)), Math.abs(Math.tan(Math.PI / 2 - angle1)))) / n;
           color1 = fb.pack(fb.HSLToRGB([d1 - 0.15 * corr, 1, 0.5]));
@@ -204,7 +204,7 @@ $._farbtastic = function (container, options) {
     m.restore();
     __debug && $('body').append('<div>drawCircle '+ (+(new Date()) - tm) +'ms');
   };
-  
+
   /**
    * Draw the saturation/luminance mask.
    */
@@ -224,9 +224,9 @@ $._farbtastic = function (container, options) {
           var c = (a > 0) ? ((2 * l - 1 + a) * .5 / a) : 0;
           outputPixel(x, y, c, a);
         }
-      }      
+      }
     }
- 
+
     // Method #1: direct pixel access (new Canvas).
     if (fb.ctxMask.getImageData) {
       // Create half-resolution buffer.
@@ -246,7 +246,7 @@ $._farbtastic = function (container, options) {
       fb.ctxMask.drawImage(buffer, 0, 0, sz + 1, sz + 1, -sq, -sq, sq * 2, sq * 2);
     }
     // Method #2: drawing commands (old Canvas).
-    else if (!navigator.userAgent.match(/msie/i)) {
+    else if (!($.browser.msie || false)) {
       // Render directly at half-resolution
       var sz = Math.floor(size / 2);
       calculateMask(sz, sz, function (x, y, c, a) {
@@ -287,7 +287,7 @@ $._farbtastic = function (container, options) {
         }
         cache.push([c, a]);
       });
-    }    
+    }
     __debug && $('body').append('<div>drawMask '+ (+(new Date()) - tm) +'ms');
   }
 
@@ -313,7 +313,7 @@ $._farbtastic = function (container, options) {
 
     // Update the overlay canvas.
     fb.ctxOverlay.clearRect(-fb.mid, -fb.mid, sz, sz);
-    for (i in circles) {
+    for (var i = 0; i < circles.length; i++) {
       var c = circles[i];
       fb.ctxOverlay.lineWidth = c.lw;
       fb.ctxOverlay.strokeStyle = c.c;
@@ -335,7 +335,7 @@ $._farbtastic = function (container, options) {
 
     // Draw markers
     fb.drawMarkers();
-    
+
     // Linked elements or callback
     if (typeof fb.callback == 'object') {
       // Set background/foreground color
@@ -349,21 +349,21 @@ $._farbtastic = function (container, options) {
         if ((typeof this.value == 'string') && this.value != fb.color) {
           this.value = fb.color;
         }
-      });
+      }).change();
     }
     else if (typeof fb.callback == 'function') {
       fb.callback.call(fb, fb.color);
     }
   }
-  
+
   /**
    * Helper for returning coordinates relative to the center.
    */
   fb.widgetCoords = function (event) {
     return {
-      x: event.pageX - fb.offset.left - fb.mid,    
+      x: event.pageX - fb.offset.left - fb.mid,
       y: event.pageY - fb.offset.top - fb.mid
-    };    
+    };
   }
 
   /**
@@ -426,7 +426,7 @@ $._farbtastic = function (container, options) {
   fb.packDX = function (c, a) {
     return '#' + fb.dec2hex(a) + fb.dec2hex(c) + fb.dec2hex(c) + fb.dec2hex(c);
   };
-  
+
   fb.pack = function (rgb) {
     var r = Math.round(rgb[0] * 255);
     var g = Math.round(rgb[1] * 255);
@@ -496,8 +496,7 @@ $._farbtastic = function (container, options) {
   options = $.extend({
     width: 300,
     wheelWidth: (options.width || 300) / 10,
-    callback: null,
-    color: "#808080"
+    callback: null
   }, options);
 
   // Initialize.
@@ -511,8 +510,7 @@ $._farbtastic = function (container, options) {
     fb.linkTo(options.callback);
   }
   // Set to gray.
-  fb.setColor( "#808080" );
-  fb.setColor( options.color );
+  if (!fb.color) fb.setColor('#808080');
 }
 
 })(jQuery);

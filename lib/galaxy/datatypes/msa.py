@@ -1,12 +1,12 @@
-from galaxy.datatypes.data import Text
-from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.data import nice_size
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.util import generic_util
+import logging
 import os
 
-import logging
+from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.data import get_file_peek, Text
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.util import generic_util
+from galaxy.util import nice_size
+
 log = logging.getLogger(__name__)
 
 

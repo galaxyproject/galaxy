@@ -122,55 +122,6 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         """
         return self.set_current( trans, self.by_id( history_id ) )
 
-# TODO: replace or move to serializer
-    def _get_history_data( self, trans, history ):
-        """
-        Returns a dictionary containing ``history`` and ``contents``, serialized
-        history and an array of serialized history contents respectively.
-        """
-        # TODO: instantiate here? really?
-        history_serializer = HistorySerializer( self.app )
-        hda_serializer = hdas.HDASerializer( self.app )
-        history_dictionary = {}
-        contents_dictionaries = []
-        try:
-            history_dictionary = history_serializer.serialize_to_view( history, view='detailed',
-                                                                       user=trans.user, trans=trans )
-
-            for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
-                contents_dict = {}
-                if isinstance( content, model.HistoryDatasetAssociation ):
-                    contents_dict = hda_serializer.serialize_to_view(content, view='detailed', user=trans.user, trans=trans )
-                    hda_annotation = hda_serializer.serialize_annotation( content, 'annotation', user=history.user )
-                    contents_dict[ 'annotation' ] = hda_annotation
-                elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-                    try:
-                        service = self.app.dataset_collections_service
-                        collection = service.get_dataset_collection_instance(
-                            trans=trans,
-                            instance_type='history',
-                            id=self.app.security.encode_id( content.id ),
-                        )
-                        serializer = collections_util.dictify_dataset_collection_instance
-                        contents_dict = serializer( collection,
-                                                    security=self.app.security,
-                                                    parent=collection.history,
-                                                    view="element" )
-                    except Exception, exc:
-                        log.exception( "Error in history API at listing dataset collection: %s", exc )
-                        # TODO: return some dict with the error
-                contents_dictionaries.append( contents_dict )
-
-        except Exception, exc:
-            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
-            log.exception( 'Error bootstrapping history for user %s: %s', user_id, str( exc ) )
-            message = ( 'An error occurred getting the history data from the server. '
-                        'Please contact a Galaxy administrator if the problem persists.' )
-            history_dictionary[ 'error' ] = message
-
-        return { 'history': history_dictionary,
-                 'contents': contents_dictionaries }
-
     # container interface
     def _filter_to_contained( self, container, content_class ):
         return content_class.history == container
@@ -215,7 +166,8 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'contents_url',
             # 'hdas',
             'empty',
-            'size', 'nice_size',
+            'size',
+            # 'nice_size',
             'user_id',
             'create_time', 'update_time',
             'importable', 'slug', 'username_and_slug',
@@ -321,14 +273,21 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
 
         return state
 
-    def serialize_contents( self, history, *args, **context ):
+    def serialize_contents( self, history, key, trans=None, **context ):
         contents_dictionaries = []
         for content in history.contents_iter( types=[ 'dataset', 'dataset_collection' ] ):
             contents_dict = {}
+
             if isinstance( content, model.HistoryDatasetAssociation ):
-                contents_dict = self.hda_serializer.serialize_to_view( content, view='detailed', **context )
-            # elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
-            #     contents_dict = self._serialize_collection( trans, content )
+                contents_dict = self.hda_serializer.serialize_to_view( content,
+                    view='detailed', trans=trans, **context )
+                # TODO: work out: shouldn't history annotations *always* use user=history.user? why anything else?
+                hda_annotation = self.hda_serializer.serialize_annotation( content, 'annotation', user=history.user )
+                contents_dict[ 'annotation' ] = hda_annotation
+
+            elif isinstance( content, model.HistoryDatasetCollectionAssociation ):
+                contents_dict = self._serialize_collection( trans, content )
+
             contents_dictionaries.append( contents_dict )
         return contents_dictionaries
 
@@ -341,7 +300,7 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             id=self.app.security.encode_id( collection.id ),
         )
         return collections_util.dictify_dataset_collection_instance( dataset_collection_instance,
-                                                                     security=self.app.security, parent=dataset_collection_instance.history, view="element" )
+            security=self.app.security, parent=dataset_collection_instance.history, view="element" )
 
 
 class HistoryDeserializer( sharable.SharableModelDeserializer, deletable.PurgableDeserializerMixin ):

@@ -116,7 +116,7 @@ function request (options) {
         data        : options.data || {},
         url         : options.url
     }
-    
+
     // encode data into url
     if (ajaxConfig.type == 'GET' || ajaxConfig.type == 'DELETE') {
         if (ajaxConfig.url.indexOf('?') == -1) {
@@ -156,7 +156,7 @@ function request (options) {
     });
 };
 
-/** 
+/**
  * Read a property value from CSS
  * @param{String}   classname   - CSS class
  * @param{String}   name        - CSS property
@@ -164,20 +164,20 @@ function request (options) {
 function cssGetAttribute (classname, name) {
     // place dummy element
     var el = $('<div class="' + classname + '"></div>');
-       
+
     // required append
     el.appendTo(':eq(0)');
-    
+
     // get value
     var value = el.css(name);
-    
+
     // remove element
     el.remove();
-        
+
     // return css value
     return value;
 };
-    
+
 /**
  * Load a CSS file
  * @param{String}   url - Url of CSS file
@@ -200,23 +200,42 @@ function merge (options, optionsDefault) {
         return optionsDefault;
 };
 
+
+/**
+ * Round floaing point 'number' to 'numPlaces' number of decimal places.
+ * @param{Object}   number      a floaing point number
+ * @param{Object}   numPlaces   number of decimal places
+ */
+function roundToDecimalPlaces( number, numPlaces ){
+    var placesMultiplier = 1;
+    for( var i=0; i<numPlaces; i++ ){
+        placesMultiplier *= 10;
+    }
+    return Math.round( number * placesMultiplier ) / placesMultiplier;
+}
+
+// calculate on import
+var kb = 1024,
+    mb = kb * kb,
+    gb = mb * kb,
+    tb = gb * kb;
 /**
  * Format byte size to string with units
  * @param{Integer}   size           - Size in bytes
  * @param{Boolean}   normal_font    - Switches font between normal and bold
  */
-function bytesToString (size, normal_font) {
+function bytesToString (size, normal_font, numberPlaces) {
+    numberPlaces = numberPlaces !== undefined? numberPlaces: 1;
     // identify unit
     var unit = "";
-    if (size >= 100000000000)   { size = size / 100000000000; unit = 'TB'; } else
-    if (size >= 100000000)      { size = size / 100000000; unit = 'GB'; } else
-    if (size >= 100000)         { size = size / 100000; unit = 'MB'; } else
-    if (size >= 100)            { size = size / 100; unit = 'KB'; } else
-    if (size >  0)              { size = size * 10; unit = 'b'; } else
-        return '<strong>-</strong>';
-                                
+    if (size >= tb){ size = size / tb; unit = 'TB'; } else
+    if (size >= gb){ size = size / gb; unit = 'GB'; } else
+    if (size >= mb){ size = size / mb; unit = 'MB'; } else
+    if (size >= kb){ size = size / kb; unit = 'KB'; } else
+    if (size >  0){ unit = 'b'; }
+    else { return normal_font? '0 b': '<strong>-</strong>'; }
     // return formatted string
-    var rounded = (Math.round(size) / 10);
+    var rounded = unit == 'b'? size: roundToDecimalPlaces( size, numberPlaces );
     if (normal_font) {
        return  rounded + ' ' + unit;
     } else {
@@ -238,11 +257,11 @@ function uid(){
 function time() {
     // get date object
     var d = new Date();
-    
+
     // format items
     var hours = (d.getHours() < 10 ? "0" : "") + d.getHours();
     var minutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes()
-    
+
     // format final stamp
     var datetime = d.getDate() + "/"
                 + (d.getMonth() + 1)  + "/"

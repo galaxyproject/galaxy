@@ -399,9 +399,18 @@ class DeleteIntermediatesAction(DefaultJobAction):
         # concurrently, sometimes non-terminal steps won't be cleaned up
         # because of the lag in job state updates.
         wfi = job.workflow_invocation_step.workflow_invocation
+        if wfi.active:
+            log.debug("Workflow still scheduling so new jobs may appear, skipping deletion of intermediate files.")
+            # Still evaluating workflow so we don't yet have all workflow invocation
+            # steps to start looking at.
+            return
         if wfi.workflow.has_outputs_defined():
             jobs_to_check = [wfistep.job for wfistep in wfi.steps if not wfistep.workflow_step.workflow_outputs]
             for j2c in jobs_to_check:
+                if j2c is None:
+                    # Job not yet created, this will be re-evaluated after subsequent jobs in
+                    # workflow.
+                    return
                 for input_dataset in [x.dataset for x in j2c.input_datasets if x.dataset.creating_job.workflow_invocation_step and x.dataset.creating_job.workflow_invocation_step.workflow_invocation == wfi]:
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:
