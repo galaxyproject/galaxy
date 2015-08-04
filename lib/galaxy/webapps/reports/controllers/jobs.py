@@ -614,7 +614,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         currday = datetime.today()
         trends = dict()
         for job in all_jobs_per_user.execute():
-            curr_user = re.sub(r'\W+', '', job.user_email)
+            if job.user_email is None:
+                curr_user = 'Anonymous'
+            else:
+                curr_user = re.sub(r'\W+', '', job.user_email)
+
             try:
                 day = currday - job.date
             except TypeError:
