@@ -24,6 +24,9 @@ import pexpect
 eggs.require('SQLAlchemy')
 from sqlalchemy import and_, func, not_, or_, true
 from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy import join, select
+from sqlalchemy.sql import label
+from sqlalchemy.ext import hybrid
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
@@ -1223,6 +1226,59 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         if nice_size:
             rval = galaxy.util.nice_size( rval )
         return rval
+
+    @hybrid.hybrid_property
+    def disk_size( self ):
+        """
+        Return the size in bytes of this history by summing the 'total_size's of
+        all non-purged, unique datasets within it.
+        """
+        # non-.expression part of hybrid.hybrid_property: called when an instance is the namespace (not the class)
+        db_session = object_session( self )
+        rval = db_session.query(
+            func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
+                    .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+                    .filter( HistoryDatasetAssociation.purged != true() )
+                    .filter( Dataset.purged != true() )
+                    # unique datasets only
+                    .distinct().subquery().c.total_size ) ).first()[0]
+        if rval is None:
+            rval = 0
+        return rval
+
+    @disk_size.expression
+    def disk_size( cls ):
+        """
+        Return a query scalar that will get any history's size in bytes by summing
+        the 'total_size's of all non-purged, unique datasets within it.
+        """
+        # .expression acts as a column_property and should return a scalar
+        # first, get the distinct datasets within a history that are not purged
+        hda_to_dataset_join = join( HistoryDatasetAssociation, Dataset,
+            HistoryDatasetAssociation.table.c.dataset_id == Dataset.table.c.id )
+        distinct_datasets = (
+            select([
+                # use labels here to better accrss from the query above
+                HistoryDatasetAssociation.table.c.history_id.label( 'history_id' ),
+                Dataset.total_size.label( 'dataset_size' ),
+                Dataset.id
+            ])
+            .where( HistoryDatasetAssociation.table.c.purged != true() )
+            .where( Dataset.table.c.purged != true() )
+            .select_from( hda_to_dataset_join )
+            # TODO: slow (in general) but most probably here - index total_size for easier sorting/distinct?
+            .distinct()
+        )
+        # then, bind as property of history using the cls.id
+        size_query = (
+            select([
+                func.sum( distinct_datasets.c.dataset_size )
+            ])
+            .select_from( distinct_datasets )
+            .where( distinct_datasets.c.history_id == cls.id )
+        )
+        # label creates a scalar
+        return size_query.label( 'disk_size' )
 
     @property
     def active_datasets_children_and_roles( self ):
