@@ -8,7 +8,7 @@ import pkg_resources
 pkg_resources.require( "Paste" )
 
 pkg_resources.require( "SQLAlchemy >= 0.4" )
-from sqlalchemy import true, false, desc
+from sqlalchemy import true, false, desc, asc
 
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
@@ -90,6 +90,23 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
                     skip the first ( offset - 1 ) items and begin returning
                     at the Nth item
 
+        The list returned can be ordered using the optional parameter:
+            order:  string containing one of the valid ordering attributes followed
+                    (optionally) by '-asc' or '-dsc' for ascending and descending
+                    order respectively. Orders can be stacked as a comma-
+                    separated list of values.
+
+        ..example:
+            To sort by name descending then create time descending:
+                '?order=name-dsc,create_time'
+
+        The ordering attributes and their default orders are:
+            create_time defaults to 'create_time-dsc'
+            update_time defaults to 'update_time-dsc'
+            name    defaults to 'name-asc'
+
+        'order' defaults to 'create_time-dsc'
+
         ..example:
             limit and offset can be combined. Skip the first two and return five:
                 '?limit=5&offset=3'
@@ -116,8 +133,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         # and any sent in from the query string
         filters += self.history_filters.parse_filters( filter_params )
 
-        # TODO: eventually make order_by a param as well
-        order_by = desc( self.app.model.History.create_time )
+        order_by = self._parse_order_by( kwd.get( 'order', 'create_time-dsc' ) )
         histories = self.history_manager.list( filters=filters, order_by=order_by, limit=limit, offset=offset )
 
         rval = []
@@ -402,3 +418,27 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             raise exceptions.MessageException( "Export not available or not yet ready." )
 
         return self.serve_ready_history_export( trans, jeha )
+
+    def _parse_order_by( self, order_by_string ):
+        ORDER_BY_SEP_CHAR = ','
+        if ORDER_BY_SEP_CHAR in order_by_string:
+            return [ self._parse_single_order_by( o ) for o in order_by_string.split( ORDER_BY_SEP_CHAR ) ]
+        return self._parse_single_order_by( order_by_string )
+
+    def _parse_single_order_by( self, order_by_string ):
+        History = self.history_manager.model_class
+        # TODO: formalize and generalize into managers
+        if order_by_string in ( 'create_time', 'create_time-dsc' ):
+            return desc( History.create_time )
+        if order_by_string == 'create_time-asc':
+            return asc( History.create_time )
+        if order_by_string in ( 'update_time', 'update_time-dsc' ):
+            return desc( History.update_time )
+        if order_by_string == 'update_time-asc':
+            return asc( History.update_time )
+        if order_by_string in ( 'name', 'name-asc' ):
+            return asc( History.name )
+        if order_by_string == 'name-dsc':
+            return desc( History.name )
+        raise exceptions.RequestParameterInvalidException( 'Unkown order_by',
+            controller='history', order_by=order_by_string )
