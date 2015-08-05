@@ -84,7 +84,7 @@ class CompressedFile( object ):
                 external_attributes = self.archive.getinfo( filename ).external_attr
                 # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
                 unix_permissions = external_attributes >> 16
-                if unix_permissions != 0:
+                if unix_permissions != 0 and os.path.exists( absolute_filepath ):
                     os.chmod( absolute_filepath, unix_permissions )
         return os.path.abspath( extraction_path )
 
@@ -1154,7 +1154,7 @@ class SetupPerlEnvironment( Download, RecipeStep ):
             filtered_actions = actions[ 1: ]
         env_shell_file_paths = action_dict.get( 'env_shell_file_paths', None )
         if env_shell_file_paths is None:
-            log.debug( 'Missing Perl environment, make sure your specified Rerl installation exists.' )
+            log.debug( 'Missing Perl environment, make sure your specified Perl installation exists.' )
             if initial_download:
                 return tool_dependency, filtered_actions, dir
             return tool_dependency, None, None
