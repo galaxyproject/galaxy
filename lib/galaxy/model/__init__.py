@@ -27,12 +27,13 @@ from sqlalchemy.orm import joinedload, object_session
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
+import galaxy.model.orm.now
 import galaxy.security.passwords
+import galaxy.util
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import Dictifiable, UsesAnnotations
-import galaxy.model.orm.now
 from galaxy.security import get_permitted_actions
-from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
+from galaxy.util import is_multi_byte, Params, restore_text, send_mail
 from galaxy.util import ready_name_for_url, unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
@@ -185,7 +186,7 @@ class User( object, Dictifiable ):
         if self.disk_usage is not None:
             rval = self.disk_usage
         if nice_size:
-            rval = galaxy.datatypes.data.nice_size( rval )
+            rval = galaxy.util.nice_size( rval )
         return rval
 
     def set_disk_usage( self, bytes ):
@@ -1220,7 +1221,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         if rval is None:
             rval = 0
         if nice_size:
-            rval = galaxy.datatypes.data.nice_size( rval )
+            rval = galaxy.util.nice_size( rval )
         return rval
 
     @property
@@ -1381,7 +1382,7 @@ class Quota( object, Dictifiable ):
         if self.bytes == -1:
             return "unlimited"
         else:
-            return nice_size( self.bytes )
+            return galaxy.util.nice_size( self.bytes )
 
 
 class DefaultQuotaAssociation( Quota, Dictifiable ):
@@ -1559,12 +1560,12 @@ class Dataset( object ):
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
-                return galaxy.datatypes.data.nice_size( self.file_size )
+                return galaxy.util.nice_size( self.file_size )
             else:
                 return self.file_size
         else:
             if nice_size:
-                return galaxy.datatypes.data.nice_size( self._calculate_size() )
+                return galaxy.util.nice_size( self._calculate_size() )
             else:
                 return self._calculate_size()
 
@@ -1755,7 +1756,7 @@ class DatasetInstance( object ):
     def get_size( self, nice_size=False ):
         """Returns the size of the data on disk"""
         if nice_size:
-            return galaxy.datatypes.data.nice_size( self.dataset.get_size() )
+            return galaxy.util.nice_size( self.dataset.get_size() )
         return self.dataset.get_size()
 
     def set_size( self ):

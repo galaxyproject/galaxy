@@ -45,6 +45,7 @@ class ToolTestCase( TwillTestCase ):
         job_stdio = None
         job_output_exceptions = None
         tool_execution_exception = None
+        expected_failure_occurred = False
         try:
             try:
                 tool_response = galaxy_interactor.run_tool( testdef, test_history )
@@ -53,22 +54,26 @@ class ToolTestCase( TwillTestCase ):
             except RunToolException as e:
                 tool_inputs = e.inputs
                 tool_execution_exception = e
-                raise e
+                if not testdef.expect_failure:
+                    raise e
+                else:
+                    expected_failure_occurred = True
             except Exception as e:
                 tool_execution_exception = e
                 raise e
 
-            self.assertTrue( data_list or data_collection_list )
+            if not expected_failure_occurred:
+                self.assertTrue( data_list or data_collection_list )
 
-            try:
-                job_stdio = self._verify_outputs( testdef, test_history, jobs, shed_tool_id, data_list, data_collection_list, galaxy_interactor )
-            except JobOutputsError as e:
-                job_stdio = e.job_stdio
-                job_output_exceptions = e.output_exceptions
-                raise e
-            except Exception as e:
-                job_output_exceptions = [e]
-                raise e
+                try:
+                    job_stdio = self._verify_outputs( testdef, test_history, jobs, shed_tool_id, data_list, data_collection_list, galaxy_interactor )
+                except JobOutputsError as e:
+                    job_stdio = e.job_stdio
+                    job_output_exceptions = e.output_exceptions
+                    raise e
+                except Exception as e:
+                    job_output_exceptions = [e]
+                    raise e
         finally:
             job_data = {}
             if tool_inputs is not None:

@@ -1,17 +1,16 @@
 """
 Proteomics Datatypes
 """
+import binascii
 import logging
 import re
-import binascii
 
 from galaxy.datatypes import data
+from galaxy.datatypes.binary import Binary, SQlite
 from galaxy.datatypes.data import Text
-from galaxy.datatypes.xml import GenericXml
-from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.binary import SQlite
 from galaxy.datatypes.tabular import Tabular
-from galaxy.util import sqlite
+from galaxy.datatypes.xml import GenericXml
+from galaxy.util import nice_size, sqlite
 
 
 log = logging.getLogger(__name__)
@@ -268,7 +267,7 @@ class ThermoRAW(Binary):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = "Thermo Finnigan RAW file"
-            dataset.blurb = data.nice_size(dataset.get_size())
+            dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -277,7 +276,7 @@ class ThermoRAW(Binary):
         try:
             return dataset.peek
         except:
-            return "Thermo Finnigan RAW file (%s)" % (data.nice_size(dataset.get_size()))
+            return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
 
 Binary.register_sniffable_binary_format("thermo.raw", "raw", ThermoRAW )
 

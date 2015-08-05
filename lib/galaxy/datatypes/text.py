@@ -2,20 +2,18 @@
 """ Clearing house for generic text datatypes that are not XML or tabular.
 """
 
-from galaxy.datatypes.data import Text
-from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.data import nice_size
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy import util
-
-import tempfile
-import subprocess
-import json
 import gzip
+import json
+import logging
 import os
 import re
+import subprocess
+import tempfile
 
-import logging
+from galaxy.datatypes.data import get_file_peek, Text
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.util import nice_size, string_as_bool
+
 log = logging.getLogger(__name__)
 
 
@@ -98,7 +96,7 @@ class Ipynb( Json ):
             return super(Ipynb, self).display_data( trans, dataset, preview=preview, fileame=filename, to_ext=to_ext, chunk=chunk, **kwd )
 
     def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
-        preview = util.string_as_bool( preview )
+        preview = string_as_bool( preview )
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
         elif to_ext or not preview:

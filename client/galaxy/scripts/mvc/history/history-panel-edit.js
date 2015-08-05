@@ -109,7 +109,7 @@ var HistoryPanelEdit = _super.extend(
     /** listening for history and HDA events */
     _setUpModelListeners : function(){
         _super.prototype._setUpModelListeners.call( this );
-        this.model.on( 'change:nice_size', this.updateHistoryDiskSize, this );
+        this.model.on( 'change:size', this.updateHistoryDiskSize, this );
         return this;
     },
 
