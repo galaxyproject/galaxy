@@ -84,11 +84,11 @@ return Backbone.View.extend({
         var self = this;
         this.uploadbox = this.$('#upload-box').uploadbox({
             url             : this.app.options.nginx_upload_path,
-            announce        : function(d) { self._eventAnnounce(d) },
-            initialize      : function(d) { return self.app.toData([ self.collection.get(d.index) ]) },
-            progress        : function(d, percentage) { self._eventProgress(d, percentage) },
-            success         : function(d, message) { self._eventSuccess(d, message) },
-            error           : function(d, message) { self._eventError(d, message) },
+            announce        : function(index, file) { self._eventAnnounce(index, file) },
+            initialize      : function(index) { return self.app.toData([ self.collection.get(index) ]) },
+            progress        : function(index, percentage) { self._eventProgress(index, percentage) },
+            success         : function(index, message) { self._eventSuccess(index, message) },
+            error           : function(index, message) { self._eventError(index, message) },
             complete        : function() { self._eventComplete() },
             ondragover      : function() { self.$('.upload-box').addClass('highlight'); },
             ondragleave     : function() { self.$('.upload-box').removeClass('highlight'); }
@@ -171,7 +171,7 @@ return Backbone.View.extend({
     //
 
     // a new file has been dropped/selected through the uploadbox plugin
-    _eventAnnounce: function(d) {
+    _eventAnnounce: function(index, file) {
         // update counter
         this.counter.announce++;
 
@@ -180,12 +180,12 @@ return Backbone.View.extend({
 
         // create view/model
         var upload_item = new UploadItem(this, {
-            id          : d.index,
-            file_name   : d.file.name,
-            file_size   : d.file.size,
-            file_mode   : d.file.mode || 'local',
-            file_path   : d.file.path,
-            file_data   : d.file
+            id          : index,
+            file_name   : file.name,
+            file_size   : file.size,
+            file_mode   : file.mode || 'local',
+            file_path   : file.path,
+            file_data   : file
         });
 
         // add to collection
@@ -199,30 +199,27 @@ return Backbone.View.extend({
     },
 
     // progress
-    _eventProgress: function(d, percentage) {
+    _eventProgress: function(index, percentage) {
         // set progress for row
-        var it = this.collection.get(d.index);
+        var it = this.collection.get(index);
         it.set('percentage', percentage);
 
         // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(percentage, d.file.size));
+        this.ui_button.set('percentage', this._uploadPercentage(percentage, it.get('file_size')));
     },
 
     // success
-    _eventSuccess: function(d, message) {
+    _eventSuccess: function(index, message) {
         // update status
-        var it = this.collection.get(d.index);
+        var it = this.collection.get(index);
         it.set('percentage', 100);
         it.set('status', 'success');
 
-        // file size
-        var file_size = it.get('file_size');
-
         // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(100, file_size));
+        this.ui_button.set('percentage', this._uploadPercentage(100, it.get('file_size')));
 
         // update completed
-        this.upload_completed += file_size * 100;
+        this.upload_completed += it.get('file_size') * 100;
 
         // update counter
         this.counter.announce--;
@@ -236,9 +233,9 @@ return Backbone.View.extend({
     },
 
     // error
-    _eventError: function(d, message) {
+    _eventError: function(index, message) {
         // get element
-        var it = this.collection.get(d.index);
+        var it = this.collection.get(index);
 
         // update status
         it.set('percentage', 100);
@@ -246,11 +243,11 @@ return Backbone.View.extend({
         it.set('info', message);
 
         // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(100, d.file.size));
+        this.ui_button.set('percentage', this._uploadPercentage(100, it.get('file_size')));
         this.ui_button.set('status', 'danger');
 
         // update completed
-        this.upload_completed += d.file.size * 100;
+        this.upload_completed += it.get('file_size') * 100;
 
         // update counter
         this.counter.announce--;

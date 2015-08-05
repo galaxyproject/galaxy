@@ -16,16 +16,16 @@ define(['utils/utils',
 
 return Backbone.View.extend({
     // extension selector
-    select_extension : null,
+    select_extension: null,
 
     // genome selector
     select_genome: null,
 
     // collection
-    collection : new UploadModel.Collection(),
+    collection: new UploadModel.Collection(),
 
     // initialize
-    initialize : function(app) {
+    initialize: function(app) {
         // link app
         this.app                = app;
         this.options            = app.options;
@@ -125,7 +125,7 @@ return Backbone.View.extend({
     },
 
     // start upload process
-    _eventStart : function() {
+    _eventStart: function() {
         var self = this;
         this.collection.each(function(item) {
             item.set('genome', self.select_genome.value());
@@ -134,90 +134,40 @@ return Backbone.View.extend({
         $.uploadpost({
             url      : this.app.options.nginx_upload_path,
             data     : this.app.toData(this.collection.filter()),
-            success  : function(message) { console.log(message); },
+            success  : function(message) { self._eventSuccess(message); },
             error    : function(message) { console.log(message); },
-            progress : function(percentage) { console.log(percentage); }
+            progress : function(percentage) { self._eventProgress(percentage); }
         });
     },
 
     // progress
-    _eventProgress : function(index, file, percentage) {
-        // set progress for row
-        var it = this.collection.get(index);
-        it.set('percentage', percentage);
-
-        // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(percentage, file.size));
+    _eventProgress: function(percentage) {
+        this.collection.each(function(it) { it.set('percentage', percentage); });
+        this.ui_button.set('percentage', percentage);
     },
 
     // success
-    _eventSuccess : function(index, file, message) {
-        // update status
-        var it = this.collection.get(index);
-        it.set('percentage', 100);
-        it.set('status', 'success');
-
-        // file size
-        var file_size = it.get('file_size');
-
-        // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(100, file_size));
-
-        // update completed
-        this.upload_completed += file_size * 100;
-
-        // update counter
-        this.counter.announce--;
-        this.counter.success++;
-
-        // update on screen info
-        this._updateScreen();
-
-        // update galaxy history
+    _eventSuccess: function(message) {
+        this.collection.each(function(it) {
+            it.set('percentage', 100);
+            it.set('status', 'success');
+        });
+        this.ui_button.set('percentage', 100);
         Galaxy.currHistoryPanel.refreshContents();
     },
 
     // error
-    _eventError : function(index, file, message) {
-        // get element
-        var it = this.collection.get(index);
-
-        // update status
-        it.set('percentage', 100);
-        it.set('status', 'error');
-        it.set('info', message);
-
-        // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(100, file.size));
-        this.ui_button.set('status', 'danger');
-
-        // update completed
-        this.upload_completed += file.size * 100;
-
-        // update counter
-        this.counter.announce--;
-        this.counter.error++;
-
-        // update on screen info
-        this._updateScreen();
-    },
-
-    // queue is done
-    _eventComplete: function() {
-        // reset queued upload to initial status
-        this.collection.each(function(item) {
-            if(item.get('status') == 'queued') {
-                item.set('status', 'init');
-            }
+    _eventError: function(message) {
+        this.collection.each(function(it) {
+            it.set('percentage', 100);
+            it.set('status', 'error');
+            it.set('info', message);
         });
-
-        // update running
-        this.counter.running = 0;
-        this._updateScreen();
+        this.ui_button.set('percentage', 100);
     },
 
     // display extension info popup
-    _showExtensionInfo : function(options) {
+    _showExtensionInfo: function(options) {
         // initialize
         var self = this;
         var $el = options.$el;
@@ -258,11 +208,6 @@ return Backbone.View.extend({
         } else {
             this.$('#upload-table').hide();
         }
-    },
-
-    // calculate percentage of all queued uploads
-    _uploadPercentage: function(percentage, size) {
-        return (this.upload_completed + (percentage * size)) / this.upload_size;
     },
 
     // template for extensions description

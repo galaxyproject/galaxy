@@ -189,7 +189,7 @@
                 for (var i = 0; i < files.length; i++) {
                     var index = String(queue_index++);
                     queue[index] = files[i];
-                    opts.announce({ index: index, file: queue[index] });
+                    opts.announce(index, queue[index]);
                     queue_length++;
                 }
                 return current_index;
@@ -230,13 +230,12 @@
             remove(index)
 
             // create and submit data
-            var callback_data = { index: index, file: file };
             $.uploadpost({
                 url      : opts.url,
-                data     : opts.initialize(callback_data),
-                success  : function(message) { opts.success(callback_data, message); process();},
-                error    : function(message) { opts.error(callback_data, message); process();},
-                progress : function(percentage) { opts.progress(callback_data, percentage); }
+                data     : opts.initialize(index),
+                success  : function(message) { opts.success(index, message); process();},
+                error    : function(message) { opts.error(index, message); process();},
+                progress : function(percentage) { opts.progress(index, percentage); }
             });
         }
 

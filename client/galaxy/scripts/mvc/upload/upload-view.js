@@ -193,7 +193,6 @@ return Backbone.View.extend({
         // add upload tools input data
         if (items && items.length > 0) {
             var inputs = {};
-            console.log(items);
             inputs['dbkey'] = items[0].get('genome', null);
             inputs['file_type'] = items[0].get('extension', null);
             for (var index in items) {
@@ -217,7 +216,7 @@ return Backbone.View.extend({
                 } else {
                     data.error_message = 'Upload content incomplete.';
                     it.set('status', 'error');
-                    it.set('status_text', data.error_message);
+                    it.set('info', data.error_message);
                     break;
                 }
             }
