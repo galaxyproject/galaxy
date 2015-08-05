@@ -83,11 +83,12 @@ return Backbone.View.extend({
         // file upload
         var self = this;
         this.uploadbox = this.$('#upload-box').uploadbox({
-            initialize      : function(index, file, message) { return self._eventInitialize(index, file, message) },
-            announce        : function(index, file, message) { self._eventAnnounce(index, file, message) },
-            progress        : function(index, file, message) { self._eventProgress(index, file, message) },
-            success         : function(index, file, message) { self._eventSuccess(index, file, message) },
-            error           : function(index, file, message) { self._eventError(index, file, message) },
+            url             : this.app.options.nginx_upload_path,
+            announce        : function(d) { self._eventAnnounce(d) },
+            initialize      : function(d) { return self._eventInitialize(d) },
+            progress        : function(d, percentage) { self._eventProgress(d, percentage) },
+            success         : function(d, message) { self._eventSuccess(d, message) },
+            error           : function(d, message) { self._eventError(d, message) },
             complete        : function() { self._eventComplete() },
             ondragover      : function() { self.$('.upload-box').addClass('highlight'); },
             ondragleave     : function() { self.$('.upload-box').removeClass('highlight'); }
@@ -170,7 +171,7 @@ return Backbone.View.extend({
     //
 
     // a new file has been dropped/selected through the uploadbox plugin
-    _eventAnnounce : function(index, file, message) {
+    _eventAnnounce: function(d) {
         // update counter
         this.counter.announce++;
 
@@ -179,11 +180,11 @@ return Backbone.View.extend({
 
         // create view/model
         var upload_item = new UploadItem(this, {
-            id          : index,
-            file_name   : file.name,
-            file_size   : file.size,
-            file_mode   : file.mode || 'local',
-            file_path   : file.path
+            id          : d.index,
+            file_name   : d.file.name,
+            file_size   : d.file.size,
+            file_mode   : d.file.mode || 'local',
+            file_path   : d.file.path
         });
 
         // add to collection
@@ -197,9 +198,9 @@ return Backbone.View.extend({
     },
 
     // the uploadbox plugin is initializing the upload for this file
-    _eventInitialize : function(index, file, message) {
+    _eventInitialize: function(d) {
         // get element
-        var it = this.collection.get(index);
+        var it = this.collection.get(d.index);
 
         // update status
         it.set('status', 'running');
@@ -215,63 +216,54 @@ return Backbone.View.extend({
         var to_posix_lines  = it.get('to_posix_lines');
 
         // validate
-        if (!url_paste && !(file.size > 0))
-            return null;
-
-        // configure uploadbox
-        this.uploadbox.configure({url : this.app.options.nginx_upload_path});
-
-        // local files
-        if (file_mode == 'local') {
-            this.uploadbox.configure({paramname : 'files_0|file_data'});
-        } else {
-            this.uploadbox.configure({paramname : null});
+        if (!url_paste && !(d.file.size > 0)) {
+            return { error: 'No upload content available.' };
         }
 
-        // configure tool
-        tool_input = {};
+        // configure tool input
+        inputs = {};
+        inputs['dbkey'] = genome;
+        inputs['file_type'] = extension;
+        inputs['files_0|type'] = 'upload_dataset';
+        inputs['files_0|space_to_tab'] = space_to_tab && 'Yes' || null;
+        inputs['files_0|to_posix_lines'] = to_posix_lines && 'Yes' || null;
 
-        // new files
+        // modes without upload data
         if (file_mode == 'new') {
-            tool_input['files_0|url_paste'] = url_paste;
+            inputs['files_0|url_paste'] = url_paste;
         }
-
-        // files from ftp
         if (file_mode == 'ftp') {
-            tool_input['files_0|ftp_files'] = file_path;
+            inputs['files_0|ftp_files'] = file_path;
         }
 
-        // add common configuration
-        tool_input['dbkey'] = genome;
-        tool_input['file_type'] = extension;
-        tool_input['files_0|type'] = 'upload_dataset';
-        tool_input['files_0|space_to_tab'] = space_to_tab && 'Yes' || null;
-        tool_input['files_0|to_posix_lines'] = to_posix_lines && 'Yes' || null;
-
-        // setup data
-        data = {};
-        data['history_id'] = this.app.current_history;
-        data['tool_id'] = 'upload1';
-        data['inputs'] = JSON.stringify(tool_input);
-
-        // return additional data to be send with file
+        // setup/return submission data
+        var data = {
+            payload: {
+                'tool_id'       : 'upload1',
+                'history_id'    : this.app.current_history,
+                'inputs'        : JSON.stringify(inputs),
+            }
+        }
+        if (file_mode == 'local') {
+            data['files'] = [{ name: 'files_0|file_data', file: d.file }];
+        }
         return data;
     },
 
     // progress
-    _eventProgress : function(index, file, percentage) {
+    _eventProgress: function(d, percentage) {
         // set progress for row
-        var it = this.collection.get(index);
+        var it = this.collection.get(d.index);
         it.set('percentage', percentage);
 
         // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(percentage, file.size));
+        this.ui_button.set('percentage', this._uploadPercentage(percentage, d.file.size));
     },
 
     // success
-    _eventSuccess : function(index, file, message) {
+    _eventSuccess: function(d, message) {
         // update status
-        var it = this.collection.get(index);
+        var it = this.collection.get(d.index);
         it.set('percentage', 100);
         it.set('status', 'success');
 
@@ -296,9 +288,9 @@ return Backbone.View.extend({
     },
 
     // error
-    _eventError : function(index, file, message) {
+    _eventError: function(d, message) {
         // get element
-        var it = this.collection.get(index);
+        var it = this.collection.get(d.index);
 
         // update status
         it.set('percentage', 100);
@@ -306,11 +298,11 @@ return Backbone.View.extend({
         it.set('info', message);
 
         // update ui button
-        this.ui_button.set('percentage', this._uploadPercentage(100, file.size));
+        this.ui_button.set('percentage', this._uploadPercentage(100, d.file.size));
         this.ui_button.set('status', 'danger');
 
         // update completed
-        this.upload_completed += file.size * 100;
+        this.upload_completed += d.file.size * 100;
 
         // update counter
         this.counter.announce--;
@@ -339,7 +331,7 @@ return Backbone.View.extend({
     //
 
     // [public] display extension info popup
-    showExtensionInfo : function(options) {
+    showExtensionInfo: function(options) {
         // initialize
         var self = this;
         var $el = options.$el;
@@ -376,7 +368,7 @@ return Backbone.View.extend({
     },
 
     // create a new file
-    _eventCreate : function (){
+    _eventCreate: function (){
         this.uploadbox.add([{
             name    : 'New File',
             size    : 0,
@@ -385,7 +377,7 @@ return Backbone.View.extend({
     },
 
     // start upload process
-    _eventStart : function() {
+    _eventStart: function() {
         // check
         if (this.counter.announce == 0 || this.counter.running > 0) {
             return;
@@ -416,7 +408,7 @@ return Backbone.View.extend({
     },
 
     // pause upload process
-    _eventStop : function() {
+    _eventStop: function() {
         // check
         if (this.counter.running == 0) {
             return;
@@ -433,7 +425,7 @@ return Backbone.View.extend({
     },
 
     // remove all
-    _eventReset : function() {
+    _eventReset: function() {
         // make sure queue is not running
         if (this.counter.running == 0){
             // reset collection

@@ -54,62 +54,36 @@
         Handles the upload queue and events such as drag/drop etc.
     */
     $.fn.uploadbox = function(options) {
-        // default options
-        var default_opts = {
-            url             : '',
-            paramname       : 'content',
-            maxfilesize     : 2048,
+        // parse options
+        var opts = $.extend({}, {
             dragover        : function() {},
             dragleave       : function() {},
-            announce        : function() {},
-            initialize      : function() {},
-            progress        : function() {},
-            success         : function() {},
-            error           : function(index, file, message) { alert(message); },
-            complete        : function() {},
-            error_filesize  : "File exceeds 2GB. Please use an FTP client.",
-            error_default   : "Please make sure the file is available.",
-            error_server    : "Upload request failed.",
-            error_login     : "Uploads require you to log in.",
-            error_missing   : "No upload content available."
-        }
+            announce        : function(d) {},
+            initialize      : function(d) {},
+            progress        : function(d, m) {},
+            success         : function(d, m) {},
+            error           : function(d, m) { alert(m); },
+            complete        : function() {}
+        }, options);
 
         // file queue
         var queue = {};
 
-        // queue index counter
+        // queue index/length counter
         var queue_index = 0;
-
-        // queue length
         var queue_length = 0;
 
         // indicates if queue is currently running
         var queue_running = false;
         var queue_stop = false;
 
-        // xml request element
-        var xhr = null;
-
-        // parse options
-        var opts = $.extend({}, default_opts, options);
-
         // element
         var uploadinput = $(this).uploadinput({
             multiple    : true,
-            onchange    : function(files) {
-                add(files);
-            },
+            onchange    : function(files) { add(files); },
             ondragover  : options.ondragover,
             ondragleave : options.ondragleave
         });
-
-        // progress
-        function progress(e) {
-            // get percentage
-            if (e.lengthComputable) {
-                opts.progress(this.index, this.file, Math.round((e.loaded * 100) / e.total));
-            }
-        }
 
         // respond to an upload request
         function add(files) {
@@ -118,35 +92,21 @@
                 return;
             }
 
-            // backup queue index
+            // evaluate queue index
             var current_index = queue_index;
-
-            // add files to queue
             for (var i = 0; i < files.length; i++) {
-                // new identifier
                 var index = String(queue_index++);
-
-                // add to queue
                 queue[index] = files[i];
-
-                // announce
-                opts.announce(index, queue[index], '');
-
-                // increase counter
+                opts.announce({ index: index, file: queue[index] });
                 queue_length++;
             }
-
-            // return
             return current_index;
         }
 
         // remove entry from queue
         function remove(index) {
             if (queue[index]) {
-                // remove from queue
                 delete queue[index];
-
-                // update counter
                 queue_length--;
             }
         }
@@ -176,45 +136,70 @@
             // remove from queue
             remove(index)
 
-            // collect file details
-            var filesize = file.size;
-            var filemode = file.mode;
-
-            // identify maximum file size
-            var maxfilesize = 1048576 * opts.maxfilesize;
-
-            // check file size, unless it's an ftp file
-            if (filesize < maxfilesize || file.mode == 'ftp') {
-                // get parameters
-                var data = opts.initialize(index, file);
-
-                // validate
-                if (data)
-                    send(index, file, data);
-                else
-                    error(index, file, opts.error_missing);
+            // create and submit data
+            var callback_data = { index: index, file: file };
+            var data = opts.initialize(callback_data);
+            if (!data.error) {
+                send({
+                    url: opts.url,
+                    data: data,
+                    success: function(message) {
+                        success(callback_data, message);
+                    },
+                    error: function(message) {
+                        error(callback_data, message);
+                    },
+                    progress: function(percentage) {
+                        progress(callback_data, percentage);
+                    }
+                });
             } else {
-                // skip file
-                error(index, file, opts.error_filesize);
+                error(callback_data, data.error);
             }
         }
 
         // send file
-        function send (index, file, data) {
+        function send (config) {
+            // parse options
+            var cnf = $.extend({}, {
+                data            : {},
+                success         : function() {},
+                error           : function() {},
+                progress        : function() {},
+                url             : null,
+                maxfilesize     : 2048,
+                error_filesize  : 'File exceeds 2GB. Please use an FTP client.',
+                error_default   : 'Please make sure the file is available.',
+                error_server    : 'Upload request failed.',
+                error_login     : 'Uploads require you to log in.'
+            }, config);
+
+            // link data
+            var data = cnf.data;
+
             // construct form data
-            var formData = new FormData();
-            for (var key in data) {
-                formData.append(key, data[key]);
+            var form = new FormData();
+            for (var key in data.payload) {
+                form.append(key, data.payload[key]);
             }
 
-            // check file size
-            if (file.size > 0 && opts.paramname) {
-                formData.append(opts.paramname, file, file.name);
+            // add files to submission
+            var sizes = 0;
+            for (var key in data.files) {
+                var d = data.files[key];
+                form.append(d.name, d.file, d.file.name);
+                sizes += d.file.size;
+            }
+
+            // check file size, unless it's an ftp file
+            if (sizes > 1048576 * cnf.maxfilesize) {
+                cnf.error(cnf.error_filesize);
+                return;
             }
 
             // prepare request
             xhr = new XMLHttpRequest();
-            xhr.open('POST', opts.url, true);
+            xhr.open('POST', cnf.url, true);
             xhr.setRequestHeader('Accept', 'application/json');
             xhr.setRequestHeader('Cache-Control', 'no-cache');
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
@@ -222,63 +207,58 @@
             // captures state changes
             xhr.onreadystatechange = function() {
                 // check for request completed, server connection closed
-                if (xhr.readyState != xhr.DONE) {
-                    return;
-                }
-
-                // retrieve response
-                var response = null;
-                if (xhr.responseText) {
-                    try {
-                        response = jQuery.parseJSON(xhr.responseText);
-                    } catch (e) {
-                        response = xhr.responseText;
-                    }
-                }
-
-                // pass any error to the error option
-                if (xhr.status < 200 || xhr.status > 299) {
-                    // format status
-                    var text = xhr.statusText;
-                    if (xhr.status == 403)
-                        text = opts.error_login;
-                    else if (xhr.status == 0)
-                        text = opts.error_server;
-                    else if (!text)
-                        text = opts.error_default;
-
-                    // request error
-                    error(index, file, text + " (" + xhr.status + ")");
-                } else {
+                if (xhr.readyState == xhr.DONE) {
                     // parse response
-                    success(index, file, response);
+                    var response = null;
+                    if (xhr.responseText) {
+                        try {
+                            response = jQuery.parseJSON(xhr.responseText);
+                        } catch (e) {
+                            response = xhr.responseText;
+                        }
+                    }
+                    // pass any error to the error option
+                    if (xhr.status < 200 || xhr.status > 299) {
+                        var text = xhr.statusText;
+                        if (xhr.status == 403) {
+                            text = cnf.error_login;
+                        } else if (xhr.status == 0) {
+                            text = cnf.error_server;
+                        } else if (!text) {
+                            text = cnf.error_default;
+                        }
+                        cnf.error(text + ' (' + xhr.status + ')');
+                    } else {
+                        cnf.success(response);
+                    }
                 }
             }
 
             // prepare upload progress
-            xhr.upload.index = index;
-            xhr.upload.file = file;
-            xhr.upload.addEventListener('progress', progress, false);
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    cnf.progress(Math.round((e.loaded * 100) / e.total));
+                }
+            }, false);
 
             // send request
-            xhr.send(formData);
+            xhr.send(form);
         }
 
-        // success
-        function success (index, file, msg) {
-            // parse message
-            opts.success(index, file, msg);
+        // progress
+        function progress(d, percentage) {
+            opts.progress(d, percentage);
+        }
 
-            // restart process after success
+        // parse success
+        function success (d, msg) {
+            opts.success(d, msg);
             process();
         }
 
-        // error
-        function error (index, file, err) {
-            // parse error
-            opts.error(index, file, err);
-
-            // restart process after error
+        // parse error
+        function error (d, err) {
+            opts.error(d, err);
             process();
         }
 
@@ -293,8 +273,9 @@
 
         // remove all entries from queue
         function reset(index) {
-            for (index in queue)
+            for (index in queue) {
                 remove(index);
+            }
         }
 
         // initiate upload process
@@ -312,10 +293,7 @@
 
         // set options
         function configure(options) {
-            // update current configuration
             opts = $.extend({}, opts, options);
-
-            // return new configuration
             return opts;
         }
 

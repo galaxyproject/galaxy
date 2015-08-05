@@ -126,95 +126,6 @@ return Backbone.View.extend({
 
     // start upload process
     _eventStart : function() {
-        // check
-        if (this.counter.announce == 0 || this.counter.running > 0) {
-            return;
-        }
-
-        // reset current size
-        var self = this;
-        this.upload_size = 0;
-        this.upload_completed = 0;
-        // switch icons for new uploads
-        this.collection.each(function(item) {
-            if(item.get('status') == 'init') {
-                item.set('status', 'queued');
-                self.upload_size += item.get('file_size');
-            }
-        });
-
-        // reset progress
-        this.ui_button.set('percentage', 0);
-        this.ui_button.set('status', 'success');
-
-        // update running
-        this._updateScreen();
-
-        // initiate upload procedure in plugin
-        this.uploadbox.start();
-    },
-
-    // the uploadbox plugin is initializing the upload for this file
-    _eventInitialize : function(index, file, message) {
-        return;//
-        // get element
-        var it = this.collection.get(index);
-
-        // update status
-        it.set('status', 'running');
-
-        // get configuration
-        var file_name       = it.get('file_name');
-        var file_path       = it.get('file_path');
-        var file_mode       = it.get('file_mode');
-        var extension       = it.get('extension');
-        var genome          = it.get('genome');
-        var url_paste       = it.get('url_paste');
-        var space_to_tab    = it.get('space_to_tab');
-        var to_posix_lines  = it.get('to_posix_lines');
-
-        // validate
-        if (!url_paste && !(file.size > 0))
-            return null;
-
-        // configure uploadbox
-        this.uploadbox.configure({url : this.app.options.nginx_upload_path});
-
-        // local files
-        if (file_mode == 'local') {
-            this.uploadbox.configure({paramname : 'files_0|file_data'});
-        } else {
-            this.uploadbox.configure({paramname : null});
-        }
-
-        // configure tool
-        tool_input = {};
-
-        // new files
-        if (file_mode == 'new') {
-            tool_input['files_0|url_paste'] = url_paste;
-        }
-
-        // files from ftp
-        if (file_mode == 'ftp') {
-            tool_input['files_0|ftp_files'] = file_path;
-        }
-
-        // add common configuration
-        tool_input['dbkey'] = genome;
-        tool_input['file_type'] = extension;
-        tool_input['files_0|type'] = 'upload_dataset';
-        tool_input['files_0|space_to_tab'] = space_to_tabs && 'Yes' || null;
-        tool_input['files_0|to_posix_lines'] = to_posix_lines && 'Yes' || null;
-
-        // setup data
-        data = {};
-        data['history_id'] = this.app.current_history;
-        data['tool_id'] = 'upload1';
-        data['inputs'] = JSON.stringify(tool_input);
-
-        // return additional data to be send with file
-        return data;
     },
 
     // progress
@@ -359,7 +270,7 @@ return Backbone.View.extend({
     _template: function() {
         return  '<div class="upload-view-composite">' +
                     '<div class="upload-top">' +
-                        '<h6 id="upload-info" class="upload-info"></h6>' +
+                        '<h6 id="upload-info" class="upload-info"/>' +
                     '</div>' +
                     '<div id="upload-footer" class="upload-footer">' +
                         '<span class="footer-title">Composite Type:</span>' +
