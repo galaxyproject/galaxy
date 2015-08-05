@@ -248,31 +248,7 @@ class RecipeStep( object ):
         raise "Unimplemented Method"
 
 
-class DirectoryRecipeStep( RecipeStep ):
-    """
-    Class for handling recipe steps related to directory actions during the
-    installation process.  Recipes that use the TMP_WORK_DIR reserved word
-    enable sub-classes (e.g., MakeDirectory, ChangeDirectory, etc) to perform
-    actions via the subclass's execute_step() method within the temporary
-    working directory created by the InstallEnvironment.make_tmp_dir() method.
-    This mirrors the same behavior that results from the use of the $INSTALL_DIR
-    keyword, where the subclasses perform the same directory actions within
-    the installation environment rather than the working environment.
-    """
-
-    def set_directory_path( self, work_dir, current_dir, target_dir ):
-        """
-        This method currently replaces the TMP_WORK_DIR keyword with the path
-        to the temporary working directory.
-        """
-        if target_dir.startswith( 'TMP_WORK_DIR' ):
-            target_dir = target_dir.replace( 'TMP_WORK_DIR', os.path.realpath( work_dir ) )
-        elif current_dir is not None:
-            target_dir = os.path.join( current_dir, target_dir )
-        return os.path.normpath( target_dir )
-
-
-class AssertDirectoryExecutable( DirectoryRecipeStep ):
+class AssertDirectoryExecutable( RecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -301,11 +277,10 @@ class AssertDirectoryExecutable( DirectoryRecipeStep ):
         Since this class is not used in the initial download stage, no recipe step filtering is
         performed here, and None values are always returned for filtered_actions and dir.
         """
-        tmp_path = self.set_directory_path( work_dir, current_dir, action_dict[ 'full_path' ] )
-        if os.path.isabs( tmp_path ):
-            full_path = tmp_path
+        if os.path.isabs( action_dict[ 'full_path' ] ):
+            full_path = action_dict[ 'full_path' ]
         else:
-            full_path = os.path.join( current_dir, tmp_path )
+            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
         if not self.assert_directory_executable( full_path=full_path ):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             error_message = 'The path %s is not a directory or is not executable by the owner.' % str( full_path )
@@ -323,7 +298,7 @@ class AssertDirectoryExecutable( DirectoryRecipeStep ):
         return action_dict
 
 
-class AssertDirectoryExists( DirectoryRecipeStep ):
+class AssertDirectoryExists( RecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -348,11 +323,10 @@ class AssertDirectoryExists( DirectoryRecipeStep ):
         class is not used in the initial download stage, no recipe step filtering is performed
         here, and None values are always returned for filtered_actions and dir.
         """
-        tmp_path = self.set_directory_path( work_dir, current_dir, action_dict[ 'full_path' ] )
-        if os.path.isabs( tmp_path ):
-            full_path = tmp_path
+        if os.path.isabs( action_dict[ 'full_path' ] ):
+            full_path = action_dict[ 'full_path' ]
         else:
-            full_path = os.path.join( current_dir, tmp_path )
+            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
         if not self.assert_directory_exists( full_path=full_path ):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             error_message = 'The path %s is not a directory or does not exist.' % str( full_path )
@@ -502,7 +476,7 @@ class Autoconf( RecipeStep ):
         return action_dict
 
 
-class ChangeDirectory( DirectoryRecipeStep ):
+class ChangeDirectory( RecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -515,20 +489,33 @@ class ChangeDirectory( DirectoryRecipeStep ):
         no recipe step filtering is performed here and a None value is return for filtered_actions.  However,
         the new dir value is returned since it is needed for later steps.
         """
-        target_directory = self.set_directory_path( work_dir, current_dir, action_dict[ 'directory' ] )
-        if target_directory.startswith( os.path.realpath( work_dir ) ) and os.path.exists( target_directory ):
-            # Change directory to a directory either above or within current_dir,
-            # which is within the defined work_dir.
-            dir = os.path.normpath( target_directory )
+
+        def dir_valid( test_dir ):
+            """
+            Make sure the defined directory is within current_dir or work_dir.
+            """
+            for valid_dir in [ os.path.realpath( current_dir ), os.path.realpath( work_dir ) ]:
+                if test_dir.startswith( valid_dir ) and os.path.exists( test_dir ):
+                    return True
+            return False
+
+        target_dir = os.path.realpath( os.path.normpath( action_dict[ 'directory' ] ) )
+        if dir_valid( target_dir ):
+            # We have a directory that includes a path.
+            dir = target_dir
         else:
-            log.debug( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.' % str( target_directory ) )
-            dir = current_dir
+            target_dir = os.path.realpath( os.path.normpath( os.path.join( current_dir, action_dict[ 'directory' ] ) ) )
+            if dir_valid( target_dir ):
+                dir = target_dir
+            else:
+                log.debug( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', str( action_dict[ 'directory' ] )  )
+                dir = current_dir
         return tool_dependency, None, dir
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="change_directory">PHYLIP-3.6b</action>
         if action_elem.text:
-            action_dict[ 'directory' ] = action_elem.text
+            action_dict[ 'directory' ] = basic_util.evaluate_template( action_elem.text, install_environment )
         return action_dict
 
 
@@ -784,7 +771,7 @@ class DownloadFile( Download, RecipeStep ):
         return action_dict
 
 
-class MakeDirectory( DirectoryRecipeStep ):
+class MakeDirectory( RecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -796,11 +783,10 @@ class MakeDirectory( DirectoryRecipeStep ):
         Make a directory on disk.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
         """
-        tmp_dir = self.set_directory_path( work_dir, current_dir, action_dict[ 'full_path' ] )
-        if os.path.isabs( tmp_dir ):
-            full_path = tmp_dir
+        if os.path.isabs( action_dict[ 'full_path' ] ):
+            full_path = action_dict[ 'full_path' ]
         else:
-            full_path = os.path.join( current_dir, tmp_dir )
+            full_path = os.path.join( current_dir, action_dict[ 'full_path' ] )
         self.make_directory( full_path=full_path )
         return tool_dependency, None, None
 
@@ -846,7 +832,7 @@ class MakeInstall( RecipeStep ):
         return action_dict
 
 
-class MoveDirectoryFiles( DirectoryRecipeStep ):
+class MoveDirectoryFiles( RecipeStep ):
 
     def __init__( self, app ):
         self.app = app
@@ -858,15 +844,9 @@ class MoveDirectoryFiles( DirectoryRecipeStep ):
         Move a directory of files.  Since this class is not used in the initial download stage, no recipe step
         filtering is performed here, and None values are always returned for filtered_actions and dir.
         """
-        source_dir = self.set_directory_path( work_dir,
-                                              current_dir,
-                                              action_dict[ 'source_directory' ] )
-        destination_dir = self.set_directory_path( work_dir,
-                                                   current_dir,
-                                                   action_dict[ 'destination_directory' ] )
         self.move_directory_files( current_dir=current_dir,
-                                   source_dir=source_dir,
-                                   destination_dir=destination_dir )
+                                   source_dir=os.path.join( action_dict[ 'source_directory' ] ),
+                                   destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
         return tool_dependency, None, None
 
     def move_directory_files( self, current_dir, source_dir, destination_dir ):
@@ -1730,7 +1710,7 @@ class SetupVirtualEnv( Download, RecipeStep ):
 
     def install_virtualenv( self, install_environment, venv_dir ):
         if not os.path.exists( venv_dir ):
-            with install_environment.make_tmp_dir() as work_dir:
+            with install_environment.use_tmp_dir() as work_dir:
                 downloaded_filename = VIRTUALENV_URL.rsplit('/', 1)[-1]
                 try:
                     dir = self.url_download( work_dir, downloaded_filename, VIRTUALENV_URL )
