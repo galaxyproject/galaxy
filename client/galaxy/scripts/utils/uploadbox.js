@@ -6,6 +6,95 @@
     jQuery.event.props.push("dataTransfer");
 
     /**
+        Performs the file/data submission to the API
+    */
+    $.uploadpost = function (config) {
+        // parse options
+        var cnf = $.extend({}, {
+            data            : {},
+            success         : function() {},
+            error           : function() {},
+            progress        : function() {},
+            url             : null,
+            maxfilesize     : 2048,
+            error_filesize  : 'File exceeds 2GB. Please use an FTP client.',
+            error_default   : 'Please make sure the file is available.',
+            error_server    : 'Upload request failed.',
+            error_login     : 'Uploads require you to log in.'
+        }, config);
+
+        // link data
+        var data = cnf.data;
+
+        // construct form data
+        var form = new FormData();
+        for (var key in data.payload) {
+            form.append(key, data.payload[key]);
+        }
+
+        // add files to submission
+        var sizes = 0;
+        for (var key in data.files) {
+            var d = data.files[key];
+            form.append(d.name, d.file, d.file.name);
+            sizes += d.file.size;
+        }
+
+        // check file size, unless it's an ftp file
+        if (sizes > 1048576 * cnf.maxfilesize) {
+            cnf.error(cnf.error_filesize);
+            return;
+        }
+
+        // prepare request
+        xhr = new XMLHttpRequest();
+        xhr.open('POST', cnf.url, true);
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('Cache-Control', 'no-cache');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+        // captures state changes
+        xhr.onreadystatechange = function() {
+            // check for request completed, server connection closed
+            if (xhr.readyState == xhr.DONE) {
+                // parse response
+                var response = null;
+                if (xhr.responseText) {
+                    try {
+                        response = jQuery.parseJSON(xhr.responseText);
+                    } catch (e) {
+                        response = xhr.responseText;
+                    }
+                }
+                // pass any error to the error option
+                if (xhr.status < 200 || xhr.status > 299) {
+                    var text = xhr.statusText;
+                    if (xhr.status == 403) {
+                        text = cnf.error_login;
+                    } else if (xhr.status == 0) {
+                        text = cnf.error_server;
+                    } else if (!text) {
+                        text = cnf.error_default;
+                    }
+                    cnf.error(text + ' (' + xhr.status + ')');
+                } else {
+                    cnf.success(response);
+                }
+            }
+        }
+
+        // prepare upload progress
+        xhr.upload.addEventListener('progress', function(e) {
+            if (e.lengthComputable) {
+                cnf.progress(Math.round((e.loaded * 100) / e.total));
+            }
+        }, false);
+
+        // send request
+        xhr.send(form);
+    }
+
+    /**
         Handles the upload events drag/drop etc.
     */
     $.fn.uploadinput = function(options) {
@@ -85,25 +174,21 @@
             ondragleave : options.ondragleave
         });
 
-        // respond to an upload request
+        // add new files to upload queue
         function add(files) {
-            // only allow adding file if current batch is complete
-            if (!files || !files.length || queue_running) {
-                return;
+            if (files && files.length && !queue_running) {
+                var current_index = queue_index;
+                for (var i = 0; i < files.length; i++) {
+                    var index = String(queue_index++);
+                    queue[index] = files[i];
+                    opts.announce({ index: index, file: queue[index] });
+                    queue_length++;
+                }
+                return current_index;
             }
-
-            // evaluate queue index
-            var current_index = queue_index;
-            for (var i = 0; i < files.length; i++) {
-                var index = String(queue_index++);
-                queue[index] = files[i];
-                opts.announce({ index: index, file: queue[index] });
-                queue_length++;
-            }
-            return current_index;
         }
 
-        // remove entry from queue
+        // remove file from queue
         function remove(index) {
             if (queue[index]) {
                 delete queue[index];
@@ -140,126 +225,17 @@
             var callback_data = { index: index, file: file };
             var data = opts.initialize(callback_data);
             if (!data.error) {
-                send({
-                    url: opts.url,
-                    data: data,
-                    success: function(message) {
-                        success(callback_data, message);
-                    },
-                    error: function(message) {
-                        error(callback_data, message);
-                    },
-                    progress: function(percentage) {
-                        progress(callback_data, percentage);
-                    }
+                $.uploadpost({
+                    url      : opts.url,
+                    data     : data,
+                    success  : function(message) { opts.success(callback_data, message); process();},
+                    error    : function(message) { opts.error(callback_data, message); process();},
+                    progress : function(percentage) { opts.progress(callback_data, percentage); }
                 });
             } else {
-                error(callback_data, data.error);
+                opts.error(callback_data, data.error);
+                process();
             }
-        }
-
-        // send file
-        function send (config) {
-            // parse options
-            var cnf = $.extend({}, {
-                data            : {},
-                success         : function() {},
-                error           : function() {},
-                progress        : function() {},
-                url             : null,
-                maxfilesize     : 2048,
-                error_filesize  : 'File exceeds 2GB. Please use an FTP client.',
-                error_default   : 'Please make sure the file is available.',
-                error_server    : 'Upload request failed.',
-                error_login     : 'Uploads require you to log in.'
-            }, config);
-
-            // link data
-            var data = cnf.data;
-
-            // construct form data
-            var form = new FormData();
-            for (var key in data.payload) {
-                form.append(key, data.payload[key]);
-            }
-
-            // add files to submission
-            var sizes = 0;
-            for (var key in data.files) {
-                var d = data.files[key];
-                form.append(d.name, d.file, d.file.name);
-                sizes += d.file.size;
-            }
-
-            // check file size, unless it's an ftp file
-            if (sizes > 1048576 * cnf.maxfilesize) {
-                cnf.error(cnf.error_filesize);
-                return;
-            }
-
-            // prepare request
-            xhr = new XMLHttpRequest();
-            xhr.open('POST', cnf.url, true);
-            xhr.setRequestHeader('Accept', 'application/json');
-            xhr.setRequestHeader('Cache-Control', 'no-cache');
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-
-            // captures state changes
-            xhr.onreadystatechange = function() {
-                // check for request completed, server connection closed
-                if (xhr.readyState == xhr.DONE) {
-                    // parse response
-                    var response = null;
-                    if (xhr.responseText) {
-                        try {
-                            response = jQuery.parseJSON(xhr.responseText);
-                        } catch (e) {
-                            response = xhr.responseText;
-                        }
-                    }
-                    // pass any error to the error option
-                    if (xhr.status < 200 || xhr.status > 299) {
-                        var text = xhr.statusText;
-                        if (xhr.status == 403) {
-                            text = cnf.error_login;
-                        } else if (xhr.status == 0) {
-                            text = cnf.error_server;
-                        } else if (!text) {
-                            text = cnf.error_default;
-                        }
-                        cnf.error(text + ' (' + xhr.status + ')');
-                    } else {
-                        cnf.success(response);
-                    }
-                }
-            }
-
-            // prepare upload progress
-            xhr.upload.addEventListener('progress', function(e) {
-                if (e.lengthComputable) {
-                    cnf.progress(Math.round((e.loaded * 100) / e.total));
-                }
-            }, false);
-
-            // send request
-            xhr.send(form);
-        }
-
-        // progress
-        function progress(d, percentage) {
-            opts.progress(d, percentage);
-        }
-
-        // parse success
-        function success (d, msg) {
-            opts.success(d, msg);
-            process();
-        }
-
-        // parse error
-        function error (d, err) {
-            opts.error(d, err);
-            process();
         }
 
         /*

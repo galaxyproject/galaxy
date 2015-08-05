@@ -126,6 +126,7 @@ return Backbone.View.extend({
 
     // start upload process
     _eventStart : function() {
+        $.uploadpost();
     },
 
     // progress
