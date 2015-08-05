@@ -183,6 +183,7 @@ def get_repos( sa_session, path_to_repositories ):
                              tools_list=tools_list ) )
     return results
 
+
 def load_one_dir( path ):
     tools_in_dir = []
     tool_elems = load_tool_elements_from_path( path )
@@ -200,6 +201,7 @@ def load_one_dir( path ):
                                    version=root.attrib.get( 'version' ) ) )
                 tools_in_dir.append( tool )
     return tools_in_dir
+
 
 def get_sa_session_and_needed_config_settings( path_to_tool_shed_config ):
     conf_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )
