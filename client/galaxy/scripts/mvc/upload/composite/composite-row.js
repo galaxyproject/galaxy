@@ -48,6 +48,7 @@ return Backbone.View.extend({
             },
             onchange: function(files) {
                 if (files && files.length > 0) {
+                    self.model.set('file_data', files[0]);
                     self.model.set('file_name', files[0].name);
                     self.model.set('file_size', files[0].size);
                     self.model.set('file_mode', files[0].mode || 'local');

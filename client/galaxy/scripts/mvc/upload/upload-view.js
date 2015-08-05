@@ -176,6 +176,54 @@ return Backbone.View.extend({
         if (this.current_user) {
             this.current_history = Galaxy.currHistoryPanel.model.get('id');
         }
+    },
+
+    // package upload items
+    toData: function(items) {
+        // create dictionary for data submission
+        var data = {
+            payload: {
+                'tool_id'       : 'upload1',
+                'history_id'    : this.current_history,
+                'inputs'        : {}
+            },
+            files: [],
+            error_message: null
+        }
+        // add upload tools input data
+        if (items && items.length > 0) {
+            var inputs = {};
+            console.log(items);
+            inputs['dbkey'] = items[0].get('genome', null);
+            inputs['file_type'] = items[0].get('extension', null);
+            for (var index in items) {
+                var it = items[index];
+                it.set('status', 'running');
+                if (it.get('file_size') > 0) {
+                    var prefix = 'files_' + index + '|';
+                    inputs[prefix + 'type'] = 'upload_dataset';
+                    inputs[prefix + 'space_to_tab'] = it.get('space_to_tab') && 'Yes' || null;
+                    inputs[prefix + 'to_posix_lines'] = it.get('to_posix_lines') && 'Yes' || null;
+                    switch (it.get('file_mode')) {
+                        case 'new':
+                            inputs[prefix + 'url_paste'] = it.get('url_paste');
+                            break;
+                        case 'ftp':
+                            inputs[prefix + 'ftp_files'] = it.get('file_path');
+                            break;
+                        case 'local':
+                            data.files.push({ name: prefix + 'file_data', file: it.get('file_data') });
+                    }
+                } else {
+                    data.error_message = 'Upload content incomplete.';
+                    it.set('status', 'error');
+                    it.set('status_text', data.error_message);
+                    break;
+                }
+            }
+            data.payload.inputs = JSON.stringify(inputs);
+        }
+        return data;
     }
 });
 

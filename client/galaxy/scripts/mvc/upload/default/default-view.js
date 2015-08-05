@@ -85,7 +85,7 @@ return Backbone.View.extend({
         this.uploadbox = this.$('#upload-box').uploadbox({
             url             : this.app.options.nginx_upload_path,
             announce        : function(d) { self._eventAnnounce(d) },
-            initialize      : function(d) { return self._eventInitialize(d) },
+            initialize      : function(d) { return self.app.toData([ self.collection.get(d.index) ]) },
             progress        : function(d, percentage) { self._eventProgress(d, percentage) },
             success         : function(d, message) { self._eventSuccess(d, message) },
             error           : function(d, message) { self._eventError(d, message) },
@@ -184,7 +184,8 @@ return Backbone.View.extend({
             file_name   : d.file.name,
             file_size   : d.file.size,
             file_mode   : d.file.mode || 'local',
-            file_path   : d.file.path
+            file_path   : d.file.path,
+            file_data   : d.file
         });
 
         // add to collection
@@ -195,59 +196,6 @@ return Backbone.View.extend({
 
         // render
         upload_item.render();
-    },
-
-    // the uploadbox plugin is initializing the upload for this file
-    _eventInitialize: function(d) {
-        // get element
-        var it = this.collection.get(d.index);
-
-        // update status
-        it.set('status', 'running');
-
-        // get configuration
-        var file_name       = it.get('file_name');
-        var file_path       = it.get('file_path');
-        var file_mode       = it.get('file_mode');
-        var extension       = it.get('extension');
-        var genome          = it.get('genome');
-        var url_paste       = it.get('url_paste');
-        var space_to_tab    = it.get('space_to_tab');
-        var to_posix_lines  = it.get('to_posix_lines');
-
-        // validate
-        if (!url_paste && !(d.file.size > 0)) {
-            return { error: 'No upload content available.' };
-        }
-
-        // configure tool input
-        inputs = {};
-        inputs['dbkey'] = genome;
-        inputs['file_type'] = extension;
-        inputs['files_0|type'] = 'upload_dataset';
-        inputs['files_0|space_to_tab'] = space_to_tab && 'Yes' || null;
-        inputs['files_0|to_posix_lines'] = to_posix_lines && 'Yes' || null;
-
-        // modes without upload data
-        if (file_mode == 'new') {
-            inputs['files_0|url_paste'] = url_paste;
-        }
-        if (file_mode == 'ftp') {
-            inputs['files_0|ftp_files'] = file_path;
-        }
-
-        // setup/return submission data
-        var data = {
-            payload: {
-                'tool_id'       : 'upload1',
-                'history_id'    : this.app.current_history,
-                'inputs'        : JSON.stringify(inputs),
-            }
-        }
-        if (file_mode == 'local') {
-            data['files'] = [{ name: 'files_0|file_data', file: d.file }];
-        }
-        return data;
     },
 
     // progress

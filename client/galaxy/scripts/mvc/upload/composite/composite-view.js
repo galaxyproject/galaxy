@@ -126,7 +126,18 @@ return Backbone.View.extend({
 
     // start upload process
     _eventStart : function() {
-        $.uploadpost();
+        var self = this;
+        this.collection.each(function(item) {
+            item.set('genome', self.select_genome.value());
+            item.set('extension', self.select_extension.value());
+        });
+        $.uploadpost({
+            url      : this.app.options.nginx_upload_path,
+            data     : this.app.toData(this.collection.filter()),
+            success  : function(message) { console.log(message); },
+            error    : function(message) { console.log(message); },
+            progress : function(percentage) { console.log(percentage); }
+        });
     },
 
     // progress

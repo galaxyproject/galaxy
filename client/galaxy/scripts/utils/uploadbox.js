@@ -26,6 +26,12 @@
         // link data
         var data = cnf.data;
 
+        // check errors
+        if (data.error_message) {
+            cnf.error(data.error_message);
+            return;
+        }
+
         // construct form data
         var form = new FormData();
         for (var key in data.payload) {
@@ -91,6 +97,8 @@
         }, false);
 
         // send request
+        console.debug('uploadbox::uploadpost() - Posting following data:');
+        console.debug(cnf);
         xhr.send(form);
     }
 
@@ -223,19 +231,13 @@
 
             // create and submit data
             var callback_data = { index: index, file: file };
-            var data = opts.initialize(callback_data);
-            if (!data.error) {
-                $.uploadpost({
-                    url      : opts.url,
-                    data     : data,
-                    success  : function(message) { opts.success(callback_data, message); process();},
-                    error    : function(message) { opts.error(callback_data, message); process();},
-                    progress : function(percentage) { opts.progress(callback_data, percentage); }
-                });
-            } else {
-                opts.error(callback_data, data.error);
-                process();
-            }
+            $.uploadpost({
+                url      : opts.url,
+                data     : opts.initialize(callback_data),
+                success  : function(message) { opts.success(callback_data, message); process();},
+                error    : function(message) { opts.error(callback_data, message); process();},
+                progress : function(percentage) { opts.progress(callback_data, percentage); }
+            });
         }
 
         /*
