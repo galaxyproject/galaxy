@@ -6,7 +6,7 @@
     jQuery.event.props.push("dataTransfer");
 
     /**
-        Performs the file/data submission to the API
+        Posts file data to the API
     */
     $.uploadpost = function (config) {
         // parse options
