@@ -23,7 +23,7 @@ eggs.require("pexpect")
 import pexpect
 eggs.require('SQLAlchemy')
 from sqlalchemy import and_, func, not_, or_, true
-from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy import join, select
 from sqlalchemy.ext import hybrid
 
@@ -1260,7 +1260,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
                 # use labels here to better accrss from the query above
                 HistoryDatasetAssociation.table.c.history_id.label( 'history_id' ),
                 Dataset.total_size.label( 'dataset_size' ),
-                Dataset.id
+                Dataset.id.label( 'dataset_id' )
             ])
             .where( HistoryDatasetAssociation.table.c.purged != true() )
             .where( Dataset.table.c.purged != true() )
@@ -1268,13 +1268,15 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             # TODO: slow (in general) but most probably here - index total_size for easier sorting/distinct?
             .distinct()
         )
+        # postgres needs an alias on FROM
+        distinct_datasets_alias = aliased( distinct_datasets, name="datasets" )
         # then, bind as property of history using the cls.id
         size_query = (
             select([
-                func.sum( distinct_datasets.c.dataset_size )
+                func.sum( distinct_datasets_alias.c.dataset_size )
             ])
-            .select_from( distinct_datasets )
-            .where( distinct_datasets.c.history_id == cls.id )
+            .select_from( distinct_datasets_alias )
+            .where( distinct_datasets_alias.c.history_id == cls.id )
         )
         # label creates a scalar
         return size_query.label( 'disk_size' )
