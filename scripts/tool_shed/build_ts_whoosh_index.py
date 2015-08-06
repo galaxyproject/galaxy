@@ -165,8 +165,8 @@ def get_repos( sa_session, path_to_repositories ):
             for root, dirs, files in os.walk( path ):
                 if '.hg' in dirs:
                     dirs.remove('.hg')
-                for name in dirs:
-                    tools_in_dir = load_one_dir( os.path.join( root, name ) )
+                for dirname in dirs:
+                    tools_in_dir = load_one_dir( os.path.join( root, dirname ) )
                     tools_list.extend( tools_in_dir )
 
         results.append(dict( id=repo_id,
