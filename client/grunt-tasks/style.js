@@ -20,7 +20,8 @@ module.exports = function( grunt ){
             'masthead',
             'library',
             'trackster',
-            'circster'
+            'circster',
+            'reports'
         ];
 
 

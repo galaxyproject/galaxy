@@ -1,5 +1,11 @@
 <%inherit file="/base/base_panels.mako"/>
 
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "reports" )}
+</%def>
+
+
 ## Default title
 <%def name="title()">Galaxy Reports</%def>
 

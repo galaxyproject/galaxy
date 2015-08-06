@@ -34,11 +34,11 @@ ${get_css()}
     <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
         %if users:
             <tr class="header">
-                <td>
+                <td class="half_width">
                     ${get_sort_url(sort_id, order, 'zero', 'users', 'last_access_date', 'Email', days_not_logged_in=days_not_logged_in)}
                     <span class='dir_arrow zero'>${arrow}</span>
                 </td>
-                <td>
+                <td class="half_width">
                     ${get_sort_url(sort_id, order, 'one', 'users', 'last_access_date', 'Date of last Login', days_not_logged_in=days_not_logged_in)}
                     <span class='dir_arrow one'>${arrow}</span>
                 </td>

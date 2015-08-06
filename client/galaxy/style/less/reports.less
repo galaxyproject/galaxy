@@ -1,0 +1,123 @@
+// ############################################################# Reports Webapp
+
+
+// ======================================================== Left ==============
+.reports-panel-container {
+    position: absolute;
+    /*From base.less, top should be @panel_header_height*/
+    top: 30px;
+    bottom: 10px;
+    overflow: scroll;
+    width: 100%;
+    padding: 10px;
+}
+
+// ======================================================== SparkLines ========
+#spark_time_select {
+    display: inline-block;
+}
+#spark_select {
+    height: 23px;
+    width: 30px;
+    padding: 0;
+    border-radius: 2px;
+}
+
+.jqstooltip {
+        -webkit-box-sizing: content-box;
+        -moz-box-sizing: content-box;
+        box-sizing: content-box;
+    }
+
+// ======================================================== Sorting ===========
+.dir_arrow {
+    visibility: hidden
+}
+
+// ======================================================== Paging ============
+// ------------------------------------ Pages ---------------------------------
+#back_button, #next_button, #curr_button, .miss_pages, .page_button {
+    position: relative;
+    float: left;
+    height: 24px;
+    width: 23px;
+    margin: 0 -1px 0 0;
+    padding-top: 2.5px;
+    border: 1px solid #bfbfbf;
+    z-index: 0;
+}
+
+#back_button {
+    cursor: pointer;
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+}
+
+#curr_button {
+    background: #ebd9b2;
+    border: 1px solid #5f6990;
+    z-index: 1;
+}
+
+#formHeader > tbody > tr {
+    vertical-align: middle;
+}
+
+#next_button {
+    cursor: pointer;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+#page_selector {
+    cursor: default;
+    position: relative;
+    text-align: center;
+}
+
+
+
+.page_button > a {
+    text-decoration: none;
+    padding: 8px;
+    margin: -8px;
+    height: 100%;
+    width: 100%;
+}
+// ------------------------------------ Entry Selector ------------------------
+#entries_edit {
+    position: relative;
+    padding: 0;
+    width: 36px;
+    height: 20px;
+    text-align: center;
+    border: 1px solid black;
+    border-radius: 3px;
+    z-index: 6;
+}
+
+#entry_submit {
+    cursor: default;
+    position: relative;
+    display: inline-block;
+    border: 1px solid black;
+    padding: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    background-color: #ebd9b2;
+    text-align: center;
+    opacity: 0.0;
+    z-index: 0;
+}
+
+// ======================================================== Misc. =============
+.half_width {
+    width: 50%
+}
+.third_width {
+    width: 30%;
+}
+.quarter_width {
+    width: 25%;
+}
