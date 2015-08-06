@@ -472,7 +472,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def show_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/invocation/{invocation_id}
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}
         Get detailed description of workflow invocation
 
         :param  workflow_id:        the workflow id (required)
@@ -492,7 +492,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def cancel_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        DELETE /api/workflows/{workflow_id}/invocation/{invocation_id}
+        DELETE /api/workflows/{workflow_id}/invocations/{invocation_id}
         Cancel the specified workflow invocation.
 
         :param  workflow_id:      the workflow id (required)
@@ -510,7 +510,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
 
         :param  workflow_id:        the workflow id (required)
         :type   workflow_id:        str
@@ -536,7 +536,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def update_invocation_step(self, trans, workflow_id, invocation_id, step_id, payload, **kwd):
         """
-        PUT /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
+        PUT /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
         Update state of running workflow step invocation - still very nebulous
         but this would be for stuff like confirming paused steps can proceed
         etc....
