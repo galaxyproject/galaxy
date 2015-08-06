@@ -20,10 +20,6 @@
 
 <%def name="get_css()">
     <style>
-    .dir_arrow {
-        visibility: hidden
-    }
-
     .${sort_id} {
         visibility: visible
     }

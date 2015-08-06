@@ -53,7 +53,7 @@
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_in_error', sort_id='default', order='default' )}">Jobs in error per month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_user', sort_id='default', order='default' )}">Jobs per user</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_tool', sort_id='default', order='default' )}">Jobs per tool</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='errors_per_tool', sort_id='default', order='default' )}">Errors per tool</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='errors_per_tool', sort_id='default', order='default', spark_time='')}">Errors per tool</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -74,6 +74,7 @@
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_workflow', sort_id='default', order='default' )}">Runs per Workflows</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_month_all', sort_id='default', order='default' )}">Workflows per month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='workflows', action='per_user', sort_id='default', order='default' )}">Workflows per user</a></div>
                     </div>
