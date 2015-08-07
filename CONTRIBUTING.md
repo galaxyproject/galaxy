@@ -13,13 +13,14 @@ deeper discussion of some of these points - please see the
 
 ## Before you Begin
 
-If you have an idea for a feature to add or an approach for a bugfix -
+If you have an idea for a feature to add or an approach for a bugfix,
 it is best to communicate with Galaxy developers early. The most
-common venue for this is the [Galaxy Trello
-board](https://wiki.galaxyproject.org/Issues). Browse through existing
-cards [here](http://bit.ly/gxytrello) and if one seems related comment
-on it. If no existing cards seem appropriate, a new issue can be
-opened using [this form](http://galaxyproject.org/trello). Galaxy
+common venues for this are
+[GitHub issues](https://github.com/galaxyproject/galaxy/issues) and the
+[Galaxy and Tool Shed Trello boards](https://wiki.galaxyproject.org/Issues).
+Browse through existing GitHub issues and Trello cards and if one seems related,
+comment on it. If no existing issue/card seems appropriate, a new issue can be
+opened using [this form](https://github.com/galaxyproject/galaxy/issues/new). Galaxy
 developers are also generally available via
 [IRC](https://wiki.galaxyproject.org/GetInvolved#IRC_Channel) and on
 the [development mailing list](http://dev.list.galaxyproject.org/).
