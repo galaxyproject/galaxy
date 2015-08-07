@@ -84,6 +84,9 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
 
    * A description of how to test the change.
 
+* The pull request should pass all the continuous integration tests which are
+  automatically run by GitHub using e.g. Travis CI.
+
 ## Ideas
 
 Galaxy's [Trello board](http://bit.ly/gxytrello) is filled with bugs and ideas
