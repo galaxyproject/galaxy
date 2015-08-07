@@ -10,7 +10,7 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
 
-from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from tool_shed.galaxy_install.install_manager import InstallRepositoryManager, RepositoriesInstalledException
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 
@@ -228,7 +228,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             )
             tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
             return tsr_ids_for_monitoring
-        except install_manager.RepositoriesInstalledException as e:
+        except RepositoriesInstalledException as e:
             return dict( message=e.message,
                          status='error' )
 
