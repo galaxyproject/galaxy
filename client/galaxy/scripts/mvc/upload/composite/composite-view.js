@@ -199,6 +199,9 @@ return Backbone.View.extend({
             this.select_extension.enable();
             this.$('#upload-info').html('You can Drag & Drop files into the rows.');
         }
+        if (this.collection.length == this.collection.where({ status : 'success' }).length) {
+            this.btnStart.disable();
+        }
 
         // table visibility
         if (this.collection.length > 0) {
