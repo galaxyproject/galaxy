@@ -641,22 +641,30 @@ return Backbone.View.extend({
         */
 
         // update reset button
-        if (this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0)
+        if (this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0){
             this.modal.enableButton('Reset');
-        else
+        }
+        else{
             this.modal.disableButton('Reset');
+        }
 
         // update upload button
-        if (this.counter.running == 0 && this.counter.announce > 0)
+        if (this.counter.running == 0 && this.counter.announce > 0){
             this.modal.enableButton('Start');
-        else
+            $('#button-3').css({backgroundColor: "#409540", color: "white"});
+        }
+        else {
             this.modal.disableButton('Start');
+            $('#button-3').css({backgroundColor: "#f2f2f2", color: "black"});
+        }
 
         // pause upload button
-        if (this.counter.running > 0)
+        if (this.counter.running > 0){
             this.modal.enableButton('Pause');
-        else
+        }
+        else{
             this.modal.disableButton('Pause');
+        }
 
         // select upload button
         if (this.counter.running == 0){
