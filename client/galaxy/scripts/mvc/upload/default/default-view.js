@@ -146,7 +146,7 @@ return Backbone.View.extend({
     //
 
     // remove item from upload list
-    _eventRemove : function(item) {
+    _eventRemove: function(item) {
         // update status
         var status = item.get('status');
 

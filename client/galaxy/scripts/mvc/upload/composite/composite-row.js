@@ -41,13 +41,15 @@ return Backbone.View.extend({
         // build upload functions
         this.uploadinput = this.$el.uploadinput({
             ondragover: function() {
-                self.$el.addClass('warning');
+                if (self.model.get('status') != 'running') {
+                    self.$el.addClass('warning');
+                }
             },
             ondragleave: function() {
                 self.$el.removeClass('warning');
             },
             onchange: function(files) {
-                if (files && files.length > 0) {
+                if (self.model.get('status') != 'running' && files && files.length > 0) {
                     self.model.set('file_data', files[0]);
                     self.model.set('file_name', files[0].name);
                     self.model.set('file_size', files[0].size);
@@ -157,16 +159,23 @@ return Backbone.View.extend({
     _refreshInfo: function() {
         var info = this.model.get('info');
         if (info) {
-            this.$('#info').html('<strong>Failed: </strong>' + info).show();
+            this.$('#info-text').html('<strong>Failed: </strong>' + info).show();
         } else {
-            this.$('#info').hide();
+            this.$('#info-text').hide();
         }
     },
 
     // percentage
     _refreshPercentage : function() {
         var percentage = parseInt(this.model.get('percentage'));
-        this.$('.progress-bar').css({ width : percentage + '%' });
+        if (percentage != 0) {
+            this.$('.progress-bar').css({ width : percentage + '%' });
+        } else {
+            this.$('.progress-bar').addClass('no-transition');
+            this.$('.progress-bar').css({ width : '0%' });
+            this.$('.progress-bar')[0].offsetHeight;
+            this.$('.progress-bar').removeClass('no-transition');
+        }
         if (percentage != 100) {
             this.$('#percentage').html(percentage + '%');
         } else {
@@ -188,16 +197,32 @@ return Backbone.View.extend({
         // enable/disable row fields
         this.$('#text-content').attr('disabled', !this.model.get('enabled'));
 
-        // success
+        // remove status classes
+        this.$el.removeClass('success danger');
+
+        // set status classes
+        if (status == 'running' || status == 'ready') {
+            this.$el.addClass('success');
+            this.model.set('percentage', 0);
+        }
+        if (status == 'running') {
+            this.$('#source').find('.button').addClass('disabled');
+        } else {
+            this.$('#source').find('.button').removeClass('disabled');
+        }
         if (status == 'success') {
             this.$el.addClass('success');
+            this.model.set('percentage', 100);
             this.$('#percentage').html('100%');
         }
-
-        // error
         if (status == 'error') {
             this.$el.addClass('danger');
-            this.$('.progress').remove();
+            this.model.set('percentage', 0);
+            this.$('#info-progress').hide();
+            this.$('#info-text').show();
+        } else {
+            this.$('#info-progress').show();
+            this.$('#info-text').hide();
         }
     },
 
@@ -251,7 +276,8 @@ return Backbone.View.extend({
                     '<td><div id="settings" class="upload-icon-button fa fa-gear"/></td>' +
                     '<td>' +
                         '<div id="info" class="info">' +
-                            '<div class="progress">' +
+                            '<div id="info-text"/>' +
+                            '<div id="info-progress" class="progress">' +
                                 '<div class="progress-bar progress-bar-success"/>' +
                                 '<div id="percentage" class="percentage">0%</div>' +
                             '</div>' +

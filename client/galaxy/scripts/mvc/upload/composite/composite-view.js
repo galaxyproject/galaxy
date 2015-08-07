@@ -31,7 +31,6 @@ return Backbone.View.extend({
         this.options            = app.options;
         this.list_extensions    = app.list_extensions;
         this.list_genomes       = app.list_genomes;
-        this.ui_button          = app.ui_button;
 
         // link this
         var self = this;
@@ -135,7 +134,7 @@ return Backbone.View.extend({
             url      : this.app.options.nginx_upload_path,
             data     : this.app.toData(this.collection.filter()),
             success  : function(message) { self._eventSuccess(message); },
-            error    : function(message) { console.log(message); },
+            error    : function(message) { self._eventError(message); },
             progress : function(percentage) { self._eventProgress(percentage); }
         });
     },
@@ -143,27 +142,22 @@ return Backbone.View.extend({
     // progress
     _eventProgress: function(percentage) {
         this.collection.each(function(it) { it.set('percentage', percentage); });
-        this.ui_button.set('percentage', percentage);
     },
 
     // success
     _eventSuccess: function(message) {
         this.collection.each(function(it) {
-            it.set('percentage', 100);
             it.set('status', 'success');
         });
-        this.ui_button.set('percentage', 100);
         Galaxy.currHistoryPanel.refreshContents();
     },
 
     // error
     _eventError: function(message) {
         this.collection.each(function(it) {
-            it.set('percentage', 100);
             it.set('status', 'error');
             it.set('info', message);
         });
-        this.ui_button.set('percentage', 100);
     },
 
     // display extension info popup
@@ -192,14 +186,18 @@ return Backbone.View.extend({
 
     // set screen
     _updateScreen: function () {
-        // show default message
-        this.$('#upload-info').html('You can Drag & Drop files into the rows.');
-
         // show start button if components have been selected
-        if (this.collection.length == this.collection.where({ status : 'ready' }).length) {
-            this.btnStart.enable();
-        } else {
+        var model = this.collection.first();
+        if (model && model.get('status') == 'running') {
             this.btnStart.disable();
+            this.select_genome.disable();
+            this.select_extension.disable();
+            this.$('#upload-info').html('Please wait...');
+        } else {
+            this.btnStart.enable();
+            this.select_genome.enable();
+            this.select_extension.enable();
+            this.$('#upload-info').html('You can Drag & Drop files into the rows.');
         }
 
         // table visibility
