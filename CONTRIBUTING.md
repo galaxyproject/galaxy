@@ -31,12 +31,13 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   should be made through pull requests to this repository (with just two
   exceptions outlined below).
 
-* If you are new to Git - please check out the very useful tutorials on the [GitHub training hub](https://training.github.com/kit/)
+* If you are new to Git, the [Try Git](http://try.github.com/) tutorial is a good places to start.
+  More learning resources are listed at https://help.github.com/articles/good-resources-for-learning-git-and-github/ .
 
-* Make sure you have a free [GitHub account](https://github.com/)
+* Make sure you have a free [GitHub](https://github.com/) account.
 
-* Fork the galaxy repository on
-  [GitHub](https://github.com/galaxyproject/galaxy) to make your changes.
+* Fork the [galaxy repository](https://github.com/galaxyproject/galaxy) on
+  GitHub to make your changes.
   (While many Galaxy instances track
   [galaxy-dist](https://bitbucket.org/galaxy/galaxy-dist), active development
   happens in the galaxy GitHub repository and this is where pull requests
@@ -44,7 +45,7 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
 
 * Choose the correct branch to develop your changes against.
 
-  * Additions to the code base should be pushed to the `dev` branch (`git
+  * Additions of new features to the code base should be pushed to the `dev` branch (`git
     checkout dev`).
 
   * Most bug fixes to previously release components (things in galaxy-dist)
@@ -78,11 +79,11 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   request](https://help.github.com/articles/creating-a-pull-request/)
   with these changes. You pull request message ideally should include:
 
-   * A description of why the change should be made.
+   * A description of why the changes should be made.
 
-   * A description of implementation of the change.
+   * A description of the implementation of the changes.
 
-   * A description of how to test the change.
+   * A description of how to test the changes.
 
 * The pull request should pass all the continuous integration tests which are
   automatically run by GitHub using e.g. Travis CI.
@@ -97,7 +98,7 @@ developers.
 ## A Quick Note about Tools
 
   For the most part, Galaxy tools should be published to the
-  [ToolShed](https://wiki.galaxyproject.org/ToolShed) and not in this
+  [Tool Shed](https://wiki.galaxyproject.org/ToolShed) and not in this
   repository directly. If you are looking to supply fixes for migrated
   core tools that used to exist in this repository - please checkout
   the [tools-devteam](https://github.com/galaxyproject/tools-devteam)
