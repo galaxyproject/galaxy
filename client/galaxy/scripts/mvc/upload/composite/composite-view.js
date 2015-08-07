@@ -39,7 +39,7 @@ return Backbone.View.extend({
         this.setElement(this._template());
 
         // create button section
-        this.btnStart = new Ui.Button({ title: 'Start', onclick: function() { self._eventStart(); } });
+        this.btnStart = new Ui.Button({ title: 'Start', onclick: function() { self._eventStart(); }, cls: 'ui-button btn btn-success'});
         this.btnClose = new Ui.Button({ title: 'Close', onclick: function() { self.app.modal.hide(); } });
 
         // append buttons to dom

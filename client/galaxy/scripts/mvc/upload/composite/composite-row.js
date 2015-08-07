@@ -166,8 +166,9 @@ return Backbone.View.extend({
                 'top'   : this.$el.height() - 8 + 'px'
             }).show();
             this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 2 * 8);
-            this.model.set('url_paste', '');
             this.model.set('file_size', 0);
+            this.model.set('url_paste', '');
+            this.$('#text-content').val('');
         } else {
             this.$('#text').hide();
         }

@@ -69,7 +69,7 @@ return Backbone.View.extend({
         this.btnLocal    = new Ui.Button({ title: 'Choose local file',   onclick: function() { self.uploadbox.select(); } });
         this.btnFtp      = new Ui.Button({ title: 'Choose FTP file',     onclick: function() { self._eventFtp(); } });
         this.btnCreate   = new Ui.Button({ title: 'Paste/Fetch data',    onclick: function() { self._eventCreate(); } });
-        this.btnStart    = new Ui.Button({ title: 'Start',               onclick: function() { self._eventStart(); } });
+        this.btnStart    = new Ui.Button({ title: 'Start',               onclick: function() { self._eventStart(); }, cls: 'ui-button btn btn-success' });
         this.btnStop     = new Ui.Button({ title: 'Pause',               onclick: function() { self._eventStop(); } });
         this.btnReset    = new Ui.Button({ title: 'Reset',               onclick: function() { self._eventReset(); } });
         this.btnClose    = new Ui.Button({ title: 'Close',               onclick: function() { self.app.modal.hide(); } });
