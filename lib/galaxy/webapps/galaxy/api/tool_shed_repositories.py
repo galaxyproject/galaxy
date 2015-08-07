@@ -203,6 +203,36 @@ class ToolShedRepositoriesController( BaseAPIController ):
         return tool_shed_repository_dicts
 
     @expose_api
+    def initiate_repository_installation( self, trans, payload, **kwd ):
+        """
+        POST /api/tool_shed_repositories/initiate_repository_installation
+        Initiate the installation of one or more repositories.
+
+        :param reinstalling (required): False if this is a fresh install, otherwise True
+        :param encoded_kwd (required): The encoded dict describing the repositories to be installed.
+        :param install_tool_dependencies (required): True to install tool dependencies.
+        :param tool_shed_repository_ids (required): Encoded tool shed repository IDs for installation.
+        """
+        irm = InstallRepositoryManager( trans.app )
+        reinstalling = util.string_as_bool( kwd.get( 'reinstalling', False ) )
+        encoded_kwd = kwd[ 'encoded_kwd' ]
+        decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
+        install_tool_dependencies = decoded_kwd.get( 'install_tool_dependencies', False )
+        tsr_ids = decoded_kwd[ 'tool_shed_repository_ids' ]
+        decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
+        try:
+            tool_shed_repositories = irm.install_repositories(
+                tsr_ids=tsr_ids,
+                decoded_kwd=decoded_kwd,
+                reinstalling=reinstalling,
+            )
+            tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
+            return tsr_ids_for_monitoring
+        except install_manager.RepositoriesInstalledException as e:
+            return dict( message=e.message,
+                         status='error' )
+
+    @expose_api
     def install_repository_revision( self, trans, payload, **kwd ):
         """
         POST /api/tool_shed_repositories/install_repository_revision
