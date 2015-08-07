@@ -651,11 +651,11 @@ return Backbone.View.extend({
         // update upload button
         if (this.counter.running == 0 && this.counter.announce > 0){
             this.modal.enableButton('Start');
-            $('#button-3').css({backgroundColor: "#409540", color: "white"});
+            $('#button-3').addClass('btn-primary');
         }
         else {
             this.modal.disableButton('Start');
-            $('#button-3').css({backgroundColor: "#f2f2f2", color: "black"});
+            $('#button-3').removeClass('btn-primary');
         }
 
         // pause upload button
