@@ -75,7 +75,7 @@ return Backbone.View.extend({
         this.btnClose    = new Ui.Button({ title: 'Close',               onclick: function() { self.app.modal.hide(); } });
 
         // append buttons to dom
-        var buttons = [ this.btnLocal, this.btnFtp, this.btnCreate, this.btnStart, this.btnStop, this.btnReset, this.btnClose ];
+        var buttons = [ this.btnLocal, this.btnFtp, this.btnCreate, this.btnStop, this.btnReset, this.btnStart, this.btnClose ];
         for (var i in buttons) {
             this.$('#upload-buttons').prepend(buttons[i].$el);
         }
