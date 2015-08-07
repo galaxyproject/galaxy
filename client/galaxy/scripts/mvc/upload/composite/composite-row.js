@@ -41,7 +41,7 @@ return Backbone.View.extend({
         // build upload functions
         this.uploadinput = this.$el.uploadinput({
             ondragover: function() {
-                if (self.model.get('status') != 'running') {
+                if (self.model.get('enabled')) {
                     self.$el.addClass('warning');
                 }
             },
@@ -54,6 +54,7 @@ return Backbone.View.extend({
                     self.model.set('file_name', files[0].name);
                     self.model.set('file_size', files[0].size);
                     self.model.set('file_mode', files[0].mode || 'local');
+                    self._refreshReady();
                 }
             }
         });
@@ -78,6 +79,13 @@ return Backbone.View.extend({
                 self.uploadinput.dialog();
             }
         });
+        this.button_menu.addMenu({
+            icon        : 'fa-pencil',
+            title       : 'Paste/Fetch data',
+            onclick     : function() {
+                self.model.set('file_mode', 'new');
+            }
+        });
 
         //
         // ui events
@@ -87,6 +95,7 @@ return Backbone.View.extend({
         this.$('#text-content').on('keyup', function(e) {
             self.model.set('url_paste', $(e.target).val());
             self.model.set('file_size', $(e.target).val().length);
+            self._refreshReady();
         });
 
         // handle settings popover
@@ -140,6 +149,13 @@ return Backbone.View.extend({
     // handle model events
     //
 
+    // refresh ready or not states
+    _refreshReady: function() {
+        this.collection.each(function(item) {
+            item.set('status', (item.get('file_size') > 0) && 'ready' || 'init');
+        });
+    },
+
     // mode
     _refreshMode: function() {
         // activate text field if file is new
@@ -150,6 +166,8 @@ return Backbone.View.extend({
                 'top'   : this.$el.height() - 8 + 'px'
             }).show();
             this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 2 * 8);
+            this.model.set('url_paste', '');
+            this.model.set('file_size', 0);
         } else {
             this.$('#text').hide();
         }
@@ -192,13 +210,13 @@ return Backbone.View.extend({
         this.$('#status').removeClass().addClass(this.status_classes[status]);
 
         // enable/disable model flag
-        this.model.set('enabled', status == 'init' || status == 'ready');
+        this.model.set('enabled', status != 'running');
 
         // enable/disable row fields
         this.$('#text-content').attr('disabled', !this.model.get('enabled'));
 
         // remove status classes
-        this.$el.removeClass('success danger');
+        this.$el.removeClass('success danger warning');
 
         // set status classes
         if (status == 'running' || status == 'ready') {
@@ -233,9 +251,7 @@ return Backbone.View.extend({
 
     // file size
     _refreshFileSize: function() {
-        var file_size = this.model.get('file_size');
-        this.$('#file_size').html(Utils.bytesToString (file_size));
-        this.model.set('status', (file_size > 0 && 'ready') || 'init');
+        this.$('#file_size').html(Utils.bytesToString (this.model.get('file_size')));
     },
 
     // show/hide settings popup
@@ -254,6 +270,12 @@ return Backbone.View.extend({
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
                         '<div id="source"/>' +
+                        '<div class="title-column">' +
+                            '<div id="text" class="text">' +
+                                '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
+                                '<textarea id="text-content" class="text-content form-control"/>' +
+                            '</div>' +
+                        '</div>' +
                     '</td>' +
                     '<td>' +
                         '<div id="status"/>' +
@@ -262,13 +284,7 @@ return Backbone.View.extend({
                         '<div id="file_desc" class="title"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div class="title-column">' +
-                            '<div id="file_name" class="title"/>' +
-                            '<div id="text" class="text">' +
-                                '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
-                                '<textarea id="text-content" class="text-content form-control"/>' +
-                            '</div>' +
-                        '</div>' +
+                        '<div id="file_name" class="title"/>' +
                     '</td>' +
                     '<td>' +
                         '<div id="file_size" class="size"/>' +

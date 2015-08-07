@@ -189,17 +189,17 @@ return Backbone.View.extend({
         // show start button if components have been selected
         var model = this.collection.first();
         if (model && model.get('status') == 'running') {
-            this.btnStart.disable();
             this.select_genome.disable();
             this.select_extension.disable();
             this.$('#upload-info').html('Please wait...');
         } else {
-            this.btnStart.enable();
             this.select_genome.enable();
             this.select_extension.enable();
             this.$('#upload-info').html('You can Drag & Drop files into the rows.');
         }
-        if (this.collection.length == this.collection.where({ status : 'success' }).length) {
+        if (this.collection.where({ status : 'ready' }).length == this.collection.length) {
+            this.btnStart.enable();
+        } else {
             this.btnStart.disable();
         }
 
