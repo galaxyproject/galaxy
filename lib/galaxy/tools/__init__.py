@@ -343,16 +343,15 @@ class ToolOutputCollection( ToolOutputBase ):
         # This line is probably not right - should verify structured_like
         # or have outputs and all outputs have name.
         if len( self.outputs ) > 1:
-            outputs = self.outputs
+            output_parts = map( to_part, self.outputs )
         else:
             # either must have specified structured_like or something worse
             if self.structure.structured_like:
                 collection_prototype = inputs[ self.structure.structured_like ].collection
             else:
                 collection_prototype = type_registry.prototype( self.structure.collection_type )
-            # TODO: Handle nested structures.
-            outputs = odict()
-            for element in collection_prototype.elements:
+
+            def prototype_dataset_element_to_output( element, parent_ids=[] ):
                 name = element.element_identifier
                 format = self.default_format
                 if self.inherit_format:
@@ -366,10 +365,29 @@ class ToolOutputCollection( ToolOutputBase ):
                 )
                 if self.inherit_metadata:
                     output.metadata_source = element.dataset_instance
+                return ToolOutputCollectionPart(
+                    self,
+                    element.element_identifier,
+                    output,
+                    parent_ids=parent_ids,
+                )
 
-                outputs[ element.element_identifier ] = output
+            def prototype_collection_to_output( collection_prototype, parent_ids=[] ):
+                output_parts = []
+                for element in collection_prototype.elements:
+                    element_parts = []
+                    if not element.is_collection:
+                        element_parts.append(prototype_dataset_element_to_output( element, parent_ids ))
+                    else:
+                        new_parent_ids = parent_ids[:] + [element.element_identifier]
+                        element_parts.extend(prototype_collection_to_output(element.element_object, new_parent_ids))
+                    output_parts.extend(element_parts)
 
-        return map( to_part, outputs.items() )
+                return output_parts
+
+            output_parts = prototype_collection_to_output( collection_prototype )
+
+        return output_parts
 
     @property
     def dynamic_structure(self):
@@ -402,10 +420,11 @@ class ToolOutputCollectionStructure( object ):
 
 class ToolOutputCollectionPart( object ):
 
-    def __init__( self, output_collection_def, element_identifier, output_def ):
+    def __init__( self, output_collection_def, element_identifier, output_def, parent_ids=[] ):
         self.output_collection_def = output_collection_def
         self.element_identifier = element_identifier
         self.output_def = output_def
+        self.parent_ids = parent_ids
 
     @property
     def effective_output_name( self ):

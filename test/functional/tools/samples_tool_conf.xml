@@ -57,9 +57,11 @@
   <tool file="collection_creates_pair_from_type.xml" />
   <tool file="collection_creates_list.xml" />
   <tool file="collection_creates_list_2.xml" />
+  <tool file="collection_creates_list_of_pairs.xml" />
   <tool file="collection_optional_param.xml" />
   <tool file="collection_split_on_column.xml" />
-
+  <tool file="collection_creates_dynamic_nested.xml" />
+  <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="cheetah_casting.xml" />
 
   <tool file="multiple_versions_v01.xml" />

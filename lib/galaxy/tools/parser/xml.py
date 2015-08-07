@@ -359,17 +359,22 @@ def __parse_output_collection_elem( output_collection_elem ):
     name = attrib.pop( 'name', None )
     if name is None:
         raise Exception( "Test output collection does not have a 'name'" )
+    element_tests = __parse_element_tests( output_collection_elem )
+    return TestCollectionOutputDef( name, attrib, element_tests )
+
+
+def __parse_element_tests( parent_element ):
     element_tests = {}
-    for element in output_collection_elem.findall("element"):
+    for element in parent_element.findall("element"):
         element_attrib = dict( element.attrib )
         identifier = element_attrib.pop( 'name', None )
         if identifier is None:
             raise Exception( "Test primary dataset does not have a 'identifier'" )
-        element_tests[ identifier ] = __parse_test_attributes( element, element_attrib )
-    return TestCollectionOutputDef( name, attrib, element_tests )
+        element_tests[ identifier ] = __parse_test_attributes( element, element_attrib, parse_elements=True )
+    return element_tests
 
 
-def __parse_test_attributes( output_elem, attrib ):
+def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     assert_list = __parse_assert_list( output_elem )
     file = attrib.pop( 'file', None )
     # File no longer required if an list of assertions was present.
@@ -390,12 +395,17 @@ def __parse_test_attributes( output_elem, attrib ):
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
     md5sum = attrib.get("md5", None)
-    if not (assert_list or file or extra_files or metadata or md5sum):
+    element_tests = {}
+    if parse_elements:
+        element_tests = __parse_element_tests( output_elem )
+
+    if not (assert_list or file or extra_files or metadata or md5sum or element_tests):
         raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or md5 tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
     attributes['md5'] = md5sum
+    attributes['elements'] = element_tests
     return file, attributes
 
 
