@@ -547,7 +547,7 @@ def populate_api_routes( webapp, app ):
                                      'import_workflows': 'POST' },
                             collection={ 'get_latest_installable_revision': 'POST',
                                          'reset_metadata_on_installed_repositories': 'POST',
-                                         'initiate_repository_installation': 'POST' },
+                                         'install': 'POST' },
                             controller='tool_shed_repositories',
                             name_prefix='tool_shed_repository_',
                             path_prefix='/api',

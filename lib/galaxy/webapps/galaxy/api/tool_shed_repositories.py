@@ -203,9 +203,9 @@ class ToolShedRepositoriesController( BaseAPIController ):
         return tool_shed_repository_dicts
 
     @expose_api
-    def initiate_repository_installation( self, trans, payload, **kwd ):
+    def install( self, trans, payload, **kwd ):
         """
-        POST /api/tool_shed_repositories/initiate_repository_installation
+        POST /api/tool_shed_repositories/install
         Initiate the installation of one or more repositories.
 
         :param reinstalling (required): False if this is a fresh install, otherwise True
