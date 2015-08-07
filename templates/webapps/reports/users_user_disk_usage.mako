@@ -27,11 +27,11 @@ ${get_css()}
     <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
         %if users:
             <tr class="header">
-                <td>
+                <td class="half_width">
                     ${get_sort_url(sort_id, order, 'email', 'users', 'user_disk_usage', 'Email')}
                     <span class='dir_arrow email'>${arrow}</span>
                 </td>
-                <td>
+                <td class="half_width">
                     ${get_sort_url(sort_id, order, 'disk_usage', 'users', 'user_disk_usage', 'Disk Usage')}
                     <span class='dir_arrow disk_usage'>${arrow}</span>
                 </td>

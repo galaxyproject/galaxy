@@ -117,6 +117,8 @@ class Registry( object ):
                 # Keep a status of the process steps to enable stopping the process of handling the datatype if necessary.
                 ok = True
                 extension = elem.get( 'extension', None )
+                if extension:
+                    extension = extension.lower()
                 dtype = elem.get( 'type', None )
                 type_extension = elem.get( 'type_extension', None )
                 mimetype = elem.get( 'mimetype', None )

@@ -31,8 +31,8 @@ require(
 });
 
 // trackster viewer
-define( ["libs/underscore", "base", "viz/trackster/tracks", "viz/visualization", "mvc/ui/icon-button" ],
-        function(_, base, tracks, visualization, mod_icon_btn) {
+define( ["libs/underscore", "base", "viz/trackster/tracks", "viz/visualization", "mvc/ui/icon-button", "utils/query-string-parsing" ],
+        function(_, base, tracks, visualization, mod_icon_btn, query_string ) {
 /**
  * User interface controls for trackster
  */
@@ -401,11 +401,84 @@ var TracksterView = Backbone.View.extend(
         // hide right panel
         force_right_panel("hide");
 
+
         // check if id is available
-        if (galaxy_config.app.id)
+        if (galaxy_config.app.id){
             this.view_existing();
-        else
+        } else if( query_string.get( 'dataset_id' ) ){
+            this.choose_existing_or_new();
+        } else {
             this.view_new();
+        }
+    },
+
+    choose_existing_or_new : function () {
+        var self = this;
+        var dbkey = query_string.get( 'dbkey' ),
+            listTracksParams = {},
+            dataset_params = {
+                dbkey       : dbkey,
+                dataset_id  : query_string.get( 'dataset_id' ),
+                hda_ldda    : query_string.get( 'hda_ldda' )
+            };
+        if (dbkey){
+            listTracksParams[ 'f-dbkey' ] = dbkey;
+        }
+        $.ajax({
+            url: galaxy_config.root + 'visualization/list_tracks?' + $.param( listTracksParams ),
+            dataType: "html",
+            error: function() { alert( "Could not add this dataset to browser." ); },
+
+            success: function(table_html) {
+                console.debug( 'success' );
+                function view_in_saved(){
+                    // Show new modal with saved visualizations.
+                    Galaxy.modal.show({
+                        title : "Add Data to Saved Visualization",
+                        body : table_html,
+                        buttons : {
+                            "Cancel": function() {
+                                // go back to the first choice
+                                show_choice();
+                            },
+                            "Add to visualization": function() {
+                                $(parent.document).find('input[name=id]:checked').each(function() {
+                                    var vis_id = $(this).val();
+                                    dataset_params.id = vis_id;
+                                    window.location = galaxy_config.root + "visualization/trackster?" + $.param(dataset_params);
+                                });
+                            }
+                        }
+                    });
+                }
+                function show_choice(){
+                    Galaxy.modal.show({
+                        title : "View Data in a New or Saved Visualization?",
+                        // either have text in here or have to remove body and the header/footer margins
+                        body  : (
+                            // TODO: yay. inline styles. thanks, galaxy
+                            '<p><ul style="list-style: disc inside none">You can add this dataset as:' +
+                                "<li>a new track to one of your existing, saved Trackster " +
+                                "sessions if they share the genome build: <b>" + dbkey + "</b></li>" +
+                                "<li>or create a new session with this dataset as the only track</li>" +
+                            "</ul></p>"
+                        ),
+                        buttons : {
+                            "Cancel": function() {
+                                window.location = galaxy_config.root + "visualization/list";
+                            },
+                            "View in saved visualization": function() {
+                                view_in_saved();
+                            },
+                            "View in new visualization": function() {
+                                self.view_new();
+                            }
+                        }
+                    });
+                }
+                show_choice();
+            }
+        });
     },
 
     // view
@@ -459,7 +532,8 @@ var TracksterView = Backbone.View.extend(
                 });
 
                 // select default
-                if (galaxy_config.app.default_dbkey) {
+                var dbkeys_in_genomes = response.map( function( r ){ return r[1]; });
+                if (galaxy_config.app.default_dbkey && _.contains(dbkeys_in_genomes,galaxy_config.app.default_dbkey)) {
                     $("#new-dbkey").val( galaxy_config.app.default_dbkey );
                 }
 

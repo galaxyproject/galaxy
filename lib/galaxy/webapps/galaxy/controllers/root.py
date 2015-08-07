@@ -26,6 +26,7 @@ class RootController( BaseUIController, UsesAnnotations ):
     def __init__( self, app ):
         super( RootController, self ).__init__( app )
         self.history_manager = managers.histories.HistoryManager( app )
+        self.history_serializer = managers.histories.HistorySerializer( self.app )
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):

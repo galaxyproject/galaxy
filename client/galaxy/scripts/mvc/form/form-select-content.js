@@ -2,9 +2,6 @@
 define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-tabs', 'mvc/tools/tools-template'],
         function(Utils, Ui, Tabs, ToolTemplate) {
 
-// track current history elements
-history = {};
-
 // hda/hdca content selector ui element
 var View = Backbone.View.extend({
     // initialize
@@ -12,6 +9,10 @@ var View = Backbone.View.extend({
         // link app and options
         this.app = app;
         this.options = options;
+
+        // track current history elements
+        this.history = {};
+
 
         // link this
         var self = this;
@@ -197,7 +198,7 @@ var View = Backbone.View.extend({
                         value: item.id
                     });
                     // backup to local history
-                    history[item.id + '_' + item.src] = item;
+                    self.history[item.id + '_' + item.src] = item;
                 }
                 // update field
                 field.update(select_options);
@@ -272,7 +273,7 @@ var View = Backbone.View.extend({
 
         // append to dataset ids
         for (var i in id_list) {
-            var details = history[id_list[i] + '_' + this.list[this.current].type];
+            var details = this.history[id_list[i] + '_' + this.list[this.current].type];
             if (details) {
                 result.values.push(details);
             } else {
@@ -315,7 +316,7 @@ var View = Backbone.View.extend({
     /** Assists in identifying the batch mode */
     _batch: function() {
         if (this.current == 'collection') {
-            var hdca = history[this._select().value() + '_hdca'];
+            var hdca = this.history[this._select().value() + '_hdca'];
             if (hdca && hdca.map_over_type) {
                 return true;
             }

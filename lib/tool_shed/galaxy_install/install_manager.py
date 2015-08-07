@@ -57,7 +57,7 @@ class InstallToolDependencyManager( object ):
     def get_tool_shed_repository_install_dir( self, tool_shed_repository ):
         return os.path.abspath( tool_shed_repository.repo_files_directory( self.app ) )
 
-    def install_and_build_package( self, tool_shed_repository, tool_dependency, actions_dict ):
+    def install_and_build_package( self, install_environment, tool_shed_repository, tool_dependency, actions_dict ):
         """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
         tool_shed_repository_install_dir = self.get_tool_shed_repository_install_dir( tool_shed_repository )
         install_dir = actions_dict[ 'install_dir' ]
@@ -65,12 +65,9 @@ class InstallToolDependencyManager( object ):
         actions = actions_dict.get( 'actions', None )
         filtered_actions = []
         env_file_builder = EnvFileBuilder( install_dir )
-        install_environment = InstallEnvironment( app=self.app,
-                                                  tool_shed_repository_install_dir=tool_shed_repository_install_dir,
-                                                  install_dir=install_dir )
         step_manager = StepManager( self.app )
         if actions:
-            with install_environment.make_tmp_dir() as work_dir:
+            with install_environment.use_tmp_dir() as work_dir:
                 with lcd( work_dir ):
                     # The first action in the list of actions will be the one that defines the initial download process.
                     # There are currently three supported actions; download_binary, download_by_url and clone via a
@@ -133,10 +130,10 @@ class InstallToolDependencyManager( object ):
                                 dir = tmp_dir
         return tool_dependency
 
-    def install_and_build_package_via_fabric( self, tool_shed_repository, tool_dependency, actions_dict ):
+    def install_and_build_package_via_fabric( self, install_environment, tool_shed_repository, tool_dependency, actions_dict ):
         try:
             # There is currently only one fabric method.
-            tool_dependency = self.install_and_build_package( tool_shed_repository, tool_dependency, actions_dict )
+            tool_dependency = self.install_and_build_package( install_environment, tool_shed_repository, tool_dependency, actions_dict )
         except Exception, e:
             log.exception( 'Error installing tool dependency %s version %s.', str( tool_dependency.name ), str( tool_dependency.version ) )
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
@@ -284,7 +281,10 @@ class InstallToolDependencyManager( object ):
             # TODO: this is not yet supported or functional, but when it is handle it using the fabric api.
             raise Exception( 'Tool dependency installation using proprietary fabric scripts is not yet supported.' )
         else:
-            tool_dependency = self.install_and_build_package_via_fabric( tool_shed_repository, tool_dependency, actions_dict )
+            tool_dependency = self.install_and_build_package_via_fabric( install_environment,
+                                                                         tool_shed_repository,
+                                                                         tool_dependency,
+                                                                         actions_dict )
         return tool_dependency
 
     def install_package( self, elem, tool_shed_repository, tool_dependencies=None, from_tool_migration_manager=False ):
@@ -391,6 +391,8 @@ class InstallToolDependencyManager( object ):
                                                 # tag set that defines the recipe to install and compile from source.
                                                 log.debug( 'Proceeding with install and compile recipe for tool dependency %s.' %
                                                            str( tool_dependency.name ) )
+                                                # Reset above error to installing
+                                                tool_dependency.status = self.install_model.ToolDependency.installation_status.INSTALLING
                                                 tool_dependency = self.install_via_fabric( tool_shed_repository,
                                                                                            tool_dependency,
                                                                                            install_dir,

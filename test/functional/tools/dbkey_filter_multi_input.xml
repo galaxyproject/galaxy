@@ -1,0 +1,34 @@
+<tool id="dbkey_filter_multi_input" name="dbkey_filter_multi_input" version="0.1.0">
+    <description>Filter select on dbkey of multiple inputs</description>
+    <command><![CDATA[
+        #for $input in $inputs#
+        cat $input >> $output;
+        #end for#
+    ]]>
+    </command>
+    <inputs>
+        <param format="txt" name="inputs" type="data" label="Inputs" multiple="true" help="" />
+        <param name="index" type="select" label="Using reference genome">
+          <options from_data_table="test_fasta_indexes">
+            <filter type="data_meta" ref="inputs" key="dbkey" column="1" />
+            <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+          </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output" />
+    </outputs>
+
+    <tests>
+        <!-- can choose a dbkey if it matches input -->
+        <test>
+            <param name="inputs" value="simple_line.txt,simple_line.txt" dbkey="hg19" />
+            <param name="index" value="hg19" />
+            <output name="output" file="simple_line_x2.txt"/>
+        </test>
+    </tests>
+
+    <help>
+    </help>
+</tool>

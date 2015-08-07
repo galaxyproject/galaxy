@@ -367,7 +367,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             # derived (not mapped) attributes
             'data_type'     : lambda i, k, **c: i.datatype.__class__.__module__ + '.' + i.datatype.__class__.__name__,
 
-            # TODO: conversions
+            'converted'     : self.serialize_converted_datasets,
             # TODO: metadata/extra files
         })
         # this an abstract superclass, so no views created
@@ -417,6 +417,19 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             metadata[ name ] = val
 
         return metadata
+
+    def serialize_converted_datasets( self, dataset_assoc, key, **context ):
+        """
+        Return a file extension -> converted dataset encoded id map with all
+        the existing converted datasets associated with this instance.
+
+        This filters out deleted associations.
+        """
+        id_map = {}
+        for converted in dataset_assoc.implicitly_converted_datasets:
+            if not converted.deleted and converted.dataset:
+                id_map[ converted.type ] = self.serialize_id( converted.dataset, 'id' )
+        return id_map
 
 
 class DatasetAssociationSerializer( _UnflattenedMetadataDatasetAssociationSerializer ):

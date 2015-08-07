@@ -62,14 +62,16 @@ def evaluate_template( text, install_environment ):
 def get_env_var_values( install_environment ):
     """
     Return a dictionary of values, some of which enable substitution of reserved words for the values.
-    The received install_enviroment object has 2 important attributes for reserved word substitution:
+    The received install_enviroment object has 3 important attributes for reserved word substitution:
     install_environment.tool_shed_repository_install_dir is the root installation directory of the repository
-    that contains the tool dependency being installed, and install_environment.install_dir is the root
-    installation directory of the tool dependency.
+    that contains the tool dependency being installed, install_environment.install_dir is the root
+    installation directory of the tool dependency, and install_environment.tmp_work_dir is the
+    temporary directory where the tool dependency compilation/installation is being processed.
     """
     env_var_dict = {}
     env_var_dict[ 'REPOSITORY_INSTALL_DIR' ] = install_environment.tool_shed_repository_install_dir
     env_var_dict[ 'INSTALL_DIR' ] = install_environment.install_dir
+    env_var_dict[ 'TMP_WORK_DIR' ] = install_environment.tmp_work_dir
     env_var_dict[ 'system_install' ] = install_environment.install_dir
     # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
     env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32

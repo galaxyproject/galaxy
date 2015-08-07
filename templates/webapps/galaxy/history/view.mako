@@ -168,7 +168,7 @@ a.btn {
         userIsOwner  = ${ 'true' if user_is_owner else 'false' },
         isCurrent    = ${ 'true' if history_is_current else 'false' },
         historyJSON  = ${ h.dumps( history ) },
-        hdaJSON      = ${ h.dumps( hdas ) },
+        contentsJSON = ${ h.dumps( contents ) },
         panelToUse   = ( userIsOwner )?
 //TODO: change class names
             ({ location: 'mvc/history/history-panel-edit',  className: 'HistoryPanelEdit' }):

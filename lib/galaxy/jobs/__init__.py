@@ -95,7 +95,7 @@ class JobToolConfiguration( Bunch ):
 def config_exception(e, file):
     abs_path = os.path.abspath(file)
     message = 'Problem parsing the XML in file %s, ' % abs_path
-    message += 'please correct the indicated portion of the file and restart Galaxy.'
+    message += 'please correct the indicated portion of the file and restart Galaxy. '
     message += str(e)
     log.exception(message)
     return Exception(message)
@@ -192,6 +192,9 @@ class JobConfiguration( object ):
                             else:
                                 self.handlers[tag] = [id]
 
+        # Must define at least one handler to have a default.
+        if not self.handlers:
+            raise ValueError("Job configuration file defines no valid handler elements.")
         # Determine the default handler(s)
         self.default_handler_id = self.__get_default(handlers, self.handlers.keys())
 

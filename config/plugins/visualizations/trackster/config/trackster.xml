@@ -15,6 +15,7 @@
             <test type="not_eq" test_attr="datatype.track_type">None</test>
             <to_param param_attr="id">dataset_id</to_param>
             <to_param assign="ldda">hda_ldda</to_param>
+            <to_param param_attr="dbkey">dbkey</to_param>
         </data_source>
     </data_sources>
     <params>
