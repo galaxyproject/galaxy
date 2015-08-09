@@ -25,3 +25,8 @@ command_inject = --sig-proxy=true -e DEBUG=false
 # The Docker hostname. It can be useful to run the Docker daemon on a different
 # host than Galaxy.
 #docker_hostname = localhost
+
+# Try to set the tempdirectory to world execute - this can fix the issue 
+# where	  'sudo docker' is not able to mount the folder otherwise.
+# "finalize namespace chdir to /import permission denied"
+wx_tempdir = False
