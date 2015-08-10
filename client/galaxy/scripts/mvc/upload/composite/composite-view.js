@@ -39,7 +39,7 @@ return Backbone.View.extend({
         this.setElement(this._template());
 
         // create button section
-        this.btnStart = new Ui.Button({ title: 'Start', onclick: function() { self._eventStart(); }, cls: 'ui-button btn btn-primary'});
+        this.btnStart = new Ui.Button({ title: 'Start', onclick: function() { self._eventStart(); } });
         this.btnClose = new Ui.Button({ title: 'Close', onclick: function() { self.app.modal.hide(); } });
 
         // append buttons to dom
@@ -199,8 +199,10 @@ return Backbone.View.extend({
         }
         if (this.collection.where({ status : 'ready' }).length == this.collection.length) {
             this.btnStart.enable();
+            this.btnStart.$el.addClass('btn-primary');
         } else {
             this.btnStart.disable();
+            this.btnStart.$el.removeClass('btn-primary');
         }
 
         // table visibility
