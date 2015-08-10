@@ -89,7 +89,8 @@ var menu = [
             if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really delete all hidden datasets?' ) ) ){
                 var filtered = Galaxy.currHistoryPanel.model.contents.hidden();
                 //TODO: batch
-                filtered.ajaxQueue( Backbone.Model.prototype.save, { deleted : true })
+                // both delete *and* unhide them
+                filtered.ajaxQueue( Backbone.Model.prototype.save, { deleted : true, visible: true })
                     .done( function(){
                         Galaxy.currHistoryPanel.render();
                     })
