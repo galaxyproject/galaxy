@@ -22,9 +22,8 @@ from galaxy import eggs
 eggs.require("pexpect")
 import pexpect
 eggs.require('SQLAlchemy')
-from sqlalchemy import and_, func, not_, or_, true
+from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
-from sqlalchemy import join, select
 from sqlalchemy.ext import hybrid
 
 import galaxy.datatypes
@@ -1273,7 +1272,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         # then, bind as property of history using the cls.id
         size_query = (
             select([
-                func.sum( distinct_datasets_alias.c.dataset_size )
+                func.coalesce( func.sum( distinct_datasets_alias.c.dataset_size ), 0 )
             ])
             .select_from( distinct_datasets_alias )
             .where( distinct_datasets_alias.c.history_id == cls.id )
