@@ -73,7 +73,7 @@ var menu = [
                 //TODO: batch
                 filtered.ajaxQueue( Backbone.Model.prototype.save, { visible : true })
                     .done( function(){
-                        Galaxy.currHistoryPanel.render();
+                        Galaxy.currHistoryPanel.renderItems();
                     })
                     .fail( function(){
                         alert( 'There was an error unhiding the datasets' );
@@ -92,7 +92,7 @@ var menu = [
                 // both delete *and* unhide them
                 filtered.ajaxQueue( Backbone.Model.prototype.save, { deleted : true, visible: true })
                     .done( function(){
-                        Galaxy.currHistoryPanel.render();
+                        Galaxy.currHistoryPanel.renderItems();
                     })
                     .fail( function(){
                         alert( 'There was an error deleting the datasets' );
