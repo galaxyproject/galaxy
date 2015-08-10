@@ -189,7 +189,7 @@ class AdminToolshed( AdminGalaxy ):
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd.get( 'tool_shed_url', '' )
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( trans.app, tool_shed_url )
-        params=dict( galaxy_url=web.url_for( '/', qualified=True ) )
+        params = dict( galaxy_url=web.url_for( '/', qualified=True ) )
         url = common_util.url_join( tool_shed_url, pathspec=[ 'repository', 'browse_valid_categories' ], params=params )
         return trans.response.send_redirect( url )
 
@@ -531,6 +531,7 @@ class AdminToolshed( AdminGalaxy ):
                                owner=owner )
                 pathspec = [ 'repository', 'get_latest_downloadable_changeset_revision' ]
                 raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
+                url = common_util.url_join( tool_shed_url, pathspec=pathspec, params=params )
                 latest_downloadable_revision = json.loads( raw_text )
                 if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
                     message = 'Error retrieving the latest downloadable revision for this repository via the url <b>%s</b>.' % url
@@ -1531,7 +1532,7 @@ class AdminToolshed( AdminGalaxy ):
                 if 'workflows' in metadata:
                     includes_workflows = True
                 # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
-                params = dict( name=tool_shed_repository.name, 
+                params = dict( name=tool_shed_repository.name,
                                owner=tool_shed_repository.owner,
                                changeset_revision=tool_shed_repository.installed_changeset_revision )
                 pathspec = [ 'repository', 'get_readme_files' ]

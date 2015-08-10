@@ -867,7 +867,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
-            params = dict( repository_metadata_id=repository_metadata_id, 
+            params = dict( repository_metadata_id=repository_metadata_id,
                            workflow_name=encoding_util.tool_shed_encode( workflow_name ),
                            open_for_url=True )
             pathspec = [ 'workflow', 'import_workflow' ]
