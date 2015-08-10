@@ -251,9 +251,9 @@ class Repository( RecipeTag, SyncDatabase ):
             message += "following required parameters is None: tool_shed_url: %s, name: %s, owner: %s, changeset_revision: %s " % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( changeset_revision ) )
             raise Exception( message )
-        params = dict( name=str( repository.name ),
-                       owner=str( repository.owner ),
-                       changeset_revision=str( repository.changeset_revision ) )
+        params = dict( name=name,
+                       owner=owner,
+                       changeset_revision=changeset_revision )
         pathspec = [ 'repository', 'get_tool_dependencies_config_contents' ]
         text = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
         if text:

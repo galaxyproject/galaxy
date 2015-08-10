@@ -469,9 +469,9 @@ class InstallRepositoryManager( object ):
         return None, None
 
     def __get_install_info_from_tool_shed( self, tool_shed_url, name, owner, changeset_revision ):
-        params = dict( name=str( repository.name ),
-                       owner=str( repository.owner ),
-                       changeset_revision=str( repository.changeset_revision ) )
+        params = dict( name=str( name ),
+                       owner=str( owner ),
+                       changeset_revision=str( changeset_revision ) )
         pathspec = [ 'api', 'repositories', 'get_repository_revision_install_info' ]
         try:
             raw_text = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
@@ -1018,6 +1018,7 @@ def fetch_tool_versions( app, tool_shed_repository ):
                        owner=str( tool_shed_repository.owner ),
                        changeset_revision=str( tool_shed_repository.changeset_revision ) )
         pathspec = [ 'repository', 'get_tool_versions' ]
+        url = common_util.url_join( pathspec=pathspec, params=params )
         text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
         if text:
             return json.loads( text )
