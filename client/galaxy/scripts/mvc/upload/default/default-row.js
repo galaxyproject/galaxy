@@ -166,10 +166,10 @@ return Backbone.View.extend({
         // activate text field if file is new
         if (file_mode == 'new') {
             this.$('#text').css({
-                'width' : this.$el.width() - 2 * 8 + 'px',
+                'width' : this.$el.width() - 16 + 'px',
                 'top'   : this.$el.height() - 8 + 'px'
             }).show();
-            this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 2 * 8);
+            this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 16);
             this.$('#mode').addClass('fa fa-pencil');
         }
 
@@ -303,7 +303,7 @@ return Backbone.View.extend({
     _template: function(options) {
         return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
                     '<td>' +
-                        '<div class="title-column">' +
+                        '<div class="text-column">' +
                             '<div id="mode"/>' +
                             '<div id="title" class="title"/>' +
                             '<div id="text" class="text">' +
