@@ -132,13 +132,13 @@ return Backbone.View.extend({
             }
         });
 
-        // setup info
-        this._updateScreen();
-
         // events
         this.collection.on('remove', function(item) {
             self._eventRemove(item);
         });
+
+        // setup info
+        this._updateScreen();
     },
 
     //
@@ -159,11 +159,11 @@ return Backbone.View.extend({
             this.counter.announce--;
         }
 
-        // show on screen info
-        this._updateScreen();
-
         // remove from queue
         this.uploadbox.remove(item.id);
+
+        // show on screen info
+        this._updateScreen();
     },
 
     //
@@ -174,9 +174,6 @@ return Backbone.View.extend({
     _eventAnnounce: function(index, file) {
         // update counter
         this.counter.announce++;
-
-        // update screen
-        this._updateScreen();
 
         // create view/model
         var upload_item = new UploadItem(this, {
@@ -193,6 +190,9 @@ return Backbone.View.extend({
 
         // add upload item element to table
         this.$('#upload-table > tbody:first').append(upload_item.$el);
+
+        // show on screen info
+        this._updateScreen();
 
         // render
         upload_item.render();
@@ -268,6 +268,8 @@ return Backbone.View.extend({
 
         // update running
         this.counter.running = 0;
+
+        // update on screen info
         this._updateScreen();
     },
 
@@ -346,27 +348,27 @@ return Backbone.View.extend({
 
         // update running
         this.counter.running = this.counter.announce;
-        this._updateScreen();
 
         // initiate upload procedure in plugin
         this.uploadbox.start();
+
+        // update on screen info
+        this._updateScreen();
     },
 
     // pause upload process
     _eventStop: function() {
         // check
-        if (this.counter.running == 0) {
-            return;
+        if (this.counter.running > 0) {
+            // show upload has paused
+            this.ui_button.set('status', 'info');
+
+            // set html content
+            $('#upload-info').html('Queue will pause after completing the current file...');
+
+            // request pause
+            this.uploadbox.stop();
         }
-
-        // show upload has paused
-        this.ui_button.set('status', 'info');
-
-        // request pause
-        this.uploadbox.stop();
-
-        // set html content
-        $('#upload-info').html('Queue will pause after completing the current file...');
     },
 
     // remove all
@@ -379,9 +381,6 @@ return Backbone.View.extend({
             // reset counter
             this.counter.reset();
 
-            // show on screen info
-            this._updateScreen();
-
             // remove from queue
             this.uploadbox.reset();
 
@@ -391,6 +390,9 @@ return Backbone.View.extend({
 
             // reset button
             this.ui_button.set('percentage', 0);
+
+            // show on screen info
+            this._updateScreen();
         }
     },
 
@@ -421,16 +423,18 @@ return Backbone.View.extend({
         */
 
         // check default message
-        if(this.counter.announce == 0){
-            if (this.uploadbox.compatible())
+        if(this.counter.announce == 0) {
+            if (this.uploadbox.compatible()) {
                 message = 'You can Drag & Drop files into this box.';
-            else
-                message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Some supported browsers are: Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.'
+            } else {
+                message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Some supported browsers are: Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.';
+            }
         } else {
-            if (this.counter.running == 0)
+            if (this.counter.running == 0) {
                 message = 'You added ' + this.counter.announce + ' file(s) to the queue. Add more files or click \'Start\' to proceed.';
-            else
+            } else {
                 message = 'Please wait...' + this.counter.announce + ' out of ' + this.counter.running + ' remaining.';
+            }
         }
 
         // set html content

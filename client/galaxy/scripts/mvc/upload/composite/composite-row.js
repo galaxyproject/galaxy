@@ -156,9 +156,8 @@ return Backbone.View.extend({
         });
     },
 
-    // mode
+    // refresh mode and e.g. show/hide textarea field
     _refreshMode: function() {
-        // activate text field if file is new
         var file_mode = this.model.get('file_mode');
         if (file_mode == 'new') {
             this.height = this.$el.height();
@@ -168,6 +167,8 @@ return Backbone.View.extend({
             }).show();
             this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 16);
             this.$('#text-content').val('').trigger('keyup');
+            self.model.set('file_data', null);
+            self.model.set('file_name', '');
         } else {
             this.$el.height(this.height);
             this.$('#text').hide();
