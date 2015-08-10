@@ -469,11 +469,12 @@ class InstallRepositoryManager( object ):
         return None, None
 
     def __get_install_info_from_tool_shed( self, tool_shed_url, name, owner, changeset_revision ):
-        params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
-        url = common_util.url_join( tool_shed_url,
-                                    'api/repositories/get_repository_revision_install_info%s' % params )
+        params = dict( name=str( repository.name ),
+                       owner=str( repository.owner ),
+                       changeset_revision=str( repository.changeset_revision ) )
+        pathspec = [ 'api', 'repositories', 'get_repository_revision_install_info' ]
         try:
-            raw_text = common_util.tool_shed_get( self.app, tool_shed_url, url )
+            raw_text = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
         except Exception, e:
             message = "Error attempting to retrieve installation information from tool shed "
             message += "%s for revision %s of repository %s owned by %s: %s" % \
@@ -1013,12 +1014,11 @@ def fetch_tool_versions( app, tool_shed_repository ):
     failed_to_fetch = False
     try:
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, str( tool_shed_repository.tool_shed ) )
-        params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( tool_shed_repository.name ),
-                                                               str( tool_shed_repository.owner ),
-                                                               str( tool_shed_repository.changeset_revision ) )
-        url = common_util.url_join( tool_shed_url,
-                                    '/repository/get_tool_versions%s' % params )
-        text = common_util.tool_shed_get( app, tool_shed_url, url )
+        params = dict( name=str( tool_shed_repository.name ),
+                       owner=str( tool_shed_repository.owner ),
+                       changeset_revision=str( tool_shed_repository.changeset_revision ) )
+        pathspec = [ 'repository', 'get_tool_versions' ]
+        text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
         if text:
             return json.loads( text )
         else:
