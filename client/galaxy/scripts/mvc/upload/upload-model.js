@@ -9,6 +9,7 @@ var Model = Backbone.Model.extend({
         url_paste       : '',
         status          : 'init',
         info            : null,
+        file_name       : '',
         file_mode       : '',
         file_size       : 0,
         file_type       : null,

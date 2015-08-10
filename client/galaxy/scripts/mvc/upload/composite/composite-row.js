@@ -133,8 +133,8 @@ return Backbone.View.extend({
 
     // render
     render: function() {
-        this.$('#file_name').html(this.model.get('file_name'));
-        this.$('#file_desc').html(this.model.get('file_desc'));
+        this.$('#file_name').html(this.model.get('file_name') || '-');
+        this.$('#file_desc').html(this.model.get('file_desc') || 'Unavailable');
         this.$('#file_size').html(Utils.bytesToString (this.model.get('file_size')));
         this.$('#status').removeClass().addClass(this.status_classes.init);
     },
@@ -151,7 +151,7 @@ return Backbone.View.extend({
 
     // refresh ready or not states
     _refreshReady: function() {
-        this.collection.each(function(item) {
+        this.app.collection.each(function(item) {
             item.set('status', (item.get('file_size') > 0) && 'ready' || 'init');
         });
     },
@@ -167,8 +167,10 @@ return Backbone.View.extend({
             }).show();
             this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 16);
             this.$('#text-content').val('').trigger('keyup');
-            self.model.set('file_data', null);
-            self.model.set('file_name', '');
+
+            // reset model
+            this.model.set('file_data', null);
+            this.model.set('file_name', 'New File');
         } else {
             this.$el.height(this.height);
             this.$('#text').hide();
@@ -247,7 +249,7 @@ return Backbone.View.extend({
 
     // file name
     _refreshFileName: function() {
-        this.$('#file_name').html(this.model.get('file_name'));
+        this.$('#file_name').html(this.model.get('file_name') || '-');
     },
 
     // file size

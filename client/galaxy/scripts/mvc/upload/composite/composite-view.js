@@ -62,8 +62,7 @@ return Backbone.View.extend({
                         var item = details.composite_files[i];
                         self.collection.add({
                             id          : self.collection.size(),
-                            file_name   : '<b>-</b>',
-                            file_desc   : item['description'] || item['name'] || 'Unavailable'
+                            file_desc   : item['description'] || item['name']
                         });
                     }
                 }
