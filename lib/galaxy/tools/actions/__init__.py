@@ -287,16 +287,36 @@ class DefaultToolAction( object ):
             if not filter_output(output, incoming):
                 if output.collection:
                     collections_manager = trans.app.dataset_collections_service
-
                     # As far as I can tell - this is always true - but just verify
                     assert set_output_history, "Cannot create dataset collection for this kind of tool."
 
-                    elements = odict()
+                    element_identifiers = []
                     input_collections = dict( [ (k, v[0]) for k, v in inp_dataset_collections.iteritems() ] )
                     known_outputs = output.known_outputs( input_collections, collections_manager.type_registry )
                     # Just to echo TODO elsewhere - this should be restructured to allow
                     # nested collections.
                     for output_part_def in known_outputs:
+                        # Add elements to top-level collection, unless nested...
+                        current_element_identifiers = element_identifiers
+                        current_collection_type = output.structure.collection_type
+
+                        for parent_id in (output_part_def.parent_ids or []):
+                            # TODO: replace following line with formal abstractions for doing this.
+                            current_collection_type = ":".join(current_collection_type.split(":")[1:])
+                            name_to_index = dict(map(lambda (index, value): (value["name"], index), enumerate(current_element_identifiers)))
+                            if parent_id not in name_to_index:
+                                if parent_id not in current_element_identifiers:
+                                    index = len(current_element_identifiers)
+                                    current_element_identifiers.append(dict(
+                                        name=parent_id,
+                                        collection_type=current_collection_type,
+                                        src="new_collection",
+                                        element_identifiers=[],
+                                    ))
+                                else:
+                                    index = name_to_index[parent_id]
+                            current_element_identifiers = current_element_identifiers[ index ][ "element_identifiers" ]
+
                         effective_output_name = output_part_def.effective_output_name
                         element = handle_output( effective_output_name, output_part_def.output_def )
                         # Following hack causes dataset to no be added to history...
@@ -307,17 +327,23 @@ class DefaultToolAction( object ):
                         trans.sa_session.add( element )
                         trans.sa_session.flush()
 
-                        elements[ output_part_def.element_identifier ] = element
+                        current_element_identifiers.append({
+                            "__object__": element,
+                            "name": output_part_def.element_identifier,
+                        })
+                        log.info(element_identifiers)
 
                     if output.dynamic_structure:
-                        assert not elements  # known_outputs must have been empty
-                        elements = collections_manager.ELEMENTS_UNINITIALIZED
+                        assert not element_identifiers  # known_outputs must have been empty
+                        element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
+                    else:
+                        element_kwds = dict(element_identifiers=element_identifiers)
 
                     if mapping_over_collection:
                         dc = collections_manager.create_dataset_collection(
                             trans,
                             collection_type=output.structure.collection_type,
-                            elements=elements,
+                            **element_kwds
                         )
                         out_collections[ name ] = dc
                     else:
@@ -327,7 +353,8 @@ class DefaultToolAction( object ):
                             history,
                             name=hdca_name,
                             collection_type=output.structure.collection_type,
-                            elements=elements,
+                            trusted_identifiers=True,
+                            **element_kwds
                         )
                         # name here is name of the output element - not name
                         # of the hdca.

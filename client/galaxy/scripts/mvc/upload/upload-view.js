@@ -219,6 +219,7 @@ return Backbone.View.extend({
                     it.set('info', data.error_message);
                     break;
                 }
+
             }
             data.payload.inputs = JSON.stringify(inputs);
         }

@@ -10,6 +10,9 @@ from galaxy import util
 
 log = logging.getLogger( __name__ )
 
+# Attributes tool developer may want to query on dataset collections.
+COLLECTION_ATTRIBUTES = [ "collection_type" ]
+
 
 class ToolOutputActionGroup( object ):
     """
@@ -235,6 +238,13 @@ class FromParamToolOutputActionOption( ToolOutputActionOption ):
                 value = value[0]
             elif isinstance(value, dict):
                 value = value[ attr_name ]
+            elif hasattr( value, "collection" ) and value not in COLLECTION_ATTRIBUTES:
+                # if this is an HDCA for instance let reverse.ext grab
+                # the reverse element and then continue for loop to grab
+                # dataset extension
+                value = value.collection[ attr_name ].element_object
+            elif hasattr( value, "collection" ) and value in COLLECTION_ATTRIBUTES:
+                value = getattr( value.collection, attr_name )
             else:
                 value = getattr( value, attr_name )
         options = [ [ str( value ) ] ]

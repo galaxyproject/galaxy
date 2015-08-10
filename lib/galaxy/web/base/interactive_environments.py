@@ -1,9 +1,10 @@
 import ConfigParser
 
 import os
+import stat
 import random
 import tempfile
-import subprocess
+from subprocess import Popen, PIPE
 
 from galaxy.util.bunch import Bunch
 from galaxy import web
@@ -51,6 +52,13 @@ class InteractiveEnviornmentRequest(object):
         self.notebook_pw = self.generate_password(length=24)
 
         self.temp_dir = os.path.abspath( tempfile.mkdtemp() )
+        if self.attr.viz_config.getboolean("docker", "wx_tempdir"):
+            # Ensure permissions are set
+            try:
+                os.chmod( self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH )
+            except Exception:
+                log.error( "Could not change permissions of tmpdir %s" % self.temp_dir )
+                # continue anyway
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
@@ -59,6 +67,7 @@ class InteractiveEnviornmentRequest(object):
         # their defaults dictionary instead.
         default_dict['command_inject'] = '--sig-proxy=true'
         default_dict['docker_hostname'] = 'localhost'
+        default_dict['wx_tempdir'] = False
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
         if not os.path.exists( conf_path ):
@@ -188,4 +197,9 @@ class InteractiveEnviornmentRequest(object):
             self.attr.viz_id,
             raw_cmd
         ))
-        subprocess.call(raw_cmd, shell=True)
+        p = Popen( raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        stdout, stderr = p.communicate()
+        if p.returncode != 0 or len(stderr):
+            log.error( "%s\n%s" % (stdout, stderr) )
+        else:
+            log.debug( "Container id: %s" % stdout)

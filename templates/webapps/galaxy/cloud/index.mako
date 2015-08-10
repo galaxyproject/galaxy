@@ -176,7 +176,7 @@
 
                     <div class="form-row">
                         <label for="id_secret">Secret Key</label>
-                        <input type="text" size="50" maxlength="40" name="secret" id="id_secret" value="" tabindex="2"/><br/>
+                        <input type="password" size="50" maxlength="40" name="secret" id="id_secret" value="" tabindex="2"/><br/>
                         <div class="toolParamHelp">
                             This is your AWS Secret Key, also found in the <a href="https://portal.aws.amazon.com/gp/aws/securityCredentials">Security
 Credentials section of the AWS Console</a>.  </div>
