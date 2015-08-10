@@ -100,11 +100,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
             raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
-        params = '?name=%s&owner=%s' % ( name, owner )
-        url = common_util.url_join( tool_shed_url,
-                                    'api/repositories/get_ordered_installable_revisions%s' % params )
+        params = dict( name=name, owner=owner )
+        pathspec = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
         try:
-            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
         except Exception, e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )
@@ -215,22 +214,31 @@ class ToolShedRepositoriesController( BaseAPIController ):
         """
         irm = InstallRepositoryManager( trans.app )
         reinstalling = util.string_as_bool( kwd.get( 'reinstalling', False ) )
+        repositories = json.loads( kwd[ 'repositories' ] )
         encoded_kwd = kwd[ 'encoded_kwd' ]
         decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
         install_tool_dependencies = decoded_kwd.get( 'install_tool_dependencies', False )
-        tsr_ids = decoded_kwd[ 'tool_shed_repository_ids' ]
+        tsr_ids = [ repo['id'] for repo in repositories ]
         decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
-        try:
-            tool_shed_repositories = irm.install_repositories(
-                tsr_ids=tsr_ids,
-                decoded_kwd=decoded_kwd,
-                reinstalling=reinstalling,
-            )
-            tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
-            return tsr_ids_for_monitoring
-        except RepositoriesInstalledException as e:
-            return dict( message=e.message,
-                         status='error' )
+        async = util.string_as_bool( kwd.get( 'async', True ) )
+        if async:
+            try:
+                tool_shed_repositories = irm.install_repositories(
+                    tsr_ids=tsr_ids,
+                    decoded_kwd=decoded_kwd,
+                    reinstalling=reinstalling,
+                )
+                tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
+                return tsr_ids_for_monitoring
+            except RepositoriesInstalledException as e:
+                return dict( message=e.message,
+                             status='error' )
+        else:
+            names = [ repo[ 'name' ] for repo in repositories ]
+            owners = [ repo[ 'owner' ] for repo in repositories ]
+            changeset_revisions = [ repo[ 'revision' ] for repo in repositories ]
+            return
+
 
     @expose_api
     def install_repository_revision( self, trans, payload, **kwd ):

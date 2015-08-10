@@ -9,11 +9,25 @@
 </%def>
 
 <%def name="repository_installation_javascripts()">
+    <%
+    import json
+    repositories = []
+    for repository in tool_shed_repositories:
+        repository_dict = dict( name=repository.name,
+                                owner=repository.owner,
+                                revision=repository.changeset_revision,
+                                toolshed=repository.tool_shed,
+                                id=trans.security.encode_id( repository.id ),
+                                reinstalling=reinstalling )
+        repositories.append( repository_dict )
+    repositories = json.dumps( repositories, indent=2 )
+    %><pre>${repositories}</pre>
     <script type="text/javascript">
+        var repositories = ${repositories}
         $(document).ready(function( ){
-            initiate_repository_installation( "${initiate_repository_installation_ids}", "${encoded_kwd}", "${reinstalling}" );
+            initiate_repository_installation( repositories, reinstalling );
         });
-        var initiate_repository_installation = function ( iri_ids, encoded_kwd, reinstalling ) {
+        var initiate_repository_installation = function ( repositories, reinstalling ) {
             // Make ajax call
             $.ajax( {
                 type: "POST",
