@@ -13,7 +13,7 @@ from galaxy import managers
 from galaxy import web
 from galaxy.web import url_for
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util import listify, Params, string_as_bool, string_as_bool_or_none
+from galaxy.util import listify, Params, string_as_bool
 
 import logging
 log = logging.getLogger( __name__ )

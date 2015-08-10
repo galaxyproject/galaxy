@@ -195,7 +195,7 @@ a.btn {
             var panelClass = panelMod[ panelToUse.className ],
                 // history module is already in the dpn chain from the panel. We can re-scope it here.
                 HISTORY = require( 'mvc/history/history-model' ),
-                historyModel = new HISTORY.History( historyJSON, hdaJSON );
+                historyModel = new HISTORY.History( historyJSON, contentsJSON );
 
             window.historyPanel = new panelClass({
                 show_deleted    : ${show_deleted_json},
