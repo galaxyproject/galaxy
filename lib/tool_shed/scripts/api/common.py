@@ -13,7 +13,7 @@ from tool_shed.util import hg_util
 
 
 class HTTPRedirectWithDataHandler( urllib2.HTTPRedirectHandler ):
-    
+
     def __init__( self, method ):
         '''
         Upon first inspection, it would seem that this shouldn't be necessary, but for some reason

@@ -58,7 +58,7 @@ class MetadataGenerator( object ):
                 repository_files_dir = self.repository.repo_files_directory( self.app )
             if metadata_dict is None:
                 # Shed related tool panel configs are only relevant to Galaxy.
-                self.metadata_dict = { 'shed_config_filename' : self.shed_config_dict.get( 'config_filename', None ) }
+                self.metadata_dict = { 'shed_config_filename': self.shed_config_dict.get( 'config_filename', None ) }
             else:
                 self.metadata_dict = metadata_dict
         else:

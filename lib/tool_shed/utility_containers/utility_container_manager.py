@@ -469,7 +469,7 @@ class UtilityContainerManager( object ):
                 container_object_tool_id += 1
                 requirements = tool_dict.get( 'requirements', None )
                 if requirements is not None:
-                    # 'requirements': [{'version': '1.56.0', 'type': 'package', 'name': 'picard'}], 
+                    # 'requirements': [{'version': '1.56.0', 'type': 'package', 'name': 'picard'}],
                     requirements_str = ''
                     for requirement_dict in requirements:
                         try:
@@ -643,7 +643,7 @@ class UtilityContainerManager( object ):
                                  repository_id=repository_id )
             folder.workflows.append( workflow )
             for workflow_tup in workflows:
-                workflow_dict=workflow_tup[ 1 ]
+                workflow_dict = workflow_tup[ 1 ]
                 steps = workflow_dict.get( 'steps', [] )
                 if steps:
                     steps = str( len( steps ) )
@@ -779,12 +779,7 @@ class UtilityContainerManager( object ):
                 installation_status = None
             can_create_dependency = not self.is_subfolder_of( sub_folder, repository_dependency )
             if can_create_dependency:
-                toolshed, \
-                repository_name, \
-                repository_owner, \
-                changeset_revision, \
-                prior_installation_required, \
-                only_if_compiling_contained_td = \
+                toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                     common_util.parse_repository_dependency_tuple( repository_dependency )
                 repository_dependency_id += 1
                 repository_dependency = RepositoryDependency( id=repository_dependency_id,
@@ -801,12 +796,7 @@ class UtilityContainerManager( object ):
         return repository_dependencies_folder, folder_id, repository_dependency_id
 
     def is_subfolder_of( self, folder, repository_dependency ):
-        toolshed, \
-        repository_name, \
-        repository_owner, \
-        changeset_revision, \
-        prior_installation_required, \
-        only_if_compiling_contained_td = \
+        toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( repository_dependency )
         key = container_util.generate_repository_dependencies_key_for_repository( toolshed,
                                                                                   repository_name,
@@ -834,11 +824,11 @@ class UtilityContainerManager( object ):
         elif len( components_list ) == 6:
             key_prior_installation_required = components_list[ 4 ]
             key_only_if_compiling_contained_td = components_list[ 5 ]
-        if repository_name == key_name and \
-            repository_owner == key_owner and \
-            changeset_revision == key_changeset_revision and \
-            prior_installation_required == key_prior_installation_required and \
-            only_if_compiling_contained_td == key_only_if_compiling_contained_td:
+        if ( repository_name == key_name and
+             repository_owner == key_owner and
+             changeset_revision == key_changeset_revision and
+             prior_installation_required == key_prior_installation_required and
+             only_if_compiling_contained_td == key_only_if_compiling_contained_td ):
             return True
         return False
 
