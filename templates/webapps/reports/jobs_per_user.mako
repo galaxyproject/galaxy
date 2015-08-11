@@ -3,6 +3,7 @@
 <%namespace file="/spark_base.mako" import="make_sparkline, make_spark_settings" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
 <%namespace file="/page_base.mako" import="get_pages, get_entry_selector" />
+
 <%!
     import re
 %>
