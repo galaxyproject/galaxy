@@ -19,6 +19,34 @@ from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 log = logging.getLogger( __name__ )
 
 
+class Timer(object):
+    def __init__(self):
+        self.start()
+        self.stop()
+        self.ERROR = self.time_elapsed()
+
+    def start(self):
+        self.start_time = datetime.now()
+
+    def stop(self):
+        try:
+            self.stop_time = datetime.now()
+            self.time_delta = self.stop_time - self.start_time 
+            del(self.stop_time)
+            del(self.start_time)
+        except NameError:
+            print("You need to start before you can stop!")
+
+    def time_elapsed(self):
+        try:
+            return_time = self.time_delta - self.ERROR
+        except NameError:
+            print("You need to start and stop before there's an elapsed time!")
+        except AttributeError:
+            return_time = self.time_delta
+
+        return return_time
+
 def sorter(default_sort_id, kwd):
     """
     Initialize sorting variables
@@ -668,6 +696,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
     @web.expose
     def per_user( self, trans, **kwd ):
+        total_time = Timer()
+        q_time = Timer()
+        iter_time = Timer()
+
+        total_time.start()
         params = util.Params( kwd )
         message = ''
         PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
@@ -709,13 +742,31 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                    offset=offset,
                                    limit=limit )
 
+        q_time.start()
+        for row in jobs_per_user.execute():
+            if ( row.user_email is None ):
+                jobs.append( ( 'Anonymous',
+                               row.total_jobs ) )
+            elif ( row.user_email == monitor_email ):
+                continue
+            else:
+                jobs.append( ( row.user_email,
+                               row.total_jobs ) )
+        q_time.stop()
+        query1time = q_time.time_elapsed()
+
+        users = sa.select( [model.User.table.c.email],
+                           from_obj=[ model.User.table ] )
+
         all_jobs_per_user = sa.select( ( model.Job.table.c.id.label( 'id' ),
                                         model.Job.table.c.create_time.label( 'date' ),
                                         model.User.table.c.email.label( 'user_email' ) ),
-                                      from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ] )
+                                      from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ],
+                                      whereclause=model.User.table.c.email.in_( users ) )
 
         currday = datetime.today()
         trends = dict()
+        q_time.start()
         for job in all_jobs_per_user.execute():
             if job.user_email is None:
                 curr_user = 'Anonymous'
@@ -737,26 +788,22 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 trends[curr_user] = [0] * spark_limit
                 if container < spark_limit:
                     trends[curr_user][container] += 1
-
-        for row in jobs_per_user.execute():
-            if ( row.user_email is None ):
-                jobs.append( ( 'Anonymous',
-                               row.total_jobs ) )
-            elif ( row.user_email == monitor_email ):
-                continue
-            else:
-                jobs.append( ( row.user_email,
-                               row.total_jobs ) )
+        q_time.stop()
+        query2time = q_time.time_elapsed()
 
         pages_found = ceil(len(jobs) / float(entries))
         page_specs = PageSpec(entries, offset, page, pages_found)
 
+        total_time.stop()
+        ttime = total_time.time_elapsed()
         return trans.fill_template( '/webapps/reports/jobs_per_user.mako',
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
                                     spark_limit=spark_limit,
                                     time_period=time_period,
+                                    q1time=query1time,
+                                    q2time=query2time,
                                     trends=trends,
                                     jobs=jobs,
                                     message=message,
