@@ -13,7 +13,7 @@ from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
 eggs.require( "SQLAlchemy >= 0.4" )
 import re
-from math import ceil, floor
+from math import ceil
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 from galaxy.webapps.reports.controllers.jobs import sorter, get_spark_time
 
@@ -408,7 +408,9 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                                 model.WorkflowInvocation.table ],
                       whereclause=sa.and_( model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id ),
                       group_by=[  model.Workflow.table.c.id ],
-                      order_by=[ _order ] )
+                      order_by=[ _order ],
+                       offset=offset,
+                       limit=limit )
 
         all_runs_per_workflow = sa.select( ( model.Workflow.table.c.id.label( 'workflow_id' ),
                                             model.Workflow.table.c.name.label( 'workflow_name' ),
