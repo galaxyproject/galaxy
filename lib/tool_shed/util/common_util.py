@@ -352,7 +352,6 @@ def tool_shed_get( app, base_url, pathspec=[], params={} ):
 def url_join( base_url, pathspec=None, params=None ):
     """Return a valid URL produced by appending a base URL and a set of request parameters."""
     url = base_url.rstrip( '/' )
-    log.debug( '%s\n%s\n%s', url, pathspec, params )
     if pathspec is not None:
         url = '%s/%s' % ( url, '/'.join( pathspec ) )
     if params is not None:
