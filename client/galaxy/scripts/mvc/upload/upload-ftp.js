@@ -151,10 +151,7 @@ return Backbone.View.extend({
             file_mode   : 'ftp',
             enabled     : true
         });
-        if (item) {
-            return item.get('id');
-        }
-        return null;
+        return item && item.get('id');
     },
 
     // template row
