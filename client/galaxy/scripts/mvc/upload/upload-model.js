@@ -14,10 +14,14 @@ var Model = Backbone.Model.extend({
         file_size       : 0,
         file_type       : null,
         file_path       : '',
+        file_data       : null,
         percentage      : 0,
         space_to_tab    : false,
         to_posix_lines  : true,
         enabled         : true
+    },
+    reset: function(attr) {
+        this.clear().set(this.defaults).set(attr);
     }
 });
 

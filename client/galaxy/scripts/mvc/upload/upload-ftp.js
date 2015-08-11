@@ -1,30 +1,24 @@
 /** This renders the content of the ftp popup **/
 define(['utils/utils'], function(Utils) {
 return Backbone.View.extend({
-    // styles
-    styles : {
-        check: {
+    // render
+    initialize: function(options) {
+        // link options
+        this.options = Utils.merge(options, {
             class_add       : 'upload-icon-button fa fa-square-o',
             class_remove    : 'upload-icon-button fa fa-check-square-o',
-            class_partial   : 'upload-icon-button fa fa-minus-square-o'
-        },
-        radio: {
-            class_add       : 'upload-icon-button fa fa-circle-o',
-            class_remove    : 'upload-icon-button fa fa-dot-circle-o'
-        }
-    },
-
-    // render
-    initialize: function(app, options) {
-        // link options
-        this.options = Utils.merge(options && this.styles[options.style] || this.styles['check'], options);
-        this.multiple = this.options.class_partial;
+            class_partial   : 'upload-icon-button fa fa-minus-square-o',
+            collection      : null,
+            onchange        : function() {},
+            onadd           : function() {},
+            onremove        : function() {}
+        });
 
         // link this
         var self = this;
 
         // link app
-        this.app = app;
+        this.collection = this.options.collection;
 
         // set template
         this.setElement(this._template());
@@ -42,7 +36,7 @@ return Backbone.View.extend({
 
     // events
     events: {
-        'mousedown' : function(e) { e.preventDefault(); }
+        'mousedown': function(e) { e.preventDefault(); }
     },
 
     // fill table
@@ -53,9 +47,9 @@ return Backbone.View.extend({
 
             // add files to table
             var size = 0;
-            for (key in ftp_files) {
-                this.rows.push(this._add(ftp_files[key]));
-                size += ftp_files[key].size;
+            for (index in ftp_files) {
+                this.rows.push(this._add(ftp_files[index]));
+                size += ftp_files[index].size;
             }
 
             // update stats
@@ -63,24 +57,23 @@ return Backbone.View.extend({
             this.$el.find('#upload-ftp-disk').html(Utils.bytesToString (size, true));
 
             // add event handler to select/unselect all
-            if (this.multiple) {
+            if (this.collection) {
+                var self = this;
                 this.$select_all = $('#upload-selectall');
                 this.$select_all.addClass(this.options.class_add);
-                var self = this;
                 this.$select_all.on('click', function() {
                     var add = self.$select_all.hasClass(self.options.class_add);
-                    for (key in ftp_files) {
-                        var ftp_file = ftp_files[key];
+                    for (index in ftp_files) {
+                        var ftp_file = ftp_files[index];
                         var model_index = self._find(ftp_file);
                         if(!model_index && add || model_index && !add) {
-                            self.rows[key].trigger('click');
+                            self.rows[index].trigger('click');
                         }
                     }
                 });
+                this._refresh();
+                this.$('._has_collection').show();
             }
-
-            // refresh
-            this._refresh();
         } else {
             // add info
             this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
@@ -104,30 +97,36 @@ return Backbone.View.extend({
         // append to table
         $(this.el).find('tbody').append($it);
 
-        // find model and set initial 'add' icon class
-        var icon_class = '';
-        if (this._find(ftp_file)) {
-            icon_class = this.options.class_remove;
-        } else {
-            icon_class = this.options.class_add;
-        }
-
-        // add icon class
-        $icon.addClass(icon_class);
-
-        // click to add ftp files
-        $it.on('click', function() {
-            var model_index = self._find(ftp_file);
-            $icon.removeClass();
-            if (!model_index) {
-                self.options.add && self.options.add(ftp_file);
-                $icon.addClass(self.options.class_remove);
+        // collection mode with add/remove triggers
+        if (this.collection) {
+            // find model and set initial 'add' icon class
+            var icon_class = '';
+            if (this._find(ftp_file)) {
+                icon_class = this.options.class_remove;
             } else {
-                self.options.remove && self.options.remove(model_index);
-                $icon.addClass(self.options.class_add);
+                icon_class = this.options.class_add;
             }
-            self._refresh();
-        });
+            $icon.addClass(icon_class);
+
+            // click triggers add/remove events
+            $it.on('click', function() {
+                var model_index = self._find(ftp_file);
+                $icon.removeClass();
+                if (!model_index || !self.options.remove) {
+                    self.options.onadd(ftp_file);
+                    $icon.addClass(self.options.class_remove);
+                } else {
+                    self.options.onremove(model_index);
+                    $icon.addClass(self.options.class_add);
+                }
+                self._refresh();
+            });
+        } else {
+            // click triggers only change
+            $it.on('dblclick', function() {
+                self.options.onchange(ftp_file);
+            });
+        }
 
         // return dom handler
         return $it;
@@ -135,24 +134,22 @@ return Backbone.View.extend({
 
     // refresh
     _refresh: function() {
-        if (this.multiple) {
-            var filtered = this.app.collection.where({file_mode: 'ftp', enabled: true});
-            this.$select_all.removeClass();
-            if (filtered.length == 0) {
-                this.$select_all.addClass(this.options.class_add);
+        var filtered = this.collection.where({file_mode: 'ftp', enabled: true});
+        this.$select_all.removeClass();
+        if (filtered.length == 0) {
+            this.$select_all.addClass(this.options.class_add);
+        } else {
+            if (filtered.length == this.rows.length) {
+                this.$select_all.addClass(this.options.class_remove);
             } else {
-                if (filtered.length == this.rows.length) {
-                    this.$select_all.addClass(this.options.class_remove);
-                } else {
-                    this.$select_all.addClass(this.options.class_partial);
-                }
+                this.$select_all.addClass(this.options.class_partial);
             }
         }
     },
 
     // get model index
     _find: function(ftp_file) {
-        var item = this.app.collection.findWhere({
+        var item = this.collection.findWhere({
             file_path   : ftp_file.path,
             file_mode   : 'ftp',
             enabled     : true
@@ -166,7 +163,7 @@ return Backbone.View.extend({
     // template row
     _templateRow: function(options) {
         return  '<tr class="upload-ftp-row">' +
-                    '<td><div class="icon"/></td>' +
+                    '<td class="_has_collection" style="display: none;"><div class="icon"/></td>' +
                     '<td class="label"><p>' + options.path + '</p></td>' +
                     '<td class="nonlabel">' + Utils.bytesToString(options.size) + '</td>' +
                     '<td class="nonlabel">' + options.ctime + '</td>' +
@@ -185,13 +182,13 @@ return Backbone.View.extend({
                 '<table class="grid" style="float: left;">' +
                     '<thead>' +
                         '<tr>' +
-                            '<th><div id="upload-selectall"></th>' +
+                            '<th class="_has_collection" style="display: none;"><div id="upload-selectall"></th>' +
                             '<th>Name</th>' +
                             '<th>Size</th>' +
                             '<th>Created</th>' +
                         '</tr>' +
                     '</thead>' +
-                    '<tbody></tbody>' +
+                    '<tbody/>' +
                 '</table>';
     },
 
@@ -206,8 +203,8 @@ return Backbone.View.extend({
     _template: function() {
         return  '<div class="upload-ftp">' +
                     '<div id="upload-ftp-wait" class="upload-ftp-wait fa fa-spinner fa-spin"/>' +
-                    '<div class="upload-ftp-help">This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.app.options.ftp_upload_site + '</strong> using your Galaxy credentials (email address and password).</div>' +
-                    '<div id="upload-ftp-content"></div>' +
+                    '<div class="upload-ftp-help">This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>' + this.options.ftp_upload_site + '</strong> using your Galaxy credentials (email address and password).</div>' +
+                    '<div id="upload-ftp-content"/>' +
                 '<div>';
     }
 });

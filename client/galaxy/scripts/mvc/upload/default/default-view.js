@@ -306,8 +306,10 @@ return Backbone.View.extend({
         if (!this.ftp.visible) {
             this.ftp.empty();
             var self = this;
-            this.ftp.append((new UploadFtp(this, {
-                add: function(ftp_file) {
+            this.ftp.append((new UploadFtp({
+                collection      : this.collection,
+                ftp_upload_site : this.app.options.ftp_upload_site,
+                onadd: function(ftp_file) {
                     self.uploadbox.add([{
                         mode: 'ftp',
                         name: ftp_file.path,
@@ -315,7 +317,7 @@ return Backbone.View.extend({
                         path: ftp_file.path
                     }]);
                 },
-                remove: function(model_index) {
+                onremove: function(model_index) {
                     self.collection.remove(model_index);
                 }
             })).$el);

@@ -52,10 +52,12 @@ return Backbone.View.extend({
             },
             onchange: function(files) {
                 if (self.model.get('status') != 'running' && files && files.length > 0) {
-                    self.model.set('file_data', files[0]);
-                    self.model.set('file_name', files[0].name);
-                    self.model.set('file_size', files[0].size);
-                    self.model.set('file_mode', files[0].mode || 'local');
+                    self.model.reset({
+                        'file_data': files[0],
+                        'file_name': files[0].name,
+                        'file_size': files[0].size,
+                        'file_mode': files[0].mode || 'local'
+                    });
                     self._refreshReady();
                 }
             }
@@ -85,7 +87,10 @@ return Backbone.View.extend({
             icon        : 'fa-pencil',
             title       : 'Paste/Fetch data',
             onclick     : function() {
-                self.model.set('file_mode', 'new');
+                self.model.reset({
+                    'file_mode': 'new',
+                    'file_name': 'New File'
+                });
             }
         });
 
@@ -183,10 +188,6 @@ return Backbone.View.extend({
             }).show();
             this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 16);
             this.$('#text-content').val('').trigger('keyup');
-
-            // reset model
-            this.model.set('file_data', null);
-            this.model.set('file_name', 'New File');
         } else {
             this.$el.height(this.height);
             this.$('#text').hide();
@@ -278,18 +279,19 @@ return Backbone.View.extend({
         if (!this.ftp.visible) {
             this.ftp.empty();
             var self = this;
-            this.ftp.append((new UploadFtp(this.app, {
-                style: 'radio',
-                add: function(ftp_file) {
-                    /*self.uploadbox.add([{
-                        mode: 'ftp',
-                        name: ftp_file.path,
-                        size: ftp_file.size,
-                        path: ftp_file.path
-                    }]);*/
-                },
-                remove: function(model_index) {
-                    //self.collection.remove(model_index);
+            this.ftp.append((new UploadFtp({
+                ftp_upload_site : this.app.options.ftp_upload_site,
+                onchange: function(ftp_file) {
+                    self.ftp.hide();
+                    if (self.model.get('status') != 'running' && ftp_file) {
+                        self.model.reset({
+                            'file_mode': 'ftp',
+                            'file_name': ftp_file.path,
+                            'file_size': ftp_file.size,
+                            'file_path': ftp_file.path
+                        });
+                        self._refreshReady();
+                    }
                 }
             })).$el);
             this.ftp.show();

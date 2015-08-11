@@ -200,8 +200,13 @@
             }
         }
         .nonlabel {
+            position: relative;
+            top: 3px;
             white-space: nowrap;
         }
+    }
+    .upload-ftp-row:hover {
+        &:extend(.grid .current);
     }
 }
 
