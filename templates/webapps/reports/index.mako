@@ -34,7 +34,11 @@
         from time import mktime, strftime, localtime
     %>
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>Reports<a target="galaxy_main" href="${h.url_for( controller='home', action='run_stats' )}"><img id="reports_home"/></a></div>
+        <div class='unified-panel-header-inner'><span>Reports</span>
+            <a target="galaxy_main" href="${h.url_for( controller='home', action='run_stats' )}">
+                <button id="reports_home" data-toggle="tooltip" data-placement="top" title="Dashboard" class="btn btn-default primary-button" type="button"><span class="fa fa-home"></span></button>
+            </a>
+        </div>
     </div>
     <div class="page-container reports-panel-container">
         <div class="toolMenu">
