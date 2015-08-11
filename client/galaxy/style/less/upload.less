@@ -190,23 +190,28 @@
     }
     .upload-ftp-row {
         cursor: pointer;
-        .label {
+        .ftp-name {
             position: relative;
-            top: 3px;
             width: 240px;
-            p {
-                width: inherit;
-                word-wrap: break-word;
-            }
+            word-wrap: break-word;
         }
-        .nonlabel {
-            position: relative;
-            top: 3px;
+        .ftp-size {
+            width: 60px;
+            white-space: nowrap;
+        }
+        .ftp-time {
+            width: 165px;
             white-space: nowrap;
         }
     }
     .upload-ftp-row:hover {
         &:extend(.grid .current);
+    }
+    th {
+        padding: 5px !important;
+    }
+    td {
+        padding: 8px 5px !important;
     }
 }
 

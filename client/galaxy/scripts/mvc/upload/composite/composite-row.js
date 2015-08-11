@@ -96,7 +96,7 @@ return Backbone.View.extend({
 
         // add ftp file viewer
         this.ftp = new Popover.View({
-            title       : 'FTP files',
+            title       : 'Choose FTP file:',
             container   : this.$('#source').find('.ui-button-menu'),
             placement   : 'right'
         });

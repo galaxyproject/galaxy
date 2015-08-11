@@ -112,7 +112,7 @@ return Backbone.View.extend({
             $it.on('click', function() {
                 var model_index = self._find(ftp_file);
                 $icon.removeClass();
-                if (!model_index || !self.options.remove) {
+                if (!model_index) {
                     self.options.onadd(ftp_file);
                     $icon.addClass(self.options.class_remove);
                 } else {
@@ -123,7 +123,7 @@ return Backbone.View.extend({
             });
         } else {
             // click triggers only change
-            $it.on('dblclick', function() {
+            $it.on('click', function() {
                 self.options.onchange(ftp_file);
             });
         }
@@ -164,9 +164,9 @@ return Backbone.View.extend({
     _templateRow: function(options) {
         return  '<tr class="upload-ftp-row">' +
                     '<td class="_has_collection" style="display: none;"><div class="icon"/></td>' +
-                    '<td class="label"><p>' + options.path + '</p></td>' +
-                    '<td class="nonlabel">' + Utils.bytesToString(options.size) + '</td>' +
-                    '<td class="nonlabel">' + options.ctime + '</td>' +
+                    '<td class="ftp-name">' + options.path + '</td>' +
+                    '<td class="ftp-size">' + Utils.bytesToString(options.size) + '</td>' +
+                    '<td class="ftp-time">' + options.ctime + '</td>' +
                 '</tr>';
     },
 
