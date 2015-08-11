@@ -63,9 +63,9 @@ return Backbone.View.extend({
         this.setElement(this._template());
 
         // create button section
-        this.btnLocal    = new Ui.Button({ title: 'Choose local file',   onclick: function() { self.uploadbox.select(); } });
-        this.btnFtp      = new Ui.Button({ title: 'Choose FTP file',     onclick: function() { self._eventFtp(); } });
-        this.btnCreate   = new Ui.Button({ title: 'Paste/Fetch data',    onclick: function() { self._eventCreate(); } });
+        this.btnLocal    = new Ui.Button({ title: 'Choose local file',   onclick: function() { self.uploadbox.select(); }, icon: 'fa fa-laptop' });
+        this.btnFtp      = new Ui.Button({ title: 'Choose FTP file',     onclick: function() { self._eventFtp(); }, icon: 'fa fa-code-fork' });
+        this.btnCreate   = new Ui.Button({ title: 'Paste/Fetch data',    onclick: function() { self._eventCreate(); }, icon: 'fa fa-pencil' });
         this.btnStart    = new Ui.Button({ title: 'Start',               onclick: function() { self._eventStart(); } });
         this.btnStop     = new Ui.Button({ title: 'Pause',               onclick: function() { self._eventStop(); } });
         this.btnReset    = new Ui.Button({ title: 'Reset',               onclick: function() { self._eventReset(); } });

@@ -59,6 +59,7 @@ return Backbone.View.extend({
             // add event handler to select/unselect all
             if (this.collection) {
                 var self = this;
+                this.$('._has_collection').show();
                 this.$select_all = $('#upload-selectall');
                 this.$select_all.addClass(this.options.class_add);
                 this.$select_all.on('click', function() {
@@ -72,14 +73,10 @@ return Backbone.View.extend({
                     }
                 });
                 this._refresh();
-                this.$('._has_collection').show();
             }
         } else {
-            // add info
             this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
         }
-
-        // hide spinner
         this.$el.find('#upload-ftp-wait').hide();
     },
 
