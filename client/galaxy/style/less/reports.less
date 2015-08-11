@@ -11,6 +11,11 @@
     width: 100%;
     padding: 10px;
 }
+#reports_home {
+    position: relative;
+    top: -6px;
+    float: right;
+}
 
 // ======================================================== SparkLines ========
 #spark_time_select {
@@ -32,6 +37,87 @@
 // ======================================================== Sorting ===========
 .dir_arrow {
     visibility: hidden
+}
+
+// ======================================================== Home page =========
+.chart {
+    cursor: zoom-in;
+    position: relative;
+    z-index: 2;
+}
+
+.chart rect {
+    fill: steelblue;
+    shape-rendering: preserveAspectRatio;
+}
+
+.chart text {
+    fill: black;
+    font: 7px sans-serif;
+    text-anchor: end;
+}
+
+.tick text {
+    fill: black;
+    font-family: Arial, sans-serif;
+    font-size: 7px;
+    text-anchor: end;
+}
+
+.axis path, .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: preserveAspectRatio;
+}
+
+.x_path {
+    stroke: #000;
+    stroke-width: 1;
+}
+
+.chart .title {
+    fill: black;
+    font-size: 15px;
+    font-family: "Lucida Grande",verdana,arial,helvetica,sans-serif;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.chart .ax_title {
+    fill: black;
+}
+
+.hr_container, .dy_container {
+    position: relative;
+    z-index: 2;
+    display: inline-block;
+    vertical-align: top;
+}
+
+.charts {
+    margin-top: 10px;
+    margin-left: 0;
+    margin-right: 0;
+    text-align: center;
+    position: relative;
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap
+}
+
+.trim {
+    position:relative;
+    height:10px;
+    top: 50px;
+    background: #ebd9b2;
+    color: #000;
+    border-top: solid #d6b161 1px;
+    border-bottom: solid #d6b161 1px;
+}
+
+.tool_tip text {
+    fill: white;
 }
 
 // ======================================================== Paging ============

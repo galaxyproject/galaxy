@@ -489,22 +489,33 @@ class ChangeDirectory( RecipeStep ):
         no recipe step filtering is performed here and a None value is return for filtered_actions.  However,
         the new dir value is returned since it is needed for later steps.
         """
-        target_directory = os.path.realpath( os.path.normpath( os.path.join( current_dir, action_dict[ 'directory' ] ) ) )
-        if target_directory.startswith( os.path.realpath( current_dir ) ) and os.path.exists( target_directory ):
-            # Change directory to a directory within the current working directory.
-            dir = target_directory
-        elif target_directory.startswith( os.path.realpath( work_dir ) ) and os.path.exists( target_directory ):
-            # Change directory to a directory above the current working directory, but within the defined work_dir.
-            dir = target_directory.replace( os.path.realpath( work_dir ), '' ).lstrip( '/' )
+
+        def dir_valid( test_dir ):
+            """
+            Make sure the defined directory is within current_dir or work_dir.
+            """
+            for valid_dir in [ os.path.realpath( current_dir ), os.path.realpath( work_dir ) ]:
+                if test_dir.startswith( valid_dir ) and os.path.exists( test_dir ):
+                    return True
+            return False
+
+        target_dir = os.path.realpath( os.path.normpath( action_dict[ 'directory' ] ) )
+        if dir_valid( target_dir ):
+            # We have a directory that includes a path.
+            dir = target_dir
         else:
-            log.debug( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', target_directory )
-            dir = current_dir
+            target_dir = os.path.realpath( os.path.normpath( os.path.join( current_dir, action_dict[ 'directory' ] ) ) )
+            if dir_valid( target_dir ):
+                dir = target_dir
+            else:
+                log.debug( 'Invalid or nonexistent directory %s specified, ignoring change_directory action.', str( action_dict[ 'directory' ] )  )
+                dir = current_dir
         return tool_dependency, None, dir
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):
         # <action type="change_directory">PHYLIP-3.6b</action>
         if action_elem.text:
-            action_dict[ 'directory' ] = action_elem.text
+            action_dict[ 'directory' ] = basic_util.evaluate_template( action_elem.text, install_environment )
         return action_dict
 
 
@@ -1699,7 +1710,7 @@ class SetupVirtualEnv( Download, RecipeStep ):
 
     def install_virtualenv( self, install_environment, venv_dir ):
         if not os.path.exists( venv_dir ):
-            with install_environment.make_tmp_dir() as work_dir:
+            with install_environment.use_tmp_dir() as work_dir:
                 downloaded_filename = VIRTUALENV_URL.rsplit('/', 1)[-1]
                 try:
                     dir = self.url_download( work_dir, downloaded_filename, VIRTUALENV_URL )

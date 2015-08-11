@@ -77,6 +77,9 @@
         ## configure require
         require.config({
             baseUrl: "${h.url_for('/static/scripts') }",
+            paths: {
+                "d3": "http://d3js.org/d3.v3.min",
+            },
             shim: {
                 "libs/underscore": { exports: "_" },
                 "libs/backbone/backbone": { exports: "Backbone" }

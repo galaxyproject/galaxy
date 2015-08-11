@@ -19,7 +19,7 @@
     <style type="text/css">
         body { margin: 0; padding: 0; overflow: hidden; }
         #left {
-            background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
+            background: #C1C9E5 url("${h.url_for('/static/style/menu_bg.png')}") top repeat-x;
         }
     </style>
 </%def>
@@ -34,7 +34,11 @@
         from time import mktime, strftime, localtime
     %>
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>Reports</div>
+        <div class='unified-panel-header-inner'><span>Reports</span>
+            <a target="galaxy_main" href="${h.url_for( controller='home', action='run_stats' )}">
+                <button id="reports_home" data-toggle="tooltip" data-placement="top" title="Dashboard" class="btn btn-default primary-button" type="button"><span class="fa fa-home"></span></button>
+            </a>
+        </div>
     </div>
     <div class="page-container reports-panel-container">
         <div class="toolMenu">
@@ -107,6 +111,6 @@
 </%def>
 
 <%def name="center_panel()">
-    <% center_url = h.url_for( controller='jobs', action='specified_month_all', sort_id='default', order='default' ) %>
+    <% center_url = h.url_for( controller='home', action='run_stats' ) %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

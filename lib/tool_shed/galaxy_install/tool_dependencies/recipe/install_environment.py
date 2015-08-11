@@ -45,6 +45,7 @@ class InstallEnvironment( object ):
         self.env_shell_file_paths = []
         self.install_dir = install_dir
         self.tool_shed_repository_install_dir = tool_shed_repository_install_dir
+        self.tmp_work_dir = os.path.abspath( tempfile.mkdtemp( prefix="tmp-toolshed-mtd" ) )
 
     def add_env_shell_file_paths( self, paths ):
         for path in paths:
@@ -255,8 +256,8 @@ class InstallEnvironment( object ):
         logfile.close()
 
     @contextmanager
-    def make_tmp_dir( self ):
-        work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-mtd" )
+    def use_tmp_dir( self ):
+        work_dir = self.tmp_work_dir
         yield work_dir
         if os.path.exists( work_dir ):
             try:
