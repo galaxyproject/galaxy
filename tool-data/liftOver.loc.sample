@@ -8,7 +8,7 @@
 #located at /depot/data2/galaxy/anoCar1/liftOver/anoCar1ToGalGal3.over.chain, 
 #then the liftOver.loc entry would look like this:
 #
-#anoCar1	galGal3		/depot/data2/galaxy/anoCar1/liftOver/anoCar1ToGalGal3.over.chain
+#anoCar1	galGal3	/depot/data2/galaxy/anoCar1/liftOver/anoCar1ToGalGal3.over.chain
 #
 #and your /depot/data2/galaxy/anoCar1/liftOver directory would 
 #contain all of your "chain" files (e.g.):
