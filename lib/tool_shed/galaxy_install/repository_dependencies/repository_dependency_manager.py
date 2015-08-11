@@ -377,7 +377,7 @@ class RepositoryDependencyInstallManager( object ):
                     if suc.is_tool_shed_client( self.app ):
                         # Handle secure / insecure Tool Shed URL protocol changes and port changes.
                         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_shed_url )
-                        pathspec = [ 'repository', 'get_required_repo_info_dict' ]
+                    pathspec = [ 'repository', 'get_required_repo_info_dict' ]
                     url = common_util.url_join( tool_shed_url, pathspec=pathspec )
                     # Fix for handling 307 redirect not being handled nicely by urllib2.urlopen when the urllib2.Request has data provided
                     url = urllib2.urlopen( urllib2.Request( url ) ).geturl()

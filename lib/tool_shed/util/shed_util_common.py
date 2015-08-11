@@ -821,6 +821,7 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         log.debug( "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n" %
                    ( str( repository.name ), str( e ) ) )
         pathspec = [ 'repository', 'check_for_updates' ]
+        params[ 'from_update_manager' ] = True
         try:
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
             text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
