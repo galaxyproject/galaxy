@@ -1018,7 +1018,7 @@ def fetch_tool_versions( app, tool_shed_repository ):
                        owner=str( tool_shed_repository.owner ),
                        changeset_revision=str( tool_shed_repository.changeset_revision ) )
         pathspec = [ 'repository', 'get_tool_versions' ]
-        url = common_util.url_join( pathspec=pathspec, params=params )
+        url = common_util.url_join( tool_shed_url, pathspec=pathspec, params=params )
         text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
         if text:
             return json.loads( text )
