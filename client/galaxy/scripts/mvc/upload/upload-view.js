@@ -88,7 +88,9 @@ return Backbone.View.extend({
 
                 // sort
                 self.list_extensions.sort(function(a, b) {
-                    return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
+                    var a_text = a.text && a.text.toLowerCase();
+                    var b_text = b.text && b.text.toLowerCase();
+                    return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
                 });
 
                 // add auto field
