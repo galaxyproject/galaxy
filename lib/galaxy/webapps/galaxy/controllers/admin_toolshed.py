@@ -559,6 +559,7 @@ class AdminToolshed( AdminGalaxy ):
                                        owner=owner,
                                        changeset_revisions=str( latest_downloadable_revision ),
                                        galaxy_url=web.url_for( '/', qualified=True ) )
+                        pathspec = [ 'repository', 'install_repositories_by_revision' ]
                         url = common_util.url_join( tool_shed_url, pathspec=pathspec, params=params )
                         return trans.response.send_redirect( url )
             else:
@@ -981,7 +982,6 @@ class AdminToolshed( AdminGalaxy ):
                 # For backward compatibility to the 12/20/12 Galaxy release.
                 try:
                     params = dict( name=str( repository.name ), owner=str( repository.owner ) )
-                    # params = '?name=%s&owner=%s' % ( str( repository.name ), str( repository.owner ) )
                     pathspec = [ 'repository', 'get_repository_id' ]
                     repository_ids = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
                 except Exception, e:
