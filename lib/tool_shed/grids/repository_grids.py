@@ -1442,7 +1442,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                         # Sort rd_tups by by required repository name.
                         sorted_rd_tups = sorted( rd_tups, key=lambda rd_tup: rd_tup[ 1 ] )
                         for rd_tup in sorted_rd_tups:
-                            name, owner, changeset_revision = rd_tup[1:3]
+                            name, owner, changeset_revision = rd_tup[1:4]
                             rd_line = ''
                             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                             if required_repository and not required_repository.deleted:
@@ -1509,7 +1509,7 @@ class DatatypesGrid( RepositoryMetadataGrid ):
     class DatatypesColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            datatype_str = ''
+            datatype_list = []
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -1526,10 +1526,9 @@ class DatatypesGrid( RepositoryMetadataGrid ):
                                 datatype_tups.append( ( extension, dtype ) )
                         sorted_datatype_tups = sorted( datatype_tups, key=lambda datatype_tup: datatype_tup[ 0 ] )
                         num_datatype_tups = len( sorted_datatype_tups )
-                        datatype_list = []
                         for datatype_tup in sorted_datatype_tups:
                             extension, datatype = datatype_tup[:2]
-                            datatype_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
+                            datatype_str = '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
                             datatype_str += '<b>%s:</b> %s' % ( escape_html( extension ), escape_html( datatype ) )
                             datatype_str += '</a>'
                             datatype_list.append( datatype_str )
@@ -1642,7 +1641,7 @@ class ToolsGrid( RepositoryMetadataGrid ):
     class ToolsColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            tool_str = ''
+            tool_line = []
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -1657,10 +1656,9 @@ class ToolsGrid( RepositoryMetadataGrid ):
                             if tool_id and version:
                                 tool_tups.append( ( tool_id, version ) )
                         sorted_tool_tups = sorted( tool_tups, key=lambda tool_tup: tool_tup[ 0 ] )
-                        tool_line = []
                         for tool_tup in sorted_tool_tups:
                             tool_id, version = tool_tup[ :2 ]
-                            tool_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
+                            tool_str = '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
                             tool_str += '<b>%s:</b> %s' % ( escape_html( tool_id ), escape_html( version ) )
                             tool_str += '</a>'
                             tool_line.append( tool_str )
