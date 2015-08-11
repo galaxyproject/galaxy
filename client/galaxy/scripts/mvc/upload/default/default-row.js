@@ -41,10 +41,10 @@ return Backbone.View.extend({
         var self = this;
 
         // create model
-        this.model = new UploadModel.Model(options);
+        this.model = options.model;
 
         // add upload item
-        this.setElement(this._template(options));
+        this.setElement(this._template(options.model));
 
         // append popup to settings icon
         this.settings = new Popover.View({

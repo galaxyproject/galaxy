@@ -1,6 +1,7 @@
 // dependencies
 define(['utils/utils',
         'mvc/upload/upload-settings',
+        'mvc/upload/upload-ftp',
         'mvc/ui/ui-popover',
         'mvc/ui/ui-misc',
         'mvc/ui/ui-select',
@@ -8,6 +9,7 @@ define(['utils/utils',
 
         function(   Utils,
                     UploadSettings,
+                    UploadFtp,
                     Popover,
                     Ui,
                     Select
@@ -59,13 +61,6 @@ return Backbone.View.extend({
             }
         });
 
-        // append popup to settings icon
-        this.settings = new Popover.View({
-            title       : 'Upload configuration',
-            container   : this.$('#settings'),
-            placement   : 'bottom'
-        });
-
         // source selection popup
         this.button_menu = new Ui.ButtonMenu({
             icon        : 'fa-caret-down',
@@ -80,11 +75,32 @@ return Backbone.View.extend({
             }
         });
         this.button_menu.addMenu({
+            icon        : 'fa-code-fork',
+            title       : 'Choose FTP file',
+            onclick     : function() {
+                self._showFtp();
+            }
+        });
+        this.button_menu.addMenu({
             icon        : 'fa-pencil',
             title       : 'Paste/Fetch data',
             onclick     : function() {
                 self.model.set('file_mode', 'new');
             }
+        });
+
+        // add ftp file viewer
+        this.ftp = new Popover.View({
+            title       : 'FTP files',
+            container   : this.$('#source').find('.ui-button-menu'),
+            placement   : 'right'
+        });
+
+        // append popup to settings icon
+        this.settings = new Popover.View({
+            title       : 'Upload configuration',
+            container   : this.$('#settings'),
+            placement   : 'bottom'
         });
 
         //
@@ -255,6 +271,31 @@ return Backbone.View.extend({
     // file size
     _refreshFileSize: function() {
         this.$('#file_size').html(Utils.bytesToString (this.model.get('file_size')));
+    },
+
+    // show/hide ftp popup
+    _showFtp: function() {
+        if (!this.ftp.visible) {
+            this.ftp.empty();
+            var self = this;
+            this.ftp.append((new UploadFtp(this.app, {
+                style: 'radio',
+                add: function(ftp_file) {
+                    /*self.uploadbox.add([{
+                        mode: 'ftp',
+                        name: ftp_file.path,
+                        size: ftp_file.size,
+                        path: ftp_file.path
+                    }]);*/
+                },
+                remove: function(model_index) {
+                    //self.collection.remove(model_index);
+                }
+            })).$el);
+            this.ftp.show();
+        } else {
+            this.ftp.hide();
+        }
     },
 
     // show/hide settings popup

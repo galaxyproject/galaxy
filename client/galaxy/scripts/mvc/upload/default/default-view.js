@@ -27,24 +27,21 @@ return Backbone.View.extend({
     // jquery uploadbox plugin
     uploadbox: null,
 
-    // current upload size
+    // current upload size in bytes
     upload_size: 0,
 
-    // collection
+    // contains upload item/row models
     collection : new UploadModel.Collection(),
 
     // ftp file viewer
     ftp : null,
 
-    // counter
+    // keeps track of the current uploader state
     counter : {
-        // stats
         announce    : 0,
         success     : 0,
         error       : 0,
         running     : 0,
-
-        // reset stats
         reset : function() {
             this.announce = this.success = this.error = this.running = 0;
         }
@@ -142,31 +139,6 @@ return Backbone.View.extend({
     },
 
     //
-    // events triggered by collection
-    //
-
-    // remove item from upload list
-    _eventRemove: function(item) {
-        // update status
-        var status = item.get('status');
-
-        // reduce counter
-        if (status == 'success') {
-            this.counter.success--;
-        } else if (status == 'error') {
-            this.counter.error--;
-        } else {
-            this.counter.announce--;
-        }
-
-        // remove from queue
-        this.uploadbox.remove(item.id);
-
-        // show on screen info
-        this._updateScreen();
-    },
-
-    //
     // events triggered by the upload box plugin
     //
 
@@ -175,8 +147,8 @@ return Backbone.View.extend({
         // update counter
         this.counter.announce++;
 
-        // create view/model
-        var upload_item = new UploadItem(this, {
+        // create if model has not been created yet
+        var new_model = new UploadModel.Model({
             id          : index,
             file_name   : file.name,
             file_size   : file.size,
@@ -185,8 +157,11 @@ return Backbone.View.extend({
             file_data   : file
         });
 
-        // add to collection
-        this.collection.add(upload_item.model);
+        // add model to collection
+        this.collection.add(new_model);
+
+        // create view/model
+        var upload_item = new UploadItem(this, { model: new_model });
 
         // add upload item element to table
         this.$('#upload-table > tbody:first').append(upload_item.$el);
@@ -274,6 +249,31 @@ return Backbone.View.extend({
     },
 
     //
+    // events triggered by collection
+    //
+
+    // remove item from upload list
+    _eventRemove: function(item) {
+        // update status
+        var status = item.get('status');
+
+        // reduce counter
+        if (status == 'success') {
+            this.counter.success--;
+        } else if (status == 'error') {
+            this.counter.error--;
+        } else {
+            this.counter.announce--;
+        }
+
+        // remove from queue
+        this.uploadbox.remove(item.id);
+
+        // show on screen info
+        this._updateScreen();
+    },
+
+    //
     // events triggered by this view
     //
 
@@ -301,15 +301,26 @@ return Backbone.View.extend({
         this.extension_popup.show();
     },
 
+    // show/hide ftp popup
     _eventFtp: function() {
-        // check if popover is visible
         if (!this.ftp.visible) {
-            // show popover
             this.ftp.empty();
-            this.ftp.append((new UploadFtp(this)).$el);
+            var self = this;
+            this.ftp.append((new UploadFtp(this, {
+                add: function(ftp_file) {
+                    self.uploadbox.add([{
+                        mode: 'ftp',
+                        name: ftp_file.path,
+                        size: ftp_file.size,
+                        path: ftp_file.path
+                    }]);
+                },
+                remove: function(model_index) {
+                    self.collection.remove(model_index);
+                }
+            })).$el);
             this.ftp.show();
         } else {
-            // hide popover
             this.ftp.hide();
         }
     },

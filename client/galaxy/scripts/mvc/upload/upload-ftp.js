@@ -1,20 +1,30 @@
 /** This renders the content of the ftp popup **/
 define(['utils/utils'], function(Utils) {
 return Backbone.View.extend({
-    // options
-    options: {
-        class_add       : 'upload-icon-button fa fa-square-o',
-        class_remove    : 'upload-icon-button fa fa-check-square-o',
-        class_partial   : 'upload-icon-button fa fa-minus-square-o'
+    // styles
+    styles : {
+        check: {
+            class_add       : 'upload-icon-button fa fa-square-o',
+            class_remove    : 'upload-icon-button fa fa-check-square-o',
+            class_partial   : 'upload-icon-button fa fa-minus-square-o'
+        },
+        radio: {
+            class_add       : 'upload-icon-button fa fa-circle-o',
+            class_remove    : 'upload-icon-button fa fa-dot-circle-o'
+        }
     },
 
     // render
-    initialize: function(app) {
-        // link app
-        this.app = app;
+    initialize: function(app, options) {
+        // link options
+        this.options = Utils.merge(options && this.styles[options.style] || this.styles['check'], options);
+        this.multiple = this.options.class_partial;
 
         // link this
         var self = this;
+
+        // link app
+        this.app = app;
 
         // set template
         this.setElement(this._template());
@@ -53,22 +63,24 @@ return Backbone.View.extend({
             this.$el.find('#upload-ftp-disk').html(Utils.bytesToString (size, true));
 
             // add event handler to select/unselect all
-            this.$select_all = $('#upload-selectall');
-            this.$select_all.addClass(this.options.class_add);
-            var self = this;
-            this.$select_all.on('click', function() {
-                var add = self.$select_all.hasClass(self.options.class_add);
-                for (key in ftp_files) {
-                    var ftp_file = ftp_files[key];
-                    var model_index = self._find(ftp_file);
-                    if(!model_index && add || model_index && !add) {
-                        self.rows[key].trigger('click');
+            if (this.multiple) {
+                this.$select_all = $('#upload-selectall');
+                this.$select_all.addClass(this.options.class_add);
+                var self = this;
+                this.$select_all.on('click', function() {
+                    var add = self.$select_all.hasClass(self.options.class_add);
+                    for (key in ftp_files) {
+                        var ftp_file = ftp_files[key];
+                        var model_index = self._find(ftp_file);
+                        if(!model_index && add || model_index && !add) {
+                            self.rows[key].trigger('click');
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // refresh
-            self._refresh();
+            this._refresh();
         } else {
             // add info
             this.$el.find('#upload-ftp-content').html($(this._templateInfo()));
@@ -105,33 +117,15 @@ return Backbone.View.extend({
 
         // click to add ftp files
         $it.on('click', function() {
-            // find model
             var model_index = self._find(ftp_file);
-
-            // update icon
             $icon.removeClass();
-
-            // add model
             if (!model_index) {
-                // add to uploadbox
-                self.app.uploadbox.add([{
-                    mode        : 'ftp',
-                    name        : ftp_file.path,
-                    size        : ftp_file.size,
-                    path        : ftp_file.path
-                }]);
-
-                // add new icon class
+                self.options.add && self.options.add(ftp_file);
                 $icon.addClass(self.options.class_remove);
             } else {
-                // remove
-                self.app.collection.remove(model_index);
-
-                // add new icon class
+                self.options.remove && self.options.remove(model_index);
                 $icon.addClass(self.options.class_add);
             }
-
-            // update select all checkbox
             self._refresh();
         });
 
@@ -141,15 +135,17 @@ return Backbone.View.extend({
 
     // refresh
     _refresh: function() {
-        var filtered = this.app.collection.where({file_mode: 'ftp', enabled: true});
-        this.$select_all.removeClass();
-        if (filtered.length == 0) {
-            this.$select_all.addClass(this.options.class_add);
-        } else {
-            if (filtered.length == this.rows.length) {
-                this.$select_all.addClass(this.options.class_remove);
+        if (this.multiple) {
+            var filtered = this.app.collection.where({file_mode: 'ftp', enabled: true});
+            this.$select_all.removeClass();
+            if (filtered.length == 0) {
+                this.$select_all.addClass(this.options.class_add);
             } else {
-                this.$select_all.addClass(this.options.class_partial);
+                if (filtered.length == this.rows.length) {
+                    this.$select_all.addClass(this.options.class_remove);
+                } else {
+                    this.$select_all.addClass(this.options.class_partial);
+                }
             }
         }
     },

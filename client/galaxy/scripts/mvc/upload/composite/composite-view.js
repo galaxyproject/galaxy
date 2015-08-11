@@ -54,7 +54,6 @@ return Backbone.View.extend({
             container   : this.$('#footer-extension'),
             data        : _.filter(this.list_extensions, function(ext) { return ext.composite_files }),
             onchange    : function(extension) {
-                // renew collection
                 self.collection.reset();
                 var details = _.findWhere(self.list_extensions, { id : extension });
                 if (details && details.composite_files) {
