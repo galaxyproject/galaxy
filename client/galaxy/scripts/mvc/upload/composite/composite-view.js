@@ -92,7 +92,7 @@ return Backbone.View.extend({
         });
         this.collection.on('change add', function(item) {
             self._updateScreen();
-        });
+        }).trigger('change');
 
         // trigger initial onchange event
         this.select_extension.options.onchange(this.select_extension.value());
@@ -195,7 +195,7 @@ return Backbone.View.extend({
             this.select_extension.enable();
             this.$('#upload-info').html('You can Drag & Drop files into the rows.');
         }
-        if (this.collection.where({ status : 'ready' }).length == this.collection.length) {
+        if (this.collection.where({ status : 'ready' }).length == this.collection.length && this.collection.length > 0) {
             this.btnStart.enable();
             this.btnStart.$el.addClass('btn-primary');
         } else {

@@ -38,11 +38,13 @@ class DatatypesController( BaseAPIController ):
                     dictionary = {}
                     for key in keys:
                         dictionary[key] = elem.get(key)
-                    composite_files = datatypes_registry.datatypes_by_extension[ elem.get('extension') ].composite_files
-                    if composite_files:
-                        dictionary['composite_files'] = []
-                        for file in composite_files:
-                            dictionary['composite_files'].append( composite_files[ file ].dict() )
+                    extension = elem.get('extension')
+                    if extension in datatypes_registry.datatypes_by_extension:
+                        composite_files = datatypes_registry.datatypes_by_extension[ extension ].composite_files
+                        if composite_files:
+                            dictionary['composite_files'] = []
+                            for file in composite_files:
+                                dictionary['composite_files'].append( composite_files[ file ].dict() )
                     rval.append(dictionary)
                 return rval
         except Exception as exception:
