@@ -61,9 +61,10 @@ return Backbone.View.extend({
                 self.show()
             },
             onunload    : function() {
-                //if (self.counter.running > 0) {
-                //    return 'Several uploads are still processing.';
-                //}
+                var percentage = self.ui_button.get('percentage', 0);
+                if (percentage > 0 && percentage < 100) {
+                    return 'Several uploads are queued.';
+                }
             }
         });
 
