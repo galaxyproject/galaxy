@@ -85,15 +85,11 @@ return Backbone.View.extend({
                         composite_files : datatypes[key].composite_files
                     });
                 }
-
-                // sort
                 self.list_extensions.sort(function(a, b) {
                     var a_text = a.text && a.text.toLowerCase();
                     var b_text = b.text && b.text.toLowerCase();
                     return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
                 });
-
-                // add auto field
                 if (!self.options.datatypes_disable_auto) {
                     self.list_extensions.unshift(self.options.auto);
                 }
