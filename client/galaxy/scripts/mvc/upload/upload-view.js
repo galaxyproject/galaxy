@@ -106,8 +106,6 @@ return Backbone.View.extend({
                         text    : genomes[key][0]
                     });
                 }
-
-                // sort
                 self.list_genomes.sort(function(a, b) {
                     if (a.id == self.options.default_genome) { return -1; }
                     if (b.id == self.options.default_genome) { return 1; }
