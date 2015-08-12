@@ -876,7 +876,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 try:
                     workflow_data = urllib2.urlopen( url ).read()
                 except Exception, e:
-                    message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( url, escape( str( e ) ) )
+                    message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( escape( url ), escape( str( e ) ) )
                     status = 'error'
             elif workflow_text:
                 # This case occurs when the workflow_text was sent via http from the tool shed.
