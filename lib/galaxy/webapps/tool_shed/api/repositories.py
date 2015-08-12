@@ -834,6 +834,15 @@ class RepositoriesController( BaseAPIController ):
         tdah = attribute_handlers.ToolDependencyAttributeHandler( trans.app, unpopulate=False )
 
         repository = suc.get_repository_in_tool_shed( trans.app, id )
+
+        if not ( trans.user_is_admin() or
+                 trans.app.security_agent.user_can_administer_repository( trans.user, repository ) or
+                 trans.app.security_agent.can_push( trans.app, trans.user, repository ) ):
+            trans.response.status = 400
+            return {
+                "err_msg": "You do not have permission to update this repository.",
+            }
+
         repo_dir = repository.repo_path( trans.app )
         repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
 
