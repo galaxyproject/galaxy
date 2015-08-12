@@ -164,7 +164,6 @@ ret_val = maf_block_pass_filter( maf_block )
       <param name="species1_is_isnot" value="in"/>
       <param name="species1_attribute" value="chr1"/>
       <param name="filter_condition"/> Test will ERROR when this is set or when it is not set.
-      
       <output name="out_file1" file="cf_maf_limit_to_species.dat"/>
     </test>
   </tests>

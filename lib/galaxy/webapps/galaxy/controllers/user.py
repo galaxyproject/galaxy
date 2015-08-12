@@ -37,7 +37,6 @@ REQUIRE_LOGIN_TEMPLATE = """
 <p>
     This %s has been configured such that only users who are logged in may use it.%s
 </p>
-<p/>
 """
 
 PASSWORD_RESET_TEMPLATE = """

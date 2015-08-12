@@ -30,7 +30,7 @@ def order_workflow_steps( steps ):
     """
     position_data_available = True
     for step in steps:
-        if not step.position or not 'left' in step.position or not 'top' in step.position:
+        if not step.position or 'left' not in step.position or 'top' not in step.position:
             position_data_available = False
     if position_data_available:
         steps.sort(cmp=lambda s1, s2: cmp( math.sqrt(s1.position['left'] ** 2 + s1.position['top'] ** 2), math.sqrt(s2.position['left'] ** 2 + s2.position['top'] ** 2)))

@@ -8,7 +8,8 @@ import gzip
 import line
 import subprocess
 import tempfile
-import urllib, urllib2
+import urllib
+import urllib2
 
 _TODO = """
 YAGNI: ftp, image, cryptos, sockets
@@ -26,7 +27,7 @@ class SubprocessDataProvider( base.DataProvider ):
     Data provider that uses the output from an intermediate program and
     subprocess as its data source.
     """
-    #TODO: need better ways of checking returncode, stderr for errors and raising
+    # TODO: need better ways of checking returncode, stderr for errors and raising
     def __init__( self, *args, **kwargs ):
         """
         :param args: the list of strings used to build commands.
@@ -35,11 +36,11 @@ class SubprocessDataProvider( base.DataProvider ):
         self.exit_code = None
         command_list = args
         self.popen = self.subprocess( *command_list, **kwargs )
-        #TODO:?? not communicate()?
+        # TODO:?? not communicate()?
         super( SubprocessDataProvider, self ).__init__( self.popen.stdout )
         self.exit_code = self.popen.poll()
 
-    #NOTE: there's little protection here v. sending a ';' and a dangerous command here
+    # NOTE: there's little protection here v. sending a ';' and a dangerous command here
     # but...we're all adults here, right? ...RIGHT?!
     def subprocess( self, *command_list, **kwargs ):
         """
@@ -49,8 +50,7 @@ class SubprocessDataProvider( base.DataProvider ):
         try:
             # how expensive is this?
             popen = subprocess.Popen( command_list, stderr=subprocess.PIPE, stdout=subprocess.PIPE )
-            log.info( 'opened subrocess (%s), PID: %s' %( str( command_list ), str( popen.pid ) ) )
-            #log.debug( 'stderr:\n%s\n' %( popen.stderr.read() ) )
+            log.info( 'opened subrocess (%s), PID: %s' % ( str( command_list ), str( popen.pid ) ) )
 
         except OSError, os_err:
             command_str = ' '.join( self.command )
@@ -61,15 +61,15 @@ class SubprocessDataProvider( base.DataProvider ):
     def __exit__( self, *args ):
         # poll the subrocess for an exit code
         self.exit_code = self.popen.poll()
-        log.info( '%s.__exit__, exit_code: %s' %( str( self ), str( self.exit_code ) ) )
+        log.info( '%s.__exit__, exit_code: %s' % ( str( self ), str( self.exit_code ) ) )
         return super( SubprocessDataProvider, self ).__exit__( *args )
 
     def __str__( self ):
         # provide the pid and current return code
         source_str = ''
         if hasattr( self, 'popen' ):
-            source_str = '%s:%s' %( str( self.popen.pid ), str( self.popen.poll() ) )
-        return '%s(%s)' %( self.__class__.__name__, str( source_str ) )
+            source_str = '%s:%s' % ( str( self.popen.pid ), str( self.popen.poll() ) )
+        return '%s(%s)' % ( self.__class__.__name__, str( source_str ) )
 
 
 class RegexSubprocessDataProvider( line.RegexLineDataProvider ):
@@ -108,15 +108,15 @@ class URLDataProvider( base.DataProvider ):
         encoded_data = urllib.urlencode( self.data )
 
         if method == 'GET':
-            self.url += '?%s' %( encoded_data )
+            self.url += '?%s' % ( encoded_data )
             opened = urllib2.urlopen( url )
         elif method == 'POST':
             opened = urllib2.urlopen( url, encoded_data )
         else:
-            raise ValueError( 'Not a valid method: %s' %( method ) )
+            raise ValueError( 'Not a valid method: %s' % ( method ) )
 
         super( URLDataProvider, self ).__init__( opened, **kwargs )
-        #NOTE: the request object is now accessible as self.source
+        # NOTE: the request object is now accessible as self.source
 
     def __enter__( self ):
         pass
@@ -135,7 +135,7 @@ class GzipDataProvider( base.DataProvider ):
     def __init__( self, source, **kwargs ):
         unzipped = gzip.GzipFile( source, 'rb' )
         super( GzipDataProvider, self ).__init__( unzipped, **kwargs )
-        #NOTE: the GzipFile is now accessible in self.source
+        # NOTE: the GzipFile is now accessible in self.source
 
 
 # ----------------------------------------------------------------------------- intermediate tempfile
@@ -146,7 +146,7 @@ class TempfileDataProvider( base.DataProvider ):
     to a command line tool: samtools view -t <this_provider.source.file_name>)
     """
     def __init__( self, source, **kwargs ):
-        #TODO:
+        # TODO:
         raise NotImplementedError()
         # write the file here
         self.create_file
@@ -162,4 +162,3 @@ class TempfileDataProvider( base.DataProvider ):
         with open( self.tmp_file, 'w' ) as open_file:
             for datum in parent_gen:
                 open_file.write( datum + '\n' )
-

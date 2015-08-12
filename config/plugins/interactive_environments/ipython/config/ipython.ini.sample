@@ -12,12 +12,16 @@
 command = docker
 
 # The docker image name that should be started.
-image = bgruening/docker-ipython-notebook:15.05
+image = bgruening/docker-ipython-notebook:dev
 
 # Additional arguments that are passed to the `docker run` command.
-command_inject = --sig-proxy=true
+command_inject = --sig-proxy=true -e DEBUG=false
 
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
 # this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the
 # Docker host of the spawned container if that is also not set.
 #galaxy_url = 
+
+# The Docker hostname. It can be useful to run the Docker daemon on a different
+# host than Galaxy.
+#docker_hostname = localhost

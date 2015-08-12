@@ -3,36 +3,94 @@
 <!--<authenticator>
         <type>ldap</type>
 -->
+        <!-- Replacement fields: instances of {email}, {username} and {password}
+             are replaced with the corresponding user's values inside the
+             <filter>, <server>, <ldap-options>, <search-fields>,
+             <search-filter>, <search-base>, <search-user> and <search-password>
+             elements. -->
         <!-- Filter users for which this authenticator applies. This is a Python
-             expression which is evaluated after replacing instances of {email}
-             and {username} with the corresponding user's values. -->
+             expression which is evaluated after field replacement. -->
 <!--    <filter>'{email}'.endswith('@example.com')</filter>
         <options>
-            <auto-register>True</auto-register>
-            <server>ldap://dc1.example.com</server>
 -->
-            <!-- If search-fields is not present, all other search-* elements are ignored -->
+            <!-- Whether to allow user registration. Possible values are True,
+                 False and Challenge (i.e. allow registration in case of
+                 successful authentication). Default is True. -->
+<!--        <allow-register>False</allow-register>
+-->
+            <!-- Whether Galaxy should automatically register users when they
+                 first login. Default is False. -->
+<!--        <auto-register>True</auto-register>
+-->
+            <!-- Whether users are allowed to change their password. Default is
+                 False. -->
+<!--        <allow-password-change>False</allow-password-change>
+-->
+
+            <!-- LDAP-specific options -->
+<!--        <server>ldap://dc1.example.com</server>
+-->
+            <!-- Additional options for the LDAP connection. The syntax is:
+                 option1=value1,option2=value2,...
+                 Options and values should match those from the python-ldap
+                 documentation.
+                 The following example allows connecting to ldaps:// (SSL/TLS)
+                 when self-signed certificates are used -->
+<!--        <ldap-options>OPT_X_TLS_REQUIRE_CERT=OPT_X_TLS_ALLOW</ldap-options>
+-->
+            <!-- Whether to allow login with username instead of email. Default
+                 is False. -->
+<!--        <login-use-username>False</login-use-username>
+-->
+            <!-- Whether to continue with the following authenticators if LDAP
+                 fails. Default is False. -->
+<!--        <continue-on-failure>False</continue-on-failure>
+-->
+            <!-- If search-fields is not specified, all other search-* elements
+                 are ignored.
+                 If search-user is not specified, Galaxy will bind anonymously
+                 to the LDAP server for search. -->
+            <!-- For Active Directory: -->
 <!--        <search-fields>sAMAccountName,mail</search-fields>
             <search-filter>(&amp;(objectClass=user)(mail={email}))</search-filter>
             <search-base>dc=dc1,dc=example,dc=com</search-base>
--->
-            <!-- If search-user not specified will bind anonymously to LDAP for search -->
-<!--        <search-user>jsmith</search-user>
+            <search-user>jsmith@dc1.example.com</search-user>
             <search-password>mysecret</search-password>
-            <bind-user>{sAMAccountName}@example.com</bind-user>
+-->
+            <!-- For OpenLDAP: -->
+<!--        <search-fields>uid,mail</search-fields>
+            <search-filter>(&#124;(mail={email})(uid={username}))</search-filter>
+            <search-base>ou=People,dc=example,dc=com</search-base>
+            <search-user>cn=jsmith,ou=People,dc=domain,dc=com</search-user>
+            <search-password>mysecret</search-password>
+-->
+
+            <!-- Replacement fields: instances of {email}, {username},
+                 {password}, {dn} plus all fields defined in <search-fields> are
+                 replaced with the corresponding user's values inside the
+                 <bind-user>, <bind-password>, <auto-register-username> and
+                 <auto-register-email> elements. -->
+            <!-- For Active Directory: -->
+<!--        <bind-user>{sAMAccountName}@dc1.example.com</bind-user>
             <bind-password>{password}</bind-password>
             <auto-register-username>{sAMAccountName}</auto-register-username>
             <auto-register-email>{mail}</auto-register-email>
 -->
-            <!-- To allow login with username instead of email, default is False -->
-<!--        <login-use-username>True</login-use-username>
-        </options>
-     </authenticator>
+            <!-- For OpenLDAP: -->
+<!--        <bind-user>{dn}</bind-user>
+            <bind-password>{password}</bind-password>
+            <auto-register-username>{uid}</auto-register-username>
+            <auto-register-email>{mail}</auto-register-email>
+-->
+<!--    </options>
+    </authenticator>
 -->
 
     <authenticator>
         <type>localdb</type>
         <options>
+            <!-- Whether users are allowed to change their password. Default is
+                 False. -->
             <allow-password-change>true</allow-password-change>
         </options>
     </authenticator>

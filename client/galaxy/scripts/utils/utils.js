@@ -19,6 +19,16 @@ function deepeach(dict, callback) {
 }
 
 /**
+ * Check if a string is a json string
+ * @param{String}   text - Content to be validated
+ */
+function isJSON(text) {
+    return /^[\],:{}\s]*$/.test(text.replace(/\\["\\\/bfnrtu]/g, '@').
+        replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, ']').
+        replace(/(?:^|:|,)(?:\s*\[)+/g, ''));
+};
+
+/**
  * Sanitize/escape a string
  * @param{String}   content - Content to be sanitized
  */
@@ -254,7 +264,8 @@ return {
     sanitize: sanitize,
     textify: textify,
     validate: validate,
-    deepeach: deepeach
+    deepeach: deepeach,
+    isJSON: isJSON
 };
 
 });

@@ -74,7 +74,10 @@ default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
-installed_tool_panel_configs = [ 'config/shed_tool_conf.xml' ]
+installed_tool_panel_configs = [
+    os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
+]
+
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
@@ -226,10 +229,11 @@ def main():
         test_dir = default_galaxy_test_file_dir
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
         galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
-        if not os.path.isabs( galaxy_test_file_dir ):
-            galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
-        library_import_dir = galaxy_test_file_dir
-        import_dir = os.path.join( galaxy_test_file_dir, 'users' )
+        first_test_file_dir = galaxy_test_file_dir.split(",")[0]
+        if not os.path.isabs( first_test_file_dir ):
+            first_test_file_dir = os.path.join( os.getcwd(), first_test_file_dir )
+        library_import_dir = first_test_file_dir
+        import_dir = os.path.join( first_test_file_dir, 'users' )
         if os.path.exists(import_dir):
             user_library_import_dir = import_dir
         else:
@@ -342,6 +346,7 @@ def main():
                        user_library_import_dir=user_library_import_dir,
                        master_api_key=master_api_key,
                        use_tasked_jobs=True,
+                       cleanup_job='onsuccess',
                        enable_beta_tool_formats=True,
                        data_manager_config_file=data_manager_config_file,
         )

@@ -85,7 +85,7 @@ var FolderRowView = Backbone.View.extend({
     tmpl_array.push('  <td>');
     tmpl_array.push('    <span title="Folder" class="fa fa-folder-o"></span>');
     tmpl_array.push('  </td>');
-    tmpl_array.push('  <td></td>');
+    tmpl_array.push('  <td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>');
     tmpl_array.push('  <td>');
     tmpl_array.push('    <a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>');
     tmpl_array.push('  </td>');

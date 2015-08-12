@@ -8,6 +8,7 @@ import pkg_resources
 pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+from galaxy.webapps.reports.controllers.jobs import sorter
 import logging
 from markupsafe import escape
 
@@ -25,11 +26,17 @@ class Users( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def registered_users_per_month( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
+        specs = sorter( 'date', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+
         q = sa.select( ( self.select_month( galaxy.model.User.table.c.create_time ).label( 'date' ),
                          sa.func.count( galaxy.model.User.table.c.id ).label( 'num_users' ) ),
                        from_obj=[ galaxy.model.User.table ],
                        group_by=self.group_by_month( galaxy.model.User.table.c.create_time ),
-                       order_by=[ sa.desc( 'date' ) ] )
+                       order_by=[ _order ] )
         users = []
         for row in q.execute():
             users.append( ( row.date.strftime( "%Y-%m" ),
@@ -37,6 +44,9 @@ class Users( BaseUIController, ReportQueryBuilder ):
                             row.date.strftime( "%B" ),
                             row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/registered_users_per_month.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     users=users,
                                     message=message )
 
@@ -104,10 +114,30 @@ class Users( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def last_access_date( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
-        not_logged_in_for_days = kwd.get( 'not_logged_in_for_days', 90 )
-        if not not_logged_in_for_days:
-            not_logged_in_for_days = 0
-        cutoff_time = datetime.utcnow() - timedelta( days=int( not_logged_in_for_days ) )
+        specs = sorter( 'one', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+
+        def name_to_num(name):
+            num = None
+
+            if name != None and name.lower() == 'zero':
+                num = 0
+            else:
+                num = 1
+                
+            return num
+
+        if order == "desc":
+            _order = True
+        else:
+            _order = False
+
+        days_not_logged_in = kwd.get( 'days_not_logged_in', 90 )
+        if not days_not_logged_in:
+            days_not_logged_in = 0
+        cutoff_time = datetime.utcnow() - timedelta( days=int( days_not_logged_in ) )
         users = []
         for user in trans.sa_session.query( galaxy.model.User ) \
                                     .filter( galaxy.model.User.table.c.deleted == False ) \
@@ -119,21 +149,37 @@ class Users( BaseUIController, ReportQueryBuilder ):
             else:
                 # The user has never logged in
                 users.append( ( user.email, "never logged in" ) )
-        users = sorted( users, key=operator.itemgetter( 1 ), reverse=True )
+        users = sorted( users, key=operator.itemgetter( name_to_num(sort_id) ), reverse=_order )
         return trans.fill_template( '/webapps/reports/users_last_access_date.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    days_not_logged_in=days_not_logged_in,
                                     users=users,
-                                    not_logged_in_for_days=not_logged_in_for_days,
                                     message=message )
 
     @web.expose
     def user_disk_usage( self, trans, **kwd ):
         message = escape( util.restore_text( kwd.get( 'message', '' ) ) )
+        specs = sorter( 'disk_usage', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        
+        if order == "desc":
+            _order = True
+        else:
+            _order = False
+        
         user_cutoff = int( kwd.get( 'user_cutoff', 60 ) )
         # disk_usage isn't indexed
-        users = sorted( trans.sa_session.query( galaxy.model.User ).all(), key=operator.attrgetter( 'disk_usage' ), reverse=True )
+        users = sorted( trans.sa_session.query( galaxy.model.User ).all(), key=operator.attrgetter( str(sort_id) ), reverse=_order )
         if user_cutoff:
             users = users[:user_cutoff]
         return trans.fill_template( '/webapps/reports/users_user_disk_usage.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     users=users,
                                     user_cutoff=user_cutoff,
                                     message=message )

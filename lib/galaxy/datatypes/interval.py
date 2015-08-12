@@ -5,7 +5,10 @@ Interval datatypes
 import pkg_resources
 pkg_resources.require( "bx-python" )
 
-import logging, os, sys, tempfile
+import os
+import sys
+import logging
+import tempfile
 import data
 from galaxy import util
 from galaxy.datatypes.sniff import *
@@ -40,12 +43,14 @@ for key, value in alias_spec.items():
 # Constants for configuring viewport generation: If a line is greater than
 # VIEWPORT_MAX_READS_PER_LINE * VIEWPORT_READLINE_BUFFER_SIZE bytes in size,
 # then we will not generate a viewport for that dataset
-VIEWPORT_READLINE_BUFFER_SIZE = 1048576 # 1MB
+VIEWPORT_READLINE_BUFFER_SIZE = 1048576  # 1MB
 VIEWPORT_MAX_READS_PER_LINE = 10
+
 
 @dataproviders.decorators.has_dataproviders
 class Interval( Tabular ):
     """Tab delimited data containing interval information"""
+    edam_format = "format_3475"
     file_ext = "interval"
     line_class = "region"
     track_type = "FeatureTrack"
@@ -62,15 +67,17 @@ class Interval( Tabular ):
     def __init__(self, **kwd):
         """Initialize interval datatype, by adding UCSC display apps"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
+        self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
+
     def init_meta( self, dataset, copy_from=None ):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
-    def set_meta( self, dataset, overwrite = True, first_line_is_header = False, **kwd ):
+
+    def set_meta( self, dataset, overwrite=True, first_line_is_header=False, **kwd ):
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
-        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 0 )
+        Tabular.set_meta( self, dataset, overwrite=overwrite, skip=0 )
         if dataset.has_data():
             empty_line_count = 0
-            num_check_lines = 100 # only check up to this many non empty lines
+            num_check_lines = 100  # only check up to this many non empty lines
             for i, line in enumerate( file( dataset.file_name ) ):
                 line = line.rstrip( '\r\n' )
                 if line:
@@ -81,9 +88,9 @@ class Interval( Tabular ):
                         for meta_name, header_list in alias_spec.iteritems():
                             for header_val in header_list:
                                 if header_val in elems:
-                                    #found highest priority header to meta_name
+                                    # found highest priority header to meta_name
                                     setattr( dataset.metadata, meta_name, elems.index( header_val ) + 1 )
-                                    break #next meta_name
+                                    break  # next meta_name
                         break  # Our metadata is set, so break out of the outer loop
                     else:
                         # Header lines in Interval files are optional. For example, BED is Interval but has no header.
@@ -100,16 +107,16 @@ class Interval( Tabular ):
                                         if overwrite or not dataset.metadata.element_is_set( 'startCol' ):
                                             dataset.metadata.startCol = 2
                                     except:
-                                        pass # Metadata default will be used
+                                        pass  # Metadata default will be used
                                     try:
                                         int( elems[2] )
                                         if overwrite or not dataset.metadata.element_is_set( 'endCol' ):
                                             dataset.metadata.endCol = 3
                                     except:
-                                        pass # Metadata default will be used
-                                    #we no longer want to guess that this column is the 'name', name must now be set manually for interval files
-                                    #we will still guess at the strand, as we can make a more educated guess
-                                    #if len( elems ) > 3:
+                                        pass  # Metadata default will be used
+                                    # we no longer want to guess that this column is the 'name', name must now be set manually for interval files
+                                    # we will still guess at the strand, as we can make a more educated guess
+                                    # if len( elems ) > 3:
                                     #    try:
                                     #        int( elems[3] )
                                     #    except:
@@ -124,9 +131,10 @@ class Interval( Tabular ):
                                     metadata_is_set = True
                                     break
                         if metadata_is_set or ( i - empty_line_count ) > num_check_lines:
-                            break # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
+                            break  # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
                 else:
                     empty_line_count += 1
+
     def displayable( self, dataset ):
         try:
             return dataset.has_data() \
@@ -139,10 +147,10 @@ class Interval( Tabular ):
         except:
             return False
 
-    def get_estimated_display_viewport( self, dataset, chrom_col = None, start_col = None, end_col = None ):
+    def get_estimated_display_viewport( self, dataset, chrom_col=None, start_col=None, end_col=None ):
         """Return a chrom, start, stop tuple for viewing a file."""
-        viewport_feature_count = 100 # viewport should check at least 100 features; excludes comment lines
-        max_line_count = max( viewport_feature_count, 500 ) # maximum number of lines to check; includes comment lines
+        viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
+        max_line_count = max( viewport_feature_count, 500 )  # maximum number of lines to check; includes comment lines
         if not self.displayable( dataset ):
             return ( None, None, None )
         try:
@@ -175,7 +183,7 @@ class Interval( Tabular ):
                                 # Set chrom last, in case start and end are not integers
                                 chrom = fields[ chrom_col ]
                             viewport_feature_count -= 1
-                    except Exception, e:
+                    except Exception:
                         # Most likely a non-integer field has been encountered
                         # for start / stop. Just ignore and make sure we finish
                         # reading the line and decrementing the counters.
@@ -185,15 +193,16 @@ class Interval( Tabular ):
                 while line.rstrip( '\n\r' ) == line:
                     assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
                     line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
-                    if not line: break #EOF
+                    if not line:
+                        break  # EOF
                     readline_count -= 1
                 max_line_count -= 1
                 if not viewport_feature_count or not max_line_count:
-                    #exceeded viewport or total line count to check
+                    # exceeded viewport or total line count to check
                     break
             if chrom is not None:
-                return ( chrom, str( start ), str( end ) ) # Necessary to return strings?
-        except Exception, e:
+                return ( chrom, str( start ), str( end ) )  # Necessary to return strings?
+        except Exception:
             # Unexpected error, possibly missing metadata
             log.exception( "Exception caught attempting to generate viewport for dataset '%d'", dataset.id )
         return ( None, None, None )
@@ -202,19 +211,22 @@ class Interval( Tabular ):
         """Returns file contents with only the bed data"""
         fd, temp_name = tempfile.mkstemp()
         c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
-        c, s, e, t, n  = int(c)-1, int(s)-1, int(e)-1, int(t)-1, int(n)-1
-        if t >= 0: # strand column (should) exists
+        c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
+        if t >= 0:  # strand column (should) exists
             for i, elems in enumerate( util.file_iter(dataset.file_name) ):
                 strand = "+"
                 name = "region_%i" % i
-                if n >= 0 and n < len( elems ): name = elems[n]
-                if t<len(elems): strand = elems[t]
+                if n >= 0 and n < len( elems ):
+                    name = elems[n]
+                if t < len(elems):
+                    strand = elems[t]
                 tmp = [ elems[c], elems[s], elems[e], name, '0', strand ]
                 os.write(fd, '%s\n' % '\t'.join(tmp) )
-        elif n >= 0: # name column (should) exists
+        elif n >= 0:  # name column (should) exists
             for i, elems in enumerate( util.file_iter(dataset.file_name) ):
                 name = "region_%i" % i
-                if n >= 0 and n < len( elems ): name = elems[n]
+                if n >= 0 and n < len( elems ):
+                    name = elems[n]
                 tmp = [ elems[c], elems[s], elems[e], name ]
                 os.write(fd, '%s\n' % '\t'.join(tmp) )
         else:
@@ -223,9 +235,11 @@ class Interval( Tabular ):
                 os.write(fd, '%s\n' % '\t'.join(tmp) )
         os.close(fd)
         return open(temp_name)
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
-        return Tabular.make_html_table( self, dataset, column_parameter_alias={'chromCol':'Chrom', 'startCol':'Start', 'endCol':'End', 'strandCol':'Strand', 'nameCol':'Name'} )
+        return Tabular.make_html_table( self, dataset, column_parameter_alias={'chromCol': 'Chrom', 'startCol': 'Start', 'endCol': 'End', 'strandCol': 'Strand', 'nameCol': 'Name'} )
+
     def ucsc_links( self, dataset, type, app, base_url ):
         """
         Generate links to UCSC genome browser sites based on the dbkey
@@ -255,18 +269,19 @@ class Interval( Tabular ):
             link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
             ret_val.append( ( site_name, link ) )
         return ret_val
+
     def validate( self, dataset ):
         """Validate an interval file using the bx GenomicIntervalReader"""
         errors = list()
         c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol
-        c, s, e, t = int(c)-1, int(s)-1, int(e)-1, int(t)-1
+        c, s, e, t = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1
         infile = open(dataset.file_name, "r")
         reader = GenomicIntervalReader(
             infile,
-            chrom_col = c,
-            start_col = s,
-            end_col = e,
-            strand_col = t)
+            chrom_col=c,
+            start_col=s,
+            end_col=e,
+            strand_col=t)
 
         while True:
             try:
@@ -279,7 +294,7 @@ class Interval( Tabular ):
 
     def repair_methods( self, dataset ):
         """Return options for removing errors along with a description"""
-        return [("lines","Remove erroneous lines")]
+        return [("lines", "Remove erroneous lines")]
 
     def sniff( self, filename ):
         """
@@ -308,8 +323,8 @@ class Interval( Tabular ):
                     try:
                         # Assume chrom start and end are in column positions 1 and 2
                         # respectively ( for 0 based columns )
-                        check = int( hdr[1] )
-                        check = int( hdr[2] )
+                        int( hdr[1] )
+                        int( hdr[2] )
                     except:
                         return False
             return True
@@ -323,11 +338,11 @@ class Interval( Tabular ):
         window = list()
         for record in data:
             fields = record.rstrip("\n\r").split("\t")
-            record_chrom = fields[dataset.metadata.chromCol-1]
-            record_start = int(fields[dataset.metadata.startCol-1])
-            record_end = int(fields[dataset.metadata.endCol-1])
+            record_chrom = fields[dataset.metadata.chromCol - 1]
+            record_start = int(fields[dataset.metadata.startCol - 1])
+            record_end = int(fields[dataset.metadata.endCol - 1])
             if record_start < end and record_end > start:
-                window.append( (record_chrom, record_start, record_end) )  #Yes I did want to use a generator here, but it doesn't work downstream
+                window.append( (record_chrom, record_start, record_end) )  # Yes I did want to use a generator here, but it doesn't work downstream
         return window
 
     def get_track_resolution( self, dataset, start, end):
@@ -371,14 +386,16 @@ class BedGraph( Interval ):
         """
         return open( dataset.file_name )
 
-    def get_estimated_display_viewport( self, dataset, chrom_col = 0, start_col = 1, end_col = 2 ):
+    def get_estimated_display_viewport( self, dataset, chrom_col=0, start_col=1, end_col=2 ):
         """
             Set viewport based on dataset's first 100 lines.
         """
-        return Interval.get_estimated_display_viewport( self, dataset, chrom_col = chrom_col, start_col = start_col, end_col = end_col )
+        return Interval.get_estimated_display_viewport( self, dataset, chrom_col=chrom_col, start_col=start_col, end_col=end_col )
+
 
 class Bed( Interval ):
     """Tab delimited data in BED format"""
+    edam_format = "format_3003"
     file_ext = "bed"
     data_sources = { "data": "tabix", "index": "bigwig", "feature_search": "fli" }
     track_type = Interval.track_type
@@ -390,9 +407,9 @@ class Bed( Interval ):
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[4], param=metadata.ColumnParameter, optional=True, multiple=True )
-    ###do we need to repeat these? they are the same as should be inherited from interval type
+    # do we need to repeat these? they are the same as should be inherited from interval type
 
-    def set_meta( self, dataset, overwrite = True, **kwd ):
+    def set_meta( self, dataset, overwrite=True, **kwd ):
         """Sets the metadata information for datasets previously determined to be in bed format."""
         i = 0
         if dataset.has_data():
@@ -415,8 +432,9 @@ class Bed( Interval ):
                                         dataset.metadata.strandCol = 6
                                 metadata_set = True
                                 break
-                if metadata_set: break
-            Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
+                if metadata_set:
+                    break
+            Tabular.set_meta( self, dataset, overwrite=overwrite, skip=i )
 
     def as_ucsc_display_file( self, dataset, **kwd ):
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
@@ -428,7 +446,7 @@ class Bed( Interval ):
             """check to see if this file doesn't conform to strict genome browser accepted bed"""
             try:
                 if len(fields) > 12:
-                    return Interval.as_ucsc_display_file(self, dataset) #too many fields
+                    return Interval.as_ucsc_display_file(self, dataset)  # too many fields
                 if len(fields) > 6:
                     int(fields[6])
                     if len(fields) > 7:
@@ -439,19 +457,22 @@ class Bed( Interval ):
                             if len(fields) > 9:
                                 int(fields[9])
                                 if len(fields) > 10:
-                                    fields2 = fields[10].rstrip(",").split(",") #remove trailing comma and split on comma
+                                    fields2 = fields[10].rstrip(",").split(",")  # remove trailing comma and split on comma
                                     for field in fields2:
                                         int(field)
                                     if len(fields) > 11:
-                                        fields2 = fields[11].rstrip(",").split(",") #remove trailing comma and split on comma
+                                        fields2 = fields[11].rstrip(",").split(",")  # remove trailing comma and split on comma
                                         for field in fields2:
                                             int(field)
-            except: return Interval.as_ucsc_display_file(self, dataset)
-            #only check first line for proper form
+            except:
+                return Interval.as_ucsc_display_file(self, dataset)
+            # only check first line for proper form
             break
 
-        try: return open(dataset.file_name)
-        except: return "This item contains no content"
+        try:
+            return open(dataset.file_name)
+        except:
+            return "This item contains no content"
 
     def sniff( self, filename ):
         """
@@ -478,7 +499,8 @@ class Bed( Interval ):
         """
         headers = get_headers( filename, '\t' )
         try:
-            if not headers: return False
+            if not headers:
+                return False
             for hdr in headers:
                 if (hdr[0] == '' or hdr[0].startswith( '#' )):
                     continue
@@ -496,58 +518,77 @@ class Bed( Interval ):
                     except:
                         return False
                     if len( hdr ) > 4:
-                        #hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
-                        #hdr[4] is an int, 'score', a score between 0 and 1000.
+                        # hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
+                        # hdr[4] is an int, 'score', a score between 0 and 1000.
                         try:
-                            if int( hdr[4] ) < 0 or int( hdr[4] ) > 1000: return False
+                            if int( hdr[4] ) < 0 or int( hdr[4] ) > 1000:
+                                return False
                         except:
                             return False
                     if len( hdr ) > 5:
-                        #hdr[5] is strand
-                        if hdr[5] not in data.valid_strand: return False
+                        # hdr[5] is strand
+                        if hdr[5] not in data.valid_strand:
+                            return False
                     if len( hdr ) > 6:
-                        #hdr[6] is thickStart, the starting position at which the feature is drawn thickly.
-                        try: int( hdr[6] )
-                        except: return False
-                    if len( hdr ) > 7:
-                        #hdr[7] is thickEnd, the ending position at which the feature is drawn thickly
-                        try: int( hdr[7] )
-                        except: return False
-                    if len( hdr ) > 8:
-                        #hdr[8] is itemRgb, an RGB value of the form R,G,B (e.g. 255,0,0).  However, this could also be an int (e.g., 0)
-                        try: int( hdr[8] )
+                        # hdr[6] is thickStart, the starting position at which the feature is drawn thickly.
+                        try:
+                            int( hdr[6] )
                         except:
-                            try: hdr[8].split(',')
-                            except: return False
+                            return False
+                    if len( hdr ) > 7:
+                        # hdr[7] is thickEnd, the ending position at which the feature is drawn thickly
+                        try:
+                            int( hdr[7] )
+                        except:
+                            return False
+                    if len( hdr ) > 8:
+                        # hdr[8] is itemRgb, an RGB value of the form R,G,B (e.g. 255,0,0).  However, this could also be an int (e.g., 0)
+                        try:
+                            int( hdr[8] )
+                        except:
+                            try:
+                                hdr[8].split(',')
+                            except:
+                                return False
                     if len( hdr ) > 9:
-                        #hdr[9] is blockCount, the number of blocks (exons) in the BED line.
-                        try: block_count = int( hdr[9] )
-                        except: return False
+                        # hdr[9] is blockCount, the number of blocks (exons) in the BED line.
+                        try:
+                            block_count = int( hdr[9] )
+                        except:
+                            return False
                     if len( hdr ) > 10:
-                        #hdr[10] is blockSizes - A comma-separated list of the block sizes.
-                        #Sometimes the blosck_sizes and block_starts lists end in extra commas
-                        try: block_sizes = hdr[10].rstrip(',').split(',')
-                        except: return False
+                        # hdr[10] is blockSizes - A comma-separated list of the block sizes.
+                        # Sometimes the blosck_sizes and block_starts lists end in extra commas
+                        try:
+                            block_sizes = hdr[10].rstrip(',').split(',')
+                        except:
+                            return False
                     if len( hdr ) > 11:
-                        #hdr[11] is blockStarts - A comma-separated list of block starts.
-                        try: block_starts = hdr[11].rstrip(',').split(',')
-                        except: return False
-                        if len(block_sizes) != block_count or len(block_starts) != block_count: return False
-                else: return False
+                        # hdr[11] is blockStarts - A comma-separated list of block starts.
+                        try:
+                            block_starts = hdr[11].rstrip(',').split(',')
+                        except:
+                            return False
+                        if len(block_sizes) != block_count or len(block_starts) != block_count:
+                            return False
+                else:
+                    return False
             return True
-        except: return False
+        except:
+            return False
+
 
 class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
 
     file_ext = "bedstrict"
 
-    #no user change of datatype allowed
+    # no user change of datatype allowed
     allow_datatype_change = False
 
-    #Read only metadata elements
+    # Read only metadata elements
     MetadataElement( name="chromCol", default=1, desc="Chrom column", readonly=True, param=metadata.MetadataParameter )
-    MetadataElement( name="startCol", default=2, desc="Start column", readonly=True, param=metadata.MetadataParameter ) #TODO: start and end should be able to be set to these or the proper thick[start/end]?
+    MetadataElement( name="startCol", default=2, desc="Start column", readonly=True, param=metadata.MetadataParameter )  # TODO: start and end should be able to be set to these or the proper thick[start/end]?
     MetadataElement( name="endCol", default=3, desc="End column", readonly=True, param=metadata.MetadataParameter )
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True )
     MetadataElement( name="nameCol", desc="Name/Identifier column (click box & select)", readonly=True, param=metadata.MetadataParameter, no_value=0, optional=True )
@@ -555,27 +596,30 @@ class BedStrict( Bed ):
 
     def __init__( self, **kwd ):
         Tabular.__init__( self, **kwd )
-        self.clear_display_apps() #only new style display applications for this datatype
+        self.clear_display_apps()  # only new style display applications for this datatype
 
-    def set_meta( self, dataset, overwrite = True, **kwd ):
-        Tabular.set_meta( self, dataset, overwrite = overwrite, **kwd) #need column count first
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        Tabular.set_meta( self, dataset, overwrite=overwrite, **kwd)  # need column count first
         if dataset.metadata.columns >= 4:
             dataset.metadata.nameCol = 4
             if dataset.metadata.columns >= 6:
                 dataset.metadata.strandCol = 6
 
     def sniff( self, filename ):
-        return False #NOTE: This would require aggressively validating the entire file
+        return False  # NOTE: This would require aggressively validating the entire file
+
 
 class Bed6( BedStrict ):
     """Tab delimited data in strict BED format - no non-standard columns allowed; column count forced to 6"""
 
     file_ext = "bed6"
 
+
 class Bed12( BedStrict ):
     """Tab delimited data in strict BED format - no non-standard columns allowed; column count forced to 12"""
 
     file_ext = "bed12"
+
 
 class _RemoteCallMixin:
     def _get_remote_call_url( self, redirect_url, site_name, dataset, type, app, base_url ):
@@ -586,7 +630,7 @@ class _RemoteCallMixin:
         """
         internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='%s_%s' % ( type, site_name ) )
         base_url = app.config.get( "display_at_callback", base_url )
-        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % \
+        display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
                                          ( base_url, url_for( controller='root' ), dataset.id, type ) )
         link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
         return link
@@ -595,6 +639,7 @@ class _RemoteCallMixin:
 @dataproviders.decorators.has_dataproviders
 class Gff( Tabular, _RemoteCallMixin ):
     """Tab delimited data in Gff format"""
+    edam_format = "format_2305"
     file_ext = "gff"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
     data_sources = { "data": "interval_index", "index": "bigwig", "feature_search": "fli" }
@@ -602,7 +647,8 @@ class Gff( Tabular, _RemoteCallMixin ):
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
-    MetadataElement( name="column_types", default=['str','str','str','int','int','int','str','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'int', 'str', 'str', 'str'],
+        param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     MetadataElement( name="attributes", default=0, desc="Number of attributes", readonly=True, visible=False, no_value=0 )
     MetadataElement( name="attribute_types", default={}, desc="Attribute types", param=metadata.DictParameter, readonly=True, visible=False, no_value=[] )
@@ -622,7 +668,7 @@ class Gff( Tabular, _RemoteCallMixin ):
         # not found in the first N lines will not have metadata.
         num_lines = 200
         attribute_types = {}
-        for i, line in enumerate( file ( dataset.file_name ) ):
+        for i, line in enumerate( file( dataset.file_name ) ):
             if line and not line.startswith( '#' ):
                 elems = line.split( '\t' )
                 if len( elems ) == 9:
@@ -652,11 +698,11 @@ class Gff( Tabular, _RemoteCallMixin ):
         dataset.metadata.attribute_types = attribute_types
         dataset.metadata.attributes = len( attribute_types )
 
-    def set_meta( self, dataset, overwrite = True, **kwd ):
+    def set_meta( self, dataset, overwrite=True, **kwd ):
         self.set_attribute_metadata( dataset )
 
         i = 0
-        for i, line in enumerate( file ( dataset.file_name ) ):
+        for i, line in enumerate( file( dataset.file_name ) ):
             line = line.rstrip('\r\n')
             if line and not line.startswith( '#' ):
                 elems = line.split( '\t' )
@@ -667,18 +713,19 @@ class Gff( Tabular, _RemoteCallMixin ):
                         break
                     except:
                         pass
-        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
+        Tabular.set_meta( self, dataset, overwrite=overwrite, skip=i )
 
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
+
     def get_estimated_display_viewport( self, dataset ):
         """
         Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
         formats.  This function should correctly handle both...
         """
-        viewport_feature_count = 100 # viewport should check at least 100 features; excludes comment lines
-        max_line_count = max( viewport_feature_count, 500 ) # maximum number of lines to check; includes comment lines
+        viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
+        max_line_count = max( viewport_feature_count, 500 )  # maximum number of lines to check; includes comment lines
         if self.displayable( dataset ):
             try:
                 seqid = None
@@ -687,17 +734,18 @@ class Gff( Tabular, _RemoteCallMixin ):
                 fh = open( dataset.file_name )
                 while True:
                     line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
-                    if not line: break #EOF
+                    if not line:
+                        break  # EOF
                     try:
-                        if line.startswith( '##sequence-region' ): # ##sequence-region IV 6000000 6030000
+                        if line.startswith( '##sequence-region' ):  # ##sequence-region IV 6000000 6030000
                             elems = line.rstrip( '\n\r' ).split()
                             if len( elems ) > 3:
                                 # line looks like:
                                 # ##sequence-region   ctg123 1 1497228
-                                seqid = elems[1] # IV
-                                start = int( elems[2] )# 6000000
-                                stop = int( elems[3] ) # 6030000
-                                break #use location declared in file
+                                seqid = elems[1]  # IV
+                                start = int( elems[2] )  # 6000000
+                                stop = int( elems[3] )  # 6030000
+                                break  # use location declared in file
                             elif len( elems ) == 2 and elems[1].find( '..' ) > 0:
                                 # line looks like this:
                                 # ##sequence-region X:120000..140000
@@ -705,17 +753,17 @@ class Gff( Tabular, _RemoteCallMixin ):
                                 seqid = elems[0]
                                 start = int( elems[1].split( '..' )[0] )
                                 stop = int( elems[1].split( '..' )[1] )
-                                break #use location declared in file
+                                break  # use location declared in file
                             else:
                                 log.exception( "line (%s) uses an unsupported ##sequence-region definition." % str( line ) )
-                                #break #no break, if bad definition, we try another method
+                                # break #no break, if bad definition, we try another method
                         elif line.startswith("browser position"):
                             # Allow UCSC style browser and track info in the GFF file
                             pos_info = line.split()[-1]
                             seqid, startend = pos_info.split(":")
                             start, stop = map( int, startend.split("-") )
-                            break #use location declared in file
-                        elif True not in map( line.startswith, ( '#', 'track', 'browser' ) ):# line.startswith() does not accept iterator in python2.4
+                            break  # use location declared in file
+                        elif True not in map( line.startswith, ( '#', 'track', 'browser' ) ):  # line.startswith() does not accept iterator in python2.4
                             viewport_feature_count -= 1
                             elems = line.rstrip( '\n\r' ).split( '\t' )
                             if len( elems ) > 3:
@@ -727,25 +775,27 @@ class Gff( Tabular, _RemoteCallMixin ):
                                     start = min( start, int( elems[3] ) )
                                     stop = max( stop, int( elems[4] ) )
                     except:
-                        #most likely start/stop is not an int or not enough fields
+                        # most likely start/stop is not an int or not enough fields
                         pass
-                    #make sure we are at the next new line
+                    # make sure we are at the next new line
                     readline_count = VIEWPORT_MAX_READS_PER_LINE
                     while line.rstrip( '\n\r' ) == line:
                         assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
                         line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
-                        if not line: break #EOF
+                        if not line:
+                            break  # EOF
                         readline_count -= 1
                     max_line_count -= 1
                     if not viewport_feature_count or not max_line_count:
-                        #exceeded viewport or total line count to check
+                        # exceeded viewport or total line count to check
                         break
                 if seqid is not None:
-                    return ( seqid, str( start ), str( stop ) ) #Necessary to return strings?
+                    return ( seqid, str( start ), str( stop ) )  # Necessary to return strings?
             except Exception, e:
-                #unexpected error
+                # unexpected error
                 log.exception( str( e ) )
-        return ( None, None, None ) #could not determine viewport
+        return ( None, None, None )  # could not determine viewport
+
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport( dataset )
@@ -753,23 +803,25 @@ class Gff( Tabular, _RemoteCallMixin ):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey ):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     redirect_url = urllib.quote_plus(
-                            "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
-                            ( site_url, dataset.dbkey, seqid, start, stop ) )
+                        "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
+                        ( site_url, dataset.dbkey, seqid, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
+
     def gbrowse_links( self, dataset, type, app, base_url ):
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport( dataset )
         if seqid is not None:
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('gbrowse', dataset.dbkey ):
                 if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
-                    if seqid.startswith( 'chr' ) and len ( seqid ) > 3:
+                    if seqid.startswith( 'chr' ) and len( seqid ) > 3:
                         seqid = seqid[3:]
                     redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, seqid, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
+
     def sniff( self, filename ):
         """
         Determines whether the file is in gff format
@@ -802,7 +854,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                         return False
                     if hdr[5] != '.':
                         try:
-                            score = float( hdr[5] )
+                            float( hdr[5] )
                         except:
                             return False
                     if hdr[6] not in data.valid_strand:
@@ -838,6 +890,7 @@ class Gff( Tabular, _RemoteCallMixin ):
 
 class Gff3( Gff ):
     """Tab delimited data in Gff3 format"""
+    edam_format = "format_1975"
     file_ext = "gff3"
     valid_gff3_strand = ['+', '-', '.', '?']
     valid_gff3_phase = ['.', '0', '1', '2']
@@ -845,16 +898,18 @@ class Gff3( Gff ):
     track_type = Interval.track_type
 
     """Add metadata elements"""
-    MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
+        param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     def __init__(self, **kwd):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
-    def set_meta( self, dataset, overwrite = True, **kwd ):
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
         self.set_attribute_metadata( dataset )
 
         i = 0
-        for i, line in enumerate( file ( dataset.file_name ) ):
+        for i, line in enumerate( file( dataset.file_name ) ):
             line = line.rstrip('\r\n')
             if line and not line.startswith( '#' ):
                 elems = line.split( '\t' )
@@ -877,7 +932,8 @@ class Gff3( Gff ):
                     phase = elems[7]
                     if valid_start and valid_end and start < end and strand in self.valid_gff3_strand and phase in self.valid_gff3_phase:
                         break
-        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i )
+        Tabular.set_meta( self, dataset, overwrite=overwrite, skip=i )
+
     def sniff( self, filename ):
         """
         Determines whether the file is in gff version 3 format
@@ -932,7 +988,7 @@ class Gff3( Gff ):
                             return False
                     if hdr[5] != '.':
                         try:
-                            score = float( hdr[5] )
+                            float( hdr[5] )
                         except:
                             return False
                     if hdr[6] not in self.valid_gff3_strand:
@@ -943,15 +999,18 @@ class Gff3( Gff ):
         except:
             return False
 
+
 class Gtf( Gff ):
     """Tab delimited data in Gtf format"""
+    edam_format = "format_2306"
     file_ext = "gtf"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Attributes' ]
     track_type = Interval.track_type
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
-    MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
+    MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
+        param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
     def sniff( self, filename ):
         """
@@ -994,7 +1053,7 @@ class Gtf( Gff ):
                         return False
                     if hdr[5] != '.':
                         try:
-                            score = float( hdr[5] )
+                            float( hdr[5] )
                         except:
                             return False
                     if hdr[6] not in data.valid_strand:
@@ -1013,9 +1072,11 @@ class Gtf( Gff ):
         except:
             return False
 
+
 @dataproviders.decorators.has_dataproviders
 class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""
+    edam_format = "format_3005"
     file_ext = "wig"
     track_type = "LineTrack"
     data_sources = { "data": "bigwig", "index": "bigwig" }
@@ -1026,10 +1087,11 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         Tabular.__init__( self, **kwd )
         self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
         self.add_display_app( 'gbrowse', 'display in Gbrowse', 'as_gbrowse_display_file', 'gbrowse_links' )
+
     def get_estimated_display_viewport( self, dataset ):
         """Return a chrom, start, stop tuple for viewing a file."""
-        viewport_feature_count = 100 # viewport should check at least 100 features; excludes comment lines
-        max_line_count = max( viewport_feature_count, 500 ) # maximum number of lines to check; includes comment lines
+        viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
+        max_line_count = max( viewport_feature_count, 500 )  # maximum number of lines to check; includes comment lines
         if self.displayable( dataset ):
             try:
                 chrom = None
@@ -1040,16 +1102,18 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                 fh = open( dataset.file_name )
                 while True:
                     line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
-                    if not line: break #EOF
+                    if not line:
+                        break  # EOF
                     try:
                         if line.startswith( "browser" ):
                             chr_info = line.rstrip( '\n\r' ).split()[-1]
                             chrom, coords = chr_info.split( ":" )
                             start, end = map( int, coords.split( "-" ) )
-                            break # use the browser line
+                            break  # use the browser line
                         # variableStep chrom=chr20
                         if line and ( line.lower().startswith( "variablestep" ) or line.lower().startswith( "fixedstep" ) ):
-                            if chrom is not None: break #different chrom or different section of the chrom
+                            if chrom is not None:
+                                break  # different chrom or different section of the chrom
                             chrom = line.rstrip( '\n\r' ).split("chrom=")[1].split()[0]
                             if 'span=' in line:
                                 span = int( line.rstrip( '\n\r' ).split("span=")[1].split()[0] )
@@ -1070,35 +1134,38 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                                 viewport_feature_count -= 1
                     except:
                         pass
-                    #make sure we are at the next new line
+                    # make sure we are at the next new line
                     readline_count = VIEWPORT_MAX_READS_PER_LINE
                     while line.rstrip( '\n\r' ) == line:
                         assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
                         line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
-                        if not line: break #EOF
+                        if not line:
+                            break  # EOF
                         readline_count -= 1
                     max_line_count -= 1
                     if not viewport_feature_count or not max_line_count:
-                        #exceeded viewport or total line count to check
+                        # exceeded viewport or total line count to check
                         break
                 if chrom is not None:
-                    return ( chrom, str( start ), str( end ) ) #Necessary to return strings?
+                    return ( chrom, str( start ), str( end ) )  # Necessary to return strings?
             except Exception, e:
-                #unexpected error
+                # unexpected error
                 log.exception( str( e ) )
-        return ( None, None, None ) #could not determine viewport
+        return ( None, None, None )  # could not determine viewport
+
     def gbrowse_links( self, dataset, type, app, base_url ):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport( dataset )
         if chrom is not None:
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('gbrowse', dataset.dbkey ):
                 if site_name in app.datatypes_registry.get_display_sites('gbrowse'):
-                    if chrom.startswith( 'chr' ) and len ( chrom ) > 3:
+                    if chrom.startswith( 'chr' ) and len( chrom ) > 3:
                         chrom = chrom[3:]
                     redirect_url = urllib.quote_plus( "%s/?q=%s:%s..%s&eurl=%%s" % ( site_url, chrom, start, stop ) )
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
+
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport( dataset )
@@ -1109,18 +1176,20 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                     link = self._get_remote_call_url( redirect_url, site_name, dataset, type, app, base_url )
                     ret_val.append( ( site_name, link ) )
         return ret_val
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
-    def set_meta( self, dataset, overwrite = True, **kwd ):
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
         max_data_lines = None
         i = 0
-        for i, line in enumerate( file ( dataset.file_name ) ):
+        for i, line in enumerate( file( dataset.file_name ) ):
             line = line.rstrip('\r\n')
             if line and not line.startswith( '#' ):
                 elems = line.split( '\t' )
                 try:
-                    float( elems[0] ) #"Wiggle track data values can be integer or real, positive or negative values"
+                    float( elems[0] )  # "Wiggle track data values can be integer or real, positive or negative values"
                     break
                 except:
                     do_break = False
@@ -1131,12 +1200,13 @@ class Wiggle( Tabular, _RemoteCallMixin ):
                     if do_break:
                         break
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            #we'll arbitrarily only use the first 100 data lines in this wig file to calculate tabular attributes (column types)
-            #this should be sufficient, except when we have mixed wig track types (bed, variable, fixed),
+            # we'll arbitrarily only use the first 100 data lines in this wig file to calculate tabular attributes (column types)
+            # this should be sufficient, except when we have mixed wig track types (bed, variable, fixed),
             #    but those cases are not a single table that would have consistant column definitions
-            #optional metadata values set in Tabular class will be 'None'
+            # optional metadata values set in Tabular class will be 'None'
             max_data_lines = 100
-        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = i, max_data_lines = max_data_lines )
+        Tabular.set_meta( self, dataset, overwrite=overwrite, skip=i, max_data_lines=max_data_lines )
+
     def sniff( self, filename ):
         """
         Determines wether the file is in wiggle format
@@ -1167,13 +1237,14 @@ class Wiggle( Tabular, _RemoteCallMixin ):
             return False
         except:
             return False
+
     def get_track_window(self, dataset, data, start, end):
         """
         Assumes we have a numpy file.
         """
         # Maybe if we import here people will still be able to use Galaxy when numpy kills it
         pkg_resources.require("numpy>=1.2.1")
-        #from numpy.lib import format
+
         import numpy
 
         range = end - start
@@ -1191,6 +1262,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         y = data[ t_start : t_end ]
 
         return zip(x.tolist(), y.tolist())
+
     def get_track_resolution( self, dataset, start, end):
         range = end - start
         # Determine appropriate resolution to plot ~1000 points
@@ -1220,17 +1292,20 @@ class CustomTrack ( Tabular ):
     def __init__(self, **kwd):
         """Initialize interval datatype, by adding UCSC display app"""
         Tabular.__init__(self, **kwd)
-        self.add_display_app ( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
-    def set_meta( self, dataset, overwrite = True, **kwd ):
-        Tabular.set_meta( self, dataset, overwrite = overwrite, skip = 1 )
+        self.add_display_app( 'ucsc', 'display at UCSC', 'as_ucsc_display_file', 'ucsc_links' )
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        Tabular.set_meta( self, dataset, overwrite=overwrite, skip=1 )
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, skipchars=['track', '#'] )
-    def get_estimated_display_viewport( self, dataset, chrom_col = None, start_col = None, end_col = None ):
+
+    def get_estimated_display_viewport( self, dataset, chrom_col=None, start_col=None, end_col=None ):
         """Return a chrom, start, stop tuple for viewing a file."""
-        #FIXME: only BED and WIG custom tracks are currently supported
-        #As per previously existing behavior, viewport will only be over the first intervals
-        max_line_count = 100 # maximum number of lines to check; includes comment lines
+        # FIXME: only BED and WIG custom tracks are currently supported
+        # As per previously existing behavior, viewport will only be over the first intervals
+        max_line_count = 100  # maximum number of lines to check; includes comment lines
         variable_step_wig = False
         chrom = None
         span = 1
@@ -1239,7 +1314,8 @@ class CustomTrack ( Tabular ):
                 fh = open( dataset.file_name )
                 while True:
                     line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
-                    if not line: break #EOF
+                    if not line:
+                        break  # EOF
                     if not line.startswith( '#' ):
                         try:
                             if variable_step_wig:
@@ -1264,28 +1340,30 @@ class CustomTrack ( Tabular ):
                                     end = int( fields[ 2 ] )
                                     return ( chrom, str( start ), str( end ) )
                         except Exception:
-                            #most likely a non-integer field has been encountered for start / stop
+                            # most likely a non-integer field has been encountered for start / stop
                             continue
-                    #make sure we are at the next new line
+                    # make sure we are at the next new line
                     readline_count = VIEWPORT_MAX_READS_PER_LINE
                     while line.rstrip( '\n\r' ) == line:
                         assert readline_count > 0, Exception( 'Viewport readline count exceeded for dataset %s.' % dataset.id )
                         line = fh.readline( VIEWPORT_READLINE_BUFFER_SIZE )
-                        if not line: break #EOF
+                        if not line:
+                            break  # EOF
                         readline_count -= 1
                     max_line_count -= 1
                     if not max_line_count:
-                        #exceeded viewport or total line count to check
+                        # exceeded viewport or total line count to check
                         break
             except Exception, e:
-                #unexpected error
+                # unexpected error
                 log.exception( str( e ) )
-        return ( None, None, None ) #could not determine viewport
+        return ( None, None, None )  # could not determine viewport
+
     def ucsc_links( self, dataset, type, app, base_url ):
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
-            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc',dataset.dbkey):
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     internal_url = "%s" % url_for( controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name )
                     display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for( controller='root' ), dataset.id, type) )
@@ -1293,6 +1371,7 @@ class CustomTrack ( Tabular ):
                     link = '%s?redirect_url=%s&display_url=%s' % ( internal_url, redirect_url, display_url )
                     ret_val.append( (site_name, link) )
         return ret_val
+
     def sniff( self, filename ):
         """
         Determines whether the file is in customtrack format.
@@ -1319,12 +1398,18 @@ class CustomTrack ( Tabular ):
                         color_found = False
                         visibility_found = False
                         for elem in hdr[1:]:
-                            if elem.startswith('color'): color_found = True
-                            if elem.startswith('visibility'): visibility_found = True
-                            if color_found and visibility_found: break
-                        if not color_found or not visibility_found: return False
-                    else: return False
-                except: return False
+                            if elem.startswith('color'):
+                                color_found = True
+                            if elem.startswith('visibility'):
+                                visibility_found = True
+                            if color_found and visibility_found:
+                                break
+                        if not color_found or not visibility_found:
+                            return False
+                    else:
+                        return False
+                except:
+                    return False
             else:
                 try:
                     if hdr[0] and not hdr[0].startswith( '#' ):
@@ -1396,5 +1481,5 @@ class ChromatinInteractions( Interval ):
 
 
 if __name__ == '__main__':
-    import doctest, sys
+    import doctest
     doctest.testmod(sys.modules[__name__])

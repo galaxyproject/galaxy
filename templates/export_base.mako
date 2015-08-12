@@ -6,10 +6,12 @@
     def inherit(context):
         if context.get('use_panels', False) == True:
             if context.get('webapp'):
-                webapp = context.get('webapp')
+                app_name = context.get('webapp')
+            elif context.get('app'):
+                app_name = context.get('app').name
             else:
-                webapp = 'galaxy'
-            return '/webapps/%s/base_panels.mako' % webapp
+                app_name = 'galaxy'
+            return '/webapps/%s/base_panels.mako' % app_name
         else:
             return '/base.mako'
 %>

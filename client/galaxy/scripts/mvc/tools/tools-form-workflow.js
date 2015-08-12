@@ -7,8 +7,11 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
     // create form view
     var View = ToolFormBase.extend({
         initialize: function(options) {
+            // link this
+            var self = this;
+
             // link with node representation in workflow module
-            this.node = workflow.active_node;
+            this.node = options.node;
             if (!this.node) {
                 console.debug('FAILED - tools-form-workflow:initialize() - Node not found in workflow.');
                 return;
@@ -37,31 +40,39 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 }
             });
 
-            // declare conditional fields as not optional
+            // mark values which can be determined at runtime
             Utils.deepeach(options.inputs, function(item) {
                 if (item.type) {
-                    if (item.type == 'conditional') {
-                        item.test_param.optional = false;
+                    if ((['data', 'data_collection']).indexOf(item.type) == -1) {
+                        item.collapsible = true;
+                        item.collapsible_value = {'__class__': 'RuntimeValue'};
                     }
                 }
             });
 
-            // load extension
-            var self = this;
-            Utils.get({
-                url     : galaxy_config.root + 'api/datatypes',
-                cache   : true,
-                success : function(datatypes) {
-                    self.datatypes = datatypes;
-                    self._makeSections(options.inputs);
-                    ToolFormBase.prototype.initialize.call(self, options);
+            // declare conditional and data input fields as not collapsible
+            Utils.deepeach(options.inputs, function(item) {
+                if (item.type) {
+                    if (item.type == 'conditional') {
+                        item.test_param.collapsible = false;
+                    }
                 }
             });
+
+            // configure custom sections
+            this._makeSections(options);
+
+            // create final tool form
+            ToolFormBase.prototype.initialize.call(this, options);
         },
 
         /** Builds all sub sections
         */
-        _makeSections: function(inputs){
+        _makeSections: function(options){
+            // initialize local variables
+            var inputs = options.inputs;
+            var datatypes = options.datatypes;
+
             // for annotation
             inputs[Utils.uid()] = {
                 label   : 'Annotation / Notes',
@@ -100,20 +111,20 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
 
                 // add output specific actions
                 for (var i in this.node.output_terminals) {
-                    inputs[Utils.uid()] = this._makeSection(i);
+                    inputs[Utils.uid()] = this._makeSection(i, datatypes);
                 }
             }
         },
 
         /** Builds sub section with step actions/annotation
         */
-        _makeSection: function(output_id){
+        _makeSection: function(output_id, datatypes){
             // format datatypes
             var extensions = [];
-            for (key in this.datatypes) {
+            for (key in datatypes) {
                 extensions.push({
-                    0 : this.datatypes[key],
-                    1 : this.datatypes[key]
+                    0 : datatypes[key],
+                    1 : datatypes[key]
                 });
             }
 
@@ -140,6 +151,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
             var input_config = {
                 title   : 'Add Actions: \'' + output_id + '\'',
                 type    : 'section',
+                flat    : true,
                 inputs  : [{
                     action      : 'RenameDatasetAction',
                     argument    : 'newname',
@@ -168,6 +180,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 },{
                     title   : 'Assign columns',
                     type    : 'section',
+                    flat    : true,
                     inputs  : [{
                         action      : 'ColumnSetAction',
                         argument    : 'chromCol',
@@ -236,7 +249,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                         if (d) {
                             // mark as expanded
                             for (var j in head_list) {
-                                head_list[j].expand = true;
+                                head_list[j].expanded = true;
                             }
 
                             // update input field value

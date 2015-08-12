@@ -1,5 +1,8 @@
 #!/bin/sh
 
+pwd_dir=$(pwd)
+cd `dirname $0`
+
 ./scripts/common_startup.sh
 
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
@@ -14,6 +17,7 @@ cat <<EOF
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/tool_shed/functional directory
 '${0##*/} -workflow test.xml'       for running a workflow test case as defined by supplied workflow xml test file (experimental)
+'${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
@@ -30,7 +34,7 @@ Run all TestUserInfo functional tests:
     ./run_tests.sh test/functional/test_user_info.py:TestUserInfo
 
 Run a specific API test requiring the framework test tools:
-    ./run_tests.sh -api -with_framework_test_tools test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
+    ./run_tests.sh -with_framework_test_tools -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
 
 
 Extra options:
@@ -39,6 +43,7 @@ Extra options:
 
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests (-toolshed, -framework, etc...)
+ --debug               On python test error or failure invoke a pdb shell for interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
  --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
@@ -217,6 +222,12 @@ do
           NOSE_WITH_COVERAGE=true
           shift
           ;;
+      --debug)
+          #TODO ipdb would be nicer.
+          NOSE_PDB=True
+          export NOSE_PDB
+          shift
+          ;;
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           test_script="./scripts/nosetests.py"
@@ -336,3 +347,4 @@ else
     # functional tests.
     grunt --gruntfile=$gruntfile $grunt_task $grunt_args
 fi
+

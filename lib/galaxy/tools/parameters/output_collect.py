@@ -229,7 +229,7 @@ def collect_primary_datasets( tool, output, job_working_directory, input_ext ):
                 app.object_store.update_from_file( outdata.dataset, file_name=filename, create=True )
                 primary_output_assigned = True
                 continue
-            if not name in primary_datasets:
+            if name not in primary_datasets:
                 primary_datasets[ name ] = {}
             visible = fields_match.visible
             ext = fields_match.ext

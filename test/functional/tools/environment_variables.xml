@@ -1,0 +1,34 @@
+<tool id="environment_variables" name="environment_variables" version="1.0.0">
+    <environment_variables>
+        <environment_variable name="INTVAR">$inttest</environment_variable>
+        <environment_variable name="FORTEST">#for i in ['m', 'o', 'o']#$i#end for#</environment_variable>
+        <environment_variable name="IFTEST">#if int($inttest) == 3
+ISTHREE
+#else#
+NOTTHREE
+#end if#</environment_variable>
+    </environment_variables>
+    <command>
+        echo "\$INTVAR"  >  $out_file1;
+        echo "\$FORTEST" >> $out_file1;
+        echo "\$IFTEST"  >> $out_file1;
+    </command>
+    <inputs>
+        <param name="inttest" value="1" type="integer" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="inttest" value="2" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="2" />
+                    <has_line line="moo" />
+                    <has_line line="NOTTHREE" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

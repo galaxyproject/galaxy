@@ -70,7 +70,7 @@ def __invoke( trans, workflow, workflow_run_config, workflow_invocation=None, po
     """ Run the supplied workflow in the supplied target_history.
     """
     if populate_state:
-        modules.populate_module_and_state( trans, workflow, workflow_run_config.param_map )
+        modules.populate_module_and_state( trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections )
 
     invoker = WorkflowInvoker(
         trans,
@@ -107,7 +107,7 @@ def __invoke( trans, workflow, workflow_run_config, workflow_invocation=None, po
 
 def queue_invoke( trans, workflow, workflow_run_config, request_params={}, populate_state=True ):
     if populate_state:
-        modules.populate_module_and_state( trans, workflow, workflow_run_config.param_map )
+        modules.populate_module_and_state( trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections )
     workflow_invocation = workflow_run_config_to_request( trans, workflow_run_config, workflow )
     workflow_invocation.workflow = workflow
     return trans.app.workflow_scheduling_manager.queue(

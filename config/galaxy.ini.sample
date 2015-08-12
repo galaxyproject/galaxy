@@ -350,8 +350,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # If your SMTP server requires SSL from the beginning of the connection
 # smtp_ssl = False
 
-# On the user registration form, users may choose to join the mailing list.
-# This is the address of the list they'll be subscribed to.
+# On the user registration form, users may choose to join a mailing list. This
+# is the address used to subscribe to the list. Uncomment and leave empty if you
+# want to remove this option from the user registration form.
 #mailing_join_addr = galaxy-announce-join@bx.psu.edu
 
 # Datasets in an error state include a link to report the error.  Those reports
@@ -835,9 +836,6 @@ use_interactive = True
 # Use new tool form
 #toolform_upgrade = True
 
-# Use new tool form in workflow editor
-#workflow_toolform_upgrade = False
-
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
@@ -948,12 +946,9 @@ use_interactive = True
 #job_config_file = config/job_conf.xml
 
 # In multiprocess configurations, notification between processes about new jobs
-# is done via the database.  In single process configurations, this is done in
-# memory, which is a bit quicker.  Galaxy tries to automatically determine
-# which method it should used based on your handler configuration in the job
-# config file, but you can explicitly override this behavior by setting the
-# following option to True or False.
-#track_jobs_in_database = None
+# must be done via the database.  In single process configurations, this can be
+# done in memory, which is a bit quicker.
+#track_jobs_in_database = True
 
 # This enables splitting of jobs into tasks, if specified by the particular tool
 # config.

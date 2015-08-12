@@ -17,7 +17,6 @@ require_login_template = """
 <p>
     This %s has been configured such that only users who are logged in may use it.%s
 </p>
-<p/>
 """
 
 # FIXME: This controller is using unencoded IDs, but I am not going to address

@@ -93,7 +93,7 @@ class DataManager( BaseUIController ):
             table_name = table_name.split( "," )
         # Reload the tool data tables
         table_names = self.app.tool_data_tables.reload_tables( table_names=table_name )
-        galaxy.queue_worker.send_control_task(trans, 'reload_tool_data_tables',
+        galaxy.queue_worker.send_control_task(trans.app, 'reload_tool_data_tables',
                                               noop_self=True,
                                               kwargs={'table_name': table_name} )
         redirect_url = None

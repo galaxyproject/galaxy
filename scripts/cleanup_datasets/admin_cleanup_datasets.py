@@ -74,7 +74,8 @@ def main():
     contains the specified text will be marked as deleted in user's history and
     the user will be notified by email using the specified template file.
     """
-    parser = OptionParser()
+    usage = "usage: %prog [options] galaxy.ini"
+    parser = OptionParser(usage=usage)
     parser.add_option("-d", "--days", dest="days", action="store",
                       type="int", help="number of days (60)", default=60)
     parser.add_option("--tool_id", default=None,
@@ -100,6 +101,9 @@ def main():
                       help="From address to use to send email. "
                       "Default: [read from galaxy ini file]")
     (options, args) = parser.parse_args()
+    if len(args) != 1 :
+        parser.print_help()
+        sys.exit()
     ini_file = args[0]
 
     config_parser = ConfigParser.ConfigParser({'here': os.getcwd()})

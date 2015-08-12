@@ -12,7 +12,7 @@ import galaxy.quota
 from galaxy.managers.tags import GalaxyTagManager
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
-from galaxy.visualization.registry import VisualizationsRegistry
+from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders

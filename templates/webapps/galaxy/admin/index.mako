@@ -46,13 +46,44 @@
     <div class="unified-panel-body">
         <div class="toolMenu">
             <div class="toolSectionList">
+                <div class="toolSectionTitle">Server</div>
+                <div class="toolSectionBody">
+                    <div class="toolSectionBg">
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='view_datatypes_registry' )}" target="galaxy_main">Data types registry</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='view_tool_data_tables' )}" target="galaxy_main">Data tables registry</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='display_applications' )}" target="galaxy_main">Display applications</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='jobs' )}" target="galaxy_main">Manage jobs</a></div>
+                    </div>
+                </div>
+                <div class="toolSectionPad"></div>
+                <div class="toolSectionTitle">Tools and Tool Shed</div>
+                <div class="toolSectionBody">
+                    <div class="toolSectionBg">                        
+                    %if trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds:
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_tool_sheds' )}" target="galaxy_main">Search Tool Shed</a></div>
+                    %endif
+                    %if installing_repository_ids:
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='monitor_repository_installation', tool_shed_repository_ids=installing_repository_ids )}" target="galaxy_main">Monitor installing repositories</a></div>
+                    %endif
+                    %if is_repo_installed:
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_repositories' )}" target="galaxy_main">Manage installed tools</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='reset_metadata_on_selected_installed_repositories' )}" target="galaxy_main">Reset metadata</a></div>
+                    %endif
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='package_tool' )}" target="galaxy_main">Download local tool</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='tool_versions' )}" target="galaxy_main">Tool lineage</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='reload_tool' )}" target="galaxy_main">Reload a tool's configuration</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='review_tool_migration_stages' )}" target="galaxy_main">Review tool migration stages</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='tool_errors' )}" target="galaxy_main">View Tool Error Logs</a></div>
+                    </div>
+                </div>
+                <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">Security</div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users' )}" target="galaxy_main">Manage users</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups' )}" target="galaxy_main">Manage groups</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles' )}" target="galaxy_main">Manage roles</a></div>
-			            <div class="toolTitle"><a href="${h.url_for( controller='userskeys', action='all_users' )}" target="galaxy_main">Manage users API keys</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users' )}" target="galaxy_main">Users</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups' )}" target="galaxy_main">Groups</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles' )}" target="galaxy_main">Roles</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='userskeys', action='all_users' )}" target="galaxy_main">API keys</a></div>
                         %if trans.app.config.allow_user_impersonation:
                             <div class="toolTitle"><a href="${h.url_for( controller='admin', action='impersonate' )}" target="galaxy_main">Impersonate a user</a></div>
                         %endif
@@ -63,55 +94,25 @@
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         %if trans.app.config.enable_quotas:
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='quotas' )}" target="galaxy_main">Manage quotas</a></div>
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='quotas' )}" target="galaxy_main">Quotas</a></div>
                         %endif
-                        <div class="toolTitle"><a href="${h.url_for( controller='library_admin', action='browse_libraries' )}" target="galaxy_main">Manage data libraries</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='data_manager' )}" target="galaxy_main">Manage local data (beta)</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='library_admin', action='browse_libraries' )}" target="galaxy_main">Data libraries</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='data_manager' )}" target="galaxy_main">Local data</a></div>
                     </div>
                 </div>
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionTitle">Server</div>
-                <div class="toolSectionBody">
-                    <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='view_datatypes_registry' )}" target="galaxy_main">View data types registry</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='view_tool_data_tables' )}" target="galaxy_main">View data tables registry</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='display_applications' )}" target="galaxy_main">View display applications</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='tool_versions' )}" target="galaxy_main">View tool lineage</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='package_tool' )}" target="galaxy_main">Download tool tarball</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='reload_tool' )}" target="galaxy_main">Reload a tool's configuration</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='jobs' )}" target="galaxy_main">Manage jobs</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='review_tool_migration_stages' )}" target="galaxy_main">Review tool migration stages</a></div>
-                        %if installing_repository_ids:
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='monitor_repository_installation', tool_shed_repository_ids=installing_repository_ids )}" target="galaxy_main">Monitor installing tool shed repositories</a></div>
-                        %endif
-                        %if installed_repositories:
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='reset_metadata_on_selected_installed_repositories' )}" target="galaxy_main">Reset metadata for tool shed repositories</a></div>
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_repositories' )}" target="galaxy_main">Manage installed tool shed repositories</a></div>
-                        %endif
-                    </div>
-                </div>
-                %if trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds:
-                    <div class="toolSectionPad"></div>
-                    <div class="toolSectionTitle">Tool sheds</div>
-                    <div class="toolSectionBody">
-                        <div class="toolSectionBg">                        
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin_toolshed', action='browse_tool_sheds' )}" target="galaxy_main">Search and browse tool sheds</a></div>
-                        </div>
-                    </div>
-                %endif
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">Form Definitions</div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='forms', action='browse_form_definitions' )}" target="galaxy_main">Manage form definitions</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='forms', action='browse_form_definitions' )}" target="galaxy_main">Form definitions</a></div>
                     </div>
                 </div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle">Sample Tracking</div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='external_service', action='browse_external_services' )}" target="galaxy_main">Manage sequencers and external services</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='request_type', action='browse_request_types' )}" target="galaxy_main">Manage request types</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='external_service', action='browse_external_services' )}" target="galaxy_main">Sequencers and external services</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='request_type', action='browse_request_types' )}" target="galaxy_main">Request types</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='requests_admin', action='browse_requests' )}" target="galaxy_main">Sequencing requests</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='requests_common', action='find_samples', cntrller='requests_admin' )}" target="galaxy_main">Find samples</a></div>
                     </div>

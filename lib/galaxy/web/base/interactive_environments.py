@@ -1,15 +1,14 @@
 import ConfigParser
 
-import hashlib
 import os
 import random
+import tempfile
+import subprocess
 
 from galaxy.util.bunch import Bunch
 from galaxy import web
-from galaxy import eggs
-eggs.require("PyYAML")
-import yaml
 from galaxy.managers import api_keys
+from galaxy.tools.deps.docker_util import DockerVolume
 
 import logging
 log = logging.getLogger(__name__)
@@ -26,11 +25,8 @@ class InteractiveEnviornmentRequest(object):
         self.attr = Bunch()
         self.attr.viz_id = plugin_config["name"].lower()
         self.attr.history_id = trans.security.encode_id( trans.history.id )
-        self.attr.proxy_request = trans.app.proxy_manager.setup_proxy( trans )
-        self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
         self.attr.galaxy_config = trans.app.config
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
-
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "plugins/visualizations/" + self.attr.viz_id + "/static/"
 
@@ -40,7 +36,21 @@ class InteractiveEnviornmentRequest(object):
         self.attr.our_config_dir = os.path.join(plugin_path, "config")
         self.attr.our_template_dir = os.path.join(plugin_path, "templates")
         self.attr.HOST = trans.request.host.rsplit(':', 1)[0]
+
+        self.load_deploy_config()
+        self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
+        self.attr.proxy_request = trans.app.proxy_manager.setup_proxy(
+            trans, host=self.attr.docker_hostname
+        )
+        self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
         self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
+
+        # Generate per-request passwords the IE plugin can use to configure
+        # the destination container.
+        self.notebook_pw_salt = self.generate_password(length=12)
+        self.notebook_pw = self.generate_password(length=24)
+
+        self.temp_dir = os.path.abspath( tempfile.mkdtemp() )
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
@@ -48,6 +58,7 @@ class InteractiveEnviornmentRequest(object):
         # .get() that will ignore missing sections, so we must make use of
         # their defaults dictionary instead.
         default_dict['command_inject'] = '--sig-proxy=true'
+        default_dict['docker_hostname'] = 'localhost'
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
         if not os.path.exists( conf_path ):
@@ -68,9 +79,9 @@ class InteractiveEnviornmentRequest(object):
         self.attr.APACHE_URLS = _boolean_option("apache_urls")
         self.attr.SSL_URLS = _boolean_option("ssl")
 
-    def write_conf_file(self, output_directory, extra={}):
+    def get_conf_dict(self):
         """
-            Build up a configuration file that is standard for ALL IEs.
+            Build up a configuration dictionary that is standard for ALL IEs.
 
             TODO: replace hashed password with plaintext.
         """
@@ -92,27 +103,11 @@ class InteractiveEnviornmentRequest(object):
         else:
             conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
             web_port = self.attr.galaxy_config.galaxy_infrastructure_web_port
-            conf_file['galaxy_paster_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+            conf_file['galaxy_web_port'] = web_port or self.attr.galaxy_config.guess_galaxy_port()
+            # Galaxy paster port is deprecated
+            conf_file['galaxy_paster_port'] = conf_file['galaxy_web_port']
 
-        if self.attr.PASSWORD_AUTH:
-            # Generate a random password + salt
-            notebook_pw_salt = self.generate_password(length=12)
-            notebook_pw = self.generate_password(length=24)
-            m = hashlib.sha1()
-            m.update( notebook_pw + notebook_pw_salt )
-            conf_file['notebook_password'] = 'sha1:%s:%s' % (notebook_pw_salt, m.hexdigest())
-            # Should we use password based connection or "default" connection style in galaxy
-        else:
-            notebook_pw = "None"
-
-        # Some will need to pass extra data
-        for extra_key in extra:
-            conf_file[extra_key] = extra[extra_key]
-
-        self.attr.notebook_pw = notebook_pw
-        # Write conf
-        with open( os.path.join( output_directory, 'conf.yaml' ), 'wb' ) as handle:
-            handle.write( yaml.dump(conf_file, default_flow_style=False) )
+        return conf_file
 
     def generate_hex(self, length):
         return ''.join(random.choice('0123456789abcdef') for _ in range(length))
@@ -165,12 +160,32 @@ class InteractiveEnviornmentRequest(object):
             .replace('${PORT}', str(self.attr.PORT))
         return url
 
-    def docker_cmd(self, temp_dir):
+    def volume(self, host_path, container_path, **kwds):
+        return DockerVolume(host_path, container_path, **kwds)
+
+    def docker_cmd(self, env_override={}, volumes=[]):
         """
             Generate and return the docker command to execute
         """
-        return '%s run -d %s -p %s:%s -v "%s:/import/" %s' % \
+        temp_dir = self.temp_dir
+        conf = self.get_conf_dict()
+        conf.update(env_override)
+        env_str = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
+        volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
+        return '%s run %s -d %s -p %s:%s -v "%s:/import/" %s %s' % \
             (self.attr.viz_config.get("docker", "command"),
+            env_str,
             self.attr.viz_config.get("docker", "command_inject"),
             self.attr.PORT, self.attr.docker_port,
-            temp_dir, self.attr.viz_config.get("docker", "image"))
+            temp_dir,
+            volume_str,
+            self.attr.viz_config.get("docker", "image"))
+
+    def launch(self, raw_cmd=None, env_override={}, volumes=[]):
+        if raw_cmd is None:
+            raw_cmd = self.docker_cmd(env_override=env_override, volumes=volumes)
+        log.info("Starting docker container for IE {0} with command [{1}]".format(
+            self.attr.viz_id,
+            raw_cmd
+        ))
+        subprocess.call(raw_cmd, shell=True)

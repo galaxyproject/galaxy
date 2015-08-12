@@ -17,6 +17,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.model.item_attrs import Dictifiable
 
+
 class Group( object, Dictifiable ):
 
     dict_collection_visible_keys = ( 'name', 'type' )
@@ -41,6 +42,7 @@ class Group( object, Dictifiable ):
         into the preferred value form.
         """
         return value
+
     def get_initial_value( self, trans, context, history=None ):
         """
         Return the initial state/value for this group
@@ -52,11 +54,12 @@ class Group( object, Dictifiable ):
         group_dict = super( Group, self ).to_dict( view=view, value_mapper=value_mapper )
         return group_dict
 
+
 class Repeat( Group ):
 
     dict_collection_visible_keys = ( 'name', 'type', 'title', 'help', 'default', 'min', 'max' )
-
     type = "repeat"
+
     def __init__( self ):
         Group.__init__( self )
         self.title = None
@@ -65,11 +68,14 @@ class Repeat( Group ):
         self.default = 0
         self.min = None
         self.max = None
+
     @property
     def title_plural( self ):
         return inflector.pluralize( self.title )
+
     def label( self ):
         return "Repeat (%s)" % self.title
+
     def value_to_basic( self, value, app ):
         rval = []
         for d in value:
@@ -81,6 +87,7 @@ class Repeat( Group ):
                 rval_dict[ input.name ] = input.value_to_basic( d[input.name], app )
             rval.append( rval_dict )
         return rval
+
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = []
         try:
@@ -103,14 +110,16 @@ class Repeat( Group ):
             if not ignore_errors:
                 raise e
         return rval
+
     def visit_inputs( self, prefix, value, callback ):
         for i, d in enumerate( value ):
             for input in self.inputs.itervalues():
                 new_prefix = prefix + "%s_%d|" % ( self.name, i )
                 if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name], parent = d )
+                    callback( new_prefix, input, d[input.name], parent=d )
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
+
     def get_initial_value( self, trans, context, history=None ):
         rval = []
         for i in range( self.default ):
@@ -129,27 +138,32 @@ class Repeat( Group ):
         repeat_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return repeat_dict
 
+
 class Section( Group ):
 
     dict_collection_visible_keys = ( 'name', 'type', 'title', 'help', 'expanded')
-
     type = "section"
+
     def __init__( self ):
         Group.__init__( self )
         self.title = None
         self.inputs = None
         self.help = None
         self.expanded = False
+
     @property
     def title_plural( self ):
         return inflector.pluralize( self.title )
+
     def label( self ):
         return "Section (%s)" % self.title
+
     def value_to_basic( self, value, app ):
         rval = {}
         for input in self.inputs.itervalues():
             rval[ input.name ] = input.value_to_basic( value[input.name], app )
         return rval
+
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = {}
         try:
@@ -160,64 +174,79 @@ class Section( Group ):
             if not ignore_errors:
                 raise e
         return rval
+
     def visit_inputs( self, prefix, value, callback ):
         for input in self.inputs.itervalues():
             if isinstance( input, ToolParameter ):
-                callback( prefix, input, value[input.name], parent = value )
+                callback( prefix, input, value[input.name], parent=value )
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
+
     def get_initial_value( self, trans, context, history=None ):
         rval = {}
         child_context = ExpressionContext( rval, context )
         for child_input in self.inputs.itervalues():
             rval[ child_input.name ] = child_input.get_initial_value( trans, child_context, history=history )
         return rval
+
     def to_dict( self, trans, view='collection', value_mapper=None ):
         section_dict = super( Section, self ).to_dict( trans, view=view, value_mapper=value_mapper )
+
         def input_to_dict( input ):
             return input.to_dict( trans, view=view, value_mapper=value_mapper )
+
         section_dict[ "inputs" ] = map( input_to_dict, self.inputs.values() )
         return section_dict
 
+
 class UploadDataset( Group ):
     type = "upload_dataset"
+
     def __init__( self ):
         Group.__init__( self )
         self.title = None
         self.inputs = None
         self.file_type_name = 'file_type'
         self.default_file_type = 'txt'
-        self.file_type_to_ext = { 'auto':self.default_file_type }
+        self.file_type_to_ext = { 'auto': self.default_file_type }
         self.metadata_ref = 'files_metadata'
-    def get_composite_dataset_name( self, context ):
-        #FIXME: HACK
-        #Special case of using 'base_name' metadata for use as Dataset name needs to be done in a General Fashion, as defined within a particular Datatype.
 
-        #We get two different types of contexts here, one straight from submitted parameters, the other after being parsed into tool inputs
+    def get_composite_dataset_name( self, context ):
+        # FIXME: HACK
+        # Special case of using 'base_name' metadata for use as Dataset name needs to be done in a General Fashion, as defined within a particular Datatype.
+
+        # We get two different types of contexts here, one straight from submitted parameters, the other after being parsed into tool inputs
         dataset_name = context.get('files_metadata|base_name', None )
         if dataset_name is None:
             dataset_name = context.get('files_metadata', {} ).get( 'base_name', None )
         if dataset_name is None:
             dataset_name = 'Uploaded Composite Dataset (%s)' % self.get_file_type( context )
         return dataset_name
+
     def get_file_base_name( self, context ):
-        fd = context.get('files_metadata|base_name','Galaxy_Composite_file')
+        fd = context.get('files_metadata|base_name', 'Galaxy_Composite_file')
         return fd
+
     def get_file_type( self, context ):
         return context.get( self.file_type_name, self.default_file_type )
+
     def get_datatype_ext( self, trans, context ):
         ext = self.get_file_type( context )
         if ext in self.file_type_to_ext:
-            ext = self.file_type_to_ext[ext] #when using autodetect, we will use composite info from 'text', i.e. only the main file
+            ext = self.file_type_to_ext[ext]  # when using autodetect, we will use composite info from 'text', i.e. only the main file
         return ext
+
     def get_datatype( self, trans, context ):
         ext = self.get_datatype_ext( trans, context )
         return trans.app.datatypes_registry.get_datatype_by_extension( ext )
+
     @property
     def title_plural( self ):
         return inflector.pluralize(self.title)
+
     def group_title( self, context ):
         return "%s (%s)" % ( self.title, context.get( self.file_type_name, self.default_file_type ) )
+
     def title_by_index( self, trans, index, context ):
         d_type = self.get_datatype( trans, context )
         for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.iteritems() ):
@@ -229,6 +258,7 @@ class UploadDataset( Group ):
                     rval = "%s [optional]" % rval
                 return rval
         return None
+
     def value_to_basic( self, value, app ):
         rval = []
         for d in value:
@@ -240,6 +270,7 @@ class UploadDataset( Group ):
                 rval_dict[ input.name ] = input.value_to_basic( d[input.name], app )
             rval.append( rval_dict )
         return rval
+
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = []
         for i, d in enumerate( value ):
@@ -249,34 +280,38 @@ class UploadDataset( Group ):
             rval_dict['__index__'] = d.get( '__index__', i )
             # Restore child inputs
             for input in self.inputs.itervalues():
-                if ignore_errors and input.name not in d: #this wasn't tested
+                if ignore_errors and input.name not in d:  # this wasn't tested
                     rval_dict[ input.name ] = input.get_initial_value( None, d )
                 else:
                     rval_dict[ input.name ] = input.value_from_basic( d[input.name], app, ignore_errors )
             rval.append( rval_dict )
         return rval
+
     def visit_inputs( self, prefix, value, callback ):
         for i, d in enumerate( value ):
             for input in self.inputs.itervalues():
                 new_prefix = prefix + "%s_%d|" % ( self.name, i )
                 if isinstance( input, ToolParameter ):
-                    callback( new_prefix, input, d[input.name], parent = d )
+                    callback( new_prefix, input, d[input.name], parent=d )
                 else:
                     input.visit_inputs( new_prefix, d[input.name], callback )
+
     def get_initial_value( self, trans, context, history=None ):
         d_type = self.get_datatype( trans, context )
         rval = []
         for i, ( composite_name, composite_file ) in enumerate( d_type.writable_files.iteritems() ):
             rval_dict = {}
-            rval_dict['__index__'] = i # create __index__
+            rval_dict['__index__'] = i  # create __index__
             for input in self.inputs.itervalues():
-                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history ) #input.value_to_basic( d[input.name], app )
+                rval_dict[ input.name ] = input.get_initial_value( trans, context, history=history )  # input.value_to_basic( d[input.name], app )
             rval.append( rval_dict )
         return rval
-    def get_uploaded_datasets( self, trans, context, override_name = None, override_info = None ):
-        def get_data_file_filename( data_file, override_name = None, override_info = None ):
+
+    def get_uploaded_datasets( self, trans, context, override_name=None, override_info=None ):
+        def get_data_file_filename( data_file, override_name=None, override_info=None ):
             dataset_name = override_name
             dataset_info = override_info
+
             def get_file_name( file_name ):
                 file_name = file_name.split( '\\' )[-1]
                 file_name = file_name.split( '/' )[-1]
@@ -288,13 +323,13 @@ class UploadDataset( Group ):
                 if not dataset_info:
                     dataset_info = 'uploaded file'
                 return Bunch( type='file', path=data_file['local_filename'], name=dataset_name )
-                #return 'file', data_file['local_filename'], get_file_name( data_file.filename ), dataset_name, dataset_info
+                # return 'file', data_file['local_filename'], get_file_name( data_file.filename ), dataset_name, dataset_info
             except:
                 # The uploaded file should've been persisted by the upload tool action
                 return Bunch( type=None, path=None, name=None )
-                #return None, None, None, None, None
-        def get_url_paste_urls_or_filename( group_incoming, override_name = None, override_info = None ):
-            filenames = []
+                # return None, None, None, None, None
+
+        def get_url_paste_urls_or_filename( group_incoming, override_name=None, override_info=None ):
             url_paste_file = group_incoming.get( 'url_paste', None )
             if url_paste_file is not None:
                 url_paste = open( url_paste_file, 'r' ).read( 1024 )
@@ -304,7 +339,7 @@ class UploadDataset( Group ):
                         line = line.strip()
                         if line:
                             if not line.lower().startswith( 'http://' ) and not line.lower().startswith( 'ftp://' ) and not line.lower().startswith( 'https://' ):
-                                continue # non-url line, ignore
+                                continue  # non-url line, ignore
                             dataset_name = override_name
                             if not dataset_name:
                                 dataset_name = line
@@ -312,15 +347,16 @@ class UploadDataset( Group ):
                             if not dataset_info:
                                 dataset_info = 'uploaded url'
                             yield Bunch( type='url', path=line, name=dataset_name )
-                            #yield ( 'url', line, precreated_name, dataset_name, dataset_info )
+                            # yield ( 'url', line, precreated_name, dataset_name, dataset_info )
                 else:
-                    dataset_name = dataset_info = precreated_name = 'Pasted Entry' #we need to differentiate between various url pastes here
+                    dataset_name = dataset_info = precreated_name = 'Pasted Entry'  # we need to differentiate between various url pastes here
                     if override_name:
                         dataset_name = override_name
                     if override_info:
                         dataset_info = override_info
                     yield Bunch( type='file', path=url_paste_file, name=precreated_name )
-                    #yield ( 'file', url_paste_file, precreated_name, dataset_name, dataset_info )
+                    # yield ( 'file', url_paste_file, precreated_name, dataset_name, dataset_info )
+
         def get_one_filename( context ):
             data_file = context['file_data']
             url_paste = context['url_paste']
@@ -335,19 +371,19 @@ class UploadDataset( Group ):
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
-            file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
+            file_bunch = get_data_file_filename( data_file, override_name=name, override_info=info )
             if file_bunch.path:
                 if url_paste is not None and url_paste.strip():
                     warnings.append( "All file contents specified in the paste box were ignored." )
                 if ftp_files:
                     warnings.append( "All FTP uploaded file selections were ignored." )
-            elif url_paste is not None and url_paste.strip(): #we need to use url_paste
-                for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
+            elif url_paste is not None and url_paste.strip():  # we need to use url_paste
+                for file_bunch in get_url_paste_urls_or_filename( context, override_name=name, override_info=info ):
                     if file_bunch.path:
                         break
                 if file_bunch.path and ftp_files is not None:
                     warnings.append( "All FTP uploaded file selections were ignored." )
-            elif ftp_files is not None and trans.user is not None: # look for files uploaded via FTP
+            elif ftp_files is not None and trans.user is not None:  # look for files uploaded via FTP
                 user_ftp_dir = trans.user_ftp_dir
                 for ( dirpath, dirnames, filenames ) in os.walk( user_ftp_dir ):
                     for filename in filenames:
@@ -357,7 +393,7 @@ class UploadDataset( Group ):
                                 if not os.path.islink( os.path.join( dirpath, filename ) ):
                                     ftp_data_file = { 'local_filename' : os.path.abspath( os.path.join( user_ftp_dir, path ) ),
                                           'filename' : os.path.basename( path ) }
-                                    file_bunch = get_data_file_filename( ftp_data_file, override_name = name, override_info = info )
+                                    file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info )
                                     if file_bunch.path:
                                         break
                         if file_bunch.path:
@@ -368,10 +404,10 @@ class UploadDataset( Group ):
             file_bunch.space_to_tab = space_to_tab
             file_bunch.uuid = uuid
             return file_bunch, warnings
+
         def get_filenames( context ):
             rval = []
             data_file = context['file_data']
-            url_paste = context['url_paste']
             ftp_files = context['ftp_files']
             uuid = context.get( 'uuid', None ) or None  # Turn '' to None
             name = context.get( 'NAME', None )
@@ -382,14 +418,13 @@ class UploadDataset( Group ):
             space_to_tab = False
             if context.get( 'space_to_tab', None ) not in [ "None", None, False ]:
                 space_to_tab = True
-            warnings = []
-            file_bunch = get_data_file_filename( data_file, override_name = name, override_info = info )
+            file_bunch = get_data_file_filename( data_file, override_name=name, override_info=info )
             file_bunch.uuid = uuid
             if file_bunch.path:
                 file_bunch.to_posix_lines = to_posix_lines
                 file_bunch.space_to_tab = space_to_tab
                 rval.append( file_bunch )
-            for file_bunch in get_url_paste_urls_or_filename( context, override_name = name, override_info = info ):
+            for file_bunch in get_url_paste_urls_or_filename( context, override_name=name, override_info=info ):
                 if file_bunch.path:
                     file_bunch.uuid = uuid
                     file_bunch.to_posix_lines = to_posix_lines
@@ -426,7 +461,7 @@ class UploadDataset( Group ):
                     # TODO: warning to the user (could happen if file is already imported)
                 ftp_data_file = { 'local_filename' : os.path.abspath( os.path.join( user_ftp_dir, ftp_file ) ),
                                   'filename' : os.path.basename( ftp_file ) }
-                file_bunch = get_data_file_filename( ftp_data_file, override_name = name, override_info = info )
+                file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info )
                 if file_bunch.path:
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.space_to_tab = space_to_tab
@@ -437,13 +472,13 @@ class UploadDataset( Group ):
         dbkey = context.get( 'dbkey', None )
         writable_files = d_type.writable_files
         writable_files_offset = 0
-        groups_incoming = [ None for filename in writable_files ]
+        groups_incoming = [ None for _ in writable_files ]
         for group_incoming in context.get( self.name, [] ):
             i = int( group_incoming['__index__'] )
             groups_incoming[ i ] = group_incoming
         if d_type.composite_type is not None:
-            #handle uploading of composite datatypes
-            #Only one Dataset can be created
+            # handle uploading of composite datatypes
+            # Only one Dataset can be created
             dataset = Bunch()
             dataset.type = 'composite'
             dataset.file_type = file_type
@@ -453,7 +488,7 @@ class UploadDataset( Group ):
             dataset.metadata = {}
             dataset.composite_files = {}
             dataset.uuid = None
-            #load metadata
+            # load metadata
             files_metadata = context.get( self.metadata_ref, {} )
             metadata_name_substition_default_dict = dict( [ ( composite_file.substitute_name_with_metadata, d_type.metadata_spec[ composite_file.substitute_name_with_metadata ].default ) for composite_file in d_type.composite_files.values() if composite_file.substitute_name_with_metadata ] )
             for meta_name, meta_spec in d_type.metadata_spec.iteritems():
@@ -461,11 +496,11 @@ class UploadDataset( Group ):
                     if meta_name in files_metadata:
                         meta_value = files_metadata[ meta_name ]
                         if meta_name in metadata_name_substition_default_dict:
-                            meta_value = sanitize_for_filename( meta_value, default = metadata_name_substition_default_dict[ meta_name ] )
+                            meta_value = sanitize_for_filename( meta_value, default=metadata_name_substition_default_dict[ meta_name ] )
                         dataset.metadata[ meta_name ] = meta_value
             dataset.precreated_name = dataset.name = self.get_composite_dataset_name( context )
             if dataset.datatype.composite_type == 'auto_primary_file':
-                #replace sniff here with just creating an empty file
+                # replace sniff here with just creating an empty file
                 temp_name, is_multi_byte = sniff.stream_to_file( StringIO.StringIO( d_type.generate_primary_file( dataset ) ), prefix='upload_auto_primary_file' )
                 dataset.primary_file = temp_name
                 dataset.to_posix_lines = True
@@ -477,7 +512,7 @@ class UploadDataset( Group ):
                 dataset.to_posix_lines = file_bunch.to_posix_lines
                 dataset.space_to_tab = file_bunch.space_to_tab
                 dataset.warnings.extend( warnings )
-            if dataset.primary_file is None:#remove this before finish, this should create an empty dataset
+            if dataset.primary_file is None:  # remove this before finish, this should create an empty dataset
                 raise Exception( 'No primary dataset file was available for composite upload' )
             keys = [ value.name for value in writable_files.values() ]
             for i, group_incoming in enumerate( groups_incoming[ writable_files_offset : ] ):
@@ -506,17 +541,21 @@ class UploadDataset( Group ):
                 rval.append( dataset )
             return rval
 
+
 class Conditional( Group ):
     type = "conditional"
+
     def __init__( self ):
         Group.__init__( self )
         self.test_param = None
         self.cases = []
         self.value_ref = None
-        self.value_ref_in_group = True #When our test_param is not part of the conditional Group, this is False
+        self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False
+
     @property
     def label( self ):
         return "Conditional (%s)" % self.name
+
     def get_current_case( self, value, trans ):
         # Convert value to user representation
         if isinstance( value, bool ):
@@ -528,6 +567,7 @@ class Conditional( Group ):
             if str_value == case.value:
                 return index
         raise ValueError( "No case matched value:", self.name, str_value )
+
     def value_to_basic( self, value, app ):
         rval = dict()
         current_case = rval['__current_case__'] = value['__current_case__']
@@ -535,6 +575,7 @@ class Conditional( Group ):
         for input in self.cases[current_case].inputs.itervalues():
             rval[ input.name ] = input.value_to_basic( value[ input.name ], app )
         return rval
+
     def value_from_basic( self, value, app, ignore_errors=False ):
         rval = dict()
         try:
@@ -560,14 +601,15 @@ class Conditional( Group ):
             if not ignore_errors:
                 raise e
         return rval
+
     def visit_inputs( self, prefix, value, callback ):
         current_case = value['__current_case__']
-        new_prefix = prefix + "%s|" % ( self.name )
         for input in self.cases[current_case].inputs.itervalues():
             if isinstance( input, ToolParameter ):
-                callback( prefix, input, value[input.name], parent = value )
+                callback( prefix, input, value[input.name], parent=value )
             else:
                 input.visit_inputs( prefix, value[input.name], callback )
+
     def get_initial_value( self, trans, context, history=None ):
         # State for a conditional is a plain dictionary.
         rval = {}

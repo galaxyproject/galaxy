@@ -25,6 +25,7 @@ from galaxy.tools.deps import requirements
 import galaxy.tools
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters import dynamic_options
+from galaxy.tools.parameters.output import ToolOutputActionGroup
 
 log = logging.getLogger( __name__ )
 
@@ -88,6 +89,22 @@ class XmlToolSource(ToolSource):
     def parse_command(self):
         command_el = self._command_el
         return ( ( command_el is not None ) and command_el.text ) or None
+
+    def parse_environment_variables(self):
+        environment_variables_el = self.root.find("environment_variables")
+        if environment_variables_el is None:
+            return []
+
+        environment_variables = []
+        for environment_variable_el in environment_variables_el.findall("environment_variable"):
+            definition = {
+                "name": environment_variable_el.get("name"),
+                "template": environment_variable_el.text,
+            }
+            environment_variables.append(
+                definition
+            )
+        return environment_variables
 
     def parse_interpreter(self):
         command_el = self._command_el
@@ -169,6 +186,7 @@ class XmlToolSource(ToolSource):
                 inherit_metadata = string_as_bool( collection_elem.get( "inherit_metadata", None ) )
             default_format_source = collection_elem.get( "format_source", None )
             default_metadata_source = collection_elem.get( "metadata_source", "" )
+            filters = collection_elem.findall( 'filter' )
 
             dataset_collectors = None
             if collection_elem.find( "discover_datasets" ) is not None:
@@ -182,6 +200,7 @@ class XmlToolSource(ToolSource):
                 name,
                 structure,
                 label=label,
+                filters=filters,
                 default_format=default_format,
                 inherit_format=inherit_format,
                 inherit_metadata=inherit_metadata,
@@ -236,7 +255,7 @@ class XmlToolSource(ToolSource):
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
         output.hidden = string_as_bool( data_elem.get("hidden", "") )
-        output.actions = galaxy.tools.ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
+        output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
         output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
         return output
 

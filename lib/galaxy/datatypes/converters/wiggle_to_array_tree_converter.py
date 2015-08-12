@@ -3,12 +3,15 @@
 from __future__ import division
 
 import sys
+
 from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
-from bx.arrays.array_tree import *
+eggs.require('numpy')  # noqa
+eggs.require('bx-python')  # noqa
+from bx.arrays.array_tree import array_tree_dict_from_reader, FileArrayTreeDict
 from bx.arrays.wiggle import WiggleReader
 
 BLOCK_SIZE = 100
+
 
 def main():
 
@@ -18,7 +21,7 @@ def main():
     reader = WiggleReader( open( input_fname ) )
 
     # Fill array from reader
-    d = array_tree_dict_from_reader( reader, {}, block_size = BLOCK_SIZE )
+    d = array_tree_dict_from_reader( reader, {}, block_size=BLOCK_SIZE )
 
     for array_tree in d.itervalues():
         array_tree.root.build_summary()

@@ -236,6 +236,14 @@
         </destination>
         <destination id="remote_cluster" runner="drmaa" tags="longjobs"/>
         <destination id="java_cluster" runner="drmaa">
+          <!-- Allow users that are not mapped to any real users to run jobs
+               as a Galaxy (fallback). Default is False.
+          -->
+          <param id="allow_guests">True</param>
+          <!-- Set to False if cluster nodes don't shared Galaxy library,
+               it will perform metadata calculation locally after the job finishes.
+          -->
+          <param id="embed_metadata_in_job">True</param>
           <!-- set arbitrary environment variables at runtime. General
                dependencies for tools should be configured via
                tool_dependency_dir and package options and these
@@ -434,6 +442,13 @@
             <param id="docker_enabled" from_config="use_docker">false</param>
         </destination>
 
+        <!-- Templatized destinations - macros can be used to create templated
+        destinations with reduced XML duplication. Here we are creating 4 destinations in 4 lines instead of 28 using the macros defined below.
+        -->
+        <expand macro="foohost_destination" id="foo_small" ncpus="1" walltime="1:00:00" />
+        <expand macro="foohost_destination" id="foo_medium" ncpus="2" walltime="4:00:00" />
+        <expand macro="foohost_destination" id="foo_large" ncpus="8" walltime="24:00:00" />
+        <expand macro="foohost_destination" id="foo_longrunning" ncpus="1" walltime="48:00:00" />
     </destinations>
     <resources default="default">
       <!-- Group different parameters defined in job_resource_params_conf.xml
@@ -507,4 +522,15 @@
         -->
         <limit type="output_size">10GB</limit>
     </limits>
+    <macros>
+        <xml name="foohost_destination" tokens="id,walltime,ncpus">
+            <destination id="@ID@" runner="cli">
+                <param id="shell_plugin">SecureShell</param>
+                <param id="job_plugin">Torque</param>
+                <param id="shell_username">galaxy</param>
+                <param id="shell_hostname">foohost_destination.example.org</param>
+                <param id="job_Resource_List">walltime=@WALLTIME@,ncpus=@NCPUS@</param>
+            </destination>
+        </xml>
+    </macros>
 </job_conf>

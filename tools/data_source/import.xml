@@ -2,7 +2,7 @@
   <description>(PSU prepared queries)</description>
   <command interpreter="python">import.py $data $output</command>
   <inputs>
-	<display>$data</display>		
+	<display>$data</display>
 	<param name="data" type="select" display="radio">
       <option value="eryth">Erythroid predicted cis-regulatory modules</option>
       <option value="exons">Exons of protein-coding genes in the mouse genome, assembly mm3</option>

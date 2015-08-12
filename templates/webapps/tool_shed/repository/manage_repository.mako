@@ -190,20 +190,24 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 %endif
                 <div style="clear: both"></div>
             </div>
-            %if repository.homepage_url:
             <div class="form-row">
                 <b>Content homepage:</b>
-                <input name="homepage_url" type="textfield" value="${homepage_url | h}" size="80"/>
+                %if repository.homepage_url:
+                    <input name="homepage_url" type="textfield" value="${homepage_url | h}" size="80"/>
+                %else:
+                    <input name="homepage_url" type="textfield" value="" size="80"/>
+                %endif
                 <div style="clear: both"></div>
             </div>
-            %endif
-            %if repository.remote_repository_url:
             <div class="form-row">
                 <b>Development repository:</b>
-                <input name="remote_repository_url" type="textfield" value="${remote_repository_url | h}" size="80"/>
+                %if repository.remote_repository_url:
+                    <input name="remote_repository_url" type="textfield" value="${remote_repository_url | h}" size="80"/>
+                %else:
+                    <input name="remote_repository_url" type="textfield" value="" size="80"/>
+                %endif
                 <div style="clear: both"></div>
             </div>
-            %endif
             <div class="form-row">
                 <b>${sharable_link_label}</b>
                 <a href="${ repository.share_url }" target="_blank">${ repository.share_url }</a>
@@ -212,7 +216,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
             %if can_download or can_push:
                 <div class="form-row">
                     <b>Clone this repository:</b>
-                    <code>hg clone ${ repository.clone_url }</code>
+                    <code>hg clone <a title="Show in mercurial browser" href="${ repository.clone_url }">${ repository.clone_url }</a></code>
                     <button title="to clipboard" class="btn btn-default btn-xs" id="clone_clipboard"><span class="fa fa-clipboard"></span></button>
                 </div>
             %endif

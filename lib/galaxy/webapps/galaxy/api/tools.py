@@ -1,6 +1,5 @@
 import urllib
 
-from galaxy.exceptions import RequestParameterMissingException
 from galaxy.exceptions import ObjectNotFound
 from galaxy.exceptions import InternalServerError
 from galaxy import web, util
@@ -12,15 +11,7 @@ from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import dumps
-from galaxy.util import string_as_bool
-from galaxy.visualization.data_providers.genome import *
-from galaxy.tools.parameters import check_param
-from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
-from galaxy.model import HistoryDatasetAssociation
-from galaxy.util.expressions import ExpressionContext
-from collections import Iterable
 
 import galaxy.queue_worker
 
@@ -80,7 +71,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         try:
             return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster)
         except Exception:
-            raise InternalServerError ( "Error: Could not convert toolbox to dictionary" )
+            raise InternalServerError( "Error: Could not convert toolbox to dictionary" )
 
     @expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):
@@ -112,8 +103,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         GET /api/tools/{tool_id}/reload
         Reload specified tool.
         """
-        toolbox = trans.app.toolbox
-        galaxy.queue_worker.send_control_task( trans, 'reload_tool', noop_self=True, kwargs={ 'tool_id': tool_id } )
+        galaxy.queue_worker.send_control_task( trans.app, 'reload_tool', noop_self=True, kwargs={ 'tool_id': tool_id } )
         message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
         return { status: message }
 
@@ -126,7 +116,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         and dependency related problems.
         """
         # TODO: Move this into tool.
-        to_dict = lambda x: x.to_dict()
+        def to_dict(x):
+            return x.to_dict()
+
         tool = self._get_tool( id, user=trans.user )
         if hasattr( tool, 'lineage' ):
             lineage_dict = tool.lineage.to_dict()
@@ -210,7 +202,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         if success:
             trans.response.set_content_type( 'application/x-gzip' )
             download_file = open( tool_tarball )
-            tarball_path, filename = os.path.split( tool_tarball )
             trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( id )
             return download_file
 
@@ -251,10 +242,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
 
-        #for inputs that are coming from the Library, copy them into the history
+        # for inputs that are coming from the Library, copy them into the history
         input_patch = {}
         for k, v in inputs.iteritems():
-            if  isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
+            if isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
                 ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( self.decode_id(v['id']) )
                 if trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset ):
                     input_patch[k] = ldda.to_history_dataset_association(target_history, add_to_history=True)
@@ -299,12 +290,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             rval[ "errors" ] = job_errors
 
         outputs = rval[ "outputs" ]
-        #TODO:?? poss. only return ids?
+        # TODO:?? poss. only return ids?
         for output_name, output in output_datasets:
             output_dict = output.to_dict()
-            #add the output name back into the output data structure
-            #so it's possible to figure out which newly created elements
-            #correspond with which tool file outputs
+            # add the output name back into the output data structure
+            # so it's possible to figure out which newly created elements
+            # correspond with which tool file outputs
             output_dict[ 'output_name' ] = output_name
             outputs.append( trans.security.encode_dict_ids( output_dict ) )
 
@@ -419,8 +410,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
                 data_provider = data_provider_registry.get_data_provider( trans, original_dataset=input_dataset, source='data' )
-                if data_provider and ( not data_provider.converted_dataset
-                                       or data_provider.converted_dataset.state != trans.app.model.Dataset.states.OK ):
+                if data_provider and ( not data_provider.converted_dataset or
+                                       data_provider.converted_dataset.state != trans.app.model.Dataset.states.OK ):
                     # Can convert but no converted dataset yet, so return message about why.
                     data_sources = input_dataset.datatype.data_sources
                     msg = input_dataset.convert_dataset( trans, data_sources[ 'data' ] )
@@ -526,12 +517,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                     deps = input_dataset.get_converted_dataset_deps( trans, data_source )
 
                     # Create new HDA for input dataset's subset.
-                    new_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext, \
-                                                                             dbkey=input_dataset.dbkey, \
-                                                                             create_dataset=True, \
+                    new_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext,
+                                                                             dbkey=input_dataset.dbkey,
+                                                                             create_dataset=True,
                                                                              sa_session=trans.sa_session,
-                                                                             name="Subset [%s] of data %i" % \
-                                                                                 ( regions_str, input_dataset.hid ),
+                                                                             name="Subset [%s] of data %i" %
+                                                                                  ( regions_str, input_dataset.hid ),
                                                                              visible=False )
                     target_history.add_dataset( new_dataset )
                     trans.sa_session.add( new_dataset )
