@@ -1261,6 +1261,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         # label creates a scalar
         return size_query.label( 'disk_size' )
 
+    @property
     def disk_nice_size( self ):
         """Returns human readable size of history on disk."""
         return galaxy.util.nice_size( self.disk_size )
