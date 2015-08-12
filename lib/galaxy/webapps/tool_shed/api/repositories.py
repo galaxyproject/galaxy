@@ -626,12 +626,15 @@ class RepositoriesController( BaseAPIController ):
                                                                             repository,
                                                                             None,
                                                                             as_html=False )
+                    results[ 'status' ] = 'warning'
                 else:
                     message = "Successfully reset metadata on repository %s owned by %s" % \
                         ( str( repository.name ), str( repository.user.username ) )
+                    results[ 'status' ] = 'ok'
             except Exception, e:
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
                     ( str( repository.name ), str( repository.user.username ), str( e ) )
+                results[ 'status' ] = 'error'
             status = '%s : %s' % ( str( repository.name ), message )
             results[ 'repository_status' ].append( status )
             return results
@@ -644,7 +647,7 @@ class RepositoriesController( BaseAPIController ):
             results = handle_repository( trans, start_time, repository )
             stop_time = strftime( "%Y-%m-%d %H:%M:%S" )
             results[ 'stop_time' ] = stop_time
-        return json.dumps( results, sort_keys=True, indent=4 )
+        return results
 
     @expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):
