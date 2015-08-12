@@ -63,14 +63,19 @@
 <script type="text/javascript">
     $('#reset_metadata_on_selected_repositories').submit(function(f) {
         f.preventDefault();
-        $('input:checked').each(function(){
-            var repository_id = $(this).attr('value');
-            repo_div = $(this).parent();
-            repo_div.attr('class', 'state-queued');
+        var repository_ids = Array()
+        $('input:checked').each(function() {
+            if ($(this).id != 'checkAll') {
+                var repository_id = $(this).attr('value');
+                repository_ids.push(repository_id);
+                repo_div = $(this).parent();
+                repo_div.attr('class', 'state-queued');
+            }
         });
-        $('input:checked').each(function(){
-            var repository_id = $(this).attr('value');
-            repo_div = $(this).parent();
+        for (var i = 0; i < repository_ids.length; i++) {
+            repository_id = repository_ids[i];
+            repo_elem = $("[value=" + repository_id + "]");
+            repo_div = repo_elem.parent();
             repo_div.attr('class', 'state-running');
             $.ajax({
                 type: 'POST',
@@ -84,6 +89,6 @@
                     repo_div.attr('title', data['repository_status'][0]);
                 }
             });
-        });
+        }; 
     });
 </script>
