@@ -83,7 +83,6 @@
                 data: { repository_id: repository_id },
                 dataType: "json"
             }).always(function (data) {
-                console.log(data);
                 repo_div.attr('class', 'state-' + data['status']);
                 if (data['status'] == 'error') {
                     repo_div.attr('title', data['repository_status'][0]);
