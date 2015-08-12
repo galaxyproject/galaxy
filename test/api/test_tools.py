@@ -116,6 +116,55 @@ class ToolsTestCase( api.ApiTestCase ):
         rdata_metadata = self._upload_and_get_details( open(rdata_path, "rb"), file_type="auto" )
         self.assertEquals( rdata_metadata[ "file_ext" ], "rdata" )
 
+    def test_unzip_collection( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_pair( history_id, [ "123", "456" ] )
+        inputs = {
+            "input": { "src": "hdca", "id": hdca_id },
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        response = self._run( "__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True )
+        outputs = response[ "outputs" ]
+        self.assertEquals( len(outputs), 2 )
+        output_forward = outputs[ 0 ]
+        output_reverse = outputs[ 1 ]
+        output_forward_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output_forward )
+        output_reverse_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output_reverse )
+        assert output_forward_content.strip() == "123"
+        assert output_reverse_content.strip() == "456"
+
+        output_forward = self.dataset_populator.get_history_dataset_details( history_id, dataset=output_forward )
+        output_reverse = self.dataset_populator.get_history_dataset_details( history_id, dataset=output_reverse )
+
+        assert output_forward["history_id"] == history_id
+        assert output_reverse["history_id"] == history_id
+
+    def test_zip_inputs( self ):
+        history_id = self.dataset_populator.new_history()
+        hda1 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='1\t2\t3' ) )
+        hda2 = dataset_to_param( self.dataset_populator.new_dataset( history_id, content='4\t5\t6' ) )
+        inputs = {
+            "input_forward": hda1,
+            "input_reverse": hda2,
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        response = self._run( "__ZIP_COLLECTION__", history_id, inputs, assert_ok=True )
+        output_collections = response[ "output_collections" ]
+        self.assertEquals( len(output_collections), 1 )
+
+    def test_zip_list_inputs( self ):
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"] ).json()["id"]
+        hdca2_id = self.dataset_collection_populator.create_list_in_history( history_id, contents=["1\n2\n3\n4", "5\n6\n7\n8"] ).json()["id"]
+        inputs = {
+            "input_forward": { 'batch': True, 'values': [ {"src": "hdca", "id": hdca1_id} ] },
+            "input_reverse": { 'batch': True, 'values': [ {"src": "hdca", "id": hdca2_id} ] },
+        }
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        response = self._run( "__ZIP_COLLECTION__", history_id, inputs, assert_ok=True )
+        implicit_collections = response[ "implicit_collections" ]
+        self.assertEquals( len(implicit_collections), 1 )
+
     @skip_without_tool( "multi_select" )
     def test_multi_select_as_list( self ):
         history_id = self.dataset_populator.new_history()
@@ -125,6 +174,7 @@ class ToolsTestCase( api.ApiTestCase ):
         response = self._run( "multi_select", history_id, inputs, assert_ok=True )
         output = response[ "outputs" ][ 0 ]
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output )
+
         assert output1_content == "--ex1,ex2"
 
     @skip_without_tool( "multi_select" )

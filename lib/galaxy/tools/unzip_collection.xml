@@ -1,0 +1,15 @@
+<tool id="__UNZIP_COLLECTION__"
+      name="Unzip Collection"
+      version="1.0.0"
+      tool_type="unzip_collection">
+  <type class="UnzipCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <inputs>
+    <param type="data_collection" collection_type="paired" name="input" label="Input Paired Dataset" />
+  </inputs>
+  <outputs>
+    <data name="reverse" />
+    <data name="forward" />
+  </outputs>
+</tool>
