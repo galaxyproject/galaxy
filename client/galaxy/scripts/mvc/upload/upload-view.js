@@ -148,7 +148,7 @@ return Backbone.View.extend({
             this.tabs.add({
                 id      : 'composite',
                 title   : 'Composite',
-                $el     : $(this.composite_view.$el)
+                $el     : this.composite_view.$el
             });
 
             // make modal

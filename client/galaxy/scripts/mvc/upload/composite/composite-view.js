@@ -1,4 +1,4 @@
-/** Renders contents of the default upload viewer */
+/** Renders contents of the composite uploader */
 define(['utils/utils',
         'mvc/upload/upload-model',
         'mvc/upload/composite/composite-row',
