@@ -155,7 +155,21 @@ class RepositoriesController( BaseAPIController ):
             "includes_workflows": false,
             "malicious": false,
             "repository_id": "f9cad7b01a472135",
-            "url": "/api/repository_revisions/f9cad7b01a472135"
+            "url": "/api/repository_revisions/f9cad7b01a472135",
+            "valid_tools": [{u'add_to_tool_panel': True,
+                u'description': u'data on any column using simple expressions',
+                u'guid': u'localhost:9009/repos/enis/sample_repo_1/Filter1/2.2.0',
+                u'id': u'Filter1',
+                u'name': u'Filter',
+                u'requirements': [],
+                u'tests': [{u'inputs': [[u'input', u'1.bed'], [u'cond', u"c1=='chr22'"]],
+                  u'name': u'Test-1',
+                  u'outputs': [[u'out_file1', u'filter1_test1.bed']],
+                  u'required_files': [u'1.bed', u'filter1_test1.bed']}],
+                u'tool_config': u'database/community_files/000/repo_1/filtering.xml',
+                u'tool_type': u'default',
+                u'version': u'2.2.0',
+                u'version_string_cmd': None}]
         }
         - a dictionary including the additional information required to install the repository.  For example:
         {
@@ -204,6 +218,7 @@ class RepositoriesController( BaseAPIController ):
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
+                repository_metadata_dict[ 'valid_tools' ] = repository_metadata.metadata[ 'tools' ]
                 # Get the repo_info_dict for installing the repository.
                 repo_info_dict, \
                     includes_tools, \
