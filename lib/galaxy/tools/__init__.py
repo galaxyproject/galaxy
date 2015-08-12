@@ -28,6 +28,7 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
+from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
@@ -84,6 +85,10 @@ class ToolErrorLog:
 
 
 global_tool_errors = ToolErrorLog()
+
+
+class ToolInputsNotReadyException( Exception ):
+    pass
 
 
 class ToolNotFoundException( Exception ):
@@ -1147,6 +1152,8 @@ class Tool( object, Dictifiable ):
         except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
+        except ToolInputsNotReadyException as e:
+            return False, e
         except Exception as e:
             log.exception('Exception caught while attempting tool execution:')
             message = 'Error executing tool: %s' % str(e)
@@ -2166,10 +2173,73 @@ class DataManagerTool( OutputParameterJSONTool ):
             log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id )
         return False
 
+
+class DatabaseOperationTool( Tool ):
+    default_tool_action = ModelOperationToolAction
+    require_dataset_ok = True
+
+    def check_inputs_ready( self, input_datasets, input_dataset_collections ):
+        def check_dataset_instance( input_dataset ):
+            if input_dataset.is_pending:
+                raise ToolInputsNotReadyException()
+
+            if self.require_dataset_ok:
+                if input_dataset.state != input_dataset.dataset.states.OK:
+                    raise ValueError("Tool requires inputs to be in valid state.")
+
+        for input_dataset in input_datasets.values():
+            check_dataset_instance( input_dataset )
+
+        for input_dataset_collection in input_dataset_collections.values():
+            if not input_dataset_collection.collection.populated:
+                raise ToolInputsNotReadyException()
+
+            map( check_dataset_instance, input_dataset_collection.dataset_instances )
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        return self._outputs_dict()
+
+    def _outputs_dict( self ):
+        return odict()
+
+
+class UnzipCollectionTool( DatabaseOperationTool ):
+    tool_type = 'unzip_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        hdca = incoming[ "input" ]
+        assert hdca.collection.collection_type == "paired"
+        forward_o, reverse_o = hdca.collection.dataset_instances
+        forward, reverse = forward_o.copy(), reverse_o.copy()
+        # TODO: rename...
+        history.add_dataset( forward, set_hid=True )
+        history.add_dataset( reverse, set_hid=True )
+        out_data["forward"] = forward
+        out_data["reverse"] = reverse
+
+
+class ZipCollectionTool( DatabaseOperationTool ):
+    tool_type = 'zip_collection'
+
+    def produce_outputs( self, trans, out_data, output_collections, incoming, history ):
+        forward_o = incoming[ "input_forward" ]
+        reverse_o = incoming[ "input_reverse" ]
+
+        forward, reverse = forward_o.copy(), reverse_o.copy()
+        new_elements = odict()
+        new_elements["forward"] = forward
+        new_elements["reverse"] = reverse
+
+        output_collections.create_collection(
+            self.outputs.values()[0], "output", elements=new_elements
+        )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [ Tool, SetMetadataTool, OutputParameterJSONTool,
                     DataManagerTool, DataSourceTool, AsyncDataSourceTool,
+                    UnzipCollectionTool, ZipCollectionTool,
                     DataDestinationTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
