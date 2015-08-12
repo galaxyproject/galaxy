@@ -300,6 +300,7 @@ def _test_elem_to_dict(test_elem, i):
         outputs=__parse_output_elems(test_elem),
         output_collections=__parse_output_collection_elems(test_elem),
         inputs=__parse_input_elems(test_elem, i),
+        expect_num_outputs=test_elem.get("expect_num_outputs"),
         command=__parse_assert_list_from_elem( test_elem.find("assert_command") ),
         stdout=__parse_assert_list_from_elem( test_elem.find("assert_stdout") ),
         stderr=__parse_assert_list_from_elem( test_elem.find("assert_stderr") ),
