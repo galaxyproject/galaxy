@@ -947,6 +947,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                 try:
                     repository = suc.get_repository_in_tool_shed( self.app, repository_id )
                     self.set_repository( repository )
+                    self.resetting_all_metadata_on_repository = True
                     self.reset_all_metadata_on_repository_in_tool_shed()
                     if self.invalid_file_tups:
                         message = tool_util.generate_message_for_invalid_tools( self.app,
