@@ -23,7 +23,9 @@ module.exports = function( grunt ){
     if (grunt.option('develop')){
         grunt.config( 'uglify.options', {
             beautify : true,
-            compress : {drop_debugger : false}
+            compress : {
+                drop_debugger : false
+            }
         });
     } else {
         grunt.config( 'uglify.target.options', {
