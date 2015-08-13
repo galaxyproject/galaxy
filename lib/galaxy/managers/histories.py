@@ -189,8 +189,8 @@ class HistorySerializer( sharable.SharableModelSerializer, deletable.PurgableSer
             'id'            : self.serialize_id,
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
-            'size'          : lambda i, k, **c: int( i.get_disk_size() ),
-            'nice_size'     : lambda i, k, **c: i.get_disk_size( nice_size=True ),
+            'size'          : lambda i, k, **c: int( i.disk_size ),
+            'nice_size'     : lambda i, k, **c: i.disk_nice_size,
             'state'         : self.serialize_history_state,
 
             'url'           : lambda i, k, **c: self.url_for( 'history', id=self.app.security.encode_id( i.id ) ),

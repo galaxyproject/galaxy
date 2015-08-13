@@ -13,6 +13,7 @@ from sqlalchemy import true, false, desc, asc
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api_raw as expose_api_raw
 
 from galaxy.web.base.controller import BaseAPIController
@@ -216,6 +217,29 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             tool_ids.add(tool_id)
         return map( lambda citation: citation.to_dict( "bibtex" ),
                     self.citations_manager.citations_for_tool_ids( tool_ids ) )
+
+    @expose_api_anonymous_and_sessionless
+    def published( self, trans, **kwd ):
+        """
+        published( self, trans, **kwd ):
+        * GET /api/histories/published:
+            return all histories that are published
+
+        :rtype:     list
+        :returns:   list of dictionaries containing summary history information
+
+        Follows the same filtering logic as the index() method above.
+        """
+        limit, offset = self.parse_limit_offset( kwd )
+        filter_params = self.parse_filter_params( kwd )
+        filters = self.history_filters.parse_filters( filter_params )
+        order_by = self._parse_order_by( kwd.get( 'order', 'create_time-dsc' ) )
+        histories = self.history_manager.list_published( filters=filters, order_by=order_by, limit=limit, offset=offset )
+        rval = []
+        for history in histories:
+            history_dict = self.history_serializer.serialize_to_view( history, user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'summary' ) )
+            rval.append( history_dict )
+        return rval
 
     @expose_api
     def create( self, trans, payload, **kwd ):

@@ -116,11 +116,11 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
     def _query_published( self, filters=None, **kwargs ):
         """
-        Query all published items.
+        Return a query for all published items.
         """
         published_filter = self.model_class.published == true()
         filters = self._munge_filters( published_filter, filters )
-        return self.list( filters=filters, **kwargs )
+        return self.query( filters=filters, **kwargs )
 
     def list_published( self, **kwargs ):
         """
