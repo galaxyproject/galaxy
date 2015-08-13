@@ -1187,7 +1187,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         rval[ 'tags' ] = tags_str_list
 
         if view == 'element':
-            rval[ 'size' ] = int( self.get_disk_size() )
+            rval[ 'size' ] = int( self.disk_size )
 
         return rval
 
@@ -1195,10 +1195,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
     def latest_export( self ):
         exports = self.exports
         return exports and exports[ 0 ]
-
-    @property
-    def get_disk_size_bytes( self ):
-        return self.get_disk_size( nice_size=False )
 
     def unhide_datasets( self ):
         for dataset in self.datasets:
@@ -1209,21 +1205,6 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             job = dataset.creating_job
             if job is not None and job.state == Job.states.PAUSED:
                 job.set_state(Job.states.NEW)
-
-    def get_disk_size( self, nice_size=False ):
-        # unique datasets only
-        db_session = object_session( self )
-        rval = db_session.query(
-            func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
-                    .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
-                    .filter( HistoryDatasetAssociation.purged != true() )
-                    .filter( Dataset.purged != true() )
-                    .distinct().subquery().c.total_size ) ).first()[0]
-        if rval is None:
-            rval = 0
-        if nice_size:
-            rval = galaxy.util.nice_size( rval )
-        return rval
 
     @hybrid.hybrid_property
     def disk_size( self ):
@@ -1279,6 +1260,11 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
         )
         # label creates a scalar
         return size_query.label( 'disk_size' )
+
+    @property
+    def disk_nice_size( self ):
+        """Returns human readable size of history on disk."""
+        return galaxy.util.nice_size( self.disk_size )
 
     @property
     def active_datasets_children_and_roles( self ):
