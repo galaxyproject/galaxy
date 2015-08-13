@@ -130,7 +130,7 @@ def add_file( dataset, registry, json_file, output_path ):
     else:
         # FIXME: This ignores the declared sniff order in datatype_conf.xml
         # resulting in improper behavior
-        type_info = Binary.is_sniffable_binary( dataset.path )
+        type_info = Binary.is_sniffable_binary( dataset.path, dataset.name )
         if type_info:
             data_type = type_info[0]
             ext = type_info[1]
