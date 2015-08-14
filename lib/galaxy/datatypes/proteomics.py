@@ -409,8 +409,8 @@ class MzSQlite( SQlite ):
     def set_meta( self, dataset, overwrite=True, **kwd ):
         super( MzSQlite, self ).set_meta( dataset, overwrite=overwrite, **kwd )
 
-    def sniff( self, filename ):
-        if super( MzSQlite, self ).sniff( filename ):
+    def sniff( self, filename, original_filename ):
+        if super( MzSQlite, self ).sniff( filename, original_filename ):
             mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
             try:
                 conn = sqlite.connect( filename )

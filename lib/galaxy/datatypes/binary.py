@@ -828,7 +828,7 @@ class GeminiSQLite( SQlite ):
             log.warn( '%s, set_meta Exception: %s', self, e )
 
     def sniff( self, filename, original_name ):
-        if super( GeminiSQLite, self ).sniff( filename ):
+        if super( GeminiSQLite, self ).sniff( filename, original_name ):
             gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
                                    "variant_impacts", "variants", "version" ]
             try:
