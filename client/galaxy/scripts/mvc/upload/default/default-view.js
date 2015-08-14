@@ -82,7 +82,7 @@ return Backbone.View.extend({
         this.uploadbox = this.$('#upload-box').uploadbox({
             url             : this.app.options.nginx_upload_path,
             announce        : function(index, file) { self._eventAnnounce(index, file) },
-            initialize      : function(index) { return self.app.toData([ self.collection.get(index) ]) },
+            initialize      : function(index) { return self.app.toData([ self.collection.get(index) ], self.history_id) },
             progress        : function(index, percentage) { self._eventProgress(index, percentage) },
             success         : function(index, message) { self._eventSuccess(index, message) },
             error           : function(index, message) { self._eventError(index, message) },
@@ -361,6 +361,9 @@ return Backbone.View.extend({
 
         // update running
         this.counter.running = this.counter.announce;
+
+        // set current history id
+        this.history_id = this.app.currentHistory();
 
         // initiate upload procedure in plugin
         this.uploadbox.start();

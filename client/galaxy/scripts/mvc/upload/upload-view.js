@@ -1,4 +1,4 @@
-/** Upload app containing the upload progress button and main modal **/
+/** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
 define(['utils/utils',
         'mvc/ui/ui-modal',
         'mvc/ui/ui-tabs',
@@ -128,8 +128,8 @@ return Backbone.View.extend({
             return;
         }
 
-        // refresh
-        this.refresh();
+        // set current user
+        this.current_user = Galaxy.currUser.get('id');
 
         // create modal
         if (!this.modal) {
@@ -166,22 +166,21 @@ return Backbone.View.extend({
         this.modal.show();
     },
 
-    // update user and current history
-    refresh: function() {
-        this.current_user = Galaxy.currUser.get('id');
-        this.current_history = null;
-        if (this.current_user) {
-            this.current_history = Galaxy.currHistoryPanel.model.get('id');
-        }
+    // refresh user and current history
+    currentHistory: function() {
+        return this.current_user && Galaxy.currHistoryPanel.model.get('id');
     },
 
-    // package upload items
-    toData: function(items) {
+    /**
+      * Package API data from array of models
+      * @param{Array} items - Upload items/rows filtered from a collection
+    */
+    toData: function(items, history_id) {
         // create dictionary for data submission
         var data = {
             payload: {
                 'tool_id'       : 'upload1',
-                'history_id'    : this.current_history,
+                'history_id'    : history_id || this.currentHistory(),
                 'inputs'        : {}
             },
             files: [],
