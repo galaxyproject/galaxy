@@ -8,7 +8,6 @@ lib/galaxy/model/migrate/versions/
 lib/galaxy/model/tool_shed_install/migrate/versions/
 lib/galaxy/util/pastescript/serve.py
 lib/galaxy/webapps/tool_shed/model/migrate/versions/
-lib/galaxy_utils/
 lib/pkg_resources.py
 lib/tool_shed/
 scripts/api/
