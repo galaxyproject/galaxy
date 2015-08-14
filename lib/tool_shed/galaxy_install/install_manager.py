@@ -461,10 +461,10 @@ class InstallRepositoryManager( object ):
         received encoded_tsr_id by determining its location in the received
         encoded_tsr_ids list.
         """
-        for index, tsr_id in enumerate( encoded_tsr_ids ):
+        for tsr_id, repo_info_dict, tool_panel_section_key in zip( encoded_tsr_ids,
+                                                                   repo_info_dicts,
+                                                                   tool_panel_section_keys ):
             if tsr_id == encoded_tsr_id:
-                repo_info_dict = repo_info_dicts[ index ]
-                tool_panel_section_key = tool_panel_section_keys[ index ]
                 return repo_info_dict, tool_panel_section_key
         return None, None
 
@@ -831,9 +831,9 @@ class InstallRepositoryManager( object ):
 
         installed_tool_shed_repositories = []
         if repositories_for_installation:
-            for index, tool_shed_repository in enumerate( repositories_for_installation ):
-                repo_info_dict = filtered_repo_info_dicts[ index ]
-                tool_panel_section_key = filtered_tool_panel_section_keys[ index ]
+            for tool_shed_repository, repo_info_dict, tool_panel_section_key in zip( repositories_for_installation,
+                                                                                     filtered_repo_info_dicts,
+                                                                                     filtered_tool_panel_section_keys ):
                 self.install_tool_shed_repository( tool_shed_repository,
                                                    repo_info_dict=repo_info_dict,
                                                    tool_panel_section_key=tool_panel_section_key,

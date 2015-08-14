@@ -1431,7 +1431,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
     class RequiredRepositoryColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            rd_str = ''
+            rd_str = []
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -1441,11 +1441,9 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                         # "repository_dependencies": [["http://localhost:9009", "bwa059", "test", "a07baa797d53"]]
                         # Sort rd_tups by by required repository name.
                         sorted_rd_tups = sorted( rd_tups, key=lambda rd_tup: rd_tup[ 1 ] )
-                        num_tups = len( sorted_rd_tups )
-                        for index, rd_tup in enumerate( sorted_rd_tups ):
-                            name = rd_tup[ 1 ]
-                            owner = rd_tup[ 2 ]
-                            changeset_revision = rd_tup[ 3 ]
+                        for rd_tup in sorted_rd_tups:
+                            name, owner, changeset_revision = rd_tup[1:4]
+                            rd_line = ''
                             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                             if required_repository and not required_repository.deleted:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
@@ -1467,13 +1465,12 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                                                                                                    required_repository_id,
                                                                                                                    updated_changeset_revision )
                                 required_repository_metadata_id = trans.security.encode_id( required_repository_metadata.id )
-                                rd_str += '<a href="browse_repository_dependencies?operation=view_or_manage_repository&id=%s">' % ( required_repository_metadata_id )
-                            rd_str += 'Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>' % ( escape_html( rd_tup[ 1 ] ), escape_html( rd_tup[ 3 ] ), escape_html( rd_tup[ 2 ] ) )
+                                rd_line += '<a href="browse_repository_dependencies?operation=view_or_manage_repository&id=%s">' % ( required_repository_metadata_id )
+                            rd_line += 'Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>' % ( escape_html( name ), escape_html( owner ), escape_html( changeset_revision ) )
                             if required_repository:
-                                rd_str += '</a>'
-                            if index < num_tups - 1:
-                                rd_str += '<br/>'
-            return rd_str
+                                rd_line += '</a>'
+                            rd_str.append( rd_line )
+            return '<br />'.join( rd_str )
 
     title = "Valid repository dependency definitions in this tool shed"
     default_sort_key = "Repository.name"
@@ -1512,7 +1509,7 @@ class DatatypesGrid( RepositoryMetadataGrid ):
     class DatatypesColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            datatype_str = ''
+            datatype_list = []
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -1529,15 +1526,13 @@ class DatatypesGrid( RepositoryMetadataGrid ):
                                 datatype_tups.append( ( extension, dtype ) )
                         sorted_datatype_tups = sorted( datatype_tups, key=lambda datatype_tup: datatype_tup[ 0 ] )
                         num_datatype_tups = len( sorted_datatype_tups )
-                        for index, datatype_tup in enumerate( sorted_datatype_tups ):
-                            extension = datatype_tup[ 0 ]
-                            dtype = datatype_tup[ 1 ]
-                            datatype_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
-                            datatype_str += '<b>%s:</b> %s' % ( escape_html( extension ), escape_html( dtype ) )
+                        for datatype_tup in sorted_datatype_tups:
+                            extension, datatype = datatype_tup[:2]
+                            datatype_str = '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
+                            datatype_str += '<b>%s:</b> %s' % ( escape_html( extension ), escape_html( datatype ) )
                             datatype_str += '</a>'
-                            if index < num_datatype_tups - 1:
-                                datatype_str += '<br/>'
-            return datatype_str
+                            datatype_list.append( datatype_str )
+            return '<br />'.join( datatype_list )
 
     title = "Custom datatypes in this tool shed"
     default_sort_key = "Repository.name"
@@ -1593,10 +1588,7 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
                             if num_env_dicts > 0:
                                 td_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
                                 td_str += '<b>environment:</b> '
-                                for index, env_dict in enumerate( env_dicts ):
-                                    td_str += '%s' % escape_html( env_dict[ 'name' ] )
-                                    if index < num_env_dicts - 1:
-                                        td_str += ', '
+                                td_str += ', '.join( [ escape_html( env_dict['name'] ) for env_dict in env_dicts ] )
                                 td_str += '</a><br/>'
                         for index, key in enumerate( sorted_keys ):
                             if key == 'set_environment':
@@ -1649,7 +1641,7 @@ class ToolsGrid( RepositoryMetadataGrid ):
     class ToolsColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            tool_str = ''
+            tool_line = []
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -1664,16 +1656,13 @@ class ToolsGrid( RepositoryMetadataGrid ):
                             if tool_id and version:
                                 tool_tups.append( ( tool_id, version ) )
                         sorted_tool_tups = sorted( tool_tups, key=lambda tool_tup: tool_tup[ 0 ] )
-                        num_tool_tups = len( sorted_tool_tups )
-                        for index, tool_tup in enumerate( sorted_tool_tups ):
-                            tool_id = tool_tup[ 0 ]
-                            version = tool_tup[ 1 ]
-                            tool_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
+                        for tool_tup in sorted_tool_tups:
+                            tool_id, version = tool_tup[ :2 ]
+                            tool_str = '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
                             tool_str += '<b>%s:</b> %s' % ( escape_html( tool_id ), escape_html( version ) )
                             tool_str += '</a>'
-                            if index < num_tool_tups - 1:
-                                tool_str += '<br/>'
-            return tool_str
+                            tool_line.append( tool_str )
+            return '<br />'.join( tool_line )
 
     title = "Valid tools in this tool shed"
     default_sort_key = "Repository.name"

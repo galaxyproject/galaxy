@@ -145,22 +145,6 @@ var GalaxyMenu = Backbone.Model.extend({
         this.masthead.append(tab_visualization);
 
         //
-        // Cloud menu.
-        //
-        if (this.options.enable_cloud_launch){
-            var tab_cloud = new mod_masthead.GalaxyMastheadTab({
-                id      : "cloud",
-                title   : "Cloud",
-                content : "cloudlaunch/index"
-            });
-            tab_cloud.add({
-                title   : "New Cloud Cluster",
-                content : "cloudlaunch/index"
-            });
-            this.masthead.append(tab_cloud);
-        }
-
-        //
         // Admin.
         //
         if (this.options.is_admin_user) {

@@ -81,10 +81,10 @@ class ExportRepositoryManager( object ):
         try:
             repositories_archive = tarfile.open( repositories_archive_filename, "w:%s" % self.file_type )
             exported_repository_registry = ExportedRepositoryRegistry()
-            for index, repository_id in enumerate( ordered_repository_ids ):
+            for repository_id, ordered_repository, ordered_changeset_revision in zip( ordered_repository_ids,
+                                                                                      ordered_repositories,
+                                                                                      ordered_changeset_revisions ):
                 work_dir = tempfile.mkdtemp( prefix="tmp-toolshed-export-er" )
-                ordered_repository = ordered_repositories[ index ]
-                ordered_changeset_revision = ordered_changeset_revisions[ index ]
                 repository_archive, error_message = self.generate_repository_archive( ordered_repository,
                                                                                       ordered_changeset_revision,
                                                                                       work_dir )
