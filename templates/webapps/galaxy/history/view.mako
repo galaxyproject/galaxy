@@ -90,10 +90,10 @@ a.btn {
     <div id="history-view-controls">
         <div class="pull-left">
             %if not history[ 'purged' ]:
-                %if user_is_owner:
-                    <button id="switch" class="btn btn-default">${ _( 'Switch to this history' ) }</button>
-                %else:
+                %if not user_is_owner:
                     <button id="import" class="btn btn-default"></button>
+                %elif not history_is_current:
+                    <button id="switch" class="btn btn-default">${ _( 'Switch to this history' ) }</button>
                 %endif
                 <a id="structure" href="${ structure_url }" class="btn btn-default">${ _( 'Show structure' ) }</a>
             %endif
@@ -166,6 +166,7 @@ a.btn {
     //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
     var hasMasthead  = ${ 'true' if use_panels else 'false' },
         userIsOwner  = ${ 'true' if user_is_owner else 'false' },
+        isCurrent    = ${ 'true' if history_is_current else 'false' },
         historyJSON  = ${ h.dumps( history ) },
         contentsJSON = ${ h.dumps( contents ) },
         panelToUse   = ( userIsOwner )?
@@ -193,8 +194,8 @@ a.btn {
 
             var panelClass = panelMod[ panelToUse.className ],
                 // history module is already in the dpn chain from the panel. We can re-scope it here.
-                historyModel = require( 'mvc/history/history-model' ),
-                history = new historyModel.History( historyJSON, contentsJSON );
+                HISTORY = require( 'mvc/history/history-model' ),
+                historyModel = new HISTORY.History( historyJSON, contentsJSON );
 
             window.historyPanel = new panelClass({
                 show_deleted    : ${show_deleted_json},
@@ -202,7 +203,7 @@ a.btn {
                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 el              : $( "#history-" + historyJSON.id ),
                 $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
-                model           : history
+                model           : historyModel
             }).render();
 
             $( '#toggle-deleted' ).on( 'click', function(){

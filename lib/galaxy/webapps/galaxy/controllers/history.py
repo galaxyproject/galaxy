@@ -481,6 +481,27 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.fill_template( "history/citations.mako", history=history, history_id=history_id )
 
     @web.expose
+    def as_xml( self, trans, id=None, show_deleted=None, show_hidden=None ):
+        """
+        Return a history in xml format.
+        """
+        if trans.app.config.require_login and not trans.user:
+            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy histories.' )
+
+        if id:
+            history = self.history_manager.get_accessible( self.decode_id( id ), trans.user,
+                current_history=trans.history )
+        else:
+            history = trans.get_history( create=True )
+
+        trans.response.set_content_type( 'text/xml' )
+        return trans.fill_template_mako(
+            "history/as_xml.mako",
+            history=history,
+            show_deleted=galaxy.util.string_as_bool( show_deleted ),
+            show_hidden=galaxy.util.string_as_bool( show_hidden ) )
+
+    @web.expose
     def display_structured( self, trans, id=None ):
         """
         Display a history as a nested structure showing the jobs and workflow
@@ -591,10 +612,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """
         View a history. If a history is importable, then it is viewable by any user.
         """
-        # Get history to view.
-        if not id:
-            return trans.show_error_message( "You must specify a history you want to view." )
-
         show_deleted = galaxy.util.string_as_bool( show_deleted )
         show_hidden = galaxy.util.string_as_bool( show_hidden )
         use_panels = galaxy.util.string_as_bool( use_panels )
@@ -603,9 +620,15 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         contents = []
         user_is_owner = False
         try:
-            history_to_view = self.history_manager.get_accessible( self.decode_id( id ), trans.user,
-                current_history=trans.history )
-            user_is_owner = history_to_view.user == trans.user
+            if id:
+                history_to_view = self.history_manager.get_accessible( self.decode_id( id ), trans.user,
+                    current_history=trans.history )
+                user_is_owner = history_to_view.user == trans.user
+                history_is_current = history_to_view == trans.history
+            else:
+                history_to_view = trans.history
+                user_is_owner = True
+                history_is_current = True
 
             # include all datasets: hidden, deleted, and purged
             history_dictionary = self.history_serializer.serialize_to_view( history_to_view,
@@ -624,7 +647,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             return trans.show_error_message( error_msg, use_panels=use_panels )
 
         return trans.fill_template_mako( "history/view.mako",
-            history=history_dictionary, contents=contents, user_is_owner=user_is_owner,
+            history=history_dictionary, contents=contents,
+            user_is_owner=user_is_owner, history_is_current=history_is_current,
             show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
     @web.expose
@@ -1079,21 +1103,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     # ......................................................................... actions/orig. async
     @web.expose
-    def delete_hidden_datasets( self, trans ):
-        """
-        This method deletes all hidden datasets in the current history.
-        """
-        count = 0
-        for hda in trans.history.datasets:
-            if not hda.visible and not hda.deleted and not hda.purged:
-                hda.mark_deleted()
-                count += 1
-                trans.sa_session.add( hda )
-                trans.log_event( "HDA id %s has been deleted" % hda.id )
-        trans.sa_session.flush()
-        return trans.show_ok_message( "%d hidden datasets have been deleted" % count, refresh_frames=['history'] )
-
-    @web.expose
     def purge_deleted_datasets( self, trans ):
         count = 0
         if trans.app.config.allow_user_dataset_purge:
@@ -1165,21 +1174,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         trans.get_or_create_default_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
-
-    @web.expose
-    def unhide_datasets( self, trans, current=False, ids=None ):
-        """Unhide the datasets in the active history -- this does not require a logged in user."""
-        if not ids and galaxy.util.string_as_bool( current ):
-            histories = [ trans.get_history() ]
-            refresh_frames = ['history']
-        else:
-            raise NotImplementedError( "You can currently only unhide all the datasets of the current history." )
-        for history in histories:
-            history.unhide_datasets()
-            trans.sa_session.add( history )
-        trans.sa_session.flush()
-        return trans.show_ok_message( "Your datasets have been unhidden.", refresh_frames=refresh_frames )
-        # TODO: used in index.mako
 
     @web.expose
     def resume_paused_jobs( self, trans, current=False, ids=None ):
@@ -1498,8 +1492,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.expose
     @web.require_login( "switch to a history" )
     def switch_to_history( self, trans, hist_id=None ):
-        """
-        """
+        """Change the current user's current history to one with `hist_id`."""
+        # remains for backwards compat
         self.set_as_current( trans, id=hist_id )
         return trans.response.send_redirect( url_for( "/" ) )
 
@@ -1508,16 +1502,14 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # TODO: override of base ui controller?
 
     def history_data( self, trans, history ):
-        """
-        """
+        """Return the given history in a serialized, dictionary form."""
         return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
 
     # TODO: combine these next two - poss. with a redirect flag
     # @web.require_login( "switch to a history" )
     @web.json
     def set_as_current( self, trans, id ):
-        """
-        """
+        """Change the current user's current history to one with `id`."""
         try:
             history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
             trans.set_history( history )
@@ -1528,15 +1520,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     @web.json
     def current_history_json( self, trans ):
-        """
-        """
+        """Return the current user's current history in a serialized, dictionary form."""
         history = trans.get_history( create=True )
         return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
 
     @web.json
     def create_new_current( self, trans, name=None ):
-        """
-        """
+        """Create a new, current history for the current user"""
         new_history = trans.new_history( name )
         return self.history_serializer.serialize_to_view( new_history, view='detailed', user=trans.user, trans=trans )
     # TODO: /history/current to do all of the above: if ajax, return json; if post, read id and set to current
