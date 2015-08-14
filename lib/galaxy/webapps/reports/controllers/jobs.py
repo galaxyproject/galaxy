@@ -31,7 +31,7 @@ class Timer(object):
     def stop(self):
         try:
             self.stop_time = datetime.now()
-            self.time_delta = self.stop_time - self.start_time 
+            self.time_delta = self.stop_time - self.start_time
             del(self.stop_time)
             del(self.start_time)
         except NameError:
@@ -46,6 +46,7 @@ class Timer(object):
             return_time = self.time_delta
 
         return return_time
+
 
 def sorter(default_sort_id, kwd):
     """
@@ -698,7 +699,6 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
     def per_user( self, trans, **kwd ):
         total_time = Timer()
         q_time = Timer()
-        iter_time = Timer()
 
         total_time.start()
         params = util.Params( kwd )
@@ -804,6 +804,7 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                     time_period=time_period,
                                     q1time=query1time,
                                     q2time=query2time,
+                                    ttime=ttime,
                                     trends=trends,
                                     jobs=jobs,
                                     message=message,
