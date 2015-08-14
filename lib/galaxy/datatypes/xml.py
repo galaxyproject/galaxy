@@ -24,7 +24,7 @@ class GenericXml( data.Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
+    def sniff( self, filename, original_name="" ):
         """
         Determines whether the file is XML or not
 
@@ -71,7 +71,7 @@ class MEMEXml( GenericXml ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
+    def sniff( self, filename, original_name="" ):
         return False
 
 
@@ -88,7 +88,7 @@ class CisML( GenericXml ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
+    def sniff( self, filename, original_name="" ):
         return False
 
 
@@ -105,7 +105,7 @@ class Phyloxml( GenericXml ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
+    def sniff( self, filename, original_name="" ):
         """"Checking for keyword - 'phyloxml' always in lowercase in the first few lines"""
 
         f = open( filename, "r" )
@@ -140,7 +140,7 @@ class Owl( GenericXml ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff( self, filename ):
+    def sniff( self, filename, original_name="" ):
         """
             Checking for keyword - '<owl' in the first 200 lines.
         """

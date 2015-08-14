@@ -46,7 +46,7 @@ class Image( data.Data ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
+    def sniff( self, filename, original_name="" ):
         # First check if we can  use PIL
         if PIL is not None:
             try:
@@ -204,7 +204,7 @@ class Pdf( Image ):
     edam_format = "format_3508"
     file_ext = "pdf"
 
-    def sniff(self, filename):
+    def sniff( self, filename, original_name="" ):
         """Determine if the file is in pdf format."""
         headers = get_headers(filename, None, 1)
         try:
@@ -277,7 +277,7 @@ class Gmaj( data.Data ):
         """Returns the mime type of the datatype"""
         return 'application/zip'
 
-    def sniff(self, filename):
+    def sniff( self, filename, original_name="" ):
         """
         NOTE: the sniff.convert_newlines() call in the upload utility will keep Gmaj data types from being
         correctly sniffed, but the files can be uploaded (they'll be sniffed as 'txt').  This sniff function
@@ -314,7 +314,7 @@ class Html( data.Text ):
         """Returns the mime type of the datatype"""
         return 'text/html'
 
-    def sniff( self, filename ):
+    def sniff( self, filename, original_name="" ):
         """
         Determines whether the file is in html format
 

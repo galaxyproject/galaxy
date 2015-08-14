@@ -325,7 +325,7 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
         successfully discovered.
         """
         try:
-            if datatype.sniff( fname, "" ):
+            if datatype.sniff( fname ):
                 return datatype.file_ext
         except:
             pass
@@ -369,7 +369,7 @@ def handle_compressed_file( filename, datatypes_registry, ext='auto' ):
             check_exts = []
         for compressed_ext in check_exts:
             compressed_datatype = datatypes_registry.get_datatype_by_extension( compressed_ext )
-            if compressed_datatype.sniff( filename, "" ):
+            if compressed_datatype.sniff( filename ):
                 ext = compressed_ext
                 keep_compressed = True
                 is_valid = True
@@ -409,7 +409,7 @@ def handle_uploaded_dataset_file( filename, datatypes_registry, ext='auto', is_m
         ext = guess_ext( filename, sniff_order=datatypes_registry.sniff_order, is_multi_byte=is_multi_byte )
 
     if check_binary( filename ):
-        if not Binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename, "" ):
+        if not Binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename ):
             raise InappropriateDatasetContentError( 'The binary uploaded file contains inappropriate content.' )
     elif check_html( filename ):
         raise InappropriateDatasetContentError( 'The uploaded file contains inappropriate HTML content.' )

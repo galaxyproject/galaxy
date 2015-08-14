@@ -30,7 +30,7 @@ class Hmmer( Text ):
 
 class Hmmer2( Hmmer ):
 
-    def sniff(self, filename):
+    def sniff( self, filename, original_name="" ):
         """HMMER2 files start with HMMER2.0
         """
         with open(filename, 'r') as handle:
@@ -40,7 +40,7 @@ class Hmmer2( Hmmer ):
 
 class Hmmer3( Hmmer ):
 
-    def sniff(self, filename):
+    def sniff( self, filename, original_name="" ):
         """HMMER3 files start with HMMER3/f
         """
         with open(filename, 'r') as handle:
@@ -101,7 +101,7 @@ class Stockholm_1_0( Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff( self, filename ):
+    def sniff( self, filename, original_name="" ):
         if generic_util.count_special_lines('^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', filename) > 0:
             return True
         else:
@@ -184,7 +184,7 @@ class MauveXmfa( Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff( self, filename ):
+    def sniff( self, filename, original_name="" ):
         with open(filename, 'r') as handle:
             return handle.read(21) == '#FormatVersion Mauve1'
         return False
