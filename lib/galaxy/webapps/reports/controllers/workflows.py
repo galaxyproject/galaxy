@@ -1,6 +1,7 @@
 import calendar
 from datetime import datetime, date, timedelta
 import logging
+from collections import namedtuple
 from galaxy import eggs
 eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
@@ -12,6 +13,7 @@ from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids
 eggs.require( "SQLAlchemy >= 0.4" )
 import re
+from math import ceil
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 from galaxy.webapps.reports.controllers.jobs import sorter, get_spark_time
 
@@ -151,17 +153,39 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def per_month_all( self, trans, **kwd ):
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+
         specs = sorter( 'date', kwd )
         sort_id = specs.sort_id
         order = specs.order
         arrow = specs.arrow
         _order = specs.exc_order
+        offset = 0
+        limit = 10
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         q = sa.select( ( self.select_month( model.StoredWorkflow.table.c.create_time ).label( 'date' ),
                         sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
                        from_obj=[ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
                        group_by=self.group_by_month( model.StoredWorkflow.table.c.create_time ),
-                       order_by=[ _order ] )
+                       order_by=[ _order ],
+                       offset=offset,
+                       limit=limit )
 
         all_workflows = sa.select( ( self.select_day( model.StoredWorkflow.table.c.create_time ).label( 'date' ),
                      model.StoredWorkflow.table.c.id ) )
@@ -191,17 +215,24 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                                 row.total_workflows,
                                 month_name,
                                 year ) )
+
+        pages_found = ceil(len(workflows) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
+
         return trans.fill_template( '/webapps/reports/workflows_per_month_all.mako',
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
                                     trends=trends,
                                     workflows=workflows,
-                                    message=message )
+                                    message=message,
+                                    page_specs=page_specs )
 
     @web.expose
     def per_user( self, trans, **kwd ):
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+
         specs = sorter( 'user_email', kwd )
         sort_id = specs.sort_id
         order = specs.order
@@ -209,14 +240,34 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
         _order = specs.exc_order
         time_period = kwd.get('spark_time')
         time_period, _time_period = get_spark_time( time_period )
-        limit = 30
+        spark_limit = 30
+        offset = 0
+        limit = 10
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         workflows = []
         q = sa.select( ( model.User.table.c.email.label( 'user_email' ),
                          sa.func.count( model.StoredWorkflow.table.c.id ).label( 'total_workflows' ) ),
                        from_obj=[ sa.outerjoin( model.StoredWorkflow.table, model.User.table ) ],
                        group_by=[ 'user_email' ],
-                       order_by=[ _order ] )
+                       order_by=[ _order ],
+                       offset=offset,
+                       limit=limit )
 
         all_workflows_per_user = sa.select( ( model.User.table.c.email.label( 'user_email' ),
                                              self.select_day( model.StoredWorkflow.table.c.create_time ).label('date'),
@@ -236,25 +287,30 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
             container = floor(day / _time_period)
             container = int(container)
             try:
-                if container < limit:
+                if container < spark_limit:
                     trends[curr_user][container] += 1
             except KeyError:
-                trends[curr_user] = [0] * limit
-                if container < limit:
+                trends[curr_user] = [0] * spark_limit
+                if container < spark_limit:
                     trends[curr_user][container] += 1
 
         for row in q.execute():
             workflows.append( ( row.user_email,
                                 row.total_workflows ) )
+
+        pages_found = ceil(len(workflows) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
+
         return trans.fill_template( '/webapps/reports/workflows_per_user.mako',
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
-                                    limit=limit,
+                                    spark_limit=spark_limit,
                                     trends=trends,
                                     time_period=time_period,
                                     workflows=workflows,
-                                    message=message )
+                                    message=message,
+                                    page_specs=page_specs )
 
     @web.expose
     def user_per_month( self, trans, **kwd ):
@@ -314,6 +370,7 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
     @web.expose
     def per_workflow( self, trans, **kwd ):
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
 
         specs = sorter( 'workflow_name', kwd )
         sort_id = specs.sort_id
@@ -322,7 +379,25 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
         _order = specs.exc_order
         time_period = kwd.get('spark_time')
         time_period, _time_period = get_spark_time( time_period )
-        limit = 30
+        spark_limit = 30
+        offset = 0
+        limit = 10
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         # In case we don't know which is the monitor user we will query for all jobs
 
@@ -333,7 +408,9 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                                 model.WorkflowInvocation.table ],
                       whereclause=sa.and_( model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id ),
                       group_by=[  model.Workflow.table.c.id ],
-                      order_by=[ _order ] )
+                      order_by=[ _order ],
+                       offset=offset,
+                       limit=limit )
 
         all_runs_per_workflow = sa.select( ( model.Workflow.table.c.id.label( 'workflow_id' ),
                                             model.Workflow.table.c.name.label( 'workflow_name' ),
@@ -355,11 +432,11 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
             container = floor(day / _time_period)
             container = int(container)
             try:
-                if container < limit:
+                if container < spark_limit:
                     trends[curr_tool][container] += 1
             except KeyError:
-                trends[curr_tool] = [0] * limit
-                if container < limit:
+                trends[curr_tool] = [0] * spark_limit
+                if container < spark_limit:
                     trends[curr_tool][container] += 1
 
         runs = []
@@ -368,15 +445,19 @@ class Workflows( BaseUIController, ReportQueryBuilder ):
                            row.total_runs,
                            row.workflow_id) )
 
+        pages_found = ceil(len(runs) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
+
         return trans.fill_template( '/webapps/reports/workflows_per_workflow.mako',
                                     order=order,
                                     arrow=arrow,
                                     sort_id=sort_id,
-                                    limit=limit,
+                                    spark_limit=spark_limit,
                                     time_period=time_period,
                                     trends=trends,
                                     runs=runs,
-                                    message=message)
+                                    message=message,
+                                    page_specs=page_specs)
 
 # ---- Utility methods -------------------------------------------------------
 

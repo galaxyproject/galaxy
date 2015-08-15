@@ -33,7 +33,7 @@
                     %if x == -2 and page > 1:
                         <div class="miss_pages">...</div>
                     %endif
-                    <div class="page_button">${get_page_url( sort_id, order, *args, page=page, offset=offset, entries=entries )}</div>
+                    <div class="page_button">${get_page_url( sort_id, order, *args, page=page, offset=offset, entries=entries, **kwargs )}</div>
                     %if x == 2 and pages_found == 4:
                         <div class="miss_pages">...</div>
                     %endif
@@ -49,6 +49,12 @@
         <form method="post" controller=${controller} action=${action}>
             <input type="hidden" value=${sort_id} name="sort_id">
             <input type="hidden" value=${order} name="order">
+            %try:
+                %if spark_limit:
+                    <input type="hidden" value=${spark_limit} name="spark_limit">
+                %endif
+            %except NameError:
+            %endtry
             Max items:
             <input id="entries_edit"
                    type="text"
