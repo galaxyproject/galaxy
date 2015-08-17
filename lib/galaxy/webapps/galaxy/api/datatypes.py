@@ -42,9 +42,7 @@ class DatatypesController( BaseAPIController ):
                     if extension in datatypes_registry.datatypes_by_extension:
                         composite_files = datatypes_registry.datatypes_by_extension[ extension ].composite_files
                         if composite_files:
-                            dictionary['composite_files'] = []
-                            for file in composite_files:
-                                dictionary['composite_files'].append( composite_files[ file ].dict() )
+                            dictionary['composite_files'] = [_.dict() for _ in composite_files.itervalues()]
                     rval.append(dictionary)
                 return rval
         except Exception as exception:
