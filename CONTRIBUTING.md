@@ -77,6 +77,8 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   request](https://help.github.com/articles/creating-a-pull-request/)
   with these changes. You pull request message ideally should include:
 
+   * A short, informative title used as a basis to generate release notes.
+
    * A description of why the change should be made.
 
    * A description of implementation of the change.
@@ -117,6 +119,13 @@ as outlined by the Apache Foundation.
 Pull requests modifying pre-existing releases should be restricted to bug fixes
 and require at least 2 *+1* binding votes from someone other than the author of
 the pull request with no *-1* binding votes.
+
+In order to facilitate the construction of release notes, the individual merging
+a pull request is responsible for ensuring the pull request either:
+
+- Is tagged on Github with at least one of the tags "bug" or "enhancement"
+- Contains a comment describing why the pull request should not be mentioned in the
+  release notes of the next version of Galaxy
 
 Pull requests changing or clarifying the procedures governing this repository:
 
