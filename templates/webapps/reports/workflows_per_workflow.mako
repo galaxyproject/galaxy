@@ -2,6 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/spark_base.mako" import="make_sparkline, make_spark_settings" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
+<%namespace file="/page_base.mako" import="get_pages, get_entry_selector" />
 <%!
     import re
 %>
@@ -15,10 +16,23 @@ ${get_css()}
 <!--jobs_per_tool.mako-->
 <div class="toolForm">
     <div class="toolFormBody">
-        <h4 align="center">Runs per Workflow</h4>
-        <h5 align="center">
-            Graph goes from present to past ${make_spark_settings( 'workflows', 'per_workflow', limit, sort_id, order, time_period )}
-        </h5>
+        <table id="formHeader">
+            <tr>
+                <td>
+                    ${get_pages( sort_id, order, page_specs, 'workflows', 'per_workflow',spark_time=time_period )}
+                </td>
+                <td>
+                    <h4 align="center">Runs per Workflow</h4>
+                    <h5 align="center">
+                        Graph goes from present to past ${make_spark_settings( 'workflows', 'per_workflow', spark_limit, sort_id, order, time_period, page=page, offset=offset )}
+                    </h5>
+                </td>
+                <td align="right">
+                    ${get_entry_selector("workflows", "per_workflow", page_specs.entries, sort_id, order)}
+                </td>
+            </tr>
+        </table>
+        
         <table align="center" width="60%" class="colored">
             %if len( runs ) == 0:
                 <tr><td colspan="2">There are no runs.</td></tr>
@@ -38,14 +52,23 @@ ${get_css()}
                     </td>
                     <td></td>
                 </tr>
-                <% ctr = 0 %>
+                <% 
+                   ctr = 0
+                   entries = 1
+                %>
                 %for run in runs:
                     <% key = re.sub(r'\W+', '', str(run[2])) %>
+
+                    %if entries > page_specs.entries:
+                        <%break%>
+                    %endif
+
                     %if ctr % 2 == 1:
                         <tr class="odd_row">
                     %else:
                         <tr class="tr">
                     %endif
+
                         <td>${run[2]}</td>
                         <td>${run[0]}</td>
                         <td>${run[1]}</td>
@@ -55,7 +78,10 @@ ${get_css()}
                         %endtry
                         <td id="${key}"></td>
                     </tr>
-                    <% ctr += 1 %>
+                    <% 
+                       ctr += 1
+                       entries += 1
+                    %>
                 %endfor
             %endif
         </table>

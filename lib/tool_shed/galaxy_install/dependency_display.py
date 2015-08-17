@@ -461,12 +461,11 @@ class DependencyDisplayer( object ):
                       self.app.install_model.ToolShedRepository.installation_status.INSTALLED ]:
                     # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
                     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, tool_shed_url )
-                    params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( repository.name ),
-                                                                           str( repository.owner ),
-                                                                           str( repository.installed_changeset_revision ) )
-                    url = common_util.url_join( tool_shed_url,
-                                                'repository/get_readme_files%s' % params )
-                    raw_text = common_util.tool_shed_get( self.app, tool_shed_url, url )
+                    params = dict( name=str( repository.name ),
+                                   owner=str( repository.owner ),
+                                   changeset_revision=str( repository.installed_changeset_revision ) )
+                    pathspec = [ 'repository', 'get_readme_files' ]
+                    raw_text = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
                     readme_files_dict = json.loads( raw_text )
                 else:
                     readme_files_dict = readme_util.build_readme_files_dict( self.app,
