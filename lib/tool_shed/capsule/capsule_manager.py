@@ -117,9 +117,10 @@ class ExportRepositoryManager( object ):
             repositories_archive.close()
         if self.using_api:
             encoded_repositories_archive_name = encoding_util.tool_shed_encode( repositories_archive_filename )
-            params = '?encoded_repositories_archive_name=%s' % encoded_repositories_archive_name
-            download_url = common_util.url_join( web.url_for( '/', qualified=True ),
-                                                'repository/export_via_api%s' % params )
+            params = dict( encoded_repositories_archive_name=encoded_repositories_archive_name )
+            pathspec = [ 'repository', 'export_via_api' ]
+            tool_shed_url = web.url_for( '/', qualified=True )
+            download_url = common_util.url_join( tool_shed_url, pathspec=pathspec, params=params )
             return dict( download_url=download_url, error_messages=error_messages )
         return repositories_archive, error_messages
 

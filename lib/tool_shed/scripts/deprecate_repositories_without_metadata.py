@@ -30,10 +30,8 @@ log.setLevel( 10 )
 log.addHandler( logging.StreamHandler( sys.stdout ) )
 assert sys.version_info[:2] >= ( 2, 4 )
 
-
 def build_citable_url( host, repository ):
-    return url_join( host, 'view', repository.user.username, repository.name )
-
+    return url_join( host, pathspec=[ 'view', repository.user.username, repository.name ] )
 
 def main():
     '''
@@ -62,7 +60,6 @@ def main():
         print "# Displaying info only ( --info_only )"
 
     deprecate_repositories( app, cutoff_time, days=options.days, info_only=options.info_only, verbose=options.verbose )
-
 
 def send_mail_to_owner( app, name, owner, email, repositories_deprecated, days=14 ):
     '''
@@ -95,7 +92,6 @@ def send_mail_to_owner( app, name, owner, email, repositories_deprecated, days=1
     except Exception, e:
         print "# An error occurred attempting to send email: %s" % str( e )
         return False
-
 
 def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=False ):
     # This method will get a list of repositories that were created on or before cutoff_time, but have never
