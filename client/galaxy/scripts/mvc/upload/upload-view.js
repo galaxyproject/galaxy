@@ -136,14 +136,13 @@ return Backbone.View.extend({
             // build tabs
             this.tabs = new Tabs.View();
 
-            // add tab
+            // add tabs
             this.default_view = new UploadViewDefault(this);
             this.tabs.add({
                 id      : 'regular',
                 title   : 'Regular',
                 $el     : this.default_view.$el
             });
-
             this.composite_view = new UploadViewComposite(this);
             this.tabs.add({
                 id      : 'composite',

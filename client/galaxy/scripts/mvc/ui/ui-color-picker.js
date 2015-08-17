@@ -13,14 +13,10 @@ return Backbone.View.extend({
                   ['7f7f7e','0c0c0c','1d1b10','0f243e','244061','632423','4f6128','3f3151','205867','974806']]
     },
 
-    // default options
-    optionsDefault: {
-    },
-
     // initialize
     initialize : function(options) {
         // configure options
-        this.options = Utils.merge(options, this.optionsDefault);
+        this.options = Utils.merge(options, {});
 
         // create new element
         this.setElement(this._template());
@@ -59,7 +55,7 @@ return Backbone.View.extend({
 
     // value
     value : function (new_val) {
-        if (new_val !== undefined) {
+        if (new_val !== undefined && new_val !== null) {
             // set default value
             if (new_val !== null) {
                 // update color value

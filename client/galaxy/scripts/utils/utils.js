@@ -4,7 +4,7 @@
 */
 
 // dependencies
-define(["libs/underscore"], function(_) {
+define([], function() {
 
 /** Traverse through json
 */
