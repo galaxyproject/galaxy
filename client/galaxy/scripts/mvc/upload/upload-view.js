@@ -170,6 +170,11 @@ return Backbone.View.extend({
         return this.current_user && Galaxy.currHistoryPanel.model.get('id');
     },
 
+    // get ftp configuration
+    currentFtp: function() {
+        return this.current_user && this.options.ftp_upload_site;
+    },
+
     /**
       * Package API data from array of models
       * @param{Array} items - Upload items/rows filtered from a collection

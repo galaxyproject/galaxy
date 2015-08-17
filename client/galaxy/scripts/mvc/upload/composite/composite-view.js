@@ -31,6 +31,7 @@ return Backbone.View.extend({
         this.options            = app.options;
         this.list_extensions    = app.list_extensions;
         this.list_genomes       = app.list_genomes;
+        this.ftp_upload_site    = app.currentFtp();
 
         // link this
         var self = this;

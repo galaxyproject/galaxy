@@ -55,6 +55,7 @@ return Backbone.View.extend({
         this.list_extensions    = app.list_extensions;
         this.list_genomes       = app.list_genomes;
         this.ui_button          = app.ui_button;
+        this.ftp_upload_site    = app.currentFtp();
 
         // link this
         var self = this;
@@ -308,7 +309,7 @@ return Backbone.View.extend({
             var self = this;
             this.ftp.append((new UploadFtp({
                 collection      : this.collection,
-                ftp_upload_site : this.app.options.ftp_upload_site,
+                ftp_upload_site : this.ftp_upload_site,
                 onadd: function(ftp_file) {
                     self.uploadbox.add([{
                         mode: 'ftp',
@@ -495,7 +496,7 @@ return Backbone.View.extend({
         }
 
         // ftp button
-        if (this.app.current_user && this.options.ftp_upload_dir && this.options.ftp_upload_site) {
+        if (this.ftp_upload_site) {
             this.btnFtp.$el.show();
         } else {
             this.btnFtp.$el.hide();

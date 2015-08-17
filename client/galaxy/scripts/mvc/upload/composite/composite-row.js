@@ -76,13 +76,15 @@ return Backbone.View.extend({
                 self.uploadinput.dialog();
             }
         });
-        this.button_menu.addMenu({
-            icon        : 'fa-code-fork',
-            title       : 'Choose FTP file',
-            onclick     : function() {
-                self._showFtp();
-            }
-        });
+        if (this.app.ftp_upload_site) {
+            this.button_menu.addMenu({
+                icon        : 'fa-code-fork',
+                title       : 'Choose FTP file',
+                onclick     : function() {
+                    self._showFtp();
+                }
+            });
+        }
         this.button_menu.addMenu({
             icon        : 'fa-pencil',
             title       : 'Paste/Fetch data',
@@ -280,7 +282,7 @@ return Backbone.View.extend({
             this.ftp.empty();
             var self = this;
             this.ftp.append((new UploadFtp({
-                ftp_upload_site : this.app.options.ftp_upload_site,
+                ftp_upload_site: this.app.ftp_upload_site,
                 onchange: function(ftp_file) {
                     self.ftp.hide();
                     if (self.model.get('status') != 'running' && ftp_file) {
