@@ -190,11 +190,11 @@ return Backbone.View.extend({
         if (model && model.get('status') == 'running') {
             this.select_genome.disable();
             this.select_extension.disable();
-            this.$('#upload-info').html('Please wait...');
+            this.$('.upload-helper').fadeOut('fast');
         } else {
             this.select_genome.enable();
             this.select_extension.enable();
-            this.$('#upload-info').html('You can Drag & Drop files into the rows.');
+            this.$('.upload-helper').fadeIn('fast');
         }
         if (this.collection.where({ status : 'ready' }).length == this.collection.length && this.collection.length > 0) {
             this.btnStart.enable();
@@ -228,9 +228,6 @@ return Backbone.View.extend({
     // load html template
     _template: function() {
         return  '<div class="upload-view-composite">' +
-                    '<div class="upload-top">' +
-                        '<h6 id="upload-info" class="upload-info"/>' +
-                    '</div>' +
                     '<div id="upload-footer" class="upload-footer">' +
                         '<span class="footer-title">Composite Type:</span>' +
                         '<span id="footer-extension"/>' +
@@ -239,6 +236,7 @@ return Backbone.View.extend({
                         '<span id="footer-genome"/>' +
                     '</div>' +
                     '<div id="upload-box" class="upload-box">' +
+                        '<div class="upload-helper">Drop files into rows</div>' +
                         '<table id="upload-table" class="ui-table-striped" style="display: none;">' +
                             '<thead>' +
                                 '<tr>' +

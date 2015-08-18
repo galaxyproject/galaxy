@@ -169,12 +169,17 @@
         border: 1px solid @btn-default-border;
         margin-top: 10px;
         background: lighten(@btn-default-border, 30%);
+        .upload-helper {
+            position: absolute;
+            padding: 0px;
+            top: 420px;
+        }
         .title {
             width: 210px;
         }
     }
-    .upload-buttons {
-        padding-top: 20px;
+    .upload-footer {
+        margin-top: 35px;
     }
 }
 
@@ -237,7 +242,7 @@
 }
 
 .upload-footer {
-    height:5%;
+    height:20px;
     text-align:left;
     max-height:20px;
     line-height:18px;
@@ -266,7 +271,7 @@
 }
 
 .upload-top {
-    height:5%;
+    height:20px;
     text-align:center;
     .upload-info {
         margin-top: 0px;

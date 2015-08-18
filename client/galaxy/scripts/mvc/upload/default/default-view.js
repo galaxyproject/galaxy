@@ -508,7 +508,7 @@ return Backbone.View.extend({
             this.$('.upload-helper').hide();
         } else {
             this.$('#upload-table').hide();
-            this.$('.upload-helper').show().html('Drop files here');
+            this.$('.upload-helper').show();
         }
     },
 
@@ -537,7 +537,7 @@ return Backbone.View.extend({
                         '<h6 id="upload-info" class="upload-info"/>' +
                     '</div>' +
                     '<div id="upload-box" class="upload-box">' +
-                        '<div class="upload-helper"/>' +
+                        '<div class="upload-helper">Drop files here</div>' +
                         '<table id="upload-table" class="ui-table-striped" style="display: none;">' +
                             '<thead>' +
                                 '<tr>' +
