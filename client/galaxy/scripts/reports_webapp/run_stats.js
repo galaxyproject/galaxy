@@ -40,7 +40,7 @@ function get_utc_time_hours() {
 function refresh() {
     window.location.reload(true);
 }
-setTimeout(refresh, 900000); //15 minutes = 900000 ms
+setTimeout(refresh, 60000); //1 minute = 60000 ms
 
 function create_chart( inp_data, name, time, title ) {
     require( ["d3"], function (e) {
