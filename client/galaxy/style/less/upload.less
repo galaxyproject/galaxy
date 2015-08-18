@@ -37,9 +37,12 @@
 
 .upload-view-default {
     .highlight {
-        border-color    : @state-warning-bg !important;
+        border-color    : @table-border-color !important;
         border-width    : 2px !important;
         padding         : 9px !important;
+        .upload-helper {
+            color  : @table-border-color !important;
+        }
     }
     .upload-box {
         width           : 100%;
@@ -54,7 +57,7 @@
         padding         : 10px;
         overflow-x      : hidden;
         -ms-overflow-style: none;
-        .upload-item {
+        .upload-row {
             .select2-arrow b {
                 background-position: 0 -3px;
             }
@@ -68,6 +71,11 @@
                     background: transparent;
                 }
             }
+        }
+        .upload-helper {
+            &:extend( h3 );
+            padding: 120px;
+            color: @btn-default-border;
         }
         .title {
             width: 130px;

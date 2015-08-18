@@ -10,7 +10,7 @@ define(['utils/utils',
 
         function(   Utils,
                     UploadModel,
-                    UploadItem,
+                    UploadRow,
                     UploadFtp,
                     Popover,
                     Select,
@@ -30,7 +30,7 @@ return Backbone.View.extend({
     // current upload size in bytes
     upload_size: 0,
 
-    // contains upload item/row models
+    // contains upload row models
     collection : new UploadModel.Collection(),
 
     // ftp file viewer
@@ -131,8 +131,8 @@ return Backbone.View.extend({
         });
 
         // events
-        this.collection.on('remove', function(item) {
-            self._eventRemove(item);
+        this.collection.on('remove', function(model) {
+            self._eventRemove(model);
         });
 
         // setup info
@@ -162,16 +162,16 @@ return Backbone.View.extend({
         this.collection.add(new_model);
 
         // create view/model
-        var upload_item = new UploadItem(this, { model: new_model });
+        var upload_row = new UploadRow(this, { model: new_model });
 
-        // add upload item element to table
-        this.$('#upload-table > tbody:first').append(upload_item.$el);
+        // add upload row element to table
+        this.$('#upload-table > tbody:first').append(upload_row.$el);
 
         // show on screen info
         this._updateScreen();
 
         // render
-        upload_item.render();
+        upload_row.render();
     },
 
     // progress
@@ -236,9 +236,9 @@ return Backbone.View.extend({
     // queue is done
     _eventComplete: function() {
         // reset queued upload to initial status
-        this.collection.each(function(item) {
-            if(item.get('status') == 'queued') {
-                item.set('status', 'init');
+        this.collection.each(function(model) {
+            if(model.get('status') == 'queued') {
+                model.set('status', 'init');
             }
         });
 
@@ -253,10 +253,10 @@ return Backbone.View.extend({
     // events triggered by collection
     //
 
-    // remove item from upload list
-    _eventRemove: function(item) {
+    // remove model from upload list
+    _eventRemove: function(model) {
         // update status
-        var status = item.get('status');
+        var status = model.get('status');
 
         // reduce counter
         if (status == 'success') {
@@ -268,7 +268,7 @@ return Backbone.View.extend({
         }
 
         // remove from queue
-        this.uploadbox.remove(item.id);
+        this.uploadbox.remove(model.id);
 
         // show on screen info
         this._updateScreen();
@@ -349,10 +349,10 @@ return Backbone.View.extend({
         this.upload_size = 0;
         this.upload_completed = 0;
         // switch icons for new uploads
-        this.collection.each(function(item) {
-            if(item.get('status') == 'init') {
-                item.set('status', 'queued');
-                self.upload_size += item.get('file_size');
+        this.collection.each(function(model) {
+            if(model.get('status') == 'init') {
+                model.set('status', 'queued');
+                self.upload_size += model.get('file_size');
             }
         });
 
@@ -416,9 +416,9 @@ return Backbone.View.extend({
     // update extension for all models
     updateExtension: function(extension, defaults_only) {
         var self = this;
-        this.collection.each(function(item) {
-            if (item.get('status') == 'init' && (item.get('extension') == self.options.default_extension || !defaults_only)) {
-                item.set('extension', extension);
+        this.collection.each(function(model) {
+            if (model.get('status') == 'init' && (model.get('extension') == self.options.default_extension || !defaults_only)) {
+                model.set('extension', extension);
             }
         });
     },
@@ -426,9 +426,9 @@ return Backbone.View.extend({
     // update genome for all models
     updateGenome: function(genome, defaults_only) {
         var self = this;
-        this.collection.each(function(item) {
-            if (item.get('status') == 'init' && (item.get('genome') == self.options.default_genome || !defaults_only)) {
-                item.set('genome', genome);
+        this.collection.each(function(model) {
+            if (model.get('status') == 'init' && (model.get('genome') == self.options.default_genome || !defaults_only)) {
+                model.set('genome', genome);
             }
         });
     },
@@ -442,9 +442,9 @@ return Backbone.View.extend({
         // check default message
         if(this.counter.announce == 0) {
             if (this.uploadbox.compatible()) {
-                message = 'You can Drag & Drop files into this box.';
+                message = '&nbsp;';
             } else {
-                message = 'Unfortunately, your browser does not support multiple file uploads or drag&drop.<br>Some supported browsers are: Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.';
+                message = 'Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.';
             }
         } else {
             if (this.counter.running == 0) {
@@ -505,8 +505,10 @@ return Backbone.View.extend({
         // table visibility
         if (this.counter.announce + this.counter.success + this.counter.error > 0) {
             this.$('#upload-table').show();
+            this.$('.upload-helper').hide();
         } else {
             this.$('#upload-table').hide();
+            this.$('.upload-helper').show().html('Drop files here');
         }
     },
 
@@ -535,6 +537,7 @@ return Backbone.View.extend({
                         '<h6 id="upload-info" class="upload-info"/>' +
                     '</div>' +
                     '<div id="upload-box" class="upload-box">' +
+                        '<div class="upload-helper"/>' +
                         '<table id="upload-table" class="ui-table-striped" style="display: none;">' +
                             '<thead>' +
                                 '<tr>' +

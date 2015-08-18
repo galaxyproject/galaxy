@@ -37,7 +37,7 @@ return Backbone.View.extend({
         // create model
         this.model = options.model;
 
-        // add upload item
+        // add upload row
         this.setElement(this._template(options.model));
 
         // build upload functions
@@ -174,8 +174,8 @@ return Backbone.View.extend({
 
     // refresh ready or not states
     _refreshReady: function() {
-        this.app.collection.each(function(item) {
-            item.set('status', (item.get('file_size') > 0) && 'ready' || 'init');
+        this.app.collection.each(function(model) {
+            model.set('status', (model.get('file_size') > 0) && 'ready' || 'init');
         });
     },
 
@@ -315,7 +315,7 @@ return Backbone.View.extend({
 
     // template
     _template: function(options) {
-        return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
+        return  '<tr id="upload-row-' + options.id + '" class="upload-row">' +
                     '<td>' +
                         '<div id="source"/>' +
                         '<div class="text-column">' +

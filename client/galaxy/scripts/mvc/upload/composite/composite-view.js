@@ -8,7 +8,7 @@ define(['utils/utils',
 
         function(   Utils,
                     UploadModel,
-                    UploadItem,
+                    UploadRow,
                     Popover,
                     Select,
                     Ui
@@ -88,10 +88,10 @@ return Backbone.View.extend({
         });
 
         // listener for collection triggers on change in composite datatype
-        this.collection.on('add', function (item) {
-            self._eventAnnounce(item);
+        this.collection.on('add', function (model) {
+            self._eventAnnounce(model);
         });
-        this.collection.on('change add', function(item) {
+        this.collection.on('change add', function() {
             self._updateScreen();
         }).trigger('change');
 
@@ -104,15 +104,15 @@ return Backbone.View.extend({
     //
 
     // builds the basic ui with placeholder rows for each composite data type file
-    _eventAnnounce: function(item) {
+    _eventAnnounce: function(model) {
         // create view/model
-        var upload_item = new UploadItem(this, { model : item });
+        var upload_row = new UploadRow(this, { model : model });
 
-        // add upload item element to table
-        this.$('#upload-table > tbody:first').append(upload_item.$el);
+        // add upload row element to table
+        this.$('#upload-table > tbody:first').append(upload_row.$el);
 
         // render
-        upload_item.render();
+        upload_row.render();
 
         // table visibility
         if (this.collection.length > 0) {
@@ -125,9 +125,9 @@ return Backbone.View.extend({
     // start upload process
     _eventStart: function() {
         var self = this;
-        this.collection.each(function(item) {
-            item.set('genome', self.select_genome.value());
-            item.set('extension', self.select_extension.value());
+        this.collection.each(function(model) {
+            model.set('genome', self.select_genome.value());
+            model.set('extension', self.select_extension.value());
         });
         $.uploadpost({
             url      : this.app.options.nginx_upload_path,

@@ -12,7 +12,7 @@ define(['utils/utils',
                     Select
                 ) {
 
-// item view
+// row view
 return Backbone.View.extend({
     // states
     status_classes : {
@@ -43,7 +43,7 @@ return Backbone.View.extend({
         // create model
         this.model = options.model;
 
-        // add upload item
+        // add upload row
         this.setElement(this._template(options.model));
 
         // append popup to settings icon
@@ -301,7 +301,7 @@ return Backbone.View.extend({
 
     // template
     _template: function(options) {
-        return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
+        return  '<tr id="upload-row-' + options.id + '" class="upload-row">' +
                     '<td>' +
                         '<div class="text-column">' +
                             '<div id="mode"/>' +
