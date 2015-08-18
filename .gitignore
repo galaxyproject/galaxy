@@ -76,6 +76,7 @@ tool-data/shared/igv/igv_build_sites.txt
 tool-data/shared/rviewer/rviewer_build_sites.txt
 tool-data/shared/ncbi/builds.txt
 tool-data/shared/ucsc/builds.txt
+tool-data/shared/ucsc/manual_builds.txt
 tool-data/shared/ensembl/builds.txt
 tool-data/shared/ucsc/publicbuilds.txt
 tool-data/shared/ucsc/ucsc_build_sites.txt
