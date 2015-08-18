@@ -740,9 +740,9 @@ class RexpBase( Html ):
         Create HTML table, used for displaying peek
         """
         out = ['<table cellspacing="0" cellpadding="3">', ]
-        p = pp.split('\n')
         try:
             # Generate column header
+            p = pp.split('\n')
             for i, row in enumerate(p):
                 lrow = row.strip().split('\t')
                 if i == 0:

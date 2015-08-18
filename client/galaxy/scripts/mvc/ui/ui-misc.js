@@ -25,7 +25,7 @@ var Image = Backbone.View.extend({
     initialize : function(options) {
         // get options
         this.options = Utils.merge(options, this.optionsDefault);
-            
+
         // create new element
         this.setElement(this._template(this.options));
     },
@@ -106,7 +106,7 @@ var Icon = Backbone.View.extend({
 var Button = Backbone.View.extend({
     // options
     optionsDefault: {
-        id          : Utils.uid(),
+        id          : null,
         title       : '',
         floating    : 'right',
         cls         : 'ui-button btn btn-default',
@@ -117,6 +117,7 @@ var Button = Backbone.View.extend({
     initialize : function(options) {
         // get options
         this.options = Utils.merge(options, this.optionsDefault);
+        this.options.id = this.options.id || Utils.uid();
 
         // create new element
         this.setElement(this._template(this.options));
@@ -134,6 +135,18 @@ var Button = Backbone.View.extend({
 
         // add tooltip
         $(this.el).tooltip({title: options.tooltip, placement: 'bottom'});
+    },
+
+    // disable
+    disable: function() {
+        this.$el.addClass('disabled');
+        this.disabled = true;
+    },
+
+    // enable
+    enable: function() {
+        this.$el.removeClass('disabled');
+        this.disabled = false;
     },
 
     // show spinner

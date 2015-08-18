@@ -2,6 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/spark_base.mako" import="make_sparkline, make_spark_settings" />
 <%namespace file="/sorting_base.mako" import="get_sort_url, get_css" />
+<%namespace file="/page_base.mako" import="get_pages, get_entry_selector" />
+
 <%!
     import re
     from galaxy import util
@@ -15,8 +17,23 @@ ${get_css()}
 
 <div class="toolForm">
     <div class="toolFormBody">
-        <h3 align="center">Workflows Per User</h3>
-        <h5 align="center">Graph goes from present to past ${make_spark_settings( "jobs", "per_user", limit, sort_id, order, time_period )}</h5>
+        <table id="formHeader">
+            <tr>
+                <td>
+                    ${get_pages( sort_id, order, page_specs, 'workflows', 'per_user',spark_time=time_period )}
+                </td>
+                <td>
+                    <h3 align="center">Workflows Per User</h3>
+                    <h5 align="center">
+                        Graph goes from present to past ${make_spark_settings( "jobs", "per_user", spark_limit, sort_id, order, time_period, page=page, offset=offset )}
+                    </h5>
+                </td>
+                <td align="right">
+                    ${get_entry_selector("workflows", "per_user", page_specs.entries, sort_id, order)}
+                </td>
+            </tr>
+        </table>
+        
         <table align="center" width="60%" class="colored">
             %if len( workflows ) == 0:
                 <tr><td colspan="2">There are no workflows</td></tr>
@@ -33,7 +50,10 @@ ${get_css()}
                     </td>
                     <td></td>
                 </tr>
-                <% ctr = 0 %>
+                <% 
+                   ctr = 0
+                   entries = 1
+                %>
                 %for workflow in workflows:
                     <%
                         email = workflow[0]
@@ -43,11 +63,17 @@ ${get_css()}
                                                .one()
                         key = re.sub(r'\W+', '', workflow[0])
                     %>
+
+                    %if entries > page_specs.entries:
+                        <%break%>
+                    %endif
+
                     %if ctr % 2 == 1:
                         <tr class="odd_row">
                     %else:
                         <tr class="tr">
                     %endif
+
                         <td><a href="${h.url_for( controller='workflows', action='user_per_month', id=trans.security.encode_id( user.id ), email=util.sanitize_text( user.email ), sort_id='default', order='default')}">${email}</a></td>
                         <td>${total}</td>
                         %try:
@@ -56,7 +82,10 @@ ${get_css()}
                         %endtry
                         <td id="${key}"></td>
                     </tr>
-                    <% ctr += 1 %>
+                    <% 
+                       ctr += 1
+                       entries += 1
+                    %>
                 %endfor
             %endif
         </table>

@@ -1,9 +1,7 @@
 /* global define, QUnit, module, test, ok, equal, deepEqual, notEqual */
 define([
-    "jquery",
-    "libs/jquery/jstorage",
-    "libs/bootstrap",
     "sinon-qunit",
+    "test-app",
     "mvc/workflow/workflow-view",
     "mvc/workflow/workflow-node",
     "mvc/workflow/workflow-view-node",
@@ -11,10 +9,8 @@ define([
     "mvc/workflow/workflow-view-terminals",
     "mvc/workflow/workflow-connector"
 ], function(
-    $,
-    jstorage,
-    bootstrap,
     sinon,
+    testApp,
     App,
     Node,
     NodeView,
@@ -44,27 +40,16 @@ define([
         });
     };
 
-    // create server (fake)
-    var create_server = function() {
-        var server = sinon.fakeServer.create();
-        server.respondWith('GET', galaxy_config.root + 'api/datatypes/mapping', [200, { 'Content-Type': 'application/json' },
-                            '{"ext_to_class_name" : {"txt" : "Text", "data":"Data","tabular":"Tabular", "binary": "Binary", "bam": "Bam" }, "class_to_classes": { "Data": { "Data": true }, "Text": { "Text": true, "Data": true }, "Tabular": { "Tabular": true, "Text": true, "Data": true }, "Binary": { "Data": true, "Binary": true }, "Bam": { "Data": true, "Binary": true, "Bam": true }}}']);
-        server.respondWith('GET', galaxy_config.root + 'api/datatypes', [200, { 'Content-Type': 'application/json' },
-                            '["RData", "ab1", "affybatch", "txt"]']);
-        return server;
-    };
-
     module( "Input terminal model test", {
         setup: function( ) {
-            this.server = create_server();
+            testApp.create();
             this.node = new Node( create_app(), {  } );
             this.input = { extensions: [ "txt" ], multiple: false };
             this.input_terminal = new Terminals.InputTerminal( { input: this.input } );
             this.input_terminal.node = this.node;
         },
         teardown: function() {
-            this.server.restore();
-            delete this.server;
+            testApp.destroy();
         },
         multiple: function( ) {
             this.input.multiple = true;

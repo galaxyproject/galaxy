@@ -33,12 +33,12 @@ class UpdateRepositoryManager( object ):
         """Return the changeset revision hash to which the repository can be updated."""
         changeset_revision_dict = {}
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( self.app, str( repository.tool_shed ) )
-        params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( repository.name ),
-                                                               str( repository.owner ),
-                                                               str( repository.installed_changeset_revision ) )
-        url = common_util.url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev%s' % params )
+        params = dict( name=str( repository.name ),
+                       owner=str( repository.owner ),
+                       changeset_revision=str( repository.installed_changeset_revision ) )
+        pathspec = [ 'repository', 'get_changeset_revision_and_ctx_rev' ]
         try:
-            encoded_update_dict = common_util.tool_shed_get( self.app, tool_shed_url, url )
+            encoded_update_dict = common_util.tool_shed_get( self.app, tool_shed_url, pathspec=pathspec, params=params )
             if encoded_update_dict:
                 update_dict = encoding_util.tool_shed_decode( encoded_update_dict )
                 includes_data_managers = update_dict.get( 'includes_data_managers', False )

@@ -4,7 +4,7 @@
 */
 
 // dependencies
-define(["libs/underscore"], function(_) {
+define([], function() {
 
 /** Traverse through json
 */
@@ -162,19 +162,10 @@ function request (options) {
  * @param{String}   name        - CSS property
  */
 function cssGetAttribute (classname, name) {
-    // place dummy element
     var el = $('<div class="' + classname + '"></div>');
-
-    // required append
     el.appendTo(':eq(0)');
-
-    // get value
     var value = el.css(name);
-
-    // remove element
     el.remove();
-
-    // return css value
     return value;
 };
 
@@ -183,9 +174,9 @@ function cssGetAttribute (classname, name) {
  * @param{String}   url - Url of CSS file
  */
 function cssLoadFile (url) {
-    // check if css is already available
-    if (!$('link[href^="' + url + '"]').length)
+    if (!$('link[href^="' + url + '"]').length) {
         $('<link href="' + galaxy_config.root + url + '" rel="stylesheet">').appendTo('head');
+    }
 };
 
 /**
@@ -194,10 +185,11 @@ function cssLoadFile (url) {
  * @param{Object}   optionsDefault  - Source dictionary
  */
 function merge (options, optionsDefault) {
-    if (options)
+    if (options) {
         return _.defaults(options, optionsDefault);
-    else
+    } else {
         return optionsDefault;
+    }
 };
 
 
@@ -255,27 +247,21 @@ function uid(){
  * Create a time stamp
  */
 function time() {
-    // get date object
     var d = new Date();
-
-    // format items
     var hours = (d.getHours() < 10 ? "0" : "") + d.getHours();
     var minutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes()
-
-    // format final stamp
-    var datetime = d.getDate() + "/"
+    return datetime = d.getDate() + "/"
                 + (d.getMonth() + 1)  + "/"
                 + d.getFullYear() + ", "
                 + hours + ":"
                 + minutes;
-    return datetime;
 };
 
 return {
-    cssLoadFile   : cssLoadFile,
-    cssGetAttribute : cssGetAttribute,
-    get : get,
-    merge : merge,
+    cssLoadFile: cssLoadFile,
+    cssGetAttribute: cssGetAttribute,
+    get: get,
+    merge: merge,
     bytesToString: bytesToString,
     uid: uid,
     time: time,
