@@ -915,7 +915,8 @@ class RepositoriesController( BaseAPIController ):
                     message = error_message
         else:
             trans.response.status = 500
-
+        if os.path.exists( uploaded_file_name ):
+            os.remove( uploaded_file_name )
         if not ok:
             return {
                 "err_msg": message,

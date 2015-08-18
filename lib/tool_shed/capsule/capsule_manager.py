@@ -112,6 +112,10 @@ class ExportRepositoryManager( object ):
         except Exception, e:
             log.exception( str( e ) )
         finally:
+            if os.path.exists( tmp_export_info ):
+                os.remove( tmp_export_info )
+            if os.path.exists( tmp_manifest ):
+                os.remove( tmp_manifest )
             lock.release()
         if repositories_archive is not None:
             repositories_archive.close()
