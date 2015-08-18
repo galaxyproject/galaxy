@@ -26,6 +26,7 @@ function date_by_subtracting_hours(date, hours) {
     );
 }
 
+// Gets the utc time without minutes and seconds
 function get_utc_time_hours() {
     var date = new Date();
     return new Date(
@@ -37,6 +38,7 @@ function get_utc_time_hours() {
     );
 }
 
+// Refreshes the page for more up to date information
 function refresh() {
     window.location.reload(true);
 }
