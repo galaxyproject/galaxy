@@ -537,7 +537,7 @@ return Backbone.View.extend({
                         '<h6 id="upload-info" class="upload-info"/>' +
                     '</div>' +
                     '<div id="upload-box" class="upload-box">' +
-                        '<div class="upload-helper">Drop files here</div>' +
+                        '<div class="upload-helper"><i class="fa fa-files-o"/>Drop files here</div>' +
                         '<table id="upload-table" class="ui-table-striped" style="display: none;">' +
                             '<thead>' +
                                 '<tr>' +
