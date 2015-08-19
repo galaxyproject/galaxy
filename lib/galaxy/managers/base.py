@@ -178,7 +178,7 @@ class ModelManager( object ):
         return item
 
     # .... query foundation wrapper
-    def query( self, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    def query( self, eagerloads=True, **kwargs ):
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
 
@@ -188,7 +188,10 @@ class ModelManager( object ):
         # joined table loading
         if eagerloads is False:
             query = query.enable_eagerloads( False )
+        return self._filter_and_order_query( query, **kwargs )
 
+    def _filter_and_order_query( self, query, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+        # TODO: not a lot of functional cohesion here
         query = self._apply_orm_filters( query, filters )
         query = self._apply_order_by( query, order_by )
         query = self._apply_orm_limit_offset( query, limit, offset )
@@ -299,21 +302,19 @@ class ModelManager( object ):
         return self.one( filters=id_filter, **kwargs )
 
     # .... multirow queries
-    def _orm_list( self, query=None, **kwargs ):
-        """
-        Sends kwargs to build the query return all models found.
-        """
-        query = query or self.query( **kwargs )
-        return query.all()
-
     def list( self, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
         Returns all objects matching the given filters
         """
+        # list becomes a way of applying both filters generated in the orm (such as .user ==)
+        # and functional filters that aren't currently possible using the orm (such as instance calcluated values
+        # or annotations/tags). List splits those two filters and applies limits/offsets
+        # only after functional filters (if any) using python.
         orm_filters, fn_filters = self._split_filters( filters )
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            return self._orm_list( filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs )
+            return self._orm_list( filters=orm_filters, order_by=order_by,
+                limit=limit, offset=offset, **kwargs )
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
         query = self.query( filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs )
@@ -346,6 +347,13 @@ class ModelManager( object ):
         Returns True if `filter_` is a functional filter to be applied after the SQL query.
         """
         return callable( filter_ )
+
+    def _orm_list( self, query=None, **kwargs ):
+        """
+        Sends kwargs to build the query return all models found.
+        """
+        query = query or self.query( **kwargs )
+        return query.all()
 
     def _apply_fn_filters_gen( self, items, filters ):
         """
