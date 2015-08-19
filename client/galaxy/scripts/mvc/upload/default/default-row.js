@@ -160,7 +160,7 @@ return Backbone.View.extend({
         // remove mode class
         this.$('#mode')
             .removeClass()
-            .addClass('upload-icon-float')
+            .addClass('upload-mode')
             .addClass('text-primary');
 
         // activate text field if file is new
