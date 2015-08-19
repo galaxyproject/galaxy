@@ -19,11 +19,11 @@ define(['utils/utils',
 return Backbone.View.extend({
     // states
     status_classes : {
-        init    : 'upload-icon fa fa-exclamation text-primary',
-        ready   : 'upload-icon fa fa-check text-success',
-        running : 'upload-icon fa fa-spinner fa-spin',
-        success : 'upload-icon fa fa-check',
-        error   : 'upload-icon fa fa-exclamation-triangle'
+        init    : 'upload-icon-float fa fa-exclamation text-primary',
+        ready   : 'upload-icon-float fa fa-check text-success',
+        running : 'upload-icon-float fa fa-spinner fa-spin',
+        success : 'upload-icon-float fa fa-check',
+        error   : 'upload-icon-float fa fa-exclamation-triangle'
     },
 
     // initialize
