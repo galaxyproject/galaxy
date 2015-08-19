@@ -155,12 +155,13 @@
             margin-left: 5px;
         }
     }
-    .upload-icon, .upload-icon-button {
-        font-size: 1.2em;
-        width: 1.2em;
+    .upload-icon {
+        &:extend(.ui-icon);
     }
     .upload-icon-button {
-        cursor: pointer;
+        &:extend(.ui-icon-button);
+        position: relative;
+        top: 1px;
     }
 }
 
