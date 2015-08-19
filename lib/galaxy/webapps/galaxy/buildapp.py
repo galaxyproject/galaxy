@@ -554,6 +554,12 @@ def populate_api_routes( webapp, app ):
                             new={ 'install_repository_revision': 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
 
+    webapp.mapper.connect( 'tool_shed_repository',
+                           '/api/tool_shed_repositories/:id/status',
+                           controller='tool_shed_repositories',
+                           action='status',
+                           conditions=dict( method=[ "GET" ] ) )
+
     # ==== Trace/Metrics Logger
     # Connect logger from app
     if app.trace_logger:
