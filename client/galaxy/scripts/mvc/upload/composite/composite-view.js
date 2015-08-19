@@ -190,11 +190,9 @@ return Backbone.View.extend({
         if (model && model.get('status') == 'running') {
             this.select_genome.disable();
             this.select_extension.disable();
-            this.$('.upload-helper').fadeOut('fast');
         } else {
             this.select_genome.enable();
             this.select_extension.enable();
-            this.$('.upload-helper').fadeIn('fast');
         }
         if (this.collection.where({ status : 'ready' }).length == this.collection.length && this.collection.length > 0) {
             this.btnStart.enable();
