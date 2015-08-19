@@ -236,7 +236,6 @@ return Backbone.View.extend({
                         '<span id="footer-genome"/>' +
                     '</div>' +
                     '<div id="upload-box" class="upload-box">' +
-                        '<div class="upload-helper"><i class="fa fa-file-o"/>Drop file into row</div>' +
                         '<table id="upload-table" class="ui-table-striped" style="display: none;">' +
                             '<thead>' +
                                 '<tr>' +
