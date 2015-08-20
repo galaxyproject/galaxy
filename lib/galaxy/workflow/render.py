@@ -107,7 +107,7 @@ class WorkflowCanvas( object ):
                                              adjusted[ 1 ] - MARGIN,
                                              in_coords[ 0 ] - 10,
                                              in_coords[ 1 ],
-                                             arrow_end="true" ).SVG() )
+                                             arrow_end="conn_%s" % (len(self.connectors.keys()) + 1) ).SVG() )
 
     def add_steps( self, highlight_errors=False ):
         # Only highlight missing tools if displaying in the tool shed.
