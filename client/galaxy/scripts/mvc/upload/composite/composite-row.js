@@ -87,7 +87,7 @@ return Backbone.View.extend({
             });
         }
         this.button_menu.addMenu({
-            icon        : 'fa-pencil',
+            icon        : 'fa-edit',
             title       : 'Paste/Fetch data',
             onclick     : function() {
                 self.model.reset({

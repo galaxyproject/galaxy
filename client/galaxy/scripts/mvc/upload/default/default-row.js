@@ -170,7 +170,7 @@ return Backbone.View.extend({
                 'top'   : this.$el.height() - 8 + 'px'
             }).show();
             this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 16);
-            this.$('#mode').addClass('fa fa-pencil');
+            this.$('#mode').addClass('fa fa-edit');
         }
 
         // file from local disk
