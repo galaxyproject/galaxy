@@ -19,11 +19,11 @@ define(['utils/utils',
 return Backbone.View.extend({
     // states
     status_classes : {
-        init    : 'status fa fa-exclamation text-primary',
-        ready   : 'status fa fa-check text-success',
-        running : 'status fa fa-spinner fa-spin',
-        success : 'status fa fa-check',
-        error   : 'status fa fa-exclamation-triangle'
+        init    : 'upload-mode fa fa-exclamation text-primary',
+        ready   : 'upload-mode fa fa-check text-success',
+        running : 'upload-mode fa fa-spinner fa-spin',
+        success : 'upload-mode fa fa-check',
+        error   : 'upload-mode fa fa-exclamation-triangle'
     },
 
     // initialize
@@ -37,7 +37,7 @@ return Backbone.View.extend({
         // create model
         this.model = options.model;
 
-        // add upload item
+        // add upload row
         this.setElement(this._template(options.model));
 
         // build upload functions
@@ -66,6 +66,7 @@ return Backbone.View.extend({
         // source selection popup
         this.button_menu = new Ui.ButtonMenu({
             icon        : 'fa-caret-down',
+            title       : 'Select',
             pull        : 'left'
         });
         this.$('#source').append(this.button_menu.$el);
@@ -174,8 +175,8 @@ return Backbone.View.extend({
 
     // refresh ready or not states
     _refreshReady: function() {
-        this.app.collection.each(function(item) {
-            item.set('status', (item.get('file_size') > 0) && 'ready' || 'init');
+        this.app.collection.each(function(model) {
+            model.set('status', (model.get('file_size') > 0) && 'ready' || 'init');
         });
     },
 
@@ -315,10 +316,10 @@ return Backbone.View.extend({
 
     // template
     _template: function(options) {
-        return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
+        return  '<tr id="upload-row-' + options.id + '" class="upload-row">' +
                     '<td>' +
                         '<div id="source"/>' +
-                        '<div class="text-column">' +
+                        '<div class="upload-text-column">' +
                             '<div id="text" class="text">' +
                                 '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
                                 '<textarea id="text-content" class="text-content form-control"/>' +
@@ -329,17 +330,17 @@ return Backbone.View.extend({
                         '<div id="status"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="file_desc" class="title"/>' +
+                        '<div id="file_desc" class="upload-title"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="file_name" class="title"/>' +
+                        '<div id="file_name" class="upload-title"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="file_size" class="size"/>' +
+                        '<div id="file_size" class="upload-size"/>' +
                     '</td>' +
                     '<td><div id="settings" class="upload-icon-button fa fa-gear"/></td>' +
                     '<td>' +
-                        '<div id="info" class="info">' +
+                        '<div id="info" class="upload-info">' +
                             '<div id="info-text"/>' +
                             '<div id="info-progress" class="progress">' +
                                 '<div class="progress-bar progress-bar-success"/>' +

@@ -152,7 +152,7 @@ return Backbone.View.extend({
 
             // make modal
             this.modal = new Modal.View({
-                title           : 'Download data directly from web or upload files from your disk',
+                title           : 'Download from web or upload from disk',
                 body            : this.tabs.$el,
                 height          : this.options.height,
                 width           : this.options.width,
