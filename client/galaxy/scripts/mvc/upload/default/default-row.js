@@ -12,7 +12,7 @@ define(['utils/utils',
                     Select
                 ) {
 
-// item view
+// row view
 return Backbone.View.extend({
     // states
     status_classes : {
@@ -43,7 +43,7 @@ return Backbone.View.extend({
         // create model
         this.model = options.model;
 
-        // add upload item
+        // add upload row
         this.setElement(this._template(options.model));
 
         // append popup to settings icon
@@ -58,7 +58,7 @@ return Backbone.View.extend({
         
         // select genomes
         this.select_genome = new Select.View({
-            css: 'genome',
+            css: 'upload-genome',
             onchange : function(genome) {
                 self.model.set('genome', genome);
                 self.app.updateGenome(genome, true);
@@ -76,7 +76,7 @@ return Backbone.View.extend({
         
         // select extension
         this.select_extension = new Select.View({
-            css: 'extension',
+            css: 'upload-extension',
             onchange : function(extension) {
                 self.model.set('extension', extension);
                 self.app.updateExtension(extension, true);
@@ -160,7 +160,7 @@ return Backbone.View.extend({
         // remove mode class
         this.$('#mode')
             .removeClass()
-            .addClass('mode')
+            .addClass('upload-mode')
             .addClass('text-primary');
 
         // activate text field if file is new
@@ -301,11 +301,11 @@ return Backbone.View.extend({
 
     // template
     _template: function(options) {
-        return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
+        return  '<tr id="upload-row-' + options.id + '" class="upload-row">' +
                     '<td>' +
-                        '<div class="text-column">' +
+                        '<div class="upload-text-column">' +
                             '<div id="mode"/>' +
-                            '<div id="title" class="title"/>' +
+                            '<div id="title" class="upload-title"/>' +
                             '<div id="text" class="text">' +
                                 '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
                                 '<textarea id="text-content" class="text-content form-control"/>' +
@@ -313,18 +313,18 @@ return Backbone.View.extend({
                         '</div>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="size" class="size"/>' +
+                        '<div id="size" class="upload-size"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="extension" class="extension" style="float: left;"/>&nbsp;&nbsp' +
+                        '<div id="extension" class="upload-extension" style="float: left;"/>&nbsp;&nbsp' +
                         '<div id="extension-info" class="upload-icon-button fa fa-search"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="genome" class="genome"/>' +
+                        '<div id="genome" class="upload-genome"/>' +
                     '</td>' +
                     '<td><div id="settings" class="upload-icon-button fa fa-gear"/></td>' +
                     '<td>' +
-                        '<div id="info" class="info">' +
+                        '<div id="info" class="upload-info">' +
                             '<div class="progress">' +
                                 '<div class="progress-bar progress-bar-success"/>' +
                                 '<div id="percentage" class="percentage">0%</div>' +
