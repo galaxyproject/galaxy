@@ -79,7 +79,7 @@ return Backbone.View.extend({
         });
         if (this.app.ftp_upload_site) {
             this.button_menu.addMenu({
-                icon        : 'fa-code-fork',
+                icon        : 'fa-folder-open-o',
                 title       : 'Choose FTP file',
                 onclick     : function() {
                     self._showFtp();
@@ -87,7 +87,7 @@ return Backbone.View.extend({
             });
         }
         this.button_menu.addMenu({
-            icon        : 'fa-pencil',
+            icon        : 'fa-edit',
             title       : 'Paste/Fetch data',
             onclick     : function() {
                 self.model.reset({
