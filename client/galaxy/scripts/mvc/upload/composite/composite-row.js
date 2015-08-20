@@ -79,7 +79,7 @@ return Backbone.View.extend({
         });
         if (this.app.ftp_upload_site) {
             this.button_menu.addMenu({
-                icon        : 'fa-code-fork',
+                icon        : 'fa-folder-open-o',
                 title       : 'Choose FTP file',
                 onclick     : function() {
                     self._showFtp();

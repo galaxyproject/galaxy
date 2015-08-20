@@ -180,7 +180,7 @@ return Backbone.View.extend({
 
         // file from ftp
         if (file_mode == 'ftp') {
-            this.$('#mode').addClass('fa fa-code-fork');
+            this.$('#mode').addClass('fa fa-folder-open-o');
         }
     },
 
