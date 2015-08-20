@@ -34,8 +34,8 @@ class WorkflowCanvas( object ):
         canvas.append( self.boxes )
         canvas.append( self.text )
         width, height = ( max_x + max_width + 50 ), max_y + 300
-        canvas[ 'width' ] = "%s px" % width
-        canvas[ 'height' ] = "%s px" % height
+        canvas[ 'width' ] = "%spx" % width
+        canvas[ 'height' ] = "%spx" % height
         canvas[ 'viewBox' ] = "0 0 %s %s" % ( width, height )
 
     def add_boxes( self, step_dict, width, name_fill ):
