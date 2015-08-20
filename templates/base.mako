@@ -53,7 +53,6 @@
         "libs/underscore",
         "libs/backbone/backbone",
         "libs/handlebars.runtime",
-        "libs/d3",
         "galaxy.base",
         'libs/require'
     )}

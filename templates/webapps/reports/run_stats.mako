@@ -1,6 +1,8 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
+${h.js("libs/d3")}
+
 %if message:
     ${render_msg( message, 'done' )}
 %endif
