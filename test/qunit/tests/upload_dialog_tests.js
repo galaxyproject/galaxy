@@ -27,7 +27,7 @@ define([ "test-app", "mvc/upload/upload-view"
         ok($('#btn-stop').hasClass('disabled'), 'Stop button should (still) be disabled.');
         ok(!$('#btn-reset').hasClass('disabled'), 'Reset button should be enabled.');
         ok(this.app.default_view.collection.length == 1, 'Invalid upload item collection length after adding item.');
-        ok($('#btn-new').find('i').hasClass('fa-pencil'), 'Paste/fetch icon changed');
+        ok($('#btn-new').find('i').hasClass('fa-edit'), 'Paste/fetch icon changed');
         ok($('#btn-start').hasClass('btn-primary'), 'Start button should be enabled/highlighted.');
         ok($('#upload-row-0').find('#symbol').hasClass('fa-trash-o'), 'Should show regular trash icon.');
         $('#upload-row-0').find('#settings').trigger('click');
