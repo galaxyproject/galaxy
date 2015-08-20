@@ -413,7 +413,7 @@ class MappingTests( unittest.TestCase ):
     @classmethod
     def setUpClass(cls):
         # Start the database and connect the mapping
-        cls.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True )
+        cls.model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True, object_store=MockObjectStore() )
         assert cls.model.engine is not None
 
     @classmethod
@@ -440,6 +440,21 @@ class MappingTests( unittest.TestCase ):
     def expunge(cls):
         cls.model.session.flush()
         cls.model.session.expunge_all()
+
+
+class MockObjectStore(object):
+
+    def __init__(self):
+        pass
+
+    def size(self, dataset):
+        return 42
+
+    def exists(self, *args, **kwds):
+        return True
+
+    def get_filename(self, *args, **kwds):
+        return "dataest_14.dat"
 
 
 def get_suite():
