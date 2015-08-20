@@ -894,7 +894,7 @@ class Newick( Text ):
     def init_meta( self, dataset, copy_from=None ):
         Text.init_meta( self, dataset, copy_from=copy_from )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """ Returning false as the newick format is too general and cannot be sniffed."""
         return False
 
@@ -918,7 +918,7 @@ class Nexus( Text ):
     def init_meta( self, dataset, copy_from=None ):
         Text.init_meta( self, dataset, copy_from=copy_from )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
         f = open( filename, "r" )
         firstline = f.readline().upper()

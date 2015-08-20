@@ -10,7 +10,6 @@ import subprocess
 import tempfile
 import warnings
 import zipfile
-# TODO: get h5py egg/wheel working with galaxy; import h5py
 
 from galaxy import eggs
 eggs.require( "bx-python" )
@@ -47,12 +46,12 @@ class Binary( data.Data ):
         Binary.unsniffable_binary_formats.append(ext)
 
     @staticmethod
-    def is_sniffable_binary( filename, original_name ):
+    def is_sniffable_binary( filename ):
         format_information = None
         for format in Binary.sniffable_binary_formats:
             format_instance = format[ "class" ]()
             try:
-                if format_instance.sniff(filename, original_name):
+                if format_instance.sniff(filename):
                     format_information = ( format["type"], format[ "ext" ] )
                     break
             except Exception:
@@ -119,7 +118,7 @@ class Idat( Binary ):
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         try:
             header = open( filename ).read(4)
             if binascii.b2a_hex( header ) == binascii.hexlify( 'IDAT' ):
@@ -354,7 +353,7 @@ class Bam( Binary ):
         except:
             pass
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
@@ -471,7 +470,7 @@ class Bcf( Binary):
 
     MetadataElement( name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         # BCF is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 3 bytes of any bcf file is 'BCF', and the file is binary.
         try:
@@ -516,57 +515,25 @@ class Bcf( Binary):
 Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
 
 
-class MZ5( Binary ):
-    """Class describing an MZ5 file"""
-    file_ext = "mz5"
-
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
-        self._magic = binascii.unhexlify("894844460d0a1a0a")
-
-    def init_meta( self, dataset, copy_from=None ):
-        Binary.init_meta( self, dataset, copy_from=copy_from )
-        self._filename = dataset.file_name
-
-    def sniff( self, filename, original_name="" ):
-        # The first 8 bytes of any hdf5 file are 0x894844460d0a1a0a
-        try:
-            header = open( filename ).read(8)
-            if header == self._magic:
-                # An mz5 file has a "FileInformation" group with a "deltaMZ" key;
-                # this is sufficient to distinguish it from pretty much any other HDF5 file
-                # TODO: get h5py egg/wheel working with galaxy; mz5 = h5py.File( filename, 'r' )
-                # TODO: get h5py egg/wheel working with galaxy; mz5["FileInformation"].dtype["deltaMZ"] # KeyError if group or key does not exist
-                # TODO: get h5py egg/wheel working with galaxy; return True
-                # HACK: can change this once h5py is working
-                return original_name.lower().endswith('.mz5')
-            return False
-        except:
-            return False
-
-# MZ5 must be registered before the HDF5 sniffer so it gets checked before HDF5
-Binary.register_sniffable_binary_format("mz5", "mz5", MZ5)
-
-
 class H5( Binary ):
     """Class describing an HDF5 file"""
     file_ext = "h5"
 
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
-        self._magic = binascii.unhexlify("894844460d0a1a0a")
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary h5 file"
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename, original_name="" ):
-        # The first 8 bytes of any hdf5 file are 0x894844460d0a1a0a
+    def display_peek( self, dataset ):
         try:
-            header = open( filename ).read(8)
-            if header == self._magic:
-                return True
-            return False
+            return dataset.peek
         except:
-            return False
+            return "Binary h5 sequence file (%s)" % ( nice_size( dataset.get_size() ) )
 
-Binary.register_sniffable_binary_format("h5", "h5", H5)
+Binary.register_unsniffable_binary_ext("h5")
 
 
 class Scf( Binary ):
@@ -599,7 +566,7 @@ class Sff( Binary ):
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         # The first 4 bytes of any sff file is '.sff', and the file is binary. For details
         # about the format, see http://www.ncbi.nlm.nih.gov/Traces/trace.cgi?cmd=show&f=formats&m=doc&s=format
         try:
@@ -645,7 +612,7 @@ class BigWig(Binary):
     def _unpack( self, pattern, handle ):
         return struct.unpack( pattern, handle.read( struct.calcsize( pattern ) ) )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         try:
             magic = self._unpack( "I", open( filename ) )
             return magic[0] == self._magic
@@ -687,7 +654,7 @@ class TwoBit (Binary):
     edam_format = "format_3009"
     file_ext = "twobit"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff(self, filename):
         try:
             # All twobit files start with a 16-byte header. If the file is smaller than 16 bytes, it's obviously not a valid twobit file.
             if os.path.getsize(filename) < 16:
@@ -756,7 +723,7 @@ class SQlite ( Binary ):
         except Exception as exc:
             log.warn( '%s, set_meta Exception: %s', self, exc )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         # The first 16 bytes of any SQLite3 database file is 'SQLite format 3\0', and the file is binary. For details
         # about the format, see http://www.sqlite.org/fileformat.html
         try:
@@ -827,8 +794,8 @@ class GeminiSQLite( SQlite ):
         except Exception as e:
             log.warn( '%s, set_meta Exception: %s', self, e )
 
-    def sniff( self, filename, original_name="" ):
-        if super( GeminiSQLite, self ).sniff( filename, original_name ):
+    def sniff( self, filename ):
+        if super( GeminiSQLite, self ).sniff( filename ):
             gemini_table_names = [ "gene_detailed", "gene_summary", "resources", "sample_genotype_counts", "sample_genotypes", "samples",
                                    "variant_impacts", "variants", "version" ]
             try:
@@ -869,7 +836,7 @@ class Xlsx(Binary):
     """Class for Excel 2007 (xlsx) files"""
     file_ext = "xlsx"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
         try:
             if zipfile.is_zipfile( filename ):
@@ -890,7 +857,7 @@ class Sra( Binary ):
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """ The first 8 bytes of any NCBI sra file is 'NCBI.sra', and the file is binary.
         For details about the format, see http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure
         """
@@ -927,7 +894,7 @@ class RData( Binary ):
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         rdata_header = binascii.hexlify('RDX2\nX\n')
         try:
             header = open(filename).read(7)

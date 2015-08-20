@@ -417,7 +417,7 @@ class Sam( Tabular ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in SAM format
 
@@ -607,7 +607,7 @@ class Pileup( Tabular ):
         """Return options for removing errors along with a description"""
         return [ ("lines", "Remove erroneous lines") ]
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Checks for 'pileup-ness'
 
@@ -671,7 +671,7 @@ class Vcf( Tabular ):
     MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, optional=True, multiple=True, visible=False )
     MetadataElement( name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[] )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         headers = get_headers( filename, '\n', count=1 )
         return headers[0][0].startswith("##fileformat=VCF")
 
@@ -748,7 +748,7 @@ class Eland( Tabular ):
             out = "Can't create peek %s" % exc
         return out
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in ELAND export format
 
@@ -842,7 +842,7 @@ class Eland( Tabular ):
 class ElandMulti( Tabular ):
     file_ext = 'elandmulti'
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         return False
 
 
@@ -890,7 +890,7 @@ class CSV( TabularData ):
         else:
             return 'str'
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """ Return True if if recognizes dialect and header. """
         if not csv.Sniffer().has_header(open(filename, 'r').read(self.peek_size)):
             return False
@@ -951,7 +951,7 @@ class ConnectivityTable( Tabular ):
 
         dataset.metadata.data_lines = data_lines
 
-    def sniff( self, filename, original_name="" ):
+    def sniff(self, filename):
         """
         The ConnectivityTable (CT) is a file format used for describing
         RNA 2D structures by tools including MFOLD, UNAFOLD and

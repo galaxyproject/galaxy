@@ -296,7 +296,7 @@ class Interval( Tabular ):
         """Return options for removing errors along with a description"""
         return [("lines", "Remove erroneous lines")]
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Checks for 'intervalness'
 
@@ -475,7 +475,7 @@ class Bed( Interval ):
         except:
             return "This item contains no content"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Checks for 'bedness'
 
@@ -607,7 +607,7 @@ class BedStrict( Bed ):
             if dataset.metadata.columns >= 6:
                 dataset.metadata.strandCol = 6
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         return False  # NOTE: This would require aggressively validating the entire file
 
 
@@ -824,7 +824,7 @@ class Gff( Tabular, _RemoteCallMixin ):
                     ret_val.append( ( site_name, link ) )
         return ret_val
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in gff format
 
@@ -937,7 +937,7 @@ class Gff3( Gff ):
                         break
         Tabular.set_meta( self, dataset, overwrite=overwrite, skip=i )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in gff version 3 format
 
@@ -1016,7 +1016,7 @@ class Gtf( Gff ):
     MetadataElement( name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
                      param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in gtf format
 
@@ -1212,7 +1212,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
             max_data_lines = 100
         Tabular.set_meta( self, dataset, overwrite=overwrite, skip=i, max_data_lines=max_data_lines )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines wether the file is in wiggle format
 
@@ -1378,7 +1378,7 @@ class CustomTrack ( Tabular ):
                     ret_val.append( (site_name, link) )
         return ret_val
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in customtrack format.
 
@@ -1457,7 +1457,7 @@ class ENCODEPeak( Interval ):
     MetadataElement( name="strandCol", desc="Strand column (click box & select)", param=metadata.ColumnParameter, optional=True, no_value=0 )
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         return False
 
 
@@ -1483,7 +1483,7 @@ class ChromatinInteractions( Interval ):
 
     MetadataElement( name="columns", default=7, desc="Number of columns", readonly=True, visible=False )
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         return False
 
 

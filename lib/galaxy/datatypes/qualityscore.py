@@ -20,7 +20,7 @@ class QualityScoreSOLiD ( QualityScore ):
     """
     file_ext = "qualsolid"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
@@ -77,7 +77,7 @@ class QualityScore454 ( QualityScore ):
     """
     file_ext = "qual454"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )

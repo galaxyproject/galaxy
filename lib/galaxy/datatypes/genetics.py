@@ -160,7 +160,7 @@ class GenomeGraphs( Tabular ):
             errors.append('row %d, %s' % (' '.join(badvals)))
             return errors
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in gg format
         """
@@ -222,7 +222,7 @@ class rgSampleList(rgTabList):
         self.column_names[1] = 'IID'
         # this is what Plink wants as at 2009
 
-    def sniff( self, filename, original_name="" ):
+    def sniff(self, filename):
         infile = open(filename, "r")
         header = infile.next()  # header
         if header[0] == 'FID' and header[1] == 'IID':
@@ -346,7 +346,7 @@ class SNPMatrix(Rgenetics):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename, original_name="" ):
+    def sniff(self, filename):
         """ need to check the file header hex code
         """
         infile = open(filename, "b")

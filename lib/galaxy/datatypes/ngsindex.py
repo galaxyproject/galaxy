@@ -60,7 +60,7 @@ class BowtieIndex( Html ):
         except:
             return "Bowtie index file"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         return False
 
 

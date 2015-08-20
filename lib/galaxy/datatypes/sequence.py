@@ -58,7 +58,7 @@ class SequenceSplitLocations( data.Text ):
 
     file_ext = "fqtoc"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         if os.path.getsize(filename) < 50000:
             try:
                 data = json.load(open(filename))
@@ -314,7 +314,7 @@ class Fasta( Sequence ):
     edam_format = "format_1929"
     file_ext = "fasta"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in fasta format
 
@@ -505,7 +505,7 @@ class csFasta( Sequence ):
     edam_format = "format_1929"
     file_ext = "csfasta"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Color-space sequence:
             >2_15_85_F3
@@ -588,7 +588,7 @@ class Fastq ( Sequence ):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in generic fastq format
         For details, see http://maq.sourceforge.net/fastq.shtml
@@ -772,7 +772,7 @@ class Maf( Alignment ):
             out = "Can't create peek %s" % exc
         return out
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines wether the file is in maf format
 
@@ -852,7 +852,7 @@ class Axt( data.Text ):
 
     file_ext = "axt"
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in axt format
 
@@ -906,7 +906,7 @@ class Lav( data.Text ):
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
     # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
         Determines whether the file is in lav format
 
@@ -945,7 +945,7 @@ class RNADotPlotMatrix( data.Data ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename, original_name="" ):
+    def sniff(self, filename):
         """Determine if the file is in RNA dot plot format."""
         if check_image_type( filename, ['EPS'] ):
             seq = False
@@ -997,7 +997,7 @@ class DotBracket ( Sequence ):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
-    def sniff( self, filename, original_name="" ):
+    def sniff(self, filename):
         """
         Galaxy Dbn (Dot-Bracket notation) rules:
 

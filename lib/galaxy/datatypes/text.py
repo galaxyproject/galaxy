@@ -29,7 +29,7 @@ class Json( Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
             Try to load the string with the json module. If successful it's a json file.
         """
@@ -73,7 +73,7 @@ class Ipynb( Json ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
             Try to load the string with the json module. If successful it's a json file.
         """
@@ -138,7 +138,7 @@ class Obo( Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
             Try to guess the Obo filetype.
             It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
@@ -177,7 +177,7 @@ class Arff( Text ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff( self, filename, original_name="" ):
+    def sniff( self, filename ):
         """
             Try to guess the Arff filetype.
             It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
