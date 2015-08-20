@@ -15,6 +15,7 @@ ${get_css()}
 <%
     page = page_specs.page
     offset = page_specs.offset
+    entries = page_specs.entries
 %>
 
 <!--jobs_per_tool.mako-->
@@ -28,7 +29,7 @@ ${get_css()}
                 <td>
                     <h4 align="center">Jobs Per Tool</h4>
                     <h5 align="center">
-                        Click Tool ID to view details. Graph goes from present to past ${make_spark_settings( "jobs", "per_tool", spark_limit, sort_id, order, time_period, page=page, offset=offset )}
+                        Click Tool ID to view details. Graph goes from present to past ${make_spark_settings( "jobs", "per_tool", spark_limit, sort_id, order, time_period, page=page, offset=offset, entries=entries )}
                     </h5>
                 </td>
                 <td align="right">

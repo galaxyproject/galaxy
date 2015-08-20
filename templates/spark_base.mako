@@ -4,12 +4,20 @@
             <input type="hidden" value=${sort_id} name="sort_id">
             <input type="hidden" value=${order} name="order">
             %try:
-                %if kwargs['page'] and kwargs['offset']:
-                    <input type="hidden" value=${kwargs['page']} name="page">
-                    <input type="hidden" value=${kwargs['offset']} name="offset">
-                %endif
+                <input type="hidden" value=${kwargs['entries']} name="entries">
             %except KeyError:
             %endtry
+
+            %try:
+                <input type="hidden" value=${kwargs['page']} name="page">
+            %except KeyError:
+            %endtry
+
+            %try:
+                <input type="hidden" value=${kwargs['offset']} name="offset">
+            %except KeyError:
+            %endtry
+
             ${limit}
             <select name="spark_time">
                 %if time_period == "days":

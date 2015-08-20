@@ -15,6 +15,7 @@ ${get_css()}
 <%
     page = page_specs.page
     offset = page_specs.offset
+    entries = page_specs.entries
 %>
 
 <!--jobs_errors_per_tool.mako-->
@@ -29,7 +30,7 @@ ${get_css()}
                     <h4 align="center">Jobs In Error Per Tool</h4>
                     <h5 align="center">
                         <p>Click Tool ID to view details. Click error number to view job details.</p>
-                        Graph goes from present to past for ${make_spark_settings( "jobs", "errors_per_tool", spark_limit, sort_id, order, time_period, page=page, offset=offset )}
+                        Graph goes from present to past for ${make_spark_settings( "jobs", "errors_per_tool", spark_limit, sort_id, order, time_period, page=page, offset=offset, entries=entries )}
                     </h5>
                 </td>
                 <td align="right">
