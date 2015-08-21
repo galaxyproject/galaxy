@@ -100,11 +100,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
             raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
-        params = '?name=%s&owner=%s' % ( name, owner )
-        url = common_util.url_join( tool_shed_url,
-                                    'api/repositories/get_ordered_installable_revisions%s' % params )
+        params = dict(name=name, owner=owner)
+        pathspec = ['api', 'repositories', 'get_ordered_installable_revisions']
         try:
-            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec, params )
         except Exception, e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )

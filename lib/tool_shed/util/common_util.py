@@ -353,7 +353,9 @@ def url_join( base_url, pathspec=None, params=None ):
     """Return a valid URL produced by appending a base URL and a set of request parameters."""
     url = base_url.rstrip( '/' )
     if pathspec is not None:
-        url = '%s/%s' % ( url, '/'.join( pathspec ) )
+        if not isinstance( pathspec, basestring ):
+            pathspec = '/'.join( pathspec )
+        url = '%s/%s' % ( url, pathspec )
     if params is not None:
         url = '%s?%s' % ( url, urllib.urlencode( params ) )
     return url
