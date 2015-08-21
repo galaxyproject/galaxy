@@ -2,8 +2,8 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 <%def name="javascripts()">
-${parent.javascripts()}
 ${h.js("libs/d3")}
+${parent.javascripts()}
 
 <script type="text/javascript" src="${h.url_for('/static/scripts/reports_webapp/run_stats.js')}"></script>
 <script type="text/javascript">
