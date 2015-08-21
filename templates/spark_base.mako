@@ -1,8 +1,15 @@
-<%def name="make_spark_settings( controller, action, limit, sort_id, order, time_period )">
+<%def name="make_spark_settings( controller, action, limit, sort_id, order, time_period, **kwargs )">
     <div id="spark_time_select">
         <form method="post" controller=${controller} action=${action}>
             <input type="hidden" value=${sort_id} name="sort_id">
             <input type="hidden" value=${order} name="order">
+            %try:
+                %if kwargs['page'] and kwargs['offset']:
+                    <input type="hidden" value=${kwargs['page']} name="page">
+                    <input type="hidden" value=${kwargs['offset']} name="offset">
+                %endif
+            %except KeyError:
+            %endtry
             ${limit}
             <select name="spark_time">
                 %if time_period == "days":

@@ -867,9 +867,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
-            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&open_for_url=true' % \
-                ( tool_shed_url, repository_metadata_id, encoding_util.tool_shed_encode( workflow_name ) )
-            workflow_text = common_util.tool_shed_get( trans.app, tool_shed_url, workflow_url )
+            params = dict( repository_metadata_id=repository_metadata_id,
+                           workflow_name=encoding_util.tool_shed_encode( workflow_name ),
+                           open_for_url=True )
+            pathspec = [ 'workflow', 'import_workflow' ]
+            workflow_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
             import_button = True
         if import_button:
             workflow_data = None
@@ -879,7 +881,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 try:
                     workflow_data = urllib2.urlopen( url ).read()
                 except Exception, e:
-                    message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( url, escape( str( e ) ) )
+                    message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( escape( url ), escape( str( e ) ) )
                     status = 'error'
             elif workflow_text:
                 # This case occurs when the workflow_text was sent via http from the tool shed.

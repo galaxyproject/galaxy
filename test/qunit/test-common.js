@@ -14,7 +14,9 @@ require.config({
         "sinon": qunit_absolute_directory + "test-libs/sinon-1.9.1",
         "sinon-qunit": qunit_absolute_directory + "test-libs/sinon-qunit-1.0.0",
         // (optional) test data
-        'test-data' : qunit_absolute_directory + "test-data/"
+        "test-data" : qunit_absolute_directory + "test-data/",
+        // (optional) test app/environment with server data
+        "test-app"  : qunit_absolute_directory + "test-app"
     },
     shim: {
         // Ensure correct Qunit order in light of requirejs loading...
@@ -44,8 +46,7 @@ require.config({
 } );
 
 // Mock out Galaxy globals.
-var galaxy_config =
-{
+var galaxy_config = {
     root: '/'
 };
 
@@ -65,11 +66,8 @@ require( [ "jquery", "QUnit" ], function( $, QUnit ) {
             QUnit.load();
             QUnit.start();
         } );
-
     } );
-
 });
-
 
 function bridge_phantomjs( QUnit ) {
     // Needed because the grunt task will attempt to inject this bridge assuming

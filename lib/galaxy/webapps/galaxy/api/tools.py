@@ -98,13 +98,13 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
     @expose_api
     @web.require_admin
-    def reload( self, trans, tool_id, **kwd ):
+    def reload( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}/reload
         Reload specified tool.
         """
-        galaxy.queue_worker.send_control_task( trans.app, 'reload_tool', noop_self=True, kwargs={ 'tool_id': tool_id } )
-        message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
+        galaxy.queue_worker.send_control_task( trans.app, 'reload_tool', noop_self=True, kwargs={ 'tool_id': id } )
+        message, status = trans.app.toolbox.reload_tool_by_id( id )
         return { status: message }
 
     @expose_api

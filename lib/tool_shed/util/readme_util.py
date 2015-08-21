@@ -97,10 +97,9 @@ def get_readme_files_dict_for_display( app, tool_shed_url, repo_info_dict ):
         suc.get_repo_info_tuple_contents( repo_info_tuple )
     # Handle changing HTTP protocols over time.
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
-    params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, repository_owner, changeset_revision )
-    url = common_util.url_join( tool_shed_url,
-                                'repository/get_readme_files%s' % params )
-    raw_text = common_util.tool_shed_get( app, tool_shed_url, url )
+    params = dict( name=name, owner=repository_owner, changeset_revision=changeset_revision )
+    pathspec = [ 'repository', 'get_readme_files' ]
+    raw_text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
     readme_files_dict = json.loads( raw_text )
     return readme_files_dict
 

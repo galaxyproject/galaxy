@@ -20,7 +20,7 @@
 #Your faseq.loc file should include an entry per line for each set of fasta 
 #sequence files you have stored.  For example:
 #
-#hg18			/depot/data2/galaxy/faseq/hg18
-#mm9			/depot/data2/galaxy/faseq/mm9
+#hg18	/depot/data2/galaxy/faseq/hg18
+#mm9	/depot/data2/galaxy/faseq/mm9
 #Arabidopsis	/depot/data2/galaxy/faseq/Arabidopsis
 #...etc...

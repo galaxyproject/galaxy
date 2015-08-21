@@ -12,13 +12,8 @@ define(['utils/utils',
                     Select
                 ) {
 
-// item view
+// row view
 return Backbone.View.extend({
-    // options
-    options: {
-        padding : 8
-    },
-
     // states
     status_classes : {
         init    : 'upload-icon-button fa fa-trash-o',
@@ -46,18 +41,15 @@ return Backbone.View.extend({
         var self = this;
 
         // create model
-        this.model = new UploadModel.Model(options);
+        this.model = options.model;
 
-        // add upload item
-        this.setElement(this._template(options));
-
-        // link item
-        var it = this.$el;
+        // add upload row
+        this.setElement(this._template(options.model));
 
         // append popup to settings icon
         this.settings = new Popover.View({
             title       : 'Upload configuration',
-            container   : it.find('#settings'),
+            container   : this.$('#settings'),
             placement   : 'bottom'
         });
 
@@ -66,13 +58,13 @@ return Backbone.View.extend({
         
         // select genomes
         this.select_genome = new Select.View({
-            css: 'genome',
+            css: 'upload-genome',
             onchange : function(genome) {
                 self.model.set('genome', genome);
                 self.app.updateGenome(genome, true);
             },
             data: self.app.list_genomes,
-            container: it.find('#genome'),
+            container: this.$('#genome'),
             value: default_genome
         });
 
@@ -84,13 +76,13 @@ return Backbone.View.extend({
         
         // select extension
         this.select_extension = new Select.View({
-            css: 'extension',
+            css: 'upload-extension',
             onchange : function(extension) {
                 self.model.set('extension', extension);
                 self.app.updateExtension(extension, true);
             },
             data: self.app.list_extensions,
-            container: it.find('#extension'),
+            container: this.$('#extension'),
             value: default_extension
         });
 
@@ -102,10 +94,10 @@ return Backbone.View.extend({
         //
 
         // handle click event
-        it.find('#symbol').on('click', function() { self._removeRow(); });
+        this.$('#symbol').on('click', function() { self._removeRow(); });
 
         // handle extension info popover
-        it.find('#extension-info').on('click' , function(e) {
+        this.$('#extension-info').on('click' , function(e) {
             self.app.showExtensionInfo({
                 $el         : $(e.target),
                 title       : self.select_extension.text(),
@@ -114,18 +106,13 @@ return Backbone.View.extend({
         }).on('mousedown', function(e) { e.preventDefault(); });
 
         // handle settings popover
-        it.find('#settings').on('click' , function(e) { self._showSettings(); })
+        this.$('#settings').on('click' , function(e) { self._showSettings(); })
                             .on('mousedown', function(e) { e.preventDefault(); });
 
         // handle text editing event
-        it.find('#text-content').on('keyup', function(e) {
+        this.$('#text-content').on('keyup', function(e) {
             self.model.set('url_paste', $(e.target).val());
             self.model.set('file_size', $(e.target).val().length);
-        });
-
-        // handle space to tabs button
-        it.find('#space_to_tabs').on('change', function(e) {
-            self.model.set('space_to_tabs', $(e.target).prop('checked'));
         });
 
         //
@@ -164,54 +151,36 @@ return Backbone.View.extend({
         var file_size   = this.model.get('file_size');
         var file_mode   = this.model.get('file_mode');
 
-        // link item
-        var it = this.$el;
-
         // update title
-        it.find('#title').html(file_name);
+        this.$('#title').html(file_name);
 
         // update info
-        it.find('#size').html(Utils.bytesToString (file_size));
+        this.$('#size').html(Utils.bytesToString (file_size));
 
         // remove mode class
-        it.find('#mode')
+        this.$('#mode')
             .removeClass()
-            .addClass('mode');
+            .addClass('upload-mode')
+            .addClass('text-primary');
 
         // activate text field if file is new
         if (file_mode == 'new') {
-            // get text component
-            var text = it.find('#text');
-
-            // get padding
-            var padding = this.options.padding;
-
-            // get dimensions
-            var width = it.width() - 2 * padding;
-            var height = it.height() - padding;
-
-            // set dimensions
-            text.css('width', width + 'px');
-            text.css('top', height + 'px');
-            it.height(height + text.height() + 2 * padding);
-
-            // show text field
-            text.show();
-
-            // update icon
-            it.find('#mode').addClass('fa fa-pencil');
+            this.$('#text').css({
+                'width' : this.$el.width() - 16 + 'px',
+                'top'   : this.$el.height() - 8 + 'px'
+            }).show();
+            this.$el.height(this.$el.height() - 8 + this.$('#text').height() + 16);
+            this.$('#mode').addClass('fa fa-edit');
         }
 
         // file from local disk
         if (file_mode == 'local') {
-            // update icon
-            it.find('#mode').addClass('fa fa-laptop');
+            this.$('#mode').addClass('fa fa-laptop');
         }
 
         // file from ftp
         if (file_mode == 'ftp') {
-            // update icon
-            it.find('#mode').addClass('fa fa-code-fork');
+            this.$('#mode').addClass('fa fa-folder-open-o');
         }
     },
 
@@ -244,74 +213,61 @@ return Backbone.View.extend({
         // write error message
         var info = this.model.get('info');
         if (info) {
-            this.$el.find('#info').html('<strong>Failed: </strong>' + info).show();
+            this.$('#info').html('<strong>Failed: </strong>' + info).show();
         } else {
-            this.$el.find('#info').hide();
+            this.$('#info').hide();
         }
     },
 
     // progress
     _refreshPercentage : function() {
         var percentage = parseInt(this.model.get('percentage'));
-        this.$el.find('.progress-bar').css({ width : percentage + '%' });
+        this.$('.progress-bar').css({ width : percentage + '%' });
         if (percentage != 100)
-            this.$el.find('#percentage').html(percentage + '%');
+            this.$('#percentage').html(percentage + '%');
         else
-            this.$el.find('#percentage').html('Adding to history...');
+            this.$('#percentage').html('Adding to history...');
     },
 
     // status
     _refreshStatus : function() {
-        // get element
-        var it = this.$el;
-
         // identify new status
         var status = this.model.get('status');
-        var status_class = this.status_classes[status];
 
         // identify symbol and reset classes
-        var sy = this.$el.find('#symbol');
-        sy.removeClass();
+        this.$('#symbol').removeClass().addClass(this.status_classes[status]);
 
-        // set new status class
-        sy.addClass(status_class);
+        // enable/disable model flag
+        this.model.set('enabled', status == 'init');
 
-        // enable form fields
-        if (status == 'init') {
-            // select fields
+        // enable/disable row fields
+        var enabled = this.model.get('enabled');
+        this.$('#text-content').attr('disabled', !enabled);
+        if (enabled) {
             this.select_genome.enable();
             this.select_extension.enable();
-
-            // default fields
-            it.find('#text-content').attr('disabled', false);
-            it.find('#space_to_tabs').attr('disabled', false);
         } else {
-            // select fields
             this.select_genome.disable();
             this.select_extension.disable();
-
-            // default fields
-            it.find('#text-content').attr('disabled', true);
-            it.find('#space_to_tabs').attr('disabled', true);
         }
 
         // success
         if (status == 'success') {
-            it.addClass('success');
-            it.find('#percentage').html('100%');
+            this.$el.addClass('success');
+            this.$('#percentage').html('100%');
         }
 
         // error
         if (status == 'error') {
-            it.addClass('danger');
-            it.find('.progress').remove();
+            this.$el.addClass('danger');
+            this.$('.progress').remove();
         }
     },
 
     // refresh size
     _refreshFileSize: function() {
         var count = this.model.get('file_size');
-        this.$el.find('#size').html(Utils.bytesToString (count));
+        this.$('#size').html(Utils.bytesToString (count));
     },
 
     //
@@ -345,38 +301,38 @@ return Backbone.View.extend({
 
     // template
     _template: function(options) {
-        return  '<tr id="upload-item-' + options.id + '" class="upload-item">' +
+        return  '<tr id="upload-row-' + options.id + '" class="upload-row">' +
                     '<td>' +
-                        '<div class="name-column">' +
-                            '<div id="mode"></div>' +
-                            '<div id="title" class="title"></div>' +
+                        '<div class="upload-text-column">' +
+                            '<div id="mode"/>' +
+                            '<div id="title" class="upload-title"/>' +
                             '<div id="text" class="text">' +
                                 '<div class="text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
-                                '<textarea id="text-content" class="text-content form-control"></textarea>' +
+                                '<textarea id="text-content" class="text-content form-control"/>' +
                             '</div>' +
                         '</div>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="size" class="size"></div>' +
+                        '<div id="size" class="upload-size"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="extension" class="extension" style="float: left;"/>&nbsp;&nbsp' +
+                        '<div id="extension" class="upload-extension" style="float: left;"/>&nbsp;&nbsp' +
                         '<div id="extension-info" class="upload-icon-button fa fa-search"/>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="genome" class="genome" />' +
+                        '<div id="genome" class="upload-genome"/>' +
                     '</td>' +
-                    '<td><div id="settings" class="upload-icon-button fa fa-gear"></div>' +
+                    '<td><div id="settings" class="upload-icon-button fa fa-gear"/></td>' +
                     '<td>' +
-                        '<div id="info" class="info">' +
+                        '<div id="info" class="upload-info">' +
                             '<div class="progress">' +
-                                '<div class="progress-bar progress-bar-success"></div>' +
+                                '<div class="progress-bar progress-bar-success"/>' +
                                 '<div id="percentage" class="percentage">0%</div>' +
                             '</div>' +
                         '</div>' +
                     '</td>' +
                     '<td>' +
-                        '<div id="symbol" class="' + this.status_classes.init + '"></div>' +
+                        '<div id="symbol" class="' + this.status_classes.init + '"/>' +
                     '</td>' +
                 '</tr>';
     }

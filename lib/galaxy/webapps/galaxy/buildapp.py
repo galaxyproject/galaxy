@@ -73,8 +73,8 @@ def paste_app_factory( global_conf, **kwargs ):
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
-    # Force /history to go to /root/history -- needed since the tests assume this
-    webapp.add_route( '/history', controller='root', action='history' )
+    # Force /history to go to view of current
+    webapp.add_route( '/history', controller='history', action='view' )
     # Force /activate to go to the controller
     webapp.add_route( '/activate', controller='user', action='activate' )
     # These two routes handle our simple needs at the moment
@@ -200,6 +200,8 @@ def populate_api_routes( webapp, app ):
     _add_item_tags_controller( webapp,
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+    webapp.mapper.connect( '/api/histories/published', action='published', controller="histories", conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( '/api/histories/shared_with_me', action='shared_with_me', controller="histories" )
     _add_item_tags_controller( webapp,
                                name_prefix="history_",
                                path_prefix='/api/histories/:history_id' )

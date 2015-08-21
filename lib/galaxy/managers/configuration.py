@@ -54,7 +54,6 @@ class ConfigSerializer( base.ModelSerializer ):
             'allow_user_creation'       : lambda i, k, **c: i.allow_user_creation,
             'use_remote_user'           : _defaults_to( None ),
             'remote_user_logout_href'   : _defaults_to( '' ),
-            'enable_cloud_launch'       : _defaults_to( False ),
             'datatypes_disable_auto'    : _defaults_to( False ),
             'allow_user_dataset_purge'  : _defaults_to( False ),
             'enable_unique_workflow_defaults' : _defaults_to( False ),
