@@ -1446,13 +1446,11 @@ class Dataset( object ):
     def get_total_size( self ):
         if self.total_size is not None:
             return self.total_size
-        if self.file_size:
-            # for backwards compatibility, set if unset
-            self.set_total_size()
-            db_session = object_session( self )
-            db_session.flush()
-            return self.total_size
-        return 0
+        # for backwards compatibility, set if unset
+        self.set_total_size()
+        db_session = object_session( self )
+        db_session.flush()
+        return self.total_size
     def set_total_size( self ):
         if self.file_size is None:
             self.set_size()
