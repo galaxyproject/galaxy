@@ -56,18 +56,15 @@ return Backbone.View.extend({
     // value
     value : function (new_val) {
         if (new_val !== undefined && new_val !== null) {
-            // set default value
-            if (new_val !== null) {
-                // update color value
-                this.$value.css('background-color', new_val);
-            
-                // check selected color in panel
-                this.$('.ui-color-picker-box').empty();
-                this.$(this._getValue()).html(this._templateCheck());
+            // update color value
+            this.$value.css('background-color', new_val);
+        
+            // check selected color in panel
+            this.$('.ui-color-picker-box').empty();
+            this.$(this._getValue()).html(this._templateCheck());
 
-                // trigger custom event
-                this.options.onchange && this.options.onchange(new_val);
-            }
+            // trigger custom event
+            this.options.onchange && this.options.onchange(new_val);
         }
 
         // return current value
