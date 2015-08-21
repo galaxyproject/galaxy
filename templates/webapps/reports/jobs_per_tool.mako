@@ -11,11 +11,13 @@
     ${render_msg( message, 'done' )}
 %endif
 
-${get_css()}
 <%
     page = page_specs.page
     offset = page_specs.offset
+    entries = page_specs.entries
 %>
+
+${get_css()}
 
 <!--jobs_per_tool.mako-->
 <div class="toolForm">
@@ -28,7 +30,7 @@ ${get_css()}
                 <td>
                     <h4 align="center">Jobs Per Tool</h4>
                     <h5 align="center">
-                        Click Tool ID to view details. Graph goes from present to past ${make_spark_settings( "jobs", "per_tool", spark_limit, sort_id, order, time_period, page=page, offset=offset )}
+                        Click Tool ID to view details. Graph goes from present to past ${make_spark_settings( "jobs", "per_tool", spark_limit, sort_id, order, time_period, page=page, offset=offset, entries=entries )}
                     </h5>
                 </td>
                 <td align="right">
@@ -42,17 +44,17 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${get_sort_url(sort_id, order, 'tool_id', 'jobs', 'per_tool', 'Tool ID', spark_time=time_period)}
+                        ${get_sort_url(sort_id, order, 'tool_id', 'jobs', 'per_tool', 'Tool ID', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow tool_id'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
                         <td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_tool', 'User Jobs', spark_time=time_period)}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_tool', 'User Jobs', spark_time=time_period, page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
                         <td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_tool', 'User and Monitor Jobs', spark_time=time_period)}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_tool', 'User and Monitor Jobs', spark_time=time_period, page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif

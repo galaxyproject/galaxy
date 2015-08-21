@@ -10,6 +10,12 @@
 
 ${get_css()}
 
+<%
+    page = page_specs.page
+    offset = page_specs.offset
+    entries = page_specs.entries
+%>
+
 <!--jobs_specified_month_all.mako-->
 <div class="toolForm">
     <div class="toolFormBody">
@@ -20,7 +26,8 @@ ${get_css()}
                 </td>
                 <td>
                     <h4 align="center">Jobs for ${month_label}&nbsp;${year_label}</h4>
-                    <h5 align="center">Click job count to see the day's details</h5>
+                    <h5 align="center">Click job count to see the day's details.</h5>
+                    <h5 align="center">Graph goes from beggining to the end of the day.</h5>
                 </td>
                 <td align="right">
                     ${get_entry_selector("jobs", "specified_month_all", page_specs.entries, sort_id, order)}
@@ -34,17 +41,17 @@ ${get_css()}
                 <tr class="header">
                     <td class="quarter_width">Day</td>
                     <td class="quarter_width">
-                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'specified_month_all', 'Date', page=page_specs.page, entries=page_specs.entries)}
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'specified_month_all', 'Date', page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td class="quarter_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User Jobs', page=page_specs.page, entries=page_specs.entries)}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User Jobs', page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td class="quarter_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User and Monitor Jobs', page=page_specs.page, entries=page_specs.entries)}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_all', 'User and Monitor Jobs', page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif

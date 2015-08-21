@@ -11,6 +11,12 @@
     ${render_msg( message, 'done' )}
 %endif
 
+<%
+    page = page_specs.page
+    offset = page_specs.offset
+    entries = page_specs.entries
+%>
+
 ${get_css()}
 
 <!--jobs_per_tool.mako-->
@@ -24,7 +30,7 @@ ${get_css()}
                 <td>
                     <h4 align="center">Runs per Workflow</h4>
                     <h5 align="center">
-                        Graph goes from present to past ${make_spark_settings( 'workflows', 'per_workflow', spark_limit, sort_id, order, time_period, page=page, offset=offset )}
+                        Graph goes from present to past ${make_spark_settings( 'workflows', 'per_workflow', spark_limit, sort_id, order, time_period, page=page, offset=offset, entries=entries )}
                     </h5>
                 </td>
                 <td align="right">
@@ -39,15 +45,15 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="quarter_width">
-                        ${get_sort_url(sort_id, order, 'workflow_id', 'workflows', 'per_workflow', 'Workflow ID', spark_time=time_period)}
+                        ${get_sort_url(sort_id, order, 'workflow_id', 'workflows', 'per_workflow', 'Workflow ID', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow workflow_id'>${arrow}</span>
                     </td>
                     <td class="quarter_width">
-                        ${get_sort_url(sort_id, order, 'workflow_name', 'workflows', 'per_workflow', 'Workflow Name', spark_time=time_period)}
+                        ${get_sort_url(sort_id, order, 'workflow_name', 'workflows', 'per_workflow', 'Workflow Name', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow workflow_name'>${arrow}</span>
                     </td>
                     <td class="quarter_width">
-                        ${get_sort_url(sort_id, order, 'total_runs', 'workflows', 'per_workflow', 'Workflow Runs', spark_time=time_period)}
+                        ${get_sort_url(sort_id, order, 'total_runs', 'workflows', 'per_workflow', 'Workflow Runs', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow total_runs'>${arrow}</span>
                     </td>
                     <td></td>

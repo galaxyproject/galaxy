@@ -8,6 +8,12 @@
     ${render_msg( message, 'done' )}
 %endif
 
+<%
+    page = page_specs.page
+    offset = page_specs.offset
+    entries = page_specs.entries
+%>
+
 ${get_css()}
 
 <div class="toolForm">
@@ -32,11 +38,11 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${get_sort_url(sort_id, order, 'date', 'workflows', 'per_month_all', 'Month')}
+                        ${get_sort_url(sort_id, order, 'date', 'workflows', 'per_month_all', 'Month', page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     <td class="half_width">
-                        ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'per_month_all', 'Total')}
+                        ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'per_month_all', 'Total', page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow total_workflows'>${arrow}</span>
                     </td>
                     <td></td>
