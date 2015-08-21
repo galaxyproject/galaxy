@@ -855,8 +855,8 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                                 temp_files.append( table_conf )
 
             tool_dir_path = os.path.dirname( os.path.abspath( tool.config_file ) )
-            if tool_dir_path[-1] != '/':
-                tool_dir_path += '/'
+            if tool_dir_path[-1] != os.sep:
+                tool_dir_path += os.sep
             for walk_base_dir, walk_dirs, walk_files in os.walk(tool_dir_path):
                 for walk_file in walk_files:
                     walk_path = os.path.join(walk_base_dir, walk_file)
