@@ -274,13 +274,18 @@ def add_file( dataset, registry, json_file, output_path ):
                     parts = dataset.name.split( "." )
                     if len( parts ) > 1:
                         ext = parts[-1].strip().lower()
-                        if not Binary.is_ext_unsniffable(ext):
-                            file_err( 'The uploaded binary file contains inappropriate content', dataset, json_file )
-                            return
-                        elif Binary.is_ext_unsniffable(ext) and dataset.file_type != ext:
-                            err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % ( ext.capitalize(), ext )
-                            file_err( err_msg, dataset, json_file )
-                            return
+                        if not Binary.is_ext_unsniffable( ext ):
+                            format_information = Binary.is_sniffable_binary( dataset.path )
+                            if format_information is not None:
+                                data_type, ext = format_information
+                        if not data_type:
+                            if Binary.is_ext_unsniffable(ext) and dataset.file_type != ext:
+                                err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % ( ext.capitalize(), ext )
+                                file_err( err_msg, dataset, json_file )
+                                return
+                            elif Binary.is_ext_unsniffable(ext):
+                                file_err( 'The uploaded binary file contains inappropriate content', dataset, json_file )
+                                return
             if not data_type:
                 # We must have a text file
                 if check_html( dataset.path ):
