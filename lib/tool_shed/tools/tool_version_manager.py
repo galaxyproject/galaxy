@@ -1,6 +1,8 @@
 import logging
 
-from galaxy.model.orm import and_
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, or_
 
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
@@ -21,8 +23,8 @@ class ToolVersionManager( object ):
 
     def get_tool_version_association( self, parent_tool_version, tool_version ):
         """
-        Return a ToolVersionAssociation if one exists that associates the two received
-        tool_versions  This function is called only from Galaxy.
+        Return a ToolVersionAssociation if one exists that associates the two
+        received tool_versions. This function is called only from Galaxy.
         """
         context = self.app.install_model.context
         return context.query( self.app.install_model.ToolVersionAssociation ) \
@@ -90,6 +92,16 @@ class ToolVersionManager( object ):
                                                             tool_shed_repository=tool_shed_repository )
                     context.add( tool_version_using_parent_id )
                     context.flush()
+                # Remove existing wrong tool version associations having
+                # tool_version_using_parent_id as parent or
+                # tool_version_using_tool_guid as child.
+                context.query( self.app.install_model.ToolVersionAssociation ) \
+                       .filter( or_( and_( self.app.install_model.ToolVersionAssociation.table.c.parent_id == tool_version_using_parent_id.id,
+                                           self.app.install_model.ToolVersionAssociation.table.c.tool_id != tool_version_using_tool_guid.id ),
+                                     and_( self.app.install_model.ToolVersionAssociation.table.c.parent_id != tool_version_using_parent_id.id,
+                                           self.app.install_model.ToolVersionAssociation.table.c.tool_id == tool_version_using_tool_guid.id ) ) ) \
+                       .delete()
+                context.flush()
                 tool_version_association = \
                     self.get_tool_version_association( tool_version_using_parent_id,
                                                        tool_version_using_tool_guid )
