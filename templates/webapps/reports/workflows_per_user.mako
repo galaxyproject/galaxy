@@ -13,6 +13,12 @@
     ${render_msg( message, 'done' )}
 %endif
 
+<%
+    page = page_specs.page
+    offset = page_specs.offset
+    entries = page_specs.entries
+%>
+
 ${get_css()}
 
 <div class="toolForm">
@@ -25,7 +31,7 @@ ${get_css()}
                 <td>
                     <h3 align="center">Workflows Per User</h3>
                     <h5 align="center">
-                        Graph goes from present to past ${make_spark_settings( "jobs", "per_user", spark_limit, sort_id, order, time_period, page=page, offset=offset )}
+                        Graph goes from present to past ${make_spark_settings( "jobs", "per_user", spark_limit, sort_id, order, time_period, page=page, offset=offset, entries=entries )}
                     </h5>
                 </td>
                 <td align="right">
@@ -40,12 +46,12 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${get_sort_url(sort_id, order, 'user_email', 'workflows', 'per_user', 'User', spark_time=time_period)}
+                        ${get_sort_url(sort_id, order, 'user_email', 'workflows', 'per_user', 'User', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow user_email'>${arrow}</span>
                     
                     </td>
                     <td class="third_width">
-                        ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'per_user', 'Total Workflows', spark_time=time_period)}
+                        ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'per_user', 'Total Workflows', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow total_workflows'>${arrow}</span>
                     </td>
                     <td></td>

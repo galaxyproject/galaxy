@@ -8,6 +8,12 @@
     ${render_msg( message, 'done' )}
 %endif
 
+<%
+    page = page_specs.page
+    offset = page_specs.offset
+    entries = page_specs.entries
+%>
+
 ${get_css()}
 
 <div class="toolForm">
@@ -33,17 +39,17 @@ ${get_css()}
                 <tr class="header">
                     <td class="quarter_width">Day</td>
                     <td class="quarter_width">
-                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'specified_month_in_error', 'Date')}
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'specified_month_in_error', 'Date', page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td class="quarter_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_in_error', 'User Jobs in Error')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_in_error', 'User Jobs in Error', page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td class="quarter_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_in_error', 'User and Monitor Jobs in Error')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'specified_month_in_error', 'User and Monitor Jobs in Error', page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif

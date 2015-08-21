@@ -45,11 +45,11 @@ ${q1time}, ${q2time}, ${ttime}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${get_sort_url(sort_id, order, 'user_email', 'jobs', 'per_user', 'User', spark_time=time_period)}
+                        ${get_sort_url(sort_id, order, 'user_email', 'jobs', 'per_user', 'User', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow user_email'>${arrow}</span>
                     </td>
                     <td class="third_width">
-                        ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_user', 'Total Jobs', spark_time=time_period)}
+                        ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_user', 'Total Jobs', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow total_jobs'>${arrow}</span>
                     </td>
                     <td></td>

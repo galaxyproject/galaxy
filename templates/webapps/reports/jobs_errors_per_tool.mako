@@ -11,12 +11,13 @@
     ${render_msg( message, 'done' )}
 %endif
 
-${get_css()}
 <%
     page = page_specs.page
     offset = page_specs.offset
     entries = page_specs.entries
 %>
+
+${get_css()}
 
 <!--jobs_errors_per_tool.mako-->
 <div class="toolForm">
@@ -44,17 +45,17 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${get_sort_url(sort_id, order, 'tool_id', 'jobs', 'errors_per_tool', 'Tool ID', spark_time=time_period)}
+                        ${get_sort_url(sort_id, order, 'tool_id', 'jobs', 'errors_per_tool', 'Tool ID', spark_time=time_period, page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow tool_id'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'errors_per_tool', 'User Jobs in Error', spark_time=time_period)}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'errors_per_tool', 'User Jobs in Error', spark_time=time_period, page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'errors_per_tool', 'User and Monitor Jobs in Error', spark_time=time_period)}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'errors_per_tool', 'User and Monitor Jobs in Error', spark_time=time_period, page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
