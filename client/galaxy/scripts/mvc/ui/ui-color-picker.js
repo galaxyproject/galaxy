@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-misc'], function(Utils, Ui) {
+define(['utils/utils'], function(Utils) {
 
 // plugin
 return Backbone.View.extend({

@@ -8,18 +8,15 @@ var Base = Backbone.View.extend({
         // link this
         var self = this;
 
-        // options
-        this.optionsDefault = {
+        // configure options
+        this.options = Utils.merge(options, {
             visible     : true,
             data        : [],
             id          : Utils.uid(),
             error_text  : 'No data available.',
             wait_text   : 'Please wait...',
             multiple    : false
-        };
-
-        // configure options
-        this.options = Utils.merge(options, this.optionsDefault);
+        });
 
         // create new element
         this.setElement('<div class="ui-options"/>');

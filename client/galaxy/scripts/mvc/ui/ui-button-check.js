@@ -6,9 +6,9 @@ return Backbone.View.extend({
 
     // default options
     optionsDefault: {
+        title : 'Select/Unselect all',
         icons : ['fa fa-square-o', 'fa fa-minus-square-o', 'fa fa-check-square-o'],
-        value : 0,
-        title : 'Select/Unselect all'
+        value : 0
     },
 
     // initialize
@@ -46,11 +46,7 @@ return Backbone.View.extend({
         if (new_val !== undefined) {
             if (total) {
                 if (new_val !== 0) {
-                    if (new_val !== total) {
-                        new_val = 1;
-                    } else {
-                        new_val = 2;
-                    }
+                    new_val = (new_val !== total) && 1 || 2;
                 }
             }
             this.current = new_val;
