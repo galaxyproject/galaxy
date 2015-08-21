@@ -10,7 +10,7 @@ from galaxy.web import _future_expose_api as expose_api
 from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
 
-from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from tool_shed.galaxy_install.install_manager import InstallRepositoryManager, RepositoriesInstalledException
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 
@@ -100,11 +100,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
             raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
-        params = '?name=%s&owner=%s' % ( name, owner )
-        url = common_util.url_join( tool_shed_url,
-                                    'api/repositories/get_ordered_installable_revisions%s' % params )
+        params = dict( name=name, owner=owner )
+        pathspec = [ 'api', 'repositories', 'get_ordered_installable_revisions' ]
         try:
-            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
         except Exception, e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )
@@ -118,9 +117,24 @@ class ToolShedRepositoriesController( BaseAPIController ):
                 return changeset_revisions[ -1 ]
         return hg_util.INITIAL_CHANGELOG_HASH
 
+    def __flatten_repository_dependency_list( self, trans, tool_shed_repository ):
+        '''
+        Return a recursive exclusive flattened list of all tool_shed_repository's dependencies.
+        '''
+        dependencies = []
+        for dependency in tool_shed_repository.repository_dependencies:
+            if len( dependency.repository_dependencies ) > 0:
+                sub_dependencies = self.__flatten_repository_dependency_list( trans, dependency )
+                for sub_dependency in sub_dependencies:
+                    if sub_dependency not in dependencies:
+                        dependencies.append( sub_dependency )
+            if dependency not in dependencies:
+                dependencies.append( dependency.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) ) )
+        return dependencies
+
     def __get_value_mapper( self, trans, tool_shed_repository ):
-        value_mapper = { 'id' : trans.security.encode_id( tool_shed_repository.id ),
-                         'error_message' : tool_shed_repository.error_message or '' }
+        value_mapper = { 'id': trans.security.encode_id( tool_shed_repository.id ),
+                         'error_message': tool_shed_repository.error_message or '' }
         return value_mapper
 
     @expose_api
@@ -201,6 +215,44 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                                               id=trans.security.encode_id( tool_shed_repository.id ) )
             tool_shed_repository_dicts.append( tool_shed_repository_dict )
         return tool_shed_repository_dicts
+
+    @expose_api
+    def install( self, trans, payload, **kwd ):
+        """
+        POST /api/tool_shed_repositories/install
+        Initiate the installation of one or more repositories.
+
+        :param reinstalling (required): False if this is a fresh install, otherwise True
+        :param encoded_kwd (required): The encoded dict describing the repositories to be installed.
+        :param install_tool_dependencies (required): True to install tool dependencies.
+        :param tool_shed_repository_ids (required): Encoded tool shed repository IDs for installation.
+        """
+        irm = InstallRepositoryManager( trans.app )
+        reinstalling = util.string_as_bool( kwd.get( 'reinstalling', False ) )
+        repositories = json.loads( kwd[ 'repositories' ] )
+        encoded_kwd = kwd[ 'encoded_kwd' ]
+        decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
+        install_tool_dependencies = decoded_kwd.get( 'install_tool_dependencies', False )
+        tsr_ids = [ repo['id'] for repo in repositories ]
+        decoded_kwd['install_tool_dependencies'] = install_tool_dependencies
+        async = util.string_as_bool( kwd.get( 'async', True ) )
+        if async:
+            try:
+                tool_shed_repositories = irm.install_repositories(
+                    tsr_ids=tsr_ids,
+                    decoded_kwd=decoded_kwd,
+                    reinstalling=reinstalling,
+                )
+                tsr_ids_for_monitoring = [ trans.security.encode_id( tsr.id ) for tsr in tool_shed_repositories ]
+                return tsr_ids_for_monitoring
+            except RepositoriesInstalledException as e:
+                return dict( message=e.message,
+                             status='error' )
+        else:
+            names = [ repo[ 'name' ] for repo in repositories ]
+            owners = [ repo[ 'owner' ] for repo in repositories ]
+            changeset_revisions = [ repo[ 'revision' ] for repo in repositories ]
+            return
 
     @expose_api
     def install_repository_revision( self, trans, payload, **kwd ):
@@ -458,4 +510,25 @@ class ToolShedRepositoriesController( BaseAPIController ):
         tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
                                                           action='show',
                                                           id=trans.security.encode_id( tool_shed_repository.id ) )
+        return tool_shed_repository_dict
+
+    @expose_api
+    @web.require_admin
+    def status( self, trans, id, **kwd ):
+        """
+        GET /api/tool_shed_repositories/{id}/status
+        Display a dictionary containing information about a specified repository's installation
+        status and a list of its dependencies and the status of each.
+
+        :param id: the repository's encoded id
+        """
+        tool_shed_repository = suc.get_tool_shed_repository_by_id( trans.app, id )
+        if tool_shed_repository is None:
+            log.debug( "Unable to locate tool_shed_repository record for id %s." % ( str( id ) ) )
+            return {}
+        tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=self.__get_value_mapper( trans, tool_shed_repository ) )
+        tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                          action='show',
+                                                          id=trans.security.encode_id( tool_shed_repository.id ) )
+        tool_shed_repository_dict[ 'repository_dependencies' ] = self.__flatten_repository_dependency_list( trans, tool_shed_repository )
         return tool_shed_repository_dict

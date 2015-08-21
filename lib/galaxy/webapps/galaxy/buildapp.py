@@ -548,12 +548,19 @@ def populate_api_routes( webapp, app ):
                                      'import_workflow': 'POST',
                                      'import_workflows': 'POST' },
                             collection={ 'get_latest_installable_revision': 'POST',
-                                         'reset_metadata_on_installed_repositories': 'POST' },
+                                         'reset_metadata_on_installed_repositories': 'POST',
+                                         'install': 'POST' },
                             controller='tool_shed_repositories',
                             name_prefix='tool_shed_repository_',
                             path_prefix='/api',
                             new={ 'install_repository_revision': 'POST' },
                             parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
+
+    webapp.mapper.connect( 'tool_shed_repository',
+                           '/api/tool_shed_repositories/:id/status',
+                           controller='tool_shed_repositories',
+                           action='status',
+                           conditions=dict( method=[ "GET" ] ) )
 
     # ==== Trace/Metrics Logger
     # Connect logger from app
