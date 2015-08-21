@@ -29,17 +29,13 @@ define( 'app', function(){
         'mvc/history/multi-panel'
     ], function( HISTORY_MODEL, MULTI_PANEL ){
         $(function(){
-            window.historyJSONArray = bootstrapped.historyJSONArray;
+            bootstrapped.histories.forEach( function( h ){
+                console.debug( h.name, h.update_time, h.size );
+            })
+            histories = new HISTORY_MODEL.HistoryCollection( bootstrapped.histories, {
+                includeDeleted  : bootstrapped.includingDeleted
+            });
 
-            var historyModels = [];
-            historyJSONArray.forEach( function( historyJSON ){
-                if( !historyJSON.purged ){
-                    historyModels.push( new HISTORY_MODEL.History( historyJSON ) );
-                }
-            });
-            histories = new HISTORY_MODEL.HistoryCollection( historyModels, {
-                includeDeleted : bootstrapped.includingDeleted
-            });
             multipanel = new MULTI_PANEL.MultiPanelColumns({
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
@@ -50,6 +46,6 @@ define( 'app', function(){
     });
 });
 </script>
-${ galaxy_client.load( app='app', historyJSONArray=histories,
-    includingDeleted=include_deleted_histories, order=order ) }
+${ galaxy_client.load( app='app', histories=histories,
+    includingDeleted=include_deleted_histories, order=order, limit=limit ) }
 </%def>

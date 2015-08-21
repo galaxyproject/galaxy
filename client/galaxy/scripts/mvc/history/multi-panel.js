@@ -411,12 +411,12 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         // --- set up models, sub-views, and listeners
         /** the original unfiltered and unordered collection of histories */
         this.collection = null;
-        this.setCollection( options.histories || [] );
-
         /** model id to column map */
         this.columnMap = {};
-        //TODO: why create here?
-        this.createColumns( options.columnOptions );
+        /** model id to column map */
+        this.columnOptions = options.columnOptions || {};
+
+        this.setCollection( options.histories );
         this.setUpListeners();
     },
 
@@ -471,14 +471,31 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** Set up a (new) history collection, sorting and adding listeners
      *  @fires 'new-collection' when set with this view as the arg
      */
-    setCollection : function setCollection( models ){
+    setCollection : function setCollection( collection ){
+        this.stopListening( this.collection );
+
+        this.collection = collection || new HISTORY_MODEL.HistoryCollection();
+        this.setUpCollectionListeners();
+
+        this.sortCollection( this.order, { silent: true });
+        this.createColumns();
+        // multipanel.addModels( collection, { silent: true });
+        this.trigger( 'new-collection', this );
+        return this;
+    },
+
+    /** Set up a (new) history collection, sorting and adding listeners
+     *  @fires 'new-collection' when set with this view as the arg
+     */
+    addModels : function setCollection( models, collection, options ){
+        // options = options || {};
         var multipanel = this;
-        multipanel.stopListening( multipanel.collection );
-        multipanel.collection = models;
-        multipanel.sortCollection( multipanel.order, { silent: true });
-        multipanel.setUpCollectionListeners();
-        multipanel.trigger( 'new-collection', multipanel );
-        return multipanel;
+        models = _.isArray( models )? models : [ models ];
+        models.forEach( function( model ){
+            multipanel.addColumn( model, false );
+        });
+// render?
+        return this;
     },
 
     /** Set up listeners for the collection - handling: added histories, change of current, deletion, and sorting */
@@ -486,13 +503,13 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         var multipanel = this,
             collection = multipanel.collection;
         multipanel.listenTo( collection, {
-            // handle addition of histories, triggered by column copy and create new
-            'add': multipanel.addAsCurrentColumn,
+            'add': multipanel.addModels,
             // handle setting a history as current, triggered by history.setAsCurrent
             'set-as-current': multipanel.setCurrentHistory,
             // handle deleting a history (depends on whether panels is including deleted or not)
             'change:deleted change:purged': multipanel.handleDeletedHistory,
-
+            // handle addition of histories, triggered by column copy and create new
+            'new-current': multipanel.addAsCurrentColumn,
             'sort' : function(){ multipanel.renderColumns( 0 ); }
         });
     },
@@ -563,6 +580,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         this.collection.sort( options );
         return this.collection;
     },
+//TODO: to setOrder
 
     /** create a new history and set it to current */
     create : function( ev ){
@@ -571,11 +589,12 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     // ------------------------------------------------------------------------ columns
     /** create columns from collection */
-    createColumns : function createColumns( columnOptions ){
-        columnOptions = columnOptions || {};
+    createColumns : function createColumns( models, columnOptions ){
+        columnOptions = columnOptions || this.options.columnOptions;
         var multipanel = this;
         // clear column map
-        this.columnMap = {};
+        // TODO: make cummulative
+        multipanel.columnMap = {};
         multipanel.collection.each( function( model, i ){
             var column = multipanel.createColumn( model, columnOptions );
             multipanel.columnMap[ model.id ] = column;
@@ -595,36 +614,10 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         return column;
     },
 
-    /** return array of Columns filtered by filters and sorted to match the collection
-     *  @param: filters Function[] array of filter fns
-     */
-    sortedFilteredColumns : function( filters ){
-        filters = filters || this.filters;
-        if( !filters || !filters.length ){
-            return this.sortedColumns();
-        }
-        var multipanel = this;
-        return multipanel.sortedColumns().filter( function( column, index ){
-            var filtered = column.currentHistory || _.every( filters.map( function( filter ){
-                return filter.call( column );
-            }));
-            return filtered;
-        });
-    },
-
-    /** return array of Columns sorted to match the collection */
-    sortedColumns : function(){
-        var multipanel = this;
-        var sorted = this.collection.map( function( history, index ){
-            return multipanel.columnMap[ history.id ];
-        });
-        return sorted;
-    },
-
     /** add a new column for history and render all columns if render is true */
     addColumn : function add( history, render ){
         //this.debug( 'adding column for:', history );
-        render = render !== undefined? render: true;
+        render = render !== undefined? render : true;
         var newColumn = this.createColumn( history );
         this.columnMap[ history.id ] = newColumn;
         if( render ){
@@ -634,7 +627,8 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     },
 
     /** add a new column for history and make it the current history/column */
-    addAsCurrentColumn : function add( history ){
+    addAsCurrentColumn : function add( history, collection, options ){
+        // console.debug( 'addAsCurrentColumn:', history, collection, options );
         //this.log( 'adding current column for:', history );
         var multipanel = this,
             newColumn = this.addColumn( history, false );
@@ -674,7 +668,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         multipanel.listenTo( column, {
             //'all': function(){ console.info( 'column ' + column + ':', arguments ) },
             'in-view': multipanel.queueHdaFetch
-         });
+        });
 
         multipanel.listenTo( column.panel, {
             //'all': function(){ console.info( 'panel ' + column.panel + ':', arguments ) },
@@ -714,6 +708,32 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** conv. fn to count the columns in columnMap */
     columnMapLength : function(){
         return Object.keys( this.columnMap ).length;
+    },
+
+    /** return array of Columns filtered by filters and sorted to match the collection
+     *  @param: filters Function[] array of filter fns
+     */
+    sortedFilteredColumns : function( filters ){
+        filters = filters || this.filters;
+        if( !filters || !filters.length ){
+            return this.sortedColumns();
+        }
+        var multipanel = this;
+        return multipanel.sortedColumns().filter( function( column, index ){
+            var filtered = column.currentHistory || _.every( filters.map( function( filter ){
+                return filter.call( column );
+            }));
+            return filtered;
+        });
+    },
+
+    /** return array of Columns sorted to match the collection */
+    sortedColumns : function(){
+        var multipanel = this;
+        var sorted = this.collection.map( function( history, index ){
+            return multipanel.columnMap[ history.id ];
+        });
+        return sorted;
     },
 
     // ------------------------------------------------------------------------ render
@@ -969,7 +989,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         // when scrolling - check for histories now in view: they will fire 'in-view' and queueHdaLoading if necc.
         //TODO:?? might be able to simplify and not use pub-sub
         var debouncedInView = _.debounce( function _debouncedInner(){
-            multipanel.checkColumnsInView();
+            var viewport = multipanel._viewport();
+            multipanel.checkColumnsInView( viewport );
+            multipanel.checkForEndOfScroll( viewport );
         }, 100 );
         this.$( '.middle' ).parent().scroll( debouncedInView );
     },
@@ -994,15 +1016,20 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 
     /** Get the left and right pixel coords of the middle element */
     _viewport : function(){
-        var viewLeft = this.$( '.middle' ).parent().offset().left;
-        return { left: viewLeft, right: viewLeft + this.$( '.middle' ).parent().width() };
+        var $outerMiddle = this.$( '.middle' ).parent(),
+            viewLeft = $outerMiddle.offset().left,
+            width = $outerMiddle.width();
+        return {
+            left    : viewLeft,
+            right   : viewLeft + width
+        };
     },
 
     /** returns the columns currently in the viewport */
-    columnsInView : function(){
+    columnsInView : function( viewport ){
         //TODO: uses offset which is render intensive
         //TODO: 2N - could use arg filter (sortedFilteredColumns( filter )) instead
-        var vp = this._viewport();
+        var vp = viewport || this._viewport();
         return this.sortedFilteredColumns().filter( function( column ){
             return column.currentHistory || column.inView( vp.left, vp.right );
         });
@@ -1015,6 +1042,17 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         this.columnsInView().forEach( function( column ){
             column.trigger( 'in-view', column );
         });
+    },
+
+    /**  */
+    checkForEndOfScroll : function( viewport ){
+        viewport = viewport || this._viewport();
+        var END_PADDING = 16,
+            $middle = this.$( '.middle' ),
+            scrollRight = $middle.parent().scrollLeft() + viewport.right;
+        if( scrollRight >= ( $middle.width() - END_PADDING ) ){
+            this.trigger( 'end-of-scroll' );
+        }
     },
 
     /** Show and enable the current columns drop target */

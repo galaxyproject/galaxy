@@ -8,7 +8,7 @@ import pkg_resources
 pkg_resources.require( "Paste" )
 
 pkg_resources.require( "SQLAlchemy >= 0.4" )
-from sqlalchemy import true, false, desc, asc
+from sqlalchemy import true, false
 
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
@@ -165,6 +165,13 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         # otherwise, do the default filter of removing the deleted histories
         return [ self.app.model.History.deleted == false() ]
+
+    def _parse_order_by( self, order_by_string ):
+        ORDER_BY_SEP_CHAR = ','
+        manager = self.history_manager
+        if ORDER_BY_SEP_CHAR in order_by_string:
+            return [ manager.parse_order_by( o ) for o in order_by_string.split( ORDER_BY_SEP_CHAR ) ]
+        return manager.parse_order_by( order_by_string )
 
     @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
@@ -418,10 +425,3 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             raise exceptions.MessageException( "Export not available or not yet ready." )
 
         return self.serve_ready_history_export( trans, jeha )
-
-    def _parse_order_by( self, order_by_string ):
-        ORDER_BY_SEP_CHAR = ','
-        manager = self.history_manager
-        if ORDER_BY_SEP_CHAR in order_by_string:
-            return [ manager.parse_order_by( o ) for o in order_by_string.split( ORDER_BY_SEP_CHAR ) ]
-        return manager.parse_order_by( order_by_string )

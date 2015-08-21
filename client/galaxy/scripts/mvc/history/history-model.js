@@ -387,18 +387,33 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
     //logger              : console,
 
     urlRoot : ( window.galaxy_config? galaxy_config.root : '/' ) + 'api/histories',
-    //url     : function(){ return this.urlRoot; },
+    url     : function(){ return this.urlRoot; },
 
     initialize : function( models, options ){
         options = options || {};
         this.log( 'HistoryCollection.initialize', arguments );
+
         this.includeDeleted = options.includeDeleted || false;
+        this.offset = options.offset;
+        this.limit = options.limit;
+        this.order = options.order;
 
         //this.on( 'all', function(){
         //    console.info( 'event:', arguments );
         //});
 
         this.setUpListeners();
+    },
+
+    fetch : function( options ){
+        options = options || {};
+        if( !this.includeDeleted ){
+            var data = options.data || {};
+            data.q = 'deleted';
+            data.qv = 'False';
+            options.data = data;
+        }
+        Backbone.Collection.prototype.fetch.call( this, options );
     },
 
     setUpListeners : function setUpListeners(){
@@ -414,7 +429,9 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
 
         // listen for a history copy, adding it to the beginning of the collection
         this.on( 'copied', function( original, newData ){
-            this.unshift( new History( newData, [] ) );
+            var history = new History( newData, [] );
+            this.unshift( history );
+            this.trigger( 'new-current', history, this );
         });
     },
 
@@ -426,7 +443,7 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
             // new histories go in the front
 //TODO:  (implicit ordering by update time...)
             collection.unshift( history );
-            collection.trigger( 'new-current' );
+            collection.trigger( 'new-current', history, this );
         });
 //TODO: move back to using history.save (via Deferred.then w/ set_as_current)
     },
