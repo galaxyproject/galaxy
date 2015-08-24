@@ -8,6 +8,12 @@
     ${render_msg( message, 'done' )}
 %endif
 
+<%
+    page = page_specs.page
+    offset = page_specs.offset
+    entries = page_specs.entries
+%>
+
 ${get_css()}
 
 <!--jobs_per_month_all.mako-->
@@ -34,17 +40,17 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="third_width">
-                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'per_month_all', 'Month')}
+                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'per_month_all', 'Month', page=page, offset=offset, entries=entries)}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_all', 'User Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_all', 'User Jobs', page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_all', 'User and Monitor Jobs')}
+                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_all', 'User and Monitor Jobs', page=page, offset=offset, entries=entries)}
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
