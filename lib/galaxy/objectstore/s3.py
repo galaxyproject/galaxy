@@ -45,7 +45,6 @@ class S3ObjectStore(ObjectStore):
         if boto is None:
             raise Exception(NO_BOTO_ERROR_MESSAGE)
         super(S3ObjectStore, self).__init__(config, config_xml)
-        self.config = config
         self.staging_path = self.config.file_path
         self.transfer_progress = 0
         self._parse_config_xml(config_xml)
