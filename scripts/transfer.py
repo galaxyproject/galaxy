@@ -6,7 +6,7 @@ hand.
 """
 import os, sys, optparse, ConfigParser, socket, SocketServer, threading, logging, random, urllib2, tempfile, time
 
-galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..' ) )
+galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
 sys.path.insert( 0, os.path.abspath( os.path.join( galaxy_root, 'lib' ) ) )
 
 from galaxy import eggs

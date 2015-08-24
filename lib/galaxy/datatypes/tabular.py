@@ -14,9 +14,10 @@ from galaxy.datatypes import data
 from galaxy.datatypes import metadata
 from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers, get_test_fname
+from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import dumps
 import dataproviders
+import re
 
 log = logging.getLogger(__name__)
 
@@ -83,8 +84,8 @@ class TabularData( data.Text ):
             else:
                 trans.response.set_content_type( "text/html" )
                 return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data=open( dataset.file_name ).read(max_peek_size),
-                                            data=dataset)
+                                                   truncated_data=open( dataset.file_name ).read(max_peek_size),
+                                                   data=dataset)
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -98,11 +99,11 @@ class TabularData( data.Text ):
             if column_number is None:
                 column_number = 'null'
             return trans.fill_template( "/dataset/tabular_chunked.mako",
-                        dataset=dataset,
-                        chunk=self.get_chunk(trans, dataset, 0),
-                        column_number=column_number,
-                        column_names=column_names,
-                        column_types=column_types )
+                                        dataset=dataset,
+                                        chunk=self.get_chunk(trans, dataset, 0),
+                                        column_number=column_number,
+                                        column_names=column_names,
+                                        column_types=column_types )
 
     def make_html_table( self, dataset, **kwargs ):
         """Create HTML table, used for displaying peek"""
@@ -112,7 +113,7 @@ class TabularData( data.Text ):
             out.append( self.make_html_peek_rows( dataset, **kwargs ) )
             out.append( '</table>' )
             out = "".join( out )
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create peek %s" % str( exc )
         return out
 
@@ -157,7 +158,7 @@ class TabularData( data.Text ):
                     out.append( '%s.%s' % ( str( i + 1 ), escape( header ) ) )
                 out.append( '</th>' )
             out.append( '</tr>' )
-        except Exception, exc:
+        except Exception as exc:
             log.exception( 'make_html_peek_header failed on HDA %s' % dataset.id )
             raise Exception( "Can't create peek header %s" % str( exc ) )
         return "".join( out )
@@ -185,7 +186,7 @@ class TabularData( data.Text ):
                         for elem in elems:
                             out.append( '<td>%s</td>' % escape( elem ) )
                         out.append( '</tr>' )
-        except Exception, exc:
+        except Exception as exc:
             log.exception( 'make_html_peek_rows failed on HDA %s' % dataset.id )
             raise Exception( "Can't create peek rows %s" % str( exc ) )
         return "".join( out )
@@ -437,6 +438,7 @@ class Sam( Tabular ):
             Columns 2 (FLAG), 4(POS), 5 (MAPQ), 8 (MPOS), and 9 (ISIZE) must be numbers (9 can be negative)
             We will only check that up to the first 5 alignments are correctly formatted.
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.maf' )
         >>> Sam().sniff( fname )
         False
@@ -458,11 +460,11 @@ class Sam( Tabular ):
                         if len(linePieces) < 11:
                             return False
                         try:
-                            check = int(linePieces[1])
-                            check = int(linePieces[3])
-                            check = int(linePieces[4])
-                            check = int(linePieces[7])
-                            check = int(linePieces[8])
+                            int(linePieces[1])
+                            int(linePieces[3])
+                            int(linePieces[4])
+                            int(linePieces[7])
+                            int(linePieces[8])
                         except ValueError:
                             return False
                         count += 1
@@ -613,6 +615,7 @@ class Pileup( Tabular ):
         the first three and last two columns are the same. We only check the
         first three to allow for some personalization of the format.
 
+        >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'interval.interval' )
         >>> Pileup().sniff( fname )
         False
@@ -632,7 +635,7 @@ class Pileup( Tabular ):
                     try:
                         # chrom start in column 1 (with 0-based columns)
                         # and reference base is in column 2
-                        check = int( hdr[1] )
+                        int( hdr[1] )
                         assert hdr[2] in [ 'A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't', 'n' ]
                     except:
                         return False
@@ -741,7 +744,7 @@ class Eland( Tabular ):
             out.append( self.make_html_peek_rows( dataset, skipchars=skipchars ) )
             out.append( '</table>' )
             out = "".join( out )
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create peek %s" % exc
         return out
 
@@ -781,8 +784,8 @@ class Eland( Tabular ):
                             raise Exception('Out of range')
                         if long(linePieces[3]) < 0:
                             raise Exception('Out of range')
-                        check = int(linePieces[4])
-                        check = int(linePieces[5])
+                        int(linePieces[4])
+                        int(linePieces[5])
                         # can get a lot more specific
                     except ValueError:
                         fh.close()
@@ -809,12 +812,12 @@ class Eland( Tabular ):
             tiles = {}
             barcodes = {}
             reads = {}
-            #     # Should always read the entire file (until we devise a more clever way to pass metadata on)
+            # Should always read the entire file (until we devise a more clever way to pass metadata on)
             # if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-            #     # If the dataset is larger than optional_metadata, just count comment lines.
+            # If the dataset is larger than optional_metadata, just count comment lines.
             #     dataset.metadata.data_lines = None
             # else:
-            #     # Otherwise, read the whole thing and set num data lines.
+            # Otherwise, read the whole thing and set num data lines.
             for i, line in enumerate(dataset_fh):
                 if line:
                     linePieces = line.split('\t')
@@ -925,3 +928,110 @@ class CSV( TabularData ):
             dataset.metadata.columns = len(header_row)
             dataset.metadata.column_names = header_row
             dataset.metadata.delimiter = reader.dialect.delimiter
+
+
+class ConnectivityTable( Tabular ):
+    edam_format = "format_3309"
+    file_ext = "ct"
+
+    header_regexp = re.compile( "^[0-9]+" + "(?:\t|[ ]+)" + ".*?" + "(?:ENERGY|energy|dG)" + "[ \t].*?=")
+    structure_regexp = re.compile( "^[0-9]+" + "(?:\t|[ ]+)" + "[ACGTURYKMSWBDHVN]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+" + "(?:\t|[ ]+)" + "[^\t]+")
+
+    def __init__(self, **kwd):
+        Tabular.__init__( self, **kwd )
+        self.columns = 6
+        self.column_names = ['base_index', 'base', 'neighbor_left', 'neighbor_right', 'partner', 'natural_numbering']
+        self.column_types = ['int', 'str', 'int', 'int', 'int', 'int']
+
+    def set_meta( self, dataset, **kwd ):
+        data_lines = 0
+
+        for line in file( dataset.file_name ):
+            data_lines += 1
+
+        dataset.metadata.data_lines = data_lines
+
+    def sniff(self, filename):
+        """
+        The ConnectivityTable (CT) is a file format used for describing
+        RNA 2D structures by tools including MFOLD, UNAFOLD and
+        the RNAStructure package. The tabular file format is defined as
+        follows:
+
+5	energy = -12.3	sequence name
+1	G	0	2	0	1
+2	A	1	3	0	2
+3	A	2	4	0	3
+4	A	3	5	0	4
+5	C	4	6	1	5
+
+        The links given at the edam ontology page do not indicate what
+        type of separator is used (space or tab) while different
+        implementations exist. The implementation that uses spaces as
+        separator (implemented in RNAStructure) is as follows:
+
+   10    ENERGY = -34.8  seqname
+    1 G       0    2    9    1
+    2 G       1    3    8    2
+    3 G       2    4    7    3
+    4 a       3    5    0    4
+    5 a       4    6    0    5
+    6 a       5    7    0    6
+    7 C       6    8    3    7
+    8 C       7    9    2    8
+    9 C       8   10    1    9
+   10 a       9    0    0   10
+        """
+
+        i = 0
+        j = 1
+
+        try:
+            with open( filename ) as handle:
+                for line in handle:
+                    line = line.strip()
+
+                    if len(line) > 0:
+                        if i == 0:
+                            if not self.header_regexp.match(line):
+                                return False
+                            else:
+                                length = int(re.split('\W+', line, 1)[0])
+                        else:
+                            if not self.structure_regexp.match(line.upper()):
+                                return False
+                            else:
+                                if j != int(re.split('\W+', line, 1)[0]):
+                                    return False
+                                elif j == length:                       # Last line of first sequence has been recheached
+                                    return True
+                                else:
+                                    j += 1
+                        i += 1
+            return False
+        except:
+            return False
+
+    def get_chunk(self, trans, dataset, chunk):
+        ck_index = int(chunk)
+        f = open(dataset.file_name)
+        f.seek(ck_index * trans.app.config.display_chunk_size)
+        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
+        if f.tell() != 0:
+            cursor = f.read(1)
+            while cursor and cursor != '\n':
+                cursor = f.read(1)
+        ck_data = f.read(trans.app.config.display_chunk_size)
+        cursor = f.read(1)
+        while cursor and ck_data[-1] != '\n':
+            ck_data += cursor
+            cursor = f.read(1)
+
+        # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
+        # By converting these spaces back to tabs, chucks can still be interpreted by tab delimited file parsers
+        ck_data_header, ck_data_body = ck_data.split('\n', 1)
+        ck_data_header = re.sub('^([0-9]+)[ ]+', r'\1\t', ck_data_header)
+        ck_data_body = re.sub('\n[ \t]+', '\n', ck_data_body)
+        ck_data_body = re.sub('[ ]+', '\t', ck_data_body)
+
+        return dumps( { 'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body ), 'ck_index': ck_index + 1 } )

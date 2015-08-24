@@ -13,6 +13,27 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     <style>
+    div.historyItem {
+        margin: 0px -5px;
+        padding: 8px 10px;
+        border-top: solid #999 1px;
+        border-right: none;
+        word-wrap: break-word;
+        background: #EEE;
+    }
+    div.historyItem .state-icon {
+        display: inline-block;
+        vertical-align: middle;
+        width: 16px;
+        height: 16px;
+        background-position: 0 1px;
+        background-repeat: no-repeat;
+    }
+    div.historyItem .historyItemTitle {
+        font-weight: bold;
+        line-height: 16px;
+    }
+
     .searchResult {
         border-style:dashed;
         border-width:1px;
@@ -55,7 +76,7 @@
                     success : function(data) {
                         var p = $("#output");
                         p.empty();
-                        _.each(data.results, function(doc){
+                        _.each(data.results, search_format_output
                             var div_class = "historyItem";
                             var a = $("<div class='" + div_class + "'>")
                             a.append($("<div>").append(doc['model_class']));

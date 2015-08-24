@@ -68,7 +68,7 @@
                     el      : $embeddedHistory.find( ".history-panel" ),
                     model   : new historyModel.History(
                         ${h.dumps( history_dict )},
-                        ${h.dumps( hda_dicts )}
+                        ${h.dumps( content_dicts )}
                     )
                 }).render();
 

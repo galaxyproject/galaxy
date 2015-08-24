@@ -122,6 +122,12 @@ class MetadataCollection( object ):
             else:
                 self.parent._metadata[name] = value
 
+    def remove_key( self, name ):
+        if name in self.parent._metadata:
+            del self.parent._metadata[name]
+        else:
+            log.info( "Attempted to delete invalid key '%s' from MetadataCollection" % name )
+
     def element_is_set( self, name ):
         return bool( self.parent._metadata.get( name, False ) )
 
@@ -667,7 +673,7 @@ class MetadataTempFile( object ):
                 if isinstance( value, cls ) and os.path.exists( value.file_name ):
                     log.debug( 'Cleaning up abandoned MetadataTempFile file: %s' % value.file_name )
                     os.unlink( value.file_name )
-        except Exception, e:
+        except Exception as e:
             log.debug( 'Failed to cleanup MetadataTempFile temp files from %s: %s' % ( filename, e ) )
 
 
@@ -720,7 +726,8 @@ class JobExternalOutputMetadataWrapper( object ):
                                  output_fnames=None, config_root=None,
                                  config_file=None, datatypes_config=None,
                                  job_metadata=None, compute_tmp_dir=None,
-                                 include_command=True, kwds=None ):
+                                 include_command=True, max_metadata_value_size=0,
+                                 kwds=None):
         kwds = kwds or {}
         if tmp_dir is None:
             tmp_dir = MetadataTempFile.tmp_dir
@@ -747,7 +754,7 @@ class JobExternalOutputMetadataWrapper( object ):
                         if dataset_path.real_path == metadata_files.dataset.file_name:
                             return dataset_path.false_path or dataset_path.real_path
                 return ""
-            line = "%s,%s,%s,%s,%s,%s" % (
+            line = '"%s,%s,%s,%s,%s,%s"' % (
                 metadata_path_on_compute(metadata_files.filename_in),
                 metadata_path_on_compute(metadata_files.filename_kwds),
                 metadata_path_on_compute(metadata_files.filename_out),
@@ -819,15 +826,16 @@ class JobExternalOutputMetadataWrapper( object ):
                 sa_session.add( metadata_files )
                 sa_session.flush()
             metadata_files_list.append( metadata_files )
-        args = "%s %s %s" % ( datatypes_config,
-                              job_metadata,
-                              " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ) )
+        args = '"%s" "%s" %s %s' % ( datatypes_config,
+                                     job_metadata,
+                                     " ".join( map( __metadata_files_list_to_cmd_line, metadata_files_list ) ),
+                                     max_metadata_value_size)
         if include_command:
             # return command required to build
             fd, fp = tempfile.mkstemp( suffix='.py', dir=tmp_dir, prefix="set_metadata_" )
             metadata_script_file = abspath( fp )
             os.fdopen( fd, 'w' ).write( 'from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()' )
-            return "python %s %s" % ( metadata_path_on_compute(metadata_script_file), args )
+            return 'python "%s" %s' % ( metadata_path_on_compute(metadata_script_file), args )
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return args
@@ -855,7 +863,7 @@ class JobExternalOutputMetadataWrapper( object ):
                                 ( 'filename_override_metadata', metadata_files.filename_override_metadata ) ]:
                 try:
                     os.remove( fname )
-                except Exception, e:
+                except Exception as e:
                     log.debug( 'Failed to cleanup external metadata file (%s) for %s: %s' % ( key, dataset_key, e ) )
 
     def set_job_runner_external_pid( self, pid, sa_session ):

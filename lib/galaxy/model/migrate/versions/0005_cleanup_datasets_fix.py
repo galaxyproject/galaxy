@@ -1,4 +1,9 @@
-import sys, logging, os, time, datetime, errno
+import datetime
+import errno
+import logging
+import os
+import sys
+import time
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -8,7 +13,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-from sqlalchemy import and_
+from sqlalchemy import and_, false, true
 
 from sqlalchemy import *
 now = datetime.datetime.utcnow
@@ -26,7 +31,7 @@ metadata = MetaData()
 context = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
 
 
-## classes
+# classes
 def get_permitted_actions( **kwds ):
     return Bunch()
 
@@ -590,13 +595,13 @@ mapper( Dataset, Dataset.table,
             primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
         active_history_associations=relation(
             HistoryDatasetAssociation,
-            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted == False ) ) ),
+            primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted == false() ) ) ),
         library_associations=relation(
             LibraryDatasetDatasetAssociation,
             primaryjoin=( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),
         active_library_associations=relation(
             LibraryDatasetDatasetAssociation,
-            primaryjoin=( ( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( LibraryDatasetDatasetAssociation.table.c.deleted == False ) ) )
+            primaryjoin=( ( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( LibraryDatasetDatasetAssociation.table.c.deleted == false() ) ) )
             ) )
 
 
@@ -620,7 +625,7 @@ mapper( HistoryDatasetAssociation, HistoryDatasetAssociation.table,
             backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
         visible_children=relation(
             HistoryDatasetAssociation,
-            primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible == True ) ) )
+            primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible == true() ) ) )
             ) )
 
 mapper( LibraryDatasetDatasetAssociation, LibraryDatasetDatasetAssociation.table,
@@ -642,7 +647,7 @@ mapper( LibraryDatasetDatasetAssociation, LibraryDatasetDatasetAssociation.table
             backref=backref( "parent", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
         visible_children=relation(
             LibraryDatasetDatasetAssociation,
-            primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == True ) ) )
+            primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == true() ) ) )
         ) )
 
 mapper( LibraryDataset, LibraryDataset.table,
@@ -668,7 +673,7 @@ def upgrade(migrate_engine):
     log.debug( "Fixing a discrepancy concerning deleted shared history items." )
     affected_items = 0
     start_time = time.time()
-    for dataset in context.query( Dataset ).filter( and_( Dataset.deleted == True, Dataset.purged == False ) ):
+    for dataset in context.query( Dataset ).filter( and_( Dataset.deleted == true(), Dataset.purged == false() ) ):
         for dataset_instance in dataset.history_associations + dataset.library_associations:
             if not dataset_instance.deleted:
                 dataset.deleted = False

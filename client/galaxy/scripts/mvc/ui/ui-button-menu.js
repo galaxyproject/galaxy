@@ -11,6 +11,7 @@ return Backbone.View.extend({
         id              : '',
         title           : '',
         floating        : 'right',
+        pull            : 'right',
         icon            : null,
         onclick         : null,
         cls             : 'ui-button-icon ui-button-menu',
@@ -122,10 +123,9 @@ return Backbone.View.extend({
     _templateMenuItem: function (options) {
         var tmpl =  '<li>' +
                         '<a class="dropdown-item" href="' + options.href + '" target="' + options.target + '">';
-                
-        if (options.icon)
+        if (options.icon) {
             tmpl +=         '<i class="fa ' + options.icon + '"></i>';
-        
+        }
         tmpl +=             ' ' + options.title +
                         '</a>' +
                     '</li>';
@@ -134,7 +134,7 @@ return Backbone.View.extend({
 
     // fill template header
     _templateMenu: function () {
-        return '<ul class="menu dropdown-menu pull-right" role="menu"></ul>';
+        return '<ul class="menu dropdown-menu pull-' + this.options.pull + '" role="menu"></ul>';
     },
 
     _templateDivider: function() {

@@ -3,10 +3,8 @@ from __future__ import print_function
 import os
 import sys
 
-script_dir = os.path.dirname(__file__)
-galaxy_root = os.path.join(script_dir, os.path.pardir)
-new_path = [ os.path.join( galaxy_root, "lib" ) ]
-new_path.extend( sys.path[1:] )
+new_path = [ os.path.join( os.path.dirname(__file__), os.pardir, "lib" ) ]
+new_path.extend( sys.path[1:] )  # remove scripts/ from the path
 sys.path = new_path
 
 try:

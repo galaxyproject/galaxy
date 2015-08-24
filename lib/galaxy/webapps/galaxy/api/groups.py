@@ -2,6 +2,8 @@
 API operations on Group objects.
 """
 import logging
+from sqlalchemy import false
+
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
 
@@ -19,7 +21,7 @@ class GroupAPIController( BaseAPIController ):
         Displays a collection (list) of groups.
         """
         rval = []
-        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == False ):
+        for group in trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.deleted == false() ):
             if trans.user_is_admin():
                 item = group.to_dict( value_mapper={ 'id': trans.security.encode_id } )
                 encoded_id = trans.security.encode_id( group.id )
@@ -41,7 +43,7 @@ class GroupAPIController( BaseAPIController ):
         if not name:
             trans.response.status = 400
             return "Enter a valid name"
-        if trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name==name ).first():
+        if trans.sa_session.query( trans.app.model.Group ).filter( trans.app.model.Group.table.c.name == name ).first():
             trans.response.status = 400
             return "A group with that name already exists"
 
@@ -49,8 +51,8 @@ class GroupAPIController( BaseAPIController ):
         trans.sa_session.add( group )
         user_ids = payload.get( 'user_ids', [] )
         for i in user_ids:
-          log.info("user_id: %s\n" % (i ))
-          log.info("%s %s\n" % (i, trans.security.decode_id( i ) ))
+            log.info("user_id: %s\n" % (i ))
+            log.info("%s %s\n" % (i, trans.security.decode_id( i ) ))
         users = [ trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( i ) ) for i in user_ids ]
         role_ids = payload.get( 'role_ids', [] )
         roles = [ trans.sa_session.query( trans.model.Role ).get( trans.security.decode_id( i ) ) for i in role_ids ]
@@ -117,12 +119,11 @@ class GroupAPIController( BaseAPIController ):
             return "Invalid group id ( %s ) specified." % str( group_id )
         name = payload.get( 'name', None )
         if name:
-          group.name = name
-          trans.sa_session.add(group)
+            group.name = name
+            trans.sa_session.add(group)
         user_ids = payload.get( 'user_ids', [] )
         users = [ trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( i ) ) for i in user_ids ]
         role_ids = payload.get( 'role_ids', [] )
         roles = [ trans.sa_session.query( trans.model.Role ).get( trans.security.decode_id( i ) ) for i in role_ids ]
-        trans.app.security_agent.set_entity_group_associations( groups=[ group ], roles=roles, users=users,delete_existing_assocs=False )
+        trans.app.security_agent.set_entity_group_associations( groups=[ group ], roles=roles, users=users, delete_existing_assocs=False )
         trans.sa_session.flush()
-

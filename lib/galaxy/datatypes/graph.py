@@ -45,9 +45,9 @@ class Xgmml( xml.GenericXml ):
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
         if len( split_files ) > 1:
-            raise NotImplementedError( "Merging multiple XML files is non-trivial "
-                                     + "and must be implemented for each XML type" )
-        #For one file only, use base class method (move/copy)
+            raise NotImplementedError( "Merging multiple XML files is non-trivial " +
+                                       "and must be implemented for each XML type" )
+        # For one file only, use base class method (move/copy)
         data.Text.merge( split_files, output_file )
 
     @dataproviders.decorators.dataprovider_factory( 'node-edge', dataproviders.hierarchy.XMLDataProvider.settings )
@@ -94,6 +94,10 @@ class Sif( tabular.Tabular ):
         dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
         return SIFGraphDataProvider( dataset_source, **settings )
 
+
+@data.deprecated_datatype_reference
+class Rdf(triples.Rdf):
+    pass
 
 
 # ----------------------------------------------------------------------------- graph specific data providers

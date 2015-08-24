@@ -20,11 +20,11 @@ ${get_css()}
                 <tr><td colspan="2">There are no requests for user "${util.restore_text( email )}"</td></tr>
             %else:
                 <tr class="header">
-                    <td>
+                    <td class="half_width">
                         ${get_sort_url(sort_id, order, 'date', 'users' 'requests_users_per_month', 'Month')}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
-                    <td>Total
+                    <td class="half_width">Total
                         ${get_sort_url(sort_id, order, 'num_users', 'users' 'requests_users_per_month', 'Month')}
                         <span class='dir_arrow num_users'>${arrow}</span>
                     </td>

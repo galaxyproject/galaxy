@@ -2,12 +2,13 @@
 DataProvider related exceptions.
 """
 
+
 class InvalidDataProviderSource( TypeError ):
     """
     Raised when a unusable source is passed to a provider.
     """
     def __init__( self, source=None, msg='' ):
-        msg = msg or 'Invalid source for provider: %s' %( source )
+        msg = msg or 'Invalid source for provider: %s' % ( source )
         super( InvalidDataProviderSource, self ).__init__( msg )
 
 
@@ -27,7 +28,7 @@ class NoProviderAvailable( TypeError ):
     def __init__( self, factory_source, format_requested=None, msg='' ):
         self.factory_source = factory_source
         self.format_requested = format_requested
-        msg = msg or 'No provider available in factory_source "%s" for format requested' %( str( factory_source ) )
+        msg = msg or 'No provider available in factory_source "%s" for format requested' % ( str( factory_source ) )
         if self.format_requested:
-            msg += ': "%s"' %( self.format_requested )
+            msg += ': "%s"' % ( self.format_requested )
         super( NoProviderAvailable, self ).__init__( msg )

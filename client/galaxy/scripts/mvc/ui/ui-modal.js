@@ -13,7 +13,8 @@ var View = Backbone.View.extend({
         height           : null,
         width            : null,
         closing_events   : false,
-        closing_callback : null
+        closing_callback : null,
+        title_separator  : true
     },
 
     // button list
@@ -35,12 +36,12 @@ var View = Backbone.View.extend({
         if (this.options.height){
             this.$body.css('height', this.options.height);
             this.$body.css('overflow', 'hidden');
-        } else{
+        } else {
             this.$body.css('max-height', $(window).height() / 2);
         }
 
         // fix width
-        if (this.options.width){
+        if (this.options.width) {
             this.$dialog.css('width', this.options.width);
         }
 
@@ -169,6 +170,11 @@ var View = Backbone.View.extend({
             // hide modal if background is clicked
             this.$el.find('.modal-backdrop').on('click', function() { self.hide(); });
         }
+
+        // removes the default separator line
+        if (!this.options.title_separator) {
+            this.$('.modal-header').css({ 'border': 'none', 'padding-bottom': '0px' });
+        }
     },
     
     // fill regular modal template
@@ -180,7 +186,7 @@ var View = Backbone.View.extend({
                             '<div class="modal-header">' +
                                 '<button type="button" class="close" style="display: none;">&times;</button>' +
                                 '<h4 class="title">' + title + '</h4>' +
-                                '</div>' +
+                            '</div>' +
                             '<div class="modal-body" style="position: static;"></div>' +
                             '<div class="modal-footer">' +
                                 '<div class="buttons" style="float: right;"></div>' +

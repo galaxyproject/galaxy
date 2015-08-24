@@ -3,6 +3,7 @@ from galaxy.model.item_attrs import UsesItemRatings
 
 log = logging.getLogger( __name__ )
 
+
 class ItemRatings( UsesItemRatings ):
     """Overrides rate_item method since we also allow for comments"""
     def rate_item( self, trans, user, item, rating, comment='' ):

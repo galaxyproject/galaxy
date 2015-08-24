@@ -1,8 +1,12 @@
 """
 Upload class
 """
-import os
 import logging
+
+from galaxy import eggs
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+
 import galaxy.util
 from galaxy import web
 from galaxy.tools import DefaultToolState
@@ -16,11 +20,10 @@ from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
 from galaxy.web import error, url_for
-from galaxy.web.framework.helpers import escape
 from galaxy.web.base.controller import BaseUIController
-import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
+
 
 class AddFrameData:
     def __init__( self ):
@@ -28,15 +31,16 @@ class AddFrameData:
         self.debug = None
         self.from_noframe = None
 
+
 class ToolRunner( BaseUIController ):
 
-    #Hack to get biomart to work, ideally, we could pass tool_id to biomart and receive it back
+    # Hack to get biomart to work, ideally, we could pass tool_id to biomart and receive it back
     @web.expose
     def biomart(self, trans, tool_id='biomart', **kwd):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
 
-    #test to get hapmap to work, ideally, we could pass tool_id to hapmap biomart and receive it back
+    # test to get hapmap to work, ideally, we could pass tool_id to hapmap biomart and receive it back
     @web.expose
     def hapmapmart(self, trans, tool_id='hapmapmart', **kwd):
         """Catches the tool id and redirects as needed"""
@@ -83,7 +87,7 @@ class ToolRunner( BaseUIController ):
 
         def _validated_params_for( kwd ):
             params = galaxy.util.Params( kwd, sanitize=False )  # Sanitize parameters when substituting into command line via input wrappers
-            #do param translation here, used by datasource tools
+            # do param translation here, used by datasource tools
             if tool.input_translator:
                 tool.input_translator.translate( params )
             return params
@@ -134,13 +138,13 @@ class ToolRunner( BaseUIController ):
                 error( "Invalid value for 'job_id' parameter" )
             if not trans.user_is_admin():
                 for data_assoc in job.output_datasets:
-                    #only allow rerunning if user is allowed access to the dataset.
+                    # only allow rerunning if user is allowed access to the dataset.
                     if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data_assoc.dataset.dataset ):
                         error( "You are not allowed to rerun this job" )
             param_error_text = "Failed to get parameters for job id %d " % job_id
         else:
             if not id:
-                error( "'id' parameter is required" );
+                error( "'id' parameter is required" )
             try:
                 id = int( id )
             except:
@@ -151,7 +155,7 @@ class ToolRunner( BaseUIController ):
                     error( "Invalid value for 'id' parameter" )
             # Get the dataset object
             data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
-            #only allow rerunning if user is allowed access to the dataset.
+            # only allow rerunning if user is allowed access to the dataset.
             if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
                 error( "You are not allowed to access this dataset" )
             # Get the associated job, if any.
@@ -170,7 +174,7 @@ class ToolRunner( BaseUIController ):
             if ( tool.id == job.tool_id or tool.old_id == job.tool_id ) and tool.version == job.tool_version:
                 tool_id_version_message = ''
             elif tool.id == job.tool_id:
-                if job.tool_version == None:
+                if job.tool_version is None:
                     # For some reason jobs don't always keep track of the tool version.
                     tool_id_version_message = ''
                 else:
@@ -198,7 +202,7 @@ class ToolRunner( BaseUIController ):
             error( "The '%s' tool does not currently support rerunning." % tool.name )
         # Get the job's parameters
         try:
-            params_objects = job.get_param_values( trans.app, ignore_errors = True )
+            params_objects = job.get_param_values( trans.app, ignore_errors=True )
         except:
             raise Exception( param_error_text )
         upgrade_messages = tool.check_and_update_param_values( params_objects, trans, update_values=False )
@@ -206,12 +210,12 @@ class ToolRunner( BaseUIController ):
         # dataset used; parameter should be the analygous dataset in the
         # current history.
         history = trans.get_history()
-        hda_source_dict = {} # Mapping from HDA in history to source HDAs.
+        hda_source_dict = {}  # Mapping from HDA in history to source HDAs.
         for hda in history.datasets:
             source_hda = hda.copied_from_history_dataset_association
-            while source_hda:#should this check library datasets as well?
-                #FIXME: could be multiple copies of a hda in a single history, this does a better job of matching on cloned histories,
-                #but is still less than perfect when eg individual datasets are copied between histories
+            while source_hda:  # should this check library datasets as well?
+                # FIXME: could be multiple copies of a hda in a single history, this does a better job of matching on cloned histories,
+                # but is still less than perfect when eg individual datasets are copied between histories
                 if source_hda not in hda_source_dict or source_hda.hid == hda.hid:
                     hda_source_dict[ source_hda ] = hda
                 source_hda = source_hda.copied_from_history_dataset_association
@@ -227,7 +231,7 @@ class ToolRunner( BaseUIController ):
         # Unpack unvalidated values to strings, they'll be validated when the
         # form is submitted (this happens when re-running a job that was
         # initially run by a workflow)
-        #This needs to be done recursively through grouping parameters
+        # This needs to be done recursively through grouping parameters
         def rerun_callback( input, value, prefixed_name, prefixed_label ):
             if isinstance( value, UnvalidatedValue ):
                 try:
@@ -237,7 +241,7 @@ class ToolRunner( BaseUIController ):
                     log.debug( "Failed to use input.to_html_value to determine value of unvalidated parameter, defaulting to string: %s" % ( e ) )
                     return str( value )
             if isinstance( input, DataToolParameter ):
-                if isinstance(value,list):
+                if isinstance(value, list):
                     values = []
                     for val in value:
                         if is_hashable( val ):
@@ -264,11 +268,11 @@ class ToolRunner( BaseUIController ):
             except:
                 # Job has no outputs?
                 pass
-        #create an incoming object from the original job's dataset-modified param objects
+        # create an incoming object from the original job's dataset-modified param objects
         incoming = {}
         params_to_incoming( incoming, tool.inputs, params_objects, trans.app )
         incoming[ "tool_state" ] = galaxy.util.object_to_string( state.encode( tool, trans.app ) )
-        template, vars = tool.handle_input( trans, incoming, old_errors=upgrade_messages ) #update new state with old parameters
+        template, vars = tool.handle_input( trans, incoming, old_errors=upgrade_messages )  # update new state with old parameters
         # Is the "add frame" stuff neccesary here?
         add_frame = AddFrameData()
         add_frame.debug = trans.debug
@@ -321,6 +325,7 @@ class ToolRunner( BaseUIController ):
             return trans.show_error_message( "Required URL for redirection missing" )
         trans.log_event( "Redirecting to: %s" % redirect_url )
         return trans.fill_template( 'root/redirect.mako', redirect_url=redirect_url )
+
     @web.json
     def upload_async_create( self, trans, tool_id=None, **kwd ):
         """
@@ -339,6 +344,7 @@ class ToolRunner( BaseUIController ):
             permissions, in_roles, error, msg = trans.app.security_agent.derive_roles_from_access( trans, library_id, cntrller, library=True, **vars )
             if error:
                 return [ 'error', msg ]
+
         def create_dataset( name ):
             ud = Bunch( name=name, file_type=None, dbkey=None )
             if nonfile_params.get( 'folder_id', False ):
@@ -355,7 +361,7 @@ class ToolRunner( BaseUIController ):
             return upload_common.new_upload( trans, cntrller, ud, library_bunch=library_bunch, state=trans.app.model.HistoryDatasetAssociation.states.UPLOAD )
         tool = self.get_toolbox().get_tool( tool_id )
         if not tool:
-            return False # bad tool_id
+            return False  # bad tool_id
         nonfile_params = galaxy.util.Params( kwd, sanitize=False )
         if kwd.get( 'tool_state', None ) not in ( None, 'None' ):
             encoded_state = galaxy.util.string_to_object( kwd["tool_state"] )
@@ -363,7 +369,7 @@ class ToolRunner( BaseUIController ):
             tool_state.decode( encoded_state, tool, trans.app )
         else:
             tool_state = tool.new_state( trans )
-        tool.update_state( trans, tool.inputs, tool_state.inputs, kwd, update_only = True )
+        tool.update_state( trans, tool.inputs, tool_state.inputs, kwd, update_only=True )
         datasets = []
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
@@ -379,9 +385,9 @@ class ToolRunner( BaseUIController ):
                 if params.file_data not in [ None, "" ]:
                     name = params.file_data
                     if name.count('/'):
-                        name = name.rsplit('/',1)[1]
+                        name = name.rsplit('/', 1)[1]
                     if name.count('\\'):
-                        name = name.rsplit('\\',1)[1]
+                        name = name.rsplit('\\', 1)[1]
                     datasets.append( create_dataset( name ) )
                 if params.url_paste not in [ None, "" ]:
                     url_paste = params.url_paste.replace( '\r', '' ).split( '\n' )
@@ -395,12 +401,13 @@ class ToolRunner( BaseUIController ):
                             datasets.append( create_dataset( line ) )
                         else:
                             if url:
-                                continue # non-url when we've already processed some urls
+                                continue  # non-url when we've already processed some urls
                             else:
                                 # pasted data
                                 datasets.append( create_dataset( 'Pasted Entry' ) )
                                 break
         return [ d.id for d in datasets ]
+
     @web.expose
     def upload_async_message( self, trans, **kwd ):
         # might be more appropriate in a different controller
@@ -408,5 +415,5 @@ class ToolRunner( BaseUIController ):
         <p><b>Please do not use your browser\'s "stop" or "reload" buttons until the upload is complete, or it may be interrupted.</b></p>
         <p>You may safely continue to use Galaxy while the upload is in progress.  Using "stop" and "reload" on pages other than Galaxy is also safe.</p>
         """
-        #return trans.show_message( msg, refresh_frames=[ 'history' ] )
+        # return trans.show_message( msg, refresh_frames=[ 'history' ] )
         return trans.show_message( msg )

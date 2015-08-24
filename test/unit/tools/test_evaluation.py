@@ -48,7 +48,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
     def test_simple_evaluation( self ):
         self._setup_test_bwa_job()
         self._set_compute_environment()
-        command_line, extra_filenames = self.evaluator.build( )
+        command_line, extra_filenames, _ = self.evaluator.build( )
         self.assertEquals( command_line, "bwa --thresh=4 --in=/galaxy/files/dataset_1.dat --out=/galaxy/files/dataset_2.dat" )
 
     def test_repeat_evaluation( self ):
@@ -59,7 +59,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         self.job.parameters = [ JobParameter( name="r", value='''[{"thresh": 4, "__index__": 0},{"thresh": 5, "__index__": 1}]''' ) ]
         self.tool._command_line = "prog1 #for $r_i in $r # $r_i.thresh#end for#"
         self._set_compute_environment()
-        command_line, extra_filenames = self.evaluator.build( )
+        command_line, extra_filenames, _ = self.evaluator.build( )
         self.assertEquals( command_line, "prog1  4 5" )
 
     def test_conditional_evaluation( self ):
@@ -77,7 +77,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         self.job.parameters = [ JobParameter( name="c", value='''{"thresh": 4, "always_true": "true", "__current_case__": 0}''' ) ]
         self.tool._command_line = "prog1 --thresh=${c.thresh} --test_param=${c.always_true}"
         self._set_compute_environment()
-        command_line, extra_filenames = self.evaluator.build( )
+        command_line, extra_filenames, _ = self.evaluator.build( )
         self.assertEquals( command_line, "prog1 --thresh=4 --test_param=true" )
 
     def test_evaluation_of_optional_datasets( self ):
@@ -89,7 +89,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         self.tool.set_params( { "input1": parameter } )
         self.tool._command_line = "prog1 --opt_input='${input1}'"
         self._set_compute_environment()
-        command_line, extra_filenames = self.evaluator.build( )
+        command_line, extra_filenames, _ = self.evaluator.build( )
         self.assertEquals( command_line, "prog1 --opt_input='None'" )
 
     def test_evaluation_with_path_rewrites_wrapped( self ):
@@ -103,7 +103,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
     def __test_evaluation_with_path_rewrites( self ):
         # Various things can cause dataset paths to be rewritten (Task
         # splitting, config.outputs_to_working_directory). This tests that
-        #functionality.
+        # functionality.
         self._setup_test_bwa_job()
         job_path_1 = "%s/dataset_1.dat" % self.test_directory
         job_path_2 = "%s/dataset_2.dat" % self.test_directory
@@ -111,14 +111,14 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
             input_paths=[DatasetPath(1, '/galaxy/files/dataset_1.dat', false_path=job_path_1)],
             output_paths=[DatasetPath(2, '/galaxy/files/dataset_2.dat', false_path=job_path_2)],
         )
-        command_line, extra_filenames = self.evaluator.build( )
+        command_line, extra_filenames, _ = self.evaluator.build( )
         self.assertEquals( command_line, "bwa --thresh=4 --in=%s --out=%s" % (job_path_1, job_path_2) )
 
     def test_configfiles_evaluation( self ):
         self.tool.config_files.append( ( "conf1", None, "$thresh" ) )
         self.tool._command_line = "prog1 $conf1"
         self._set_compute_environment()
-        command_line, extra_filenames = self.evaluator.build( )
+        command_line, extra_filenames, _ = self.evaluator.build( )
         self.assertEquals( len( extra_filenames ), 1)
         config_filename = extra_filenames[ 0 ]
         config_basename = os.path.basename( config_filename )
@@ -160,7 +160,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
                 v = v.replace("/old", "/new")
             return v
         self._set_compute_environment(path_rewriter=test_path_rewriter)
-        command_line, extra_filenames = self.evaluator.build( )
+        command_line, extra_filenames, _ = self.evaluator.build( )
         self.assertEquals(command_line, "prog1 /new/path/human")
 
     def test_template_property_app( self ):
@@ -179,7 +179,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         self.tool._command_line = "test.exe"
         self.tool.config_files.append( ( "conf1", None, """%s""" % expression) )
         self._set_compute_environment()
-        _, extra_filenames = self.evaluator.build( )
+        _, extra_filenames, _ = self.evaluator.build( )
         config_filename = extra_filenames[ 0 ]
         self.assertEquals(open( config_filename, "r").read(), value)
 
@@ -255,6 +255,7 @@ class MockTool( object ):
     def __init__( self, app ):
         self.app = app
         self.hooks_called = []
+        self.environment_variables = []
         self._config_files = []
         self._command_line = "bwa --thresh=$thresh --in=$input1 --out=$output1"
         self._params = { "thresh": self.test_thresh_param() }
@@ -281,8 +282,6 @@ class MockTool( object ):
 
     @property
     def outputs( self ):
-        #elem_output1 = XML( '<param name="output1" type="data" format="txt"/>' )
-        #                DataToolParameter( self, elem_output1 ),
         return dict(
             output1=ToolOutput( "output1" ),
         )

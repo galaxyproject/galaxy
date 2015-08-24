@@ -95,7 +95,7 @@ class JobToolConfiguration( Bunch ):
 def config_exception(e, file):
     abs_path = os.path.abspath(file)
     message = 'Problem parsing the XML in file %s, ' % abs_path
-    message += 'please correct the indicated portion of the file and restart Galaxy.'
+    message += 'please correct the indicated portion of the file and restart Galaxy. '
     message += str(e)
     log.exception(message)
     return Exception(message)
@@ -192,6 +192,9 @@ class JobConfiguration( object ):
                             else:
                                 self.handlers[tag] = [id]
 
+        # Must define at least one handler to have a default.
+        if not self.handlers:
+            raise ValueError("Job configuration file defines no valid handler elements.")
         # Determine the default handler(s)
         self.default_handler_id = self.__get_default(handlers, self.handlers.keys())
 
@@ -856,7 +859,7 @@ class JobWrapper( object ):
 
         self.sa_session.flush()
 
-        self.command_line, self.extra_filenames = tool_evaluator.build()
+        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
         # Shell fragment to inject dependencies
@@ -1189,8 +1192,8 @@ class JobWrapper( object ):
                     # either use the metadata from originating output dataset, or call set_meta on the copies
                     # it would be quicker to just copy the metadata from the originating output dataset,
                     # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
-                         and self.app.config.retry_metadata_internally ):
+                    if ( self.app.config.retry_metadata_internally
+                            and not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session ) ):
                         # If Galaxy was expected to sniff type and didn't - do so.
                         if dataset.ext == "_sniff_":
                             extension = sniff.handle_uploaded_dataset_file( dataset.dataset.file_name, self.app.datatypes_registry )
@@ -1198,8 +1201,8 @@ class JobWrapper( object ):
 
                         # call datatype.set_meta directly for the initial set_meta call during dataset creation
                         dataset.datatype.set_meta( dataset, overwrite=False )
-                    elif ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session )
-                           and job.states.ERROR != final_job_state ):
+                    elif ( job.states.ERROR != final_job_state
+                            and not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) ):
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
                         # load metadata from file
@@ -1272,7 +1275,7 @@ class JobWrapper( object ):
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
         # is either incorrect or has the wrong semantics.
-        if None != tool_exit_code:
+        if tool_exit_code is not None:
             job.exit_code = tool_exit_code
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
@@ -1597,6 +1600,7 @@ class JobWrapper( object ):
                                                                       config_file=config_file,
                                                                       datatypes_config=datatypes_config,
                                                                       job_metadata=os.path.join( self.working_directory, TOOL_PROVIDED_JOB_METADATA_FILE ),
+                                                                      max_metadata_value_size=self.app.config.max_metadata_value_size,
                                                                       **kwds )
 
     @property
@@ -1742,7 +1746,7 @@ class TaskWrapper(JobWrapper):
 
         self.sa_session.flush()
 
-        self.command_line, self.extra_filenames = tool_evaluator.build()
+        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir

@@ -533,11 +533,6 @@ nglims_config_file = tool-data/nglims.yaml
 #static_style_dir = static/june_2007_style/blue
 #static_robots_txt = static/robots.txt
 
-# Cloud Launch
-
-#enable_cloud_launch = False
-#cloudlaunch_default_ami = ami-a7dbf6ce
-
 # Incremental Display Options
 
 #display_chunk_size = 65536
@@ -642,6 +637,12 @@ nglims_config_file = tool-data/nglims.yaml
 # special tools that require unaltered output.  WARNING: disabling this does
 # make the Galaxy instance susceptible to XSS attacks initiated by your users.
 #sanitize_all_html = True
+
+# Whitelist sanitization file.
+# Datasets created by tools listed in this file are trusted and will not have
+# their HTML sanitized on display.  This can be manually edited or manipulated
+# through the Admin control panel -- see "Manage Display Whitelist"
+#sanitize_whitelist_file = config/sanitize_whitelist.txt
 
 # By default Galaxy will serve non-HTML tool output that may potentially
 # contain browser executable JavaScript content as plain text.  This will for
@@ -836,9 +837,6 @@ use_interactive = True
 # Use new tool form
 #toolform_upgrade = True
 
-# Use new tool form in workflow editor
-#workflow_toolform_upgrade = True
-
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
@@ -949,12 +947,9 @@ use_interactive = True
 #job_config_file = config/job_conf.xml
 
 # In multiprocess configurations, notification between processes about new jobs
-# is done via the database.  In single process configurations, this is done in
-# memory, which is a bit quicker.  Galaxy tries to automatically determine
-# which method it should used based on your handler configuration in the job
-# config file, but you can explicitly override this behavior by setting the
-# following option to True or False.
-#track_jobs_in_database = None
+# must be done via the database.  In single process configurations, this can be
+# done in memory, which is a bit quicker.
+#track_jobs_in_database = True
 
 # This enables splitting of jobs into tasks, if specified by the particular tool
 # config.
@@ -976,9 +971,10 @@ use_interactive = True
 
 # Very large metadata values can cause Galaxy crashes.  This will allow
 # limiting the maximum metadata key size (in bytes used in memory, not the end
-# result database value size) Galaxy will attempt to save with a dataset.  0 to
-# disable this feature.  5000000 seems to be a reasonable size.
-#max_metadata_value_size = 0
+# result database value size) Galaxy will attempt to save with a dataset.  Use
+# 0 to disable this feature.  The default is 5MB, but as low as 1MB seems to be
+# a reasonable size.
+#max_metadata_value_size = 5242880
 
 # If (for example) you run on a cluster and your datasets (by default,
 # database/files/) are mounted read-only, this option will override tool output

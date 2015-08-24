@@ -1,41 +1,37 @@
 #!/usr/bin/env python
 
+import ConfigParser
 import logging
 import os
 import string
 import sys
 import textwrap
+import time
+from datetime import datetime, timedelta
+from time import strftime
+from optparse import OptionParser
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
+from galaxy import eggs
+eggs.require( "SQLAlchemy >= 0.4" )
+import sqlalchemy as sa
+from sqlalchemy import and_, distinct, false, not_
+
+import galaxy.webapps.tool_shed.config as tool_shed_config
+import galaxy.webapps.tool_shed.model.mapping
+from galaxy.util import send_mail as galaxy_send_mail
+from tool_shed.util.common_util import url_join
+
 log = logging.getLogger()
 log.setLevel( 10 )
 log.addHandler( logging.StreamHandler( sys.stdout ) )
-
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-
-import time
-import ConfigParser
-from datetime import datetime, timedelta
-from time import strftime
-from optparse import OptionParser
-
-from tool_shed.util.common_util import url_join
-import galaxy.webapps.tool_shed.config as tool_shed_config
-import galaxy.webapps.tool_shed.model.mapping
-import sqlalchemy as sa
-from sqlalchemy import and_, distinct, not_
-from galaxy.util import send_mail as galaxy_send_mail
-
 assert sys.version_info[:2] >= ( 2, 4 )
 
-
 def build_citable_url( host, repository ):
-    return url_join( host, 'view', repository.user.username, repository.name )
-
+    return url_join( host, pathspec=[ 'view', repository.user.username, repository.name ] )
 
 def main():
     '''
@@ -64,7 +60,6 @@ def main():
         print "# Displaying info only ( --info_only )"
 
     deprecate_repositories( app, cutoff_time, days=options.days, info_only=options.info_only, verbose=options.verbose )
-
 
 def send_mail_to_owner( app, name, owner, email, repositories_deprecated, days=14 ):
     '''
@@ -98,7 +93,6 @@ def send_mail_to_owner( app, name, owner, email, repositories_deprecated, days=1
         print "# An error occurred attempting to send email: %s" % str( e )
         return False
 
-
 def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=False ):
     # This method will get a list of repositories that were created on or before cutoff_time, but have never
     # had any metadata records associated with them. Then it will iterate through that list and deprecate the
@@ -116,8 +110,8 @@ def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=
     # This will yield a list of repositories that have been created more than n days ago, but never populated.
     repository_query = sa.select( [ app.model.Repository.table.c.id ],
                                   whereclause=and_( app.model.Repository.table.c.create_time < cutoff_time,
-                                                    app.model.Repository.table.c.deprecated == False,
-                                                    app.model.Repository.table.c.deleted == False,
+                                                    app.model.Repository.table.c.deprecated == false(),
+                                                    app.model.Repository.table.c.deleted == false(),
                                                     not_( app.model.Repository.table.c.id.in_( repository_ids_to_not_check ) ) ),
                                   from_obj=[ app.model.Repository.table ] )
     query_result = repository_query.execute()

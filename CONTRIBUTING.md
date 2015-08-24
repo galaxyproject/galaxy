@@ -13,13 +13,14 @@ deeper discussion of some of these points - please see the
 
 ## Before you Begin
 
-If you have an idea for a feature to add or an approach for a bugfix -
+If you have an idea for a feature to add or an approach for a bugfix,
 it is best to communicate with Galaxy developers early. The most
-common venue for this is the [Galaxy Trello
-board](https://wiki.galaxyproject.org/Issues). Browse through existing
-cards [here](http://bit.ly/gxytrello) and if one seems related comment
-on it. If no existing cards seem appropriate, a new issue can be
-opened using [this form](http://galaxyproject.org/trello). Galaxy
+common venues for this are
+[GitHub issues](https://github.com/galaxyproject/galaxy/issues) and the
+[Galaxy and Tool Shed Trello boards](https://wiki.galaxyproject.org/Issues).
+Browse through existing GitHub issues and Trello cards and if one seems related,
+comment on it. If no existing issue/card seems appropriate, a new issue can be
+opened using [this form](https://github.com/galaxyproject/galaxy/issues/new). Galaxy
 developers are also generally available via
 [IRC](https://wiki.galaxyproject.org/GetInvolved#IRC_Channel) and on
 the [development mailing list](http://dev.list.galaxyproject.org/).
@@ -30,12 +31,13 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   should be made through pull requests to this repository (with just two
   exceptions outlined below).
 
-* If you are new to Git - please check out the very useful tutorials on the [GitHub training hub](https://training.github.com/kit/)
+* If you are new to Git, the [Try Git](http://try.github.com/) tutorial is a good places to start.
+  More learning resources are listed at https://help.github.com/articles/good-resources-for-learning-git-and-github/ .
 
-* Make sure you have a free [GitHub account](https://github.com/)
+* Make sure you have a free [GitHub](https://github.com/) account.
 
-* Fork the galaxy repository on
-  [GitHub](https://github.com/galaxyproject/galaxy) to make your changes.
+* Fork the [galaxy repository](https://github.com/galaxyproject/galaxy) on
+  GitHub to make your changes.
   (While many Galaxy instances track
   [galaxy-dist](https://bitbucket.org/galaxy/galaxy-dist), active development
   happens in the galaxy GitHub repository and this is where pull requests
@@ -43,7 +45,7 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
 
 * Choose the correct branch to develop your changes against.
 
-  * Additions to the code base should be pushed to the `dev` branch (`git
+  * Additions of new features to the code base should be pushed to the `dev` branch (`git
     checkout dev`).
 
   * Most bug fixes to previously release components (things in galaxy-dist)
@@ -51,7 +53,7 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
 
   * Serious security problems should not be fixed via pull request - please
     responsibly disclose these by e-mailing them (with or without patches) to
-    galaxy-lab@lists.galaxyproject.org. The Galaxy core development team will
+    galaxy-committers@lists.galaxyproject.org . The Galaxy core development team will
     issue patches to public servers before announcing the issue to ensure there
     is time to patch and highlight these fixes widely. We will provide you
     credit for the discovery when publicly disclosing the issue.
@@ -77,11 +79,14 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   request](https://help.github.com/articles/creating-a-pull-request/)
   with these changes. You pull request message ideally should include:
 
-   * A description of why the change should be made.
+   * A description of why the changes should be made.
 
-   * A description of implementation of the change.
+   * A description of the implementation of the changes.
 
-   * A description of how to test the change.
+   * A description of how to test the changes.
+
+* The pull request should pass all the continuous integration tests which are
+  automatically run by GitHub using e.g. Travis CI.
 
 ## Ideas
 
@@ -93,7 +98,7 @@ developers.
 ## A Quick Note about Tools
 
   For the most part, Galaxy tools should be published to the
-  [ToolShed](https://wiki.galaxyproject.org/ToolShed) and not in this
+  [Tool Shed](https://wiki.galaxyproject.org/ToolShed) and not in this
   repository directly. If you are looking to supply fixes for migrated
   core tools that used to exist in this repository - please checkout
   the [tools-devteam](https://github.com/galaxyproject/tools-devteam)
@@ -135,7 +140,14 @@ Pull requests changing or clarifying the procedures governing this repository:
   pull request for each person added or removed.
 
 Any other pull request requires at least 1 *+1* binding vote from someone other
-than the author of the pull request.
+than the author of the pull request. A member of the committers group merging a
+pull request is considered an implicit +1.
+
+Pull requests marked *[WIP]* (i.e. work in progress) in the title by the
+author(s), or tagged WIP via GitHub tags, may *not* be merged without
+coordinating the removal of that tag with the pull request author(s), and
+completing the removal of that tag from wherever it is present in the open pull
+request.
 
 ### Timelines
 
@@ -145,16 +157,16 @@ open for comment. Subjectively speaking though - larger and more potentially
 controversial pull requests containing enhancements should remain open for a at
 least a few days to give everyone the opportunity to weigh in.
 
-### Vetos
+### Vetoes
 
-A note on vetos (*-1* votes) taken verbatim from the
+A note on vetoes (*-1* votes) taken verbatim from the
 [Apache Foundation](http://www.apache.org/foundation/voting.html):
 
 >"A code-modification proposal may be stopped dead in its tracks by a -1 vote
 by a qualified voter. This constitutes a veto, and it cannot be overruled nor
-overridden by anyone. Vetos stand until and unless withdrawn by their casters.
+overridden by anyone. Vetoes stand until and unless withdrawn by their casters.
 >
->To prevent vetos from being used capriciously, they must be accompanied by a
+>To prevent vetoes from being used capriciously, they must be accompanied by a
 technical justification showing why the change is bad (opens a security
 exposure, negatively affects performance, etc. ). A veto without a
 justification is invalid and has no weight."
@@ -162,6 +174,22 @@ justification is invalid and has no weight."
 For votes regarding non-coding issues such as procedure changes, the requirement
 that a veto is accompanied by a *technical* justification is relaxed somewhat,
 though a well reasoned justification must still be included.
+
+### Reversions
+
+A *-1* vote on any recently merged pull request requires an immediate
+reversion of the merged pull request. The backout of such a pull request
+invokes a mandatory, minimum 72 hour, review period.
+
+- Recently merged pull requests are defined as a being within the past 168 hours (7
+  days), so as to not prevent forward progress, while allowing for reversions of
+  things merged without proper review and consensus.
+- The person issuing the -1 vote will, upon commenting `-1` with technical
+  justification per the vetoes section, immediately open a pull request to
+  revert the original merge in question. If any committer other than the -1
+  issuer deems the justification technical - regardless of whether they agree
+  with justification - that committer must then merge the pull request to
+  revert.
 
 ### Direct Commit Access
 

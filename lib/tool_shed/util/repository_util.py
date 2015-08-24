@@ -3,21 +3,24 @@ import logging
 import os
 import re
 
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false
+
 from galaxy import util
 from galaxy import web
 from galaxy.web.form_builder import build_select_field
 from galaxy.webapps.tool_shed.model import directory_hash_id
-from tool_shed.util.web_util import escape
-
 from tool_shed.dependencies.repository import relation_builder
-
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
+from tool_shed.util.web_util import escape
 
 log = logging.getLogger( __name__ )
 
 VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
+
 
 def build_allow_push_select_field( trans, current_push_list, selected_value='none' ):
     options = []
@@ -32,6 +35,7 @@ def build_allow_push_select_field( trans, current_push_list, selected_value='non
                                refresh_on_change=False,
                                multiple=True )
 
+
 def change_repository_name_in_hgrc_file( hgrc_file, new_name ):
     config = ConfigParser.ConfigParser()
     config.read( hgrc_file )
@@ -40,6 +44,7 @@ def change_repository_name_in_hgrc_file( hgrc_file, new_name ):
     new_file = open( hgrc_file, 'wb' )
     config.write( new_file )
     new_file.close()
+
 
 def check_or_update_tool_shed_status_for_installed_repository( app, repository ):
     updated = False
@@ -54,6 +59,7 @@ def check_or_update_tool_shed_status_for_installed_repository( app, repository )
     else:
         ok = False
     return ok, updated
+
 
 def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None,
                            repository=None, repository_metadata=None, tool_dependencies=None, repository_dependencies=None ):
@@ -121,6 +127,7 @@ def create_repo_info_dict( app, repository_clone_url, changeset_revision, ctx_re
                                                  tool_dependencies )
     return repo_info_dict
 
+
 def create_repository( app, name, type, description, long_description, user_id, category_ids=[], remote_repository_url=None, homepage_url=None ):
     """Create a new ToolShed repository"""
     sa_session = app.model.context.current
@@ -136,7 +143,7 @@ def create_repository( app, name, type, description, long_description, user_id, 
     sa_session.add( repository )
     sa_session.flush()
     # Create an admin role for the repository.
-    repository_admin_role = create_repository_admin_role( app, repository )
+    create_repository_admin_role( app, repository )
     # Determine the repository's repo_path on disk.
     dir = os.path.join( app.config.file_path, *directory_hash_id( repository.id ) )
     # Create directory if it does not exist.
@@ -148,7 +155,7 @@ def create_repository( app, name, type, description, long_description, user_id, 
     if not os.path.exists( repository_path ):
         os.makedirs( repository_path )
     # Create the local repository.
-    repo = hg_util.get_repo_for_repository( app, repository=None, repo_path=repository_path, create=True )
+    hg_util.get_repo_for_repository( app, repository=None, repo_path=repository_path, create=True )
     # Add an entry in the hgweb.config file for the local repository.
     lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
     app.hgweb_config_manager.add_entry( lhs, repository_path )
@@ -169,6 +176,7 @@ def create_repository( app, name, type, description, long_description, user_id, 
     app.repository_registry.add_entry( repository )
     message = "Repository <b>%s</b> has been created." % escape( str( repository.name ) )
     return repository, message
+
 
 def update_repository( app, trans, id, **kwds ):
     """Update an existing ToolShed repository"""
@@ -193,8 +201,8 @@ def update_repository( app, trans, id, **kwds ):
 
     if 'category_ids' in kwds and isinstance( kwds[ 'category_ids' ], list ):
         # Get existing category associations
-        category_associations  = sa_session.query( app.model.RepositoryCategoryAssociation ) \
-                                .filter( app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id( id ) )
+        category_associations = sa_session.query( app.model.RepositoryCategoryAssociation ) \
+                                          .filter( app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id( id ) )
         # Remove all of them
         for rca in category_associations:
             sa_session.delete( rca )
@@ -244,6 +252,7 @@ def update_repository( app, trans, id, **kwds ):
         message = None
     return repository, message
 
+
 def create_repository_admin_role( app, repository ):
     """
     Create a new role with name-spaced name based on the repository name and its owner's public user
@@ -256,17 +265,28 @@ def create_repository_admin_role( app, repository ):
     sa_session.add( role )
     sa_session.flush()
     # Associate the role with the repository owner.
-    ura = app.model.UserRoleAssociation( repository.user, role )
+    app.model.UserRoleAssociation( repository.user, role )
     # Associate the role with the repository.
     rra = app.model.RepositoryRoleAssociation( repository, role )
     sa_session.add( rra )
     sa_session.flush()
     return role
 
+
 def get_installed_tool_shed_repository( app, id ):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
-    return app.install_model.context.query( app.install_model.ToolShedRepository ) \
-                                    .get( app.security.decode_id( id ) )
+    rval = []
+    if isinstance( id, list ):
+        return_list = True
+    else:
+        id = [ id ]
+        return_list = False
+    for i in id:
+        rval.append( app.install_model.context.query( app.install_model.ToolShedRepository ).get( app.security.decode_id( i ) ) )
+    if return_list:
+        return rval
+    return rval[0]
+
 
 def get_repo_info_dict( app, user, repository_id, changeset_revision ):
     repository = suc.get_repository_in_tool_shed( app, repository_id )
@@ -324,13 +344,16 @@ def get_repo_info_dict( app, user, repository_id, changeset_revision ):
     return repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, \
         has_repository_dependencies, has_repository_dependencies_only_if_compiling_contained_td
 
+
 def get_repository_admin_role_name( repository_name, repository_owner ):
     return '%s_%s_admin' % ( str( repository_name ), str( repository_owner ) )
+
 
 def get_role_by_id( app, role_id ):
     """Get a Role from the database by id."""
     sa_session = app.model.context.current
     return sa_session.query( app.model.Role ).get( app.security.decode_id( role_id ) )
+
 
 def handle_role_associations( app, role, repository, **kwd ):
     sa_session = app.model.context.current
@@ -354,9 +377,9 @@ def handle_role_associations( app, role, repository, **kwd ):
         in_groups = [ sa_session.query( app.model.Group ).get( x ) for x in in_groups_list ]
         in_repositories = [ repository ]
         app.security_agent.set_entity_role_associations( roles=[ role ],
-                                                               users=in_users,
-                                                               groups=in_groups,
-                                                               repositories=in_repositories  )
+                                                         users=in_users,
+                                                         groups=in_groups,
+                                                         repositories=in_repositories )
         sa_session.refresh( role )
         message += "Role <b>%s</b> has been associated with %d users, %d groups and %d repositories.  " % \
             ( escape( str( role.name ) ), len( in_users ), len( in_groups ), len( in_repositories ) )
@@ -365,14 +388,14 @@ def handle_role_associations( app, role, repository, **kwd ):
     in_groups = []
     out_groups = []
     for user in sa_session.query( app.model.User ) \
-                          .filter( app.model.User.table.c.deleted==False ) \
+                          .filter( app.model.User.table.c.deleted == false() ) \
                           .order_by( app.model.User.table.c.email ):
         if user in [ x.user for x in role.users ]:
             in_users.append( ( user.id, user.email ) )
         else:
             out_users.append( ( user.id, user.email ) )
     for group in sa_session.query( app.model.Group ) \
-                           .filter( app.model.Group.table.c.deleted==False ) \
+                           .filter( app.model.Group.table.c.deleted == false() ) \
                            .order_by( app.model.Group.table.c.name ):
         if group in [ x.group for x in role.groups ]:
             in_groups.append( ( group.id, group.name ) )
@@ -385,6 +408,7 @@ def handle_role_associations( app, role, repository, **kwd ):
                               message=message,
                               status=status )
     return associations_dict
+
 
 def validate_repository_name( app, name, user ):
     """

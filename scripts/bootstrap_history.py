@@ -11,7 +11,7 @@ import urlparse
 import textwrap
 
 
-PROJECT_DIRECTORY = os.path.join(os.path.dirname(__file__), "..")
+PROJECT_DIRECTORY = os.path.join(os.path.dirname(__file__), os.pardir)
 PROJECT_OWNER = "galaxyproject"
 PROJECT_NAME = "galaxy"
 PROJECT_URL = "https://github.com/%s/%s" % (PROJECT_OWNER, PROJECT_NAME)

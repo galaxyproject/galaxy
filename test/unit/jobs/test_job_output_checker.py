@@ -83,7 +83,7 @@ class OutputCheckerTestCase( TestCase ):
         self.__add_regex( regex )
         self.stderr = "foobar"
         self.__assertSuccessful()
- 
+
     def __add_regex( self, regex ):
         self.tool.stdio_regexes.append( regex )
 

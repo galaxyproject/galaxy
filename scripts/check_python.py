@@ -3,13 +3,14 @@ If the current installed python version is not 2.6 to 2.7, prints an error
 message to stderr and returns 1
 """
 
-import os, sys
+import sys
 
 msg = """ERROR: Your Python version is: %s
 Galaxy is currently supported on Python 2.6 and 2.7.  To run Galaxy,
 please download and install a supported version from python.org.  If a
 supported version is installed but is not your default, getgalaxy.org
 contains instructions on how to force Galaxy to use a different version.""" % sys.version[:3]
+
 
 def check_python():
     try:

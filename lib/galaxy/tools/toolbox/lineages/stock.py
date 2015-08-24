@@ -36,7 +36,7 @@ class StockLineage(ToolLineage):
         versions = [ ToolLineageVersion( self.tool_id, v ) for v in self.tool_versions ]
         # Sort using LooseVersion which defines an appropriate __cmp__
         # method for comparing tool versions.
-        return sorted( versions, key=_to_loose_version )
+        return sorted( versions, key=_to_loose_version, reverse=reverse )
 
     def to_dict(self):
         return dict(

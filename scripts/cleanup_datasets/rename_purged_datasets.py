@@ -4,9 +4,11 @@ Renames a dataset file by appending _purged to the file name so that it can late
 Usage: python rename_purged_datasets.py purge.log
 """
 
-import sys, os
+import os
+import sys
 
 assert sys.version_info[:2] >= ( 2, 4 )
+
 
 def usage(prog) :
     print "usage: %s file" % prog
@@ -20,6 +22,7 @@ disk with remove_renamed_datasets_from_disk.py, by supplying it with a list of
 them.
     """
 
+
 def main():
     if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help" :
         usage(sys.argv[0])
@@ -27,7 +30,7 @@ def main():
     infile = sys.argv[1]
     outfile = infile + ".renamed.log"
     out = open( outfile, 'w' )
-    
+
     print >> out, "# The following renamed datasets can be removed from disk"
     i = 0
     renamed_files = 0
@@ -41,7 +44,7 @@ def main():
                 renamed_files += 1
             except Exception, exc:
                 print >> out, "# Error, exception " + str( exc ) + " caught attempting to rename " + purged_filename
-    print >> out, "# Renamed " + str( renamed_files ) + " files"    
+    print >> out, "# Renamed " + str( renamed_files ) + " files"
 
 if __name__ == "__main__":
     main()

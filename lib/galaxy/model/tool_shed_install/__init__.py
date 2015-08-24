@@ -606,8 +606,8 @@ class ToolVersion( object, Dictifiable ):
 
     def get_versions( self, app ):
         tool_versions = []
-        # Prepend ancestors.
 
+        # Prepend ancestors.
         def __ancestors( app, tool_version ):
             # Should we handle multiple parents at each level?
             previous_version = tool_version.get_previous_version( app )
@@ -624,6 +624,7 @@ class ToolVersion( object, Dictifiable ):
                 if next_version not in tool_versions:
                     tool_versions.append( next_version )
                     __descendants( app, next_version )
+
         __ancestors( app, self )
         if self not in tool_versions:
             tool_versions.append( self )
@@ -631,12 +632,10 @@ class ToolVersion( object, Dictifiable ):
         return tool_versions
 
     def get_version_ids( self, app, reverse=False ):
+        version_ids = [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
         if reverse:
-            version_ids = []
-            for tool_version in self.get_versions( app ):
-                version_ids.insert( 0, tool_version.tool_id )
-            return version_ids
-        return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
+            version_ids.reverse()
+        return version_ids
 
     def to_dict( self, view='element' ):
         rval = super( ToolVersion, self ).to_dict( view=view )

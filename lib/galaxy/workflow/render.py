@@ -30,8 +30,8 @@ class WorkflowCanvas( object ):
         canvas.append( self.boxes )
         canvas.append( self.text )
         width, height = ( max_x + max_width + 50 ), max_y + 300
-        canvas[ 'width' ] = "%s px" % width
-        canvas[ 'height' ] = "%s px" % height
+        canvas[ 'width' ] = "%spx" % width
+        canvas[ 'height' ] = "%spx" % height
         canvas[ 'viewBox' ] = "0 0 %s %s" % ( width, height )
 
     def add_boxes( self, step_dict, width, name_fill ):
@@ -107,7 +107,7 @@ class WorkflowCanvas( object ):
                                              adjusted[ 1 ] - MARGIN,
                                              in_coords[ 0 ] - 10,
                                              in_coords[ 1 ],
-                                             arrow_end="true" ).SVG() )
+                                             arrow_end="conn_%s" % (len(self.connectors.keys()) + 1) ).SVG() )
 
     def add_steps( self, highlight_errors=False ):
         # Only highlight missing tools if displaying in the tool shed.

@@ -8,6 +8,9 @@ class Bunch( object ):
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
+    def dict(self):
+        return self.__dict__
+
     def get(self, key, default=None):
         return self.__dict__.get(key, default)
 
