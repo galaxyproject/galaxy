@@ -875,6 +875,12 @@ class MetadataGenerator( object ):
         owner = repository_elem.get( 'owner', None )
         changeset_revision = repository_elem.get( 'changeset_revision', None )
         prior_installation_required = str( repository_elem.get( 'prior_installation_required', False ) )
+        repository_dependency_tup = [ toolshed,
+                                      name,
+                                      owner,
+                                      changeset_revision,
+                                      prior_installation_required,
+                                      str( only_if_compiling_contained_td ) ]
         if self.app.name == 'galaxy':
             if self.updating_installed_repository:
                 pass
@@ -882,21 +888,20 @@ class MetadataGenerator( object ):
                 # We're installing a repository into Galaxy, so make sure its contained repository
                 # dependency definition is valid.
                 if toolshed is None or name is None or owner is None or changeset_revision is None:
+                    # Several packages exist in the Tool Shed that contain invalid repository
+                    # definitions, but will still install. We will report these errors to the
+                    # installing user. Previously, we would:
                     # Raise an exception here instead of returning an error_message to keep the
                     # installation from proceeding.  Reaching here implies a bug in the Tool Shed
                     # framework.
-                    error_message = 'Installation halted because the following repository dependency definition is invalid:\n'
+                    error_message = 'Installation encountered an invalid repository dependency definition:\n'
                     error_message += xml_util.xml_to_string( repository_elem, use_indent=True )
-                    raise Exception( error_message )
+                    log.error( error_message )
+                    return repository_dependency_tup, False, error_message
         if not toolshed:
             # Default to the current tool shed.
             toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
-        repository_dependency_tup = [ toolshed,
-                                      name,
-                                      owner,
-                                      changeset_revision,
-                                      prior_installation_required,
-                                      str( only_if_compiling_contained_td ) ]
+            repository_dependency_tup[0] = toolshed
         user = None
         repository = None
         toolshed = common_util.remove_protocol_from_tool_shed_url( toolshed )
