@@ -164,4 +164,3 @@ class SIFGraphDataProvider( dataproviders.column.ColumnarDataProvider ):
                         graph.add_edge( source_id, target_id, type=relation )
 
         yield graph.as_dict()
-
