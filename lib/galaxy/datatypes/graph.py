@@ -165,7 +165,3 @@ class SIFGraphDataProvider( dataproviders.column.ColumnarDataProvider ):
 
         yield graph.as_dict()
 
-
-@data.deprecated_datatype_reference
-class Rdf(triples.Rdf):
-    pass
