@@ -70,11 +70,11 @@ participants with disabilities.
 
 ### Reporting Issues
 
-If you experience or witness unacceptable behavior—or have any other concerns,
-please report it by contacting us by contacting Dave Clements
-(clementsgalaxy@gmail.com). To report an issue involving Dave Clements please
-email James Taylor (james@taylorlab.org). All reports will be handled with
-discretion. In your report please include:
+If you experience or witness unacceptable behavior, or have any other concerns,
+please report it by contacting Dave Clements (clementsgalaxy@gmail.com). To
+report an issue involving Dave Clements please email James Taylor
+(james@taylorlab.org). All reports will be handled with discretion. In your
+report please include:
 
 - Your contact information.
 
