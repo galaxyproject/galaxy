@@ -117,7 +117,7 @@ class Rdf( xml.GenericXml, Triples ):
             firstlines = "".join( f.readlines( 5000 ) )
             # <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ...
             match = re.compile( r'xmlns:([^=]*)="http://www.w3.org/1999/02/22-rdf-syntax-ns#"' ).search( firstlines )
-            if match not None and (match.group(1) + ":RDF") in firstlines:
+            if not match and (match.group(1) + ":RDF") in firstlines:
                 return True
         return False
 
