@@ -155,7 +155,7 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner( matplotlib_repository_name, common.test_user_1_name )
         preview_strings_displayed = [ 'package_matplotlib_1_2_0170', self.get_repository_tip( matplotlib_repository ) ]
-        strings_displayed = [ 'Choose the tool panel section' ]
+        strings_displayed = [ 'Handle repository dependencies', numpy_repository_name, 'Never installed' ]
         self.install_repository( matplotlib_repository_name,
                                  common.test_user_1_name,
                                  category_name,
