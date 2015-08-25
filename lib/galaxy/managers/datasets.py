@@ -225,8 +225,7 @@ class DatasetDeserializer( base.ModelDeserializer, deletable.PurgableDeserialize
         deletable.PurgableDeserializerMixin.add_deserializers( self )
 
         self.deserializers.update({
-            # TODO: do not enable until fully tested
-            # 'permissions' : self.deserialize_permissions,
+            'permissions' : self.deserialize_permissions,
         })
 
     def deserialize_permissions( self, dataset, key, permissions, user=None, **context ):
@@ -257,7 +256,7 @@ class DatasetDeserializer( base.ModelDeserializer, deletable.PurgableDeserialize
         return permissions
 
     def _list_of_roles_from_ids( self, id_list ):
-        # TODO: this manager may make more sense inside rbac_secured
+        # TODO: this may make more sense inside rbac_secured
         # note: no checking of valid roles is made
         return self.role_manager.by_ids( [ self.app.security.decode_id( id_ ) for id_ in id_list ] )
 
@@ -368,7 +367,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             # 'dataset_uuid'  : self._proxy_to_dataset( key='uuid' ),
             'file_name'     : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_file_name ),
             'extra_files_path' : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_extra_files_path ),
-            'permissions'   : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_permissions),
+            'permissions'   : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_permissions ),
             # TODO: do the sizes proxy accurately/in the same way?
             'size'          : lambda i, k, **c: int( i.get_size() ),
             'file_size'     : lambda i, k, **c: self.serializers[ 'size' ]( i, k, **c ),
@@ -565,7 +564,7 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
         """
         comparison_class = self.app.datatypes_registry.get_datatype_class_by_name( class_str )
         return ( comparison_class and
-                 dataset_assoc.datatype.__class__ == comparison_class )
+            dataset_assoc.datatype.__class__ == comparison_class )
 
     def isinstance_datatype( self, dataset_assoc, class_strs ):
         """
@@ -579,4 +578,4 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
             if datatype_class:
                 comparison_classes.append( datatype_class )
         return ( comparison_classes and
-                isinstance( dataset_assoc.datatype, comparison_classes ) )
+            isinstance( dataset_assoc.datatype, comparison_classes ) )
