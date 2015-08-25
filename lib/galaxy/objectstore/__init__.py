@@ -33,6 +33,10 @@ class ObjectStore(object):
     def __init__(self, config, config_xml=None, **kwargs):
         self.running = True
         self.extra_dirs = {}
+        self.config = config
+        self.check_old_style = config.object_store_check_old_style
+        self.extra_dirs['job_work'] = config.job_working_directory
+        self.extra_dirs['temp'] = config.new_file_path
 
     def shutdown(self):
         self.running = False
@@ -198,10 +202,6 @@ class DiskObjectStore(ObjectStore):
     def __init__(self, config, config_xml=None, file_path=None, extra_dirs=None):
         super(DiskObjectStore, self).__init__(config, config_xml=None, file_path=file_path, extra_dirs=extra_dirs)
         self.file_path = file_path or config.file_path
-        self.config = config
-        self.check_old_style = config.object_store_check_old_style
-        self.extra_dirs['job_work'] = config.job_working_directory
-        self.extra_dirs['temp'] = config.new_file_path
         # The new config_xml overrides universe settings.
         if config_xml is not None:
             for e in config_xml:
