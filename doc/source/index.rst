@@ -36,6 +36,8 @@ Contents
 
    Releases <releases/index>
 
+   Developer Documentation <dev/index>
+
 Indices and tables
 ==================
 
