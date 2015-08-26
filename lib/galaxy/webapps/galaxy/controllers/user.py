@@ -45,7 +45,8 @@ REQUIRE_LOGIN_TEMPLATE = """
 """
 
 PASSWORD_RESET_TEMPLATE = """
-To reset your Galaxy password for the instance at %s, use the following link:
+To reset your Galaxy password for the instance at %s use the following link,
+which will expire %s.
 
 <a href="%s">%s</a>
 
@@ -1192,7 +1193,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 reset_url = url_for( controller='user',
                                      action="change_password",
                                      token=prt.token, qualified=True)
-                body = PASSWORD_RESET_TEMPLATE % ( host, reset_url, reset_url )
+                body = PASSWORD_RESET_TEMPLATE % ( host, prt.expiration_time.strftime("%c"), reset_url, reset_url )
                 frm = trans.app.config.email_from
                 if frm is None:
                     frm = 'galaxy-no-reply@' + host
