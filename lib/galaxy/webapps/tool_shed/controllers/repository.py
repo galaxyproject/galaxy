@@ -905,10 +905,8 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             params = dict( tool_shed_url=web.url_for( '/', qualified=True ),
                            name=str( repository.name ),
                            owner=str( repository.user.username ),
-                           changeset_revision=changeset_revision,
-                           latest_changeset_revision=latest_changeset_revision )
+                           changeset_revision=changeset_revision )
             pathspec = [ 'admin_toolshed', 'update_to_changeset_revision' ]
-            url = common_util.url_join( galaxy_url, pathspec=pathspec, params=params )
         else:
             message = 'Unable to check for updates due to an invalid Galaxy URL: <b>%s</b>.  ' % galaxy_url
             message += 'You may need to enable third-party cookies in your browser.  '
@@ -918,7 +916,6 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
             if from_update_manager:
                 return no_update
             # Return the same value for changeset_revision and latest_changeset_revision.
-            url += latest_changeset_revision
         else:
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans.app,
                                                                                      trans.security.encode_id( repository.id ),
@@ -928,9 +925,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                 # additional updates.
                 if from_update_manager:
                     return no_update
-                else:
-                    # Return the same value for changeset_revision and latest_changeset_revision.
-                    url += latest_changeset_revision
+                # Return the same value for changeset_revision and latest_changeset_revision.
             else:
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # changeset_revision value since the repository was installed.  We need to find the changeset_revision
@@ -963,8 +958,9 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
                     if latest_changeset_revision == changeset_revision:
                         return no_update
                     return update
-                url += str( latest_changeset_revision )
-        url += '&latest_ctx_rev=%s' % str( update_to_ctx.rev() )
+        params['latest_changeset_revision'] = str( latest_changeset_revision )
+        params['latest_ctx_rev'] = str( update_to_ctx.rev() )
+        url = common_util.url_join( galaxy_url, pathspec=pathspec, params=params )
         return trans.response.send_redirect( url )
 
     @web.expose
