@@ -1,21 +1,19 @@
 import logging
 import os
 import re
-import test_db_util
 import time
 
-import galaxy.model as model
+from galaxy import eggs
+eggs.require( 'twill' )
+import twill.commands as tc
+
 import galaxy.model.tool_shed_install as install_model
 import galaxy.util
-
 from galaxy.web import security
 from base.twilltestcase import TwillTestCase
 from base.tool_shed_util import repository_installation_timeout
 
-from galaxy import eggs
-eggs.require( 'twill' )
-
-import twill.commands as tc
+from . import test_db_util
 
 log = logging.getLogger( __name__ )
 
@@ -65,8 +63,6 @@ class InstallTestRepository( TwillTestCase ):
     def install_repository( self, repository_info_dict, install_tool_dependencies=True, install_repository_dependencies=True,
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[],
                             post_submit_strings_displayed=[], new_tool_panel_section_label=None, **kwd ):
-        name = repository_info_dict[ 'name' ]
-        owner = repository_info_dict[ 'owner' ]
         changeset_revision = repository_info_dict[ 'changeset_revision' ]
         encoded_repository_id = repository_info_dict[ 'repository_id' ]
         tool_shed_url = repository_info_dict[ 'tool_shed_url' ]
@@ -120,7 +116,7 @@ class InstallTestRepository( TwillTestCase ):
         else:
             if field_name in kwd:
                 log.debug( 'No field %s in form %s, discarding from return value.' % ( str( control ), str( form_id ) ) )
-                del( kwd[ field_name ] )
+                del kwd[ field_name ]
         return kwd
 
     def wait_for_repository_installation( self, repository_ids ):
@@ -131,20 +127,20 @@ class InstallTestRepository( TwillTestCase ):
         if repository_ids:
             for repository_id in repository_ids:
                 galaxy_repository = test_db_util.get_repository( self.security.decode_id( repository_id ) )
-                log.debug( 'Repository %s with ID %s has initial state %s.' % \
+                log.debug( 'Repository %s with ID %s has initial state %s.' %
                     ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
                 timeout_counter = 0
                 while galaxy_repository.status not in final_states:
                     test_db_util.refresh( galaxy_repository )
-                    log.debug( 'Repository %s with ID %s is in state %s, continuing to wait.' % \
+                    log.debug( 'Repository %s with ID %s is in state %s, continuing to wait.' %
                         ( str( galaxy_repository.name ), str( repository_id ), str( galaxy_repository.status ) ) )
                     timeout_counter = timeout_counter + 1
                     if timeout_counter % 10 == 0:
                         log.debug( 'Waited %d seconds for repository %s.' % ( timeout_counter, str( galaxy_repository.name ) ) )
                     # This timeout currently defaults to 10 minutes.
                     if timeout_counter > repository_installation_timeout:
-                        raise AssertionError( 'Repository installation timed out after %d seconds, repository state is %s.' % \
-                            ( timeout_counter, repository.status ) )
+                        raise AssertionError( 'Repository installation timed out after %d seconds, repository state is %s.' %
+                            ( timeout_counter, galaxy_repository.status ) )
                         break
                     time.sleep( 1 )
             # Set all metadata on each installed repository.
@@ -162,7 +158,7 @@ class InstallTestRepository( TwillTestCase ):
                             log.debug( 'Waited %d seconds for repository %s.' % ( timeout_counter, str( galaxy_repository.name ) ) )
                         # This timeout currently defaults to 10 minutes.
                         if timeout_counter > repository_installation_timeout:
-                            raise AssertionError( 'Repository installation timed out after %d seconds, repository state is %s.' % \
+                            raise AssertionError( 'Repository installation timed out after %d seconds, repository state is %s.' %
                                 ( timeout_counter, galaxy_repository.status ) )
                             break
                         time.sleep( 1 )

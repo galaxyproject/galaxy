@@ -19,7 +19,4 @@ scripts/scramble/
 scripts/tool_shed/
 scripts/tools/
 scripts/transfer.py
-test/base/
-test/casperjs/
-test/install_and_test_tool_shed_repositories/
 tools/
