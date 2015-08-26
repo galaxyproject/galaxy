@@ -1219,8 +1219,9 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
 
     def update_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
-        url = '/admin_toolshed/check_for_updates?id=%s' % self.security.encode_id( installed_repository.id )
-        self.visit_galaxy_url( url )
+        url = '/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&galaxy_url=%s' % ( installed_repository.name,
+            installed_repository.owner, installed_repository.installed_changeset_revision, self.galaxy_url )
+        self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
 
     def update_tool_shed_status( self ):
