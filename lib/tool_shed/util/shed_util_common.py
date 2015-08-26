@@ -817,7 +817,7 @@ def get_tool_shed_repository_status_label( app, tool_shed_repository=None, name=
                                                              tool_shed=tool_shed,
                                                              name=name,
                                                              owner=owner,
-                                                             changeset_revision=changeset_revision )
+                                                             installed_changeset_revision=changeset_revision )
     if tool_shed_repository:
         status_label = tool_shed_repository.status
         if tool_shed_repository.status in [ app.install_model.ToolShedRepository.installation_status.CLONING,
@@ -1067,7 +1067,7 @@ def repository_was_previously_installed( app, tool_shed_url, repository_name, re
                                                      tool_shed=tool_shed,
                                                      name=repository_name,
                                                      owner=repository_owner,
-                                                     changeset_revision=changeset_revision )
+                                                     installed_changeset_revision=changeset_revision )
     if tool_shed_repository:
         return tool_shed_repository, changeset_revision
     # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
@@ -1086,7 +1086,7 @@ def repository_was_previously_installed( app, tool_shed_url, repository_name, re
                                                              tool_shed=tool_shed,
                                                              name=repository_name,
                                                              owner=repository_owner,
-                                                             changeset_revision=previous_changeset_revision )
+                                                             installed_changeset_revision=previous_changeset_revision )
             if tool_shed_repository:
                 return tool_shed_repository, previous_changeset_revision
     return None, None
