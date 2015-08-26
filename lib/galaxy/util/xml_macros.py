@@ -147,6 +147,19 @@ def _expand_yield_statements(macro_def, expand_el):
     for yield_el in yield_els:
         _xml_replace(yield_el, expand_el_children, macro_def_parent_map)
 
+    # Replace yields at the top level of a macro, seems hacky approach
+    replace_yield = True
+    while replace_yield:
+        for i, macro_def_el in enumerate(macro_def):
+            if macro_def_el.tag == "yield":
+                for target in expand_el_children:
+                    i += 1
+                    macro_def.insert(i, deepcopy(target))
+                macro_def.remove(macro_def_el)
+                continue
+
+        replace_yield = False
+
 
 def _load_macros(macros_el, tool_dir):
     macros = []
