@@ -58,13 +58,15 @@
     )}
 
     <script type="text/javascript">
+        ## global galaxy object
+        window.Galaxy = window.Galaxy || {};
+
         ## global configuration object
-        var galaxy_config =
-        {
+        window.galaxy_config = {
             root: '${h.url_for( "/" )}'
         };
 
-        // console protection
+        ## console protection
         window.console = window.console || {
             log     : function(){},
             debug   : function(){},
