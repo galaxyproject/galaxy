@@ -1,5 +1,6 @@
 {
   "name": "galaxy-qunit-tests",
+  "version": "1.0.0",
   "devDependencies": {
     "grunt": "^0.4.4",
     "grunt-contrib-qunit": "^0.4.0",
