@@ -754,6 +754,10 @@ def get_tool_shed_from_clone_url( repository_clone_url ):
     return tmp_url.split( '/repos/' )[ 0 ].rstrip( '/' )
 
 def get_installed_repository( app, tool_shed, name, owner, changeset_revision=None, installed_changeset_revision=None ):
+    """
+    Return a tool shed repository database record defined by the combination of a toolshed, repository name,
+    repository owner and either current or originally installed changeset_revision.
+    """
     query = app.install_model.context.query( app.install_model.ToolShedRepository )
     clause_list = [ app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                     app.install_model.ToolShedRepository.table.c.name == name,
