@@ -1,4 +1,7 @@
-from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
+import os
+
+from tool_shed.base.twilltestcase import common, ShedTwillTestCase
+
 datatypes_repository_name = 'emboss_datatypes_0020'
 datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
 datatypes_repository_long_description = "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
@@ -42,55 +45,54 @@ running_standalone = False
 
 class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
     '''Verify that the "Reset selected metadata" feature works.'''
- 
+
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
+        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
- 
+        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        self.test_db_util.get_private_role( admin_user )
+
     def test_0005_create_filtering_repository( self ):
         '''Create and populate the filtering_0000 repository.'''
         global running_standalone
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         category_0000 = self.create_category( name='Test 0000 Basic Repository Features 1', description='Test 0000 Basic Repository Features 1' )
-        category_0001 = self.create_category( name='Test 0000 Basic Repository Features 2', description='Test 0000 Basic Repository Features 2' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = self.get_or_create_repository( name='filtering_0000', 
-                                                    description="Galaxy's filtering tool", 
-                                                    long_description="Long description of Galaxy's filtering tool", 
+        repository = self.get_or_create_repository( name='filtering_0000',
+                                                    description="Galaxy's filtering tool",
+                                                    long_description="Long description of Galaxy's filtering tool",
                                                     owner=common.test_user_1_name,
                                                     category_id=self.security.encode_id( category_0000.id ) )
         if self.repository_is_new( repository ):
             running_standalone = True
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='filtering/filtering_1.1.0.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded filtering 1.1.0 tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='filtering/filtering_2.2.0.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded filtering 2.2.0 tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
- 
+
     def test_0010_create_freebayes_repository( self ):
         '''Create and populate the freebayes_0010 repository.'''
         global running_standalone
@@ -99,48 +101,48 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         category_0010 = self.create_category( name='Test 0010 Repository With Tool Dependencies', description='Tests for a repository with tool dependencies.' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = self.get_or_create_repository( name='freebayes_0010', 
-                                                    description="Galaxy's freebayes tool", 
-                                                    long_description="Long description of Galaxy's freebayes tool", 
+        repository = self.get_or_create_repository( name='freebayes_0010',
+                                                    description="Galaxy's freebayes tool",
+                                                    long_description="Long description of Galaxy's freebayes tool",
                                                     owner=common.test_user_1_name,
                                                     category_id=self.security.encode_id( category_0010.id ),
                                                     strings_displayed=[] )
         if running_standalone:
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='freebayes/freebayes.xml',
                               filepath=None,
                               valid_tools_only=False,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded freebayes.xml.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='freebayes/tool_data_table_conf.xml.sample',
                               filepath=None,
                               valid_tools_only=False,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded tool_data_table_conf.xml.sample',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='freebayes/sam_fa_indices.loc.sample',
                               filepath=None,
                               valid_tools_only=False,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded sam_fa_indices.loc.sample',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='freebayes/tool_dependencies.xml',
                               filepath=None,
                               valid_tools_only=False,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded tool_dependencies.xml',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
 
     def test_0015_create_datatypes_0020_repository( self ):
@@ -152,22 +154,22 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category_0020 = self.create_category( name='Test 0020 Basic Repository Dependencies', description='Testing basic repository dependency features.' )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            repository = self.get_or_create_repository( name='emboss_datatypes_0020', 
-                                                        description=datatypes_repository_description, 
-                                                        long_description=datatypes_repository_long_description, 
+            repository = self.get_or_create_repository( name='emboss_datatypes_0020',
+                                                        description=datatypes_repository_description,
+                                                        long_description=datatypes_repository_long_description,
                                                         owner=common.test_user_1_name,
                                                         category_id=self.security.encode_id( category_0020.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='emboss/datatypes/datatypes_conf.xml',
                               filepath=None,
                               valid_tools_only=False,
                               uncompress_file=False,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded datatypes_conf.xml.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-            
+
     def test_0020_create_emboss_0020_repository( self ):
         '''Create and populate the emboss_0020 repository.'''
         global running_standalone
@@ -177,20 +179,20 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category_0020 = self.create_category( name='Test 0020 Basic Repository Dependencies', description='Testing basic repository dependency features.' )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            repository = self.get_or_create_repository( name='emboss_0020', 
-                                                        description=emboss_repository_long_description, 
-                                                        long_description=emboss_repository_long_description, 
+            repository = self.get_or_create_repository( name='emboss_0020',
+                                                        description=emboss_repository_long_description,
+                                                        long_description=emboss_repository_long_description,
                                                         owner=common.test_user_1_name,
                                                         category_id=self.security.encode_id( category_0020.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 
-                              filename='emboss/emboss.tar', 
+            self.upload_file( repository,
+                              filename='emboss/emboss.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
                               remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded emboss.tar',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
 
     def test_0025_create_emboss_datatypes_0030_repository( self ):
@@ -202,22 +204,22 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category_0030 = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Testing repository dependencies by revision.' )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            datatypes_repository = self.get_or_create_repository( name='emboss_datatypes_0030', 
-                                                                  description=datatypes_repository_description, 
-                                                                  long_description=datatypes_repository_long_description, 
+            datatypes_repository = self.get_or_create_repository( name='emboss_datatypes_0030',
+                                                                  description=datatypes_repository_description,
+                                                                  long_description=datatypes_repository_long_description,
                                                                   owner=common.test_user_1_name,
-                                                                  category_id=self.security.encode_id( category_0030.id ), 
+                                                                  category_id=self.security.encode_id( category_0030.id ),
                                                                   strings_displayed=[] )
-            self.upload_file( datatypes_repository, 
+            self.upload_file( datatypes_repository,
                               filename='emboss/datatypes/datatypes_conf.xml',
                               filepath=None,
                               valid_tools_only=False,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded datatypes_conf.xml.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-    
+
     def test_0030_create_emboss_5_repository( self ):
         '''Create and populate the emboss_5_0030 repository.'''
         global running_standalone
@@ -227,22 +229,22 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category_0030 = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Testing repository dependencies by revision.' )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            emboss_5_repository = self.get_or_create_repository( name='emboss_5_0030', 
-                                                                 description=emboss_repository_description, 
-                                                                 long_description=emboss_repository_long_description, 
+            emboss_5_repository = self.get_or_create_repository( name='emboss_5_0030',
+                                                                 description=emboss_repository_description,
+                                                                 long_description=emboss_repository_long_description,
                                                                  owner=common.test_user_1_name,
-                                                                 category_id=self.security.encode_id( category_0030.id ), 
+                                                                 category_id=self.security.encode_id( category_0030.id ),
                                                                  strings_displayed=[] )
-            self.upload_file( emboss_5_repository, 
-                              filename='emboss/emboss.tar', 
+            self.upload_file( emboss_5_repository,
+                              filename='emboss/emboss.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
                               remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded emboss.tar',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-            
+
     def test_0035_create_emboss_6_repository( self ):
         '''Create and populate the emboss_6_0030 repository.'''
         global running_standalone
@@ -252,22 +254,22 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category_0030 = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Testing repository dependencies by revision.' )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            emboss_6_repository = self.get_or_create_repository( name='emboss_6_0030', 
-                                                                 description=emboss_repository_description, 
-                                                                 long_description=emboss_repository_long_description, 
+            emboss_6_repository = self.get_or_create_repository( name='emboss_6_0030',
+                                                                 description=emboss_repository_description,
+                                                                 long_description=emboss_repository_long_description,
                                                                  owner=common.test_user_1_name,
-                                                                 category_id=self.security.encode_id( category_0030.id ), 
+                                                                 category_id=self.security.encode_id( category_0030.id ),
                                                                  strings_displayed=[] )
-            self.upload_file( emboss_6_repository, 
-                              filename='emboss/emboss.tar', 
+            self.upload_file( emboss_6_repository,
+                              filename='emboss/emboss.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
                               remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded emboss.tar',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-    
+
     def test_0040_create_emboss_0030_repository( self ):
         '''Create and populate the emboss_0030 repository.'''
         global running_standalone
@@ -277,22 +279,22 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category_0030 = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Testing repository dependencies by revision.' )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            emboss_repository = self.get_or_create_repository( name='emboss_0030', 
-                                                               description=emboss_repository_description, 
-                                                               long_description=emboss_repository_long_description, 
+            emboss_repository = self.get_or_create_repository( name='emboss_0030',
+                                                               description=emboss_repository_description,
+                                                               long_description=emboss_repository_long_description,
                                                                owner=common.test_user_1_name,
-                                                               category_id=self.security.encode_id( category_0030.id ), 
+                                                               category_id=self.security.encode_id( category_0030.id ),
                                                                strings_displayed=[] )
-            self.upload_file( emboss_repository, 
-                              filename='emboss/emboss.tar', 
+            self.upload_file( emboss_repository,
+                              filename='emboss/emboss.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
                               remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded emboss.tar',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-    
+
     def test_0045_create_repository_dependencies_for_0030( self ):
         '''Create the dependency structure for test 0030.'''
         global running_standalone
@@ -318,23 +320,23 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         category_0040 = self.create_category( name='test_0040_repository_circular_dependencies', description='Testing handling of circular repository dependencies.' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = self.get_or_create_repository( name='freebayes_0040', 
-                                                    description="Galaxy's freebayes tool", 
-                                                    long_description="Long description of Galaxy's freebayes tool", 
+        repository = self.get_or_create_repository( name='freebayes_0040',
+                                                    description="Galaxy's freebayes tool",
+                                                    long_description="Long description of Galaxy's freebayes tool",
                                                     owner=common.test_user_1_name,
                                                     category_id=self.security.encode_id( category_0040.id ),
                                                     strings_displayed=[] )
         if running_standalone:
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='freebayes/freebayes.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded freebayes tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
- 
+
     def test_0055_create_filtering_repository( self ):
         '''Create and populate the filtering_0040 repository.'''
         global running_standalone
@@ -344,22 +346,22 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category_0040 = self.create_category( name='test_0040_repository_circular_dependencies', description='Testing handling of circular repository dependencies.' )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            repository = self.get_or_create_repository( name='filtering_0040', 
-                                                        description="Galaxy's filtering tool", 
-                                                        long_description="Long description of Galaxy's filtering tool", 
+            repository = self.get_or_create_repository( name='filtering_0040',
+                                                        description="Galaxy's filtering tool",
+                                                        long_description="Long description of Galaxy's filtering tool",
                                                         owner=common.test_user_1_name,
                                                         category_id=self.security.encode_id( category_0040.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='filtering/filtering_1.1.0.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded filtering 1.1.0 tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
- 
+
     def test_0060_create_dependency_structure( self ):
         '''Create the dependency structure for test 0040.'''
         global running_standalone
@@ -381,22 +383,22 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category = self.create_category( name=category_0050_name, description=category_0050_description )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            repository = self.get_or_create_repository( name=convert_repository_name, 
-                                                        description=convert_repository_description, 
-                                                        long_description=convert_repository_long_description, 
+            repository = self.get_or_create_repository( name=convert_repository_name,
+                                                        description=convert_repository_description,
+                                                        long_description=convert_repository_long_description,
                                                         owner=common.test_user_1_name,
-                                                        category_id=self.security.encode_id( category.id ), 
+                                                        category_id=self.security.encode_id( category.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 
-                              filename='convert_chars/convert_chars.tar', 
+            self.upload_file( repository,
+                              filename='convert_chars/convert_chars.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded convert_chars tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
- 
+
     def test_0070_create_column_repository( self ):
         '''Create and populate convert_chars_0050.'''
         global running_standalone
@@ -406,20 +408,20 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category = self.create_category( name=category_0050_name, description=category_0050_description )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            repository = self.get_or_create_repository( name=column_repository_name, 
-                                                        description=column_repository_description, 
-                                                        long_description=column_repository_long_description, 
+            repository = self.get_or_create_repository( name=column_repository_name,
+                                                        description=column_repository_description,
+                                                        long_description=column_repository_long_description,
                                                         owner=common.test_user_1_name,
-                                                        category_id=self.security.encode_id( category.id ), 
+                                                        category_id=self.security.encode_id( category.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 
-                              filename='column_maker/column_maker.tar', 
+            self.upload_file( repository,
+                              filename='column_maker/column_maker.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded column_maker tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
 
     def test_0075_create_emboss_datatypes_repository( self ):
@@ -431,20 +433,20 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category = self.create_category( name=category_0050_name, description=category_0050_description )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            repository = self.get_or_create_repository( name=emboss_datatypes_repository_name, 
-                                                        description=datatypes_repository_description, 
-                                                        long_description=datatypes_repository_long_description, 
+            repository = self.get_or_create_repository( name=emboss_datatypes_repository_name,
+                                                        description=datatypes_repository_description,
+                                                        long_description=datatypes_repository_long_description,
                                                         owner=common.test_user_1_name,
-                                                        category_id=self.security.encode_id( category.id ), 
+                                                        category_id=self.security.encode_id( category.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 
-                              filename='emboss/datatypes/datatypes_conf.xml', 
+            self.upload_file( repository,
+                              filename='emboss/datatypes/datatypes_conf.xml',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=False,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded datatypes_conf.xml.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
 
     def test_0080_create_emboss_repository( self ):
@@ -456,20 +458,20 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category = self.create_category( name=category_0050_name, description=category_0050_description )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            repository = self.get_or_create_repository( name=emboss_repository_name, 
-                                                        description=emboss_repository_description, 
-                                                        long_description=emboss_repository_long_description, 
+            repository = self.get_or_create_repository( name=emboss_repository_name,
+                                                        description=emboss_repository_description,
+                                                        long_description=emboss_repository_long_description,
                                                         owner=common.test_user_1_name,
-                                                        category_id=self.security.encode_id( category.id ), 
+                                                        category_id=self.security.encode_id( category.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 
-                              filename='emboss/emboss.tar', 
+            self.upload_file( repository,
+                              filename='emboss/emboss.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded emboss tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
 
     def test_0085_create_filtering_repository( self ):
@@ -481,20 +483,20 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category = self.create_category( name=category_0050_name, description=category_0050_description )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            filtering_repository = self.get_or_create_repository( name=filtering_repository_name, 
-                                                                  description=filtering_repository_description, 
-                                                                  long_description=filtering_repository_long_description, 
+            filtering_repository = self.get_or_create_repository( name=filtering_repository_name,
+                                                                  description=filtering_repository_description,
+                                                                  long_description=filtering_repository_long_description,
                                                                   owner=common.test_user_1_name,
-                                                                  category_id=self.security.encode_id( category.id ), 
+                                                                  category_id=self.security.encode_id( category.id ),
                                                                   strings_displayed=[] )
-            self.upload_file( filtering_repository, 
+            self.upload_file( filtering_repository,
                               filename='filtering/filtering_1.1.0.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded filtering 1.1.0 tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
 
     def test_0090_create_freebayes_repository( self ):
@@ -506,22 +508,22 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category = self.create_category( name=category_0050_name, description=category_0050_description )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            repository = self.get_or_create_repository( name=freebayes_repository_name, 
-                                                        description=freebayes_repository_description, 
-                                                        long_description=freebayes_repository_long_description, 
+            repository = self.get_or_create_repository( name=freebayes_repository_name,
+                                                        description=freebayes_repository_description,
+                                                        long_description=freebayes_repository_long_description,
                                                         owner=common.test_user_1_name,
-                                                        category_id=self.security.encode_id( category.id ), 
+                                                        category_id=self.security.encode_id( category.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='freebayes/freebayes.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded freebayes tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-   
+
     def test_0095_create_bismark_repository( self ):
         '''Create and populate bismark_0050.'''
         global running_standalone
@@ -531,22 +533,22 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             category = self.create_category( name=category_0050_name, description=category_0050_description )
             self.logout()
             self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-            repository = self.get_or_create_repository( name=bismark_repository_name, 
-                                                        description=bismark_repository_description, 
-                                                        long_description=bismark_repository_long_description, 
+            repository = self.get_or_create_repository( name=bismark_repository_name,
+                                                        description=bismark_repository_description,
+                                                        long_description=bismark_repository_long_description,
                                                         owner=common.test_user_1_name,
-                                                        category_id=self.security.encode_id( category.id ), 
+                                                        category_id=self.security.encode_id( category.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 
+            self.upload_file( repository,
                               filename='bismark/bismark.tar',
                               filepath=None,
                               valid_tools_only=False,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded bismark tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-   
+
     def test_0100_create_and_upload_dependency_definitions( self ):
         '''Create the dependency structure for test 0050.'''
         global running_standalone
@@ -577,11 +579,10 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             self.create_repository_dependency( repository=column_repository, repository_tuples=[ convert_tuple ], filepath=dependency_xml_path )
             self.create_repository_dependency( repository=datatypes_repository, repository_tuples=[ bismark_tuple ], filepath=dependency_xml_path )
             self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ datatypes_tuple ], filepath=dependency_xml_path )
-            self.create_repository_dependency( repository=freebayes_repository, 
-                                               repository_tuples=[ freebayes_tuple, datatypes_tuple, emboss_tuple, column_tuple ], 
+            self.create_repository_dependency( repository=freebayes_repository,
+                                               repository_tuples=[ freebayes_tuple, datatypes_tuple, emboss_tuple, column_tuple ],
                                                filepath=dependency_xml_path )
             self.create_repository_dependency( repository=filtering_repository, repository_tuples=[ emboss_tuple ], filepath=dependency_xml_path )
-   
 
     def test_0105_create_filtering_repository( self ):
         '''Create and populate the filtering_0060 repository.'''
@@ -590,9 +591,9 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         category_0060 = self.create_category( name='Test 0060 Workflow Features', description='Test 0060 - Workflow Features' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        workflow_repository = self.get_or_create_repository( name='filtering_0060', 
-                                                             description="Galaxy's filtering tool", 
-                                                             long_description="Long description of Galaxy's filtering tool", 
+        workflow_repository = self.get_or_create_repository( name='filtering_0060',
+                                                             description="Galaxy's filtering tool",
+                                                             long_description="Long description of Galaxy's filtering tool",
                                                              owner=common.test_user_1_name,
                                                              category_id=self.security.encode_id( category_0060.id ),
                                                              strings_displayed=[] )
@@ -603,23 +604,23 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
             if not os.path.exists( workflow_filepath ):
                 os.makedirs( workflow_filepath )
             file( os.path.join( workflow_filepath, workflow_filename ), 'w+' ).write( workflow )
-            self.upload_file( workflow_repository, 
-                              filename=workflow_filename, 
-                              filepath=workflow_filepath, 
+            self.upload_file( workflow_repository,
+                              filename=workflow_filename,
+                              filepath=workflow_filepath,
                               valid_tools_only=True,
                               uncompress_file=False,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded filtering workflow.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
-            self.upload_file( workflow_repository, 
+            self.upload_file( workflow_repository,
                               filename='filtering/filtering_2.2.0.tar',
                               filepath=None,
                               valid_tools_only=True,
                               uncompress_file=True,
-                              remove_repo_files_not_in_tar=False, 
+                              remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded filtering 2.2.0 tarball.',
-                              strings_displayed=[], 
+                              strings_displayed=[],
                               strings_not_displayed=[] )
 
     def test_0110_reset_metadata_on_all_repositories( self ):
@@ -632,11 +633,11 @@ class TestResetAllRepositoryMetadata( ShedTwillTestCase ):
         for repository in repositories:
             old_metadata[ self.security.encode_id( repository.id ) ] = dict()
             for metadata in self.get_repository_metadata( repository ):
-                old_metadata[ self.security.encode_id( repository.id ) ][ metadata.changeset_revision ] = metadata.metadata 
+                old_metadata[ self.security.encode_id( repository.id ) ][ metadata.changeset_revision ] = metadata.metadata
         self.reset_metadata_on_selected_repositories( old_metadata.keys() )
         for repository in repositories:
             new_metadata[ self.security.encode_id( repository.id ) ] = dict()
             for metadata in self.get_repository_metadata( repository ):
-                new_metadata[ self.security.encode_id( repository.id ) ][ metadata.changeset_revision ] = metadata.metadata 
+                new_metadata[ self.security.encode_id( repository.id ) ][ metadata.changeset_revision ] = metadata.metadata
             if old_metadata[ self.security.encode_id( repository.id ) ] != new_metadata[ self.security.encode_id( repository.id ) ]:
                 raise AssertionError( 'Metadata changed after reset for repository %s.' % repository.name )
