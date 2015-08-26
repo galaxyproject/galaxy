@@ -15,7 +15,7 @@ from galaxy import eggs
 eggs.require( "MarkupSafe" )
 from markupsafe import escape
 eggs.require('sqlalchemy')
-from sqlalchemy import and_, or_, true
+from sqlalchemy import and_, or_, true, func
 
 from galaxy import model
 from galaxy import util
@@ -1184,7 +1184,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                 message = ( "Your reset request for %s has been received.  "
                             "Please check your email account for more instructions.  "
                             "If you do not receive an email shortly, please contact an administrator." % ( escape( email ) ) )
-                reset_user = trans.sa_session.query( trans.app.model.User ).filter( trans.app.model.User.table.c.email == email ).first()
+                reset_user = trans.sa_session.query( trans.app.model.User ).filter( func.lower(trans.app.model.User.table.c.email) == func.lower(email) ).first()
                 if reset_user:
                     prt = trans.app.model.PasswordResetToken( reset_user )
                     trans.sa_session.add( prt )
