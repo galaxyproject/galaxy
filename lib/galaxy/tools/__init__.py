@@ -531,11 +531,11 @@ class Tool( object, Dictifiable ):
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
-                                                                                                 self.tool_shed,
-                                                                                                 self.repository_name,
-                                                                                                 self.repository_owner,
-                                                                                                 self.installed_changeset_revision )
+            return suc.get_installed_repository( self.app,
+                                                 tool_shed=self.tool_shed,
+                                                 name=self.repository_name,
+                                                 owner=self.repository_owner,
+                                                 installed_changeset_revision=self.installed_changeset_revision )
         return None
 
     @property
