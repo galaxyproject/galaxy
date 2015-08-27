@@ -1512,7 +1512,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         """Change the current user's current history to one with `id`."""
         try:
             history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
-            trans.set_history( history )
+            self.history_manager.set_current( trans, history )
             return self.history_serializer.serialize_to_view( history, view='detailed', user=trans.user, trans=trans )
         except exceptions.MessageException, msg_exc:
             trans.response.status = msg_exc.err_code.code
