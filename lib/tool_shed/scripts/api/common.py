@@ -4,7 +4,7 @@ import sys
 import urllib
 import urllib2
 
-new_path = [ os.path.join( os.path.dirname( __file__ ), '..', '..', '..', '..', 'lib' ) ]
+new_path = [ os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, os.pardir, 'lib' ) ]
 new_path.extend( sys.path[ 1: ] )
 sys.path = new_path
 
@@ -13,7 +13,7 @@ from tool_shed.util import hg_util
 
 
 class HTTPRedirectWithDataHandler( urllib2.HTTPRedirectHandler ):
-    
+
     def __init__( self, method ):
         '''
         Upon first inspection, it would seem that this shouldn't be necessary, but for some reason
@@ -131,14 +131,7 @@ def get_api_url( base, parts=[], params=None ):
         parts.insert( 0, 'api' )
     elif 'api' not in parts:
         parts.insert( 0, 'api' )
-    url = common_util.url_join( base, *parts )
-    if params is not None:
-        try:
-            query_string = urllib.urlencode( params )
-        except Exception, e:
-            # The value of params must be a string.
-            query_string = params
-        url += '?%s' % query_string
+    url = common_util.url_join( base, pathspec=parts, params=params )
     return url
 
 def get_latest_downloadable_changeset_revision_via_api( url, name, owner ):

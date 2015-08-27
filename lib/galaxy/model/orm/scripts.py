@@ -33,7 +33,7 @@ DATABASE = {
         },
     "tool_shed":
         {
-            'repo':  'lib/galaxy/webapps/tool_shed/model/migrate',
+            'repo': 'lib/galaxy/webapps/tool_shed/model/migrate',
             'config_file': 'config/tool_shed.ini',
             'old_config_file': 'tool_shed_wsgi.ini',
             'default_sqlite_file': './database/community.sqlite',

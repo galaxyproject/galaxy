@@ -1,17 +1,19 @@
 from __future__ import absolute_import
+import logging
+import os
 
-from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.model.orm import *
 from galaxy import model, util
-from galaxy.web.form_builder import *
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, web
+from galaxy.web.form_builder import build_select_field
+from galaxy.web.framework.helpers import time_ago, grids
 from .requests_common import RequestsGrid, invalid_id_redirect
 from galaxy import eggs
 eggs.require("amqp")
 import amqp
-import logging, os, pexpect, ConfigParser
+import pexpect
 
 log = logging.getLogger( __name__ )
+
 
 class AdminRequestsGrid( RequestsGrid ):
     class UserColumn( grids.TextColumn ):
@@ -33,17 +35,21 @@ class AdminRequestsGrid( RequestsGrid ):
                                                       cntrller='requests_admin' ) )
     ]
 
+
 class DataTransferGrid( grids.Grid ):
     # Custom column types
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
             return sample_dataset.name
+
     class SizeColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
             return sample_dataset.size
+
     class StatusColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
             return sample_dataset.status
+
     class ExternalServiceColumn( grids.TextColumn ):
         def get_value( self, trans, grid, sample_dataset ):
             try:
@@ -91,11 +97,13 @@ class DataTransferGrid( grids.Grid ):
                              allow_multiple=True,
                              condition=( lambda item: item.status in [ model.SampleDataset.transfer_status.NOT_STARTED ] ) )
     ]
+
     def apply_query_filter( self, trans, query, **kwd ):
         sample_id = kwd.get( 'sample_id', None )
         if not sample_id:
             return query
         return query.filter_by( sample_id=trans.security.decode_id( sample_id ) )
+
 
 class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
     request_grid = AdminRequestsGrid()
@@ -105,6 +113,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
     @web.require_admin
     def index( self, trans ):
         return trans.fill_template( "/admin/requests/index.mako" )
+
     @web.expose
     @web.require_admin
     def browse_requests( self, trans, **kwd ):
@@ -153,6 +162,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                                                                   **kwd ) )
         # Render the list view
         return self.request_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def reject_request( self, trans, **kwd ):
@@ -172,8 +182,8 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         # Validate
         comment = util.restore_text( params.get( 'comment', '' ) )
         if not comment:
-            status='error'
-            message='A reason for rejecting the request is required.'
+            status = 'error'
+            message = 'A reason for rejecting the request is required.'
             return trans.fill_template( '/admin/requests/reject.mako',
                                         cntrller='requests_admin',
                                         request=request,
@@ -184,12 +194,13 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         event = trans.model.RequestEvent( request, request.states.REJECTED, event_comment )
         trans.sa_session.add( event )
         trans.sa_session.flush()
-        message='Sequencing request (%s) has been rejected.' % request.name
+        message = 'Sequencing request (%s) has been rejected.' % request.name
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='browse_requests',
                                                           status=status,
                                                           message=message,
                                                           **kwd ) )
+
     # Data transfer from sequencer/external_service
     @web.expose
     @web.require_admin
@@ -210,7 +221,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         if sample_id is None:
             sample_id = params.get( 'id', None )
         try:
-            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id ( sample_id ) )
+            sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         except:
             return invalid_id_redirect( trans, 'requests_admin', sample_id, 'sample' )
         if 'operation' in kwd:
@@ -285,7 +296,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         # Render the grid view
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
-        self.datatx_grid.title = 'Manage "%s" datasets'  % sample.name
+        self.datatx_grid.title = 'Manage "%s" datasets' % sample.name
         self.datatx_grid.global_actions = [ grids.GridAction( "Browse target data library",
                                                               dict( controller='library_common',
                                                                     action='browse_library',
@@ -297,6 +308,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                                                                     cntrller='requests_admin',
                                                                     id=request_id ) ) ]
         return self.datatx_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def rename_datasets( self, trans, **kwd ):
@@ -351,6 +363,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         return trans.response.send_redirect( web.url_for( controller='requests_admin',
                                                           action='manage_datasets',
                                                           sample_id=sample_id ) )
+
     @web.expose
     @web.require_admin
     def select_datasets_to_transfer( self, trans, **kwd ):
@@ -359,7 +372,6 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         status = params.get( 'status', 'done' )
         request_id = kwd.get( 'request_id', None )
         external_service_id = kwd.get( 'external_service_id', None )
-        files = []
         request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         external_service = trans.sa_session.query( trans.model.ExternalService ).get( trans.security.decode_id( external_service_id ) )
         # Load the data transfer settings
@@ -419,6 +431,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                                     sample_id_select_field=sample_id_select_field,
                                     status=status,
                                     message=message )
+
     @web.json
     def get_file_details( self, trans, request_id, external_service_id, folder_path ):
         def print_ticks( d ):
@@ -427,13 +440,12 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        request = trans.sa_session.query( trans.model.Request ).get( trans.security.decode_id( request_id ) )
         external_service = trans.sa_session.query( trans.model.ExternalService ).get( trans.security.decode_id( external_service_id ) )
         external_service.load_data_transfer_settings( trans )
         scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_protocol.SCP ]
-        cmd  = 'ssh %s@%s "ls -oghp \'%s\'"' % ( scp_configs[ 'user_name' ],
-                                                 scp_configs[ 'host' ],
-                                                 folder_path )
+        cmd = 'ssh %s@%s "ls -oghp \'%s\'"' % ( scp_configs[ 'user_name' ],
+                                                scp_configs[ 'host' ],
+                                                folder_path )
         # Handle the authentication message if ssh keys are not set - the message is
         # something like: "Are you sure you want to continue connecting (yes/no)."
         output = pexpect.run( cmd,
@@ -446,6 +458,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
             if password_str in output:
                 output = output.replace( password_str, '' )
         return unicode( output.replace( '\r\n', '<br/>' ) )
+
     @web.json
     def open_folder( self, trans, request_id, external_service_id, key ):
         # Avoid caching
@@ -469,6 +482,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                          "key": full_path }
                 folder_contents.append( node )
         return folder_contents
+
     def __get_files( self, trans, request, external_service, folder_path ):
         # Retrieves the filenames to be transferred from the remote host.
         ok = True
@@ -478,14 +492,15 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
             status = 'error'
             message = "Error in external service login information."
             ok = False
+
         def print_ticks( d ):
             pass
-        cmd  = 'ssh %s@%s "ls -p \'%s\'"' % ( scp_configs[ 'user_name' ], scp_configs[ 'host' ], folder_path )
+        cmd = 'ssh %s@%s "ls -p \'%s\'"' % ( scp_configs[ 'user_name' ], scp_configs[ 'host' ], folder_path )
         # Handle the authentication message if keys are not set - the message is
         # something like: "Are you sure you want to continue connecting (yes/no)."
         output = pexpect.run( cmd,
                               events={ '\(yes\/no\)\.*' : 'yes\r\n',
-                                      '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
+                                       '.ssword:*' : scp_configs[ 'password' ] + '\r\n',
                                        pexpect.TIMEOUT : print_ticks },
                               timeout=10 )
         if 'No such file or directory' in output:
@@ -505,6 +520,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                                                           external_service_id=trans.security.encode_id( external_service.id ),
                                                           status=status,
                                                           message=message ) )
+
     def __create_sample_datasets( self, trans, sample, selected_datasets_to_transfer, external_service ):
         external_service.load_data_transfer_settings( trans )
         scp_configs = external_service.data_transfer[ trans.model.ExternalService.data_transfer_protocol.SCP ]
@@ -527,6 +543,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                     trans.sa_session.flush()
                     sample_dataset_file_names.append( str( sample_dataset.name ) )
         return sample_dataset_file_names
+
     def __rename_dataset( self, sample, filepath, scp_configs ):
         name = filepath.split( '/' )[-1]
         options = sample.request.type.rename_dataset_options
@@ -540,6 +557,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         else:
             new_name = name
         return util.sanitize_for_filename( new_name )
+
     def __ensure_library_add_permission( self, trans, target_library, target_folder ):
         """
         Ensures the current admin user has ADD_LIBRARY permission on the target data library and folder.
@@ -561,6 +579,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
             flush_needed = True
         if flush_needed:
             trans.sa_session.flush()
+
     def __create_data_transfer_messages( self, trans, sample, selected_sample_datasets ):
         """
         Creates the xml messages to send to the rabbitmq server. It returns a dictionary of messages
@@ -593,11 +612,11 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         for sample_dataset in selected_sample_datasets:
             external_service = sample_dataset.external_service
             if sample_dataset.status == trans.app.model.SampleDataset.transfer_status.NOT_STARTED:
-                if not dataset_elements.has_key( external_service ):
+                if external_service not in dataset_elements:
                     dataset_elements[ external_service ] = ''
                 dataset_elements[ external_service ] += dataset_xml % dict( ID=str( sample_dataset.id ),
-                                                                      NAME=sample_dataset.name,
-                                                                      FILE=sample_dataset.file_path )
+                                                                            NAME=sample_dataset.name,
+                                                                            FILE=sample_dataset.file_path )
                 # update the dataset transfer status
                 sample_dataset.status = trans.app.model.SampleDataset.transfer_status.IN_QUEUE
                 trans.sa_session.add( sample_dataset )
@@ -627,12 +646,13 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                                   DATASETS=dataset_elem )
             messages.append( message.replace( '\n', '' ).replace( '\r', '' ) )
         return messages
+
     def __validate_data_transfer_settings( self, trans, request_type, scp_configs ):
         err_msg = ''
         # check the external service login info
-        if not scp_configs.get( 'host', '' ) \
-            or not scp_configs.get( 'user_name', '' ) \
-            or not scp_configs.get( 'password', '' ):
+        if not scp_configs.get( 'host', '' ) or \
+                not scp_configs.get( 'user_name', '' ) or \
+                not scp_configs.get( 'password', '' ):
             err_msg += "Error in external service login information. "
         if not trans.user.api_keys:
             err_msg += "Set your API Key in your User Preferences to transfer datasets. "
@@ -645,6 +665,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                 err_msg += 'Set RabbitMQ server settings in the "galaxy_amqp" section of the Galaxy config file, specifically "%s" is not set.' % k
                 break
         return err_msg
+
     @web.expose
     @web.require_admin
     def initiate_data_transfer( self, trans, sample_id, sample_datasets=[], sample_dataset_id='' ):
@@ -720,6 +741,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
                                                           sample_id=trans.security.encode_id( sample.id ),
                                                           message=message,
                                                           status=status ) )
+
     @web.expose
     def update_sample_dataset_status(self, trans, cntrller, sample_dataset_ids, new_status, error_msg=None ):
         # check if the new status is a valid transfer status
@@ -739,17 +761,19 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
             trans.sa_session.add( sample_dataset )
             trans.sa_session.flush()
         return 200, 'Done'
-    # ===== Methods for building SelectFields used on various admin_requests forms
+    # Methods for building SelectFields used on various admin_requests forms
+
     def __build_sample_id_select_field( self, trans, request, selected_value ):
         return build_select_field( trans, request.samples, 'name', 'sample_id', selected_value=selected_value, refresh_on_change=False )
 
-# ===== Methods for building SelectFields used on various admin_requests forms - used outside this controller =====
+
+# Methods for building SelectFields used on various admin_requests forms - used outside this controller =====
 def build_rename_datasets_for_sample_select_field( trans, sample_dataset, selected_value='none' ):
     options = []
     for option_index, option in enumerate( sample_dataset.file_path.split( os.sep )[ :-1 ] ):
         option = option.strip()
         if option:
-           options.append( option )
+            options.append( option )
     return build_select_field( trans,
                                objs=options,
                                label_attr='self',

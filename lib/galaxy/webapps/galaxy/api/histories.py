@@ -8,11 +8,12 @@ import pkg_resources
 pkg_resources.require( "Paste" )
 
 pkg_resources.require( "SQLAlchemy >= 0.4" )
-import sqlalchemy
+from sqlalchemy import true, false, desc, asc
 
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import _future_expose_api_raw as expose_api_raw
 
 from galaxy.web.base.controller import BaseAPIController
@@ -21,7 +22,6 @@ from galaxy.web.base.controller import ImportsHistoryMixin
 
 from galaxy.managers import histories, citations, users
 
-from galaxy import util
 from galaxy.util import string_as_bool
 from galaxy.util import restore_text
 from galaxy.web import url_for
@@ -91,6 +91,23 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
                     skip the first ( offset - 1 ) items and begin returning
                     at the Nth item
 
+        The list returned can be ordered using the optional parameter:
+            order:  string containing one of the valid ordering attributes followed
+                    (optionally) by '-asc' or '-dsc' for ascending and descending
+                    order respectively. Orders can be stacked as a comma-
+                    separated list of values.
+
+        ..example:
+            To sort by name descending then create time descending:
+                '?order=name-dsc,create_time'
+
+        The ordering attributes and their default orders are:
+            create_time defaults to 'create_time-dsc'
+            update_time defaults to 'update_time-dsc'
+            name    defaults to 'name-asc'
+
+        'order' defaults to 'create_time-dsc'
+
         ..example:
             limit and offset can be combined. Skip the first two and return five:
                 '?limit=5&offset=3'
@@ -105,7 +122,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             current_history = self.history_manager.get_current( trans )
             if not current_history:
                 return []
-            #note: ignores filters, limit, offset
+            # note: ignores filters, limit, offset
             return [ self.history_serializer.serialize_to_view( current_history,
                      user=current_user, trans=trans, **serialization_params ) ]
 
@@ -117,19 +134,17 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         # and any sent in from the query string
         filters += self.history_filters.parse_filters( filter_params )
 
-        #TODO: eventually make order_by a param as well
-        order_by = sqlalchemy.desc( self.app.model.History.create_time )
+        order_by = self._parse_order_by( kwd.get( 'order', 'create_time-dsc' ) )
         histories = self.history_manager.list( filters=filters, order_by=order_by, limit=limit, offset=offset )
 
         rval = []
         for history in histories:
-            history_dict = self.history_serializer.serialize_to_view( history,
-                user=trans.user, trans=trans, **serialization_params )
+            history_dict = self.history_serializer.serialize_to_view( history, user=trans.user, trans=trans, **serialization_params )
             rval.append( history_dict )
         return rval
 
     def _get_deleted_filter( self, deleted, filter_params ):
-        #TODO: this should all be removed (along with the default) in v2
+        # TODO: this should all be removed (along with the default) in v2
         # support the old default of not-returning/filtering-out deleted histories
         try:
             # the consumer must explicitly ask for both deleted and non-deleted
@@ -142,7 +157,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         # the deleted string bool was also used as an 'include deleted' flag
         if deleted in ( 'True', 'true' ):
-            return [ self.app.model.History.deleted == True ]
+            return [ self.app.model.History.deleted == true() ]
 
         # the third option not handled here is 'return only deleted'
         #   if this is passed in (in the form below), simply return and let the filter system handle it
@@ -150,7 +165,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             return []
 
         # otherwise, do the default filter of removing the deleted histories
-        return [ self.app.model.History.deleted == False ]
+        return [ self.app.model.History.deleted == false() ]
 
     @expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
@@ -179,7 +194,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
 
         if history_id == "most_recently_used":
             history = self.history_manager.most_recent( trans.user,
-                filters=( self.app.model.History.deleted == False ), current_history=trans.history )
+                filters=( self.app.model.History.deleted == false() ), current_history=trans.history )
         else:
             history = self.history_manager.get_accessible( self.decode_id( history_id ), trans.user, current_history=trans.history )
 
@@ -202,6 +217,56 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             tool_ids.add(tool_id)
         return map( lambda citation: citation.to_dict( "bibtex" ),
                     self.citations_manager.citations_for_tool_ids( tool_ids ) )
+
+    @expose_api_anonymous_and_sessionless
+    def published( self, trans, **kwd ):
+        """
+        published( self, trans, **kwd ):
+        * GET /api/histories/published:
+            return all histories that are published
+
+        :rtype:     list
+        :returns:   list of dictionaries containing summary history information
+
+        Follows the same filtering logic as the index() method above.
+        """
+        limit, offset = self.parse_limit_offset( kwd )
+        filter_params = self.parse_filter_params( kwd )
+        filters = self.history_filters.parse_filters( filter_params )
+        order_by = self._parse_order_by( kwd.get( 'order', 'create_time-dsc' ) )
+        histories = self.history_manager.list_published( filters=filters, order_by=order_by, limit=limit, offset=offset )
+        rval = []
+        for history in histories:
+            history_dict = self.history_serializer.serialize_to_view( history, user=trans.user, trans=trans,
+                **self._parse_serialization_params( kwd, 'summary' ) )
+            rval.append( history_dict )
+        return rval
+
+    @expose_api_anonymous_and_sessionless
+    def shared_with_me( self, trans, **kwd ):
+        """
+        shared_with_me( self, trans, **kwd )
+        * GET /api/histories/shared_with_me:
+            return all histories that are shared with the current user
+
+        :rtype:     list
+        :returns:   list of dictionaries containing summary history information
+
+        Follows the same filtering logic as the index() method above.
+        """
+        current_user = trans.user
+        limit, offset = self.parse_limit_offset( kwd )
+        filter_params = self.parse_filter_params( kwd )
+        filters = self.history_filters.parse_filters( filter_params )
+        order_by = self._parse_order_by( kwd.get( 'order', 'create_time-dsc' ) )
+        histories = self.history_manager.list_shared_with( current_user,
+            filters=filters, order_by=order_by, limit=limit, offset=offset )
+        rval = []
+        for history in histories:
+            history_dict = self.history_serializer.serialize_to_view( history, user=current_user, trans=trans,
+                **self._parse_serialization_params( kwd, 'summary' ) )
+            rval.append( history_dict )
+        return rval
 
     @expose_api
     def create( self, trans, payload, **kwd ):
@@ -307,6 +372,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :rtype:     str
         :returns:   'OK' if the history was undeleted
         """
+        # TODO: remove at v2
         history_id = id
         history = self.history_manager.get_owned( self.decode_id( history_id ), trans.user, current_history=trans.history )
         self.history_manager.undelete( history )
@@ -336,12 +402,12 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :returns:   an error object if an error occurred or a dictionary containing
             any values that were different from the original and, therefore, updated
         """
-        #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
+        # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
         history = self.history_manager.get_owned( self.decode_id( id ), trans.user, current_history=trans.history )
 
         self.history_deserializer.deserialize( history, payload, user=trans.user, trans=trans )
         return self.history_serializer.serialize_to_view( history,
-            user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
+                                                          user=trans.user, trans=trans, **self._parse_serialization_params( kwd, 'detailed' ) )
 
     @expose_api
     def archive_export( self, trans, id, **kwds ):
@@ -363,7 +429,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         jeha = history.latest_export
         up_to_date = jeha and jeha.up_to_date
         if 'force' in kwds:
-            up_to_date = False #Temp hack to force rebuild everytime during dev
+            up_to_date = False  # Temp hack to force rebuild everytime during dev
         if not up_to_date:
             # Need to create new JEHA + job.
             gzip = kwds.get( "gzip", True )
@@ -404,3 +470,27 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             raise exceptions.MessageException( "Export not available or not yet ready." )
 
         return self.serve_ready_history_export( trans, jeha )
+
+    def _parse_order_by( self, order_by_string ):
+        ORDER_BY_SEP_CHAR = ','
+        if ORDER_BY_SEP_CHAR in order_by_string:
+            return [ self._parse_single_order_by( o ) for o in order_by_string.split( ORDER_BY_SEP_CHAR ) ]
+        return self._parse_single_order_by( order_by_string )
+
+    def _parse_single_order_by( self, order_by_string ):
+        History = self.history_manager.model_class
+        # TODO: formalize and generalize into managers
+        if order_by_string in ( 'create_time', 'create_time-dsc' ):
+            return desc( History.create_time )
+        if order_by_string == 'create_time-asc':
+            return asc( History.create_time )
+        if order_by_string in ( 'update_time', 'update_time-dsc' ):
+            return desc( History.update_time )
+        if order_by_string == 'update_time-asc':
+            return asc( History.update_time )
+        if order_by_string in ( 'name', 'name-asc' ):
+            return asc( History.name )
+        if order_by_string == 'name-dsc':
+            return desc( History.name )
+        raise exceptions.RequestParameterInvalidException( 'Unkown order_by',
+            controller='history', order_by=order_by_string )

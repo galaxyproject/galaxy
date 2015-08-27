@@ -262,7 +262,7 @@ var Tool = Backbone.Model.extend({
 
         // Run job and resolve run_deferred to tool outputs.
         $.when(ss_deferred.go()).then(function(result) {
-            run_deferred.resolve(new data.DatasetCollection().reset(result));
+            run_deferred.resolve(new data.DatasetCollection(result));
         });
         return run_deferred;
     }

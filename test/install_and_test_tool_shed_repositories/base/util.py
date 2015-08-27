@@ -1,5 +1,12 @@
+import json
+import logging
 import os
+import platform
+import string
+import subprocess
 import sys
+import time
+from datetime import datetime, timedelta
 
 cwd = os.getcwd()
 sys.path.append( cwd )
@@ -12,44 +19,21 @@ sys.path = new_path
 from galaxy import eggs
 eggs.require( 'mercurial' )
 eggs.require( "nose" )
+import nose
+from mercurial import hg, ui
+from nose.plugins import Plugin
 
-import json
-import logging
+import galaxy.webapps.tool_shed.model.mapping
 import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
 import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
-import nose
-import platform
-import string
-import subprocess
-import time
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-import urllib
-
-from datetime import datetime
-from datetime import timedelta
-
 from common import get_api_url
 from common import get_latest_downloadable_changeset_revision_via_api
-from common import get_repository_dict
-from common import json_from_url
-from common import submit
-from common import update
-
-from galaxy.util import asbool
-from galaxy.util import listify
-from galaxy.util import unicodify
-import galaxy.webapps.tool_shed.model.mapping
-
-from nose.plugins import Plugin
-from tool_shed.util import common_util
-from tool_shed.util import hg_util
-from tool_shed.util import tool_dependency_util
-
+from common import get_repository_dict, json_from_url, submit, update
+from galaxy.util import asbool, listify, unicodify
+from tool_shed.util import common_util, hg_util
 from tool_shed.util.xml_util import parse_xml
-
-from mercurial import hg
-from mercurial import ui
 
 log = logging.getLogger(__name__)
 
@@ -307,6 +291,7 @@ def get_missing_repository_dependencies( repository, all_missing_repository_depe
                                                                                              all_missing_repository_dependencies ) )
     return all_missing_repository_dependencies
 
+
 def get_missing_tool_dependencies( repository, all_missing_tool_dependencies=None ):
     """
     Return the entire list of missing tool dependencies for the received repository.  The entire
@@ -325,6 +310,7 @@ def get_missing_tool_dependencies( repository, all_missing_tool_dependencies=Non
             all_missing_tool_dependencies.extend( get_missing_tool_dependencies( repository_dependency,
                                                                                  all_missing_tool_dependencies ) )
     return all_missing_tool_dependencies
+
 
 def get_repositories_to_install( tool_shed_url, test_framework ):
     """
@@ -374,7 +360,7 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
                 if changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     # If testing repositories of type tool_dependency_definition, filter accordingly.
                     if test_framework == TOOL_DEPENDENCY_DEFINITIONS and \
-                        repository_dict.get( 'type', None ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
+                            repository_dict.get( 'type', None ) != rt_util.TOOL_DEPENDENCY_DEFINITION:
                         continue
                     # Merge the dictionary returned from /api/repository_revisions with the detailed repository_dict and
                     # append it to the list of repository_dicts to install and test.
@@ -415,6 +401,7 @@ def get_repositories_to_install( tool_shed_url, test_framework ):
             ( changeset_revision, name, owner, repository_id, repository_metadata_id )
     return repository_dicts, error_message
 
+
 def get_repository( name, owner, changeset_revision ):
     """Return a repository record associated with the received name, owner, changeset_revision if one exists."""
     repository = None
@@ -424,6 +411,7 @@ def get_repository( name, owner, changeset_revision ):
         # The repository may not have been installed in a previous test.
         pass
     return repository
+
 
 def get_repository_current_revision( repo_path ):
     """This method uses the python mercurial API to get the current working directory's mercurial changeset hash."""
@@ -439,6 +427,7 @@ def get_repository_current_revision( repo_path ):
     hg_id = '%d:%s' % ( ctx_rev, str( changectx ) )
     return hg_id
 
+
 def get_repository_dependencies_dicts( tool_shed_url, encoded_repository_metadata_id ):
     """
     Return the list of dictionaries that define all repository dependencies of the repository_metadata
@@ -452,12 +441,14 @@ def get_repository_dependencies_dicts( tool_shed_url, encoded_repository_metadat
         return None, error_message
     return repository_dependencies_dicts, error_message
 
+
 def get_repository_tuple_from_elem( elem ):
     attributes = elem.attrib
     name = attributes.get( 'name', None )
     owner = attributes.get( 'owner', None )
     changeset_revision = attributes.get( 'changeset_revision', None )
     return ( name, owner, changeset_revision )
+
 
 def get_static_settings():
     """
@@ -466,16 +457,17 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from galaxy.ini
-    #TODO: static_enabled needed here?
-    return dict( static_enabled = True,
-                 static_cache_time = 360,
-                 static_dir = static_dir,
-                 static_images_dir = os.path.join( static_dir, 'images', '' ),
-                 static_favicon_dir = os.path.join( static_dir, 'favicon.ico' ),
-                 static_scripts_dir = os.path.join( static_dir, 'scripts', '' ),
-                 static_style_dir = os.path.join( static_dir, 'june_2007_style', 'blue' ),
-                 static_robots_txt = os.path.join( static_dir, 'robots.txt' ) )
+    # TODO: these should be copied from galaxy.ini
+    # TODO: static_enabled needed here?
+    return dict( static_enabled=True,
+                 static_cache_time=360,
+                 static_dir=static_dir,
+                 static_images_dir=os.path.join( static_dir, 'images', '' ),
+                 static_favicon_dir=os.path.join( static_dir, 'favicon.ico' ),
+                 static_scripts_dir=os.path.join( static_dir, 'scripts', '' ),
+                 static_style_dir=os.path.join( static_dir, 'june_2007_style', 'blue' ),
+                 static_robots_txt=os.path.join( static_dir, 'robots.txt' ) )
+
 
 def get_time_last_tested( tool_shed_url, encoded_repository_metadata_id ):
     """
@@ -497,6 +489,7 @@ def get_time_last_tested( tool_shed_url, encoded_repository_metadata_id ):
         error_message = 'The url %s returned the invalid repository_metadata_dict %s' % ( str( api_url ), str( repository_metadata_dict ) )
         return None, error_message
 
+
 def get_tool_test_results_dict( tool_test_results_dicts ):
     if tool_test_results_dicts:
         # Inspect the tool_test_results_dict for the last test run to make sure it contains only a test_environment
@@ -509,7 +502,7 @@ def get_tool_test_results_dict( tool_test_results_dicts ):
             # since it will be re-inserted later.
             tool_test_results_dict = tool_test_results_dicts.pop( 0 )
         elif len( tool_test_results_dict ) == 2 and \
-            'test_environment' in tool_test_results_dict and 'missing_test_components' in tool_test_results_dict:
+                'test_environment' in tool_test_results_dict and 'missing_test_components' in tool_test_results_dict:
             # We can re-use tool_test_results_dict if its only entries are "test_environment" and "missing_test_components".
             # In this case, some tools are missing tests components while others are not.
             tool_test_results_dict = tool_test_results_dicts.pop( 0 )
@@ -517,9 +510,10 @@ def get_tool_test_results_dict( tool_test_results_dicts ):
             # The latest tool_test_results_dict has been populated with the results of a test run, so it cannot be used.
             tool_test_results_dict = {}
     else:
-        # Create a new dictionary for this test test run, 
+        # Create a new dictionary for this test test run,
         tool_test_results_dict = {}
     return tool_test_results_dict
+
 
 def get_tool_test_results_dicts( tool_shed_url, encoded_repository_metadata_id ):
     """
@@ -541,12 +535,14 @@ def get_tool_test_results_dicts( tool_shed_url, encoded_repository_metadata_id )
         error_message = 'The url %s returned the invalid repository_metadata_dict %s' % ( str( api_url ), str( repository_metadata_dict ) )
         return None, error_message
 
+
 def get_webapp_global_conf():
     """Return the global_conf dictionary sent as the first argument to app_factory."""
     global_conf = {}
     if STATIC_ENABLED:
         global_conf.update( get_static_settings() )
     return global_conf
+
 
 def initialize_install_and_test_statistics_dict():
     # Initialize a dictionary for the summary that will be printed to stdout.
@@ -559,6 +555,7 @@ def initialize_install_and_test_statistics_dict():
     install_and_test_statistics_dict[ 'all_tests_passed' ] = []
     install_and_test_statistics_dict[ 'at_least_one_test_failed' ] = []
     return install_and_test_statistics_dict
+
 
 def initialize_tool_tests_results_dict( app, tool_test_results_dict ):
     test_environment_dict = tool_test_results_dict.get( 'test_environment', {} )
@@ -593,6 +590,7 @@ def initialize_tool_tests_results_dict( app, tool_test_results_dict ):
                                                                  tool_dependencies=[] )
     return tool_test_results_dict
 
+
 def install_repository( app, repository_dict ):
     """Install a repository defined by the received repository_dict from the tool shed into Galaxy."""
     name = str( repository_dict.get( 'name', None ) )
@@ -616,6 +614,7 @@ def install_repository( app, repository_dict ):
         error_message = 'Error getting revision %s of repository %s owned by %s: An entry for the repository was not found in the database.' % ( changeset_revision, name, owner )
         log.error( error_message )
     return repository, error_message
+
 
 def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_repository_metadata_id ):
     """
@@ -645,7 +644,7 @@ def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_re
                 rd_owner = repository_dependency_dict.get( 'owner', '' )
                 rd_changeset_revision = repository_dependency_dict.get( 'changeset_revision', '' )
                 if ( rd_name, rd_owner, rd_changeset_revision ) in exclude_repositories or \
-                    ( rd_name, rd_owner, None ) in exclude_repositories:
+                        ( rd_name, rd_owner, None ) in exclude_repositories:
                     print 'Revision %s of repository %s owned by %s is excluded from testing because ' % \
                         ( changeset_revision, name, owner, reason )
                     print 'it requires revision %s of repository %s owned by %s (which is excluded from testing).' % \
@@ -655,6 +654,7 @@ def is_excluded( exclude_list_dicts, name, owner, changeset_revision, encoded_re
                     return True, reason
                     break
     return False, None
+
 
 def is_latest_downloadable_revision( url, repository_dict ):
     """
@@ -674,6 +674,7 @@ def is_latest_downloadable_revision( url, repository_dict ):
             return None, error_message
     is_latest_downloadable = changeset_revision == str( latest_revision )
     return is_latest_downloadable, error_message
+
 
 def parse_exclude_list( xml_filename ):
     """Return a list of repositories to exclude from testing."""
@@ -730,6 +731,7 @@ def parse_exclude_list( xml_filename ):
     else:
         print 'The exclude file %s defines no repositories to be excluded from testing.' % xml_filename
     return exclude_list
+
 
 def populate_dependency_install_containers( app, repository, repository_identifier_tup, install_and_test_statistics_dict,
                                             tool_test_results_dict ):
@@ -839,6 +841,7 @@ def populate_dependency_install_containers( app, repository, repository_identifi
             tool_test_results_dict[ 'successful_installations' ][ 'tool_dependencies' ].append( tool_dependency_info_dict )
     return params, install_and_test_statistics_dict, tool_test_results_dict
 
+
 def populate_install_containers_for_repository_dependencies( app, repository, repository_metadata_id, install_and_test_statistics_dict,
                                                              can_update_tool_shed ):
     """
@@ -905,7 +908,7 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     # This is counter intuitive because the following check is on strings like this: '2014-01-21T19:46:06.953741',
                     # so if "time_last_tested > twenty_hours_ago" is True, then it implies that the time_last_tested column
                     # was actually updated less than 20 hours ago, and should not be updated again because we're likely processing
-                    # another dependent repository, many of which can have the same repository dependency.  
+                    # another dependent repository, many of which can have the same repository dependency.
                     try:
                         # Be very conservative here.  Our default behavior will be to assume containers have not been populated
                         # during the current test run.
@@ -930,8 +933,8 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     if len( tool_test_results_dict ) <= 1:
                         tool_test_results_dict = tool_test_results_dicts.pop( 0 )
                     elif len( tool_test_results_dict ) == 2 and \
-                        'test_environment' in tool_test_results_dict and \
-                        'missing_test_components' in tool_test_results_dict:
+                            'test_environment' in tool_test_results_dict and \
+                            'missing_test_components' in tool_test_results_dict:
                         tool_test_results_dict = tool_test_results_dicts.pop( 0 )
                     else:
                         tool_test_results_dict = {}
@@ -986,12 +989,14 @@ def populate_install_containers_for_repository_dependencies( app, repository, re
                     print 'tool_shed: %s name: %s owner: %s changeset_revision: %s' % \
                         ( cleaned_tool_shed_url, name, owner, changeset_revision )
 
+
 def populate_shed_conf_file( shed_conf_file, tool_path, xml_elems=None ):
     """Populate the file defined by shed_conf_file with xml_elems or initialize it with a template string."""
     if xml_elems is None:
         tool_conf_template_parser = string.Template( shed_tool_conf_xml_template )
         xml_elems = tool_conf_template_parser.safe_substitute( shed_tool_path=tool_path )
     file( shed_conf_file, 'w' ).write( xml_elems )
+
 
 def populate_galaxy_shed_tools_dict_file( galaxy_shed_tools_dict_file, shed_tools_dict=None ):
     """
@@ -1002,12 +1007,13 @@ def populate_galaxy_shed_tools_dict_file( galaxy_shed_tools_dict_file, shed_tool
         shed_tools_dict = {}
     file( galaxy_shed_tools_dict_file, 'w' ).write( json.dumps( shed_tools_dict ) )
 
+
 def print_install_and_test_results( install_stage_type, install_and_test_statistics_dict, error_message ):
     "Print statistics for the current test run."
     if error_message:
         print "Error returned from install_and_test_repositories:"
         print error_message
-    elif isinstance ( install_and_test_statistics_dict, dict ):
+    elif isinstance( install_and_test_statistics_dict, dict ):
         all_tests_passed = install_and_test_statistics_dict.get( 'all_tests_passed', None )
         at_least_one_test_failed = install_and_test_statistics_dict.get( 'at_least_one_test_failed', None )
         repositories_with_installation_error = \
@@ -1049,6 +1055,7 @@ def print_install_and_test_results( install_stage_type, install_and_test_statist
             display_repositories_by_owner( at_least_one_test_failed )
         print "####################################################################################"
 
+
 def remove_protocol_from_tool_shed_url( base_url ):
     """Eliminate the protocol from the received base_url and return the possibly altered url."""
     # The tool_shed value stored in the tool_shed_repository record does not include the protocol, but does
@@ -1057,7 +1064,7 @@ def remove_protocol_from_tool_shed_url( base_url ):
         if base_url.find( '://' ) > -1:
             try:
                 protocol, base = base_url.split( '://' )
-            except ValueError, e:
+            except ValueError:
                 # The received base_url must be an invalid url.
                 log.debug( "Returning unchanged invalid base_url from remove_protocol_from_tool_shed_url: %s" % str( base_url ) )
                 return base_url
@@ -1066,8 +1073,9 @@ def remove_protocol_from_tool_shed_url( base_url ):
     log.debug( "Returning base_url from remove_protocol_from_tool_shed_url: %s" % str( base_url ) )
     return base_url
 
+
 def run_tests( test_config ):
-    ## TODO: replace whole method with...
+    # TODO: replace whole method with...
     # from base import nose_util
     # result = nose_util.run( test_config, plugins=[ new ReportResults() ] )
     # return result, test_config.plugins._plugins
@@ -1085,6 +1093,7 @@ def run_tests( test_config ):
         test_runner = plug_runner
     result = test_runner.run( tests )
     return result, test_config.plugins._plugins
+
 
 def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool_test_results_dict, repository_dict,
                                               params, can_update_tool_shed ):
@@ -1145,5 +1154,5 @@ def save_test_results_for_changeset_revision( url, tool_test_results_dicts, tool
                         ( changeset_revision, name, owner, str( response_from_update ) )
                     print '\n=============================================================\n'
                 except Exception, e:
-                    log.exception( 'Error updating tool_test_results for repository_metadata id %s:\n%s' % \
+                    log.exception( 'Error updating tool_test_results for repository_metadata id %s:\n%s' %
                         ( str( metadata_revision_id ), str( e ) ) )

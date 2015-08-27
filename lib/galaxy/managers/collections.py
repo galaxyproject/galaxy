@@ -42,17 +42,21 @@ class DatasetCollectionManager( object ):
     def create(
         self,
         trans,
-        parent,  # PRECONDITION: security checks on ability to add to parent occurred during load.
+        parent,
+        # PRECONDITION: security checks on ability to add to parent
+        # occurred during load.
         name,
         collection_type,
         element_identifiers=None,
         elements=None,
         implicit_collection_info=None,
+        trusted_identifiers=None,  # Trust preloaded element objects
     ):
         """
         """
         # Trust embedded, newly created objects created by tool subsystem.
-        trusted_identifiers = implicit_collection_info is not None
+        if trusted_identifiers is None:
+            trusted_identifiers = implicit_collection_info is not None
 
         if element_identifiers and not trusted_identifiers:
             validate_input_element_identifiers( element_identifiers )
@@ -155,6 +159,11 @@ class DatasetCollectionManager( object ):
 
         return dataset_collection
 
+    def collection_builder_for( self, dataset_collection ):
+        collection_type = dataset_collection.collection_type
+        collection_type_description = self.collection_type_descriptions.for_collection_type( collection_type )
+        return builder.BoundCollectionBuilder( dataset_collection, collection_type_description )
+
     def delete( self, trans, instance_type, id ):
         dataset_collection_instance = self.get_dataset_collection_instance( trans, instance_type, id, check_ownership=True )
         dataset_collection_instance.deleted = True
@@ -178,7 +187,9 @@ class DatasetCollectionManager( object ):
     def copy(
         self,
         trans,
-        parent,  # PRECONDITION: security checks on ability to add to parent occurred during load.
+        parent,
+        # PRECONDITION: security checks on ability to add to parent
+        # occurred during load.
         source,
         encoded_source_id,
     ):
@@ -275,7 +286,9 @@ class DatasetCollectionManager( object ):
             raise MessageException( "Dataset collection element definition (%s) not dictionary-like." % element_identifier )
         encoded_id = element_identifier.get( 'id', None )
         if not src_type or not encoded_id:
-            raise RequestParameterInvalidException( "Problem decoding element identifier %s" % element_identifier )
+            message_template = "Problem decoding element identifier %s - must contain a 'src' and a 'id'."
+            message = message_template % element_identifier
+            raise RequestParameterInvalidException( message )
 
         if src_type == 'hda':
             decoded_id = int( trans.app.security.decode_id( encoded_id ) )

@@ -1,13 +1,15 @@
 import logging
 import os
 
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false
+
 from galaxy import util
 from galaxy.util import inflector
 from galaxy.web.form_builder import SelectField
-
 from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.metadata import metadata_generator
-
 from tool_shed.util import common_util
 from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
@@ -53,12 +55,12 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
         """
         if order:
             return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
-                                                 .filter( self.app.install_model.ToolShedRepository.table.c.uninstalled == False ) \
+                                                 .filter( self.app.install_model.ToolShedRepository.table.c.uninstalled == false() ) \
                                                  .order_by( self.app.install_model.ToolShedRepository.table.c.name,
                                                             self.app.install_model.ToolShedRepository.table.c.owner )
         else:
             return self.app.install_model.context.query( self.app.install_model.ToolShedRepository ) \
-                                                 .filter( self.app.install_model.ToolShedRepository.table.c.uninstalled == False )
+                                                 .filter( self.app.install_model.ToolShedRepository.table.c.uninstalled == false() )
 
     def get_repository_tools_tups( self ):
         """
@@ -122,7 +124,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
                         log.debug( message )
                         unsuccessful_count += 1
                     else:
-                        log.debug( "Successfully reset metadata on repository %s owned by %s" % \
+                        log.debug( "Successfully reset metadata on repository %s owned by %s" %
                             ( str( repository.name ), str( repository.owner ) ) )
                         successful_count += 1
                 except:
@@ -155,7 +157,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
         shed_conf_dict = self.repository.get_shed_config_dict( self.app )
         shed_tool_conf = shed_conf_dict[ 'config_filename' ]
         tool_path = shed_conf_dict[ 'tool_path' ]
-        tool_panel_dict = self.tpm.generate_tool_panel_dict_from_shed_tool_conf_entries( self.repository )
+        self.tpm.generate_tool_panel_dict_from_shed_tool_conf_entries( self.repository )
         repository_tools_tups = self.get_repository_tools_tups()
         clone_url = common_util.generate_clone_url_for_installed_repository( self.app, self.repository )
         tool_shed = self.tool_shed_from_repository_clone_url()

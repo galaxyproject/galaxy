@@ -46,7 +46,7 @@ class node:
     def num_not_visited(self):
         num = 0
         for n in self.edges:
-            if n.visited == False: num += 1
+            if n.visited is False: num += 1
         return num 
 
     def __cmp__(self, other):
@@ -137,7 +137,7 @@ def check_output(g, tagsnps):
 def main(ldfile, snpsfile, required, excluded):
     # construct the graph
     g = construct_graph(ldfile, snpsfile)
-    if debug_flag == True: g.check_graph()
+    if debug_flag is True: g.check_graph()
 
     tagsnps   = []
     neighbors = {}
@@ -150,7 +150,7 @@ def main(ldfile, snpsfile, required, excluded):
         ns = []
  
         for n in t.edges:
-            if n.visited == False: ns.append(n.name)
+            if n.visited is False: ns.append(n.name)
             n.visited = True 
         
         tagsnps.append(t)
@@ -163,13 +163,13 @@ def main(ldfile, snpsfile, required, excluded):
     while data:
         s = heapq.heappop(data)
 
-        if s.visited == True or s.name in excluded: continue
+        if s.visited is True or s.name in excluded: continue
 
         s.visited = True
         ns = []
 
         for n in s.edges:
-            if n.visited == False: ns.append(n.name)
+            if n.visited is False: ns.append(n.name)
             n.visited = True
             
         tagsnps.append(s)
@@ -183,10 +183,10 @@ def main(ldfile, snpsfile, required, excluded):
             continue
         print s
         
-    if debug_flag == True: check_output(g, tagsnps) 
+    if debug_flag is True: check_output(g, tagsnps) 
        
 def read_list(filename):
-    assert os.path.exists(filename) == True
+    assert os.path.exists(filename)
     file = open(filename, "r")
     list = {}
 
@@ -237,7 +237,7 @@ if __name__ == "__main__":
         usage()
         exit(3)
 
-    assert os.path.exists(args[0]) == True
-    assert os.path.exists(args[1]) == True
+    assert os.path.exists(args[0])
+    assert os.path.exists(args[1])
     
     main(args[0], args[1], required, excluded)

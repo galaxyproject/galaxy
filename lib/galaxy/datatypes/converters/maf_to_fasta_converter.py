@@ -1,13 +1,14 @@
 #!/usr/bin/env python
-#Dan Blankenberg
+# Dan Blankenberg
 
 import sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+import pkg_resources
+pkg_resources.require( "bx-python" )
 import bx.align.maf
 from galaxy.tools.util import maf_utilities
 
 assert sys.version_info[:2] >= ( 2, 4 )
+
 
 def __main__():
     output_name = sys.argv.pop(1)
@@ -22,11 +23,12 @@ def __main__():
                 spec_counts[ spec ] = 0
             else:
                 spec_counts[ spec ] += 1
-            out.write( "%s\n" % maf_utilities.get_fasta_header( c, { 'block_index' : count, 'species' : spec, 'sequence_index' : spec_counts[ spec ] }, suffix = "%s_%i_%i" % ( spec, count, spec_counts[ spec ] ) ) )
+            out.write( "%s\n" % maf_utilities.get_fasta_header( c, { 'block_index' : count, 'species' : spec, 'sequence_index' : spec_counts[ spec ] }, suffix="%s_%i_%i" % ( spec, count, spec_counts[ spec ] ) ) )
             out.write( "%s\n" % c.text )
         out.write( "\n" )
     out.close()
     print "%i MAF blocks converted to FASTA." % ( count )
 
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

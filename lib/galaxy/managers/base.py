@@ -35,7 +35,6 @@ import routes
 
 from galaxy import exceptions
 from galaxy import model
-from galaxy import web
 from galaxy.model import tool_shed_install
 
 import logging
@@ -179,7 +178,7 @@ class ModelManager( object ):
         return item
 
     # .... query foundation wrapper
-    def query( self, eagerloads=True, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+    def query( self, eagerloads=True, **kwargs ):
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
 
@@ -189,7 +188,10 @@ class ModelManager( object ):
         # joined table loading
         if eagerloads is False:
             query = query.enable_eagerloads( False )
+        return self._filter_and_order_query( query, **kwargs )
 
+    def _filter_and_order_query( self, query, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+        # TODO: not a lot of functional cohesion here
         query = self._apply_orm_filters( query, filters )
         query = self._apply_order_by( query, order_by )
         query = self._apply_orm_limit_offset( query, limit, offset )
@@ -291,7 +293,7 @@ class ModelManager( object ):
         except exceptions.ObjectNotFound:
             return None
 
-    #NOTE: at this layer, all ids are expected to be decoded and in int form
+    # NOTE: at this layer, all ids are expected to be decoded and in int form
     def by_id( self, id, **kwargs ):
         """
         Gets a model by primary id.
@@ -300,22 +302,19 @@ class ModelManager( object ):
         return self.one( filters=id_filter, **kwargs )
 
     # .... multirow queries
-    def _orm_list( self, query=None, **kwargs ):
-        """
-        Sends kwargs to build the query return all models found.
-        """
-        query = query or self.query( **kwargs )
-        return query.all()
-
-    #def list( self, query=None, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
     def list( self, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
         """
         Returns all objects matching the given filters
         """
+        # list becomes a way of applying both filters generated in the orm (such as .user ==)
+        # and functional filters that aren't currently possible using the orm (such as instance calcluated values
+        # or annotations/tags). List splits those two filters and applies limits/offsets
+        # only after functional filters (if any) using python.
         orm_filters, fn_filters = self._split_filters( filters )
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            return self._orm_list( filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs )
+            return self._orm_list( filters=orm_filters, order_by=order_by,
+                limit=limit, offset=offset, **kwargs )
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
         query = self.query( filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs )
@@ -349,12 +348,19 @@ class ModelManager( object ):
         """
         return callable( filter_ )
 
+    def _orm_list( self, query=None, **kwargs ):
+        """
+        Sends kwargs to build the query return all models found.
+        """
+        query = query or self.query( **kwargs )
+        return query.all()
+
     def _apply_fn_filters_gen( self, items, filters ):
         """
         If all the filter functions in `filters` return True for an item in `items`,
         yield that item.
         """
-        #cpu-expensive
+        # cpu-expensive
         for item in items:
             filter_results = map( lambda f: f( item ), filters )
             if all( filter_results ):
@@ -385,6 +391,8 @@ class ModelManager( object ):
         """
         Returns an in-order list of models with the matching ids in `ids`.
         """
+        if not ids:
+            return []
         ids_filter = self.model_class.id.in_( ids )
         found = self.list( filters=self._munge_filters( ids_filter, filters ), **kwargs )
         # TODO: this does not order by the original 'ids' array
@@ -574,7 +582,7 @@ class ModelSerializer( object ):
             if key in self.serializers:
                 try:
                     returned[ key ] = self.serializers[ key ]( item, key, **context )
-                except SkipAttribute, skip:
+                except SkipAttribute:
                     # dont add this key if the deserializer threw this
                     pass
             elif key in self.serializable_keyset:
@@ -632,7 +640,7 @@ class ModelSerializer( object ):
             no `view` or `keys`: use the `default_view` if any
             `view` and `keys`: combine both into one list of keys
         """
-        #TODO: default view + view makes no sense outside the API.index context - move default view there
+        # TODO: default view + view makes no sense outside the API.index context - move default view there
         all_keys = []
         keys = keys or []
         # chose explicit over concise here
@@ -670,7 +678,7 @@ class ModelDeserializer( object ):
     #: the class used to create this deserializer's generically accessible model_manager
     model_manager_class = None
 
-    #TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
+    # TODO:?? a larger question is: which should be first? Deserialize then validate - or - validate then deserialize?
 
     def __init__( self, app ):
         """
@@ -742,8 +750,8 @@ class ModelDeserializer( object ):
         val = self.validate.int_range( key, val, min, max )
         return self.default_deserializer( item, key, val, **context )
 
-    #def deserialize_date( self, item, key, val ):
-    #   #TODO: parse isoformat date into date object
+    # def deserialize_date( self, item, key, val ):
+    #    #TODO: parse isoformat date into date object
 
     # ... common deserializers for Galaxy
     def deserialize_genome_build( self, item, key, val, **context ):
@@ -856,7 +864,7 @@ class ModelFilterParser( object ):
     These might be safely be replaced in the future by creating SQLAlchemy
     hybrid properties or more thoroughly mapping derived values.
     """
-    #??: this class kindof 'lives' in both the world of the controllers/param-parsing and to models/orm
+    # ??: this class kindof 'lives' in both the world of the controllers/param-parsing and to models/orm
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
 
@@ -869,9 +877,9 @@ class ModelFilterParser( object ):
         """
         self.app = app
 
-        #: dictionary containing parsing data for ORM/SQLAlchemy-based filters
-        #..note: although kind of a pain in the ass and verbose, opt-in/whitelisting allows more control
-        #:   over potentially expensive queries
+        # dictionary containing parsing data for ORM/SQLAlchemy-based filters
+        # ..note: although kind of a pain in the ass and verbose, opt-in/whitelisting allows more control
+        #   over potentially expensive queries
         self.orm_filter_parsers = {}
 
         #: dictionary containing parsing data for functional filters - applied after a query is made
@@ -919,7 +927,7 @@ class ModelFilterParser( object ):
                 return fn_filter
 
             # if no custom filter found, try to make an ORM filter
-            #note: have to use explicit is None here, bool( sqlalx.filter ) == False
+            # note: have to use explicit is None here, bool( sqlalx.filter ) == False
             orm_filter = self._parse_orm_filter( attr, op, val )
             if orm_filter is not None:
                 return orm_filter
@@ -927,10 +935,10 @@ class ModelFilterParser( object ):
         # by convention, assume most val parsers raise ValueError
         except ValueError, val_err:
             raise exceptions.RequestParameterInvalidException( 'unparsable value for filter',
-                column=attr, operation=op, value=val, ValueError=str( val_err ) )
+                                                               column=attr, operation=op, value=val, ValueError=str( val_err ) )
 
         # if neither of the above work, raise an error with how-to info
-        #TODO: send back all valid filter keys in exception for added user help
+        # TODO: send back all valid filter keys in exception for added user help
         raise exceptions.RequestParameterInvalidException( 'bad filter', column=attr, operation=op )
 
     # ---- fn filters
@@ -997,7 +1005,7 @@ class ModelFilterParser( object ):
 
     #: these are the easier/shorter string equivalents to the python operator fn names that need '__' around them
     UNDERSCORED_OPS = ( 'lt', 'le', 'eq', 'ne', 'ge', 'gt' )
-    #UNCHANGED_OPS = ( 'like' )
+
     def _convert_op_string_to_fn( self, column, op_string ):
         """
         Convert the query string filter op shorthand into actual ORM usable
@@ -1005,7 +1013,7 @@ class ModelFilterParser( object ):
         """
         # correct op_string to usable function key
         fn_name = op_string
-        if   op_string in self.UNDERSCORED_OPS:
+        if op_string in self.UNDERSCORED_OPS:
             fn_name = '__' + op_string + '__'
         elif op_string == 'in':
             fn_name = 'in_'
@@ -1027,7 +1035,7 @@ class ModelFilterParser( object ):
         }
 
     # --- more parsers! yay!
-    #TODO: These should go somewhere central - we've got ~6 parser modules/sections now
+    # TODO: These should go somewhere central - we've got ~6 parser modules/sections now
     def parse_bool( self, bool_string ):
         """
         Parse a boolean from a string.
@@ -1043,6 +1051,6 @@ class ModelFilterParser( object ):
         """
         Split `id_list_string` at `sep`.
         """
-        #TODO: move id decoding out
+        # TODO: move id decoding out
         id_list = [ self.app.security.decode_id( id_ ) for id_ in id_list_string.split( sep ) ]
         return id_list

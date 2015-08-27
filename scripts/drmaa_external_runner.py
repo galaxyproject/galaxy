@@ -6,20 +6,18 @@ defining any or all of the following: args, remoteCommand, outputPath,
 errorPath, nativeSpecification, name, email, project
 """
 
-import os
-import sys
 import errno
-import pwd
 import json
+import os
+import pwd
+import sys
 
-#import drmaa
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )  # remove scripts/ from the path
 sys.path = new_path
 
 from galaxy import eggs
-import pkg_resources
-pkg_resources.require("drmaa")
+eggs.require("drmaa")
 import drmaa
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',

@@ -50,7 +50,7 @@ if __name__ == '__main__':
         os.chdir( os.path.dirname( sys.argv[0] ) )
 
     # find setuptools
-    sys.path.insert( 1, os.path.abspath( os.path.join( '..', '..', '..', 'lib' ) ) )
+    sys.path.insert( 1, os.path.abspath( os.path.join( os.pardir, os.pardir, os.pardir, 'lib' ) ) )
     from scramble_lib import *
 
     tag = get_tag()

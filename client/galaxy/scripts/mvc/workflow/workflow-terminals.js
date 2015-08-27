@@ -454,7 +454,7 @@ define(['mvc/workflow/workflow-globals'], function( Globals ) {
         }
     });
 
-    var OutputCollectionTerminal = OutputTerminal.extend( {
+    var OutputCollectionTerminal = Terminal.extend( {
         initialize: function( attr ) {
             Terminal.prototype.initialize.call( this, attr );
             this.datatypes = attr.datatypes;

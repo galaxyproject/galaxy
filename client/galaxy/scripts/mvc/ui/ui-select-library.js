@@ -4,7 +4,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/ui/ui-table', 'mvc/ui/ui-list'],
 
 // collection of libraries
 var Libraries = Backbone.Collection.extend({
-    url: galaxy_config.root + 'api/libraries'
+    url: galaxy_config.root + 'api/libraries?deleted=false'
 });
 
 // collection of dataset

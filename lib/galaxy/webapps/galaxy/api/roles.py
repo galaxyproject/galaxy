@@ -2,8 +2,13 @@
 API operations on Role objects.
 """
 import logging
-from galaxy.web.base.controller import BaseAPIController, url_for
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false
+
 from galaxy import web
+from galaxy.web.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger( __name__ )
 
@@ -17,7 +22,7 @@ class RoleAPIController( BaseAPIController ):
         Displays a collection (list) of roles.
         """
         rval = []
-        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == False ):
+        for role in trans.sa_session.query( trans.app.model.Role ).filter( trans.app.model.Role.table.c.deleted == false() ):
             if trans.user_is_admin() or trans.app.security_agent.ok_to_display( trans.user, role ):
                 item = role.to_dict( value_mapper={ 'id': trans.security.encode_id } )
                 encoded_id = trans.security.encode_id( role.id )

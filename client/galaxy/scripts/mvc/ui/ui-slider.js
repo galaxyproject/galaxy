@@ -68,9 +68,9 @@ var View = Backbone.View.extend({
         this.$text.on('keydown', function (e) {
             var v = e.which;
             pressed[v] = true;
-            if (!(v == 8 || v == 9 || v == 13 || v == 37 || v == 39 || (v >= 48 && v <= 57)
-                || (v == 190 && $(this).val().indexOf('.') == -1 && self.options.precise)
-                || (v == 189 && $(this).val().indexOf('-') == -1)
+            if (!(v == 8 || v == 9 || v == 13 || v == 37 || v == 39 || (v >= 48 && v <= 57) || (v >= 96 && v <= 105)
+                || ((v == 190 || v == 110) && $(this).val().indexOf('.') == -1 && self.options.precise)
+                || ((v == 189 || v == 109) && $(this).val().indexOf('-') == -1)
                 || pressed[91] || pressed[17])) {
                 event.preventDefault();
             }

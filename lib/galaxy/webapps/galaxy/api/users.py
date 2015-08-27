@@ -2,22 +2,25 @@
 API operations on User objects.
 """
 
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesTagsMixin
-from galaxy.web.base.controller import CreatesApiKeysMixin
-from galaxy.web.base.controller import CreatesUsersMixin
+import logging
 
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false, true
+
+from galaxy import exceptions
+from galaxy import util
+from galaxy import web
 from galaxy.security.validate_user_input import validate_email
 from galaxy.security.validate_user_input import validate_password
 from galaxy.security.validate_user_input import validate_publicname
-
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy import web
-from galaxy import util
-from galaxy import exceptions
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import CreatesApiKeysMixin
+from galaxy.web.base.controller import CreatesUsersMixin
+from galaxy.web.base.controller import UsesTagsMixin
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -36,12 +39,12 @@ class UserAPIController( BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cr
         if f_email:
             query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
         if deleted:
-            query = query.filter( trans.app.model.User.table.c.deleted == True )  # noqa
+            query = query.filter( trans.app.model.User.table.c.deleted == true() )
             # only admins can see deleted users
             if not trans.user_is_admin():
                 return []
         else:
-            query = query.filter( trans.app.model.User.table.c.deleted == False )  # noqa
+            query = query.filter( trans.app.model.User.table.c.deleted == false() )
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
             #   exposed, we don't want special case #1

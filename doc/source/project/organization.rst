@@ -73,7 +73,7 @@ CONTRIBUTING_ document - with one exception - a `commmitter` may not vote
 against their own removal from the group (for obvious reasons).
 
 Given the responsibilities and power invested in this group - it is important
-that individuals not actively working on Galaxy in some fashion are removed
+that individuals not actively working on Galaxy in some fashion are removed from
 the group. If individuals in this group intend to change jobs or reallocate
 volunteer activities and will no longer be active in the Galaxy community,
 they should withdraw from membership of this group. Periodically, active

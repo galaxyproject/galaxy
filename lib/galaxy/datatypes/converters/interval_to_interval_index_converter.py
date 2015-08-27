@@ -16,6 +16,7 @@ from galaxy import eggs
 eggs.require( "bx-python" )
 from bx.interval_index_file import Indexes
 
+
 def main():
 
     # Read options, args.
@@ -49,4 +50,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -1,16 +1,21 @@
 """
 Manager and Serializer for TS groups.
 """
-from galaxy.exceptions import InconsistentDatabase
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.exceptions import ObjectNotFound
-from galaxy.exceptions import InternalServerError
-from galaxy.exceptions import ItemAccessibilityException
-from galaxy.exceptions import Conflict
+import logging
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false, true
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
-import logging
+from galaxy.exceptions import Conflict
+from galaxy.exceptions import InconsistentDatabase
+from galaxy.exceptions import InternalServerError
+from galaxy.exceptions import ItemAccessibilityException
+from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import RequestParameterInvalidException
+
 log = logging.getLogger( __name__ )
 
 
@@ -112,9 +117,9 @@ class GroupManager( object ):
                 #  Flag is not specified, do not filter on it.
                 pass
             elif deleted:
-                query = query.filter( trans.app.model.Group.table.c.deleted == True )
+                query = query.filter( trans.app.model.Group.table.c.deleted == true() )
             else:
-                query = query.filter( trans.app.model.Group.table.c.deleted == False )
+                query = query.filter( trans.app.model.Group.table.c.deleted == false() )
         else:
-            query = query.filter( trans.app.model.Group.table.c.deleted == False )
+            query = query.filter( trans.app.model.Group.table.c.deleted == false() )
         return query

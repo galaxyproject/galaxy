@@ -17,13 +17,13 @@ from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryM
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
 from tool_shed.util import workflow_util
 from tool_shed.util import tool_util
 
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
+
 
 def get_message_for_no_shed_tool_config():
     # This Galaxy instance is not configured with a shed-related tool panel configuration file.
@@ -100,11 +100,10 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
         if not trans.user_is_admin():
             raise exceptions.AdminRequiredException( 'You are not authorized to request the latest installable revision for a repository in this Galaxy instance.' )
-        params = '?name=%s&owner=%s' % ( name, owner )
-        url = common_util.url_join( tool_shed_url,
-                                    'api/repositories/get_ordered_installable_revisions%s' % params )
+        params = dict(name=name, owner=owner)
+        pathspec = ['api', 'repositories', 'get_ordered_installable_revisions']
         try:
-            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec, params )
         except Exception, e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( name ), str( owner ), str( e ) )
@@ -119,8 +118,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
         return hg_util.INITIAL_CHANGELOG_HASH
 
     def __get_value_mapper( self, trans, tool_shed_repository ):
-        value_mapper={ 'id' : trans.security.encode_id( tool_shed_repository.id ),
-                       'error_message' : tool_shed_repository.error_message or '' }
+        value_mapper = { 'id' : trans.security.encode_id( tool_shed_repository.id ),
+                         'error_message' : tool_shed_repository.error_message or '' }
         return value_mapper
 
     @expose_api
@@ -297,8 +296,8 @@ class ToolShedRepositoriesController( BaseAPIController ):
         changeset_revisions = util.listify( payload.get( 'changeset_revisions', '' ) )
         num_specified_repositories = len( tool_shed_urls )
         if len( names ) != num_specified_repositories or \
-            len( owners ) != num_specified_repositories or \
-            len( changeset_revisions ) != num_specified_repositories:
+                len( owners ) != num_specified_repositories or \
+                len( changeset_revisions ) != num_specified_repositories:
             message = 'Error in tool_shed_repositories API in install_repository_revisions: the received parameters must be ordered '
             message += 'lists so that positional values in tool_shed_urls, names, owners and changeset_revisions are associated.'
             log.debug( message )

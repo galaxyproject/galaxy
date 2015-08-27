@@ -106,7 +106,7 @@ class Data( object ):
     def write_from_stream(self, dataset, stream):
         """Writes data from a stream"""
         fd = open(dataset.file_name, 'wb')
-        while 1:
+        while True:
             chunk = stream.read(1048576)
             if not chunk:
                 break
@@ -202,13 +202,13 @@ class Data( object ):
                 line = line.strip()
                 if not line:
                     continue
-                if type( line ) is unicode:
+                if isinstance(line, unicode):
                     out.append( '<tr><td>%s</td></tr>' % escape( line ) )
                 else:
                     out.append( '<tr><td>%s</td></tr>' % escape( unicode( line, 'utf-8' ) ) )
             out.append( '</table>' )
             out = "".join( out )
-        except Exception, exc:
+        except Exception as exc:
             out = "Can't create peek %s" % str( exc )
         return out
 
@@ -249,7 +249,7 @@ class Data( object ):
                 if params.do_action == 'zip':
                     # Can't use mkstemp - the file must not exist first
                     tmpd = tempfile.mkdtemp()
-                    util.umask_fix_perms( tmpd, trans.app.config.umask, 0777, trans.app.config.gid )
+                    util.umask_fix_perms( tmpd, trans.app.config.umask, 0o777, trans.app.config.gid )
                     tmpf = os.path.join( tmpd, 'library_download.' + params.do_action )
                     archive = zipfile.ZipFile( tmpf, 'w', zipfile.ZIP_DEFLATED, True )
                     archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
@@ -371,18 +371,22 @@ class Data( object ):
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.
+                # Check to see if this dataset's parent job is whitelisted
+                # We cannot currently trust imported datasets for rendering.
+                if not data.creating_job.imported and data.creating_job.tool_id in trans.app.config.sanitize_whitelist:
+                    return open(data.file_name).read()
                 return sanitize_html(open( data.file_name ).read())
             return open( data.file_name )
         else:
             trans.response.set_content_type( "text/html" )
             return trans.stream_template_mako( "/dataset/large_file.mako",
-                                            truncated_data=open( data.file_name ).read(max_peek_size),
-                                            data=data)
+                                               truncated_data=open( data.file_name ).read(max_peek_size),
+                                               data=data)
 
     def display_name(self, dataset):
         """Returns formatted html of dataset name"""
         try:
-            if type( dataset.name ) is unicode:
+            if isinstance(dataset.name, unicode):
                 return escape( dataset.name )
             else:
                 return escape( unicode( dataset.name, 'utf-8 ') )
@@ -402,7 +406,7 @@ class Data( object ):
                 info = info.replace( '\n', '<br/>' )
 
             # Convert to unicode to display non-ascii characters.
-            if type( info ) is not unicode:
+            if not isinstance(info, unicode):
                 info = unicode( info, 'utf-8')
 
             return info
@@ -680,7 +684,7 @@ class Text( Data ):
         """Writes data from a stream"""
         # write it twice for now
         fd, temp_name = tempfile.mkstemp()
-        while 1:
+        while True:
             chunk = stream.read(1048576)
             if not chunk:
                 break
@@ -836,7 +840,7 @@ class Text( Data ):
                     lines_remaining -= 1
                 if part_file is not None:
                     part_file.close()
-        except Exception, e:
+        except Exception as e:
             log.error('Unable to split files: %s' % str(e))
             f.close()
             if part_file is not None:

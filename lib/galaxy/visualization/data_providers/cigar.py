@@ -4,6 +4,7 @@ Functions for working with SAM/BAM CIGAR representation.
 
 import operator
 
+
 def get_ref_based_read_seq_and_cigar( read_seq, read_start, ref_seq, ref_seq_start, cigar ):
     '''
     Returns a ( new_read_seq, new_cigar ) that can be used with reference
@@ -27,9 +28,8 @@ def get_ref_based_read_seq_and_cigar( read_seq, read_start, ref_seq, ref_seq_sta
     cigar_ops = 'MIDNSHP=X'
     for op_tuple in cigar:
         op, op_len = op_tuple
-        
         # Op is index into string 'MIDNSHP=X'
-        if op == 0: # Match
+        if op == 0:  # Match
             # Transform Ms to =s and Xs using reference.
             new_op = ''
             total_count = 0
@@ -51,20 +51,20 @@ def get_ref_based_read_seq_and_cigar( read_seq, read_start, ref_seq, ref_seq_sta
             # If end of read falls outside of ref_seq data, leave as M.
             if total_count < op_len:
                 new_cigar += '%iM' % ( op_len - total_count )
-        elif op == 1: # Insertion
+        elif op == 1:  # Insertion
             new_cigar += '%i%s' % ( op_len, cigar_ops[ op ] )
             # Include insertion bases in new read sequence.
             new_read_seq += read_seq[ read_pos:read_pos + op_len ]
             read_pos += op_len
-        elif op in [ 2, 3, 6 ]: # Deletion, Skip, or Padding
+        elif op in [ 2, 3, 6 ]:  # Deletion, Skip, or Padding
             ref_seq_pos += op_len
             new_cigar += '%i%s' % ( op_len, cigar_ops[ op ] )
-        elif op == 4: # Soft clipping
+        elif op == 4:  # Soft clipping
             read_pos += op_len
             new_cigar += '%i%s' % ( op_len, cigar_ops[ op ] )
-        elif op == 5: # Hard clipping
+        elif op == 5:  # Hard clipping
             new_cigar += '%i%s' % ( op_len, cigar_ops[ op ] )
-        elif op in [ 7, 8 ]: # Match or mismatch
+        elif op in [ 7, 8 ]:  # Match or mismatch
             if op == 8:
                 # Include mismatched bases in new read sequence.
                 new_read_seq += read_seq[ read_pos:read_pos + op_len ]
@@ -73,6 +73,7 @@ def get_ref_based_read_seq_and_cigar( read_seq, read_start, ref_seq, ref_seq_sta
             new_cigar += '%i%s' % ( op_len, cigar_ops[ op ] )
 
     return ( new_read_seq, new_cigar )
+
 
 def _match_mismatch_counter( s1, p1, s2, p2 ):
     '''

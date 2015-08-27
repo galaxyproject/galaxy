@@ -1,16 +1,16 @@
 """
 Manager and Serializer for libraries.
 """
+import logging
 
-import galaxy.web
-from galaxy import exceptions
-from galaxy.model import orm
-from galaxy.managers import base as manager_base
-from galaxy.model.orm import and_, not_, or_
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import and_, false, not_, or_, true
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
-import logging
+from galaxy import exceptions
+
 log = logging.getLogger( __name__ )
 
 
@@ -115,20 +115,27 @@ class LibraryManager( object ):
                 #  Flag is not specified, do not filter on it.
                 pass
             elif deleted:
-                query = query.filter( trans.app.model.Library.table.c.deleted == True ) 
+                query = query.filter( trans.app.model.Library.table.c.deleted == true() )
             else:
-                query = query.filter( trans.app.model.Library.table.c.deleted == False )
+                query = query.filter( trans.app.model.Library.table.c.deleted == false() )
         else:
             #  Nonadmins can't see deleted libraries
             current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
             library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
-            restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
-                                                                 .filter( trans.model.LibraryPermissions.table.c.action == library_access_action )
-                                                                 .distinct() ) ]
-            accessible_restricted_library_ids = [ lp.library_id for lp in ( trans.sa_session.query( trans.model.LibraryPermissions )
-                                                  .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
-                                                                 trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ) ]
-            query = query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ), trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
+            restricted_library_ids = [ lp.library_id for lp in (
+                trans.sa_session.query( trans.model.LibraryPermissions ).filter(
+                    trans.model.LibraryPermissions.table.c.action == library_access_action
+                ).distinct() ) ]
+            accessible_restricted_library_ids = [ lp.library_id for lp in (
+                trans.sa_session.query( trans.model.LibraryPermissions ).filter(
+                    and_(
+                        trans.model.LibraryPermissions.table.c.action == library_access_action,
+                        trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids )
+                    ) ) ) ]
+            query = query.filter( or_(
+                not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ),
+                trans.model.Library.table.c.id.in_( accessible_restricted_library_ids )
+            ) )
         return query
 
     def secure( self, trans, library, check_accessible=True ):
@@ -199,9 +206,9 @@ class LibraryManager( object ):
         modify_library_role_list = [ ( modify_role.name, trans.security.encode_id( modify_role.id ) ) for modify_role in self.get_modify_roles( trans, library ) ]
         manage_library_role_list = [ ( manage_role.name, trans.security.encode_id( manage_role.id ) ) for manage_role in self.get_manage_roles( trans, library ) ]
         add_library_item_role_list = [ ( add_role.name, trans.security.encode_id( add_role.id ) ) for add_role in self.get_add_roles( trans, library ) ]
-        return dict( access_library_role_list=access_library_role_list, 
-                     modify_library_role_list=modify_library_role_list, 
-                     manage_library_role_list=manage_library_role_list, 
+        return dict( access_library_role_list=access_library_role_list,
+                     modify_library_role_list=modify_library_role_list,
+                     manage_library_role_list=manage_library_role_list,
                      add_library_item_role_list=add_library_item_role_list )
 
     def get_access_roles( self, trans, library ):
@@ -245,4 +252,3 @@ class LibraryManager( object ):
         Return true if lib is public.
         """
         return trans.app.security_agent.library_is_public( library )
-

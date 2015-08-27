@@ -1,37 +1,29 @@
 #!/usr/bin/env python
 
-from datetime import datetime
-from optparse import OptionParser
-from time import strftime
-
 import ConfigParser
 import logging
 import os
-import shutil
 import sys
 import time
-import tempfile
+from optparse import OptionParser
+from time import strftime
 
 new_path = [ os.path.join( os.getcwd(), "lib" ), os.path.join( os.getcwd(), "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
 from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 eggs.require( 'mercurial' )
-
 from mercurial import __version__
+eggs.require( "SQLAlchemy >= 0.4" )
+from sqlalchemy import and_, false, not_, select, true
 
 import galaxy.webapps.tool_shed.config as tool_shed_config
 
 from install_and_test_tool_shed_repositories.base.util import get_database_version
 from install_and_test_tool_shed_repositories.base.util import get_repository_current_revision
 from install_and_test_tool_shed_repositories.base.util import RepositoryMetadataApplication
-from galaxy.model.orm import and_
-from galaxy.model.orm import not_
-from galaxy.model.orm import select
 from galaxy.util import listify
-from galaxy.web import url_for
 from tool_shed.repository_types.util import TOOL_DEPENDENCY_DEFINITION
 
 log = logging.getLogger()
@@ -39,6 +31,7 @@ log.setLevel( 10 )
 log.addHandler( logging.StreamHandler( sys.stdout ) )
 
 assert sys.version_info[ :2 ] >= ( 2, 6 )
+
 
 def main():
     '''Script that validates all repositories of type tool_dependency_definition.'''
@@ -55,7 +48,7 @@ def main():
     except IndexError:
         print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
         exit( 127 )
-    config_parser = ConfigParser.ConfigParser( { 'here':os.getcwd() } )
+    config_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     config_parser.read( ini_file )
     config_dict = {}
     for key, value in config_parser.items( "app:main" ):
@@ -68,7 +61,7 @@ def main():
     print "# %s - Validating repositories of type %s" % ( now, TOOL_DEPENDENCY_DEFINITION )
     print "# This tool shed is configured to listen on %s:%s" % ( config_parser.get( config_section, 'host' ),
                                                                   config_parser.get( config_section, 'port' ) )
-    
+
     app = RepositoryMetadataApplication( config )
     if options.info_only:
         print "# Displaying info only ( --info_only )"
@@ -76,25 +69,26 @@ def main():
         print "# Displaying extra information ( --verbosity = %d )" % options.verbosity
     validate_repositories( app, info_only=options.info_only, verbosity=options.verbosity )
 
+
 def validate_repositories( app, info_only=False, verbosity=1 ):
     """
     Inspect records in the repository_metadata table that are associated with repositories of type TOOL_DEPENDENCY_DEFINITION
     to ensure they are valid and set the repository_metadata.do_not_test column value to True if the metadata is invalid.
     Each repository's metadata should look something like:
-    "{"tool_dependencies": 
-        {"libpng/1.2.5": {"name": "libpng", 
-                          "readme": "README content", 
-                          "type": "package", 
+    "{"tool_dependencies":
+        {"libpng/1.2.5": {"name": "libpng",
+                          "readme": "README content",
+                          "type": "package",
                           "version": "1.2.5"}}}"
     or:
-    "{"repository_dependencies": 
-        {"description": null, 
-         "repository_dependencies": 
-             [["http://localhost:9009", "package_libpng_1_2", "iuc", "5788512d4c0a", "True", "False"]]}, 
-         "tool_dependencies": 
-             {"libgd/2.1.0": 
-                 {"name": "libgd", "readme": "text"}, 
-              "libpng/1.2.5": 
+    "{"repository_dependencies":
+        {"description": null,
+         "repository_dependencies":
+             [["http://localhost:9009", "package_libpng_1_2", "iuc", "5788512d4c0a", "True", "False"]]},
+         "tool_dependencies":
+             {"libgd/2.1.0":
+                 {"name": "libgd", "readme": "text"},
+              "libpng/1.2.5":
                  {"name": "libpng", "type": "package", "version": "1.2.5"}}}"
     """
     invalid_metadata = 0
@@ -105,7 +99,7 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
     # Restrict testing to repositories of type TOOL_DEPENDENCY_DEFINITION
     tool_dependency_defintion_repository_ids = []
     for repository in app.sa_session.query( app.model.Repository ) \
-                                    .filter( and_( app.model.Repository.table.c.deleted == False,
+                                    .filter( and_( app.model.Repository.table.c.deleted == false(),
                                                    app.model.Repository.table.c.type == TOOL_DEPENDENCY_DEFINITION ) ):
         tool_dependency_defintion_repository_ids.append( repository.id )
     # Do not check metadata records that have an entry in the skip_tool_tests table, since they won't be tested anyway.
@@ -113,8 +107,8 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
     # Get the list of metadata records to check, restricting it to records that have not been flagged do_not_test.
     for repository_metadata in \
         app.sa_session.query( app.model.RepositoryMetadata ) \
-                      .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
-                                     app.model.RepositoryMetadata.table.c.do_not_test == False,
+                      .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == true(),
+                                     app.model.RepositoryMetadata.table.c.do_not_test == false(),
                                      app.model.RepositoryMetadata.table.c.repository_id.in_( tool_dependency_defintion_repository_ids ),
                                      not_( app.model.RepositoryMetadata.table.c.id.in_( skip_metadata_ids ) ) ) ):
         records_checked += 1
@@ -156,7 +150,8 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
                         # since it will be re-inserted later.
                         tool_test_results_dict = tool_test_results_dicts.pop( 0 )
                     elif len( tool_test_results_dict ) == 2 and \
-                        'test_environment' in tool_test_results_dict and 'missing_test_components' in tool_test_results_dict:
+                            'test_environment' in tool_test_results_dict and \
+                            'missing_test_components' in tool_test_results_dict:
                         # We can re-use tool_test_results_dict if its only entries are "test_environment" and "missing_test_components".
                         # In this case, some tools are missing tests components while others are not.
                         tool_test_results_dict = tool_test_results_dicts.pop( 0 )
@@ -194,4 +189,5 @@ def validate_repositories( app, info_only=False, verbosity=1 ):
     print "# Elapsed time: ", stop - start
     print "#############################################################################"
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

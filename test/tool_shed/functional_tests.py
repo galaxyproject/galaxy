@@ -1,26 +1,18 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
 
-import os
-import sys
-import shutil
-import tempfile
-import re
-import string
-import multiprocessing
-import unittest
-import time
-import sys
-import threading
-import random
 import httplib
-import socket
-import urllib
-import atexit
 import logging
 import os
+import random
+import shutil
+import socket
+import string
 import sys
 import tempfile
+import threading
+import time
+import urllib
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -35,12 +27,11 @@ new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-from galaxy import eggs, model
+from galaxy import eggs
 
 eggs.require( "nose" )
 eggs.require( "NoseHTML" )
 eggs.require( "NoseTestDiff" )
-eggs.require( "twill==0.9" )
 eggs.require( "Paste" )
 eggs.require( "PasteDeploy" )
 eggs.require( "Cheetah" )
@@ -48,23 +39,19 @@ eggs.require( "Cheetah" )
 # This should not be required, but it is under certain conditions, thanks to this bug: http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
 
-import twill
 from paste import httpserver
-# This is for the tool shed application.
-import galaxy.webapps.tool_shed.app
-from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
-from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
-# This is for the galaxy application.
-from galaxy.app import UniverseApplication as GalaxyUniverseApplication
-from galaxy.web import buildapp as galaxybuildapp
-from galaxy.util import asbool
-from galaxy.util.json import dumps
-
-import nose.core
 import nose.config
+import nose.core
 import nose.loader
 import nose.plugins.manager
 
+# This is for the tool shed application.
+from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
+from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
+# This is for the galaxy application.
+from galaxy.app import UniverseApplication as GalaxyUniverseApplication
+from galaxy.util import asbool
+from galaxy.web import buildapp as galaxybuildapp
 
 from functional import database_contexts
 from base import nose_util
@@ -87,6 +74,7 @@ default_install_db_merged = False
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
 
+
 def get_static_settings():
     """Returns dictionary of the settings necessary for a galaxy App
     to be wrapped in the static middleware.
@@ -96,18 +84,19 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from galaxy.ini
+    # TODO: these should be copied from galaxy.ini
     return dict(
-        #TODO: static_enabled needed here?
-        static_enabled      = True,
-        static_cache_time   = 360,
-        static_dir          = static_dir,
-        static_images_dir   = os.path.join( static_dir, 'images', '' ),
-        static_favicon_dir  = os.path.join( static_dir, 'favicon.ico' ),
-        static_scripts_dir  = os.path.join( static_dir, 'scripts', '' ),
-        static_style_dir    = os.path.join( static_dir, 'june_2007_style', 'blue' ),
-        static_robots_txt   = os.path.join( static_dir, 'robots.txt' ),
+        # TODO: static_enabled needed here?
+        static_enabled=True,
+        static_cache_time=360,
+        static_dir=static_dir,
+        static_images_dir=os.path.join( static_dir, 'images', '' ),
+        static_favicon_dir=os.path.join( static_dir, 'favicon.ico' ),
+        static_scripts_dir=os.path.join( static_dir, 'scripts', '' ),
+        static_style_dir=os.path.join( static_dir, 'june_2007_style', 'blue' ),
+        static_robots_txt=os.path.join( static_dir, 'robots.txt' ),
     )
+
 
 def get_webapp_global_conf():
     """Get the global_conf dictionary sent as the first argument to app_factory.
@@ -236,27 +225,27 @@ def main():
         install_galaxy_database_connection = 'sqlite:///%s' % install_galaxy_db_path
     tool_shed_global_conf = get_webapp_global_conf()
     tool_shed_global_conf[ '__file__' ] = 'tool_shed_wsgi.ini.sample'
-    kwargs = dict( admin_users = 'test@bx.psu.edu',
-                   allow_user_creation = True,
-                   allow_user_deletion = True,
-                   database_connection = toolshed_database_connection,
-                   datatype_converters_config_file = 'datatype_converters_conf.xml.sample',
-                   file_path = shed_file_path,
-                   global_conf = tool_shed_global_conf,
-                   hgweb_config_dir = hgweb_config_dir,
-                   job_queue_workers = 5,
-                   id_secret = 'changethisinproductiontoo',
-                   log_destination = "stdout",
-                   new_file_path = new_repos_path,
-                   running_functional_tests = True,
-                   shed_tool_data_table_config = shed_tool_data_table_conf_file,
-                   smtp_server = 'smtp.dummy.string.tld',
-                   email_from = 'functional@localhost',
-                   template_path = 'templates',
+    kwargs = dict( admin_users='test@bx.psu.edu',
+                   allow_user_creation=True,
+                   allow_user_deletion=True,
+                   database_connection=toolshed_database_connection,
+                   datatype_converters_config_file='datatype_converters_conf.xml.sample',
+                   file_path=shed_file_path,
+                   global_conf=tool_shed_global_conf,
+                   hgweb_config_dir=hgweb_config_dir,
+                   job_queue_workers=5,
+                   id_secret='changethisinproductiontoo',
+                   log_destination="stdout",
+                   new_file_path=new_repos_path,
+                   running_functional_tests=True,
+                   shed_tool_data_table_config=shed_tool_data_table_conf_file,
+                   smtp_server='smtp.dummy.string.tld',
+                   email_from='functional@localhost',
+                   template_path='templates',
                    tool_path=tool_path,
-                   tool_parse_help = False,
-                   tool_data_table_config_path = galaxy_tool_data_table_conf_file,
-                   use_heartbeat = False )
+                   tool_parse_help=False,
+                   tool_data_table_config_path=galaxy_tool_data_table_conf_file,
+                   use_heartbeat=False )
     for dir in [ tool_shed_test_tmp_dir ]:
         try:
             os.makedirs( dir )
@@ -353,38 +342,38 @@ def main():
         galaxy_global_conf = get_webapp_global_conf()
         galaxy_global_conf[ '__file__' ] = 'config/galaxy.ini.sample'
 
-        kwargs = dict( allow_user_creation = True,
-                       allow_user_deletion = True,
-                       admin_users = 'test@bx.psu.edu',
-                       allow_library_path_paste = True,
-                       install_database_connection = install_galaxy_database_connection,
-                       database_connection = galaxy_database_connection,
-                       database_auto_migrate = galaxy_database_auto_migrate,
-                       datatype_converters_config_file = "datatype_converters_conf.xml.sample",
-                       check_migrate_tools = False,
-                       enable_tool_shed_check = True,
-                       file_path = galaxy_file_path,
-                       global_conf = galaxy_global_conf,
-                       hours_between_check = 0.001,
-                       id_secret = 'changethisinproductiontoo',
-                       job_queue_workers = 5,
-                       log_destination = "stdout",
-                       migrated_tools_config = galaxy_migrated_tool_conf_file,
-                       new_file_path = galaxy_tempfiles,
+        kwargs = dict( allow_user_creation=True,
+                       allow_user_deletion=True,
+                       admin_users='test@bx.psu.edu',
+                       allow_library_path_paste=True,
+                       install_database_connection=install_galaxy_database_connection,
+                       database_connection=galaxy_database_connection,
+                       database_auto_migrate=galaxy_database_auto_migrate,
+                       datatype_converters_config_file="datatype_converters_conf.xml.sample",
+                       check_migrate_tools=False,
+                       enable_tool_shed_check=True,
+                       file_path=galaxy_file_path,
+                       global_conf=galaxy_global_conf,
+                       hours_between_check=0.001,
+                       id_secret='changethisinproductiontoo',
+                       job_queue_workers=5,
+                       log_destination="stdout",
+                       migrated_tools_config=galaxy_migrated_tool_conf_file,
+                       new_file_path=galaxy_tempfiles,
                        running_functional_tests=True,
-                       shed_data_manager_config_file = galaxy_shed_data_manager_conf_file,
-                       shed_tool_data_table_config = shed_tool_data_table_conf_file,
-                       shed_tool_path = galaxy_shed_tool_path,
-                       template_path = "templates",
-                       tool_data_path = tool_data_path,
-                       tool_dependency_dir = galaxy_tool_dependency_dir,
-                       tool_path = tool_path,
-                       tool_config_file = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
-                       tool_sheds_config_file = galaxy_tool_sheds_conf_file,
-                       tool_parse_help = False,
-                       tool_data_table_config_path = galaxy_tool_data_table_conf_file,
-                       update_integrated_tool_panel = False,
-                       use_heartbeat = False )
+                       shed_data_manager_config_file=galaxy_shed_data_manager_conf_file,
+                       shed_tool_data_table_config=shed_tool_data_table_conf_file,
+                       shed_tool_path=galaxy_shed_tool_path,
+                       template_path="templates",
+                       tool_data_path=tool_data_path,
+                       tool_dependency_dir=galaxy_tool_dependency_dir,
+                       tool_path=tool_path,
+                       tool_config_file=[ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
+                       tool_sheds_config_file=galaxy_tool_sheds_conf_file,
+                       tool_parse_help=False,
+                       tool_data_table_config_path=galaxy_tool_data_table_conf_file,
+                       update_integrated_tool_panel=False,
+                       use_heartbeat=False )
 
         # ---- Build Galaxy Application --------------------------------------------------
         if not galaxy_database_connection.startswith( 'sqlite://' ) and not install_galaxy_database_connection.startswith( 'sqlite://' ):
@@ -418,7 +407,7 @@ def main():
                         continue
                     raise
             else:
-                raise Exception( "Unable to open a port between %s and %s to start Galaxy server" % \
+                raise Exception( "Unable to open a port between %s and %s to start Galaxy server" %
                                  ( default_galaxy_test_port_min, default_galaxy_test_port_max ) )
         if galaxy_test_proxy_port:
             os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_proxy_port
@@ -500,6 +489,7 @@ def main():
         return 0
     else:
         return 1
+
 
 def __copy_database_template( source, db_path ):
     """

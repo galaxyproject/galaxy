@@ -68,9 +68,9 @@ def has_dataproviders( cls ):
     #       where it's possible to override a super's provider with a sub's
     for attr_key, attr_value in cls.__dict__.iteritems():
         # can't use isinstance( attr_value, MethodType ) bc of wrapping
-        if( ( callable( attr_value ) )
-        and ( not attr_key.startswith( "__" ) )
-        and ( getattr( attr_value, _DATAPROVIDER_METHOD_NAME_KEY, None ) ) ):
+        if( ( callable( attr_value ) ) and
+                ( not attr_key.startswith( "__" ) ) and
+                ( getattr( attr_value, _DATAPROVIDER_METHOD_NAME_KEY, None ) ) ):
             name = getattr( attr_value, _DATAPROVIDER_METHOD_NAME_KEY )
             dataproviders[ name ] = attr_value
     return cls

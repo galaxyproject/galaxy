@@ -29,7 +29,7 @@
           <option value="no">No</option>
       </param>
       <conditional name="seq_source">
-          <param name="index_source" type="select" label="Source for Genomic Data">
+          <param name="index_source" type="select" label="Source for Genomic Data" help="If 'Locally cached' is selected, it will use a genomic reference file that matches the input file's dbkey. First it looks whether there are corresponding *.nib files in alignseq.loc. If that is not available, it searches for a corresponding *.2bit in twobit.loc.">
               <option value="cached">Locally cached</option>
               <option value="history">History</option>
           </param>
@@ -39,10 +39,10 @@
               <param name="ref_file" type="data" format="fasta" label="Using reference file" />
           </when>
       </conditional>
-	  <param name="out_format" type="select" label="Output data type">
-    	  <option value="fasta">FASTA</option>
-    	  <option value="interval">Interval</option>
-	  </param>
+      <param name="out_format" type="select" label="Output data type">
+          <option value="fasta">FASTA</option>
+          <option value="interval">Interval</option>
+      </param>
   </inputs>
   <outputs>
       <data format="input" name="out_file1" metadata_source="input">

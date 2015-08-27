@@ -8,12 +8,45 @@ transparent computational biomedical research.
 - *Reproducible:* Galaxy captures information so that any user can repeat and understand a complete computational analysis.
 - *Transparent:* Users share and publish analyses via the web and create Pages, interactive, web-based documents that describe a complete analysis.
 
-Two copies of the Galaxy code doumentation are published by the Galaxy Project
+Things to know:
 
-- Galaxy-Dist_:  This describes the code in the `most recent official release`_ of Galaxy.
-- Galaxy-Central_: Describes the `current code in the development branch`_ of Galaxy.  This is the latest checkin, bleeding edge version of the code.  The documentation should never be more than an hour behind the code.
+- There are multiple choices_ when it comes to using Galaxy.
+- You can explore the `current code in the development branch`_ on GitHub.
+- This documentation is hosted at readthedocs_.
 
-Both copies are hosted at ReadTheDocs_, a publicly supported web site for hosting project documentation.
+For more information on the Galaxy Project, please visit the `project home page`_.
+
+.. _Galaxy: http://galaxyproject.org
+.. _choices: https://wiki.galaxyproject.org/BigPicture/Choices
+.. _current code in the development branch: https://github.com/galaxyproject/galaxy
+.. _readthedocs: http://galaxy.readthedocs.org
+.. _project home page: http://galaxyproject.org
+
+
+Contents
+========
+.. toctree::
+   :maxdepth: 5
+
+   Galaxy API Documentation <api_doc>
+
+   Tool Shed API Documentation <ts_api_doc>
+
+   Application Documentation <lib/modules>
+
+   Releases <releases/index>
+
+   Developer Documentation <dev/index>
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+Building this Documentation
+==========================
 
 If you have your own copy of the Galaxy source code, you can also generate your own version of this documentation:
 
@@ -23,35 +56,3 @@ If you have your own copy of the Galaxy source code, you can also generate your 
     $ make html
 
 The generated documentation will be in ``doc/build/html/`` and can be viewed with a web browser.  Note that you will need to install Sphinx and a fair number of module dependencies before this will produce output.
-
-.. _Galaxy: http://galaxyproject.org/
-.. _Galaxy-Dist: https://galaxy-dist.readthedocs.org/
-.. _most recent official release: https://bitbucket.org/galaxy/galaxy-dist
-.. _Galaxy-Central: https://galaxy-central.readthedocs.org/
-.. _current code in the development branch: https://bitbucket.org/galaxy/galaxy-central
-.. _ReadTheDocs: https://readthedocs.org/
-
-
-For more on the Galaxy Project, please visit the `project home page`_.
-
-.. _project home page: http://galaxyproject.org/
-
-
-Contents
-========
-.. toctree::
-   :maxdepth: 5
-
-   API Documentation <api_doc>
-
-   Application Documentation <lib/modules>
-
-   Releases <releases/index>
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
