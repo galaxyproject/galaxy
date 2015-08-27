@@ -21,14 +21,14 @@ ${get_css()}
         <table id="formHeader">
             <tr>
                 <td>
-                    ${get_pages( sort_id, order, page_specs, 'jobs', 'specified_month_in_error_all' )}
+                    ${get_pages( sort_id, order, page_specs, 'jobs', 'specified_month_in_error' )}
                 </td>
                 <td>
                     <h4 align="center">Jobs in Error for ${month_label}&nbsp;${year_label}</h4>
                     <h5 align="center">Click job count to see the day's details</h5>
                 </td>
                 <td align="right">
-                    ${get_entry_selector("jobs", "specified_month_in_error_all", page_specs.entries, sort_id, order)}
+                    ${get_entry_selector("jobs", "specified_month_in_error", page_specs.entries, sort_id, order)}
                 </td>
             </tr>
         </table>

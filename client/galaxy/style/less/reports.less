@@ -155,13 +155,14 @@
     border-bottom-right-radius: 3px;
 }
 
+// TODO: min-width in page_selector should be set when the amount of
+//       buttons is calculated
 #page_selector {
     cursor: default;
     position: relative;
     text-align: center;
+    min-width: 132px;
 }
-
-
 
 .page_button > a {
     text-decoration: none;
@@ -182,6 +183,10 @@
     z-index: 6;
 }
 
+#entry_form {
+    min-width: 123px;
+}
+
 #entry_submit {
     cursor: default;
     position: relative;
@@ -197,6 +202,7 @@
     z-index: 0;
 }
 
+
 // ======================================================== Misc. =============
 .half_width {
     width: 50%
@@ -206,4 +212,9 @@
 }
 .quarter_width {
     width: 25%;
+}
+
+.toolFormBody {
+    text-align: center;
+    text-align: -moz-center;
 }
