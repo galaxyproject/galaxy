@@ -11,6 +11,14 @@
     padding: 0px !important;
 }
 
+.no-transition {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  -ms-transition: none !important;
+  transition: none !important;
+}
+
 // default margins
 @ui-margin-vertical: 5px;
 @ui-margin-horizontal: 5px;
@@ -46,17 +54,29 @@
     margin: 0px;
 }
 
+// icons
 .ui-icon {
     font-size: 1.2em;
+    width: 1.2em;
+}
+.ui-icon-button {
+    &:extend(.ui-icon);
+    cursor: pointer;
 }
 
 // buttons
+.ui-button {
+    i {
+        font-size: 1.2em;
+    }
+}
 .ui-button-icon {
     &:extend(.icon-btn);
     &:extend(.no-highlight);
     height: auto !important;
     ul {
         i {
+            width: 1.2em;
             font-size: 1.2em;
             margin-right: @ui-margin-horizontal;
             position: relative;
@@ -115,11 +135,27 @@
 // tables
 .ui-table {
     &:extend(.grid);
-
     tbody {
         cursor: pointer;
         td {
             &:extend(.grid tbody td);
+        }
+    }
+}
+
+.ui-table-striped {
+    &:extend(.table all);
+    &:extend(.table-striped all);
+    width : 100%;
+    margin-bottom: 0px;
+    th {
+        text-align: center;
+        white-space: nowrap;
+    }
+    td {
+        margin: 0px;
+        .ui-button-icon {
+            line-height: 1.2em;
         }
     }
 }

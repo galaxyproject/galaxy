@@ -6,7 +6,7 @@ doc/patch.py
 doc/source/conf.py
 lib/galaxy/model/migrate/versions/
 lib/galaxy/model/tool_shed_install/migrate/versions/
-lib/galaxy/util/pastescript/serve.py
+lib/galaxy/util/jstree.py
 lib/galaxy/webapps/tool_shed/model/migrate/versions/
 lib/pkg_resources.py
 lib/tool_shed/
@@ -22,5 +22,4 @@ scripts/transfer.py
 test/base/
 test/casperjs/
 test/install_and_test_tool_shed_repositories/
-test/tool_shed/
 tools/

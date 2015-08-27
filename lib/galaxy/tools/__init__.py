@@ -2303,6 +2303,10 @@ class Tool( object, Dictifiable ):
         # Basic information
         tool_dict = super( Tool, self ).to_dict()
 
+        # If an admin user, expose the path to the actual tool config XML file.
+        if trans.user_is_admin():
+            tool_dict['config_file'] = os.path.abspath(self.config_file)
+
         # Add link details.
         if link_details:
             # Add details for creating a hyperlink to the tool.
