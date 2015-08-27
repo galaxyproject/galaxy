@@ -206,6 +206,7 @@ Fixes
 -------------------------------
 
 .. fixes
+
 * During the 15.07 development cycle dozens of fixes were pushed to the
   ``release_15.05`` branch of Galaxy. These are all included in 15.07 and
   summarized `here
