@@ -14,12 +14,6 @@ Enhancements
 * Interactive environment (IE) framework updates including a new IE for RStudio.
   (Thanks to a team effort spearheaded by `@erasche <https://github.com/erasche>`__.)
   `Pull Request 229`_, `Pull Request 230`_
-* A wide variety of improvements and fixes to the reports app thanks to
-  Daniel Bouchard (`@Airistotal <https://github.com/Airistotal>`__) - including a
-  new landing page, improved sorting, pagination, and sparkline graphs.
-  `Pull Request 303`_, `Pull Request 330`_, `Pull Request 410`_,
-  `Pull Request 370`_, `Pull Request 472`_, `Pull Request 584`_, 
-  `Pull Request 338`_
 * Rework workflow editor to use newer tool form components and allow construction
   of workflows with tools explicitly producing output collections.
   `Pull Request 286`_, `Pull Request 328`_, `Pull Request 311`_,
@@ -27,25 +21,25 @@ Enhancements
   `Pull Request 602`_
 * Implement policies for committers and pull requests.
   `Pull Request 295`_, `Pull Request 314`_
-* Add EDAM IDs to Galaxy datatypes. (Thanks to a team effort initiated by `@erasche
-  <https://github.com/erasche>`__.)
-  `Pull Request 80`_, `Pull Request 342`_
-* Allow the users launching Trackster to attach dataset to an existing 
-  visualization. `Pull Request 526`_
 * Allow exporting a library folder to a history. (Thanks to `@ericenns
   <https://github.com/ericenns>`__.) `Pull Request 426`_
 * Fix and update documentation available on the ReadTheDocs with particular
-  focus on the API documentation. (Thanks mostly to `@nsoranzo
+  focus on the API documentation. (Thanks to `@nsoranzo
   <https://github.com/nsoranzo>`__.)
-  `Pull Request 399`_, `Pull Request 405`_, `Pull Request 569`_
+  `Pull Request 399`_, `Pull Request 405`_
+* Add EDAM IDs to Galaxy datatypes. (Thanks to a team effort initiated by `@erasche
+  <https://github.com/erasche>`__.)
+  `Pull Request 80`_, `Pull Request 342`_
+* Improved reports app sorting and bug fixes thanks to
+  Daniel Bouchard (`@Airistotal <https://github.com/Airistotal>`__). Even more
+  reports enhancements will be included in the next release of Galaxy including
+  new landing page, pagination, and sparkline graphs.
+  `Pull Request 303`_, `Pull Request 330`_, `Pull Request 338`_
 * Significant speedup of tool panel/homepage loading. (Thanks to `@abretaud
   <https://github.com/abretaud>`__.) `Pull Request 159`_
-* Allow whitelisting tools as producing secure HTML content. `Pull Request 510`_
 * Allow parameterization of tool XML macros. `Pull Request 362`_
 * Allow use of tool-style XML macros in ``job_conf.xml``. `Pull Request 362`_
-* Make the upload 'Start' button green when enabled. `Pull Request 577`_
 * Update and clarify admin menu. `Pull Request 302`_
-* Allow uninstalling multiple toolshed repositories at once. `Pull Request 517`_
 * Add usage information to python cleanup scripts. (Thanks to `@dpryan79
   <https://github.com/dpryan79>`__.) `Pull Request 274`_
 * Added default indexing for bcf files. `Pull Request 163`_
@@ -64,10 +58,7 @@ Enhancements
 * Adding tool error tracking. (Thanks to `@kellrott
   <https://github.com/kellrott>`__.) `Pull Request 322`_
 * Implement ``<filter>`` tag for output collections. `Pull Request 455`_
-* Allow tools to explicitly produce nested collections. `Pull Request 538`_
 * Allow environment variable definitions in tool XML. `Pull Request 395`_
-* Update output actions code for some collection operations. `Pull Request
-  544`_
 * Add new ``exclude_min`` and ``exclude_max`` attributes to ``InRangeValidator``
   for numeric tool parameters. (Thanks to `@gregvonkuster
   <https://github.com/gregvonkuster>`__.) `Pull Request 339`_
@@ -93,10 +84,6 @@ Enhancements
   information. (Thanks to `@jj-umn <https://github.com/jj-umn>`__.)
   `Pull Request 427`_
 * Allow ``display_in_upload`` by default for h5 files. `Pull Request 470`_
-* Implement a new API endpoint for published histories. `Pull Request 594`_
-* Implement API methods for to getting and/or creating converted datasets. `Pull
-  Request 553`_
-* Extend history index API to allow ``order`` ing elements. `Pull Request 540`_
 * Accept history id in tool state construction API. `Pull Request 268`_
 * Adding dataset uuid information to job and workflow invocation calls.
   (Thanks to `@kellrott <https://github.com/kellrott>`__.) `Pull Request 181`_
@@ -108,10 +95,7 @@ Enhancements
   `@bgruening <https://github.com/bgruening>`__.)
   `Pull Request 421`_, `Pull Request 422`_, `Pull Request 424`_,
   `Pull Request 433`_, `Pull Request 449`_, `Pull Request 350`_,
-  `Pull Request 453`_, `Pull Request 454`_, `Pull Request 394`_,
-  `Pull Request 492`_, `Pull Request 589`_, `Pull Request 591`_,
-  `Pull Request 479`_, `Pull Request 478`_, `Pull Request 480`_,
-  `Pull Request 481`_, `Pull Request 494`_, `Pull Request 204`_
+  `Pull Request 453`_, `Pull Request 394`_, `Pull Request 204`_
 * Nose update with ``--debug`` option added to ``run_tests.sh``. `Pull Request 172`_
 * Mention ``-installed`` option in ``run_tests.sh`` help. `Pull Request 323`_
 * Allow config of shed tool configuration file used with ``run_tests.sh
@@ -132,13 +116,9 @@ Enhancements
   built-in visualizations. `Pull Request 243`_
 * Set default value for IE sig proxy (Thanks to `@erasche
   <https://github.com/erasche>`__.) `Pull Request 197`_
-* Minor improvements and fixes for the IPython interactive environment. (Thanks to
-  `@scholtalbers <https://github.com/scholtalbers>`__.) `Pull Request 462`_
 * Other smaller interactive environment updates. (Thanks to
   `@erasche <https://github.com/erasche>`__.)
   `Pull Request 412`_
-* Allow interactive environments to have their own static base URL. 
-  `Pull Request 500`_
 * Refuse to load interactive debugging middleware under uwsgi.
   `Pull Request 200`_
 * Move stylesheet source files from ``static/style/src`` to
@@ -146,12 +126,9 @@ Enhancements
 * Fix sprite paths by using hardcoded path in task. `Pull Request
   279`_
 * Improve various focus handling behavior in the UI. `Pull Request 280`_
-* Fixes and updates to various JavaScript-based tests. `Pull Request 219`_,
-  `Pull Request 485`_, `Pull Request 487`_
-* Update various client libs (e.g. jQuery, Raven, d3, requirejs, farbtastic, 
-  jqtouch, bib2json).
-  `Pull Request 221`_, `Pull Request 241`_, `Pull Request 473`_,
-  `Pull Request 536`_
+* Fixes and updates to various JavaScript-based unit tests. `Pull Request 219`_
+* Update various client libs (e.g. jQuery, Raven, d3, requirejs).
+  `Pull Request 221`_, `Pull Request 241`_
 * Ignore sample files from toolshed installed tools. (Thanks to `@Unode
   <https://github.com/Unode>`__.) `Pull Request 248`_
 * Add test option for disabling truncation of test diffs.
@@ -184,8 +161,6 @@ Enhancements
 * Improved datatype registry debugging. `Pull Request 329`_
 * Add app option to client process to allow building Tool Shed scripts. 
   `Pull Request 332`_
-* Enable grunt-based handlebars compilation as part of client build process.
-  `Pull Request 484`_
 * Add grunt command ``grunt decompress`` to copy decompressed artifacts.
   `Pull Request 173`_
 * Improvements to Tool Shed search API.
@@ -212,48 +187,18 @@ Enhancements
   `@dctrud <https://github.com/dctrud>`__.) `Pull Request 384`_
 * Add error message for bad dependency declaration (Thanks to `@kaktus42
   <https://github.com/kaktus42>`__.) `Pull Request 419`_
-* Enhance``extract_genomic_dna`` tool to support for 2bit files from local
-  data. (Thanks to `@yhoogstrate <https://github.com/yhoogstrate>`__.)
-  `Pull Request 529`_
-* Include valid tools as part of metadata returned from the Tool Shed API
-  repository information.
-  `Pull Request 592`_
 * Refactor JavaScript set up code for tagging toward reuse. `Pull Request 429`_
 * Improved md5sum/sha256 in Tool Shed actions. (Thanks to `@yhoogstrate
   <https://github.com/yhoogstrate>`__.) `Pull Request 444`_
-* Use manager copy when copying HDAs between histories, to preserve tags and 
-  annotations. `Pull Request 482`_
 * Include owner annotations of HDAs in published history display.
   `Pull Request 490`_
-* Page Saved Histories UI at 10 histories. `Pull Request 581`_
-* Do not render selector in history UI when there are no datasets to select.
-  `Pull Request 491`_
 * Added log error for config file not found. (Thanks to `@Christian-B
   <https://github.com/Christian-B>`__.) `Pull Request 443`_
-* Improve shortcut logic in jobs module. `Pull Request 488`_
-* Improvements to HDA manager test. `Pull Request 493`_
-* Improvements to managers for containers and HDA permissions. `Pull Request 496`_
-* Improved directory handling of Tool Shed install actions. (Thanks to
-  `@gregvonkuster <https://github.com/gregvonkuster>`__.) `Pull Request 511`_
-* For anonymous user calls to ``set_tags`` to fail silently. `Pull Request 516`_
-* Refactor history serialization code for reuse. `Pull Request 530`_
 * Fix for installing dependencies from source when download of precompiled
   binaries has failed. `Pull Request 531`_
-* Render history ``nice_size`` on the client (optimization). `Pull Request 532`_
-* Swap ``track_jobs_in_database`` to be ``True`` by default. `Pull Request 533`_
-* Standardize ``nice_size()`` import. (Thanks to `@nsoranzo
-  <https://github.com/nsoranzo>`__.) `Pull Request 537`_
-* Remove older history style rules. `Pull Request 539`_
-* Improve job config error when no handler elements are defined. `Pull Request
-  543`_
-* Use an sqlalchemy ``hybrid_property`` to allow use of ``History.disk_size``
-  as a column in query operations. `Pull Request 550`_
 * Use a password field for deprecated cloudlaunch's secret key field.
   `Pull Request 551`_
-* Correct typo in tool shed install logging.
-  (Thanks to `@erasche <https://github.com/erasche>`__.) `Pull Request 561`_
 * Normalize ``datatypes_by_ext`` upon entry. `Pull Request 567`_
-* Remove some unused files in ``static``. `Pull Request 583`_
 * Stop creating unneeded ``database/message.mako.py``. `Pull Request 575`_
 
 
@@ -343,33 +288,15 @@ Fixes
 * Fixed typo in Tool Shed docstring. (Thanks to `@peterjc
   <https://github.com/peterjc>`__.) `Pull Request 438`_
 * Various Trackster fixes. `Pull Request 446`_
-* Fix display of Trackster chrint files. `Pull Request 463`_
 * Fix job query to allow admins to view other histories. `Pull Request 465`_
-* Fixes to make Sweepster work with latest release. `Pull Request 486`_
-* Fix for server error when installing certain repositories. `Pull Request
-  495`_
-* Fix BBI data provider underflow bug when computing standard deviation. `Pull
-  Request 499`_
-* Add numpad support to integer inputs. `Pull Request 509`_
-* Fix RData extension type. `Pull Request 512`_
-* Fix for toolshed escape method, where an error/log message contains non-
-  ASCII characters. `Pull Request 514`_
-* Restore line wrongly removed in fa7c5c5 and again in 9805294. (Thanks to
-  `@nsoranzo <https://github.com/nsoranzo>`__.) `Pull Request 515`_
-* Fix to 9e2e909, revert saturate/lighten changes. `Pull Request 527`_
 * Fix ``dbkey`` filtering of multiple input targets. `Pull Request 534`_
-* Ensure file exists before attempting chmod in tool shed install code.
-  `Pull Request 545`_
 * Fixes for ``DeleteIntermediatesAction``. `Pull Request 547`_
-* Correct examples of API for workflow invocations. `Pull Request 565`_
 * Fix overriding the name variable in Tool Shed index code. `Pull Request 566`_
 * Fix batch mode input in new tool form UI. (Thanks to `@ericenns
   <https://github.com/ericenns>`__.) `Pull Request 568`_
 * CSV/SAM sniff order fix. `Pull Request 571`_
 * Show field for entering remote/home url when managing a Tool Shed repository.
   `Pull Request 580`_
-* Fix the class for reports brand so it is actually shown. `Pull Request 585`_
-* Retab .loc.samples. `Pull Request 587`_
 * Fix regenerating repository metadata when coming from batch interface.
   `Pull Request 600`_
 

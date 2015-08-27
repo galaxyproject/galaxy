@@ -1,27 +1,20 @@
 ===========================================================
-July 2015 Galaxy Release (v 15.07)
+TODO Galaxy Release (v %s)
 ===========================================================
-
 
 .. include:: _header.rst
 
 Highlights
 ===========================================================
 
-**Interactive Environments**
-  The interactive environments (IE) framework features several updates this release
-  and Galaxy is now distributed with a new IE for RStudio implemented by Eric Rasche.
+**Feature1**
+  Feature description.
 
-**Workflow Editor Enhancements**
-  The workflow editor has been significantly revamped - it now uses newer tool form
-  components and allow construction of workflows with tools explicitly producing
-  output collections.
+**Feature2**
+  Feature description.
 
-**Policies for Committers and Pull Requests**
-  The process for adding committers to the project and fielding pull requests has 
-  been formalized and documented in the source code. Three new committers have
-  added to the project - Björn Grüning, Nicola Soranzo, and Eric Rasche.
-
+**Feature3**
+  Feature description.
 
 `Github <https://github.com/galaxyproject/galaxy>`__
 ===========================================================
@@ -39,7 +32,7 @@ Update to latest stable release
 Update to exact version
   .. code-block:: shell
   
-      % git checkout v15.07
+      % git checkout v%s
 
 
 `BitBucket <https://bitbucket.org/galaxy/galaxy-dist>`__
@@ -48,8 +41,8 @@ Update to exact version
 Upgrade
   .. code-block:: shell
   
-      % hg pull 
-      % hg update latest_15.07
+      % hg pull
+      % hg update latest_%s
 
 
 See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
@@ -57,7 +50,7 @@ See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additio
 Release Notes
 ===========================================================
 
-.. include:: 15.07.rst
+.. include:: %s.rst
    :start-after: enhancements
 
 .. include:: _thanks.rst
