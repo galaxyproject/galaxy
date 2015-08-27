@@ -4,8 +4,17 @@ This script cannot be run directly, because it needs to have test/functional/tes
 order to run functional tests on repository tools after installation. The install_and_test_tool_shed_repositories.sh
 will execute this script with the appropriate parameters.
 """
+import httplib
+import logging
 import os
+import random
+import shutil
+import socket
 import sys
+import tempfile
+import threading
+import time
+
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
 sys.path.append( cwd )
@@ -17,34 +26,19 @@ new_path.extend( sys.path )
 sys.path = new_path
 
 from galaxy import eggs
-eggs.require( "nose" )
 eggs.require( "Paste" )
 eggs.require( 'mercurial' )
 # This should not be required, but it is under certain conditions thanks to this bug:
 # http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
-
-import httplib
-import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
-import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
-import logging
-import nose
-import random
-import shutil
-import socket
-import tempfile
-import time
-import threading
+from paste import httpserver
 
 import install_and_test_tool_shed_repositories.base.util as install_and_test_base_util
-
+from functional import database_contexts
+from functional_tests import generate_config_file
 from galaxy.app import UniverseApplication
 from galaxy.util import asbool
 from galaxy.web import buildapp
-from functional_tests import generate_config_file
-from paste import httpserver
-
-from functional import database_contexts
 
 log = logging.getLogger( 'install_and_test_tool_dependency_definitions' )
 

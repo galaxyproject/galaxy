@@ -1,6 +1,7 @@
 import inspect
 import logging
 import sys
+
 log = logging.getLogger( __name__ )
 
 assertion_module_names = ['text', 'tabular', 'xml']
@@ -14,7 +15,7 @@ for assertion_module_name in assertion_module_names:
     full_assertion_module_name = 'base.asserts.' + assertion_module_name
     log.debug(full_assertion_module_name)
     try:
-        #Dynamically import module
+        # Dynamically import module
         __import__(full_assertion_module_name)
         assertion_module = sys.modules[full_assertion_module_name]
         assertion_modules.append(assertion_module)
@@ -40,7 +41,7 @@ def verify_assertion(data, assertion_description):
     if assert_function is None:
         errmsg = "Unable to find test function associated with XML tag '%s'. Check your tool file syntax." % tag
         raise AssertionError(errmsg)
-    
+
     assert_function_args = inspect.getargspec(assert_function).args
     args = {}
     for attribute, value in assertion_description["attributes"].iteritems():
@@ -72,6 +73,6 @@ def verify_assertion(data, assertion_description):
 
     if "children" in assert_function_args:
         args["children"] = assertion_description["children"]
-        
+
     # TODO: Verify all needed function arguments are specified.
     assert_function(**args)

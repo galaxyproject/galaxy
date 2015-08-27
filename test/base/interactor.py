@@ -1,17 +1,18 @@
 import os
 import re
+from json import dumps
+from logging import getLogger
 from StringIO import StringIO
-from galaxy.tools.parser.interface import TestCollectionDef
+
 from galaxy import eggs
 eggs.require( "requests" )
-from galaxy import util
-from galaxy.util.odict import odict
-from galaxy.util.bunch import Bunch
-from requests import get
-from requests import post
-from json import dumps
+from requests import get, post
 
-from logging import getLogger
+from galaxy import util
+from galaxy.tools.parser.interface import TestCollectionDef
+from galaxy.util.bunch import Bunch
+from galaxy.util.odict import odict
+
 log = getLogger( __name__ )
 
 # Off by default because it can pound the database pretty heavily
@@ -57,7 +58,7 @@ class GalaxyInteractorApi( object ):
         name = output_testdef.name
         self.wait_for_jobs( history_id, jobs, maxseconds )
         hid = self.__output_id( output_data )
-        ## TODO: Twill version verifys dataset is 'ok' in here.
+        # TODO: Twill version verifys dataset is 'ok' in here.
         self.verify_output_dataset( history_id=history_id, hda_id=hid, outfile=outfile, attributes=attributes, shed_tool_id=shed_tool_id )
 
         primary_datasets = attributes.get( 'primary_datasets', {} )
@@ -155,10 +156,10 @@ class GalaxyInteractorApi( object ):
                 file_name = self.twill_test_case.get_filename( composite_file.get( 'value' ), shed_tool_id=shed_tool_id )
                 files["files_%s|file_data" % i] = open( file_name, 'rb' )
                 tool_input.update({
-                    #"files_%d|NAME" % i: name,
+                    # "files_%d|NAME" % i: name,
                     "files_%d|type" % i: "upload_dataset",
-                    ## TODO:
-                    #"files_%d|space_to_tab" % i: composite_file.get( 'space_to_tab', False )
+                    # TODO:
+                    # "files_%d|space_to_tab" % i: composite_file.get( 'space_to_tab', False )
                 })
             name = test_data[ 'name' ]
         else:
@@ -180,7 +181,7 @@ class GalaxyInteractorApi( object ):
             dataset = submit_response["outputs"][0]
         except KeyError:
             raise Exception(submit_response)
-        #raise Exception(str(dataset))
+        # raise Exception(str(dataset))
         hid = dataset['id']
         self.uploads[ os.path.basename(fname) ] = self.uploads[ fname ] = self.uploads[ name ] = {"src": "hda", "id": hid}
         return self.__wait_for_history( history_id )
@@ -203,7 +204,7 @@ class GalaxyInteractorApi( object ):
                     new_values.append( value )
             inputs_tree[ key ] = new_values
 
-        # # HACK: Flatten single-value lists. Required when using expand_grouping
+        # HACK: Flatten single-value lists. Required when using expand_grouping
         for key, value in inputs_tree.iteritems():
             if isinstance(value, list) and len(value) == 1:
                 inputs_tree[key] = value[0]
@@ -255,9 +256,9 @@ class GalaxyInteractorApi( object ):
         return output_collections_dict
 
     def __dictify_outputs( self, datasets_object ):
-        ## Convert outputs list to a dictionary that can be accessed by
-        ## output_name so can be more flexiable about ordering of outputs
-        ## but also allows fallback to legacy access as list mode.
+        # Convert outputs list to a dictionary that can be accessed by
+        # output_name so can be more flexiable about ordering of outputs
+        # but also allows fallback to legacy access as list mode.
         outputs_dict = odict()
         index = 0
         for output in datasets_object[ 'outputs' ]:

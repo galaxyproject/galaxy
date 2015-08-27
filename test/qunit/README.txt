@@ -3,6 +3,7 @@ Running Tests in qunit Directory
 
 From Command-line (with Grunt and Phantom):
 
+ % npm install -g grunt-cli
  % npm install
  % grunt
 

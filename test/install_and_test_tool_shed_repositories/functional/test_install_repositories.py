@@ -1,5 +1,6 @@
 import logging
 import new
+
 import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
 from install_and_test_tool_shed_repositories.base.twilltestcase import InstallTestRepository
 
@@ -16,10 +17,11 @@ class InstallTestRepositories( InstallTestRepository ):
         self.login( email=admin_email, username=admin_username )
         admin_user = test_db_util.get_user( admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = test_db_util.get_private_role( admin_user )
-        # Install the repository through the web interface using twill.  The install_repository() method may 
+        test_db_util.get_private_role( admin_user )
+        # Install the repository through the web interface using twill.  The install_repository() method may
         # actually install more than this singe repository because repository dependencies can be installed.
         self.install_repository( repository_dict )
+
 
 def generate_install_method( repository_dict=None ):
     """Generate abstract test cases for the defined list of repositories."""
