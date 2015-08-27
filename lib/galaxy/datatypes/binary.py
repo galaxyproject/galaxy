@@ -909,6 +909,7 @@ class RData( Binary ):
 
 Binary.register_sniffable_binary_format('RData', 'RData', RData)
 
+
 @dataproviders.decorators.has_dataproviders
 class Mrh( Binary ):
     """Class describing a MRH file"""
@@ -930,7 +931,7 @@ class Mrh( Binary ):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek  = 'Binary mrh file'
+            dataset.peek = 'Binary mrh file'
             dataset.blurb = data.nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
