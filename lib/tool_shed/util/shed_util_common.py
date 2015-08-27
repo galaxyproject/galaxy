@@ -1131,8 +1131,10 @@ def set_image_paths( app, encoded_repository_id, text ):
         else:
             # We're in the tool shed.
             route_to_images = '/repository/static/images/%s' % encoded_repository_id
-        # We used to require $PATH_TO_IMAGES, but we now eliminate it if it's used.
+        # We used to require $PATH_TO_IMAGES and ${static_path}, but
+        # we now eliminate it if it's used.
         text = text.replace( '$PATH_TO_IMAGES', '' )
+        text = text.replace( '${static_path}', '' )
         # Use regex to instantiate routes into the defined image paths, but replace
         # paths that start with neither http:// nor https://, which will allow for
         # settings like .. images:: http_files/images/help.png
