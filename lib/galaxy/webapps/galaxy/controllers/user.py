@@ -1128,7 +1128,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
             if token:
                 # If a token was supplied, validate and set user
                 token_result = trans.sa_session.query( trans.app.model.PasswordResetToken ).get(token)
-                if token_result and token_result.expiration_time > datetime.now():
+                if token_result and token_result.expiration_time > datetime.utcnow():
                     user = token_result.user
                 else:
                     return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
@@ -1150,7 +1150,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                     # if we used a token, invalidate it and log the user in.
                     if token_result:
                         trans.handle_user_login(token_result.user)
-                        token_result.expiration_time = datetime.now()
+                        token_result.expiration_time = datetime.utcnow()
                         trans.sa_session.add(token_result)
                     # Invalidate all other sessions
                     for other_galaxy_session in trans.sa_session.query( trans.app.model.GalaxySession ) \

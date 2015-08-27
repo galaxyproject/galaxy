@@ -273,7 +273,7 @@ class PasswordResetToken( object ):
         else:
             self.token = unique_id()
         self.user = user
-        self.expiration_time = datetime.now() + timedelta(hours=24)
+        self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
 class BaseJobMetric( object ):
