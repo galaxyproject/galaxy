@@ -147,7 +147,7 @@ def _parse_query_string_settings( query_kwargs, settings=None ):
             if needed_type != 'str':
                 try:
                     query_kwargs[ key ] = parsers[ needed_type ]( query_value )
-                except ( KeyError, ValueError ), e:
+                except ( KeyError, ValueError ):
                     del query_kwargs[ key ]
 
         # TODO:?? do we want to remove query_kwarg entries NOT in settings?

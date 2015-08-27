@@ -1,6 +1,5 @@
 """
 """
-import binascii
 import struct
 import math
 
@@ -40,7 +39,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
 
         :param chrom2: chromosome for sequence2
         :type chrom2: str.
-        
+
         :param start2: starting bp in sequence 2
         :type start2: long
 
@@ -76,7 +75,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         if not self.header_only:
             for key in [ 'start1', 'start2', 'stop1', 'stop2', 'minresolution', 'maxresolution' ]:
                 if key in kwargs:
-                    self[ key ] = int( round( float( kwargs[ key ] ) ) ) 
+                    self[ key ] = int( round( float( kwargs[ key ] ) ) )
             if self.minresolution != self.maxresolution:
                 self.levels = {}
                 i = self.minresolution
@@ -121,7 +120,6 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
             elif self.chrom1 != '' and self.chrom2 != '':
                 if self.header is None:
                     self.load_header( infile )
-                #squares = []
                 if self.transpose:
                     self.start1, self.start2 = self.start2, self.start1
                     self.stop1, self.stop2 = self.stop2, self.stop1
@@ -132,26 +130,6 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
                 else:
                     for square in self.paint_cis_canvas( infile ):
                         yield self.interpolate_square( square )
-
-    def toBSON( self, squares ):
-        data = [ '' ]
-        size = 5
-        for i, square in enumerate( squares ):
-            data += [
-                "\x04", # array flag
-                str( i ) + "\x00", # array index
-                "\x34\x00\x00\x00", # int32 size of square document (52)
-                "\x10\x78\x31\x00%s" % struct.pack( '>i', square[ 'x1' ] ), # int32 flag, x1 name, x1 value
-                "\x10\x78\x32\x00%s" % struct.pack( '>i', square[ 'x2' ] ), # int32 flag, x1 name, x1 value
-                "\x10\x79\x31\x00%s" % struct.pack( '>i', square[ 'y1' ] ), # int32 flag, x1 name, x1 value
-                "\x10\x79\x32\x00%s" % struct.pack( '>i', square[ 'y2' ] ), # int32 flag, x1 name, x1 value
-                "\x01\x76\x61\x6C\x75\x65\x00%s" % struct.pack( '>d', square[ 'value' ] ), # float64 flag, value name, value value
-                "\x00", # end of square document
-                ]
-            size += len( str( i ) ) + 54
-        data[0] = struct.pack( '>i', size ) # int32 size of whole document
-        data.append( "\x00" ) # end of whole document
-        return ''.join( data )
 
     def load_chrom_data( self, infile ):
         """
@@ -177,7 +155,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         for i in range( num_chroms ):
             self.chr2int[ ''.join( struct.unpack( '>' + 'c' * name_sizes[i],
                 infile.read( name_sizes[i] ) ) ).strip( ) ] = i
-        return { 'chromosomes':self.chr2int.keys( ), 'includes_trans':bool( trans ) }
+        return { 'chromosomes': self.chr2int.keys( ), 'includes_trans': bool( trans ) }
 
     def load_header( self, infile ):
         int_float32_size = 4
@@ -316,7 +294,7 @@ class MrhSquareDataProvider( base.LimitedOffsetDataProvider ):
         end_pos1 = min( self.header[ 'n' ], ( self.stop1 - self.header[ 'start' ] - 1 ) / self.header[ 'lres' ] + 1 )
         start_pos2 = max( 0, ( self.start2 - self.header[ 'start' ] ) / self.header[ 'lres' ] )
         end_pos2 = min( self.header[ 'n' ], ( self.stop2 - self.header[ 'start' ] - 1 ) / self.header[ 'lres' ] + 1 )
-        
+
         if self.overlap:
             # if data overlap, break query into two parts, since data only covers upper-triangle
             outdata = []
