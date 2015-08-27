@@ -8,6 +8,7 @@ import galaxy.datatypes.metadata
 from galaxy.managers import base
 from galaxy.managers import secured
 from galaxy.managers import deletable
+from galaxy.managers import roles
 from galaxy.managers import rbac_secured
 from galaxy.managers import users
 
@@ -109,7 +110,6 @@ class DatasetRBACPermissions( object ):
     def available_roles( self, trans, dataset, controller='root' ):
         return self.app.security_agent.get_legitimate_roles( trans, dataset, controller )
 
-    # TODO: not enough by a long shot
     def get( self, dataset, flush=True ):
         manage = self.manage.by_dataset( dataset )
         access = self.access.by_dataset( dataset )
@@ -199,7 +199,7 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
     def serialize_permissions( self, dataset, key, user=None, **context ):
         """
         """
-        if not user or not self.dataset_manager.permissions.manage.is_permitted( dataset, user ):
+        if not self.dataset_manager.permissions.manage.is_permitted( dataset, user ):
             self.skip()
 
         management_permissions = self.dataset_manager.permissions.manage.by_dataset( dataset )
@@ -214,6 +214,11 @@ class DatasetSerializer( base.ModelSerializer, deletable.PurgableSerializerMixin
 class DatasetDeserializer( base.ModelDeserializer, deletable.PurgableDeserializerMixin ):
     model_manager_class = DatasetManager
 
+    def __init__( self, app ):
+        super( DatasetDeserializer, self ).__init__( app )
+        # TODO: this manager may make more sense inside rbac_secured
+        self.role_manager = roles.RoleManager( app )
+
     def add_deserializers( self ):
         super( DatasetDeserializer, self ).add_deserializers()
         # not much to set here besides permissions and purged/deleted
@@ -223,14 +228,37 @@ class DatasetDeserializer( base.ModelDeserializer, deletable.PurgableDeserialize
             'permissions' : self.deserialize_permissions,
         })
 
-    def deserialize_permissions( self, dataset, key, value, **context ):
+    def deserialize_permissions( self, dataset, key, permissions, user=None, **context ):
         """
+        Create permissions for each list of encoded role ids in the (validated)
+        `permissions` dictionary, where `permissions` is in the form:
+            { 'manage': [ <role id 1>, ... ], 'access': [ <role id 2>, ... ] }
         """
-        permissions = {}
-# TODO: test if different - it's an expensive op
-# TODO: validation will be tricky
-# TODO: use rbac permissions?
+        self.manager.permissions.manage.error_unless_permitted( dataset, user )
+        self._validate_permissions( permissions, **context )
+        manage = self._list_of_roles_from_ids( permissions[ 'manage' ] )
+        access = self._list_of_roles_from_ids( permissions[ 'access' ] )
+        self.manager.permissions.set( dataset, manage, access, flush=False )
         return permissions
+
+    def _validate_permissions( self, permissions, **context ):
+        self.validate.type( 'permissions', permissions, dict )
+        for permission_key in ( 'manage', 'access' ):
+            if( not isinstance( permissions.get( permission_key, None ), list ) ):
+                msg = 'permissions requires "{0}" as a list of role ids'.format( permission_key )
+                raise exceptions.RequestParameterInvalidException( msg )
+
+        # TODO: push down into permissions?
+        manage_permissions = permissions[ 'manage' ]
+        if len( manage_permissions ) < 1:
+            raise exceptions.RequestParameterInvalidException( 'At least one managing role is required' )
+
+        return permissions
+
+    def _list_of_roles_from_ids( self, id_list ):
+        # TODO: this may make more sense inside rbac_secured
+        # note: no checking of valid roles is made
+        return self.role_manager.by_ids( [ self.app.security.decode_id( id_ ) for id_ in id_list ] )
 
 
 # ============================================================================= AKA DatasetInstanceManager
@@ -339,7 +367,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             # 'dataset_uuid'  : self._proxy_to_dataset( key='uuid' ),
             'file_name'     : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_file_name ),
             'extra_files_path' : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_extra_files_path ),
-            'permissions'   : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_permissions),
+            'permissions'   : self._proxy_to_dataset( serializer=self.dataset_serializer.serialize_permissions ),
             # TODO: do the sizes proxy accurately/in the same way?
             'size'          : lambda i, k, **c: int( i.get_size() ),
             'file_size'     : lambda i, k, **c: self.serializers[ 'size' ]( i, k, **c ),
@@ -549,7 +577,7 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
         """
         comparison_class = self.app.datatypes_registry.get_datatype_class_by_name( class_str )
         return ( comparison_class and
-                 dataset_assoc.datatype.__class__ == comparison_class )
+            dataset_assoc.datatype.__class__ == comparison_class )
 
     def isinstance_datatype( self, dataset_assoc, class_strs ):
         """
@@ -561,6 +589,6 @@ class DatasetAssociationFilterParser( base.ModelFilterParser, deletable.Purgable
         for class_str in class_strs.split( ',' ):
             datatype_class = parse_datatype_fn( class_str )
             if datatype_class:
-                comparison_classes.append(datatype_class)
-        return (comparison_classes and
-                isinstance(dataset_assoc.datatype, comparison_classes))
+                comparison_classes.append( datatype_class )
+        return ( comparison_classes and
+            isinstance( dataset_assoc.datatype, comparison_classes ) )
