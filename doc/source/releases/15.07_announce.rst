@@ -19,7 +19,7 @@ Highlights
 
 **Policies for Committers and Pull Requests**
   The process for adding committers to the project and fielding pull requests has 
-  been formalized and documented in the source code. Three new committers have
+  been formalized and documented in the source code. Three new committers have been
   added to the project - Björn Grüning, Nicola Soranzo, and Eric Rasche.
 
 
