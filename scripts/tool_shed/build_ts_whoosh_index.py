@@ -161,21 +161,13 @@ def get_repos( sa_session, path_to_repositories ):
         path = os.path.join( path_to_repositories, *model.directory_hash_id( repo.id ))
         path = os.path.join( path, "repo_%d" % repo.id )
         if os.path.exists(path):
-            tool_elems = load_tool_elements_from_path(path)
-            if tool_elems:
-                for elem in tool_elems:
-                    root = elem[1].getroot()
-                    if root.tag == 'tool':
-                        tool = {}
-                        if root.find('help') is not None:
-                            tool.update( dict( help=root.find( 'help' ).text ) )
-                        if root.find('description') is not None:
-                            tool.update( dict( description=root.find( 'description' ).text ) )
-                        tool.update( dict( id=root.attrib.get('id'),
-                                           name=root.attrib.get('name'),
-                                           version=root.attrib.get('version') ) )
-
-                        tools_list.append( tool )
+            tools_list.extend( load_one_dir( path ) )
+            for root, dirs, files in os.walk( path ):
+                if '.hg' in dirs:
+                    dirs.remove('.hg')
+                for dirname in dirs:
+                    tools_in_dir = load_one_dir( os.path.join( root, dirname ) )
+                    tools_list.extend( tools_in_dir )
 
         results.append(dict( id=repo_id,
                              name=name,
@@ -190,6 +182,25 @@ def get_repos( sa_session, path_to_repositories ):
                              full_last_updated=full_last_updated,
                              tools_list=tools_list ) )
     return results
+
+
+def load_one_dir( path ):
+    tools_in_dir = []
+    tool_elems = load_tool_elements_from_path( path )
+    if tool_elems:
+        for elem in tool_elems:
+            root = elem[1].getroot()
+            if root.tag == 'tool':
+                tool = {}
+                if root.find( 'help' ) is not None:
+                    tool.update( dict( help=root.find( 'help' ).text ) )
+                if root.find( 'description' ) is not None:
+                    tool.update( dict( description=root.find( 'description' ).text ) )
+                tool.update( dict( id=root.attrib.get( 'id' ),
+                                   name=root.attrib.get( 'name' ),
+                                   version=root.attrib.get( 'version' ) ) )
+                tools_in_dir.append( tool )
+    return tools_in_dir
 
 
 def get_sa_session_and_needed_config_settings( path_to_tool_shed_config ):

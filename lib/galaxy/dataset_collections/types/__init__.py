@@ -2,8 +2,6 @@ from galaxy import exceptions
 from abc import ABCMeta
 from abc import abstractmethod
 
-from galaxy import model
-
 import logging
 log = logging.getLogger( __name__ )
 

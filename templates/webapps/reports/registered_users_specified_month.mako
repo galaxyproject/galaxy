@@ -14,8 +14,8 @@
                 <tr><td colspan="2">There are no user registrations for ${month_label}&nbsp;${year_label}</td></tr>
             %else:
                 <tr class="header">
-                    <td>Day</td>
-                    <td>New Registrations</td>
+                    <td class="half_width">Day</td>
+                    <td class="half_width">New Registrations</td>
                 </tr>
                 <% ctr = 0 %>
                 %for user in users:

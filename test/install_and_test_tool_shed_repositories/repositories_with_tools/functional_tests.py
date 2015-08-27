@@ -4,8 +4,18 @@ This script cannot be run directly, because it needs to have test/functional/tes
 order to run functional tests on repository tools after installation. The install_and_test_tool_shed_repositories.sh
 will execute this script with the appropriate parameters.
 """
+import httplib
+import logging
 import os
+import random
+import re
+import shutil
+import socket
 import sys
+import tempfile
+import threading
+import time
+
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
 sys.path.append( cwd )
@@ -23,32 +33,17 @@ eggs.require( 'mercurial' )
 # This should not be required, but it is under certain conditions thanks to this bug:
 # http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
-
-import httplib
-import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
-import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
-import logging
 import nose
-import random
-import re
-import shutil
-import socket
-import tempfile
-import time
-import threading
+from paste import httpserver
 
 import install_and_test_tool_shed_repositories.base.util as install_and_test_base_util
-
 from base.tool_shed_util import parse_tool_panel_config
-
+from functional import database_contexts
+from functional_tests import generate_config_file
 from galaxy.app import UniverseApplication
 from galaxy.util.json import loads
 from galaxy.util import asbool
 from galaxy.web import buildapp
-from functional_tests import generate_config_file
-from paste import httpserver
-
-from functional import database_contexts
 
 log = logging.getLogger( 'install_and_test_repositories_with_tools' )
 
@@ -75,6 +70,7 @@ else:
     can_update_tool_shed = True
 
 test_framework = install_and_test_base_util.REPOSITORIES_WITH_TOOLS
+test_toolbox = None
 
 
 def get_failed_test_dicts( test_result, from_tool_test=True ):
@@ -407,7 +403,7 @@ def main():
     else:
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
         galaxy_db_path = os.path.join( tempdir, 'database' )
-    # Checks if galaxy_db_path exists, if not create it. 
+    # Checks if galaxy_db_path exists, if not create it.
     if not os.path.exists(galaxy_db_path):
         os.makedirs(galaxy_db_path)
     # Configure the paths Galaxy needs to install and test tools.

@@ -12,11 +12,13 @@ KEY_LENGTH = 24
 HASH_FUNCTION = 'sha256'
 COST_FACTOR = 10000
 
+
 def hash_password( password ):
     """
     Hash a password, currently will use the PBKDF2 scheme.
     """
     return hash_password_PBKDF2( password )
+
 
 def check_password( guess, hashed ):
     """
@@ -33,6 +35,7 @@ def check_password( guess, hashed ):
     # Password does not match
     return False
 
+
 def hash_password_PBKDF2( password ):
     # Generate a random salt
     salt = b64encode( urandom( SALT_LENGTH ) )
@@ -40,6 +43,7 @@ def hash_password_PBKDF2( password ):
     hashed = pbkdf2_bin( bytes( password ), salt, COST_FACTOR, KEY_LENGTH, getattr( hashlib, HASH_FUNCTION ) )
     # Format
     return 'PBKDF2${0}${1}${2}${3}'.format( HASH_FUNCTION, COST_FACTOR, salt, b64encode( hashed ) )
+
 
 def check_password_PBKDF2( guess, hashed ):
     # Split the database representation to extract cost_factor and salt
@@ -49,10 +53,11 @@ def check_password_PBKDF2( guess, hashed ):
     encoded_guess = b64encode( hashed_guess )
     return safe_str_cmp( encoded_original, encoded_guess )
 
-## Taken from https://github.com/mitsuhiko/python-pbkdf2/blob/master/pbkdf2.py
-## (c) Copyright 2011 by Armin Ronacher, BSD LICENSE
+# Taken from https://github.com/mitsuhiko/python-pbkdf2/blob/master/pbkdf2.py
+# (c) Copyright 2011 by Armin Ronacher, BSD LICENSE
 
 _pack_int = Struct('>I').pack
+
 
 def pbkdf2_bin( data, salt, iterations=1000, keylen=24, hashfunc=None ):
     """Returns a binary digest for the PBKDF2 hash algorithm of `data`
@@ -62,6 +67,7 @@ def pbkdf2_bin( data, salt, iterations=1000, keylen=24, hashfunc=None ):
     """
     hashfunc = hashfunc or hashlib.sha1
     mac = hmac.new(data, None, hashfunc)
+
     def _pseudorandom(x, mac=mac):
         h = mac.copy()
         h.update(x)
@@ -71,6 +77,6 @@ def pbkdf2_bin( data, salt, iterations=1000, keylen=24, hashfunc=None ):
         rv = u = _pseudorandom(salt + _pack_int(block))
         for i in xrange(iterations - 1):
             u = _pseudorandom(''.join(map(chr, u)))
-            rv = starmap( xor, zip( rv, u ) ) #Python < 2.6.8: starmap requires function inputs to be tuples, so we need to use zip instead of izip
+            rv = starmap( xor, zip( rv, u ) )  # Python < 2.6.8: starmap requires function inputs to be tuples, so we need to use zip instead of izip
         buf.extend(rv)
     return ''.join(map(chr, buf))[:keylen]

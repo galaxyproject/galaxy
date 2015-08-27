@@ -4,12 +4,11 @@ Galaxy root package -- this is a namespace package.
 
 __import__( "pkg_resources" ).declare_namespace( __name__ )
 
-import re
-import os
 import sys
 import platform
 
 import pkg_resources
+
 
 # patch get_platform() for better ABI recognition
 def _get_build_platform():
@@ -32,11 +31,11 @@ def _get_build_platform():
         if plat_split[-1] == 'universal' and platform.processor() != 'powerpc':
             plat_split[-1] = 'intel'
         plat = '-'.join( plat_split )
-    elif sys.platform == "linux2" and sys.maxint < 2**31 and plat.endswith( '-x86_64' ):
+    elif sys.platform == "linux2" and sys.maxint < 2 ** 31 and plat.endswith( '-x86_64' ):
         # 32 bit Python on 64 bit Linux
         plat = plat.replace( '-x86_64', '-i686' )
     if not (plat.endswith('-ucs2') or plat.endswith('-ucs4')):
-        if sys.maxunicode > 2**16:
+        if sys.maxunicode > 2 ** 16:
             plat += '-ucs4'
         else:
             plat += '-ucs2'
@@ -48,8 +47,9 @@ except:
     pkg_resources.get_build_platform = _get_build_platform
     pkg_resources.get_platform = _get_build_platform
 
+
 # patch to insert eggs at the beginning of sys.path instead of at the end
-def _insert_on(self, path, loc = None):
+def _insert_on(self, path, loc=None):
     """Insert self.location in path before its nearest parent directory"""
 
     loc = loc or self.location
@@ -57,7 +57,7 @@ def _insert_on(self, path, loc = None):
         return
 
     nloc = pkg_resources._normalize_cached(loc)
-    npath= [(p and pkg_resources._normalize_cached(p) or p) for p in path]
+    npath = [(p and pkg_resources._normalize_cached(p) or p) for p in path]
 
     if path is sys.path:
         self.check_version_conflict()
@@ -91,5 +91,3 @@ if not hasattr( logging, 'NullHandler' ):
         def emit( self, record ):
             pass
     logging.NullHandler = NullHandler
-
-import galaxy.eggs

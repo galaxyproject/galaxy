@@ -9,11 +9,14 @@ usage:
 
 from __future__ import division
 
-import sys, fileinput
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
-from galaxy.datatypes.util.gff_util import *
+import sys
+import fileinput
+import pkg_resources
+pkg_resources.require( "bx-python" )
+
+from galaxy.datatypes.util.gff_util import GFFReaderWrapper, GenomicInterval, convert_gff_coords_to_bed
 from bx.interval_index_file import Indexes
+
 
 def main():
     # Arguments

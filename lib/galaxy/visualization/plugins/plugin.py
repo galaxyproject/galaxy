@@ -77,7 +77,7 @@ class ServesTemplatesPluginMixin( object ):
         if self._is_template_plugin():
             self.template_path = self._build_template_path()
             self.template_lookup = self._build_template_lookup( template_cache_dir,
-                additional_template_paths=additional_template_paths )
+                                                                additional_template_paths=additional_template_paths )
             self.serves_templates = True
         return self.serves_templates
 
@@ -88,7 +88,7 @@ class ServesTemplatesPluginMixin( object ):
         return os.path.join( self.path, 'templates' )
 
     def _build_template_lookup( self, template_cache_dir, additional_template_paths=None,
-            collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING ):
+                                collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING ):
         """
         Build a mako template filename lookup for the plugin.
         """
@@ -119,7 +119,6 @@ class VisualizationPlugin( pluginframework.Plugin, ServesStaticPluginMixin, Serv
 
         base_url = context.get( 'base_url', '' )
         self.base_url = '/'.join([ base_url, self.name ]) if base_url else self.name
-
         self._set_up_static_plugin()
 
         template_cache_dir = context.get( 'template_cache_dir', None )
@@ -251,6 +250,11 @@ class InteractiveEnvironmentPlugin( VisualizationPlugin ):
     Serves web-based REPLs such as IPython and RStudio.
     """
     INTENV_REQUEST_FACTORY = interactive_environments.InteractiveEnviornmentRequest
+
+    def __init__( self, app, path, name, config, context=None, **kwargs ):
+        # TODO: this is a hack until we can get int envs seperated from the vis reg and into their own framework
+        context[ 'base_url' ] = 'interactive_environments'
+        super( InteractiveEnvironmentPlugin, self ).__init__( app, path, name, config, context=context, **kwargs )
 
     def _render( self, render_vars, trans=None, embedded=None, **kwargs ):
         """

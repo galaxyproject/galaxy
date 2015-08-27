@@ -185,7 +185,7 @@ class ToolEvaluator( object ):
                         # Input that converter is based from has a value,
                         # but converted dataset does not exist
                         raise Exception( 'A path for explicit datatype conversion has not been found: %s --/--> %s'
-                            % ( input_values[ input.name ].extension, conversion_extensions ) )
+                                         % ( input_values[ input.name ].extension, conversion_extensions ) )
                     else:
                         # Trick wrapper into using target conv ext (when
                         # None) without actually being a tool parameter
@@ -329,7 +329,8 @@ class ToolEvaluator( object ):
                 # Assume the reason we lack this output is because a filter
                 # failed to pass; for tool writing convienence, provide a
                 # NoneDataset
-                param_dict[ out_name ] = NoneDataset( datatypes_registry=self.app.datatypes_registry, ext=output.format )
+                ext = getattr( output, "format", None )  # populate only for output datasets (not collections)
+                param_dict[ out_name ] = NoneDataset( datatypes_registry=self.app.datatypes_registry, ext=ext )
 
     def __populate_non_job_params(self, param_dict):
         # -- Add useful attributes/functions for use in creating command line.

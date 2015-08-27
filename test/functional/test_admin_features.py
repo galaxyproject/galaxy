@@ -87,12 +87,12 @@ class TestDataSecurity( TwillTestCase ):
         if not regular_user3.roles:
             raise AssertionError( 'No UserRoleAssociations were created for user %s when the admin created the account' % email )
         if not previously_created and len( regular_user3.roles ) != 1:
-            raise AssertionError( '%d UserRoleAssociations were created for user %s when the admin created the account ( should have been 1 )' \
+            raise AssertionError( '%d UserRoleAssociations were created for user %s when the admin created the account ( should have been 1 )'
                                   % ( len( regular_user3.roles ), regular_user3.email ) )
         for ura in regular_user3.roles:
             role = database_contexts.galaxy_context.query( galaxy.model.Role ).get( ura.role_id )
             if not previously_created and role.type != 'private':
-                raise AssertionError( 'Role created for user %s when the admin created the account is not private, type is' \
+                raise AssertionError( 'Role created for user %s when the admin created the account is not private, type is'
                                       % str( role.type ) )
         if not previously_created:
             # Make sure a history was not created ( previous test runs may have left deleted histories )
@@ -123,7 +123,7 @@ class TestDataSecurity( TwillTestCase ):
             raise AssertionError( 'More than 1 DefaultHistoryPermissions were created for history id %d when it was created' % latest_history.id )
         dhp = dhps[0]
         if not dhp.action == galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
-            raise AssertionError( 'The DefaultHistoryPermission.action for history id %d is "%s", but it should be "manage permissions"' \
+            raise AssertionError( 'The DefaultHistoryPermission.action for history id %d is "%s", but it should be "manage permissions"'
                                   % ( latest_history.id, dhp.action ) )
         # Upload a file to create a HistoryDatasetAssociation
         self.upload_file( '1.bed' )
@@ -131,7 +131,7 @@ class TestDataSecurity( TwillTestCase ):
         for dp in latest_dataset.actions:
             # Should only have 1 DatasetPermissions
             if dp.action != galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
-                raise AssertionError( 'The DatasetPermissions for dataset id %d is %s ( should have been %s )' \
+                raise AssertionError( 'The DatasetPermissions for dataset id %d is %s ( should have been %s )'
                                       % ( latest_dataset.id,
                                           latest_dataset.actions.action,
                                           galaxy.model.Dataset.permitted_actions.DATASET_MANAGE_PERMISSIONS.action ) )
@@ -175,13 +175,13 @@ class TestDataSecurity( TwillTestCase ):
         assert role_one is not None, 'Problem retrieving role named "Role One" from the database'
         # Make sure UserRoleAssociations are correct
         if len( role_one.users ) != len( in_user_ids ):
-            raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created ( should have been %d )' \
+            raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created ( should have been %d )'
                                   % ( len( role_one.users ), role_one.id, len( in_user_ids ) ) )
         # Each of the following users should now have 2 role associations, their private role and role_one
         for user in [ admin_user, regular_user1, regular_user3 ]:
             refresh( user )
             if len( user.roles ) != 2:
-                raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 2 )' \
+                raise AssertionError( '%d UserRoleAssociations are associated with user %s ( should be 2 )'
                                       % ( len( user.roles ), user.email ) )
         # Make sure the group was created
         self.visit_url( '%s/admin/groups' % self.url )
@@ -218,7 +218,7 @@ class TestDataSecurity( TwillTestCase ):
         assert group_one is not None, 'Problem retrieving group named "Group One" from the database'
         # Make sure UserGroupAssociations are correct
         if len( group_one.users ) != len( in_user_ids ):
-            raise AssertionError( '%d UserGroupAssociations were created for group id %d when it was created ( should have been %d )' \
+            raise AssertionError( '%d UserGroupAssociations were created for group id %d when it was created ( should have been %d )'
                                   % ( len( group_one.users ), group_one.id, len( in_user_ids ) ) )
         # Each user should now have 1 group association, group_one
         for user in [ admin_user, regular_user1, regular_user3 ]:
@@ -227,7 +227,7 @@ class TestDataSecurity( TwillTestCase ):
                 raise AssertionError( '%d UserGroupAssociations are associated with user %s ( should be 1 )' % ( len( user.groups ), user.email ) )
         # Make sure GroupRoleAssociations are correct
         if len( group_one.roles ) != num_gras:
-            raise AssertionError( '%d GroupRoleAssociations were created for group id %d when it was created ( should have been %d )' \
+            raise AssertionError( '%d GroupRoleAssociations were created for group id %d when it was created ( should have been %d )'
                                   % ( len( group_one.roles ), group_one.id, num_gras ) )
         # Rename the group
         rename = "Group One's been Renamed"
@@ -248,10 +248,10 @@ class TestDataSecurity( TwillTestCase ):
         assert group_two is not None, 'Problem retrieving group named "Group Two" from the database'
         # group_two should have no associations
         if group_two.users:
-            raise AssertionError( '%d UserGroupAssociations were created for group id %d when it was created ( should have been 0 )' \
+            raise AssertionError( '%d UserGroupAssociations were created for group id %d when it was created ( should have been 0 )'
                               % ( len( group_two.users ), group_two.id ) )
         if group_two.roles:
-            raise AssertionError( '%d GroupRoleAssociations were created for group id %d when it was created ( should have been 0 )' \
+            raise AssertionError( '%d GroupRoleAssociations were created for group id %d when it was created ( should have been 0 )'
                               % ( len( group_two.roles ), group_two.id ) )
         user_ids = [ str( regular_user1.id )  ]
         role_ids = [ str( role_one.id ) ]
@@ -284,7 +284,7 @@ class TestDataSecurity( TwillTestCase ):
         assert role_two is not None, 'Problem retrieving role named "Role Two" from the database'
         # Make sure UserRoleAssociations are correct
         if len( role_two.users ) != len( user_ids ):
-            raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created with %d members' \
+            raise AssertionError( '%d UserRoleAssociations were created for role id %d when it was created with %d members'
                                   % ( len( role_two.users ), role_two.id, len( user_ids ) ) )
         # admin_user should now have 3 role associations, private role, role_one, role_two
         refresh( admin_user )
@@ -293,7 +293,7 @@ class TestDataSecurity( TwillTestCase ):
         # Make sure GroupRoleAssociations are correct
         refresh( role_two )
         if len( role_two.groups ) != len( group_ids ):
-            raise AssertionError( '%d GroupRoleAssociations were created for role id %d when it was created ( should have been %d )' \
+            raise AssertionError( '%d GroupRoleAssociations were created for role id %d when it was created ( should have been %d )'
                                   % ( len( role_two.groups ), role_two.id, len( group_ids ) ) )
         # group_two should now be associated with 2 roles: role_one, role_two
         refresh( group_two )
@@ -327,7 +327,7 @@ class TestDataSecurity( TwillTestCase ):
         group_ids = []
         for uga in admin_user.groups:
             group_ids.append( str( uga.group_id ) )
-        strings_displayed = [ "User '%s' has been updated with %d associated roles and %d associated groups" % \
+        strings_displayed = [ "User '%s' has been updated with %d associated roles and %d associated groups" %
                             ( admin_user.email, len( role_ids ), len( group_ids ) ) ]
         self.manage_roles_and_groups_for_user( self.security.encode_id( admin_user.id ),
                                                in_role_ids=role_ids,
@@ -336,7 +336,7 @@ class TestDataSecurity( TwillTestCase ):
         refresh( admin_user )
         # admin_user should now be associated with 4 roles: private, role_one, role_two, role_three
         if len( admin_user.roles ) != 4:
-            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 4 )' % \
+            raise AssertionError( '%d UserRoleAssociations are associated with %s ( should be 4 )' %
                                   ( len( admin_user.roles ), admin_user.email ) )
 
     def test_055_mark_group_deleted( self ):

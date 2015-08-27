@@ -46,16 +46,17 @@ def collect_dynamic_collections(
             collection = has_collection
 
         try:
-            elements = job_context.build_collection_elements(
+            collection_builder = collections_service.collection_builder_for(
+                collection
+            )
+            job_context.populate_collection_elements(
                 collection,
+                collection_builder,
                 output_collection_def,
             )
-            collections_service.set_collection_elements(
-                collection,
-                elements
-            )
+            collection_builder.populate()
         except Exception:
-            log.info("Problem gathering output collection.")
+            log.exception("Problem gathering output collection.")
             collection.handle_population_failed("Problem building datasets for collection.")
 
 
@@ -85,33 +86,23 @@ class JobContext( object ):
             filenames[ path ] = extra_file_collector
         return filenames
 
-    def build_collection_elements( self, collection, output_collection_def ):
-        datasets = self.create_datasets(
-            collection,
-            output_collection_def,
-        )
-
-        elements = odict.odict()
+    def populate_collection_elements( self, collection, root_collection_builder, output_collection_def ):
         # TODO: allow configurable sorting.
         #    <sort by="lexical" /> <!-- default -->
         #    <sort by="reverse_lexical" />
         #    <sort regex="example.(\d+).fastq" by="1:numerical" />
         #    <sort regex="part_(\d+)_sample_([^_]+).fastq" by="2:lexical,1:numerical" />
-        # TODO: allow nested structure
-        for designation in datasets.keys():
-            elements[ designation ] = datasets[ designation ]
-
-        return elements
-
-    def create_datasets( self, collection, output_collection_def ):
         dataset_collectors = output_collection_def.dataset_collectors
         filenames = self.find_files( collection, dataset_collectors )
 
-        datasets = {}
         for filename, extra_file_collector in filenames.iteritems():
             fields_match = extra_file_collector.match( collection, os.path.basename( filename ) )
             if not fields_match:
                 raise Exception( "Problem parsing metadata fields for file %s" % filename )
+            element_identifiers = fields_match.element_identifiers
+            current_builder = root_collection_builder
+            for element_identifier in element_identifiers[:-1]:
+                current_builder = current_builder.get_level(element_identifier)
             designation = fields_match.designation
             visible = fields_match.visible
             ext = fields_match.ext
@@ -128,9 +119,7 @@ class JobContext( object ):
                 filename=filename,
                 metadata_source_name=output_collection_def.metadata_source,
             )
-
-            datasets[ designation ] = dataset
-        return datasets
+            current_builder.add_dataset( element_identifiers[-1], dataset )
 
     def create_dataset(
         self,
@@ -394,12 +383,36 @@ class CollectedDatasetMatch( object ):
     @property
     def designation( self ):
         re_match = self.re_match
-        if "designation" in re_match.groupdict():
+        # If collecting nested collection, grap identifier_0,
+        # identifier_1, etc... and join on : to build designation.
+        element_identifiers = self.raw_element_identifiers
+        if element_identifiers:
+            return ":".join(element_identifiers)
+        elif "designation" in re_match.groupdict():
             return re_match.group( "designation" )
         elif "name" in re_match.groupdict():
             return re_match.group( "name" )
         else:
             return None
+
+    @property
+    def element_identifiers( self ):
+        return self.raw_element_identifiers or [self.designation]
+
+    @property
+    def raw_element_identifiers( self ):
+        re_match = self.re_match
+        identifiers = []
+        i = 0
+        while True:
+            key = "identifier_%d" % i
+            if key in re_match.groupdict():
+                identifiers.append(re_match.group(key))
+            else:
+                break
+            i += 1
+
+        return identifiers
 
     @property
     def name( self ):

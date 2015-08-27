@@ -17,11 +17,11 @@ ${get_css()}
                 <tr><td colspan="2">There are no registered users</td></tr>
             %else:
                 <tr class="header">
-                    <td>
+                    <td class="half_width">
                         ${get_sort_url(sort_id, order, 'date', 'users', 'registered_users_per_month', 'Month')}
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
-                    <td>
+                    <td class="half_width">
                         ${get_sort_url(sort_id, order, 'num_users', 'users', 'registered_users_per_month', 'Number of Registrations')}
                         <span class='dir_arrow num_users'>${arrow}</span>
                     </td>

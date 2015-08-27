@@ -28,6 +28,15 @@
     ${parent.javascripts()}
 </%def>
 
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    <style>
+    .ldda-peek {
+        padding-top: 2px;
+    }
+    </style>
+</%def>
+
 %if current_version:
     <b><i>This is the latest version of this library dataset</i></b>
 %else:
@@ -168,7 +177,7 @@
         %endfor
         %if ldda.peek != "no peek":
             <div class="form-row">
-                <div id="info${ trans.security.encode_id( ldda.id ) | h}" class="historyItemBody">
+                <div id="info${ trans.security.encode_id( ldda.id ) | h}" class="ldda-peek">
                     <label>Peek:</label>
                     <div><pre id="peek${ trans.security.encode_id( ldda.id ) | h}" class="peek">${util.unicodify( ldda.display_peek() )}</pre></div>
                 </div>

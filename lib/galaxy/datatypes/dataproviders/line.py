@@ -4,8 +4,10 @@ Dataproviders that iterate over lines from their sources.
 
 import collections
 import re
-
 import base
+
+import logging
+log = logging.getLogger( __name__ )
 
 _TODO = """
 line offsets (skip to some place in a file) needs to work more efficiently than simply iterating till we're there
@@ -14,11 +16,7 @@ line offsets (skip to some place in a file) needs to work more efficiently than 
 a lot of the hierarchy here could be flattened since we're implementing pipes
 """
 
-import logging
-log = logging.getLogger( __name__ )
 
-
-# ----------------------------------------------------------------------------- text
 class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
     """
     Data provider that yields lines of data from its source allowing
@@ -70,7 +68,7 @@ class FilteredLineDataProvider( base.LimitedOffsetDataProvider ):
         :returns: a line or `None`
         """
         if line is not None:
-            #??: shouldn't it strip newlines regardless, if not why not use on of the base.dprovs
+            # ??: shouldn't it strip newlines regardless, if not why not use on of the base.dprovs
             if self.strip_lines:
                 line = line.strip()
             elif self.strip_newlines:

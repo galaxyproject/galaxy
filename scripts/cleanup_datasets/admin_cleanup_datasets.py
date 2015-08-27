@@ -36,34 +36,33 @@ Email Template Variables:
 
 Author: Lance Parsons (lparsons@princeton.edu)
 """
+import ConfigParser
 import os
-import sys
-import shutil
 import logging
+import shutil
+import sys
+import time
 from collections import defaultdict
+from datetime import datetime, timedelta
+from optparse import OptionParser
+from time import strftime
+
+from cleanup_datasets import CleanupDatasetsApplication
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+import sqlalchemy as sa
+from sqlalchemy import and_, false
+eggs.require("Mako")
+from mako.template import Template
+
+import galaxy.config
+import galaxy.model.mapping
+import galaxy.util
 
 log = logging.getLogger()
 log.setLevel(10)
 log.addHandler(logging.StreamHandler(sys.stdout))
-
-from cleanup_datasets import CleanupDatasetsApplication
-import pkg_resources
-#pkg_resources.require("SQLAlchemy >= 0.4")
-
-pkg_resources.require("Mako")
-from mako.template import Template
-
-import time
-import ConfigParser
-from datetime import datetime, timedelta
-from time import strftime
-from optparse import OptionParser
-
-import galaxy.config
-import galaxy.model.mapping
-import sqlalchemy as sa
-from galaxy.model.orm import and_
-import galaxy.util
 
 assert sys.version_info[:2] >= (2, 4)
 
@@ -180,15 +179,15 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
         (app.model.HistoryDatasetAssociation.table.c.id,
          app.model.HistoryDatasetAssociation.table.c.deleted),
         whereclause=and_(
-            app.model.Dataset.table.c.deleted == False,
+            app.model.Dataset.table.c.deleted == false(),
             app.model.HistoryDatasetAssociation.table.c.update_time
             < cutoff_time,
-            app.model.HistoryDatasetAssociation.table.c.deleted == False),
+            app.model.HistoryDatasetAssociation.table.c.deleted == false()),
         from_obj=[sa.outerjoin(
                   app.model.Dataset.table,
                   app.model.HistoryDatasetAssociation.table)])
 
-   # Add all datasets associated with Histories to our list
+    # Add all datasets associated with Histories to our list
     hda_ids = []
     hda_ids.extend(
         [row.id for row in hda_ids_query.execute()])
@@ -249,15 +248,8 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
         print "----------"
         print msgtext
         if not info_only:
-            #msg = MIMEText(msgtext)
-            #msg['Subject'] = subject
-            #msg['From'] = 'noone@nowhere.com'
-            #msg['To'] = email
             galaxy.util.send_mail(fromaddr, email, subject,
                                   msgtext, config)
-            #s = smtplib.SMTP(smtp_server)
-            #s.sendmail(['lparsons@princeton.edu'], email, msg.as_string())
-            #s.quit()
 
     stop = time.time()
     print ""

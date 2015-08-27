@@ -5,7 +5,7 @@
 #the directories in which those files are stored. The perm_color_index.loc 
 #file has this format (white space characters are TAB characters):
 #
-#<build_seed_readlength>	<display_name>		<file_base>
+#<build_seed_readlength>	<display_name>	<file_base>
 #
 #Because each PerM index is built with a specific seed and a specific read
 #length, this needs to be specified so the user can choose the appropriate
@@ -13,7 +13,7 @@
 #50, and stored in /depot/data/galaxy/phiX/perm_index/,
 #then the perm_color_index.loc entry would look something like this:
 #
-#phiX_F3_50		phiX: seed=F3, read length=50		/data/galaxy/phiX/perm_index/phiX_color_F3_50.index
+#phiX_F3_50	phiX: seed=F3, read length=50	/data/galaxy/phiX/perm_index/phiX_color_F3_50.index
 #
 #and your /depot/data/galaxy/phiX/perm_index/ directory
 #would contain the file phiX_color_F3_50.index:
@@ -21,8 +21,8 @@
 #Your perm_color_index.loc file should include an entry per line for each
 #index set you have stored. For example:
 #
-#phiX_F3_50		phiX: seed=F3, read length=50		/data/galaxy/phiX/perm_index/phiX_color_F3_50.index
-#phiX_F4_50		phiX: seed=F4, read length=50		/data/galaxy/phiX/perm_index/phiX_color_F3_50.index
-#hg19_F3_50		hg19: seed=F3, read length=50		/data/galaxy/hg19/perm_index/hg19_color_F3_50.index
-#hg19_F4_50		hg19: seed=F4, read length=50		/data/galaxy/hg19/perm_index/hg19_color_F3_50.index
+#phiX_F3_50	phiX: seed=F3, read length=50	/data/galaxy/phiX/perm_index/phiX_color_F3_50.index
+#phiX_F4_50	phiX: seed=F4, read length=50	/data/galaxy/phiX/perm_index/phiX_color_F3_50.index
+#hg19_F3_50	hg19: seed=F3, read length=50	/data/galaxy/hg19/perm_index/hg19_color_F3_50.index
+#hg19_F4_50	hg19: seed=F4, read length=50	/data/galaxy/hg19/perm_index/hg19_color_F3_50.index
 #

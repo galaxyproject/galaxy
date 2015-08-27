@@ -3,8 +3,10 @@
         if sort_id == test_id:
             if order == "asc":
                 tool_order = "desc"
-            else:
+            elif order == "desc":
                 tool_order = "asc"
+            else:
+                tool_order = "default"
         else:
             tool_order = "default"
     %>
@@ -18,10 +20,6 @@
 
 <%def name="get_css()">
     <style>
-    .dir_arrow {
-        visibility: hidden
-    }
-
     .${sort_id} {
         visibility: visible
     }

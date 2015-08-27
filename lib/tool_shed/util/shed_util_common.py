@@ -5,20 +5,21 @@ import re
 import shutil
 import socket
 import string
+from urllib2 import HTTPError
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
 import sqlalchemy.orm.exc
+from sqlalchemy import and_, false, or_, true
 
 from galaxy import util
 from galaxy.web import url_for
 from galaxy.datatypes import checkers
-from galaxy.model.orm import and_
-from galaxy.model.orm import or_
 
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-
-from urllib2 import HTTPError
 
 log = logging.getLogger( __name__ )
 
@@ -200,7 +201,7 @@ def generate_tool_shed_repository_install_dir( repository_clone_url, changeset_r
     tool_shed_url = items[ 0 ]
     repo_path = items[ 1 ]
     tool_shed_url = common_util.remove_port_from_tool_shed_url( tool_shed_url )
-    return common_util.url_join( tool_shed_url, 'repos', repo_path, changeset_revision )
+    return common_util.url_join( tool_shed_url, pathspec=[ 'repos', repo_path, changeset_revision ] )
 
 
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
@@ -219,7 +220,7 @@ def get_categories( app ):
     """Get all categories from the database."""
     sa_session = app.model.context.current
     return sa_session.query( app.model.Category ) \
-                     .filter( app.model.Category.table.c.deleted == False ) \
+                     .filter( app.model.Category.table.c.deleted == false() ) \
                      .order_by( app.model.Category.table.c.name ) \
                      .all()
 
@@ -245,10 +246,9 @@ def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
     combination of a name, owner and changeset revision.
     """
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed_url )
-    params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
-    url = common_util.url_join( tool_shed_url,
-                                'repository/get_ctx_rev%s' % params )
-    ctx_rev = common_util.tool_shed_get( app, tool_shed_url, url )
+    params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
+    pathspec = [ 'repository', 'get_ctx_rev' ]
+    ctx_rev = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
     return ctx_rev
 
 
@@ -522,10 +522,9 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
         # The received changeset_revision is no longer installable, so get the next changeset_revision
         # in the repository's changelog in the tool shed that is associated with repository_metadata.
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, tool_shed )
-        params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
-        url = common_util.url_join( tool_shed_url,
-                                    'repository/next_installable_changeset_revision%s' % params )
-        text = common_util.tool_shed_get( app, tool_shed_url, url )
+        params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
+        pathspec = [ 'repository', 'next_installable_changeset_revision' ]
+        text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
         if text:
             repository = get_tool_shed_repository_by_shed_name_owner_changeset_revision( app=app,
                                                                                          tool_shed=tool_shed,
@@ -661,11 +660,13 @@ def get_repository_in_tool_shed( app, id ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.Repository ).get( app.security.decode_id( id ) )
 
+
 def get_repository_categories( app, id ):
     """Get categories of a repository on the tool shed side from the database via id"""
     sa_session = app.model.context.current
     return sa_session.query( app.model.RepositoryCategoryAssociation ) \
-        .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id==app.security.decode_id( id ))
+        .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id( id ))
+
 
 def get_repository_metadata_by_changeset_revision( app, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database."""
@@ -808,13 +809,10 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
     object from Galaxy.
     """
     tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry( app, str( repository.tool_shed ) )
-    params = '?name=%s&owner=%s&changeset_revision=%s' % ( str( repository.name ),
-                                                           str( repository.owner ),
-                                                           str( repository.changeset_revision ) )
-    url = common_util.url_join( tool_shed_url,
-                                'repository/status_for_installed_repository%s' % params )
+    params = dict( name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision )
+    pathspec = [ 'repository', 'status_for_installed_repository' ]
     try:
-        encoded_tool_shed_status_dict = common_util.tool_shed_get( app, tool_shed_url, url )
+        encoded_tool_shed_status_dict = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
         tool_shed_status_dict = encoding_util.tool_shed_decode( encoded_tool_shed_status_dict )
         return tool_shed_status_dict
     except HTTPError, e:
@@ -822,14 +820,11 @@ def get_tool_shed_status_for_installed_repository( app, repository ):
         # using a boolean value.
         log.debug( "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n" %
                    ( str( repository.name ), str( e ) ) )
-        params = '?name=%s&owner=%s&changeset_revision=%s&from_update_manager=True' % ( str( repository.name ),
-                                                                                        str( repository.owner ),
-                                                                                        str( repository.changeset_revision ) )
-        url = common_util.url_join( tool_shed_url,
-                                    'repository/check_for_updates%s' % params )
+        pathspec = [ 'repository', 'check_for_updates' ]
+        params[ 'from_update_manager' ] = True
         try:
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
-            text = common_util.tool_shed_get( app, tool_shed_url, url )
+            text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
             return dict( revision_update=text )
         except Exception, e:
             # The required tool shed may be unavailable, so default the revision_update value to 'false'.
@@ -922,10 +917,9 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
         message += "required parameters is None: tool_shed_url: %s, name: %s, owner: %s, changeset_revision: %s " % \
             ( str( tool_shed_url ), str( name ), str( owner ), str( changeset_revision ) )
         raise Exception( message )
-    params = '?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision )
-    url = common_util.url_join( tool_shed_url,
-                                'repository/updated_changeset_revisions%s' % params )
-    text = common_util.tool_shed_get( app, tool_shed_url, url )
+    params = dict( name=name, owner=owner, changeset_revision=changeset_revision )
+    pathspec = [ 'repository', 'updated_changeset_revisions' ]
+    text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
     return text
 
 
@@ -1018,8 +1012,8 @@ def handle_email_alerts( app, host, repository, content_alert_str='', new_repo_a
             subject = subject[ :80 ]
             email_alerts = []
             for user in sa_session.query( app.model.User ) \
-                                  .filter( and_( app.model.User.table.c.deleted == False,
-                                                 app.model.User.table.c.new_repo_alert == True ) ):
+                                  .filter( and_( app.model.User.table.c.deleted == false(),
+                                                 app.model.User.table.c.new_repo_alert == true() ) ):
                 if admin_only:
                     if user.email in admin_users:
                         email_alerts.append( user.email )
@@ -1104,14 +1098,13 @@ def repository_was_previously_installed( app, tool_shed_url, repository_name, re
         return tool_shed_repository, changeset_revision
     # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
     # the previous valid changeset revision to see if it was previously installed using one of them.
-    params = '?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&from_tip=%s' % ( url_for( '/', qualified=True ),
-                                                                                     str( repository_name ),
-                                                                                     str( repository_owner ),
-                                                                                     changeset_revision,
-                                                                                     str( from_tip ) )
-    url = common_util.url_join( tool_shed_url,
-                                'repository/previous_changeset_revisions%s' % params )
-    text = common_util.tool_shed_get( app, tool_shed_url, url )
+    params = dict( galaxy_url=url_for( '/', qualified=True ),
+                   name=repository_name,
+                   owner=repository_owner,
+                   changeset_revision=changeset_revision,
+                   from_tip=str( from_tip ) )
+    pathspec = [ 'repository', 'previous_changeset_revisions' ]
+    text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
     if text:
         changeset_revisions = util.listify( text )
         for previous_changeset_revision in changeset_revisions:

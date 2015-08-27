@@ -1,10 +1,12 @@
 /*
- TraceKit - Cross brower stack traces - github.com/occ/TraceKit
+ TraceKit - Cross brower stack traces - github.com/csnover/TraceKit
  MIT license
 */
 
 (function(window, undefined) {
-
+if (!window) {
+    return;
+}
 
 var TraceKit = {};
 var _oldTraceKit = window.TraceKit;
@@ -18,7 +20,7 @@ var UNKNOWN_FUNCTION = '?';
  * _has, a better form of hasOwnProperty
  * Example: _has(MainHostObject, property) === true/false
  *
- * @param {Object} host object to check property
+ * @param {Object} object to check property
  * @param {string} key to check
  */
 function _has(object, key) {
@@ -126,9 +128,9 @@ TraceKit.report = (function reportModuleWrapper() {
      * Dispatch stack information to all handlers.
      * @param {Object.<string, *>} stack
      */
-    function notifyHandlers(stack, windowError) {
+    function notifyHandlers(stack, isWindowError) {
         var exception = null;
-        if (windowError && !TraceKit.collectWindowErrors) {
+        if (isWindowError && !TraceKit.collectWindowErrors) {
           return;
         }
         for (var i in handlers) {
@@ -155,29 +157,39 @@ TraceKit.report = (function reportModuleWrapper() {
      * @param {string} url URL of script that generated the exception.
      * @param {(number|string)} lineNo The line number at which the error
      * occurred.
+     * @param {?(number|string)} columnNo The column number at which the error
+     * occurred.
+     * @param {?Error} errorObj The actual Error object.
      */
-    function traceKitWindowOnError(message, url, lineNo) {
+    function traceKitWindowOnError(message, url, lineNo, columnNo, errorObj) {
         var stack = null;
 
-        if (lastExceptionStack) {
-            TraceKit.computeStackTrace.augmentStackTraceWithInitialElement(lastExceptionStack, url, lineNo, message);
-            stack = lastExceptionStack;
-            lastExceptionStack = null;
-            lastException = null;
-        } else {
-            var location = {
-                'url': url,
-                'line': lineNo
-            };
-            location.func = TraceKit.computeStackTrace.guessFunctionName(location.url, location.line);
-            location.context = TraceKit.computeStackTrace.gatherContext(location.url, location.line);
-            stack = {
-                'mode': 'onerror',
-                'message': message,
-                'url': document.location.href,
-                'stack': [location],
-                'useragent': navigator.userAgent
-            };
+        if (errorObj) {
+          stack = TraceKit.computeStackTrace(errorObj);
+        }
+        else
+        {
+            if (lastExceptionStack) {
+                TraceKit.computeStackTrace.augmentStackTraceWithInitialElement(lastExceptionStack, url, lineNo, message);
+                stack = lastExceptionStack;
+                lastExceptionStack = null;
+                lastException = null;
+            } else {
+                var location = {
+                    'url': url,
+                    'line': lineNo,
+                    'column': columnNo
+                };
+                location.func = TraceKit.computeStackTrace.guessFunctionName(location.url, location.line);
+                location.context = TraceKit.computeStackTrace.gatherContext(location.url, location.line);
+                stack = {
+                    'mode': 'onerror',
+                    'message': message,
+                    'url': document.location.href,
+                    'stack': [location],
+                    'useragent': navigator.userAgent
+                };
+            }
         }
 
         notifyHandlers(stack, 'from window.onerror');
@@ -346,11 +358,17 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
      * @return {Array.<string>} Source contents.
      */
     function getSource(url) {
+        if (typeof url !== 'string') {
+            return [];
+        }
+
         if (!_has(sourceCache, url)) {
             // URL needs to be able to fetched within the acceptable domain.  Otherwise,
             // cross-domain errors will be triggered.
             var source = '';
-            if (url.indexOf(document.domain) !== -1) {
+
+            url = url || '';
+            if (url.indexOf && url.indexOf(document.domain) !== -1) {
                 source = loadSource(url);
             }
             sourceCache[url] = source ? source.split('\n') : [];
@@ -587,6 +605,7 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
     // ex.message = qq is not defined
     // ex.fileName = http://...
     // ex.lineNumber = 59
+    // ex.columnNumber = 69
     // ex.stack = ...stack trace... (see the example below)
     // ex.name = ReferenceError
     //
@@ -618,8 +637,9 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
             return null;
         }
 
-        var chrome = /^\s*at (?:((?:\[object object\])?\S+(?: \[as \S+\])?) )?\(?((?:file|http|https):.*?):(\d+)(?::(\d+))?\)?\s*$/i,
-            gecko = /^\s*(\S*)(?:\((.*?)\))?@((?:file|http|https).*?):(\d+)(?::(\d+))?\s*$/i,
+        var chrome = /^\s*at (.*?) ?\(?((?:file|https?|chrome-extension):.*?):(\d+)(?::(\d+))?\)?\s*$/i,
+            gecko = /^\s*(.*?)(?:\((.*?)\))?@?((?:file|https?|chrome):.*?):(\d+)(?::(\d+))?\s*$/i,
+            winjs = /^\s*at (?:((?:\[object object\])?.+) )?\(?((?:ms-appx|http|https):.*?):(\d+)(?::(\d+))?\)?\s*$/i,
             lines = ex.stack.split('\n'),
             stack = [],
             parts,
@@ -642,6 +662,13 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
                     'line': +parts[3],
                     'column': parts[4] ? +parts[4] : null
                 };
+            } else if ((parts = winjs.exec(lines[i]))) {
+              element = {
+                'url': parts[2],
+                'func': parts[1] || UNKNOWN_FUNCTION,
+                'line': +parts[3],
+                'column': parts[4] ? +parts[4] : null
+              };
             } else {
                 continue;
             }
@@ -657,12 +684,17 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
             stack.push(element);
         }
 
-        if (stack[0] && stack[0].line && !stack[0].column && reference) {
-            stack[0].column = findSourceInLine(reference[1], stack[0].url, stack[0].line);
-        }
-
         if (!stack.length) {
             return null;
+        }
+
+        if (stack[0] && stack[0].line && !stack[0].column && reference) {
+            stack[0].column = findSourceInLine(reference[1], stack[0].url, stack[0].line);
+        } else if (!stack[0].column && !_isUndefined(ex.columnNumber)) {
+            // FireFox uses this awesome columnNumber property for its top frame
+            // Also note, Firefox's column number is 0-based and everything else expects 1-based,
+            // so adding 1
+            stack[0].column = ex.columnNumber + 1;
         }
 
         return {
@@ -762,8 +794,8 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
             return null;
         }
 
-        var lineRE1 = /^\s*Line (\d+) of linked script ((?:file|http|https)\S+)(?:: in function (\S+))?\s*$/i,
-            lineRE2 = /^\s*Line (\d+) of inline#(\d+) script in ((?:file|http|https)\S+)(?:: in function (\S+))?\s*$/i,
+        var lineRE1 = /^\s*Line (\d+) of linked script ((?:file|https?)\S+)(?:: in function (\S+))?\s*$/i,
+            lineRE2 = /^\s*Line (\d+) of inline#(\d+) script in ((?:file|https?)\S+)(?:: in function (\S+))?\s*$/i,
             lineRE3 = /^\s*Line (\d+) of function script\s*$/i,
             stack = [],
             scripts = document.getElementsByTagName('script'),
@@ -939,6 +971,12 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
                 item.func = parts[1];
             }
 
+            if (typeof item.func === 'undefined') {
+              try {
+                item.func = parts.input.substring(0, parts.input.indexOf('{'));
+              } catch (e) { }
+            }
+
             if ((source = findSourceByFunctionBody(curr))) {
                 item.url = source.url;
                 item.line = source.line;
@@ -1059,6 +1097,7 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
     computeStackTrace.guessFunctionName = guessFunctionName;
     computeStackTrace.gatherContext = gatherContext;
     computeStackTrace.ofCaller = computeStackTraceOfCaller;
+    computeStackTrace.getSource = getSource;
 
     return computeStackTrace;
 }());
@@ -1067,7 +1106,7 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
  * Extends support for global error handling for asynchronous browser
  * functions. Adopted from Closure Library's errorhandler.js
  */
-(function extendToAsynchronousCallbacks() {
+TraceKit.extendToAsynchronousCallbacks = function () {
     var _helper = function _helper(fnName) {
         var originalFn = window[fnName];
         window[fnName] = function traceKitAsyncExtension() {
@@ -1090,7 +1129,7 @@ TraceKit.computeStackTrace = (function computeStackTraceWrapper() {
 
     _helper('setTimeout');
     _helper('setInterval');
-}());
+};
 
 //Default options:
 if (!TraceKit.remoteFetching) {
@@ -1109,4 +1148,4 @@ if (!TraceKit.linesOfContext || TraceKit.linesOfContext < 1) {
 // Export to global object
 window.TraceKit = TraceKit;
 
-}(window));
+}(typeof window !== 'undefined' ? window : global));

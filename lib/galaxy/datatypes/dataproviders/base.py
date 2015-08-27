@@ -9,6 +9,8 @@ Base class(es) for all DataProviders.
 
 from collections import deque
 import exceptions
+import logging
+log = logging.getLogger( __name__ )
 
 _TODO = """
 hooks into datatypes (define providers inside datatype modules) as factories
@@ -30,9 +32,6 @@ datasets API entry point:
         Building a giant list by sweeping all possible dprov classes doesn't make sense
     For now - I'm burying them in the class __init__s - but I don't like that
 """
-
-import logging
-log = logging.getLogger( __name__ )
 
 
 # ----------------------------------------------------------------------------- base classes
@@ -127,7 +126,7 @@ class DataProvider( object ):
     # iterator interface
     def __iter__( self ):
         # it's generators all the way up, Timmy
-        with self as source:
+        with self:
             for datum in self.source:
                 yield datum
 

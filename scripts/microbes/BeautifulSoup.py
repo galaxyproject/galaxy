@@ -809,7 +809,7 @@ class SoupStrainer:
     def _matches(self, markup, matchAgainst):    
         #print "Matching %s against %s" % (markup, matchAgainst)
         result = False
-        if matchAgainst == True and type(matchAgainst) == types.BooleanType:
+        if matchAgainst is True:
             result = markup != None
         elif callable(matchAgainst):
             result = matchAgainst(markup)

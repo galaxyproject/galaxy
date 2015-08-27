@@ -6,12 +6,13 @@ import re
 import sys
 import logging
 import logging.config
-from optparse import OptionParser
 import ConfigParser
 from galaxy import eggs
 from galaxy.util import string_as_bool, listify
+from galaxy.version import VERSION, VERSION_MAJOR
 
 log = logging.getLogger( __name__ )
+
 
 def resolve_path( path, root ):
     """If 'path' is relative make absolute by prepending 'root'"""
@@ -34,9 +35,11 @@ class Configuration( object ):
         self.__parse_config_file_options( kwargs )
 
         # Collect the umask and primary gid from the environment
-        self.umask = os.umask( 077 ) # get the current umask
-        os.umask( self.umask ) # can't get w/o set, so set it back
-        self.gid = os.getgid() # if running under newgrp(1) we'll need to fix the group of data created on the cluster
+        self.umask = os.umask( 077 )  # get the current umask
+        os.umask( self.umask )  # can't get w/o set, so set it back
+        self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
+        self.version_major = VERSION_MAJOR
+        self.version = VERSION
         # Database related configuration
         self.database = resolve_path( kwargs.get( "database_file", "database/community.sqlite" ), self.root )
         self.database_connection = kwargs.get( "database_connection", False )
@@ -71,7 +74,7 @@ class Configuration( object ):
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
         self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
         self.builds_file_path = resolve_path( kwargs.get( "builds_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'builds.txt') ), self.root )
-        self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared','ucsc','chrom') ), self.root )
+        self.len_file_path = resolve_path( kwargs.get( "len_file_path", os.path.join( self.tool_data_path, 'shared', 'ucsc', 'chrom') ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         # Install and test framework for testing tools contained in repositories.
         self.display_legacy_test_results = string_as_bool( kwargs.get( 'display_legacy_test_results', True ) )
@@ -99,8 +102,8 @@ class Configuration( object ):
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates/community" ), self.root )
         self.admin_users = kwargs.get( "admin_users", "" )
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
-        self.sendmail_path = kwargs.get('sendmail_path',"/usr/sbin/sendmail")
-        self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
+        self.sendmail_path = kwargs.get('sendmail_path', "/usr/sbin/sendmail")
+        self.mailing_join_addr = kwargs.get('mailing_join_addr', "galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
@@ -167,12 +170,12 @@ class Configuration( object ):
     def __parse_config_file_options( self, kwargs ):
         defaults = dict(
             auth_config_file=[ 'config/auth_conf.xml', 'config/auth_conf.xml.sample' ],
-            datatypes_config_file = [ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
-            shed_tool_data_table_config = [ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
+            datatypes_config_file=[ 'config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample' ],
+            shed_tool_data_table_config=[ 'shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml' ],
         )
 
         listify_defaults = dict(
-            tool_data_table_config_path = [ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
+            tool_data_table_config_path=[ 'config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample' ],
         )
 
         for var, defaults in defaults.items():
@@ -226,8 +229,8 @@ class Configuration( object ):
                     raise ConfigurationError( "Unable to create missing directory: %s\n%s" % ( path, e ) )
         # Create the directories that it makes sense to create.
         for path in self.file_path, \
-                    self.template_cache, \
-                    os.path.join( self.tool_data_path, 'shared', 'jars' ):
+            self.template_cache, \
+                os.path.join( self.tool_data_path, 'shared', 'jars' ):
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:
                     os.makedirs( path )
@@ -244,12 +247,13 @@ class Configuration( object ):
         admin_users = self.get( "admin_users", "" ).split( "," )
         return user is not None and user.email in admin_users
 
+
 def get_database_engine_options( kwargs ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
     """
-    conversions =  {
+    conversions = {
         'convert_unicode': string_as_bool,
         'pool_timeout': int,
         'echo': string_as_bool,
@@ -270,6 +274,7 @@ def get_database_engine_options( kwargs ):
                 value = conversions[key](value)
             rval[ key  ] = value
     return rval
+
 
 def configure_logging( config ):
     """
@@ -313,4 +318,3 @@ def configure_logging( config ):
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )
         root.addHandler( sentry_handler )
-

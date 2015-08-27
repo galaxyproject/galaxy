@@ -1,0 +1,2 @@
+define([],function(){function a(a,b){b=b||window.location.search.substr(1);var c=new RegExp(a+"=([^&#$]+)"),d=b.match(c);return d&&d.length?(d=d.splice(1),1===d.length?d[0]:d):void 0}return{get:a}});
+//# sourceMappingURL=../../maps/utils/query-string-parsing.js.map

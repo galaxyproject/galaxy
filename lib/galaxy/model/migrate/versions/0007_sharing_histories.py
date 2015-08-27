@@ -27,9 +27,9 @@ def display_migration_details():
     print "========================================"
 
 HistoryUserShareAssociation_table = Table( "history_user_share_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
+                                           Column( "id", Integer, primary_key=True ),
+                                           Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+                                           Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
 
 def upgrade(migrate_engine):

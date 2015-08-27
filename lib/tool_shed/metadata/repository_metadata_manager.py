@@ -1,16 +1,17 @@
 import logging
-import os
 import tempfile
+
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy import false, or_
 
 from galaxy import util
 from galaxy.util import inflector
 from galaxy.web.form_builder import SelectField
-from galaxy.model.orm import or_
 
 from tool_shed.metadata import metadata_generator
 from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.repository_types import util as rt_util
-
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import hg_util
@@ -125,12 +126,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         no_tools = not ancestor_guids and not current_guids
         no_workflows = not ancestor_workflows and not current_workflows
         no_data_manager = not ancestor_data_manager and not current_data_manager
-        if no_datatypes and \
-            no_readme_files and \
-            no_repository_dependencies and \
-            no_tool_dependencies and \
-            no_tools and no_workflows and \
-            no_data_manager:
+        if no_datatypes and no_readme_files and no_repository_dependencies and \
+                no_tool_dependencies and no_tools and no_workflows and \
+                no_data_manager:
             return self.NO_METADATA
         # Uncomment the following if we decide that README files should affect how installable
         # repository revisions are defined.  See the NOTE in self.compare_readme_files().
@@ -144,11 +142,11 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         data_manager_comparison = self.compare_data_manager( ancestor_data_manager, current_data_manager )
         # Handle case where all metadata is the same.
         if ancestor_guids == current_guids and \
-            repository_dependency_comparison == self.EQUAL and \
-            tool_dependency_comparison == self.EQUAL and \
-            workflow_comparison == self.EQUAL and \
-            datatype_comparison == self.EQUAL and \
-            data_manager_comparison == self.EQUAL:
+                repository_dependency_comparison == self.EQUAL and \
+                tool_dependency_comparison == self.EQUAL and \
+                workflow_comparison == self.EQUAL and \
+                datatype_comparison == self.EQUAL and \
+                data_manager_comparison == self.EQUAL:
             return self.EQUAL
         # Handle case where ancestor metadata is a subset of current metadata.
         # readme_file_is_subset = readme_file_comparision in [ self.EQUAL, self.SUBSET ]
@@ -157,11 +155,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         workflow_dependency_is_subset = workflow_comparison in self.SUBSET_VALUES
         datatype_is_subset = datatype_comparison in self.SUBSET_VALUES
         datamanager_is_subset = data_manager_comparison in self.SUBSET_VALUES
-        if repository_dependency_is_subset and \
-            tool_dependency_is_subset and \
-            workflow_dependency_is_subset and \
-            datatype_is_subset and \
-            datamanager_is_subset:
+        if repository_dependency_is_subset and tool_dependency_is_subset and \
+                workflow_dependency_is_subset and datatype_is_subset and \
+                datamanager_is_subset:
             is_subset = True
             for guid in ancestor_guids:
                 if guid not in current_guids:
@@ -193,7 +189,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
 
     def compare_datatypes( self, ancestor_datatypes, current_datatypes ):
         """Determine if ancestor_datatypes is the same as or a subset of current_datatypes."""
-        # Each datatype dict looks something like: 
+        # Each datatype dict looks something like:
         # {"dtype": "galaxy.datatypes.images:Image", "extension": "pdf", "mimetype": "application/pdf"}
         if len( ancestor_datatypes ) <= len( current_datatypes ):
             for ancestor_datatype in ancestor_datatypes:
@@ -204,8 +200,8 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                 found_in_current = False
                 for current_datatype in current_datatypes:
                     if current_datatype[ 'dtype' ] == ancestor_datatype_dtype and \
-                        current_datatype[ 'extension' ] == ancestor_datatype_extension and \
-                        current_datatype.get( 'mimetype', None ) == ancestor_datatype_mimetype:
+                            current_datatype[ 'extension' ] == ancestor_datatype_extension and \
+                            current_datatype.get( 'mimetype', None ) == ancestor_datatype_mimetype:
                         found_in_current = True
                         break
                 if not found_in_current:
@@ -249,30 +245,22 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         # Create a string from each tuple in the list for easier comparison.
         if len( ancestor_repository_dependencies ) <= len( current_repository_dependencies ):
             for ancestor_tup in ancestor_repository_dependencies:
-                a_tool_shed, \
-                a_repo_name, \
-                a_repo_owner, \
-                a_changeset_revision, \
-                a_prior_installation_required, \
-                a_only_if_compiling_contained_td = \
-                    ancestor_tup
+                a_tool_shed, a_repo_name, a_repo_owner, a_changeset_revision, \
+                    a_prior_installation_required, \
+                    a_only_if_compiling_contained_td = ancestor_tup
                 cleaned_a_tool_shed = common_util.remove_protocol_from_tool_shed_url( a_tool_shed )
                 found_in_current = False
                 for current_tup in current_repository_dependencies:
-                    c_tool_shed, \
-                    c_repo_name, \
-                    c_repo_owner, \
-                    c_changeset_revision, \
-                    c_prior_installation_required, \
-                    c_only_if_compiling_contained_td = \
-                        current_tup
+                    c_tool_shed, c_repo_name, c_repo_owner, \
+                        c_changeset_revision, c_prior_installation_required, \
+                        c_only_if_compiling_contained_td = current_tup
                     cleaned_c_tool_shed = common_util.remove_protocol_from_tool_shed_url( c_tool_shed )
                     if cleaned_c_tool_shed == cleaned_a_tool_shed and \
-                        c_repo_name == a_repo_name and \
-                        c_repo_owner == a_repo_owner and \
-                        c_changeset_revision == a_changeset_revision and \
-                        util.string_as_bool( c_prior_installation_required ) == util.string_as_bool( a_prior_installation_required ) and \
-                        util.string_as_bool( c_only_if_compiling_contained_td ) == util.string_as_bool( a_only_if_compiling_contained_td ):
+                            c_repo_name == a_repo_name and \
+                            c_repo_owner == a_repo_owner and \
+                            c_changeset_revision == a_changeset_revision and \
+                            util.string_as_bool( c_prior_installation_required ) == util.string_as_bool( a_prior_installation_required ) and \
+                            util.string_as_bool( c_only_if_compiling_contained_td ) == util.string_as_bool( a_only_if_compiling_contained_td ):
                         found_in_current = True
                         break
                 if not found_in_current:
@@ -331,7 +319,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                     # Assume that if the name and number of steps are euqal, then the workflows
                     # are the same.  Of course, this may not be true...
                     if current_workflow_dict[ 'name' ] == ancestor_workflow_name and \
-                        len( current_workflow_dict[ 'steps' ] ) == num_ancestor_workflow_steps:
+                            len( current_workflow_dict[ 'steps' ] ) == num_ancestor_workflow_steps:
                         found_in_current = True
                         break
                 if not found_in_current:
@@ -364,11 +352,9 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             if 'workflows' in metadata_dict:
                 includes_workflows = True
         if has_repository_dependencies or \
-            has_repository_dependencies_only_if_compiling_contained_td or \
-            includes_datatypes or \
-            includes_tools or \
-            includes_tool_dependencies or \
-            includes_workflows:
+                has_repository_dependencies_only_if_compiling_contained_td or \
+                includes_datatypes or includes_tools or \
+                includes_tool_dependencies or includes_workflows:
             downloadable = True
         else:
             downloadable = False
@@ -449,7 +435,6 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         Determine if the only difference between rd_tup and a dependency definition in the list of
         repository_dependencies is the changeset_revision value.
         """
-        new_metadata_required = False
         rd_tool_shed, rd_name, rd_owner, rd_changeset_revision, rd_prior_installation_required, rd_only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( rd_tup )
         cleaned_rd_tool_shed = common_util.remove_protocol_from_tool_shed_url( rd_tool_shed )
@@ -496,7 +481,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
             username = self.user.username
             clause_list = []
             for repository in self.sa_session.query( self.app.model.Repository ) \
-                                             .filter( self.app.model.Repository.table.c.deleted == False ):
+                                             .filter( self.app.model.Repository.table.c.deleted == false() ):
                 # Always reset metadata on all repositories of types repository_suite_definition and
                 # tool_dependency_definition.
                 if repository.type in [ rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION ]:
@@ -524,12 +509,12 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         else:
             if order:
                 return self.sa_session.query( self.app.model.Repository ) \
-                                      .filter( self.app.model.Repository.table.c.deleted == False ) \
+                                      .filter( self.app.model.Repository.table.c.deleted == false() ) \
                                       .order_by( self.app.model.Repository.table.c.name,
                                                  self.app.model.Repository.table.c.user_id )
             else:
                 return self.sa_session.query( self.app.model.Repository ) \
-                                      .filter( self.app.model.Repository.table.c.deleted == False )
+                                      .filter( self.app.model.Repository.table.c.deleted == false() )
 
     def get_skip_tool_test_by_changeset_revision( self, changeset_revision ):
         """
@@ -599,11 +584,8 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         tools_required = self.new_tool_metadata_required( repository_metadata )
         tool_dependencies_required = self.new_tool_dependency_metadata_required( repository_metadata )
         workflows_required = self.new_workflow_metadata_required( repository_metadata )
-        if datatypes_required or \
-            repository_dependencies_required or \
-            tools_required or \
-            tool_dependencies_required or \
-            workflows_required:
+        if datatypes_required or repository_dependencies_required or \
+                tools_required or tool_dependencies_required or workflows_required:
             return True
         return False
 
@@ -810,7 +792,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
         return False
 
     def reset_all_metadata_on_repository_in_tool_shed( self ):
-        """Reset all metadata on a single repository in a tool shed."""    
+        """Reset all metadata on a single repository in a tool shed."""
         log.debug( "Resetting all metadata on repository: %s" % self.repository.name )
         repo = hg_util.get_repo_for_repository( self.app,
                                                 repository=None,
@@ -855,7 +837,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                         elif comparison == self.NOT_EQUAL_AND_NOT_SUBSET:
                             metadata_changeset_revision = ancestor_changeset_revision
                             metadata_dict = ancestor_metadata_dict
-                            repository_metadata = self.create_or_update_repository_metadata( metadata_changeset_revision, metadata_dict )
+                            self.create_or_update_repository_metadata( metadata_changeset_revision, metadata_dict )
                             changeset_revisions.append( metadata_changeset_revision )
                             ancestor_changeset_revision = self.changeset_revision
                             ancestor_metadata_dict = self.metadata_dict
@@ -867,7 +849,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                         metadata_changeset_revision = self.changeset_revision
                         metadata_dict = self.metadata_dict
                         # We're at the end of the change log.
-                        repository_metadata = self.create_or_update_repository_metadata( metadata_changeset_revision, metadata_dict )
+                        self.create_or_update_repository_metadata( metadata_changeset_revision, metadata_dict )
                         changeset_revisions.append( metadata_changeset_revision )
                         ancestor_changeset_revision = None
                         ancestor_metadata_dict = None
@@ -875,7 +857,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                     # We reach here only if self.metadata_dict is empty and ancestor_metadata_dict is not.
                     if not ctx.children():
                         # We're at the end of the change log.
-                        repository_metadata = self.create_or_update_repository_metadata( metadata_changeset_revision, metadata_dict )
+                        self.create_or_update_repository_metadata( metadata_changeset_revision, metadata_dict )
                         changeset_revisions.append( metadata_changeset_revision )
                         ancestor_changeset_revision = None
                         ancestor_metadata_dict = None
@@ -947,6 +929,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                 try:
                     repository = suc.get_repository_in_tool_shed( self.app, repository_id )
                     self.set_repository( repository )
+                    self.resetting_all_metadata_on_repository = True
                     self.reset_all_metadata_on_repository_in_tool_shed()
                     if self.invalid_file_tups:
                         message = tool_util.generate_message_for_invalid_tools( self.app,
@@ -957,7 +940,7 @@ class RepositoryMetadataManager( metadata_generator.MetadataGenerator ):
                         log.debug( message )
                         unsuccessful_count += 1
                     else:
-                        log.debug( "Successfully reset metadata on repository %s owned by %s" % \
+                        log.debug( "Successfully reset metadata on repository %s owned by %s" %
                             ( str( repository.name ), str( repository.user.username ) ) )
                         successful_count += 1
                 except:

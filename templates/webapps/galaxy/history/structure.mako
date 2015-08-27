@@ -74,7 +74,7 @@ define( 'app', function(){
         'mvc/history/history-structure-view'
     ], function( JOB, HISTORY, StructureView ){
 
-        var historyModel = new HISTORY.History( bootstrapped.history, bootstrapped.hdas );
+        var historyModel = new HISTORY.History( bootstrapped.history, bootstrapped.contents );
 window.historymodel = historyModel;
 window.jobs = bootstrapped.jobs;
 window.tools = bootstrapped.tools;
@@ -89,5 +89,5 @@ window.structure = structure;
     });
 });
 </script>
-${ galaxy_client.load( app='app', historyId=historyId, history=history, hdas=hdas, jobs=jobs, tools=tools ) }
+${ galaxy_client.load( app='app', historyId=historyId, history=history, contents=contents, jobs=jobs, tools=tools ) }
 </%def>
