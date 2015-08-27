@@ -57,7 +57,7 @@ See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additio
 Deprecation Notice
 ===========================================================
 
-Galaxy's built-in cloudlaunch functionality is being replaced by `CloudLaunch`
+Galaxy's built-in cloudlaunch functionality is being replaced by `CloudLaunch
 <https://github.com/galaxyproject/cloudlaunch>`__ and will be removed from the
 core codebase in the next release.
 
