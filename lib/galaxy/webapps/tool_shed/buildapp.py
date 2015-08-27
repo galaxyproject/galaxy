@@ -69,7 +69,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
     webapp.add_route( '/view/{owner}/{name}/{changeset_revision}', controller='repository', action='sharable_repository_revision' )
     # Handle displaying tool help images and README file images for tools contained in repositories.
-    webapp.add_route( '/repository/static/images/:repository_id/:image_file',
+    webapp.add_route( '/repository/static/images/:repository_id/{image_file:.+?}',
                       controller='repository',
                       action='display_image_in_repository',
                       repository_id=None,
