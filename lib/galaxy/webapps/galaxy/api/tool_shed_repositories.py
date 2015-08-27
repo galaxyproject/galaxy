@@ -312,17 +312,16 @@ class ToolShedRepositoriesController( BaseAPIController ):
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
         tool_panel_section_id = payload.get( 'tool_panel_section_id', '' )
         all_installed_tool_shed_repositories = []
-        for index, tool_shed_url in enumerate( tool_shed_urls ):
-            current_payload = {}
-            current_payload[ 'tool_shed_url' ] = tool_shed_url
-            current_payload[ 'name' ] = names[ index ]
-            current_payload[ 'owner' ] = owners[ index ]
-            current_payload[ 'changeset_revision' ] = changeset_revisions[ index ]
-            current_payload[ 'new_tool_panel_section_label' ] = new_tool_panel_section_label
-            current_payload[ 'tool_panel_section_id' ] = tool_panel_section_id
-            current_payload[ 'install_repository_dependencies' ] = install_repository_dependencies
-            current_payload[ 'install_tool_dependencies' ] = install_tool_dependencies
-            current_payload[ 'shed_tool_conf' ] = shed_tool_conf
+        for tool_shed_url, name, owner, changeset_revision in zip( tool_shed_urls, names, owners, changeset_revisions ):
+            current_payload = dict( tool_shed_url=tool_shed_url,
+                                    name=name,
+                                    owner=owner,
+                                    changeset_revision=changeset_revision,
+                                    new_tool_panel_section_label=new_tool_panel_section_label,
+                                    tool_panel_section_id=tool_panel_section_id,
+                                    install_repository_dependencies=install_repository_dependencies,
+                                    install_tool_dependencies=install_tool_dependencies,
+                                    shed_tool_conf=shed_tool_conf )
             installed_tool_shed_repositories = self.install_repository_revision( trans, **current_payload )
             if isinstance( installed_tool_shed_repositories, dict ):
                 # We encountered an error.
@@ -348,11 +347,11 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload( payload, include_changeset=True )
         tool_shed_repositories = []
-        tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app,
-                                                                                                   tool_shed_url,
-                                                                                                   name,
-                                                                                                   owner,
-                                                                                                   changeset_revision )
+        tool_shed_repository = suc.get_installed_repository( trans.app,
+                                                             tool_shed=tool_shed_url,
+                                                             name=name,
+                                                             owner=owner,
+                                                             changeset_revision=changeset_revision )
         rrm = RepairRepositoryManager( trans.app )
         repair_dict = rrm.get_repair_dict( tool_shed_repository )
         ordered_tsr_ids = repair_dict.get( 'ordered_tsr_ids', [] )
