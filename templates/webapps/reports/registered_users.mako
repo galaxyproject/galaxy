@@ -6,7 +6,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormBody">
+    <div class="reportToolFormBody">
         <h3 align="center">Registered Users</h3>
         <h4 align="center">Click Number of Registered Users to see the number of user registrations per month</h4>
         <table align="center" class="colored">
