@@ -391,6 +391,8 @@ class ModelManager( object ):
         """
         Returns an in-order list of models with the matching ids in `ids`.
         """
+        if not ids:
+            return []
         ids_filter = self.model_class.id.in_( ids )
         found = self.list( filters=self._munge_filters( ids_filter, filters ), **kwargs )
         # TODO: this does not order by the original 'ids' array
