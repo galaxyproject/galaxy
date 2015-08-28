@@ -1295,7 +1295,7 @@ class SetupREnvironment( Download, RecipeStep ):
                 for tarball_name in tarball_names:
                     # Use raw strings so that python won't automatically unescape the quotes before passing the command
                     # to subprocess.Popen.
-                    cmd = r'''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR; export R_LIBS;
+                    cmd = r'''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR:$R_LIBS; export R_LIBS;
                         Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % \
                         ( str( tarball_name ) )
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
