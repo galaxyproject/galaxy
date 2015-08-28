@@ -127,6 +127,7 @@ def _parse_query_string_settings( query_kwargs, settings=None ):
 
     parsers = {
         'int'   : int,
+        'long'  : long,
         'float' : float,
         'bool'  : bool,
         'list:str'      : lambda s: list_from_query_string( s ),

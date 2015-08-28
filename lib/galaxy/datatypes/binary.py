@@ -908,3 +908,44 @@ class RData( Binary ):
             return False
 
 Binary.register_sniffable_binary_format('RData', 'RData', RData)
+
+
+@dataproviders.decorators.has_dataproviders
+class Mrh( Binary ):
+    """Class describing a MRH file"""
+    file_ext = "mrh"
+
+    def __init__( self, **kwd ):
+        Binary.__init__( self, **kwd )
+
+    def sniff( self, filename ):
+        # MRH is a binary file type.
+        # The first 8 bytes of any mrh file is '42054205'.
+        try:
+            header = open( filename, 'rb' ).read(4)
+            if header == binascii.a2b_hex( '42054205' ):
+                return True
+            return False
+        except:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = 'Binary mrh file'
+            dataset.blurb = data.nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return 'Binary mrh file (%s)' % (data.nice_size(dataset.get_size()))
+
+    @dataproviders.decorators.dataprovider_factory( 'json', dataproviders.mrh.MrhSquareDataProvider.settings )
+    def json_dataprovider( self, dataset, **settings ):
+        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
+        return dataproviders.mrh.MrhSquareDataProvider( dataset_source, **settings )
+
+Binary.register_sniffable_binary_format("mrh", "mrh", Mrh)
