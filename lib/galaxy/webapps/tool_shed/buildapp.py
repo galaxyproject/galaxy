@@ -69,13 +69,13 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
     webapp.add_route( '/view/{owner}/{name}/{changeset_revision}', controller='repository', action='sharable_repository_revision' )
     # Handle displaying tool help images and README file images for tools contained in repositories.
-    webapp.add_route( '/repository/static/images/:repository_id/{image_file:.+?}',
+    webapp.add_route( '/repository/static/images/{repository_id}/{image_file:.+?}',
                       controller='repository',
                       action='display_image_in_repository',
                       repository_id=None,
                       image_file=None )
-    webapp.add_route( '/:controller/:action', action='index' )
-    webapp.add_route( '/:action', controller='repository', action='index' )
+    webapp.add_route( '/{controller}/{action}', action='index' )
+    webapp.add_route( '/{action}', controller='repository', action='index' )
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
     # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
     webapp.add_api_controllers( 'galaxy.webapps.tool_shed.api', app )
@@ -95,7 +95,7 @@ def app_factory( global_conf, **kwargs ):
                            action='create',
                            conditions=dict( method=[ "POST" ] ) )
     webapp.mapper.connect( 'group',
-                           '/api/groups/:encoded_id',
+                           '/api/groups/{encoded_id}',
                            controller='groups',
                            action='show',
                            conditions=dict( method=[ "GET" ] ) )
@@ -134,12 +134,12 @@ def app_factory( global_conf, **kwargs ):
                             path_prefix='/api',
                             parent_resources=dict( member_name='user', collection_name='users' ) )
     webapp.mapper.connect( 'update_repository',
-                           '/api/repositories/:id',
+                           '/api/repositories/{id}',
                            controller='repositories',
                            action='update',
                            conditions=dict( method=[ "PATCH", "PUT" ] ) )
     webapp.mapper.connect( 'repository_create_changeset_revision',
-                           '/api/repositories/:id/changeset_revision',
+                           '/api/repositories/{id}/changeset_revision',
                            controller='repositories',
                            action='create_changeset_revision',
                            conditions=dict( method=[ "POST" ] ) )

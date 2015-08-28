@@ -39,7 +39,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
     def show( self, trans, id, **kwd ):
         """
         show( self, trans, id, **kwd )
-        * GET /api/libraries/datasets/{encoded_dataset_id}:
+        * GET /api/libraries/datasets/{encoded_dataset_id}
             Displays information about the dataset identified by the encoded ID.
 
         :param  id:      the encoded id of the dataset to query
@@ -88,7 +88,7 @@ class LibraryDatasetsController( BaseAPIController, UsesVisualizationMixin ):
     def show_version( self, trans, encoded_dataset_id, encoded_ldda_id, **kwd ):
         """
         show_version( self, trans, encoded_dataset_id, encoded_ldda_id, **kwd ):
-        * GET /api/libraries/datasets/:encoded_dataset_id/versions/:encoded_ldda_id
+        * GET /api/libraries/datasets/{encoded_dataset_id}/versions/{encoded_ldda_id}
             Displays information about specific version of the library_dataset (i.e. ldda).
 
         :param  encoded_dataset_id:      the encoded id of the dataset to query
