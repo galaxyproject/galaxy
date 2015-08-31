@@ -7,17 +7,16 @@ from xml.etree import ElementTree as XmlET
 import xml.etree.ElementTree
 
 log = logging.getLogger( __name__ )
-using_python_27 = sys.version_info[ :2 ] >= ( 2, 7 )
 
 
 class Py26CommentedTreeBuilder ( XmlET.XMLTreeBuilder ):
     # Python 2.6 uses ElementTree 1.2.x.
 
-    def __init__ ( self, html=0, target=None ):
+    def __init__( self, html=0, target=None ):
         XmlET.XMLTreeBuilder.__init__( self, html, target )
         self._parser.CommentHandler = self.handle_comment
 
-    def handle_comment ( self, data ):
+    def handle_comment( self, data ):
         self._target.start( XmlET.Comment, {} )
         self._target.data( data )
         self._target.end( XmlET.Comment )
@@ -31,6 +30,7 @@ class Py27CommentedTreeBuilder ( XmlET.TreeBuilder ):
         self.data( data )
         self.end( XmlET.Comment )
 
+
 def create_and_write_tmp_file( elems, use_indent=False ):
     tmp_str = ''
     for elem in listify( elems ):
@@ -43,6 +43,7 @@ def create_and_write_tmp_file( elems, use_indent=False ):
     fh.write( tmp_str )
     fh.close()
     return tmp_filename
+
 
 def create_element( tag, attributes=None, sub_elements=None ):
     """
@@ -87,6 +88,7 @@ def create_element( tag, attributes=None, sub_elements=None ):
         return elem
     return None
 
+
 def indent( elem, level=0 ):
     """
     Prints an XML tree with each node indented according to its depth.  This method is used to print the
@@ -102,7 +104,7 @@ def indent( elem, level=0 ):
         if not elem.tail or not elem.tail.strip():
             elem.tail = i
         for child in elem:
-            indent( child, level+1 )
+            indent( child, level + 1 )
         if not child.tail or not child.tail.strip():
             child.tail = i
         if not elem.tail or not elem.tail.strip():
@@ -111,28 +113,25 @@ def indent( elem, level=0 ):
         if level and ( not elem.tail or not elem.tail.strip() ):
             elem.tail = i
 
+
 def parse_xml( file_name ):
     """Returns a parsed xml tree with comments intact."""
     error_message = ''
     fobj = open( file_name, 'r' )
-    if using_python_27:
-        try:
-            tree = XmlET.parse( fobj, parser=XmlET.XMLParser( target=Py27CommentedTreeBuilder() ) )
-        except Exception, e:
-            fobj.close()
-            error_message = "Exception attempting to parse %s: %s" % ( str( file_name ), str( e ) )
-            log.exception( error_message )
-            return None, error_message
+    if sys.version_info[ :2 ] >= ( 2, 7 ):
+        xml_parser = XmlET.XMLParser( target=Py27CommentedTreeBuilder() )
     else:
-        try:
-            tree = XmlET.parse( fobj, parser=Py26CommentedTreeBuilder() )
-        except Exception, e:
-            fobj.close()
-            error_message = "Exception attempting to parse %s: %s" % ( str( file_name ), str( e ) )
-            log.exception( error_message )
-            return None, error_message
+        xml_parser = Py26CommentedTreeBuilder()
+    try:
+        tree = XmlET.parse( fobj, parser=xml_parser )
+    except Exception, e:
+        fobj.close()
+        error_message = "Exception attempting to parse %s: %s" % ( str( file_name ), str( e ) )
+        log.exception( error_message )
+        return None, error_message
     fobj.close()
     return tree, error_message
+
 
 def xml_to_string( elem, encoding='utf-8', use_indent=False, level=0 ):
     if elem is not None:
@@ -140,7 +139,7 @@ def xml_to_string( elem, encoding='utf-8', use_indent=False, level=0 ):
             # We were called from ToolPanelManager.config_elems_to_xml_file(), so
             # set the level to 1 since level 0 is the <toolbox> tag set.
             indent( elem, level=level )
-        if using_python_27:
+        if sys.version_info[ :2 ] >= ( 2, 7 ):
             xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding, method="xml" )
         else:
             xml_str = '%s\n' % xml.etree.ElementTree.tostring( elem, encoding=encoding )
