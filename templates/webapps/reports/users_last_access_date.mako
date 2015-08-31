@@ -13,7 +13,7 @@ ${get_css()}
     <h4 align="center">
         Listed in descending order by access date ( oldest date first )
     </h4>
-    <table class="colored lastAccessForm" >
+    <table class="lastAccessForm colored" >
         <tr>
             <td>
                 <form method="post"
@@ -42,7 +42,7 @@ ${get_css()}
             </td>
         </tr>
     </table>
-    <table class="colored lastAccessForm">
+    <table class="lastAccessForm colored">
         %if users:
             <tr class="header">
                 <td class="half_width">
