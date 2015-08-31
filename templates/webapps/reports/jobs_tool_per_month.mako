@@ -12,7 +12,7 @@ ${get_css()}
 
 <!--jobs_tool_per_month.mako-->
 <div class="toolForm">
-    <div class="toolFormBody">
+    <div class="reportToolFormBody">
         <h4 align="center">Jobs per month for tool "${tool_id}"</h4>
         <h5 align="center">
             <p>Click Jobs to view details.</p>

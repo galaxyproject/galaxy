@@ -22,7 +22,7 @@
 ${get_css()}
 
 <div class="toolForm">
-    <div class="toolFormBody">
+    <div class="reportToolFormBody">
         <table id="formHeader">
             <tr>
                 <td>

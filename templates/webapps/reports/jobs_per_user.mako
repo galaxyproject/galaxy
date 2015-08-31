@@ -22,7 +22,7 @@ ${get_css()}
 <!--jobs_per_user.mako-->
 ${q1time}, ${q2time}, ${ttime}
 <div class="toolForm">
-    <div class="toolFormBody">
+    <div class="reportToolFormBody">
         <table id="formHeader">
             <tr>
                 <td>

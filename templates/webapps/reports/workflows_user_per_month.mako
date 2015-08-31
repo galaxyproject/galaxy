@@ -18,7 +18,7 @@ ${get_css()}
 %>
 
 <div class="toolForm">
-    <div class="toolFormBody">
+    <div class="reportToolFormBody">
         <h3 align="center">Workflows per month for user "${_email}"</h3>
         <h4 align="center">
             <p>Graph goes from first of the month to the last</p>

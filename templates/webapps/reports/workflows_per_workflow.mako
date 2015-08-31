@@ -21,7 +21,7 @@ ${get_css()}
 
 <!--jobs_per_tool.mako-->
 <div class="toolForm">
-    <div class="toolFormBody">
+    <div class="reportToolFormBody">
         <table id="formHeader">
             <tr>
                 <td>

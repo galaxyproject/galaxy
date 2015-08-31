@@ -13,7 +13,7 @@
 ${get_css()}
 
 <div class="toolForm">
-    <div class="toolFormBody">
+    <div class="reportToolFormBody">
         <h3 align="center">Sequencing requests per month for user "${util.restore_text( email )}"</h3>
         <table align="center" width="60%" class="colored">
             %if len( requests ) == 0:

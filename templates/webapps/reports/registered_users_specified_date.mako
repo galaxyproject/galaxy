@@ -6,7 +6,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormBody">
+    <div class="reportToolFormBody">
         <h3 align="center">User Registrations for ${day_label},&nbsp;${month_label}&nbsp;${day_of_month},&nbsp;${year_label}</h3>
         <table align="center" width="30%" class="colored">
             %if len( users ) == 0:
