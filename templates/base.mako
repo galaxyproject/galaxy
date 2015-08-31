@@ -48,13 +48,17 @@
         "libs/jquery/jquery",
         "libs/jquery/jquery.migrate",
         "libs/jquery/select2",
+        "libs/jquery/jquery.event.hover",
+        "libs/jquery/jquery.form",
+        "libs/jquery/jquery.rating",
         "libs/jquery.sparklines",
         "libs/bootstrap",
         "libs/underscore",
         "libs/backbone/backbone",
         "libs/handlebars.runtime",
         "galaxy.base",
-        'libs/require'
+        "galaxy.panels",
+        "libs/require"
     )}
 
     <script type="text/javascript">
