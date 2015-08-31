@@ -5,8 +5,8 @@
     ${render_msg( message, 'done' )}
 %endif
 
-<div class="toolForm">
-    <div class="reportToolFormBody">
+<div class="report">
+    <div class="reportBody">
         <h3 align="center">User Registrations for ${month_label}&nbsp;${year_label}</h3>
         <h4 align="center">Click Day to see user registrations for that day</h4>
         <table align="center" width="60%" class="colored">

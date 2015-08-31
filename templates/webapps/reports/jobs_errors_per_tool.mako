@@ -20,8 +20,8 @@
 ${get_css()}
 
 <!--jobs_errors_per_tool.mako-->
-<div class="toolForm">
-    <div class="reportToolFormBody">
+<div class="report">
+    <div class="reportBody">
         <table id="formHeader">
             <tr>
                 <td>

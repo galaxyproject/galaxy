@@ -9,7 +9,7 @@
     ${render_msg( message, 'done' )}
 %endif
 
-<div class="toolForm">
+<div class="report">
     <h3 align="center">Old Histories and Datasets</h3>
     <table align="center" width="90%" class="border" cellpadding="5" cellspacing="5">
         <tr>

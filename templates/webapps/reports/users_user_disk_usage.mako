@@ -9,7 +9,7 @@
 ${get_css()}
 
 <!--users_user_disk_usage.mako-->
-<div class="toolForm">
+<div class="report">
     <h3 align="center">Per-user disk usage</h3>
     <h4 align="center">Listed in descending order by usage size</h4>
     <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
