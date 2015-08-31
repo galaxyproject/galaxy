@@ -8,7 +8,7 @@
 
 ${get_css()}
 
-<div class="toolForm">
+<div class="report">
     <h3 align="center">Date of Last Galaxy Login</h3>
     <h4 align="center">Listed in descending order by access date ( oldest date first )</h4>
     <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">

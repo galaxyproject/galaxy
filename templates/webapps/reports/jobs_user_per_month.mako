@@ -18,8 +18,8 @@ ${get_css()}
 %>
     
 <!--jobs_user_per_month.mako-->
-<div class="toolForm">
-    <div class="reportToolFormBody">
+<div class="report">
+    <div class="reportBody">
         <h3 align="center">Jobs per month for user "${_email}"</h3>
         <h4 align="center">
             <p>Click Total Jobs to see the user's jobs for that month</p>

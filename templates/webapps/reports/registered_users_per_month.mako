@@ -8,8 +8,8 @@
 
 ${get_css()}
 
-<div class="toolForm">
-    <div class="reportToolFormBody">
+<div class="report">
+    <div class="reportBody">
         <h3 align="center">User Registrations Per Month</h3>
         <h4 align="center">Click Month to view the number of user registrations for each day of that month</h4>
         <table align="center" width="30%" class="colored">

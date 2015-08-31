@@ -23,7 +23,7 @@ $(document).ready( function(e) {
 %endif
 
 <!--run_stats.mako-->
-<div class="toolForm">
+<div class="report">
     <div class="charts">
         <div class="trim" id="tr_hr"></div>
         <div class="hr_container" >

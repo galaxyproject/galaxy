@@ -17,8 +17,8 @@ ${get_css()}
    _email = util.restore_text( email )
 %>
 
-<div class="toolForm">
-    <div class="reportToolFormBody">
+<div class="report">
+    <div class="reportBody">
         <h3 align="center">Workflows per month for user "${_email}"</h3>
         <h4 align="center">
             <p>Graph goes from first of the month to the last</p>
