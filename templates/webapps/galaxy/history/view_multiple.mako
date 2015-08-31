@@ -14,18 +14,6 @@
         margin: 0px;
         padding: 0px;
     }
-    .history-loading-indicator {
-        max-height: fit-content;
-        width: 8px;
-        transform: rotate(90deg);
-        transform-origin: left top 0;
-        margin-left: 16px;
-        white-space: nowrap;
-        color: grey;
-    }
-    .history-loading-indicator span {
-        margin-right: 8px;
-    }
     </style>
 </%def>
 
