@@ -26,16 +26,44 @@ ${q1time}, ${q2time}, ${ttime}
         <table id="formHeader">
             <tr>
                 <td>
-                    ${get_pages( sort_id, order, page_specs, 'jobs', 'per_user',spark_time=time_period )}
+                    ${
+                        get_pages(
+                            sort_id,
+                            order,
+                            page_specs,
+                            'jobs',
+                            'per_user',
+                            spark_time=time_period)
+                    }
                 </td>
                 <td>
                     <h4 align="center">Jobs Per User</h4>
                     <h5 align="center">
-                        Click User to view details. Graph goes from present to past ${make_spark_settings( "jobs", "per_user", spark_limit, sort_id, order, time_period, page=page, offset=offset, entries=entries )}
+                        Click User to view details.
+                        Graph goes from present to past
+                        ${
+                            make_spark_settings(
+                                "jobs",
+                                "per_user",
+                                spark_limit,
+                                sort_id,
+                                order,
+                                time_period,
+                                page=page,
+                                offset=offset,
+                                entries=entries)
+                        }
                     </h5>
                 </td>
                 <td align="right">
-                    ${get_entry_selector("jobs", "per_user", page_specs.entries, sort_id, order)}
+                    ${
+                        get_entry_selector(
+                            "jobs",
+                            "per_user",
+                            page_specs.entries,
+                            sort_id,
+                            order)
+                    }
                 </td>
             </tr>
         </table>
@@ -45,11 +73,35 @@ ${q1time}, ${q2time}, ${ttime}
             %else:
                 <tr class="header">
                     <td class="half_width">
-                        ${get_sort_url(sort_id, order, 'user_email', 'jobs', 'per_user', 'User', spark_time=time_period, page=page, offset=offset, entries=entries)}
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'user_email',
+                                'jobs',
+                                'per_user',
+                                'User',
+                                spark_time=time_period,
+                                page=page,
+                                offset=offset,
+                                entries=entries)
+                        }
                         <span class='dir_arrow user_email'>${arrow}</span>
                     </td>
                     <td class="third_width">
-                        ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_user', 'Total Jobs', spark_time=time_period, page=page, offset=offset, entries=entries)}
+                        ${
+                            get_sort_url(
+                            sort_id,
+                            order,
+                            'total_jobs',
+                            'jobs',
+                            'per_user',
+                            'Total Jobs',
+                            spark_time=time_period,
+                            page=page,
+                            offset=offset,
+                            entries=entries)
+                        }
                         <span class='dir_arrow total_jobs'>${arrow}</span>
                     </td>
                     <td></td>
@@ -71,10 +123,20 @@ ${q1time}, ${q2time}, ${ttime}
                         <tr class="tr">
                     %endif
 
-                        <td><a href="${h.url_for( controller='jobs', action='user_per_month', email=job[0], sort_id='default', order='default' )}">${job[0]}</a></td>
+                        <td>
+                            <a href="${h.url_for( controller='jobs', action='user_per_month', email=job[0], sort_id='default', order='default' )}">
+                                ${job[0]}
+                            </a>
+                        </td>
                         <td>${job[1]}</td>
                         %try:
-                            ${make_sparkline(key, trends[key], "bar", "/ " + time_period[:-1])}
+                            ${
+                                make_sparkline(
+                                    key,
+                                    trends[key],
+                                    "bar",
+                                    "/ " + time_period[:-1])
+                            }
                         %except KeyError:
                         %endtry
                         <td id="${key}"></td>
