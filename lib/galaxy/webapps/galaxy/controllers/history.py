@@ -651,8 +651,22 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             user_is_owner=user_is_owner, history_is_current=history_is_current,
             show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
+    def _parse_int( self, value, min=None, max=None, **kwargs ):
+        try:
+            value = int( value )
+            if min is not None and value < min:
+                return min
+            if max is not None and value > max:
+                return max
+            return value
+        except ValueError:
+            if 'default' in kwargs:
+                return kwargs.get( 'default' )
+            raise
+
+    # @web.require_login( "use more than one Galaxy history" )
     @web.expose
-    def view_multiple( self, trans, include_deleted_histories=False, limit=10, order='update' ):
+    def view_multiple( self, trans, include_deleted_histories=False, order='update_time', limit=10 ):
         """
         """
         if not trans.user:
@@ -665,26 +679,24 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
         # TODO: allow specifying user_id for admin?
         include_deleted_histories = galaxy.util.string_as_bool( include_deleted_histories )
-        limit = limit if limit != 'None' else None
-        order = order if order in ( 'update_time', 'name', 'size' ) else 'update_time'
-        order_by = self.history_manager.parse_order_by( order )
+        order_by = self.history_manager.parse_order_by( order, default='update_time' )
+        limit = self._parse_int( limit, min=1 ) if limit != 'None' else None
 
         deleted_filter = None
         if not include_deleted_histories:
             deleted_filter = model.History.deleted == false()
 
         current_history = trans.get_history()
-        current_history_id = trans.security.encode_id( current_history.id ) if current_history else None
+        histories = [ current_history ]
+        histories += self.history_manager.by_user( trans.user, filters=deleted_filter, limit=limit, order_by=order_by )
 
         history_dictionaries = []
-        histories = self.history_manager.by_user( trans.user, filters=deleted_filter, limit=limit, order_by=order_by )
         for history in histories:
             history_dictionary = self.history_serializer.serialize_to_view( history,
                 view='detailed', user=trans.user, trans=trans )
             history_dictionaries.append( history_dictionary )
 
-        return trans.fill_template_mako( "history/view_multiple.mako",
-            current_history_id=current_history_id, histories=history_dictionaries,
+        return trans.fill_template_mako( "history/view_multiple.mako", histories=history_dictionaries,
             include_deleted_histories=include_deleted_histories, order=order, limit=limit )
 
     @web.expose

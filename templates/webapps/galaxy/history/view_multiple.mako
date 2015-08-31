@@ -2,17 +2,29 @@
 <%namespace file="/galaxy_client_app.mako" name="galaxy_client"/>
 
 <%def name="title()">
-    ${_('Histories')}
+    ${_( 'Histories' )}
 </%def>
 
 ## ----------------------------------------------------------------------------
 <%def name="stylesheets()">
-    ${parent.stylesheets()}
+    ${ parent.stylesheets() }
     <style type="text/css">
     /* reset */
     html, body {
         margin: 0px;
         padding: 0px;
+    }
+    .history-loading-indicator {
+        max-height: fit-content;
+        width: 8px;
+        transform: rotate(90deg);
+        transform-origin: left top 0;
+        margin-left: 16px;
+        white-space: nowrap;
+        color: grey;
+    }
+    .history-loading-indicator span {
+        margin-right: 8px;
     }
     </style>
 </%def>
@@ -29,18 +41,16 @@ define( 'app', function(){
         'mvc/history/multi-panel'
     ], function( HISTORY_MODEL, MULTI_PANEL ){
         $(function(){
-            bootstrapped.histories.forEach( function( h ){
-                console.debug( h.name, h.update_time, h.size );
-            })
             histories = new HISTORY_MODEL.HistoryCollection( bootstrapped.histories, {
-                includeDeleted  : bootstrapped.includingDeleted
+                includeDeleted  : bootstrapped.includingDeleted,
+                order           : bootstrapped.order,
+                currentHistoryId: '${histories[0][ "id" ]}'
             });
 
             multipanel = new MULTI_PANEL.MultiPanelColumns({
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
-                order                       : bootstrapped.order,
-                currentHistoryId            : '${current_history_id}'
+                perPage                     : bootstrapped.limit
             }).render( 0 );
         });
     });

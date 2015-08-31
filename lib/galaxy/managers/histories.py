@@ -129,7 +129,7 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         return self.set_current( trans, self.by_id( history_id ) )
 
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
-    def parse_order_by( self, order_by_string ):
+    def parse_order_by( self, order_by_string, default=None ):
         """Return an ORM compatible order_by using the given string"""
         # TODO: generalize into class
         # TODO: general (enough) columns
@@ -146,10 +146,12 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         if order_by_string == 'name-dsc':
             return desc( self.model_class.name )
         # TODO: history columns
-        if order_by_string in ( 'size', 'name-dsc' ):
+        if order_by_string in ( 'size', 'size-dsc' ):
             return desc( self.model_class.disk_size )
         if order_by_string == 'size-asc':
             return asc( self.model_class.disk_size )
+        if default:
+            return self.parse_order_by( default )
         raise glx_exceptions.RequestParameterInvalidException( 'Unkown order_by', order_by=order_by_string,
             available=[ 'create_time', 'update_time', 'name', 'size' ])
 
