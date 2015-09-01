@@ -1252,6 +1252,18 @@ def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
 
 
+def parse_int(value, min=None, max=None, default=None):
+    try:
+        value = int(value)
+        if min is not None and value < min:
+            return min
+        if max is not None and value > max:
+            return max
+        return value
+    except ValueError:
+        return default
+
+
 class ExecutionTimer(object):
 
     def __init__(self):
@@ -1260,7 +1272,6 @@ class ExecutionTimer(object):
     def __str__(self):
         elapsed = (time.time() - self.begin) * 1000.0
         return "(%0.3f ms)" % elapsed
-
 
 if __name__ == '__main__':
     import doctest
