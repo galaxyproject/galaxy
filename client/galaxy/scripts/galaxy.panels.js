@@ -117,6 +117,8 @@ $.extend( Panel.prototype, {
                     $( this ).hide().off( 'mousemove', move );
                 });
         });
+        window.force_left_panel = function( x ) { self.force_panel( x ) };
+        window.handle_minwidth_hint = function( x ) { self.handle_minwidth_hint( x ) };
     }
 });
 

@@ -66,9 +66,8 @@
         window.Galaxy = window.Galaxy || {};
 
         ## global configuration object
-        window.galaxy_config = {
-            root: '${h.url_for( "/" )}'
-        };
+        window.Galaxy.root = '${h.url_for( "/" )}';
+        window.galaxy_config = { root: window.Galaxy.root };
 
         ## console protection
         window.console = window.console || {
