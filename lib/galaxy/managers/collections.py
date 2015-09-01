@@ -199,7 +199,7 @@ class DatasetCollectionManager( object ):
         parent.add_dataset_collection( new_hdca )
         trans.sa_session.add( new_hdca )
         trans.sa_session.flush()
-        return source_hdca
+        return new_hdca
 
     def _set_from_dict( self, trans, dataset_collection_instance, new_data ):
         # send what we can down into the model
