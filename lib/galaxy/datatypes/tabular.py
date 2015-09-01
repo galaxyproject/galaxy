@@ -273,7 +273,7 @@ class Tabular( TabularData ):
                 if column_type2 == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise "Tried to compare unknown column types"
+            raise ValueError( "Tried to compare unknown column types: %s and %s" % ( column_type1, column_type2 ) )
 
         def is_int( column_text ):
             try:
