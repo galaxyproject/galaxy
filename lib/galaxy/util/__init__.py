@@ -39,7 +39,7 @@ eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
-from xml.etree import ElementTree, ElementInclude
+from xml.etree import ElementTree
 
 eggs.require( "wchartype" )
 import wchartype

@@ -1,5 +1,4 @@
 import galaxy.model
-from galaxy import util
 from galaxy.util import xml_util
 
 import logging
