@@ -273,7 +273,7 @@ class Tabular( TabularData ):
                 if column_type2 == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise "Tried to compare unknown column types"
+            raise ValueError( "Tried to compare unknown column types: %s and %s" % ( column_type1, column_type2 ) )
 
         def is_int( column_text ):
             try:
@@ -913,8 +913,6 @@ class CSV( TabularData ):
                 raise Exception('CSV reader error - line %d: %s' % (reader.line_num, e))
 
             # Guess column types
-            if len(header_row) != len(data_row):
-                raise ('mismatching number of columns in header and data')
             column_types = []
             for cell in data_row:
                 column_types.append(self.guess_type(cell))
@@ -923,7 +921,7 @@ class CSV( TabularData ):
             dataset.metadata.data_lines = reader.line_num - 1
             dataset.metadata.comment_lines = 1
             dataset.metadata.column_types = column_types
-            dataset.metadata.columns = len(header_row)
+            dataset.metadata.columns = max( len( header_row ), len( data_row ) )
             dataset.metadata.column_names = header_row
             dataset.metadata.delimiter = reader.dialect.delimiter
 
