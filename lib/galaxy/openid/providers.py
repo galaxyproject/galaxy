@@ -19,7 +19,11 @@ class OpenIDProvider( object ):
     @classmethod
     def from_file( cls, filename ):
         tree, parse_error = xml_util.parse_xml( filename )
-        return cls.from_elem( tree.getroot() )
+        if parse_error is None:
+            return cls.from_elem( tree.getroot() )
+        else:
+            log.exception( str( parse_error ) )
+            return cls()
 
     @classmethod
     def from_elem( cls, xml_root ):
@@ -107,10 +111,10 @@ class OpenIDProviders( object ):
     @classmethod
     def from_file( cls, filename ):
         tree, parse_error = xml_util.parse_xml( filename )
-        if parse_error is not None:
+        if parse_error is None:
             return cls.from_elem( tree.getroot() )
         else:
-            log.exception( 'Failed to load OpenID Providers: %s' % ( prase_error ) )
+            log.exception( 'Failed to load OpenID Providers: %s' % ( parse_error ) )
             return cls()
 
     @classmethod

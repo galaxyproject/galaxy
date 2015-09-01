@@ -383,7 +383,7 @@ class JobConfiguration( object ):
 
         resource_param_file = self.app.config.job_resource_params_file
         resource_definitions, parse_error = xml_util.util.parse_xml( resource_param_file )
-        if error_message is not None:
+        if parse_error is not None:
             raise config_exception(str(parse_error), resource_param_file)
 
         resource_definitions_root = resource_definitions.getroot()
