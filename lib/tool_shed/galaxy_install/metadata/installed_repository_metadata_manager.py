@@ -2,6 +2,7 @@ import logging
 import os
 
 from galaxy import eggs
+from galaxy import util
 eggs.require('SQLAlchemy')
 from sqlalchemy import false
 

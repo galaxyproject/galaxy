@@ -9,6 +9,7 @@ import tempfile
 import threading
 import logging
 
+from galaxy import util
 from galaxy.tools.toolbox import ToolSection
 from galaxy.util import xml_util
 from galaxy.util.odict import odict

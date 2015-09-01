@@ -1,9 +1,10 @@
 import os
 import shutil
 
+from galaxy import util
+from galaxy.util import xml_util
 from tool_shed.util import commit_util
 from tool_shed.util import hg_util
-from galaxy.util import xml_util
 
 import tool_shed.repository_types.util as rt_util
 
