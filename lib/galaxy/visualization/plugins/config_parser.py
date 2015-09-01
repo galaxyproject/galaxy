@@ -1,5 +1,6 @@
 import galaxy.model
 from galaxy import util
+from galaxy.util import xml_util
 
 import logging
 log = logging.getLogger( __name__ )
@@ -41,7 +42,7 @@ class VisualizationsConfigParser( object ):
         Parse the given XML file for visualizations data.
         :returns: visualization config dictionary
         """
-        xml_tree = util.parse_xml( xml_filepath )
+        xml_tree, parse_error = xml_util.parse_xml( xml_filepath )
         visualization = self.parse_visualization( xml_tree.getroot() )
         return visualization
 
@@ -158,9 +159,9 @@ class VisualizationsConfigParser( object ):
         if template is not None and template.text:
             log.info( 'template syntax is deprecated: use entry_point instead' )
             return {
-                'type' : 'mako',
-                'file' : template.text,
-                'attr' : {}
+                'type': 'mako',
+                'file': template.text,
+                'attr': {}
             }
 
         # need one of the two: (the deprecated) template or entry_point
@@ -174,9 +175,9 @@ class VisualizationsConfigParser( object ):
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
             raise ParsingException( 'Unknown entry_point type: ' + entry_point_type )
         return {
-            'type' : entry_point_type,
-            'file' : entry_point.text,
-            'attr' : entry_point_attrib
+            'type': entry_point_type,
+            'file': entry_point.text,
+            'attr': entry_point_attrib
         }
 
 
@@ -328,10 +329,10 @@ class DataSourceParser( object ):
                     return str( getter( o ) ) == result
 
             tests.append({
-                'type'          : test_type,
-                'result'        : test_result,
-                'result_type'   : test_result_type,
-                'fn'            : test_fn
+                'type': test_type,
+                'result': test_result,
+                'result_type': test_result_type,
+                'fn': test_fn
             })
 
         return tests

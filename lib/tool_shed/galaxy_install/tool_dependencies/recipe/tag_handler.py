@@ -8,11 +8,11 @@ from sqlalchemy import and_
 
 from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY
 from galaxy.util import listify
+from galaxy.util import xml_util
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
-from tool_shed.util import xml_util
 
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
@@ -290,7 +290,7 @@ class Repository( RecipeTag, SyncDatabase ):
             os.makedirs( dependent_install_dir )
         required_tool_dependency_env_file_path = None
         if tool_dependencies_config:
-            required_td_tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+            required_td_tree, parse_error = xml_util.parse_xml( tool_dependencies_config )
             if required_td_tree:
                 required_td_root = required_td_tree.getroot()
                 for required_td_elem in required_td_root:

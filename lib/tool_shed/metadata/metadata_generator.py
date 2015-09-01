@@ -8,6 +8,7 @@ eggs.require('SQLAlchemy')
 from sqlalchemy import and_
 
 from galaxy import util
+from galaxy.util import xml_util
 from galaxy.datatypes import checkers
 from galaxy.tools.data_manager.manager import DataManager
 from galaxy.tools.parser.interface import TestCollectionDef
@@ -21,7 +22,6 @@ from tool_shed.util import readme_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
 from tool_shed.util import tool_util
-from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -121,10 +121,10 @@ class MetadataGenerator( object ):
                                   'invalid_data_managers': invalid_data_managers,
                                   'error_messages': [] }
         metadata_dict[ 'data_manager' ] = data_manager_metadata
-        tree, error_message = xml_util.parse_xml( data_manager_config_filename )
+        tree, parse_error = xml_util.parse_xml( data_manager_config_filename )
         if tree is None:
             # We are not able to load any data managers.
-            data_manager_metadata[ 'error_messages' ].append( error_message )
+            data_manager_metadata[ 'error_messages' ].append( str( parse_error ) )
             return metadata_dict
         tool_path = None
         if shed_config_dict:
@@ -191,7 +191,7 @@ class MetadataGenerator( object ):
 
     def generate_datatypes_metadata( self, tv, repository_files_dir, datatypes_config, metadata_dict ):
         """Update the received metadata_dict with information from the parsed datatypes_config."""
-        tree, error_message = xml_util.parse_xml( datatypes_config )
+        tree, parse_error = xml_util.parse_xml( datatypes_config )
         if tree is None:
             return metadata_dict
         root = tree.getroot()
@@ -406,7 +406,7 @@ class MetadataGenerator( object ):
                                      checkers.check_zip( full_path ) ):
                                 # Make sure we're looking at a tool config and not a display application
                                 # config or something else.
-                                element_tree, error_message = xml_util.parse_xml( full_path )
+                                element_tree, parse_error = xml_util.parse_xml( full_path )
                                 if element_tree is None:
                                     is_tool = False
                                 else:
@@ -585,7 +585,7 @@ class MetadataGenerator( object ):
         """
         error_message = ''
         # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree, error_message = xml_util.parse_xml( repository_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( repository_dependencies_config )
         if tree is None:
             xml_is_valid = False
         else:
@@ -722,9 +722,9 @@ class MetadataGenerator( object ):
             original_valid_tool_dependencies_dict = original_repository_metadata.get( 'tool_dependencies', None )
         else:
             original_valid_tool_dependencies_dict = None
-        tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( tool_dependencies_config )
         if tree is None:
-            return metadata_dict, error_message
+            return metadata_dict, str( parse_error )
         root = tree.getroot()
 
         class RecurserValueStore( object ):

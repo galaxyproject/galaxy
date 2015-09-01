@@ -5,13 +5,13 @@ import shutil
 from xml.etree import ElementTree as XmlET
 
 from tool_shed.util import hg_util
-from tool_shed.util import xml_util
+from galaxy.util import xml_util
 
 log = logging.getLogger( __name__ )
 
 
 class ToolDataTableManager( object ):
-    
+
     def __init__( self, app ):
         self.app = app
 
@@ -30,8 +30,8 @@ class ToolDataTableManager( object ):
         repository_owner_elem.text = owner
         changeset_revision_elem = XmlET.SubElement( elem, 'installed_changeset_revision' )
         changeset_revision_elem.text = changeset_revision
-        #add additional values
-        #TODO: enhance additional values to allow e.g. use of dict values that will recurse
+        # add additional values
+        # TODO: enhance additional values to allow e.g. use of dict values that will recurse
         for key, value in kwd.iteritems():
             new_elem = XmlET.SubElement( elem, key )
             new_elem.text = value
@@ -128,7 +128,7 @@ class ToolDataTableManager( object ):
         SAMPLE_SUFFIX_OFFSET = -len( SAMPLE_SUFFIX )
         target_dir, tool_path, relative_target_dir = self.get_target_install_dir( tool_shed_repository )
         for sample_file in tool_index_sample_files:
-            path, filename = os.path.split ( sample_file )
+            path, filename = os.path.split( sample_file )
             target_filename = filename
             if target_filename.endswith( SAMPLE_SUFFIX ):
                 target_filename = target_filename[ : SAMPLE_SUFFIX_OFFSET ]
@@ -145,7 +145,7 @@ class ToolDataTableManager( object ):
         tool_data_table_conf_filename = os.path.join( target_dir, TOOL_DATA_TABLE_FILE_NAME )
         elems = []
         if os.path.exists( tool_data_table_conf_filename ):
-            tree, error_message = xml_util.parse_xml( tool_data_table_conf_filename )
+            tree, parse_error = xml_util.parse_xml( tool_data_table_conf_filename )
             if tree:
                 for elem in tree.getroot():
                     # Append individual table elems or other elemes, but not tables elems.

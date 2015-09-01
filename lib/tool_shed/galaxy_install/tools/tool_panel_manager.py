@@ -6,7 +6,7 @@ from xml.etree import ElementTree as XmlET
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import xml_util
+from galaxy.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -25,7 +25,7 @@ class ToolPanelManager( object ):
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         config_elems = []
-        tree, error_message = xml_util.parse_xml( shed_tool_conf )
+        tree, parse_error = xml_util.parse_xml( shed_tool_conf )
         if tree:
             root = tree.getroot()
             for elem in root:
@@ -179,7 +179,7 @@ class ToolPanelManager( object ):
                 file_name = basic_util.strip_path( tool_config )
                 guids_and_configs[ guid ] = file_name
         # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict.
-        tree, error_message = xml_util.parse_xml( shed_tool_conf )
+        tree, parse_error = xml_util.parse_xml( shed_tool_conf )
         if tree is None:
             return tool_panel_dict
         root = tree.getroot()
@@ -381,7 +381,7 @@ class ToolPanelManager( object ):
         shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
         tool_path = shed_tool_conf_dict[ 'tool_path' ]
         config_elems = []
-        tree, error_message = xml_util.parse_xml( shed_tool_conf )
+        tree, parse_error = xml_util.parse_xml( shed_tool_conf )
         if tree:
             root = tree.getroot()
             for elem in root:

@@ -382,10 +382,9 @@ class JobConfiguration( object ):
             return
 
         resource_param_file = self.app.config.job_resource_params_file
-        try:
-            resource_definitions = util.parse_xml( resource_param_file )
-        except Exception as e:
-            raise config_exception(e, resource_param_file)
+        resource_definitions, parse_error = xml_util.util.parse_xml( resource_param_file )
+        if error_message is not None:
+            raise config_exception(str(parse_error), resource_param_file)
 
         resource_definitions_root = resource_definitions.getroot()
         # TODO: Also handling conditionals would be awesome!

@@ -9,12 +9,11 @@ from galaxy import eggs
 eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, true
 
-from galaxy import util
+from galaxy.util import xml_util
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_dependency_util
-from tool_shed.util import xml_util
 
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
@@ -574,7 +573,7 @@ class InstalledRepositoryManager( object ):
 
     def get_repository_install_dir( self, tool_shed_repository ):
         for tool_config in self.tool_configs:
-            tree, error_message = xml_util.parse_xml( tool_config )
+            tree, parse_error = xml_util.parse_xml( tool_config )
             if tree is None:
                 return None
             root = tree.getroot()

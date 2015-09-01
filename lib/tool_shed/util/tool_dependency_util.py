@@ -7,9 +7,9 @@ eggs.require('SQLAlchemy')
 from sqlalchemy import and_
 
 from galaxy import util
+from galaxy.util import xml_util
 from galaxy.web.form_builder import SelectField
 from tool_shed.util import hg_util
-from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -81,7 +81,7 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
         relative_install_dir = os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir )
     # Get the tool_dependencies.xml file from the repository.
     tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
-    tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+    tree, parse_error = xml_util.parse_xml( tool_dependencies_config )
     if tree is None:
         return tool_dependency_objects
     root = tree.getroot()

@@ -16,6 +16,7 @@ import coverage
 import tracks
 import binary
 import galaxy.util
+from galaxy.util import xml_util
 from galaxy.util.odict import odict
 from display_applications.application import DisplayApplication
 
@@ -91,7 +92,7 @@ class Registry( object ):
             #           type="galaxy.datatypes.blast:BlastXml" />
             handling_proprietary_datatypes = False
             # Parse datatypes_conf.xml
-            tree = galaxy.util.parse_xml( config )
+            tree, parse_error = xml_util.parse_xml( config )
             root = tree.getroot()
             # Load datatypes and converters from config
             if deactivate:

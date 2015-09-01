@@ -2,6 +2,7 @@ import copy
 import logging
 
 from galaxy.util import asbool
+from galaxy.util import xml_util
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 
@@ -10,7 +11,6 @@ from tool_shed.repository_types.util import REPOSITORY_DEPENDENCY_DEFINITION_FIL
 from tool_shed.repository_types.util import TOOL_DEPENDENCY_DEFINITION_FILENAME
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
-from tool_shed.util import xml_util
 log = logging.getLogger( __name__ )
 
 
@@ -158,9 +158,9 @@ class RepositoryDependencyAttributeHandler( object ):
         repository is being exported.
         """
         # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree, error_message = xml_util.parse_xml( config )
+        tree, parse_error = xml_util.parse_xml( config )
         if tree is None:
-            return False, None, error_message
+            return False, None, str( parse_error )
         root = tree.getroot()
         root_altered = False
         new_root = copy.deepcopy( root )
@@ -195,9 +195,9 @@ class ToolDependencyAttributeHandler( object ):
         altered = False
         error_message = ''
         # Make sure we're looking at a valid tool_dependencies.xml file.
-        tree, error_message = xml_util.parse_xml( tool_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( tool_dependencies_config )
         if tree is None:
-            return False, None, error_message
+            return False, None, str( parse_error )
         root = tree.getroot()
         altered, new_root, error_message = tah.process_config( root )
         return altered, new_root, error_message

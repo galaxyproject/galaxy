@@ -3,6 +3,8 @@ import logging
 import os
 import tempfile
 
+from galaxy import util
+from galaxy.util import xml_util
 from galaxy.tools import Tool
 from galaxy.tools import parameters
 from galaxy.tools.parameters import dynamic_options
@@ -13,7 +15,6 @@ from tool_shed.util import basic_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
-from tool_shed.util import xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -312,7 +313,7 @@ class ToolValidator( object ):
         message = ''
         tmp_tool_config = hg_util.get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
         if tmp_tool_config:
-            tool_element, error_message = xml_util.parse_xml( tmp_tool_config )
+            tool_element, parse_error = xml_util.parse_xml( tmp_tool_config )
             if tool_element is None:
                 return tool, message
             # Look for external files required by the tool config.

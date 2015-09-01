@@ -7,6 +7,7 @@ import urllib
 
 from galaxy import util
 from galaxy import web
+from galaxy.util import xml_util
 from galaxy.datatypes import checkers
 from galaxy.web.base.controller import BaseUIController
 from tool_shed.util.web_util import escape
@@ -22,7 +23,6 @@ from tool_shed.util import commit_util
 from tool_shed.util import hg_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import repository_content_util
-from tool_shed.util import xml_util
 
 from galaxy import eggs
 eggs.require( 'mercurial' )

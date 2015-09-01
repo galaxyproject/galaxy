@@ -4,7 +4,7 @@ Contains OpenID provider functionality
 
 import os
 import logging
-from galaxy.util import parse_xml, string_as_bool
+from galaxy.util import xml_util, string_as_bool
 from galaxy.util.odict import odict
 
 
@@ -18,7 +18,8 @@ class OpenIDProvider( object ):
     '''An OpenID Provider object.'''
     @classmethod
     def from_file( cls, filename ):
-        return cls.from_elem( parse_xml( filename ).getroot() )
+        tree, parse_error = xml_util.parse_xml( filename )
+        return cls.from_elem( tree.getroot() )
 
     @classmethod
     def from_elem( cls, xml_root ):
@@ -105,10 +106,11 @@ class OpenIDProviders( object ):
 
     @classmethod
     def from_file( cls, filename ):
-        try:
-            return cls.from_elem( parse_xml( filename ).getroot() )
-        except Exception, e:
-            log.error( 'Failed to load OpenID Providers: %s' % ( e ) )
+        tree, parse_error = xml_util.parse_xml( filename )
+        if parse_error is not None:
+            return cls.from_elem( tree.getroot() )
+        else:
+            log.exception( 'Failed to load OpenID Providers: %s' % ( prase_error ) )
             return cls()
 
     @classmethod

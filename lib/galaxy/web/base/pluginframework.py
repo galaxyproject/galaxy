@@ -15,6 +15,7 @@ import imp
 from galaxy import util
 from galaxy.util import odict
 from galaxy.util import bunch
+from galaxy.util import xml_util
 
 import pkg_resources
 pkg_resources.require( 'MarkupSafe' )
@@ -422,7 +423,7 @@ class PageServingPluginManager( PluginManager ):
         :param  base_directory:     path prefixed to new, relative template paths
         """
         additional_paths = []
-        xml_tree = util.parse_xml( config_filepath )
+        xml_tree, parse_error = xml_util.parse_xml( config_filepath )
         paths_list = xml_tree.getroot()
         for rel_path_elem in paths_list.findall( 'path' ):
             if rel_path_elem.text is not None:

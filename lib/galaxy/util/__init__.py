@@ -168,18 +168,6 @@ def unique_id(KEY_SIZE=128):
     return md5(str( random.getrandbits( KEY_SIZE ) )).hexdigest()
 
 
-def parse_xml( fname ):
-    """Returns a parsed xml tree"""
-    # handle deprecation warning for XMLParsing a file with DOCTYPE
-    class DoctypeSafeCallbackTarget( ElementTree.TreeBuilder ):
-        def doctype( *args ):
-            pass
-    tree = ElementTree.ElementTree()
-    root = tree.parse( fname, parser=ElementTree.XMLParser( target=DoctypeSafeCallbackTarget() ) )
-    ElementInclude.include( root )
-    return tree
-
-
 def parse_xml_string(xml_string):
     tree = ElementTree.fromstring(xml_string)
     return tree

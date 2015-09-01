@@ -3,6 +3,7 @@ import json
 import os
 
 from galaxy import util
+from galaxy.util import xml_util
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.tools.data import TabularToolDataTable
@@ -34,10 +35,9 @@ class DataManagers( object ):
             self.load_from_xml( self.app.config.shed_data_manager_config_file, store_tool_path=False, replace_existing=True )
 
     def load_from_xml( self, xml_filename, store_tool_path=True, replace_existing=False ):
-        try:
-            tree = util.parse_xml( xml_filename )
-        except Exception, e:
-            log.error( 'There was an error parsing your Data Manager config file "%s": %s' % ( xml_filename, e ) )
+        tree, parse_error = xml_util.parse_xml( xml_filename )
+        if parse_error is not None:
+            log.exception( 'There was an error parsing your Data Manager config file "%s"' % xml_filename )
             return  # we are not able to load any data managers
         root = tree.getroot()
         if root.tag != 'data_managers':
@@ -158,10 +158,11 @@ class DataManager( object ):
                 log.warning( 'Could not determine tool shed repository from database. This should only ever happen when running tests.' )
                 # we'll set tool_path manually here from shed_conf_file
                 tool_shed_repository_id = None
-                try:
-                    tool_path = util.parse_xml( elem.get( 'shed_conf_file' ) ).getroot().get( 'tool_path', tool_path )
-                except Exception, e:
-                    log.error( 'Error determining tool_path for Data Manager during testing: %s', e )
+                shed_conf, parse_error = xml_util.parse_xml( elem.get( 'shed_conf_file' ) )
+                if parse_error is not None:
+                    log.exception( 'Error determining tool_path for Data Manager during testing.' )
+                else:
+                    tool_path = shed_conf.getroot().get( 'tool_path', tool_path )
             else:
                 tool_shed_repository_id = self.data_managers.app.security.encode_id( tool_shed_repository.id )
             # use shed_conf_file to determine tool_path
