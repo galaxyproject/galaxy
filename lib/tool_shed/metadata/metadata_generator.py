@@ -123,6 +123,7 @@ class MetadataGenerator( object ):
         metadata_dict[ 'data_manager' ] = data_manager_metadata
         tree, parse_error = xml_util.parse_xml( data_manager_config_filename, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             # We are not able to load any data managers.
             data_manager_metadata[ 'error_messages' ].append( str( parse_error ) )
             return metadata_dict
@@ -193,6 +194,7 @@ class MetadataGenerator( object ):
         """Update the received metadata_dict with information from the parsed datatypes_config."""
         tree, parse_error = xml_util.parse_xml( datatypes_config, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             return metadata_dict
         root = tree.getroot()
         repository_datatype_code_files = []
@@ -587,6 +589,7 @@ class MetadataGenerator( object ):
         # Make sure we're looking at a valid repository_dependencies.xml file.
         tree, parse_error = xml_util.parse_xml( repository_dependencies_config, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             xml_is_valid = False
         else:
             root = tree.getroot()
@@ -724,6 +727,7 @@ class MetadataGenerator( object ):
             original_valid_tool_dependencies_dict = None
         tree, parse_error = xml_util.parse_xml( tool_dependencies_config, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             return metadata_dict, str( parse_error )
         root = tree.getroot()
 

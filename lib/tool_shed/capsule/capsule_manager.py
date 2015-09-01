@@ -523,6 +523,7 @@ class ImportRepositoryManager( object ):
         error_message = ''
         manifest_tree, parse_error = xml_util.parse_xml( manifest_file_path, preserve_comments=True )
         if parse_error:
+            log.exception( str( parse_error ) )
             return archives, str( parse_error )
         manifest_root = manifest_tree.getroot()
         for elem in manifest_root:
@@ -634,6 +635,7 @@ class ImportRepositoryManager( object ):
         repository_info_dicts = []
         manifest_tree, parse_error = xml_util.parse_xml( manifest_file_path, preserve_comments=True )
         if parse_error:
+            log.exception( str( parse_error ) )
             return repository_info_dicts, str( parse_error )
         manifest_root = manifest_tree.getroot()
         for elem in manifest_root:
@@ -875,6 +877,7 @@ class ImportRepositoryManager( object ):
         export_info_file_path = os.path.join( file_path, 'export_info.xml' )
         export_info_tree, parse_error = xml_util.parse_xml( export_info_file_path, preserve_comments=True )
         if parse_error:
+            log.exception( str( parse_error ) )
             capsule_dict[ 'error_message' ] = str( parse_error )
             capsule_dict[ 'status' ] = 'error'
             return capsule_dict

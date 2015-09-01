@@ -17,6 +17,7 @@ class Registry( object ):
             # Parse tool_sheds_conf.xml
             tree, parse_error = xml_util.parse_xml( config, preserve_comments=True )
             if tree is None:
+                log.exception( str( parse_error ) )
                 log.warning( "Unable to load references to tool sheds defined in file %s" % str( config ) )
             else:
                 root = tree.getroot()

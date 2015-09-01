@@ -30,6 +30,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
     migrated_tool_configs_dict = odict()
     tree, parse_error = xml_util.parse_xml( tools_xml_file_path, preserve_comments=True )
     if tree is None:
+        log.exception( str( parse_error ) )
         return False, odict()
     root = tree.getroot()
     tool_shed = root.get( 'name' )
@@ -145,6 +146,7 @@ def get_non_shed_tool_panel_configs( app ):
         # <toolbox tool_path="../shed_tools">
         tree, parse_error = xml_util.parse_xml( config_filename, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             continue
         root = tree.getroot()
         tool_path = root.get( 'tool_path', None )

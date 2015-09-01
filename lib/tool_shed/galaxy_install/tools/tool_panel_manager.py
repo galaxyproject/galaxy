@@ -181,6 +181,7 @@ class ToolPanelManager( object ):
         # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict.
         tree, parse_error = xml_util.parse_xml( shed_tool_conf, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             return tool_panel_dict
         root = tree.getroot()
         for elem in root:

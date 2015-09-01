@@ -575,6 +575,7 @@ class InstalledRepositoryManager( object ):
         for tool_config in self.tool_configs:
             tree, parse_error = xml_util.parse_xml( tool_config, preserve_comments=True )
             if tree is None:
+                log.exception( str( parse_error ) )
                 return None
             root = tree.getroot()
             tool_path = root.get( 'tool_path', None )

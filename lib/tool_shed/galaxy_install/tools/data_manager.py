@@ -44,6 +44,7 @@ class DataManagerHandler( object ):
             # Load existing data managers.
             tree, parse_error = xml_util.parse_xml( shed_data_manager_conf_filename, preserve_comments=True )
             if tree is None:
+                log.exception( str( parse_error ) )
                 return rval
             config_elems = [ elem for elem in tree.getroot() ]
             repo_data_manager_conf_filename = metadata_dict['data_manager'].get( 'config_filename', None )
@@ -55,6 +56,7 @@ class DataManagerHandler( object ):
             repo_data_manager_conf_filename = os.path.join( relative_repo_data_manager_dir, repo_data_manager_conf_filename )
             tree, parse_error = xml_util.parse_xml( repo_data_manager_conf_filename, preserve_comments=True )
             if tree is None:
+                log.exception( str( parse_error ) )
                 return rval
             root = tree.getroot()
             for elem in root:

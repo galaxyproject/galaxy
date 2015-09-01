@@ -83,6 +83,7 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
     tool_dependencies_config = hg_util.get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
     tree, parse_error = xml_util.parse_xml( tool_dependencies_config, preserve_comments=True )
     if tree is None:
+        log.exception( str( parse_error ) )
         return tool_dependency_objects
     root = tree.getroot()
     for elem in root:

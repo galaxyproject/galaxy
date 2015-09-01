@@ -315,6 +315,7 @@ class ToolValidator( object ):
         if tmp_tool_config:
             tool_element, parse_error = xml_util.parse_xml( tmp_tool_config, preserve_comments=True )
             if tool_element is None:
+                log.exception( str( parse_error ) )
                 return tool, message
             # Look for external files required by the tool config.
             tmp_code_files = []

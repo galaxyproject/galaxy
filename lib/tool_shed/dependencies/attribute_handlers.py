@@ -160,6 +160,7 @@ class RepositoryDependencyAttributeHandler( object ):
         # Make sure we're looking at a valid repository_dependencies.xml file.
         tree, parse_error = xml_util.parse_xml( config, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             return False, None, str( parse_error )
         root = tree.getroot()
         root_altered = False
@@ -197,6 +198,7 @@ class ToolDependencyAttributeHandler( object ):
         # Make sure we're looking at a valid tool_dependencies.xml file.
         tree, parse_error = xml_util.parse_xml( tool_dependencies_config, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             return False, None, str( parse_error )
         root = tree.getroot()
         altered, new_root, error_message = tah.process_config( root )

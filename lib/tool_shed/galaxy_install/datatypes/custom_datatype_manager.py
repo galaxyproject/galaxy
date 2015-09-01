@@ -31,6 +31,7 @@ class CustomDatatypeLoader( object ):
         """
         tree, parse_error = xml_util.parse_xml( datatypes_config, preserve_comments=True )
         if tree is None:
+            log.exception( str( parse_error ) )
             return None, None
         datatypes_config_root = tree.getroot()
         registration = datatypes_config_root.find( 'registration' )
