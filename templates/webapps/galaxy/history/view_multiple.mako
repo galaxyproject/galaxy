@@ -2,12 +2,12 @@
 <%namespace file="/galaxy_client_app.mako" name="galaxy_client"/>
 
 <%def name="title()">
-    ${_('Histories')}
+    ${_( 'Histories' )}
 </%def>
 
 ## ----------------------------------------------------------------------------
 <%def name="stylesheets()">
-    ${parent.stylesheets()}
+    ${ parent.stylesheets() }
     <style type="text/css">
     /* reset */
     html, body {
@@ -29,27 +29,21 @@ define( 'app', function(){
         'mvc/history/multi-panel'
     ], function( HISTORY_MODEL, MULTI_PANEL ){
         $(function(){
-            window.historyJSONArray = bootstrapped.historyJSONArray;
+            histories = new HISTORY_MODEL.HistoryCollection( bootstrapped.histories, {
+                includeDeleted  : bootstrapped.includingDeleted,
+                order           : bootstrapped.order,
+                currentHistoryId: '${histories[0][ "id" ]}'
+            });
 
-            var historyModels = [];
-            historyJSONArray.forEach( function( historyJSON ){
-                if( !historyJSON.purged ){
-                    historyModels.push( new HISTORY_MODEL.History( historyJSON ) );
-                }
-            });
-            histories = new HISTORY_MODEL.HistoryCollection( historyModels, {
-                includeDeleted : bootstrapped.includingDeleted
-            });
             multipanel = new MULTI_PANEL.MultiPanelColumns({
                 el                          : $( '#center' ).get(0),
                 histories                   : histories,
-                order                       : bootstrapped.order,
-                currentHistoryId            : '${current_history_id}'
+                perPage                     : bootstrapped.limit
             }).render( 0 );
         });
     });
 });
 </script>
-${ galaxy_client.load( app='app', historyJSONArray=histories,
-    includingDeleted=include_deleted_histories, order=order ) }
+${ galaxy_client.load( app='app', histories=histories,
+    includingDeleted=include_deleted_histories, order=order, limit=limit ) }
 </%def>

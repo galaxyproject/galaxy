@@ -2,7 +2,6 @@ define([
     'utils/add-logging',
     'utils/localization'
 ], function( addLogging, _l ){
-//ASSUMES: backbone
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
  *      Designed to allow switching an objects log output off/on at one central
@@ -33,7 +32,7 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
     // replace null with console (if available) to see all logs
     logger       : null,
     _logNamespace : '?',
-    
+
     /** Output log messages/arguments to logger.
      *  @param {Arguments} ... (this function is variadic)
      *  @returns undefined if not this.logger
@@ -446,7 +445,7 @@ var SelectableViewMixin = {
         /** is the view currently selected? */
         this.selected   = attributes.selected || false;
     },
-    
+
     /** $el sub-element where the selector is rendered and what can be clicked to select. */
     $selector : function(){
         return this.$( '.selector' );
