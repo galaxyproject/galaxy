@@ -121,7 +121,7 @@ class MetadataGenerator( object ):
                                   'invalid_data_managers': invalid_data_managers,
                                   'error_messages': [] }
         metadata_dict[ 'data_manager' ] = data_manager_metadata
-        tree, parse_error = xml_util.parse_xml( data_manager_config_filename )
+        tree, parse_error = xml_util.parse_xml( data_manager_config_filename, preserve_comments=True )
         if tree is None:
             # We are not able to load any data managers.
             data_manager_metadata[ 'error_messages' ].append( str( parse_error ) )
@@ -191,7 +191,7 @@ class MetadataGenerator( object ):
 
     def generate_datatypes_metadata( self, tv, repository_files_dir, datatypes_config, metadata_dict ):
         """Update the received metadata_dict with information from the parsed datatypes_config."""
-        tree, parse_error = xml_util.parse_xml( datatypes_config )
+        tree, parse_error = xml_util.parse_xml( datatypes_config, preserve_comments=True )
         if tree is None:
             return metadata_dict
         root = tree.getroot()
@@ -406,7 +406,7 @@ class MetadataGenerator( object ):
                                      checkers.check_zip( full_path ) ):
                                 # Make sure we're looking at a tool config and not a display application
                                 # config or something else.
-                                element_tree, parse_error = xml_util.parse_xml( full_path )
+                                element_tree, parse_error = xml_util.parse_xml( full_path, preserve_comments=True )
                                 if element_tree is None:
                                     is_tool = False
                                 else:
@@ -585,7 +585,7 @@ class MetadataGenerator( object ):
         """
         error_message = ''
         # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree, parse_error = xml_util.parse_xml( repository_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( repository_dependencies_config, preserve_comments=True )
         if tree is None:
             xml_is_valid = False
         else:
@@ -722,7 +722,7 @@ class MetadataGenerator( object ):
             original_valid_tool_dependencies_dict = original_repository_metadata.get( 'tool_dependencies', None )
         else:
             original_valid_tool_dependencies_dict = None
-        tree, parse_error = xml_util.parse_xml( tool_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( tool_dependencies_config, preserve_comments=True )
         if tree is None:
             return metadata_dict, str( parse_error )
         root = tree.getroot()

@@ -145,7 +145,7 @@ class ToolDataTableManager( object ):
         tool_data_table_conf_filename = os.path.join( target_dir, TOOL_DATA_TABLE_FILE_NAME )
         elems = []
         if os.path.exists( tool_data_table_conf_filename ):
-            tree, parse_error = xml_util.parse_xml( tool_data_table_conf_filename )
+            tree, parse_error = xml_util.parse_xml( tool_data_table_conf_filename, preserve_comments=True )
             if tree:
                 for elem in tree.getroot():
                     # Append individual table elems or other elemes, but not tables elems.

@@ -42,7 +42,7 @@ class DataManagerHandler( object ):
             for tool_tup in repository_tools_tups:
                 repository_tools_by_guid[ tool_tup[ 1 ] ] = dict( tool_config_filename=tool_tup[ 0 ], tool=tool_tup[ 2 ] )
             # Load existing data managers.
-            tree, parse_error = xml_util.parse_xml( shed_data_manager_conf_filename )
+            tree, parse_error = xml_util.parse_xml( shed_data_manager_conf_filename, preserve_comments=True )
             if tree is None:
                 return rval
             config_elems = [ elem for elem in tree.getroot() ]
@@ -53,7 +53,7 @@ class DataManagerHandler( object ):
             data_manager_config_has_changes = False
             relative_repo_data_manager_dir = os.path.join( shed_config_dict.get( 'tool_path', '' ), relative_install_dir )
             repo_data_manager_conf_filename = os.path.join( relative_repo_data_manager_dir, repo_data_manager_conf_filename )
-            tree, parse_error = xml_util.parse_xml( repo_data_manager_conf_filename )
+            tree, parse_error = xml_util.parse_xml( repo_data_manager_conf_filename, preserve_comments=True )
             if tree is None:
                 return rval
             root = tree.getroot()
@@ -121,7 +121,7 @@ class DataManagerHandler( object ):
         metadata_dict = repository.metadata
         if metadata_dict and 'data_manager' in metadata_dict:
             shed_data_manager_conf_filename = self.app.config.shed_data_manager_config_file
-            tree, parse_error = xml_util.parse_xml( shed_data_manager_conf_filename )
+            tree, parse_error = xml_util.parse_xml( shed_data_manager_conf_filename, preserve_comments=True )
             if tree:
                 root = tree.getroot()
                 assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % ( shed_data_manager_conf_filename )

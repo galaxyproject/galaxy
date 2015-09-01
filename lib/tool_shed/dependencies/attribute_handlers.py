@@ -158,7 +158,7 @@ class RepositoryDependencyAttributeHandler( object ):
         repository is being exported.
         """
         # Make sure we're looking at a valid repository_dependencies.xml file.
-        tree, parse_error = xml_util.parse_xml( config )
+        tree, parse_error = xml_util.parse_xml( config, preserve_comments=True )
         if tree is None:
             return False, None, str( parse_error )
         root = tree.getroot()
@@ -195,7 +195,7 @@ class ToolDependencyAttributeHandler( object ):
         altered = False
         error_message = ''
         # Make sure we're looking at a valid tool_dependencies.xml file.
-        tree, parse_error = xml_util.parse_xml( tool_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( tool_dependencies_config, preserve_comments=True )
         if tree is None:
             return False, None, str( parse_error )
         root = tree.getroot()

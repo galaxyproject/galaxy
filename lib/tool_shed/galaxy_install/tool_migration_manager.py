@@ -59,7 +59,7 @@ class ToolMigrationManager( object ):
         self.proprietary_tool_panel_elems = self.get_proprietary_tool_panel_elems( latest_migration_script_number )
         # Set the location where the repositories will be installed by retrieving the tool_path
         # setting from migrated_tools_config.
-        tree, parse_error = xml_util.parse_xml( migrated_tools_config )
+        tree, parse_error = xml_util.parse_xml( migrated_tools_config, preserve_comments=True )
         if tree is None:
             print str( parse_error )
         else:
@@ -68,7 +68,7 @@ class ToolMigrationManager( object ):
             print "Repositories will be installed into configured tool_path location ", str( self.tool_path )
             # Parse tool_shed_install_config to check each of the tools.
             self.tool_shed_install_config = tool_shed_install_config
-            tree, parse_error = xml_util.parse_xml( tool_shed_install_config )
+            tree, parse_error = xml_util.parse_xml( tool_shed_install_config, preserve_comments=True )
             if tree is None:
                 print str( parse_error )
             else:
@@ -217,7 +217,7 @@ class ToolMigrationManager( object ):
         """Eliminate all entries in all non-shed-related tool panel configs for all tool config file names in the received tool_configs_to_filter."""
         for proprietary_tool_conf in self.proprietary_tool_confs:
             persist_required = False
-            tree, parse_error = xml_util.parse_xml( proprietary_tool_conf )
+            tree, parse_error = xml_util.parse_xml( proprietary_tool_conf, preserve_comments=True )
             if tree:
                 root = tree.getroot()
                 for elem in root:
@@ -327,7 +327,7 @@ class ToolMigrationManager( object ):
         tools_xml_file_path = os.path.abspath( os.path.join( 'scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number ) )
         # Parse the XML and load the file attributes for later checking against the integrated elements from self.proprietary_tool_confs.
         migrated_tool_configs = []
-        tree, parse_error = xml_util.parse_xml( tools_xml_file_path )
+        tree, parse_error = xml_util.parse_xml( tools_xml_file_path, preserve_comments=True )
         if tree is None:
             return []
         root = tree.getroot()
@@ -338,7 +338,7 @@ class ToolMigrationManager( object ):
         # Parse each file in self.proprietary_tool_confs and generate the integrated list of tool panel Elements that contain them.
         tool_panel_elems = []
         for proprietary_tool_conf in self.proprietary_tool_confs:
-            tree, parse_error = xml_util.parse_xml( proprietary_tool_conf )
+            tree, parse_error = xml_util.parse_xml( proprietary_tool_conf, preserve_comments=True )
             if tree is None:
                 return []
             root = tree.getroot()

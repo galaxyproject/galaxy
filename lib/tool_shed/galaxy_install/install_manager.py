@@ -160,7 +160,7 @@ class InstallToolDependencyManager( object ):
         installed_packages = []
         tag_manager = TagManager( self.app )
         # Parse the tool_dependencies.xml config.
-        tree, parse_error = xml_util.parse_xml( tool_dependencies_config )
+        tree, parse_error = xml_util.parse_xml( tool_dependencies_config, preserve_comments=True )
         if tree is None:
             log.debug( "The received tool_dependencies.xml file is likely invalid: %s" % str( parse_error ) )
             return installed_packages

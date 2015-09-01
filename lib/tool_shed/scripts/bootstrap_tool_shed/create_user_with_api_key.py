@@ -73,7 +73,7 @@ def create_user( app ):
     email = None
     password = None
     username = None
-    tree, parse_error = xml_util.parse_xml( user_info_config )
+    tree, parse_error = xml_util.parse_xml( user_info_config, preserve_comments=True )
     if tree is None:
         print "The XML file ", user_info_config, " seems to be invalid, using defaults."
         email = 'admin@test.org'

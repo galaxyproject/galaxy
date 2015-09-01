@@ -313,7 +313,7 @@ class ToolValidator( object ):
         message = ''
         tmp_tool_config = hg_util.get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
         if tmp_tool_config:
-            tool_element, parse_error = xml_util.parse_xml( tmp_tool_config )
+            tool_element, parse_error = xml_util.parse_xml( tmp_tool_config, preserve_comments=True )
             if tool_element is None:
                 return tool, message
             # Look for external files required by the tool config.

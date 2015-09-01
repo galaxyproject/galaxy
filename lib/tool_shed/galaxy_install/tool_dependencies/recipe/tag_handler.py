@@ -290,7 +290,7 @@ class Repository( RecipeTag, SyncDatabase ):
             os.makedirs( dependent_install_dir )
         required_tool_dependency_env_file_path = None
         if tool_dependencies_config:
-            required_td_tree, parse_error = xml_util.parse_xml( tool_dependencies_config )
+            required_td_tree, parse_error = xml_util.parse_xml( tool_dependencies_config, preserve_comments=True )
             if required_td_tree:
                 required_td_root = required_td_tree.getroot()
                 for required_td_elem in required_td_root:

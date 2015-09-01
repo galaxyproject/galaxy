@@ -174,7 +174,7 @@ class InstalledRepositoryMetadataManager( metadata_generator.MetadataGenerator )
                                                                           tool,
                                                                           None )
         config_elems = []
-        tree, parse_error = xml_util.parse_xml( shed_tool_conf )
+        tree, parse_error = xml_util.parse_xml( shed_tool_conf, preserve_comments=True )
         if tree:
             root = tree.getroot()
             for elem in root:

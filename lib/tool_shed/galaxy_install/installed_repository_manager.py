@@ -573,7 +573,7 @@ class InstalledRepositoryManager( object ):
 
     def get_repository_install_dir( self, tool_shed_repository ):
         for tool_config in self.tool_configs:
-            tree, parse_error = xml_util.parse_xml( tool_config )
+            tree, parse_error = xml_util.parse_xml( tool_config, preserve_comments=True )
             if tree is None:
                 return None
             root = tree.getroot()

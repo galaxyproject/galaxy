@@ -29,7 +29,7 @@ class CustomDatatypeLoader( object ):
         occurring after the datatypes registry has been initialized, the registry's contents
         cannot be overridden by conflicting data types.
         """
-        tree, parse_error = xml_util.parse_xml( datatypes_config )
+        tree, parse_error = xml_util.parse_xml( datatypes_config, preserve_comments=True )
         if tree is None:
             return None, None
         datatypes_config_root = tree.getroot()

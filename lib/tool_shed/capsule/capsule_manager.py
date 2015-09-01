@@ -521,7 +521,7 @@ class ImportRepositoryManager( object ):
         """
         archives = []
         error_message = ''
-        manifest_tree, parse_error = xml_util.parse_xml( manifest_file_path )
+        manifest_tree, parse_error = xml_util.parse_xml( manifest_file_path, preserve_comments=True )
         if parse_error:
             return archives, str( parse_error )
         manifest_root = manifest_tree.getroot()
@@ -605,7 +605,7 @@ class ImportRepositoryManager( object ):
         Parse the export_info.xml file contained within the capsule and return a dictionary
         containing its entries.
         """
-        export_info_tree, parse_error = xml_util.parse_xml( export_info_file_path )
+        export_info_tree, parse_error = xml_util.parse_xml( export_info_file_path, preserve_comments=True )
         export_info_root = export_info_tree.getroot()
         export_info_dict = {}
         for elem in export_info_root:
@@ -632,7 +632,7 @@ class ImportRepositoryManager( object ):
         each exported repository archive contained within the capsule.
         """
         repository_info_dicts = []
-        manifest_tree, parse_error = xml_util.parse_xml( manifest_file_path )
+        manifest_tree, parse_error = xml_util.parse_xml( manifest_file_path, preserve_comments=True )
         if parse_error:
             return repository_info_dicts, str( parse_error )
         manifest_root = manifest_tree.getroot()
@@ -873,7 +873,7 @@ class ImportRepositoryManager( object ):
         file_path = encoding_util.tool_shed_decode( encoded_file_path )
         # The capsule must contain a valid XML file named export_info.xml.
         export_info_file_path = os.path.join( file_path, 'export_info.xml' )
-        export_info_tree, parse_error = xml_util.parse_xml( export_info_file_path )
+        export_info_tree, parse_error = xml_util.parse_xml( export_info_file_path, preserve_comments=True )
         if parse_error:
             capsule_dict[ 'error_message' ] = str( parse_error )
             capsule_dict[ 'status' ] = 'error'
