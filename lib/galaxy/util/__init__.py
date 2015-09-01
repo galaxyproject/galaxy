@@ -1252,13 +1252,13 @@ def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
 
 
-def parse_int(value, min=None, max=None, default=None):
+def parse_int(value, min_val=None, max_val=None, default=None):
     try:
         value = int(value)
-        if min is not None and value < min:
-            return min
-        if max is not None and value > max:
-            return max
+        if min_val is not None and value < min_val:
+            return min_val
+        if max_val is not None and value > max_val:
+            return max_val
         return value
     except ValueError:
         return default
