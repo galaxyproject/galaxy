@@ -25,15 +25,37 @@ ${get_css()}
         </h4>
         <table align="center" width="60%" class="colored">
             %if len( workflows ) == 0:
-                <tr><td colspan="2">There are no workflows for user "${_email}"</td></tr>
+                <tr>
+                    <td colspan="2">
+                        There are no workflows for user "${_email}"
+                    </td>
+                </tr>
             %else:
                 <tr class="header">
                     <td class="third_width">
-                        ${get_sort_url(sort_id, order, 'date', 'workflows', 'user_per_month', 'Month', email=util.sanitize_text( email ))}
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'date',
+                                'workflows',
+                                'user_per_month',
+                                'Month',
+                                email=util.sanitize_text( email ))
+                        }
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     <td class="third_width">
-                        ${get_sort_url(sort_id, order, 'total_workflows', 'workflows', 'user_per_month', 'Total', email=util.sanitize_text( email ))}
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'total_workflows',
+                                'workflows',
+                                'user_per_month',
+                                'Total',
+                                email=util.sanitize_text( email ))
+                        }
                         <span class='dir_arrow total_workflows'>${arrow}</span>
                     </td>
                     <td></td>
@@ -52,7 +74,13 @@ ${get_css()}
                     %endif
                         <td>${month}</td>
                         <td>${total}</td>
-                        ${make_sparkline(key, trends[key], "bar", "/ day")}
+                        ${
+                            make_sparkline(
+                                key,
+                                trends[key],
+                                "bar",
+                                "/ day")
+                        }
                         <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>
