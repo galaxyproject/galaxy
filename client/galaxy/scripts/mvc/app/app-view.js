@@ -49,11 +49,13 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
             // build panel content
             var historyPanel = new HistoryPanel( options );
-            this.$('#right-panel').append( historyPanel.$el );
             var toolPanel = new ToolPanel( options );
+            var centerPanel = new CenterPanel();
+
+            // append panel content
+            this.$('#right-panel').append( historyPanel.$el );
             this.$('#left-panel').append( toolPanel.$el );
-            //var centerPanel = new CenterPanel();
-            //this.$el.append( centerPanel.$el );
+            this.$('#center-panel').append( centerPanel.$el );
 
             // add upload plugin
             Galaxy.upload = new Upload( options );
@@ -61,12 +63,12 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
         _template: function() {
             return  '<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">' +
-                        '<div id="background"/>' +
+                        //'<div id="background"/>' +
                         '<div id="masthead" class="navbar navbar-fixed-top navbar-inverse"/>' +
-                        '<div id="messagebox"/>' +
-                        '<div id="inactivebox" class="panel-warning-message"/>' +
+                        //'<div id="messagebox"/>' +
+                        //'<div id="inactivebox" class="panel-warning-message"/>' +
                         '<div id="left-panel"/>' +
-                        '<div id="center" class="inbound"/>' +
+                        '<div id="center-panel" class="inbound"/>' +
                         '<div id="right-panel"/>' +
                     '</div>';
         }

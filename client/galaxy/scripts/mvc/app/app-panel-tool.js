@@ -89,10 +89,10 @@ define(['utils/utils', 'mvc/tools'],
 
 
             var lp = new Panel( {
-                panel   : this.$( '#left' ),
+                panel   : this.$el,
                 center  : this.$( '#center' ),
-                drag    : this.$( '#left > .unified-panel-footer > .drag' ),
-                toggle  : this.$( '#left > .unified-panel-footer > .panel-collapse' )
+                drag    : this.$( '.unified-panel-footer > .drag' ),
+                toggle  : this.$( '.unified-panel-footer > .panel-collapse' )
             } );
         },
 

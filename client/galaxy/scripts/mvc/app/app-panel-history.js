@@ -28,10 +28,10 @@ define(['utils/utils', 'mvc/history/options-menu', 'mvc/history/history-panel-ed
             currPanel.loadCurrentHistory();
             Galaxy.currHistoryPanel = currPanel;
             var rp = new Panel( {
-                panel   : this.$( '#right' ),
+                panel   : this.$el,
                 center  : this.$( '#center' ),
-                drag    : this.$( '#right > .unified-panel-footer > .drag' ),
-                toggle  : this.$( '#right > .unified-panel-footer > .panel-collapse' ),
+                drag    : this.$( '.unified-panel-footer > .drag' ),
+                toggle  : this.$( '.unified-panel-footer > .panel-collapse' ),
                 right   : true
             } );
         },
