@@ -3,18 +3,14 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css("tool_menu")}
-    <style>
-        #right .unified-panel-body {
-            background: none repeat scroll 0 0 #DFE5F9;
-            overflow: auto;
-            padding: 0;
-        }
-    </style>
+</%def>
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${h.templates("tool_link", "panel_section", "tool_search")}
 </%def>
 <%
-    from markupsafe import escape
-
     ## get configuration
+    from markupsafe import escape
     app = trans.app
     app_config = {
         'brand'                     : app.config.get("brand", ""),
@@ -34,10 +30,14 @@
         'terms_url'                 : app.config.get("terms_url", ""),
         'allow_user_creation'       : app.config.allow_user_creation,
         'logo_url'                  : h.url_for(app.config.get( 'logo_url', '/')),
+        'spinner_url'               : h.url_for('/static/images/loading_small_white_bg.gif'),
+        'search_url'                : h.url_for(controller='root', action='tool_search'),
         'is_admin_user'             : trans.user_is_admin(),
         'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
         'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
         'datatypes_disable_auto'    : app.config.get_bool("datatypes_disable_auto",  False),
+        'toolbox'                   : trans.app.toolbox.to_dict( trans, in_panel=False ),
+        'toolbox_in_panel'          : trans.app.toolbox.to_dict( trans ),
         'user'          : {
             'requests'  : bool(trans.user and (trans.user.requests or trans.app.security_agent.get_accessible_request_types(trans, trans.user))),
             'email'     : escape( trans.user.email ) if (trans.user) else "",
@@ -46,6 +46,13 @@
         }
     }
 %>
+<style>
+    #right .unified-panel-body {
+        background: none repeat scroll 0 0 #DFE5F9;
+        overflow: auto;
+        padding: 0;
+    }
+</style>
 <script>
     require(['mvc/app/app-view'], function(App){
         $(function(){

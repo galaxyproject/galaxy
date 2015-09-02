@@ -56,9 +56,10 @@
         "libs/underscore",
         "libs/backbone/backbone",
         "libs/handlebars.runtime",
+        "libs/require",
         "galaxy.base",
         "galaxy.panels",
-        "libs/require"
+        "galaxy.autocom_tagging"
     )}
 
     <script type="text/javascript">
