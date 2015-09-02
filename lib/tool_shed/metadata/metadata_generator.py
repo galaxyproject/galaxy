@@ -648,8 +648,8 @@ class MetadataGenerator( object ):
                 for param_name, values in ttb.inputs.iteritems():
                     # Handle improperly defined or strange test parameters and values.
                     if param_name is not None:
-                        if values is None:
-                            # An example is the 3rd test in http://testtoolshed.g2.bx.psu.edu/view/devteam/samtools_rmdup
+                        if values in [ None, False ]:
+                            # An example is the third test in http://testtoolshed.g2.bx.psu.edu/view/devteam/samtools_rmdup
                             # which is defined as:
                             # <test>
                             #    <param name="input1" value="1.bam" ftype="bam" />
