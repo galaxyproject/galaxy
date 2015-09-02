@@ -46,15 +46,11 @@ class Py27CommentedTreeBuilder( Py27DoctypeSafeCallbackTarget, XmlET.TreeBuilder
 
 
 def create_and_write_tmp_file( elems, use_indent=False ):
-    tmp_str = ''
-    for elem in listify( elems ):
-        tmp_str += xml_to_string( elem, use_indent=use_indent )
     fh = tempfile.NamedTemporaryFile( 'wb', prefix="tmp-xmlutil-cawrf"  )
     tmp_filename = fh.name
-    fh.close()
-    fh = open( tmp_filename, 'wb' )
     fh.write( '<?xml version="1.0"?>\n' )
-    fh.write( tmp_str )
+    for elem in listify( elems ):
+        fh.write( xml_to_string( elem, use_indent=use_indent ) )
     fh.close()
     return tmp_filename
 
