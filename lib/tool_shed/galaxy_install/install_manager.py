@@ -797,7 +797,7 @@ class InstallRepositoryManager( object ):
                 shed_tool_conf=shed_tool_conf,
                 tool_path=tool_path,
                 tool_panel_section_keys=tool_panel_section_keys,
-                repo_info_dicts=repo_info_dicts,
+                repo_info_dicts=filtered_repo_info_dicts,
                 install_tool_dependencies=install_tool_dependencies,
             )
             return self.install_repositories(tsr_ids, decoded_kwd, reinstalling=False)
