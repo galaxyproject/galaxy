@@ -8,17 +8,26 @@ import xml.etree.ElementTree
 log = logging.getLogger( __name__ )
 
 
-class DoctypeSafeCallbackTarget( XmlET.TreeBuilder ):
+class Py27DoctypeSafeCallbackTarget( XmlET.TreeBuilder ):
 
     def doctype( *args ):
         pass
 
 
-class Py26CommentedTreeBuilder( DoctypeSafeCallbackTarget, XmlET.XMLTreeBuilder ):
-    # Python 2.6 uses ElementTree 1.2.x.
+class Py26DoctypeSafeCallbackTarget( XmlET.XMLTreeBuilder ):
 
     def __init__( self, html=0, target=None ):
         XmlET.XMLTreeBuilder.__init__( self, html, target )
+
+    def doctype( *args ):
+        pass
+
+
+class Py26CommentedTreeBuilder( Py26DoctypeSafeCallbackTarget, XmlET.XMLTreeBuilder ):
+    # Python 2.6 uses ElementTree 1.2.x with old-style class definitions.
+
+    def __init__( self, html=0, target=None ):
+        Py26DoctypeSafeCallbackTarget.__init__( self, html, target )
         self._parser.CommentHandler = self.handle_comment
 
     def handle_comment( self, data ):
@@ -27,7 +36,7 @@ class Py26CommentedTreeBuilder( DoctypeSafeCallbackTarget, XmlET.XMLTreeBuilder 
         self._target.end( XmlET.Comment )
 
 
-class Py27CommentedTreeBuilder( DoctypeSafeCallbackTarget, XmlET.TreeBuilder ):
+class Py27CommentedTreeBuilder( Py27DoctypeSafeCallbackTarget, XmlET.TreeBuilder ):
     # Python 2.7 uses ElementTree 1.3.x.
 
     def comment( self, data ):
