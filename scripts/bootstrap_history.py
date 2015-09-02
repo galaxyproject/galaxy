@@ -82,17 +82,17 @@ Highlights
 
 New
   .. code-block:: shell
-  
+
       % git clone -b master https://github.com/galaxyproject/galaxy.git
 
 Update to latest stable release
   .. code-block:: shell
-  
+
       % git checkout master && pull --ff-only origin master
 
 Update to exact version
   .. code-block:: shell
-  
+
       % git checkout v%s
 
 
@@ -101,7 +101,7 @@ Update to exact version
 
 Upgrade
   .. code-block:: shell
-  
+
       % hg pull
       % hg update latest_%s
 
