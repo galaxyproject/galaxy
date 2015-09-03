@@ -38,35 +38,42 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 }).render();
             }
 
-            // append panel content
-            this._buildPanel( 'left', new Analysis['left']( options ) );
-            this._buildPanel( 'right', new Analysis['right']( options ) );
-            this.$('#center').append( ( new Analysis['center']( options ) ).$el );
+            // build page
+            this._buildPage( Analysis, options );
         },
 
-        _buildPanel: function( id, view ) {
-            var components = Utils.merge( view.components, {
-                header  : {
-                    title   : '',
-                    cls     : '',
-                    buttons : []
+        _buildPage: function( Cls, options ) {
+            var panel_ids = [ 'left', 'center', 'right' ];
+            for ( var i in panel_ids ) {
+                var id = panel_ids[ i ];
+                var view = new Cls[ id ]( options );
+                if ( id == 'center' ) {
+                    this.$('#center').append( view.$el );
+                } else {
+                    var components = Utils.merge( view.components, {
+                        header  : {
+                            title   : '',
+                            cls     : '',
+                            buttons : []
+                        }
+                    });
+                    var $panel = $( this._templatePanel( id ) );
+                    $panel.find('.panel-header-text').html( components.header.title );
+                    $panel.find('.unified-panel-header-inner').addClass( components.header.cls );
+                    for ( var i in components.header.buttons ) {
+                        $panel.find('.panel-header-buttons').append( components.header.buttons[ i ].$el );
+                    }
+                    $panel.find('.unified-panel-body').append( view.$el );
+                    var panel = new Panel( {
+                        center  : this.$( '#center' ),
+                        panel   : $panel,
+                        drag    : $panel.find('.unified-panel-footer > .drag' ),
+                        toggle  : $panel.find('.unified-panel-footer > .panel-collapse' ),
+                        right   : id == 'right'
+                    } );
+                    this.$el.append( $panel );
                 }
-            });
-            var $panel = $( this._templatePanel( id ) );
-            $panel.find('.panel-header-text').html( components.header.title );
-            $panel.find('.unified-panel-header-inner').addClass( components.header.cls );
-            for ( var i in components.header.buttons ) {
-                $panel.find('.panel-header-buttons').append( components.header.buttons[ i ].$el );
             }
-            $panel.find('.unified-panel-body').append( view.$el );
-            var panel = new Panel( {
-                center  : this.$( '#center' ),
-                panel   : $panel,
-                drag    : $panel.find('.unified-panel-footer > .drag' ),
-                toggle  : $panel.find('.unified-panel-footer > .panel-collapse' ),
-                right   : id == 'right'
-            } );
-            this.$el.append( $panel );
         },
 
         _templatePanel: function( id ) {
