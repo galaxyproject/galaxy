@@ -174,7 +174,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_my_writable_repositories( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -189,7 +189,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_my_writable_repositories_missing_tool_test_components( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -206,7 +206,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_my_writable_repositories_with_failing_tool_tests( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -225,7 +225,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_my_writable_repositories_with_invalid_tools( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -242,7 +242,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_my_writable_repositories_with_no_failing_tool_tests( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -260,7 +260,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_my_writable_repositories_with_install_errors( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -278,7 +278,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_my_writable_repositories_with_skip_tool_test_checked( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -394,7 +394,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repositories_i_can_administer( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -409,7 +409,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repositories_i_own( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -466,7 +466,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repositories_missing_tool_test_components( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -482,7 +482,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repositories_with_failing_tool_tests( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -499,7 +499,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repositories_with_install_errors( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -516,7 +516,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repositories_with_invalid_tools( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -532,7 +532,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repositories_with_no_failing_tool_tests( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
@@ -549,7 +549,7 @@ class RepositoryController( BaseUIController, ratings_util.ItemRatings ):
 
     @web.expose
     def browse_repositories_with_skip_tool_test_checked( self, trans, **kwd ):
-        _redir = self._redirect_if_necesseary( trans, **kwd )
+        _redir = self._redirect_if_necessary( trans, **kwd )
         if _redir is not None:
             return _redir
 
