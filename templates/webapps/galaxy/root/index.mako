@@ -1,9 +1,5 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/galaxy_client_app.mako" import="get_user_dict" />
-<%def name="stylesheets()">
-    ${parent.stylesheets()}
-    ${h.css("tool_menu")}
-</%def>
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.templates("tool_link", "panel_section", "tool_search")}
