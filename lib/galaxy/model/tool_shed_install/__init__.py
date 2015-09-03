@@ -269,11 +269,16 @@ class ToolShedRepository( object ):
 
     @property
     def missing_tool_dependencies( self ):
-        """Return the repository's tool dependencies that are not currently installed, and may not ever have been installed."""
+        """Return the repository's tool dependencies that are not currently installed, and may not ever have been installed.
+        Skip tool dependencies that are not listed in self.metadata["tool_dependencies"], as those are previously
+        required tool dependencies."""
         missing_dependencies = []
         for tool_dependency in self.tool_dependencies:
             if tool_dependency.status not in [ ToolDependency.installation_status.INSTALLED ]:
-                missing_dependencies.append( tool_dependency )
+                metadata_tool_dependencies = self.metadata["tool_dependencies"]
+                for metadata_tool_dependency in metadata_tool_dependencies.values():
+                    if tool_dependency.name ==  metadata_tool_dependency["name"]:
+                        missing_dependencies.append( tool_dependency )
         return missing_dependencies
 
     def repo_files_directory( self, app ):
@@ -295,15 +300,28 @@ class ToolShedRepository( object ):
     def repository_dependencies( self ):
         """
         Return all of this repository's repository dependencies, ignoring their attributes like prior_installation_required and
-        only_if_compiling_contained_td.
+        only_if_compiling_contained_td. Skip dependencies of previously installed repositories that are not required anymore.
         """
         required_repositories = []
         for rrda in self.required_repositories:
+            # self.required_repositories might be populated from the database for an outdated installed_changeset_revision and can contain
+            # obsolete dependencies. Check these against self.metadata["repository_dependencies"], which is generated for the current
+            # changeset_revision.
             repository_dependency = rrda.repository_dependency
-            required_repository = repository_dependency.repository
-            if required_repository:
-                required_repositories.append( required_repository )
-        return required_repositories
+            if ( rrda.repository.name, rrda.repository.owner, rrda.repository.tool_shed ) == \
+                    ( self.name, self.owner, self.tool_shed ) :
+                if self.metadata:
+                    repository_dependencies = self.metadata["repository_dependencies"]
+                    for item in repository_dependencies["repository_dependencies"]:
+                        if item[1] == repository_dependency.repository.name:
+                            required_repository = repository_dependency.repository
+                            if required_repository:
+                                required_repositories.append( required_repository )
+            else:
+                required_repository = repository_dependency.repository
+                if required_repository:
+                    required_repositories.append( required_repository )
+        return list( set( required_repositories ) )
 
     @property
     def repository_dependencies_being_installed( self ):
