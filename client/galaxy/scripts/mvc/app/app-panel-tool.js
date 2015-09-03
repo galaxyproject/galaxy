@@ -1,14 +1,14 @@
-define(['utils/utils', 'mvc/tools'],
-    function( Utils, Tools ) {
+define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view'],
+    function( Utils, Tools, Upload ) {
 
     // create form view
     return Backbone.View.extend({
-        initialize: function(options) {
-            this.options = Utils.merge(options, {});
+        initialize: function( options ) {
+            this.options = Utils.merge( options, {} );
             this.setElement( this._template() );
 
             // create tool search, tool panel, and tool panel view.
-            if (Galaxy.user.valid || !Galaxy.config.require_login) {
+            if ( Galaxy.user.valid || !Galaxy.config.require_login ) {
                 var tool_search = new Tools.ToolSearch({
                     spinner_url : options.spinner_url,
                     search_url  : options.search_url,
@@ -26,39 +26,38 @@ define(['utils/utils', 'mvc/tools'],
                 Galaxy.toolPanel = tool_panel;
 
                 // if there are tools, render panel and display everything
-                if (tool_panel.get('layout').size() > 0) {
+                if (tool_panel.get( 'layout' ).size() > 0) {
                     tool_panel_view.render();
-                    this.$('.toolMenu').show();
+                    this.$( '.toolMenu' ).show();
                 }
-                this.$('.toolMenuContainer').prepend(tool_panel_view.$el);
+                this.$el.append( tool_panel_view.$el );
                 
                 // minsize init hint
                 this.$( 'a[minsizehint]' ).click( function() {
                     if ( parent.handle_minwidth_hint ) {
-                        parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
+                        parent.handle_minwidth_hint( $(this).attr( 'minsizehint' ) );
                     }
                 });
+
+                // add upload plugin
+                Galaxy.upload = new Upload( options );
+
+                // define components (is used in app-view.js)
+                this.components = {
+                    header  : {
+                        title   : 'Tools',
+                        buttons : [ Galaxy.upload ]
+                    }
+                }
             }
         },
 
         _template: function() {
-            return  '<div class="unified-panel">' +
-                        '<div class="unified-panel-header" unselectable="on">' +
-                            '<div class="unified-panel-header-inner with-upload-button">' +
-                                ' Tools ' +
+            return  '<div class="toolMenuContainer">' +
+                        '<div class="toolMenu" style="display: none">' +
+                            '<div id="search-no-results" style="display: none; padding-top: 5px">' +
+                                '<em><strong>Search did not match any tools.</strong></em>' +
                             '</div>' +
-                        '</div>' +
-                        '<div class="unified-panel-body">' +
-                            '<div class="toolMenuContainer">' +
-                                '<div class="toolMenu" style="display: none">' +
-                                    '<div id="search-no-results" style="display: none; padding-top: 5px">' +
-                                        '<em><strong>Search did not match any tools.</strong></em>' +
-                                    '</div>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="unified-panel-footer">' +
-                            'testsadasdsa' +
                         '</div>' +
                     '</div>';
             /*%if t.user:

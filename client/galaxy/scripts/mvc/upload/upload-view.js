@@ -43,12 +43,12 @@ return Backbone.View.extend({
     list_genomes: [],
 
     // initialize
-    initialize: function(options) {
+    initialize: function( options ) {
         // link this
         var self = this;
 
         // merge parsed options
-        this.options = Utils.merge(options, this.options);
+        this.options = Utils.merge( options, this.options );
 
         // create model for upload/progress button
         this.ui_button = new UploadButton.Model();
@@ -68,30 +68,30 @@ return Backbone.View.extend({
             }
         });
 
-        // append button to container
-        $('.with-upload-button').append(this.ui_button_view.$el);
+        // set element to button view
+        this.setElement( this.ui_button_view.$el );
 
         // load extensions
         var self = this;
         Utils.get({
             url     : galaxy_config.root + 'api/datatypes?extension_only=False',
-            success : function(datatypes) {
-                for (key in datatypes) {
+            success : function( datatypes ) {
+                for ( key in datatypes ) {
                     self.list_extensions.push({
-                        id              : datatypes[key].extension,
-                        text            : datatypes[key].extension,
-                        description     : datatypes[key].description,
-                        description_url : datatypes[key].description_url,
-                        composite_files : datatypes[key].composite_files
+                        id              : datatypes[ key ].extension,
+                        text            : datatypes[ key ].extension,
+                        description     : datatypes[ key ].description,
+                        description_url : datatypes[ key ].description_url,
+                        composite_files : datatypes[ key ].composite_files
                     });
                 }
-                self.list_extensions.sort(function(a, b) {
+                self.list_extensions.sort( function( a, b ) {
                     var a_text = a.text && a.text.toLowerCase();
                     var b_text = b.text && b.text.toLowerCase();
                     return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
                 });
-                if (!self.options.datatypes_disable_auto) {
-                    self.list_extensions.unshift(self.options.auto);
+                if ( !self.options.datatypes_disable_auto ) {
+                    self.list_extensions.unshift( self.options.auto );
                 }
             }
         });
@@ -99,16 +99,16 @@ return Backbone.View.extend({
         // load genomes
         Utils.get({
             url     : galaxy_config.root + 'api/genomes',
-            success : function(genomes) {
-                for (key in genomes) {
+            success : function( genomes ) {
+                for ( key in genomes ) {
                     self.list_genomes.push({
-                        id      : genomes[key][1],
-                        text    : genomes[key][0]
+                        id      : genomes[ key ][ 1 ],
+                        text    : genomes[ key ][ 0 ]
                     });
                 }
-                self.list_genomes.sort(function(a, b) {
-                    if (a.id == self.options.default_genome) { return -1; }
-                    if (b.id == self.options.default_genome) { return 1; }
+                self.list_genomes.sort( function( a, b ) {
+                    if ( a.id == self.options.default_genome ) { return -1; }
+                    if ( b.id == self.options.default_genome ) { return 1; }
                     return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
                 });
             }
@@ -123,27 +123,27 @@ return Backbone.View.extend({
     show: function () {
         // wait for galaxy history panel
         var self = this;
-        if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
+        if ( !Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model ) {
             window.setTimeout(function() { self.show() }, 500)
             return;
         }
 
         // set current user
-        this.current_user = Galaxy.currUser.get('id');
+        this.current_user = Galaxy.currUser.get( 'id' );
 
         // create modal
-        if (!this.modal) {
+        if ( !this.modal ) {
             // build tabs
             this.tabs = new Tabs.View();
 
             // add tabs
-            this.default_view = new UploadViewDefault(this);
+            this.default_view = new UploadViewDefault( this );
             this.tabs.add({
                 id      : 'regular',
                 title   : 'Regular',
                 $el     : this.default_view.$el
             });
-            this.composite_view = new UploadViewComposite(this);
+            this.composite_view = new UploadViewComposite( this );
             this.tabs.add({
                 id      : 'composite',
                 title   : 'Composite',
@@ -167,7 +167,7 @@ return Backbone.View.extend({
 
     // refresh user and current history
     currentHistory: function() {
-        return this.current_user && Galaxy.currHistoryPanel.model.get('id');
+        return this.current_user && Galaxy.currHistoryPanel.model.get( 'id' );
     },
 
     // get ftp configuration
@@ -179,7 +179,7 @@ return Backbone.View.extend({
       * Package API data from array of models
       * @param{Array} items - Upload items/rows filtered from a collection
     */
-    toData: function(items, history_id) {
+    toData: function( items, history_id ) {
         // create dictionary for data submission
         var data = {
             payload: {
@@ -191,37 +191,37 @@ return Backbone.View.extend({
             error_message: null
         }
         // add upload tools input data
-        if (items && items.length > 0) {
+        if ( items && items.length > 0 ) {
             var inputs = {};
-            inputs['dbkey'] = items[0].get('genome', null);
-            inputs['file_type'] = items[0].get('extension', null);
-            for (var index in items) {
-                var it = items[index];
-                it.set('status', 'running');
-                if (it.get('file_size') > 0) {
+            inputs[ 'dbkey' ] = items[0].get( 'genome', null );
+            inputs[ 'file_type' ] = items[0].get( 'extension', null );
+            for ( var index in items ) {
+                var it = items[ index ];
+                it.set( 'status', 'running' );
+                if ( it.get( 'file_size' ) > 0 ) {
                     var prefix = 'files_' + index + '|';
-                    inputs[prefix + 'type'] = 'upload_dataset';
-                    inputs[prefix + 'space_to_tab'] = it.get('space_to_tab') && 'Yes' || null;
-                    inputs[prefix + 'to_posix_lines'] = it.get('to_posix_lines') && 'Yes' || null;
-                    switch (it.get('file_mode')) {
+                    inputs[ prefix + 'type' ] = 'upload_dataset';
+                    inputs[ prefix + 'space_to_tab' ] = it.get( 'space_to_tab' ) && 'Yes' || null;
+                    inputs[ prefix + 'to_posix_lines' ] = it.get( 'to_posix_lines' ) && 'Yes' || null;
+                    switch ( it.get( 'file_mode' ) ) {
                         case 'new':
-                            inputs[prefix + 'url_paste'] = it.get('url_paste');
+                            inputs[ prefix + 'url_paste' ] = it.get( 'url_paste' );
                             break;
                         case 'ftp':
-                            inputs[prefix + 'ftp_files'] = it.get('file_path');
+                            inputs[ prefix + 'ftp_files' ] = it.get( 'file_path' );
                             break;
                         case 'local':
-                            data.files.push({ name: prefix + 'file_data', file: it.get('file_data') });
+                            data.files.push( { name: prefix + 'file_data', file: it.get( 'file_data' ) } );
                     }
                 } else {
                     data.error_message = 'Upload content incomplete.';
-                    it.set('status', 'error');
-                    it.set('info', data.error_message);
+                    it.set( 'status', 'error' );
+                    it.set( 'info', data.error_message );
                     break;
                 }
 
             }
-            data.payload.inputs = JSON.stringify(inputs);
+            data.payload.inputs = JSON.stringify( inputs );
         }
         return data;
     }

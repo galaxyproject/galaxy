@@ -18,7 +18,7 @@ var View = Backbone.View.extend({
     model : null,
 
     // initialize
-    initialize : function(options) {
+    initialize : function( options ) {
         // link this
         var self = this;
 
@@ -26,64 +26,62 @@ var View = Backbone.View.extend({
         var model = options.model;
 
         // create new element
-        this.setElement(this._template());
+        this.setElement( this._template() );
 
         // add event
-        $(this.el).on('click', function(e) { options.onclick(e); });
+        this.$el.on( 'click', function( e ) { options.onclick( e ); });
 
         // add tooltip
-        $(this.el).tooltip({title: model.get('tooltip'), placement: 'bottom'});
+        this.$el.tooltip( { title: model.get('tooltip'), placement: 'bottom' } );
 
         // events
-        model.on('change:percentage', function() {
-            self._percentage(model.get('percentage'));
+        model.on( 'change:percentage', function() {
+            self._percentage( model.get( 'percentage' ) );
         });
-        model.on('change:status', function() {
-            self._status(model.get('status'));
+        model.on( 'change:status', function() {
+            self._status( model.get( 'status' ) );
         });
 
         // unload event
         var self = this;
-        $(window).on('beforeunload', function() {
+        $( window ).on( 'beforeunload', function() {
             var text = "";
-            if (options.onunload) {
+            if ( options.onunload ) {
                 text = options.onunload();
             }
-            if (text != "") {
+            if ( text != "" ) {
                 return text;
             }
         });
     },
 
     // set status
-    _status: function(value) {
-        var $el = this.$el.find('.progress-bar');
+    _status: function( value ) {
+        var $el = this.$el.find( '.progress-bar' );
         $el.removeClass();
-        $el.addClass('progress-bar');
-        $el.addClass('progress-bar-notransition');
-        if (value != '') {
-            $el.addClass('progress-bar-' + value);
+        $el.addClass( 'progress-bar' );
+        $el.addClass( 'progress-bar-notransition' );
+        if ( value != '' ) {
+            $el.addClass( 'progress-bar-' + value );
         }
     },
 
     // set percentage
-    _percentage: function(value) {
-        var $el = this.$el.find('.progress-bar');
-        $el.css({ width : value + '%' });
+    _percentage: function( value ) {
+        var $el = this.$el.find( '.progress-bar' );
+        $el.css( { width : value + '%' } );
     },
 
     // template
     _template: function() {
-        return  '<div style="float: right">' +
-                    '<div class="upload-button">' +
-                        '<div class="progress">' +
-                            '<div class="progress-bar"></div>' +
-                        '</div>' +
-                        '<div id="label" class="label">' +
-                            '<a class="panel-header-button" href="javascript:void(0)">' +
-                                '<span class="fa fa-upload"></span>' +
-                            '</a>' +
-                        '</div>' +
+        return  '<div class="upload-button">' +
+                    '<div class="progress">' +
+                        '<div class="progress-bar"></div>' +
+                    '</div>' +
+                    '<div id="label" class="label">' +
+                        '<a class="panel-header-button" href="javascript:void(0)">' +
+                            '<span class="fa fa-upload"></span>' +
+                        '</a>' +
                     '</div>' +
                 '</div>';
     }
