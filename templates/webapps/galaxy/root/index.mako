@@ -46,6 +46,8 @@
 <script>
     require(['mvc/app/app-view'], function(App){
         $(function(){
+            Galaxy.config.message_box_class = 'info';
+            Galaxy.config.message_box_content = 'sadsadasd';
             var app = new App(${ h.dumps(app_config) });
         });
     });
