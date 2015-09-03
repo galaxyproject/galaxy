@@ -129,6 +129,7 @@ class CycleError(Exception):
         answer.reverse()
         return answer
 
+
 def _numpreds_and_successors_from_pairlist(pairlist):
     numpreds = OrderedDict()   # elt -> # of predecessors
     successors = OrderedDict()  # elt -> list of successors
