@@ -263,4 +263,3 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
 def wrap_in_static( app, global_conf, **local_conf ):
     urlmap, _ = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     return urlmap
-
