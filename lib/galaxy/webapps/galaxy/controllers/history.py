@@ -16,7 +16,7 @@ from galaxy import util
 from galaxy import web
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.util import nice_size, Params
+from galaxy.util import nice_size, Params, parse_int
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
@@ -651,19 +651,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             user_is_owner=user_is_owner, history_is_current=history_is_current,
             show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels )
 
-    def _parse_int( self, value, min=None, max=None, **kwargs ):
-        try:
-            value = int( value )
-            if min is not None and value < min:
-                return min
-            if max is not None and value > max:
-                return max
-            return value
-        except ValueError:
-            if 'default' in kwargs:
-                return kwargs.get( 'default' )
-            raise
-
     # @web.require_login( "use more than one Galaxy history" )
     @web.expose
     def view_multiple( self, trans, include_deleted_histories=False, order='update_time', limit=10 ):
@@ -680,7 +667,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # TODO: allow specifying user_id for admin?
         include_deleted_histories = galaxy.util.string_as_bool( include_deleted_histories )
         order_by = self.history_manager.parse_order_by( order, default='update_time' )
-        limit = self._parse_int( limit, min=1 ) if limit != 'None' else None
+        limit = parse_int( limit, min_val=1, default=10, allow_none=True)
 
         deleted_filter = None
         if not include_deleted_histories:
