@@ -5,9 +5,11 @@ The latest information about Galaxy is available via `http://galaxyproject.org/ 
 
 .. image:: https://img.shields.io/badge/questions-galaxy%20biostar-blue.svg
     :target: https://biostar.usegalaxy.org
+    :alt: Ask a question
 
 .. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
     :target: https://webchat.freenode.net/?channels=galaxyproject
+    :alt: Chat with us
 
 .. image:: https://readthedocs.org/projects/galaxy/badge/?version=master
     :target: http://galaxy.readthedocs.org/en/master/
@@ -15,6 +17,7 @@ The latest information about Galaxy is available via `http://galaxyproject.org/ 
 
 .. image:: https://travis-ci.org/galaxyproject/galaxy.svg?branch=dev
     :target: https://travis-ci.org/galaxyproject/galaxy
+    :alt: Inspect the test results
 
 Galaxy Quickstart
 =================
@@ -55,6 +58,8 @@ Issues
 Issues can be submitted to trello via the `galaxyproject
 website <http://galaxyproject.org/trello/>`__ and viewed on the `Galaxy
 Trello Board <https://trello.com/b/75c1kASa/galaxy-development>`__.
+Alternatively you can `create an issue <https://github.com/galaxyproject/galaxy/issues>`__
+through GitHub interface.
 
 
 Galaxy Development
