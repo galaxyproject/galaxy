@@ -667,7 +667,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # TODO: allow specifying user_id for admin?
         include_deleted_histories = galaxy.util.string_as_bool( include_deleted_histories )
         order_by = self.history_manager.parse_order_by( order, default='update_time' )
-        limit = parse_int( limit, min_val=1, default=10 )
+        limit = parse_int( limit, min_val=1, default=10, allow_none=True)
 
         deleted_filter = None
         if not include_deleted_histories:
