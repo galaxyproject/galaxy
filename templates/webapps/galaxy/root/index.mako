@@ -46,13 +46,6 @@
         }
     }
 %>
-<style>
-    #right .unified-panel-body {
-        background: none repeat scroll 0 0 #DFE5F9;
-        overflow: auto;
-        padding: 0;
-    }
-</style>
 <script>
     require(['mvc/app/app-view'], function(App){
         $(function(){

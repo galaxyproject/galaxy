@@ -11,7 +11,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.options = Utils.merge( options, {} );
             this.setElement( this._template( options ) );
             ensure_dd_helper();
-            $('body').append( this.$el );
+            $( 'body' ).attr( 'scroll', 'no' ).addClass( 'full-content' ).append( this.$el );
 
             // set user
             if( !Galaxy.currUser ) {
@@ -19,7 +19,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
 
             // load global galaxy objects
-            if (! Galaxy.masthead ) {
+            if ( !Galaxy.masthead ) {
                 Galaxy.masthead = new Masthead.GalaxyMasthead( options );
                 Galaxy.modal = new Modal.View();
                 Galaxy.frame = new Frame.GalaxyFrame();
@@ -55,6 +55,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                             title   : '',
                             cls     : '',
                             buttons : []
+                        },
+                        body    : {
+                            cls     : ''
                         }
                     });
                     var $panel = $( this._templatePanel( id ) );
@@ -63,7 +66,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     for ( var i in components.header.buttons ) {
                         $panel.find('.panel-header-buttons').append( components.header.buttons[ i ].$el );
                     }
-                    $panel.find('.unified-panel-body').append( view.$el );
+                    $panel.find('.unified-panel-body').addClass( components.body.cls ).append( view.$el );
                     var panel = new Panel( {
                         center  : this.$( '#center' ),
                         panel   : $panel,
