@@ -4,8 +4,8 @@
 define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         'galaxy.masthead', 'galaxy.menu', 'mvc/ui/ui-modal', 'galaxy.frame',
         'mvc/user/user-model','mvc/user/user-quotameter',
-        'mvc/app/app-panel-history', 'mvc/app/app-panel-tool', 'mvc/app/app-panel-center'],
-    function( Utils, Portlet, Ui, Masthead, Menu, Modal, Frame, User, QuotaMeter, HistoryPanel, ToolPanel, CenterPanel) {
+        'mvc/app/app-analysis'],
+    function( Utils, Portlet, Ui, Masthead, Menu, Modal, Frame, User, QuotaMeter, Analysis ) {
     return Backbone.View.extend({
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
@@ -38,15 +38,10 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 }).render();
             }
 
-            // build panel content
-            var toolPanel = new ToolPanel( options );
-            var historyPanel = new HistoryPanel( options );
-            var centerPanel = new CenterPanel();
-
             // append panel content
-            this._buildPanel( 'left', toolPanel );
-            this._buildPanel( 'right', historyPanel );
-            this.$('#center').append( centerPanel.$el );
+            this._buildPanel( 'left', new Analysis['left']( options ) );
+            this._buildPanel( 'right', new Analysis['right']( options ) );
+            this.$('#center').append( ( new Analysis['center']( options ) ).$el );
         },
 
         _buildPanel: function( id, view ) {
