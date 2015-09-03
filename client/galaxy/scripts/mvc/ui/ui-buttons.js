@@ -54,7 +54,7 @@ define(['utils/utils'], function( Utils ) {
         _template: function( options ) {
             var str =   '<button id="' + options.id + '" type="submit" style="float: ' + options.floating + ';" type="button" class="' + options.cls + '">';
             if (options.icon) {
-                str +=      '<i class="icon fa ' + options.icon + '"></i>&nbsp;';
+                str +=      '<i class="icon fa ' + options.icon + '"/>&nbsp;';
             }
             str +=          '<span class="title">' + options.title + '</span>' +
                         '</button>';
@@ -65,13 +65,12 @@ define(['utils/utils'], function( Utils ) {
     /** This button allows the right-click/open-in-new-tab feature, its used e.g. for panel buttons.
     */
     var ButtonLink = ButtonBase.extend({
-        initialize: function(options) {
-            ButtonBase.prototype.initialize.call(this, options);
+        initialize: function( options ) {
+            ButtonBase.prototype.initialize.call( this, options );
         },
-        _template: function(options) {
-            return  '<a id="' + options.id + '" class="' + options.cls + '" href="'
-                        + ( options.href || 'javascript:void(0)' ) + '" title="' + options.title + '">' +
-                        '<span class="' + options.icon + '"/>' +
+        _template: function( options ) {
+            return  '<a id="' + options.id + '" class="' + options.cls + '" href="' + ( options.href || 'javascript:void(0)' ) + '"' +
+                        ' title="' + options.title + '" target="' + ( options.target || '_top' ) + '">' + '<span class="' + options.icon + '"/>' +
                     '</a>';
         }
     });
@@ -79,7 +78,7 @@ define(['utils/utils'], function( Utils ) {
     /** The check button is used in the tool form and allows to distinguish between multiple states e.g. all, partially and nothing selected.
     */
     var ButtonCheck = Backbone.View.extend({
-        initialize: function(options) {
+        initialize: function( options ) {
             // configure options
             this.options = Utils.merge(options, {
                 title : 'Select/Unselect all',
@@ -88,21 +87,21 @@ define(['utils/utils'], function( Utils ) {
             });
 
             // create new element
-            this.setElement(this._template());
-            this.$title = this.$('.title');
-            this.$icon  = this.$('.icon');
+            this.setElement( this._template() );
+            this.$title = this.$( '.title' );
+            this.$icon  = this.$( '.icon' );
 
             // set initial value
-            this.value(this.options.value);
+            this.value( this.options.value );
 
             // set title
-            this.$title.html(this.options.title);
+            this.$title.html( this.options.title );
 
             // add event handler
             var self = this;
             this.$el.on('click', function() {
-                self.current = (self.current === 0 && 2) || 0;
-                self.value(self.current);
+                self.current = ( self.current === 0 && 2 ) || 0;
+                self.value( self.current );
                 self.options.onclick && self.options.onclick();
             });
         },
@@ -113,18 +112,18 @@ define(['utils/utils'], function( Utils ) {
         * @param{Integer}   new_val - Number of selected options.
         * @param{Integer}   total   - Total number of available options.
         */
-        value: function (new_val, total) {
-            if (new_val !== undefined) {
-                if (total) {
-                    if (new_val !== 0) {
-                        new_val = (new_val !== total) && 1 || 2;
+        value: function ( new_val, total ) {
+            if ( new_val !== undefined ) {
+                if ( total ) {
+                    if ( new_val !== 0 ) {
+                        new_val = ( new_val !== total ) && 1 || 2;
                     }
                 }
                 this.current = new_val;
                 this.$icon.removeClass()
-                          .addClass('icon')
-                          .addClass(this.options.icons[new_val]);
-                this.options.onchange && this.options.onchange(new_val);
+                          .addClass( 'icon' )
+                          .addClass( this.options.icons[ new_val ] );
+                this.options.onchange && this.options.onchange( new_val );
             }
             return this.current;
         },
@@ -143,9 +142,9 @@ define(['utils/utils'], function( Utils ) {
         TODO: Consolidate with icon-button.js and/or button-default.js.
     */
     var ButtonIcon = Backbone.View.extend({
-        initialize : function(options) {
+        initialize : function( options ) {
             // get options
-            this.options = Utils.merge(options, {
+            this.options = Utils.merge( options, {
                 id          : Utils.uid(),
                 title       : '',
                 floating    : 'right',
@@ -156,50 +155,50 @@ define(['utils/utils'], function( Utils ) {
             });
 
             // create new element
-            this.setElement(this._template(this.options));
+            this.setElement( this._template( this.options ) );
 
             // link button element
-            this.$button = this.$el.find('.button');
+            this.$button = this.$el.find( '.button' );
 
             // add event
             var self = this;
             $(this.el).on('click', function() {
                 // hide all tooltips
-                $('.tooltip').hide();
+                $( '.tooltip' ).hide();
 
                 // execute onclick callback
-                if (options.onclick && !self.disabled) {
+                if ( options.onclick && !self.disabled ) {
                     options.onclick();
                 }
             });
 
             // add tooltip
-            this.$button.tooltip({title: options.tooltip, placement: 'bottom'});
+            this.$button.tooltip( { title: options.tooltip, placement: 'bottom' } );
         },
 
         // disable
         disable: function() {
-            this.$button.addClass('disabled');
+            this.$button.addClass( 'disabled' );
             this.disabled = true;
         },
 
         // enable
         enable: function() {
-            this.$button.removeClass('disabled');
+            this.$button.removeClass( 'disabled' );
             this.disabled = false;
         },
 
         // change icon
         setIcon: function(icon_cls) {
-            this.$('i').removeClass(this.options.icon).addClass(icon_cls);
+            this.$('i').removeClass( this.options.icon ).addClass( icon_cls );
             this.options.icon = icon_cls;
         },
 
         // template
-        _template: function(options) {
+        _template: function( options ) {
             // width
             var width = '';
-            if (options.title) {
+            if ( options.title ) {
                 width = 'width: auto;';
             }
 
@@ -226,9 +225,9 @@ define(['utils/utils'], function( Utils ) {
         $menu: null,
 
         // initialize
-        initialize: function (options) {
+        initialize: function ( options ) {
             // get options
-            this.options = Utils.merge(options, {
+            this.options = Utils.merge( options, {
                 // same as Ui.ButtonIcon
                 id              : '',
                 title           : '',
@@ -245,49 +244,49 @@ define(['utils/utils'], function( Utils ) {
                 onunload        : null,
                 visible         : true,
                 tag             : ''
-            });
+            } );
 
             // add template for tab
-            this.setElement($(this._template(this.options)));
+            this.setElement( $( this._template( this.options ) ) );
 
             // find root
-            var $root = $(this.el).find('.root');
+            var $root = $( this.el ).find( '.root' );
 
             // link head
             var self = this;
-            $root.on('click', function(e) {
+            $root.on( 'click', function( e ) {
                 // hide all tooltips
-                $('.tooltip').hide();
+                $( '.tooltip' ).hide();
 
                 // prevent default
                 e.preventDefault();
 
                 // add click event
-                if(self.options.onclick) {
+                if( self.options.onclick ) {
                     self.options.onclick();
                 }
             });
 
             // visiblity
-            if (!this.options.visible)
+            if ( !this.options.visible )
                 this.hide();
 
             // add tooltip
-            $root.tooltip({title: options.tooltip, placement: 'bottom'});
+            $root.tooltip( { title: options.tooltip, placement: 'bottom' } );
         },
 
         // show
         show: function() {
-            $(this.el).show();
+            $( this.el ).show();
         },
 
         // hide
         hide: function() {
-            $(this.el).hide();
+            $( this.el ).hide();
         },
 
         // add menu item
-        addMenu: function (options) {
+        addMenu: function ( options ) {
             // menu option defaults
             var menuOptions = {
                 title       : '',
@@ -300,45 +299,46 @@ define(['utils/utils'], function( Utils ) {
             }
 
             // get options
-            menuOptions = Utils.merge(options, menuOptions);
+            menuOptions = Utils.merge( options, menuOptions );
 
             // check if submenu element is available
-            if (!this.$menu) {
+            if ( !this.$menu ) {
                 // insert submenu element into root
-                $(this.el).append(this._templateMenu());
+                $( this.el ).append( this._templateMenu() );
 
                 // update element link
-                this.$menu = $(this.el).find('.menu');
+                this.$menu = $( this.el ).find( '.menu' );
             }
 
             // create
-            var $item = $(this._templateMenuItem(menuOptions));
+            var $item = $( this._templateMenuItem( menuOptions ) );
 
             // add events
-            $item.on('click', function(e) {
+            $item.on( 'click', function( e ) {
                 // prevent default
                 e.preventDefault();
 
                 // add click event
-                if(menuOptions.onclick) {
-                    menuOptions.onclick();
+                if( menuOptions.onclick ) {
+                    menuOptions.onclick ();
                 }
             });
 
             // append menu
-            this.$menu.append($item);
+            this.$menu.append( $item );
 
             // append divider
-            if (menuOptions.divider)
-                this.$menu.append($(this._templateDivider()));
+            if ( menuOptions.divider ) {
+                this.$menu.append( $( this._templateDivider() ) );
+            }
         },
 
         // fill template header
-        _templateMenuItem: function (options) {
+        _templateMenuItem: function ( options ) {
             var tmpl =  '<li>' +
                             '<a class="dropdown-item" href="' + options.href + '" target="' + options.target + '">';
-            if (options.icon) {
-                tmpl +=         '<i class="fa ' + options.icon + '"></i>';
+            if ( options.icon ) {
+                tmpl +=         '<i class="fa ' + options.icon + '"/>';
             }
             tmpl +=             ' ' + options.title +
                             '</a>' +
@@ -348,11 +348,11 @@ define(['utils/utils'], function( Utils ) {
 
         // fill template header
         _templateMenu: function () {
-            return '<ul class="menu dropdown-menu pull-' + this.options.pull + '" role="menu"></ul>';
+            return '<ul class="menu dropdown-menu pull-' + this.options.pull + '" role="menu"/>';
         },
 
         _templateDivider: function() {
-            return '<li class="divider"></li>';
+            return '<li class="divider"/>';
         },
 
         // element
@@ -360,7 +360,7 @@ define(['utils/utils'], function( Utils ) {
             // TODO: width/margin should be set in css
             var width = '';
             var margin = '';
-            if (options.title) {
+            if ( options.title ) {
                 width = 'width: auto;';
             } else {
                 margin = 'margin: 0px;';
@@ -368,7 +368,7 @@ define(['utils/utils'], function( Utils ) {
             var str =   '<div id="' + options.id + '" style="float: ' + options.floating + '; ' + width + '" class="dropdown ' + options.cls + '">' +
                             '<div class="root button dropdown-toggle" data-toggle="dropdown" style="' + margin + '">' +
                                 '<i class="icon fa ' + options.icon + '"/>';
-            if (options.title) {
+            if ( options.title ) {
                 str +=          '&nbsp;<span class="title">' + options.title + '</span>';
             }
             str +=          '</div>' +
