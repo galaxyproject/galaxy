@@ -16,9 +16,10 @@ from sqlalchemy.exc import OperationalError
 
 from tool_shed.util import xml_util
 
+
 def check_db( config_parser ):
     dburi = None
-    
+
     if config_parser.has_option( 'app:main', 'database_connection' ):
         dburi = config_parser.get( 'app:main', 'database_connection' )
     elif config_parser.has_option( 'app:main', 'database_file' ):
@@ -27,12 +28,12 @@ def check_db( config_parser ):
     else:
         print 'The database configuration setting is missing from the tool_shed.ini file.  Add this setting before attempting to bootstrap.'
         exit(1)
-    
+
     sa_session = None
 
     database_exists_message = 'The database configured for this Tool Shed is not new, so bootstrapping is not allowed.  '
     database_exists_message += 'Create a new database that has not been migrated before attempting to bootstrap.'
-   
+
     try:
         model = tool_shed_model.init( config_parser.get( 'app:main', 'file_path' ), dburi, engine_options={}, create_tables=False )
         sa_session = model.context.current
@@ -42,7 +43,7 @@ def check_db( config_parser ):
         pass
     except OperationalError, e:
         pass
-    
+
     try:
         if sa_session is not None:
             result = sa_session.execute( 'SELECT version FROM migrate_version' ).first()
@@ -53,7 +54,7 @@ def check_db( config_parser ):
                 pass
     except ProgrammingError, e:
         pass
-    
+
     if config_parser.has_option( 'app:main', 'hgweb_config_dir' ):
         hgweb_config_parser = ConfigParser.ConfigParser()
         hgweb_dir = config_parser.get( 'app:main', 'hgweb_config_dir' )
@@ -66,16 +67,17 @@ def check_db( config_parser ):
             message = "This Tool Shed's hgweb.config file contains entries, so bootstrapping is not allowed.  Delete"
             message += " the current hgweb.config file along with all associated repositories in the configured "
             message += "location before attempting to boostrap."
-            print 
+            print
             exit(1)
         else:
             exit(0)
     else:
         exit(0)
-    
+
     exit(0)
-    
-def admin_user_info( config_parser ):
+
+
+def admin_user_info( ):
     user_info_config = os.path.abspath( os.path.join( os.getcwd(), 'lib/tool_shed/scripts/bootstrap_tool_shed', 'user_info.xml' ) )
     tree, error_message = xml_util.parse_xml( user_info_config )
     if tree is None:
@@ -92,8 +94,8 @@ def admin_user_info( config_parser ):
                 password = elem.text
             elif elem.tag == 'username':
                 username = elem.text
-    print '%s__SEP__%s__SEP__%s' % ( username, email, password )
-    return 0
+    return (username, email, password)
+
 
 def get_local_tool_shed_url( config_parser ):
     port = '9009'
@@ -104,9 +106,10 @@ def get_local_tool_shed_url( config_parser ):
     print 'http://%s:%s' % ( host, port )
     return 0
 
+
 def main( args ):
     config_parser = ConfigParser.ConfigParser()
-    
+
     if os.path.exists( args.config ):
         config_parser.read( args.config )
     else:
@@ -115,12 +118,14 @@ def main( args ):
     if args.method == 'check_db':
         return check_db( config_parser )
     elif args.method == 'admin_user_info':
-        return admin_user_info( config_parser )
+        (username, email, password) = admin_user_info()
+        print '%s__SEP__%s__SEP__%s' % ( username, email, password )
+        return 0
     elif args.method == 'get_url':
         return get_local_tool_shed_url( config_parser )
     else:
         return 1
-    
+
 parser = argparse.ArgumentParser()
 parser.add_argument( '-c', '--config_file', dest='config', action='store', default='config/tool_shed.ini.sample' )
 parser.add_argument( '-e', '--execute', dest='method', action='store', default='check_db' )

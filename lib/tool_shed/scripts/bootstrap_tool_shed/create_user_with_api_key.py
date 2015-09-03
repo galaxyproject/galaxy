@@ -20,6 +20,7 @@ from galaxy.web import security
 import galaxy.webapps.tool_shed.config as tool_shed_config
 from galaxy.webapps.tool_shed.model import mapping
 from tool_shed.util import xml_util
+from .bootstrap_util import admin_user_info
 
 log = logging.getLogger( __name__ )
 
@@ -57,6 +58,7 @@ class BootstrapApplication( object ):
     def shutdown( self ):
         pass
 
+
 def create_api_key( app, user ):
     api_key = app.security.get_new_guid()
     new_key = app.model.APIKeys()
@@ -65,27 +67,10 @@ def create_api_key( app, user ):
     app.sa_session.add( new_key )
     app.sa_session.flush()
     return api_key
-    
+
+
 def create_user( app ):
-    user_info_config = os.path.abspath( os.path.join( app.config.root, 'lib/tool_shed/scripts/bootstrap_tool_shed', 'user_info.xml' ) )
-    email = None
-    password = None
-    username = None
-    tree, error_message = xml_util.parse_xml( user_info_config )
-    if tree is None:
-        print "The XML file ", user_info_config, " seems to be invalid, using defaults."
-        email = 'admin@test.org'
-        password = 'testuser'
-        username = 'admin'
-    else:
-        root = tree.getroot()
-        for elem in root:
-            if elem.tag == 'email':
-                email = elem.text
-            elif elem.tag == 'password':
-                password = elem.text
-            elif elem.tag == 'username':
-                username = elem.text
+    (username, email, password) = admin_user_info()
     if email and password and username:
         invalid_message = validate( email, password, username )
         if invalid_message:
@@ -102,6 +87,7 @@ def create_user( app ):
         print "Missing required values for email: ", email, ", password: ", password, ", username: ", username
     return None
 
+
 def validate( email, password, username ):
     message = validate_email( email )
     if not message:
@@ -109,6 +95,7 @@ def validate( email, password, username ):
     if not message:
         message = validate_publicname( username )
     return message
+
 
 def validate_email( email ):
     """Validates the email format."""
@@ -119,10 +106,12 @@ def validate_email( email ):
         message = "Email address exceeds maximum allowable length."
     return message
 
+
 def validate_password( password ):
     if len( password ) < 6:
         return "Use a password of at least 6 characters"
     return ''
+
 
 def validate_publicname( username ):
     """Validates the public username."""
@@ -142,7 +131,7 @@ if __name__ == "__main__":
     except IndexError:
         print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
         exit( 127 )
-    config_parser = ConfigParser.ConfigParser( { 'here':os.getcwd() } )
+    config_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     print "Reading ini file: ", ini_file
     config_parser.read( ini_file )
     config_dict = {}
