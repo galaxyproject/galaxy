@@ -1,7 +1,7 @@
 .. figure:: https://wiki.galaxyproject.org/Images/GalaxyLogo?action=AttachFile&do=get&target=galaxy_project_logo.jpg
    :alt: Galaxy Logo
 
-The latest information about Galaxy is available via `http://galaxyproject.org/ <http://galaxyproject.org/>`__
+The latest information about Galaxy is available via `https://galaxyproject.org/ <https://galaxyproject.org/>`__
 
 .. image:: https://img.shields.io/badge/questions-galaxy%20biostar-blue.svg
     :target: https://biostar.usegalaxy.org
@@ -12,7 +12,7 @@ The latest information about Galaxy is available via `http://galaxyproject.org/ 
     :alt: Chat with us
 
 .. image:: https://readthedocs.org/projects/galaxy/badge/?version=master
-    :target: http://galaxy.readthedocs.org/en/master/
+    :target: https://galaxy.readthedocs.org/en/master/
     :alt: Documentation Status
 
 .. image:: https://travis-ci.org/galaxyproject/galaxy.svg?branch=dev
@@ -56,7 +56,7 @@ Issues
 ======
 
 Issues can be submitted to trello via the `galaxyproject
-website <http://galaxyproject.org/trello/>`__ and viewed on the `Galaxy
+website <https://galaxyproject.org/trello>`__ and viewed on the `Galaxy
 Trello Board <https://trello.com/b/75c1kASa/galaxy-development>`__.
 Alternatively you can `create an issue <https://github.com/galaxyproject/galaxy/issues>`__
 through GitHub interface.
