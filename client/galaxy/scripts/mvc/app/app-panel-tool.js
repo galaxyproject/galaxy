@@ -31,7 +31,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view'],
                     this.$( '.toolMenu' ).show();
                 }
                 this.$el.append( tool_panel_view.$el );
-                
+
                 // minsize init hint
                 this.$( 'a[minsizehint]' ).click( function() {
                     if ( parent.handle_minwidth_hint ) {

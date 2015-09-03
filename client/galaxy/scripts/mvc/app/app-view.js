@@ -62,11 +62,13 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             var components = Utils.merge( view.components, {
                 header  : {
                     title   : '',
+                    cls     : '',
                     buttons : []
                 }
             });
             var $panel = $( this._templatePanel( id ) );
             $panel.find('.panel-header-text').html( components.header.title );
+            $panel.find('.unified-panel-header-inner').addClass( components.header.cls );
             for ( var i in components.header.buttons ) {
                 $panel.find('.panel-header-buttons').append( components.header.buttons[ i ].$el );
             }

@@ -38,6 +38,7 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/history/options-menu', 'mvc/histor
             this.components = {
                 header  : {
                     title   : 'History',
+                    cls     : 'history-panel-header',
                     buttons : [ buttonRefresh, buttonOptions, buttonViewMulti ]
                 }
             }
