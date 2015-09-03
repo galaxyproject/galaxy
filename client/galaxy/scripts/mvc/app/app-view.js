@@ -92,10 +92,9 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
         _template: function() {
             return  '<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">' +
-                        //'<div id="background"/>' +
-                        //'<div id="masthead" class="navbar navbar-fixed-top navbar-inverse"/>' +
-                        //'<div id="messagebox"/>' +
-                        //'<div id="inactivebox" class="panel-warning-message"/>' +
+                        '<div id="background"/>' +
+                        '<div id="messagebox"/>' +
+                        '<div id="inactivebox" class="panel-warning-message"/>' +
                         '<div id="center" class="inbound"/>' +
                     '</div>';
         }
