@@ -9,6 +9,7 @@
     from markupsafe import escape
     app = trans.app
     app_config = {
+        'active_view'               : 'analysis',
         'brand'                     : app.config.get("brand", ""),
         'nginx_upload_path'         : app.config.get("nginx_upload_path", h.url_for(controller='api', action='tools')),
         'use_remote_user'           : app.config.use_remote_user,
@@ -46,7 +47,6 @@
     require(['mvc/app/app-view'], function(App){
         $(function(){
             var app = new App(${ h.dumps(app_config) });
-            $('body').append(app.$el);
         });
     });
 </script>
