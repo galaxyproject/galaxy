@@ -14,6 +14,7 @@ import pkg_resources
 
 from galaxy.config import process_is_uwsgi
 from galaxy.util import asbool
+from galaxy.webapps.util import build_template_error_formatters
 
 import galaxy.model
 import galaxy.model.mapping
@@ -152,21 +153,3 @@ def wrap_in_static( app, global_conf, **local_conf ):
     urlmap, _ = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     return urlmap
 
-
-def build_template_error_formatters():
-    """
-    Build a list of template error formatters for WebError. When an error
-    occurs, WebError pass the exception to each function in this list until
-    one returns a value, which will be displayed on the error page.
-    """
-    formatters = []
-    # Formatter for mako
-    import mako.exceptions
-
-    def mako_html_data( exc_value ):
-        if isinstance( exc_value, ( mako.exceptions.CompileException, mako.exceptions.SyntaxException ) ):
-            return mako.exceptions.html_error_template().render( full=False, css=False )
-        if isinstance( exc_value, AttributeError ) and exc_value.args[0].startswith( "'Undefined' object has no attribute" ):
-            return mako.exceptions.html_error_template().render( full=False, css=False )
-    formatters.append( mako_html_data )
-    return formatters
