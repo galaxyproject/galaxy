@@ -33,71 +33,16 @@ define(['utils/utils', 'mvc/tools'],
                 this.$('.toolMenuContainer').prepend(tool_panel_view.$el);
                 
                 // minsize init hint
-                this.$( "a[minsizehint]" ).click( function() {
+                this.$( 'a[minsizehint]' ).click( function() {
                     if ( parent.handle_minwidth_hint ) {
                         parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
                     }
                 });
             }
-
-            /*require.config({
-                baseUrl: "${h.url_for('/static/scripts')}",
-                shim: {
-                    "libs/underscore": { exports: "_" }
-                },
-                urlArgs: 'v=${app.server_starttime}'
-            });
-
-                ## Populate tool panel if (a) anonymous use possible or (b) user is logged in.
-                %if trans.user or not trans.app.config.require_login:
-                    // Create tool search, tool panel, and tool panel view.
-                    var tool_search = new tools_mod.ToolSearch({ 
-                            spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
-                            search_url: "${h.url_for( controller='root', action='tool_search' )}",
-                            hidden: false 
-                        }),
-                        tools = new tools_mod.ToolCollection( 
-                                    ${ h.dumps( trans.app.toolbox.to_dict( trans, in_panel=False ) ) } 
-                                                        ),
-                        tool_panel = new tools_mod.ToolPanel({ 
-                            tool_search: tool_search,
-                            tools: tools,
-                            layout: ${h.dumps( trans.app.toolbox.to_dict( trans ) )}
-                        }),
-                        tool_panel_view = new tools_mod.ToolPanelView({ model: tool_panel });
-                    
-                    // Add tool panel to Galaxy object.
-                    Galaxy.toolPanel = tool_panel;
-
-                    // If there are tools, render panel and display everything.
-                    if (tool_panel.get('layout').size() > 0) {
-                        tool_panel_view.render();
-                        $('.toolMenu').show();
-                    }
-                    $('.toolMenuContainer').prepend(tool_panel_view.$el);
-                    
-                    // Minsize init hint.
-                    $( "a[minsizehint]" ).click( function() {
-                        if ( parent.handle_minwidth_hint ) {
-                            parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
-                        }
-                    });
-                %endif
-            });
-
-        });*/
-
-
-            var lp = new Panel( {
-                panel   : this.$el,
-                center  : this.$( '#center' ),
-                drag    : this.$( '.unified-panel-footer > .drag' ),
-                toggle  : this.$( '.unified-panel-footer > .panel-collapse' )
-            } );
         },
 
         _template: function() {
-            return  '<div id="left">' +
+            return  '<div class="unified-panel">' +
                         '<div class="unified-panel-header" unselectable="on">' +
                             '<div class="unified-panel-header-inner with-upload-button">' +
                                 ' Tools ' +
@@ -113,24 +58,10 @@ define(['utils/utils', 'mvc/tools'],
                             '</div>' +
                         '</div>' +
                         '<div class="unified-panel-footer">' +
-                            '<div class="panel-collapse left"/>' +
-                            '<div class="drag"/>' +
+                            'testsadasdsa' +
                         '</div>' +
                     '</div>';
-
-                    /*<div class="toolMenuContainer">
-        
-        <div class="toolMenu" style="display: none">
-            ## Feedback when search returns no results.
-            <div id="search-no-results" style="display: none; padding-top: 5px">
-                <em><strong>Search did not match any tools.</strong></em>
-            </div>
-            
-            ## Link to workflow management. The location of this may change, but eventually
-            ## at least some workflows will appear here (the user should be able to
-            ## configure which of their stored workflows appear in the tools menu). 
-            
-            %if t.user:
+            /*%if t.user:
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
@@ -150,32 +81,7 @@ define(['utils/utils', 'mvc/tools'],
                         </div>
                     </div>
                 </div>
-            %endif
-            
-        </div>
-    </div>*/
+            %endif*/
         }
     });
 });
-
-
-        _/*template: function() {
-            ## Javascript required for tool menu.
-<%def name="tool_menu_javascripts()">
-    ${h.templates( "tool_link", "panel_section", "tool_search" )}
-    ${h.js( "libs/require", "galaxy.autocom_tagging" )}
-    
-    <script type="text/javascript">
-
-
-    </script>
-</%def>
-
-## Render tool menu.
-<%def name="render_tool_menu()">
-
-</%def>
-
-        }
-    });
-});*/

@@ -48,17 +48,43 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
 
             // build panel content
-            var historyPanel = new HistoryPanel( options );
             var toolPanel = new ToolPanel( options );
+            var historyPanel = new HistoryPanel( options );
             var centerPanel = new CenterPanel();
 
             // append panel content
-            this.$('#right-panel').append( historyPanel.$el );
-            this.$('#left-panel').append( toolPanel.$el );
-            this.$('#center-panel').append( centerPanel.$el );
+            this._buildPanel( '#right', historyPanel );
+            this.$('#left').append( toolPanel.$el.children() );
+            this.$('#center').append( centerPanel.$el );
 
             // add upload plugin
             Galaxy.upload = new Upload( options );
+
+            // left/right panel
+            var lp = new Panel( {
+                center  : this.$( '#center' ),
+                panel   : this.$( '#left' ),
+                drag    : this.$( '#left .unified-panel-footer > .drag' ),
+                toggle  : this.$( '#left .unified-panel-footer > .panel-collapse' )
+            } );
+
+        },
+
+        _buildPanel: function( id, view ) {
+            var $el = this.$( id );
+            var components = view.components;
+            $el.find('.panel-header-text').html( components.header.title );
+            for ( var i in components.header.buttons ) {
+                $el.find('.panel-header-buttons').append( components.header.buttons[ i ].$el );
+            }
+            $el.find('.unified-panel-body').append( view.$el );
+            new Panel( {
+                center  : this.$( '#center' ),
+                panel   : this.$( id ),
+                drag    : this.$( id + '.unified-panel-footer > .drag' ),
+                toggle  : this.$( id + '.unified-panel-footer > .panel-collapse' ),
+                right   : true
+            } );
         },
 
         _template: function() {
@@ -67,9 +93,21 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         '<div id="masthead" class="navbar navbar-fixed-top navbar-inverse"/>' +
                         //'<div id="messagebox"/>' +
                         //'<div id="inactivebox" class="panel-warning-message"/>' +
-                        '<div id="left-panel"/>' +
-                        '<div id="center-panel" class="inbound"/>' +
-                        '<div id="right-panel"/>' +
+                        '<div id="left"/>' +
+                        '<div id="center" class="inbound"/>' +
+                        '<div id="right">' +
+                            '<div class="unified-panel-header" unselectable="on">' +
+                                '<div class="unified-panel-header-inner history-panel-header">' +
+                                    '<div class="panel-header-buttons" style="float: right"/>' +
+                                    '<div class="panel-header-text"/>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="unified-panel-body"/>' +
+                            '<div class="unified-panel-footer">' +
+                                '<div class="panel-collapse right"/>' +
+                                '<div class="drag"/>' +
+                            '</div>' +
+                        '</div>' +
                     '</div>';
         }
     });

@@ -1,16 +1,11 @@
-define(['utils/utils', 'mvc/history/options-menu', 'mvc/history/history-panel-edit-current'],
-    function( Utils, optionsMenu, HistoryPanel) {
+define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/history/options-menu', 'mvc/history/history-panel-edit-current'],
+    function( Utils, Ui, optionsMenu, HistoryPanel) {
 
     // history panel builder
     return Backbone.View.extend({
         initialize: function(options) {
             this.options = Utils.merge(options, {});
             this.setElement( this._template() );
-            this.$( '#history-refresh-button' ).on( 'click', function() {
-                if( top.Galaxy && top.Galaxy.currHistoryPanel ){
-                    top.Galaxy.currHistoryPanel.loadCurrentHistory();
-                }
-            });
             var popupmenu = optionsMenu( this.$( '#history-options-button' ), {
                     anonymous    : options.user.valid && 'true' || 'false',
                     purgeAllowed : Galaxy.config.allow_user_dataset_purge && 'true' || 'false',
@@ -18,26 +13,42 @@ define(['utils/utils', 'mvc/history/options-menu', 'mvc/history/history-panel-ed
                 });
             Galaxy.historyOptionsMenu = popupmenu;
             var currPanel = new HistoryPanel.CurrentHistoryPanel({
-                el              : this.$( '#current-history-panel' ),
+                el              : this.$el,
                 purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                 linkTarget      : 'galaxy_main',
                 $scrollContainer: function(){ return this.$el.parent(); }
             });
+
+            this.components = {
+                header  : {
+                    title   : 'History',
+                    buttons : [new Ui.ButtonLink({
+                            id      : 'history-refresh-button',
+                            title   : 'Refresh history',
+                            cls     : 'panel-header-button',
+                            icon    : 'fa fa-refresh',
+                            onclick : function() {
+                                if( top.Galaxy && top.Galaxy.currHistoryPanel ) {
+                                    top.Galaxy.currHistoryPanel.loadCurrentHistory();
+                                }
+                            }
+                        })
+                    ]
+                }
+            }
+
             currPanel.connectToQuotaMeter( Galaxy.quotaMeter );
             currPanel.listenToGalaxy( Galaxy );
             currPanel.loadCurrentHistory();
             Galaxy.currHistoryPanel = currPanel;
-            var rp = new Panel( {
-                panel   : this.$el,
-                center  : this.$( '#center' ),
-                drag    : this.$( '.unified-panel-footer > .drag' ),
-                toggle  : this.$( '.unified-panel-footer > .panel-collapse' ),
-                right   : true
-            } );
         },
 
         _template: function() {
-            return  '<div id="right">' +
+            return '<div id="current-history-panel" class="history-panel"/>';
+        },
+
+        /*_template: function() {
+            return  '<div class="unified-panel">' +
                         '<div class="unified-panel-header" unselectable="on">' +
                             '<div class="unified-panel-header-inner history-panel-header">' +
                                 '<div style="float: right">' +
@@ -57,11 +68,8 @@ define(['utils/utils', 'mvc/history/options-menu', 'mvc/history/history-panel-ed
                         '<div class="unified-panel-body">' +
                             '<div id="current-history-panel" class="history-panel"/>' +
                         '</div>' +
-                        '<div class="unified-panel-footer">' +
-                            '<div class="panel-collapse right"/>' +
-                            '<div class="drag"/>' +
-                        '</div>' +
+                        '<div class="unified-panel-footer"/>' +
                     '</div>';
-        }
+        }*/
     });
 });

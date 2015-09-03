@@ -1,9 +1,7 @@
-// dependencies
-define(['utils/utils', 'mvc/ui/ui-button-check'], function(Utils, ButtonCheck) {
-
 /**
  *  This class creates/wraps a default html select field as backbone class.
  */
+define(['utils/utils', 'mvc/ui/ui-buttons'], function(Utils, Buttons) {
 var View = Backbone.View.extend({
     // options
     optionsDefault: {
@@ -38,7 +36,7 @@ var View = Backbone.View.extend({
         if (this.options.multiple) {
             // create select all button
             if (this.options.searchable) {
-                this.all_button = new ButtonCheck({
+                this.all_button = new Buttons.ButtonCheck({
                     onclick: function() {
                         var new_value = [];
                         if (self.all_button.value() !== 0) {
