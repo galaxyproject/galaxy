@@ -17,39 +17,90 @@
 ${get_css()}
 
 <!--jobs_per_month_in_error.mako-->
-<div class="toolForm">
-    <div class="toolFormBody">
+<div class="report">
+    <div class="reportBody">
         <table id="formHeader">
             <tr>
                 <td>
-                    ${get_pages( sort_id, order, page_specs, 'jobs', 'per_month_in_error' )}
+                    ${
+                        get_pages(
+                            sort_id,
+                            order,
+                            page_specs,
+                            'jobs',
+                            'per_month_in_error')
+                    }
                 </td>
                 <td>
                     <h4 align="center">Jobs In Error Per Month</h4>
                     <h5 align="center">Click Month to view details.</h5>
                 </td>
                 <td align="right">
-                    ${get_entry_selector("jobs", "per_month_in_error", page_specs.entries, sort_id, order)}
+                    ${
+                        get_entry_selector(
+                            "jobs",
+                            "per_month_in_error",
+                            page_specs.entries,
+                            sort_id,
+                            order)
+                    }
                 </td>
             </tr>
         </table>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
-                <tr><td colspan="2">There are no jobs in the error state.</td></tr>
+                <tr>
+                    <td colspan="2">
+                        There are no jobs in the error state.
+                    </td>
+                </tr>
             %else:
                 <tr class="header">
                     <td class="third_width">
-                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'per_month_in_error', 'Month', page=page, offset=offset, entries=entries)}
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'date',
+                                'jobs',
+                                'per_month_in_error',
+                                'Month',
+                                page=page,
+                                offset=offset,
+                                entries=entries)
+                        }
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_in_error', 'User Jobs', page=page, offset=offset, entries=entries)}
+                            ${
+                                get_sort_url(
+                                    sort_id,
+                                    order,
+                                    'total_jobs',
+                                    'jobs',
+                                    'per_month_in_error',
+                                    'User Jobs',
+                                    page=page,
+                                    offset=offset,
+                                    entries=entries)
+                            }
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'per_month_in_error', 'User and Monitor Jobs', page=page, offset=offset, entries=entries)}
+                            ${
+                                get_sort_url(
+                                    sort_id,
+                                    order,
+                                    'total_jobs',
+                                    'jobs',
+                                    'per_month_in_error',
+                                    'User and Monitor Jobs',
+                                    page=page,
+                                    offset=offset,
+                                    entries=entries)
+                            }
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
@@ -74,7 +125,13 @@ ${get_css()}
 
                         <td><a href="${h.url_for( controller='jobs', action='specified_month_in_error', specified_date=job[0]+'-01', sort_id='default', order='default' )}">${job[2]}&nbsp;${job[3]}</a></td>
                         <td>${job[1]}</td>
-                        ${make_sparkline(key, trends[key], "bar", "/ day")}
+                        ${
+                            make_sparkline(
+                                key,
+                                trends[key],
+                                "bar",
+                                "/ day")
+                        }
                         <td id="${key}"></td>
                     </tr>
                     <% 

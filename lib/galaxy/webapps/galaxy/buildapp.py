@@ -78,22 +78,22 @@ def paste_app_factory( global_conf, **kwargs ):
     # Force /activate to go to the controller
     webapp.add_route( '/activate', controller='user', action='activate' )
     # These two routes handle our simple needs at the moment
-    webapp.add_route( '/async/:tool_id/:data_id/:data_secret', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
-    webapp.add_route( '/:controller/:action', action='index' )
-    webapp.add_route( '/:action', controller='root', action='index' )
+    webapp.add_route( '/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None )
+    webapp.add_route( '/{controller}/{action}', action='index' )
+    webapp.add_route( '/{action}', controller='root', action='index' )
 
     # allow for subdirectories in extra_files_path
-    webapp.add_route( '/datasets/:dataset_id/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
-    webapp.add_route( '/datasets/:dataset_id/:action/:filename', controller='dataset', action='index', dataset_id=None, filename=None)
-    webapp.add_route( '/display_application/:dataset_id/:app_name/:link_name/:user_id/:app_action/:action_param/{action_param_extra:.+?}',
+    webapp.add_route( '/datasets/{dataset_id}/display/{filename:.+?}', controller='dataset', action='display', dataset_id=None, filename=None)
+    webapp.add_route( '/datasets/{dataset_id}/{action}/{filename}', controller='dataset', action='index', dataset_id=None, filename=None)
+    webapp.add_route( '/display_application/{dataset_id}/{app_name}/{link_name}/{user_id}/{app_action}/{action_param}/{action_param_extra:.+?}',
                       controller='dataset', action='display_application', dataset_id=None, user_id=None,
                       app_name=None, link_name=None, app_action=None, action_param=None, action_param_extra=None )
-    webapp.add_route( '/u/:username/d/:slug/:filename', controller='dataset', action='display_by_username_and_slug', filename=None )
-    webapp.add_route( '/u/:username/p/:slug', controller='page', action='display_by_username_and_slug' )
-    webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
-    webapp.add_route( '/u/:username/w/:slug', controller='workflow', action='display_by_username_and_slug' )
-    webapp.add_route( '/u/:username/w/:slug/:format', controller='workflow', action='display_by_username_and_slug' )
-    webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
+    webapp.add_route( '/u/{username}/d/{slug}/{filename}', controller='dataset', action='display_by_username_and_slug', filename=None )
+    webapp.add_route( '/u/{username}/p/{slug}', controller='page', action='display_by_username_and_slug' )
+    webapp.add_route( '/u/{username}/h/{slug}', controller='history', action='display_by_username_and_slug' )
+    webapp.add_route( '/u/{username}/w/{slug}', controller='workflow', action='display_by_username_and_slug' )
+    webapp.add_route( '/u/{username}/w/{slug}/{format}', controller='workflow', action='display_by_username_and_slug' )
+    webapp.add_route( '/u/{username}/v/{slug}', controller='visualization', action='display_by_username_and_slug' )
     webapp.add_route( '/search', controller='search', action='index' )
 
     # TODO: Refactor above routes into external method to allow testing in
@@ -164,24 +164,24 @@ def populate_api_routes( webapp, app ):
         'dataset_collection',
     ]
 
-    # Accesss HDA details via histories/:history_id/contents/datasets/:hda_id
+    # Accesss HDA details via histories/{history_id}/contents/datasets/{hda_id}
     webapp.mapper.resource( "content_typed",
                             "{type:%s}s" % "|".join( valid_history_contents_types ),
                             name_prefix="history_",
                             controller='history_contents',
-                            path_prefix='/api/histories/:history_id/contents',
+                            path_prefix='/api/histories/{history_id}/contents',
                             parent_resources=dict( member_name='history', collection_name='histories' ),
                             )
 
-    # Legacy access to HDA details via histories/:history_id/contents/:hda_id
+    # Legacy access to HDA details via histories/{history_id}/contents/{hda_id}
     webapp.mapper.resource( 'content',
                             'contents',
                             controller='history_contents',
                             name_prefix='history_',
-                            path_prefix='/api/histories/:history_id',
+                            path_prefix='/api/histories/{history_id}',
                             parent_resources=dict( member_name='history', collection_name='histories' ) )
     webapp.mapper.connect( "history_contents_display",
-                           "/api/histories/:history_id/contents/:history_content_id/display",
+                           "/api/histories/{history_id}/contents/{history_content_id}/display",
                            controller="datasets",
                            action="display",
                            conditions=dict(method=["GET"]))
@@ -189,37 +189,37 @@ def populate_api_routes( webapp, app ):
                             'users',
                             controller='group_users',
                             name_prefix='group_',
-                            path_prefix='/api/groups/:group_id',
+                            path_prefix='/api/groups/{group_id}',
                             parent_resources=dict( member_name='group', collection_name='groups' ) )
     webapp.mapper.resource( 'role',
                             'roles',
                             controller='group_roles',
                             name_prefix='group_',
-                            path_prefix='/api/groups/:group_id',
+                            path_prefix='/api/groups/{group_id}',
                             parent_resources=dict( member_name='group', collection_name='groups' ) )
     _add_item_tags_controller( webapp,
                                name_prefix="history_content_",
-                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+                               path_prefix='/api/histories/{history_id}/contents/{history_content_id}' )
     webapp.mapper.connect( '/api/histories/published', action='published', controller="histories", conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.connect( '/api/histories/shared_with_me', action='shared_with_me', controller="histories" )
     _add_item_tags_controller( webapp,
                                name_prefix="history_",
-                               path_prefix='/api/histories/:history_id' )
+                               path_prefix='/api/histories/{history_id}' )
     _add_item_tags_controller( webapp,
                                name_prefix="workflow_",
-                               path_prefix='/api/workflows/:workflow_id' )
+                               path_prefix='/api/workflows/{workflow_id}' )
     _add_item_annotation_controller( webapp,
                                      name_prefix="history_content_",
-                                     path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+                                     path_prefix='/api/histories/{history_id}/contents/{history_content_id}' )
     _add_item_annotation_controller( webapp,
                                      name_prefix="history_",
-                                     path_prefix='/api/histories/:history_id' )
+                                     path_prefix='/api/histories/{history_id}' )
     _add_item_annotation_controller( webapp,
                                      name_prefix="workflow_",
-                                     path_prefix='/api/workflows/:workflow_id' )
+                                     path_prefix='/api/workflows/{workflow_id}' )
     _add_item_provenance_controller( webapp,
                                      name_prefix="history_content_",
-                                     path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+                                     path_prefix='/api/histories/{history_id}/contents/{history_content_id}' )
 
     webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.mapper.resource( 'tool_data', 'tool_data', path_prefix='/api' )
@@ -280,7 +280,7 @@ def populate_api_routes( webapp, app ):
     webapp.mapper.resource( 'search', 'search', path_prefix='/api' )
     webapp.mapper.resource( 'page', 'pages', path_prefix="/api")
     webapp.mapper.resource( 'revision', 'revisions',
-                            path_prefix='/api/pages/:page_id',
+                            path_prefix='/api/pages/{page_id}',
                             controller='page_revisions',
                             parent_resources=dict( member_name='page', collection_name='pages' ) )
 
@@ -291,12 +291,12 @@ def populate_api_routes( webapp, app ):
                            "/api/histories/{id}/exports/{jeha_id}", controller="histories",
                            action="archive_download", conditions=dict( method=[ "GET" ] ) )
 
-    webapp.mapper.connect( "create_api_key", "/api/users/:user_id/api_key",
+    webapp.mapper.connect( "create_api_key", "/api/users/{user_id}/api_key",
                            controller="users", action="api_key", user_id=None,
                            conditions=dict( method=["POST"] ) )
 
     # visualizations registry generic template renderer
-    webapp.add_route( '/visualization/show/:visualization_name', controller='visualization', action='render', visualization_name=None )
+    webapp.add_route( '/visualization/show/{visualization_name}', controller='visualization', action='render', visualization_name=None )
 
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect( 'import_workflow_deprecated',
@@ -323,8 +323,8 @@ def populate_api_routes( webapp, app ):
                            conditions=dict( method=['POST'] ) )
 
     # route for creating/getting converted datasets
-    webapp.mapper.connect( '/api/datasets/:dataset_id/converted', controller='datasets', action='converted', ext=None )
-    webapp.mapper.connect( '/api/datasets/:dataset_id/converted/:ext', controller='datasets', action='converted' )
+    webapp.mapper.connect( '/api/datasets/{dataset_id}/converted', controller='datasets', action='converted', ext=None )
+    webapp.mapper.connect( '/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted' )
 
     # API refers to usages and invocations - these mean the same thing but the
     # usage routes should be considered deprecated.
@@ -396,25 +396,25 @@ def populate_api_routes( webapp, app ):
     # =======================
 
     webapp.mapper.connect( 'update_library',
-                           '/api/libraries/:id',
+                           '/api/libraries/{id}',
                            controller='libraries',
                            action='update',
                            conditions=dict( method=[ "PATCH", "PUT" ] ) )
 
     webapp.mapper.connect( 'show_library_permissions',
-                           '/api/libraries/:encoded_library_id/permissions',
+                           '/api/libraries/{encoded_library_id}/permissions',
                            controller='libraries',
                            action='get_permissions',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'set_library_permissions',
-                           '/api/libraries/:encoded_library_id/permissions',
+                           '/api/libraries/{encoded_library_id}/permissions',
                            controller='libraries',
                            action='set_permissions',
                            conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.connect( 'show_ld_item',
-                           '/api/libraries/datasets/:id',
+                           '/api/libraries/datasets/{id}',
                            controller='lda_datasets',
                            action='show',
                            conditions=dict( method=[ "GET" ] ) )
@@ -426,31 +426,31 @@ def populate_api_routes( webapp, app ):
                            conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.connect( 'show_version_of_ld_item',
-                           '/api/libraries/datasets/:encoded_dataset_id/versions/:encoded_ldda_id',
+                           '/api/libraries/datasets/{encoded_dataset_id}/versions/{encoded_ldda_id}',
                            controller='lda_datasets',
                            action='show_version',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'show_legitimate_lda_roles',
-                           '/api/libraries/datasets/:encoded_dataset_id/permissions',
+                           '/api/libraries/datasets/{encoded_dataset_id}/permissions',
                            controller='lda_datasets',
                            action='show_roles',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'update_lda_permissions',
-                           '/api/libraries/datasets/:encoded_dataset_id/permissions',
+                           '/api/libraries/datasets/{encoded_dataset_id}/permissions',
                            controller='lda_datasets',
                            action='update_permissions',
                            conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.connect( 'delete_lda_item',
-                           '/api/libraries/datasets/:encoded_dataset_id',
+                           '/api/libraries/datasets/{encoded_dataset_id}',
                            controller='lda_datasets',
                            action='delete',
                            conditions=dict( method=[ "DELETE" ] ) )
 
     webapp.mapper.connect( 'download_lda_items',
-                           '/api/libraries/datasets/download/:format',
+                           '/api/libraries/datasets/download/{format}',
                            controller='lda_datasets',
                            action='download',
                            conditions=dict( method=[ "POST", "GET" ] ) )
@@ -463,25 +463,25 @@ def populate_api_routes( webapp, app ):
                             'contents',
                             controller='library_contents',
                             name_prefix='library_',
-                            path_prefix='/api/libraries/:library_id',
+                            path_prefix='/api/libraries/{library_id}',
                             parent_resources=dict( member_name='library', collection_name='libraries' ) )
 
     _add_item_extended_metadata_controller( webapp,
                                             name_prefix="library_dataset_",
-                                            path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+                                            path_prefix='/api/libraries/{library_id}/contents/{library_content_id}' )
 
     # =======================
     # ===== FOLDERS API =====
     # =======================
 
     webapp.mapper.connect( 'add_history_datasets_to_library',
-                           '/api/folders/:encoded_folder_id/contents',
+                           '/api/folders/{encoded_folder_id}/contents',
                            controller='folder_contents',
                            action='create',
                            conditions=dict( method=[ "POST" ] ) )
 
     webapp.mapper.connect( 'create_folder',
-                           '/api/folders/:encoded_parent_folder_id',
+                           '/api/folders/{encoded_parent_folder_id}',
                            controller='folders',
                            action='create',
                            conditions=dict( method=[ "POST" ] ) )
@@ -491,13 +491,13 @@ def populate_api_routes( webapp, app ):
                             path_prefix='/api' )
 
     webapp.mapper.connect( 'show_folder_permissions',
-                           '/api/folders/:encoded_folder_id/permissions',
+                           '/api/folders/{encoded_folder_id}/permissions',
                            controller='folders',
                            action='get_permissions',
                            conditions=dict( method=[ "GET" ] ) )
 
     webapp.mapper.connect( 'set_folder_permissions',
-                           '/api/folders/:encoded_folder_id/permissions',
+                           '/api/folders/{encoded_folder_id}/permissions',
                            controller='folders',
                            action='set_permissions',
                            conditions=dict( method=[ "POST" ] ) )
@@ -506,7 +506,7 @@ def populate_api_routes( webapp, app ):
                             'contents',
                             controller='folder_contents',
                             name_prefix='folder_',
-                            path_prefix='/api/folders/:folder_id',
+                            path_prefix='/api/folders/{folder_id}',
                             parent_resources=dict( member_name='folder', collection_name='folders' ),
                             conditions=dict( method=[ "GET" ] )  )
 
@@ -522,19 +522,19 @@ def populate_api_routes( webapp, app ):
                             'files',
                             controller="job_files",
                             name_prefix="job_",
-                            path_prefix='/api/jobs/:job_id',
+                            path_prefix='/api/jobs/{job_id}',
                             parent_resources=dict( member_name="job", collection_name="jobs" ) )
 
     _add_item_extended_metadata_controller( webapp,
                                             name_prefix="history_dataset_",
-                                            path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+                                            path_prefix='/api/histories/{history_id}/contents/{history_content_id}' )
 
     # ====================
     # ===== TOOLSHED =====
     # ====================
 
     # Handle displaying tool help images and README file images contained in repositories installed from the tool shed.
-    webapp.add_route( '/admin_toolshed/static/images/:repository_id/{image_file:.+?}',
+    webapp.add_route( '/admin_toolshed/static/images/{repository_id}/{image_file:.+?}',
                       controller='admin_toolshed',
                       action='display_image_in_repository',
                       repository_id=None,
@@ -580,19 +580,19 @@ def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
                 controller=controller, action="index",
                 conditions=dict(method=["GET"]))
     # Allow remove tag from item
-    map.connect("%s_delete" % name, "%s/tags/:tag_name" % path_prefix,
+    map.connect("%s_delete" % name, "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="delete",
                 conditions=dict(method=["DELETE"]))
     # Allow create a new tag with from name
-    map.connect("%s_create" % name, "%s/tags/:tag_name" % path_prefix,
+    map.connect("%s_create" % name, "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="create",
                 conditions=dict(method=["POST"]))
     # Allow update tag value
-    map.connect("%s_update" % name, "%s/tags/:tag_name" % path_prefix,
+    map.connect("%s_update" % name, "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="update",
                 conditions=dict(method=["PUT"]))
     # Allow show tag by name
-    map.connect("%s_show" % name, "%s/tags/:tag_name" % path_prefix,
+    map.connect("%s_show" % name, "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="show",
                 conditions=dict(method=["GET"]))
 

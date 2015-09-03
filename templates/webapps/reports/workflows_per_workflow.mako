@@ -20,21 +20,48 @@
 ${get_css()}
 
 <!--jobs_per_tool.mako-->
-<div class="toolForm">
-    <div class="toolFormBody">
+<div class="report">
+    <div class="reportBody">
         <table id="formHeader">
             <tr>
                 <td>
-                    ${get_pages( sort_id, order, page_specs, 'workflows', 'per_workflow',spark_time=time_period )}
+                    ${
+                        get_pages(
+                            sort_id,
+                            order,
+                            page_specs,
+                            'workflows',
+                            'per_workflow',
+                            spark_time=time_period)
+                    }
                 </td>
                 <td>
                     <h4 align="center">Runs per Workflow</h4>
                     <h5 align="center">
-                        Graph goes from present to past ${make_spark_settings( 'workflows', 'per_workflow', spark_limit, sort_id, order, time_period, page=page, offset=offset, entries=entries )}
+                        Graph goes from present to past 
+                        ${
+                            make_spark_settings(
+                                'workflows',
+                                'per_workflow',
+                                spark_limit,
+                                sort_id,
+                                order,
+                                time_period,
+                                page=page,
+                                offset=offset,
+                                entries=entries)
+                        }
                     </h5>
                 </td>
                 <td align="right">
-                    ${get_entry_selector("workflows", "per_workflow", page_specs.entries, sort_id, order)}
+                    ${
+                        get_entry_selector(
+                            "workflows",
+                            "per_workflow",
+                            page_specs.entries,
+                            sort_id,
+                            order)
+                    }
                 </td>
             </tr>
         </table>
@@ -45,15 +72,51 @@ ${get_css()}
             %else:
                 <tr class="header">
                     <td class="quarter_width">
-                        ${get_sort_url(sort_id, order, 'workflow_id', 'workflows', 'per_workflow', 'Workflow ID', spark_time=time_period, page=page, offset=offset, entries=entries)}
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'workflow_id',
+                                'workflows',
+                                'per_workflow',
+                                'Workflow ID',
+                                spark_time=time_period,
+                                page=page,
+                                offset=offset,
+                                entries=entries)
+                        }
                         <span class='dir_arrow workflow_id'>${arrow}</span>
                     </td>
                     <td class="quarter_width">
-                        ${get_sort_url(sort_id, order, 'workflow_name', 'workflows', 'per_workflow', 'Workflow Name', spark_time=time_period, page=page, offset=offset, entries=entries)}
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'workflow_name',
+                                'workflows',
+                                'per_workflow',
+                                'Workflow Name',
+                                spark_time=time_period,
+                                page=page,
+                                offset=offset,
+                                entries=entries)
+                        }
                         <span class='dir_arrow workflow_name'>${arrow}</span>
                     </td>
                     <td class="quarter_width">
-                        ${get_sort_url(sort_id, order, 'total_runs', 'workflows', 'per_workflow', 'Workflow Runs', spark_time=time_period, page=page, offset=offset, entries=entries)}
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'total_runs',
+                                'workflows',
+                                'per_workflow',
+                                'Workflow Runs',
+                                spark_time=time_period,
+                                page=page,
+                                offset=offset,
+                                entries=entries)
+                        }
                         <span class='dir_arrow total_runs'>${arrow}</span>
                     </td>
                     <td></td>
@@ -79,7 +142,13 @@ ${get_css()}
                         <td>${run[0]}</td>
                         <td>${run[1]}</td>
                         %try:
-                            ${make_sparkline(key, trends[key], "bar", "/ " + time_period[:-1])}
+                            ${
+                                make_sparkline(
+                                    key,
+                                    trends[key],
+                                    "bar",
+                                    "/ " + time_period[:-1])
+                            }
                         %except KeyError:
                         %endtry
                         <td id="${key}"></td>

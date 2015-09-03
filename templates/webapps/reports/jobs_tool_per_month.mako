@@ -11,8 +11,8 @@ ${get_css()}
 
 
 <!--jobs_tool_per_month.mako-->
-<div class="toolForm">
-    <div class="toolFormBody">
+<div class="report">
+    <div class="reportBody">
         <h4 align="center">Jobs per month for tool "${tool_id}"</h4>
         <h5 align="center">
             <p>Click Jobs to view details.</p>
@@ -20,21 +20,52 @@ ${get_css()}
         </h5>
         <table align="center" width="60%" class="colored">
             %if len( jobs ) == 0:
-                <tr><td colspan="2">There are no jobs for tool "${tool_id}"</td></tr>
+                <tr>
+                    <td colspan="2">
+                        There are no jobs for tool "${tool_id}"
+                    </td>
+                </tr>
             %else:
                 <tr class="header">
                     <td class="third_width">
-                        ${get_sort_url(sort_id, order, 'date', 'jobs', 'tool_per_month', 'Month', tool_id=tool_id)}
+                        ${
+                            get_sort_url(
+                                sort_id,
+                                order,
+                                'date',
+                                'jobs',
+                                'tool_per_month',
+                                'Month',
+                                tool_id=tool_id)
+                        }
                         <span class='dir_arrow date'>${arrow}</span>
                     </td>
                     %if is_user_jobs_only:
     					<td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'tool_per_month', 'User Jobs', tool_id=tool_id)}
+                            ${
+                                get_sort_url(
+                                    sort_id,
+                                    order,
+                                    'total_jobs',
+                                    'jobs',
+                                    'tool_per_month',
+                                    'User Jobs',
+                                    tool_id=tool_id)
+                            }
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 					%else:
 	                    <td class="third_width">
-                            ${get_sort_url(sort_id, order, 'total_jobs', 'jobs', 'tool_per_month', 'User and Monitor Jobs', tool_id=tool_id)}
+                            ${
+                                get_sort_url(
+                                    sort_id,
+                                    order,
+                                    'total_jobs',
+                                    'jobs',
+                                    'tool_per_month',
+                                    'User and Monitor Jobs',
+                                    tool_id=tool_id)
+                            }
                             <span class='dir_arrow total_jobs'>${arrow}</span>
                         </td>
 	                %endif
@@ -50,7 +81,13 @@ ${get_css()}
                     %endif
                         <td>${job[2]}&nbsp;${job[3]}</td>
                         <td><a href="${h.url_for( controller='jobs', action='specified_date_handler', operation='tool_for_month', tool_id=tool_id, specified_date=job[0] )}">${job[1]}</a></td>
-                        ${make_sparkline(key, trends[key], "bar", "/ day")}
+                        ${
+                            make_sparkline(
+                                key,
+                                trends[key],
+                                "bar",
+                                "/ day")
+                        }
                         <td id="${key}"></td>
                     </tr>
                     <% ctr += 1 %>

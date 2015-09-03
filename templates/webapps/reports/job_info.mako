@@ -7,8 +7,8 @@
     ${render_msg( message, 'done' )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormBody">
+<div class="report">
+    <div class="reportBody">
         <h3 align="center">Job Information</h3>
         <table align="center" class="colored">
             <tr class="header">

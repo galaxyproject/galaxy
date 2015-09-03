@@ -32,20 +32,20 @@ class RepairRepositoryManager():
                 repository_components_tuple = container_util.get_components_from_key( rd_key )
                 components_list = suc.extract_components_from_tuple( repository_components_tuple )
                 tool_shed, name, owner, changeset_revision = components_list[ 0:4 ]
-                installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( self.app,
-                                                                                                           tool_shed,
-                                                                                                           name,
-                                                                                                           owner,
-                                                                                                           changeset_revision )
+                installed_repository = suc.get_installed_repository( self.app,
+                                                                     tool_shed=tool_shed,
+                                                                     name=name,
+                                                                     owner=owner,
+                                                                     changeset_revision=changeset_revision )
                 if installed_repository not in installed_repositories:
                     installed_repositories.append( installed_repository )
                 for rd_val in rd_vals:
                     tool_shed, name, owner, changeset_revision = rd_val[ 0:4 ]
-                    installed_repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( self.app,
-                                                                                                               tool_shed,
-                                                                                                               name,
-                                                                                                               owner,
-                                                                                                               changeset_revision )
+                    installed_repository = suc.get_installed_repository( self.app,
+                                                                         tool_shed=tool_shed,
+                                                                         name=name,
+                                                                         owner=owner,
+                                                                         changeset_revision=changeset_revision )
                     if installed_repository not in installed_repositories:
                         installed_repositories.append( installed_repository )
         return installed_repositories

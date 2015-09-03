@@ -803,6 +803,21 @@
             overflow: auto;
         }
     }
+
+    // loading indicator on far right of multipanel view
+    .histories-loading-indicator {
+        // if we don't bring the width down here, the space is way too large for vertical text
+        width: 8px;
+        transform: rotate(90deg);
+        transform-origin: left top 0;
+        margin-left: 16px;
+        white-space: nowrap;
+        color: grey;
+        span {
+            // space btwn icon and text
+            margin-right: 8px;
+        }
+    }
 }
 
 

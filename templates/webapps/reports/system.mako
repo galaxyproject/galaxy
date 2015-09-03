@@ -9,28 +9,44 @@
     ${render_msg( message, 'done' )}
 %endif
 
-<div class="toolForm">
+<div class="report">
     <h3 align="center">Old Histories and Datasets</h3>
-    <table align="center" width="90%" class="border" cellpadding="5" cellspacing="5">
+    <table id="systemForm" class="border">
         <tr>
             <td>
                 <form method="post" action="system">
                     <p>
-                        <button name="action" value="userless_histories">Number of Histories</button>
-                        that are not associate with a user and were last updated more than 
-                        <input type="textfield" value="${userless_histories_days}" size="3" name="userless_histories_days"> 
+                        <button name="action" value="userless_histories">
+                            Number of Histories
+                        </button>
+                        that are not associate with a user and were last
+                        updated more than
+                        <input type="textfield"
+                               value="${userless_histories_days}"
+                               size="3"
+                               name="userless_histories_days">
                         days ago.
                     </p>
                     <p>
-                        <button name="action" value="deleted_histories">Number of Histories</button>
+                        <button name="action" value="deleted_histories">
+                            Number of Histories
+                        </button>
                         that were deleted more than 
-                        <input type="textfield" value="${deleted_histories_days}" size="3" name="deleted_histories_days"> 
+                        <input type="textfield" 
+                               value="${deleted_histories_days}"
+                               size="3"
+                               name="deleted_histories_days"> 
                         days ago but have not yet been purged.
                     </p>
                     <p>
-                        <button name="action" value="deleted_datasets">Number of Datasets</button> 
+                        <button name="action" value="deleted_datasets">
+                            Number of Datasets
+                        </button> 
                         that were deleted more than 
-                        <input type="textfield" value="${deleted_datasets_days}" size="3" name="deleted_datasets_days"> 
+                        <input type="textfield" 
+                               value="${deleted_datasets_days}"
+                               size="3"
+                               name="deleted_datasets_days"> 
                         days ago but have not yet been purged.
                     </p>
                 </form>
@@ -62,7 +78,10 @@
     </table>
     <br clear="left" />
     %if datasets.count() > 0:
-        <h3 align="center">${datasets.count()} largest unpurged data files over ${file_size_str}</h3>
+        <h3 align="center">
+            ${datasets.count()} largest unpurged data files over
+            ${file_size_str}
+        </h3>
         <table align="center" width="90%" class="colored">
             <tr class="header">
                 <td>File</td>
@@ -79,7 +98,9 @@
                 %endif
                     <td>
                         <% dataset_label = 'dataset_%d.dat' % dataset.id %>
-                        <a href="${h.url_for( controller='system', action='dataset_info', id=trans.security.encode_id( dataset.id ) )}">${dataset_label}</a>
+                        <a href="${h.url_for( controller='system', action='dataset_info', id=trans.security.encode_id( dataset.id ) )}">
+                            ${dataset_label}
+                        </a>
                     </td>
                     <td>${time_ago( dataset.update_time )}</td>
                     <td>${dataset.deleted}</td>
@@ -90,6 +111,8 @@
         </table>
         <br clear="left" />
     %else:
-        <h3 align="center">There are no unpurged data files larger than ${file_size_str}</h3>
+        <h3 align="center">
+            There are no unpurged data files larger than ${file_size_str}
+        </h3>
     %endif
 </div>

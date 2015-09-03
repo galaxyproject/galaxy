@@ -726,44 +726,54 @@ class MetadataGenerator( object ):
         if tree is None:
             return metadata_dict, error_message
         root = tree.getroot()
-        valid_tool_dependencies_dict = {}
-        invalid_tool_dependencies_dict = {}
+
+        class RecurserValueStore( object ):
+            pass
+        rvs = RecurserValueStore()
+        rvs.valid_tool_dependencies_dict = {}
+        rvs.invalid_tool_dependencies_dict = {}
         valid_repository_dependency_tups = []
         invalid_repository_dependency_tups = []
         description = root.get( 'description' )
-        for elem in root:
-            if elem.tag == 'package':
-                valid_tool_dependencies_dict, invalid_tool_dependencies_dict, \
-                    repository_dependency_tup, repository_dependency_is_valid, \
-                    message = self.generate_package_dependency_metadata( elem,
-                                                                         valid_tool_dependencies_dict,
-                                                                         invalid_tool_dependencies_dict )
-                if repository_dependency_is_valid:
-                    if repository_dependency_tup and repository_dependency_tup not in valid_repository_dependency_tups:
-                        # We have a valid complex repository dependency.
-                        valid_repository_dependency_tups.append( repository_dependency_tup )
-                else:
-                    if repository_dependency_tup and repository_dependency_tup not in invalid_repository_dependency_tups:
-                        # We have an invalid complex repository dependency, so mark the tool dependency as invalid.
-                        # Append the error message to the invalid repository dependency tuple.
-                        toolshed, name, owner, changeset_revision, \
-                            prior_installation_required, \
-                            only_if_compiling_contained_td = \
-                            repository_dependency_tup
-                        repository_dependency_tup = \
-                            ( toolshed,
-                              name,
-                              owner,
-                              changeset_revision,
-                              prior_installation_required,
-                              only_if_compiling_contained_td,
-                              message )
-                        invalid_repository_dependency_tups.append( repository_dependency_tup )
-                        error_message = '%s  %s' % ( error_message, message )
-            elif elem.tag == 'set_environment':
-                valid_tool_dependencies_dict = \
-                    self.generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict )
-        if valid_tool_dependencies_dict:
+
+        def _check_elem_for_dep( elems ):
+            error_messages = []
+            for elem in elems:
+                if elem.tag == 'package':
+                    rvs.valid_tool_dependencies_dict, rvs.invalid_tool_dependencies_dict, \
+                        repository_dependency_tup, repository_dependency_is_valid, \
+                        message = self.generate_package_dependency_metadata( elem,
+                                                                             rvs.valid_tool_dependencies_dict,
+                                                                             rvs.invalid_tool_dependencies_dict )
+                    if repository_dependency_is_valid:
+                        if repository_dependency_tup and repository_dependency_tup not in valid_repository_dependency_tups:
+                            # We have a valid complex repository dependency.
+                            valid_repository_dependency_tups.append( repository_dependency_tup )
+                    else:
+                        if repository_dependency_tup and repository_dependency_tup not in invalid_repository_dependency_tups:
+                            # We have an invalid complex repository dependency, so mark the tool dependency as invalid.
+                            # Append the error message to the invalid repository dependency tuple.
+                            toolshed, name, owner, changeset_revision, \
+                                prior_installation_required, \
+                                only_if_compiling_contained_td = \
+                                repository_dependency_tup
+                            repository_dependency_tup = \
+                                ( toolshed,
+                                  name,
+                                  owner,
+                                  changeset_revision,
+                                  prior_installation_required,
+                                  only_if_compiling_contained_td,
+                                  message )
+                            invalid_repository_dependency_tups.append( repository_dependency_tup )
+                            error_messages.append('%s  %s' % ( error_message, message ) )
+                elif elem.tag == 'set_environment':
+                    rvs.valid_tool_dependencies_dict = \
+                        self.generate_environment_dependency_metadata( elem, rvs.valid_tool_dependencies_dict )
+                error_messages += _check_elem_for_dep( elem )
+            return error_messages
+        error_message = "\n".join([error_message] + _check_elem_for_dep( root ))
+        if rvs.valid_tool_dependencies_dict:
             if original_valid_tool_dependencies_dict:
                 # We're generating metadata on an update pulled to a tool shed repository installed
                 # into a Galaxy instance, so handle changes to tool dependencies appropriately.
@@ -771,10 +781,10 @@ class MetadataGenerator( object ):
                 updated_tool_dependency_names, deleted_tool_dependency_names = \
                     irm.handle_existing_tool_dependencies_that_changed_in_update( self.repository,
                                                                                   original_valid_tool_dependencies_dict,
-                                                                                  valid_tool_dependencies_dict )
-            metadata_dict[ 'tool_dependencies' ] = valid_tool_dependencies_dict
-        if invalid_tool_dependencies_dict:
-            metadata_dict[ 'invalid_tool_dependencies' ] = invalid_tool_dependencies_dict
+                                                                                  rvs.valid_tool_dependencies_dict )
+            metadata_dict[ 'tool_dependencies' ] = rvs.valid_tool_dependencies_dict
+        if rvs.invalid_tool_dependencies_dict:
+            metadata_dict[ 'invalid_tool_dependencies' ] = rvs.invalid_tool_dependencies_dict
         if valid_repository_dependency_tups:
             metadata_dict = \
                 self.update_repository_dependencies_metadata( metadata=metadata_dict,
@@ -866,6 +876,12 @@ class MetadataGenerator( object ):
         owner = repository_elem.get( 'owner', None )
         changeset_revision = repository_elem.get( 'changeset_revision', None )
         prior_installation_required = str( repository_elem.get( 'prior_installation_required', False ) )
+        repository_dependency_tup = [ toolshed,
+                                      name,
+                                      owner,
+                                      changeset_revision,
+                                      prior_installation_required,
+                                      str( only_if_compiling_contained_td ) ]
         if self.app.name == 'galaxy':
             if self.updating_installed_repository:
                 pass
@@ -873,21 +889,20 @@ class MetadataGenerator( object ):
                 # We're installing a repository into Galaxy, so make sure its contained repository
                 # dependency definition is valid.
                 if toolshed is None or name is None or owner is None or changeset_revision is None:
+                    # Several packages exist in the Tool Shed that contain invalid repository
+                    # definitions, but will still install. We will report these errors to the
+                    # installing user. Previously, we would:
                     # Raise an exception here instead of returning an error_message to keep the
                     # installation from proceeding.  Reaching here implies a bug in the Tool Shed
                     # framework.
-                    error_message = 'Installation halted because the following repository dependency definition is invalid:\n'
+                    error_message = 'Installation encountered an invalid repository dependency definition:\n'
                     error_message += xml_util.xml_to_string( repository_elem, use_indent=True )
-                    raise Exception( error_message )
+                    log.error( error_message )
+                    return repository_dependency_tup, False, error_message
         if not toolshed:
             # Default to the current tool shed.
             toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
-        repository_dependency_tup = [ toolshed,
-                                      name,
-                                      owner,
-                                      changeset_revision,
-                                      prior_installation_required,
-                                      str( only_if_compiling_contained_td ) ]
+            repository_dependency_tup[0] = toolshed
         user = None
         repository = None
         toolshed = common_util.remove_protocol_from_tool_shed_url( toolshed )
@@ -962,9 +977,9 @@ class MetadataGenerator( object ):
                     return repository_dependency_tup, is_valid, error_message
                 try:
                     repository = self.sa_session.query( self.app.model.Repository ) \
-                                                .filter( and_( self.app.model.Repository.table.c.name == name,
-                                                               self.app.model.Repository.table.c.user_id == user.id ) ) \
-                                                .one()
+                        .filter( and_( self.app.model.Repository.table.c.name == name,
+                                       self.app.model.Repository.table.c.user_id == user.id ) ) \
+                        .one()
                 except:
                     error_message = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, " % \
                         ( toolshed, name, owner )

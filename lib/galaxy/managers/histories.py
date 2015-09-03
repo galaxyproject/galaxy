@@ -6,12 +6,18 @@ created (or copied) by users over the course of an analysis.
 """
 import operator
 
+import pkg_resources
+pkg_resources.require( "SQLAlchemy >= 0.4" )
+from sqlalchemy import desc, asc
+
 from galaxy import model
+from galaxy import exceptions as glx_exceptions
 from galaxy.managers import sharable
 from galaxy.managers import deletable
 from galaxy.managers import containers
 from galaxy.managers import hdas
 from galaxy.managers import collections_util
+
 
 import logging
 log = logging.getLogger( __name__ )
@@ -121,6 +127,33 @@ class HistoryManager( sharable.SharableModelManager, deletable.PurgableManagerMi
         Set the current history by an id.
         """
         return self.set_current( trans, self.by_id( history_id ) )
+
+    # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
+    def parse_order_by( self, order_by_string, default=None ):
+        """Return an ORM compatible order_by using the given string"""
+        # TODO: generalize into class
+        # TODO: general (enough) columns
+        if order_by_string in ( 'create_time', 'create_time-dsc' ):
+            return desc( self.model_class.create_time )
+        if order_by_string == 'create_time-asc':
+            return asc( self.model_class.create_time )
+        if order_by_string in ( 'update_time', 'update_time-dsc' ):
+            return desc( self.model_class.update_time )
+        if order_by_string == 'update_time-asc':
+            return asc( self.model_class.update_time )
+        if order_by_string in ( 'name', 'name-asc' ):
+            return asc( self.model_class.name )
+        if order_by_string == 'name-dsc':
+            return desc( self.model_class.name )
+        # TODO: history columns
+        if order_by_string in ( 'size', 'size-dsc' ):
+            return desc( self.model_class.disk_size )
+        if order_by_string == 'size-asc':
+            return asc( self.model_class.disk_size )
+        if default:
+            return self.parse_order_by( default )
+        raise glx_exceptions.RequestParameterInvalidException( 'Unkown order_by', order_by=order_by_string,
+            available=[ 'create_time', 'update_time', 'name', 'size' ])
 
     # container interface
     def _filter_to_contained( self, container, content_class ):

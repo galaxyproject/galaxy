@@ -1844,11 +1844,11 @@ class AdminToolshed( AdminGalaxy ):
         changeset_revision = kwd.get( 'changeset_revision', None )
         latest_changeset_revision = kwd.get( 'latest_changeset_revision', None )
         latest_ctx_rev = kwd.get( 'latest_ctx_rev', None )
-        repository = suc.get_tool_shed_repository_by_shed_name_owner_changeset_revision( trans.app,
-                                                                                         tool_shed_url,
-                                                                                         name,
-                                                                                         owner,
-                                                                                         changeset_revision )
+        repository = suc.get_installed_repository( trans.app,
+                                                   tool_shed=tool_shed_url,
+                                                   name=name,
+                                                   owner=owner,
+                                                   changeset_revision=changeset_revision )
         original_metadata_dict = repository.metadata
         original_repository_dependencies_dict = original_metadata_dict.get( 'repository_dependencies', {} )
         original_repository_dependencies = original_repository_dependencies_dict.get( 'repository_dependencies', [] )
