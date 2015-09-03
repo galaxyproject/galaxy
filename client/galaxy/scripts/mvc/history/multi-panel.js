@@ -439,7 +439,6 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
         this.stopListening( this.collection );
 
         this.collection = collection || new HISTORY_MODEL.HistoryCollection();
-        this.collection.allFetched = !this.perPage || ( this.collection.length < this.perPage );
         this.setUpCollectionListeners();
 
         this.collection.sort({ silent : true });
@@ -454,7 +453,7 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
     /** Set up a (new) history collection, sorting and adding listeners
      *  @fires 'new-collection' when set with this view as the arg
      */
-    addModels : function setCollection( models, collection, options ){
+    addModels : function addModels( models, collection, options ){
         options = options || {};
         var multipanel = this;
         models = _.isArray( models )? models : [ models ];

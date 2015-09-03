@@ -492,6 +492,8 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
         this.setOrder( options.order || this.DEFAULT_ORDER );
         /** @type {String} encoded id of the history that's current */
         this.currentHistoryId = options.currentHistoryId;
+        /** @type {boolean} have all histories been fetched and in the collection? */
+        this.allFetched = options.allFetched || false;
 
         // this.on( 'all', function(){
         //    console.info( 'event:', arguments );
@@ -580,8 +582,10 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
      *  and set allFetched/fire 'all-fetched' when xhr returns
      */
     fetch : function( options ){
+        console.debug( 'fetch', this.allFetched );
         options = options || {};
         if( this.allFetched ){ return jQuery.when({}); }
+        console.debug( 'fetching' );
         var collection = this,
             fetchOptions = _.defaults( options, {
                 remove : false,
