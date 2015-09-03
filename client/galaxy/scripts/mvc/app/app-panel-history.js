@@ -22,16 +22,16 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/history/options-menu', 'mvc/histor
                 id      : 'history-options-button',
                 title   : 'History options',
                 cls     : 'panel-header-button',
-                href    : Galaxy.root + 'root/history_options',
                 target  : 'galaxy_main',
-                icon    : 'fa fa-cog'
+                icon    : 'fa fa-cog',
+                href    : Galaxy.root + 'root/history_options'
             });
             var buttonViewMulti = new Ui.ButtonLink({
                 id      : 'history-view-multi-button',
                 title   : 'View all histories',
                 cls     : 'panel-header-button',
-                href    : Galaxy.root + 'history/view_multiple',
-                icon    : 'fa fa-columns'
+                icon    : 'fa fa-columns',
+                href    : Galaxy.root + 'history/view_multiple'
             });
 
             // define components (is used in app-view.js)
