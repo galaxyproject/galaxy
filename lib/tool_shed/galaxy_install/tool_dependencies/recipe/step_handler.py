@@ -53,7 +53,8 @@ class CompressedFile( object ):
     def extract( self, path ):
         '''Determine the path to which the archive should be extracted.'''
         contents = self.getmembers()
-        extraction_path = path
+        extraction_path = os.path.join( path )
+        common_prefix = ''
         if len( contents ) == 1:
             # The archive contains a single file, return the extraction path.
             if self.isfile( contents[ 0 ] ):
@@ -68,18 +69,16 @@ class CompressedFile( object ):
             common_prefix = os.path.commonprefix( [ self.getname( item ) for item in contents ] )
             if len( common_prefix ) >= 1 and not common_prefix.endswith( os.sep ) and self.isdir( self.getmember( common_prefix ) ):
                 common_prefix += os.sep
-            if common_prefix.endswith( os.sep ):
-                self.archive.extractall( os.path.join( path ) )
-                extraction_path = os.path.join( path, common_prefix )
-            else:
+            if not common_prefix.endswith( os.sep ):
+                common_prefix = ''
                 extraction_path = os.path.join( path, self.file_name )
                 if not os.path.exists( extraction_path ):
                     os.makedirs( extraction_path )
-                self.archive.extractall( os.path.join( extraction_path ) )
+            self.archive.extractall( extraction_path )
         # Since .zip files store unix permissions separately, we need to iterate through the zip file
         # and set permissions on extracted members.
         if self.file_type == 'zip':
-            for zipped_file in self.getmembers():
+            for zipped_file in contents:
                 filename = self.getname( zipped_file )
                 absolute_filepath = os.path.join( extraction_path, filename )
                 external_attributes = self.archive.getinfo( filename ).external_attr
@@ -87,7 +86,7 @@ class CompressedFile( object ):
                 unix_permissions = external_attributes >> 16
                 if unix_permissions != 0:
                     os.chmod( absolute_filepath, unix_permissions )
-        return os.path.abspath( extraction_path )
+        return os.path.abspath( os.path.join( extraction_path, common_prefix ) )
 
     def getmembers_tar( self ):
         return self.archive.getmembers()
