@@ -1,3 +1,8 @@
+from galaxy import eggs
+eggs.require("Mako")
+import mako.exceptions
+
+
 def build_template_error_formatters():
     """
     Build a list of template error formatters for WebError. When an error
@@ -6,7 +11,6 @@ def build_template_error_formatters():
     """
     formatters = []
     # Formatter for mako
-    import mako.exceptions
 
     def mako_html_data( exc_value ):
         if isinstance( exc_value, ( mako.exceptions.CompileException, mako.exceptions.SyntaxException ) ):
