@@ -80,30 +80,27 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                                     '<em><strong>Search did not match any tools.</strong></em>' +
                                 '</div>' +
                             '</div>' +
-                        '</div>';
-            window.console.debug( Galaxy );
-            //if ( Galaxy.user.id )
-            /*%if t.user:
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-                  <span>Workflows</span>
-                </div>
-                <div id="XXinternalXXworkflow" class="toolSectionBody">
-                    <div class="toolSectionBg">
-                        %if t.user.stored_workflow_menu_entries:
+                            '<div class="toolSectionPad"/>' +
+                            '<div class="toolSectionPad"/>' +
+                            '<div class="toolSectionTitle" id="title_XXinternalXXworkflow">' +
+                                '<span>Workflows</span>' +
+                            '</div>' +
+                            '<div id="XXinternalXXworkflow" class="toolSectionBody">' +
+                                '<div class="toolSectionBg">';
+
+                        /*%if t.user.stored_workflow_menu_entries:
                             %for m in t.user.stored_workflow_menu_entries:
                                 <div class="toolTitle">
                                     <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${ util.unicodify( m.stored_workflow.name ) | h}</a>
                                 </div>
                             %endfor
-                        %endif
-                        <div class="toolTitle">
-                            <a href="${h.url_for( controller='workflow', action='list_for_run')}" target="galaxy_main">All workflows</a>
-                        </div>
-                    </div>
-                </div>
-            %endif*/
+                        %endif*/
+            tmpl +=                 '<div class="toolTitle">' +
+                                        '<a href="' + Galaxy.root + '/workflow/list_for_run" target="galaxy_main">All workflows</a>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>';
             return tmpl;
         }
     });
