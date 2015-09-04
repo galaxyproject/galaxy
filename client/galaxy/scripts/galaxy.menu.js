@@ -50,35 +50,35 @@ var GalaxyMenu = Backbone.Model.extend({
         });
 
         tab_shared.add({
-            title           : 'Data Libraries',
-            content         : 'library/index'
+            title   : 'Data Libraries',
+            content : 'library/index'
         });
 
         tab_shared.add({
-            title           : 'Data Libraries Beta',
-            content         : 'library/list',
-            divider         : true
+            title   : 'Data Libraries Beta',
+            content : 'library/list',
+            divider : true
         });
 
         tab_shared.add({
-            title           : 'Published Histories',
-            content         : 'history/list_published'
+            title   : 'Published Histories',
+            content : 'history/list_published'
         });
 
         tab_shared.add({
-            title           : 'Published Workflows',
-            content         : 'workflow/list_published'
+            title   : 'Published Workflows',
+            content : 'workflow/list_published'
 
         });
 
         tab_shared.add({
-            title           : 'Published Visualizations',
-            content         : 'visualization/list_published'
+            title   : 'Published Visualizations',
+            content : 'visualization/list_published'
         });
 
         tab_shared.add({
-            title           : 'Published Pages',
-            content         : 'page/list_published'
+            title   : 'Published Pages',
+            content : 'page/list_published'
         });
 
         this.masthead.append(tab_shared);
@@ -88,20 +88,20 @@ var GalaxyMenu = Backbone.Model.extend({
         //
         if ( this.options.user_requests ) {
             var tab_lab = new Masthead.GalaxyMastheadTab({
-                id          : 'lab',
-                title       : 'Lab'
+                id      : 'lab',
+                title   : 'Lab'
             });
             tab_lab.add({
-                title       : 'Sequencing Requests',
-                content     : 'requests/index'
+                title   : 'Sequencing Requests',
+                content : 'requests/index'
             });
             tab_lab.add({
-                title       : 'Find Samples',
-                content     : 'requests/find_samples_index'
+                title   : 'Find Samples',
+                content : 'requests/find_samples_index'
             });
             tab_lab.add({
-                title       : 'Help',
-                content     : this.options.lims_doc_url
+                title   : 'Help',
+                content : this.options.lims_doc_url
             });
             this.masthead.append( tab_lab );
         }
@@ -126,14 +126,14 @@ var GalaxyMenu = Backbone.Model.extend({
         // add submenu only when user is logged in
         if ( Galaxy.user.id ) {
             tab_visualization.add({
-                title       : 'New Track Browser',
-                content     : 'visualization/trackster',
-                target      : '_frame'
+                title   : 'New Track Browser',
+                content : 'visualization/trackster',
+                target  : '_frame'
             });
             tab_visualization.add({
-                title       : 'Saved Visualizations',
-                content     : 'visualization/list',
-                target      : '_frame'
+                title   : 'Saved Visualizations',
+                content : 'visualization/list',
+                target  : '_frame'
             });
         }
         this.masthead.append( tab_visualization );
@@ -162,14 +162,14 @@ var GalaxyMenu = Backbone.Model.extend({
         });
         if ( this.options.biostar_url ){
             tab_help.add({
-                title       : 'Galaxy Biostar',
-                content     : this.options.biostar_url_redirect,
-                target      : '_blank'
+                title   : 'Galaxy Biostar',
+                content : this.options.biostar_url_redirect,
+                target  : '_blank'
             });
             tab_help.add({
-                title       : 'Ask a question',
-                content     : 'biostar/biostar_question_redirect',
-                target      : '_blank'
+                title   : 'Ask a question',
+                content : 'biostar/biostar_question_redirect',
+                target  : '_blank'
             });
         }
         tab_help.add({

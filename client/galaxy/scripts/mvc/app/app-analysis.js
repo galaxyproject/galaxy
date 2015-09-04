@@ -1,4 +1,5 @@
-define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 'mvc/history/options-menu', 'mvc/history/history-panel-edit-current'],
+define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
+        'mvc/history/options-menu', 'mvc/history/history-panel-edit-current'],
     function( Utils, Tools, Upload, Ui, optionsMenu, HistoryPanel ) {
 
     /* Builds the center panel */
@@ -55,7 +56,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
                 // minsize init hint
                 this.$( 'a[minsizehint]' ).click( function() {
                     if ( parent.handle_minwidth_hint ) {
-                        parent.handle_minwidth_hint( $(this).attr( 'minsizehint' ) );
+                        parent.handle_minwidth_hint( $( this ).attr( 'minsizehint' ) );
                     }
                 });
 
@@ -80,7 +81,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
                                 '</div>' +
                             '</div>' +
                         '</div>';
-            window.console.log( Galaxy );
+            window.console.debug( Galaxy );
             //if ( Galaxy.user.id )
             /*%if t.user:
                 <div class="toolSectionPad"></div>
