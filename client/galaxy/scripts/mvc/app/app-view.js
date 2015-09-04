@@ -1,11 +1,10 @@
 /**
     This is the entrance point for the Galaxy UI.
 */
-define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
-        'galaxy.masthead', 'galaxy.menu', 'mvc/ui/ui-modal', 'galaxy.frame',
-        'mvc/user/user-model','mvc/user/user-quotameter',
-        'mvc/app/app-analysis'],
-    function( Utils, Portlet, Ui, Masthead, Menu, Modal, Frame, User, QuotaMeter, Analysis ) {
+define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
+        'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal',
+        'mvc/user/user-quotameter', 'mvc/app/app-analysis'],
+    function( Utils, Masthead, Menu, Frame, Portlet, Ui, Modal, QuotaMeter, Analysis ) {
     return Backbone.View.extend({
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
@@ -24,11 +23,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             if ( this.options.show_inactivity_warning ) {
                 $container.addClass( 'has-inactivity-box' );
                 this.$( '#inactivebox' ).show();
-            }
-
-            // set user
-            if( !Galaxy.currUser ) {
-                Galaxy.currUser = new User.User( options.user_json );
             }
 
             // load global galaxy objects

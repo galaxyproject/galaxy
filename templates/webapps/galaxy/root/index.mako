@@ -39,8 +39,7 @@
         'toolbox_in_panel'          : app.toolbox.to_dict( trans ),
         'message_box_visible'       : app.config.message_box_visible,
         'show_inactivity_warning'   : trans.user and ( ( trans.user.active is False ) and ( app.config.user_activation_on ) and ( app.config.inactivity_box_content is not None ) ),
-        'user_requests'             : bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) ),
-        'user_json'                 : get_user_dict()
+        'user_requests'             : bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) )
     }
 %>
 <script>
