@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/galaxy_client_app.mako" import="get_user_dict" />
+
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.templates("tool_link", "panel_section", "tool_search")}
@@ -33,8 +34,10 @@
         'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
         'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
         'datatypes_disable_auto'    : app.config.get_bool("datatypes_disable_auto",  False),
-        'toolbox'                   : trans.app.toolbox.to_dict( trans, in_panel=False ),
-        'toolbox_in_panel'          : trans.app.toolbox.to_dict( trans ),
+        'toolbox'                   : app.toolbox.to_dict( trans, in_panel=False ),
+        'toolbox_in_panel'          : app.toolbox.to_dict( trans ),
+        'message_box_visible'       : app.config.message_box_visible,
+        'show_inactivity_warning'   : trans.user and ( ( trans.user.active is False ) and ( app.config.user_activation_on ) and ( app.config.inactivity_box_content is not None ) ),
         'user'          : {
             'requests'  : bool(trans.user and (trans.user.requests or trans.app.security_agent.get_accessible_request_types(trans, trans.user))),
             'email'     : escape( trans.user.email ) if (trans.user) else "",
@@ -44,11 +47,11 @@
     }
 %>
 <script>
-    require(['mvc/app/app-view'], function(App){
-        $(function(){
+    require(['mvc/app/app-view'], function( App ){
+        $( function() {
             Galaxy.config.message_box_class = 'info';
             Galaxy.config.message_box_content = 'sadsadasd';
             var app = new App(${ h.dumps(app_config) });
-        });
+        } );
     });
 </script>

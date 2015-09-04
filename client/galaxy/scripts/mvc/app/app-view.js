@@ -10,8 +10,21 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
             this.setElement( this._template( options ) );
+
+            // configure body
+            $( 'body' ).append( this.$el );
             ensure_dd_helper();
-            $( 'body' ).attr( 'scroll', 'no' ).addClass( 'full-content' ).append( this.$el );
+
+            // adjust parent container
+            var $container = $( this.$el.parent() ).attr( 'scroll', 'no' ).addClass( 'full-content' );
+            if ( this.options.message_box_visible ) {
+                $container.addClass( 'has-message-box' );
+                this.$('#messagebox').show();
+            }
+            if ( this.options.show_inactivity_warning ) {
+                $container.addClass( 'has-inactivity-box' );
+                this.$('#inactivebox').show();
+            }
 
             // set user
             if( !Galaxy.currUser ) {
@@ -39,14 +52,14 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
 
             // build page
-            this._buildPage( Analysis, options );
+            this._buildPanels( Analysis, options );
         },
 
-        _buildPage: function( Cls, options ) {
+        _buildPanels: function( Views, options ) {
             var panel_ids = [ 'left', 'center', 'right' ];
             for ( var i in panel_ids ) {
                 var id = panel_ids[ i ];
-                var view = new Cls[ id ]( options );
+                var view = new Views[ id ]( options );
                 if ( id == 'center' ) {
                     this.$('#center').append( view.$el );
                 } else {
@@ -98,10 +111,13 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
         _template: function() {
             return  '<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">' +
                         '<div id="background"/>' +
-                        '<div id="messagebox" class="panel-' + Galaxy.config.message_box_class + '-message">' +
+                        '<div id="messagebox" class="panel-' + Galaxy.config.message_box_class + '-message" style="display: none;">' +
                             Galaxy.config.message_box_content +
                         '</div>' +
-                        '<div id="inactivebox" class="panel-warning-message"/>' +
+                        '<div id="inactivebox" class="panel-warning-message" style="display: none;">' +
+                            Galaxy.config.inactivity_box_content +
+                                ' <a href="' + Galaxy.root + 'user/resend_verification">Resend verification.</a>' +
+                        '</div>' +
                         '<div id="center" class="inbound"/>' +
                     '</div>';
         }
