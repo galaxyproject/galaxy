@@ -214,7 +214,7 @@ class GalaxyRBACAgent( RBACAgent ):
             for role in self.get_sharing_roles( trans.user ):
                 roles.add( role )
             # Add all remaining non-private, non-sharing roles
-            for role in self._get_roles( trans):
+            for role in self._get_npns_roles( trans):
                 roles.add( role )
         return self.sort_by_attr( [ role for role in roles ], 'name' )
 
