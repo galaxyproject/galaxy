@@ -5,10 +5,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
     var CenterPanel = Backbone.View.extend({
         // initialize
         initialize: function( options ) {
-            // configure options
             this.options = Utils.merge( options, {} );
-
-            // set element
             this.setElement( this._template() );
 
             /*if trans.app.config.require_login and not trans.user:
@@ -23,12 +20,13 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
                     center_url = h.url_for( controller="root", action="welcome" )*/
 
             var src = 'welcome';
-            /*if ( Galaxy.config.require_login && !Galaxy.user.valid ) {
+            window.console.log(Galaxy.config);
+            if ( Galaxy.config.require_login && !Galaxy.user.valid ) {
                 src = 'user/login';
             } else {
                 if (true ) {
                 }
-            }*/
+            }
             this.$( '#galaxy_main' ).prop( 'src', galaxy_config.root + src );
         },
 
