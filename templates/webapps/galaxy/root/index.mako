@@ -11,6 +11,7 @@
     app = trans.app
     app_config = {
         'active_view'               : 'analysis',
+        'params'                    : dict( trans.request.params ),
         'brand'                     : app.config.get("brand", ""),
         'nginx_upload_path'         : app.config.get("nginx_upload_path", h.url_for(controller='api', action='tools')),
         'use_remote_user'           : app.config.use_remote_user,

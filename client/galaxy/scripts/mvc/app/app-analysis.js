@@ -1,33 +1,19 @@
 define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 'mvc/history/options-menu', 'mvc/history/history-panel-edit-current'],
     function( Utils, Tools, Upload, Ui, optionsMenu, HistoryPanel ) {
 
-    // create form view
+    /* Builds the center panel */
     var CenterPanel = Backbone.View.extend({
-        // initialize
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
             this.setElement( this._template() );
-
-            /*if trans.app.config.require_login and not trans.user:
-                center_url = h.url_for( controller='user', action='login' )
-            elif tool_id is not None:
-                center_url = h.url_for( 'tool_runner', tool_id=tool_id, from_noframe=True, **params )
-            elif workflow_id is not None:
-                center_url = h.url_for( controller='workflow', action='run', id=workflow_id )
-            elif m_c is not None:
-                center_url = h.url_for( controller=m_c, action=m_a )
-            else:
-                    center_url = h.url_for( controller="root", action="welcome" )*/
-
-            var src = 'welcome';
-            window.console.log(Galaxy.config);
-            if ( Galaxy.config.require_login && !Galaxy.user.valid ) {
-                src = 'user/login';
-            } else {
-                if (true ) {
-                }
-            }
-            this.$( '#galaxy_main' ).prop( 'src', galaxy_config.root + src );
+            var params = this.options.params;
+            this.$( '#galaxy_main' ).prop( 'src', galaxy_config.root + (
+                ( params.tool_id && ( 'tool_runner?' + $.param( params ) ) ) ||
+                ( params.workflow_id && ( 'workflow/run?workflow_id=' + params.workflow_id ) ) ||
+                ( params.m_c && ( params.m_c + '/' + params.m_a ) ) ||
+                ( !Galaxy.config.require_login && Galaxy.user.valid && 'user/login') ||
+                'root/welcome'
+            ));
         },
 
         _template: function() {
@@ -37,7 +23,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
         }
     });
 
-    // create form view
+    /* Builds the tool panel on the left */
     var LeftPanel = Backbone.View.extend({
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
@@ -120,6 +106,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
         }
     });
 
+    /* Builds the history panel on the right */
     var RightPanel = Backbone.View.extend({
         initialize: function(options) {
             this.options = Utils.merge( options, {} );
