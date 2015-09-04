@@ -19,11 +19,11 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             var $container = $( this.$el.parent() ).attr( 'scroll', 'no' ).addClass( 'full-content' );
             if ( this.options.message_box_visible ) {
                 $container.addClass( 'has-message-box' );
-                this.$('#messagebox').show();
+                this.$( '#messagebox' ).show();
             }
             if ( this.options.show_inactivity_warning ) {
                 $container.addClass( 'has-inactivity-box' );
-                this.$('#inactivebox').show();
+                this.$( '#inactivebox' ).show();
             }
 
             // set user
