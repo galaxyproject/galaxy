@@ -11,7 +11,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
                 ( params.tool_id && ( 'tool_runner?' + $.param( params ) ) ) ||
                 ( params.workflow_id && ( 'workflow/run?workflow_id=' + params.workflow_id ) ) ||
                 ( params.m_c && ( params.m_c + '/' + params.m_a ) ) ||
-                ( !Galaxy.config.require_login && Galaxy.user.valid && 'user/login') ||
+                ( Galaxy.config.require_login && !Galaxy.user.id && 'user/login') ||
                 'root/welcome'
             ));
         },
@@ -27,9 +27,8 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
             this.setElement( this._template() );
-
             // create tool search, tool panel, and tool panel view.
-            if ( Galaxy.user.valid || !Galaxy.config.require_login ) {
+            if ( Galaxy.user.id || !Galaxy.config.require_login ) {
                 var tool_search = new Tools.ToolSearch({
                     spinner_url : options.spinner_url,
                     search_url  : options.search_url,
@@ -74,13 +73,15 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
         },
 
         _template: function() {
-            return  '<div class="toolMenuContainer">' +
-                        '<div class="toolMenu" style="display: none">' +
-                            '<div id="search-no-results" style="display: none; padding-top: 5px">' +
-                                '<em><strong>Search did not match any tools.</strong></em>' +
+            var tmpl =  '<div class="toolMenuContainer">' +
+                            '<div class="toolMenu" style="display: none">' +
+                                '<div id="search-no-results" style="display: none; padding-top: 5px">' +
+                                    '<em><strong>Search did not match any tools.</strong></em>' +
+                                '</div>' +
                             '</div>' +
-                        '</div>' +
-                    '</div>';
+                        '</div>';
+            window.console.log( Galaxy );
+            //if ( Galaxy.user.id )
             /*%if t.user:
                 <div class="toolSectionPad"></div>
                 <div class="toolSectionPad"></div>
@@ -102,6 +103,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
                     </div>
                 </div>
             %endif*/
+            return tmpl;
         }
     });
 
@@ -153,7 +155,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc', 
 
             // build history options menu
             Galaxy.historyOptionsMenu = optionsMenu( buttonOptions.$el, {
-                anonymous    : options.user.valid && 'true' || 'false',
+                anonymous    : Galaxy.user.id && 'true' || 'false',
                 purgeAllowed : Galaxy.config.allow_user_dataset_purge && 'true' || 'false',
                 root         : Galaxy.root
             });

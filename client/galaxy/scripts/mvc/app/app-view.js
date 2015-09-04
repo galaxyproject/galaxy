@@ -28,7 +28,7 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
             // set user
             if( !Galaxy.currUser ) {
-                Galaxy.currUser = new User.User( options.user.json );
+                Galaxy.currUser = new User.User( options.user_json );
             }
 
             // load global galaxy objects
