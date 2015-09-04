@@ -54,7 +54,7 @@
         ], function( mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload, user, quotameter ){
             if( !Galaxy.currUser ){
                 // this doesn't need to wait for the page being readied
-                Galaxy.currUser = new user.User(${ h.dumps( masthead_config[ 'user' ][ 'json' ], indent=2 ) });
+                Galaxy.currUser = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
             }
 
             $(function() {
