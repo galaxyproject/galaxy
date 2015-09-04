@@ -38,8 +38,9 @@
                  when self-signed certificates are used -->
 <!--        <ldap-options>OPT_X_TLS_REQUIRE_CERT=OPT_X_TLS_ALLOW</ldap-options>
 -->
-            <!-- Whether to allow login with username instead of email. Default
-                 is False. -->
+            <!-- Whether unregistered users should use their LDAP username
+                 instead of the email at their first login when auto-register is
+                 True. Default is False. -->
 <!--        <login-use-username>False</login-use-username>
 -->
             <!-- Whether to continue with the following authenticators if LDAP
@@ -52,16 +53,28 @@
                  to the LDAP server for search. -->
             <!-- For Active Directory: -->
 <!--        <search-fields>sAMAccountName,mail</search-fields>
-            <search-filter>(&amp;(objectClass=user)(mail={email}))</search-filter>
             <search-base>dc=dc1,dc=example,dc=com</search-base>
-            <search-user>jsmith@dc1.example.com</search-user>
+-->
+            <!-- If login-use-username is False -->
+<!--        <search-filter>(&amp;(objectClass=user)(mail={email}))</search-filter>
+-->
+            <!-- If login-use-username is True -->
+<!--        <search-filter>(&amp;(objectClass=user)(sAMAccountName={username}))</search-filter>
+-->
+<!--        <search-user>jsmith@dc1.example.com</search-user>
             <search-password>mysecret</search-password>
 -->
             <!-- For OpenLDAP: -->
 <!--        <search-fields>uid,mail</search-fields>
-            <search-filter>(&#124;(mail={email})(uid={username}))</search-filter>
             <search-base>ou=People,dc=example,dc=com</search-base>
-            <search-user>cn=jsmith,ou=People,dc=domain,dc=com</search-user>
+-->
+            <!-- If login-use-username is False -->
+<!--        <search-filter>(mail={email})</search-filter>
+-->
+            <!-- If login-use-username is True -->
+<!--        <search-filter>(uid={username})</search-filter>
+-->
+<!--        <search-user>cn=jsmith,ou=People,dc=domain,dc=com</search-user>
             <search-password>mysecret</search-password>
 -->
 
