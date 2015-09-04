@@ -8,7 +8,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
             this.options = Utils.merge( options, {} );
             this.setElement( this._template() );
             var params = this.options.params;
-            this.$( '#galaxy_main' ).prop( 'src', galaxy_config.root + (
+            this.$( '#galaxy_main' ).prop( 'src', Galaxy.root + (
                 ( params.tool_id && ( 'tool_runner?' + $.param( params ) ) ) ||
                 ( params.workflow_id && ( 'workflow/run?workflow_id=' + params.workflow_id ) ) ||
                 ( params.m_c && ( params.m_c + '/' + params.m_a ) ) ||

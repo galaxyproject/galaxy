@@ -40,7 +40,7 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
                 // set up the quota meter (And fetch the current user data from trans)
                 // add quota meter to masthead
                 Galaxy.quotaMeter = new QuotaMeter.UserQuotaMeter({
-                    model       : Galaxy.currUser,
+                    model       : Galaxy.user,
                     el          : Galaxy.masthead.$( '.quota-meter-container' )
                 }).render();
             }

@@ -129,7 +129,7 @@ return Backbone.View.extend({
         }
 
         // set current user
-        this.current_user = Galaxy.currUser.get( 'id' );
+        this.current_user = Galaxy.user.id;
 
         // create modal
         if ( !this.modal ) {
