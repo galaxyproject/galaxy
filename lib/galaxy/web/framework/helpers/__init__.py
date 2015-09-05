@@ -16,6 +16,19 @@ eggs.require( "repoze.lru" )  # used by Routes
 eggs.require( "Routes" )
 from routes import url_for
 
+import json
+
+try:
+    eggs.require('PyYAML')
+except Exception:
+    # If not in Galaxy, ignore this.
+    pass
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+
 server_starttime = int(time.time())
 
 
@@ -120,3 +133,12 @@ def is_true( val ):
     Returns true if input is a boolean and true or is a string and looks like a true value.
     """
     return val is True or val in [ 'True', 'true', 'T', 't' ]
+
+
+def get_intro_configuration( introduction_config_file ):
+    """
+    Reads a yaml file with intro.js configurations.
+    """
+    conf = yaml.load( open( introduction_config_file ) )
+    print conf
+    return json.dumps( conf )
