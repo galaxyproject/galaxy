@@ -266,7 +266,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             });
 
             // add admin operations
-            if (Galaxy.user.get('is_admin')) {
+            if (Galaxy.user && Galaxy.user.get('is_admin')) {
                 // create download button
                 menu_button.addMenu({
                     icon    : 'fa-download',
