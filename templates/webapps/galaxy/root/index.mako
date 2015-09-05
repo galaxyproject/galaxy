@@ -1,6 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/galaxy_client_app.mako" import="get_user_dict" />
-
+${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
+${h.css("base", "jquery-ui/smoothness/jquery-ui")}
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.templates("tool_link", "panel_section", "tool_search")}
