@@ -15,10 +15,20 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                 ( Galaxy.config.require_login && !Galaxy.user.id && 'user/login') ||
                 'root/welcome'
             ));
+            var self = this;
+            this.$( '#galaxy_main' ).on( 'load', function() {
+                $( this ).show();
+                self.$( '#center-panel' ).hide();
+            });
+        },
+        display: function( $el ) {
+            this.$( '#galaxy_main' ).hide();
+            this.$( '#center-panel' ).empty().append( $el ).show();
         },
         _template: function() {
             return  '<div style="position: absolute; width: 100%; height: 100%">' +
                         '<iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;"/>' +
+                        '<div id="center-panel" style="position: absolute; width: 100%; height: 100%; padding: 10px; overflow: auto;"/>' +
                     '</div>';
         }
     });

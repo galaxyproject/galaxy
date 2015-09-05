@@ -8,7 +8,11 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
     return Backbone.View.extend({
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
+            this.params  = this.options.params;
             this.setElement( this._template( options ) );
+
+            // register this view
+            Galaxy.app = this;
 
             // configure body
             $( 'body' ).append( this.$el );
@@ -49,11 +53,18 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
             this._buildPanels( Analysis, options );
         },
 
+        /** Display content */
+        display: function ( $el, target ) {
+            this.panels && this.panels[ target || 'center' ].display( $el );
+        },
+
+        /** Build all panels **/
         _buildPanels: function( Views, options ) {
+            this.panels = [];
             var panel_ids = [ 'left', 'center', 'right' ];
             for ( var i in panel_ids ) {
                 var id = panel_ids[ i ];
-                var view = new Views[ id ]( options );
+                var view = this.panels[ id ] = new Views[ id ]( options );
                 if ( id == 'center' ) {
                     this.$('#center').append( view.$el );
                 } else {
@@ -86,6 +97,7 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
             }
         },
 
+        /** Template for left/right panel */
         _templatePanel: function( id ) {
             return  '<div id="' + id + '">' +
                         '<div class="unified-panel-header" unselectable="on">' +
@@ -102,6 +114,7 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
                     '</div>';
         },
 
+        /** Main template **/
         _template: function() {
             return  '<div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">' +
                         '<div id="background"/>' +

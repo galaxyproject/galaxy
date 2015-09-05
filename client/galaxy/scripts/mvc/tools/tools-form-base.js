@@ -9,15 +9,19 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
     return Backbone.View.extend({
         // initialize
         initialize: function(options) {
+            this.options = Utils.merge(options, {});
+            this.setElement('<div/>');
+
             // create deferred processing queue handler
             // this handler reduces the number of requests to the api by filtering redundant requests
             this.deferred = new Deferred();
 
-            // set element
-            this.setElement('<div/>');
-
             // create form
-            this._buildForm(options);
+            if (options.inputs) {
+                this._buildForm(options);
+            } else {
+                this._buildModel(options, true);
+            }
         },
 
         /** Build form */
@@ -53,7 +57,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
 
         /** Builds a new model through api call and recreates the entire form
         */
-        _buildModel: function(options) {
+        _buildModel: function(options, hide_message) {
             // link this
             var self = this;
 
@@ -90,7 +94,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     self._buildForm(new_model['tool_model'] || new_model);
 
                     // show version message
-                    self.form.message.update({
+                    !hide_message && self.form.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
                         persistent  : false
