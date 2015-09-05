@@ -10,7 +10,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
             var params = this.options.params;
             this.$( '#galaxy_main' ).prop( 'src', Galaxy.root + (
                 ( params.tool_id && ( 'tool_runner?' + $.param( params ) ) ) ||
-                ( params.workflow_id && ( 'workflow/run?workflow_id=' + params.workflow_id ) ) ||
+                ( params.workflow_id && ( 'workflow/run?id=' + params.workflow_id ) ) ||
                 ( params.m_c && ( params.m_c + '/' + params.m_a ) ) ||
                 ( Galaxy.config.require_login && !Galaxy.user.id && 'user/login') ||
                 'root/welcome'
@@ -42,7 +42,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                     layout      : options.toolbox_in_panel
                 });
                 tool_panel_view = new Tools.ToolPanelView({ model: tool_panel });
-            
+
                 // add tool panel to Galaxy object
                 Galaxy.toolPanel = tool_panel;
 
@@ -51,7 +51,18 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                     tool_panel_view.render();
                     this.$( '.toolMenu' ).show();
                 }
-                this.$el.append( tool_panel_view.$el );
+                this.$el.prepend( tool_panel_view.$el );
+                this.$( '.toolSectionBody' ).append( this._templateTool({
+                    title   : 'All workflows',
+                    href    : 'workflow/list_for_run'
+                }) )
+                for ( var i in options.stored_workflow_menu_entries ) {
+                    var m = options.stored_workflow_menu_entries[ i ];
+                    this.$( '.toolSectionBody' ).append( this._templateTool({
+                        title : m.stored_workflow.name,
+                        href  : 'workflow/run?id=' + m.encoded_stored_workflow_id
+                    }) );
+                }
 
                 // minsize init hint
                 this.$( 'a[minsizehint]' ).click( function() {
@@ -73,35 +84,28 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
             }
         },
 
-        _template: function() {
-            var tmpl =  '<div class="toolMenuContainer">' +
-                            '<div class="toolMenu" style="display: none">' +
-                                '<div id="search-no-results" style="display: none; padding-top: 5px">' +
-                                    '<em><strong>Search did not match any tools.</strong></em>' +
-                                '</div>' +
-                            '</div>' +
-                            '<div class="toolSectionPad"/>' +
-                            '<div class="toolSectionPad"/>' +
-                            '<div class="toolSectionTitle" id="title_XXinternalXXworkflow">' +
-                                '<span>Workflows</span>' +
-                            '</div>' +
-                            '<div id="XXinternalXXworkflow" class="toolSectionBody">' +
-                                '<div class="toolSectionBg">';
+        _templateTool: function( options ) {
+            return  '<div class="toolTitle">' +
+                        '<a href="' + Galaxy.root + options.href + '" target="galaxy_main">' + options.title + '</a>' +
+                    '</div>';
+        },
 
-                        /*%if t.user.stored_workflow_menu_entries:
-                            %for m in t.user.stored_workflow_menu_entries:
-                                <div class="toolTitle">
-                                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(m.stored_workflow_id) )}" target="galaxy_main">${ util.unicodify( m.stored_workflow.name ) | h}</a>
-                                </div>
-                            %endfor
-                        %endif*/
-            tmpl +=                 '<div class="toolTitle">' +
-                                        '<a href="' + Galaxy.root + '/workflow/list_for_run" target="galaxy_main">All workflows</a>' +
-                                    '</div>' +
-                                '</div>' +
+        _template: function() {
+            return  '<div class="toolMenuContainer">' +
+                        '<div class="toolMenu" style="display: none">' +
+                            '<div id="search-no-results" style="display: none; padding-top: 5px">' +
+                                '<em><strong>Search did not match any tools.</strong></em>' +
                             '</div>' +
-                        '</div>';
-            return tmpl;
+                        '</div>' +
+                        '<div class="toolSectionPad"/>' +
+                        '<div class="toolSectionPad"/>' +
+                        '<div class="toolSectionTitle" id="title_XXinternalXXworkflow">' +
+                            '<span>Workflows</span>' +
+                        '</div>' +
+                        '<div id="XXinternalXXworkflow" class="toolSectionBody">' +
+                            '<div class="toolSectionBg"/>' +
+                        '</div>' +
+                    '</div>';
         }
     });
 
