@@ -52,13 +52,15 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                     this.$( '.toolMenu' ).show();
                 }
                 this.$el.prepend( tool_panel_view.$el );
-                this.$( '.toolSectionBody' ).append( this._templateTool({
+
+                // add internal workflow list
+                this.$( '#internal-workflows' ).append( this._templateTool({
                     title   : 'All workflows',
                     href    : 'workflow/list_for_run'
                 }) )
                 for ( var i in options.stored_workflow_menu_entries ) {
                     var m = options.stored_workflow_menu_entries[ i ];
-                    this.$( '.toolSectionBody' ).append( this._templateTool({
+                    this.$( '#internal-workflows' ).append( this._templateTool({
                         title : m.stored_workflow.name,
                         href  : 'workflow/run?id=' + m.encoded_stored_workflow_id
                     }) );
@@ -102,7 +104,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                         '<div class="toolSectionTitle" id="title_XXinternalXXworkflow">' +
                             '<span>Workflows</span>' +
                         '</div>' +
-                        '<div id="XXinternalXXworkflow" class="toolSectionBody">' +
+                        '<div id="internal-workflows" class="toolSectionBody">' +
                             '<div class="toolSectionBg"/>' +
                         '</div>' +
                     '</div>';
