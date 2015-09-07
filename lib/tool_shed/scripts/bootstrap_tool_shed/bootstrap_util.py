@@ -80,6 +80,9 @@ def check_db( config_parser ):
 def admin_user_info( ):
     user_info_config = os.path.abspath( os.path.join( os.getcwd(), 'lib/tool_shed/scripts/bootstrap_tool_shed', 'user_info.xml' ) )
     tree, error_message = xml_util.parse_xml( user_info_config )
+    username = None
+    email = None
+    password = None
     if tree is None:
         print "The XML file ", user_info_config, " seems to be invalid, using defaults."
         email = 'admin@test.org'
