@@ -1,5 +1,6 @@
 # Contributing
 
+Galaxy welcomes new development!
 This document briefly describes how to contribute to the [core
 galaxy project](https://github.com/galaxyproject/galaxy) -
 also checkout our 2013 Galaxy Community
@@ -19,11 +20,17 @@ common venues for this are
 [GitHub issues](https://github.com/galaxyproject/galaxy/issues) and the
 [Galaxy and Tool Shed Trello boards](https://wiki.galaxyproject.org/Issues).
 Browse through existing GitHub issues and Trello cards and if one seems related,
-comment on it. If no existing issue/card seems appropriate, a new issue can be
-opened using [this form](https://github.com/galaxyproject/galaxy/issues/new). Galaxy
-developers are also generally available via
+comment on it. We also maintain a [card](https://trello.com/c/eFdPIdIB) with
+links to smaller issues we believe would make the best entry points for new
+developers.
+Galaxy developers are generally available via
 [IRC](https://wiki.galaxyproject.org/GetInvolved#IRC_Channel) and on
 the [development mailing list](http://dev.list.galaxyproject.org/).
+
+## Reporting a new issue
+
+If no existing Galaxy issue/Trello card seems appropriate, a new issue can be
+opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
 
 ## How to Contribute
 
@@ -42,6 +49,14 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
   [galaxy-dist](https://bitbucket.org/galaxy/galaxy-dist), active development
   happens in the galaxy GitHub repository and this is where pull requests
   should be made).
+  To keep your copy up to date with respect to the main repository, you need to
+  frequently [sync your fork](https://help.github.com/articles/syncing-a-fork/):
+  ```
+    $ git remote add upstream https://github.com/galaxyproject/galaxy
+    $ git fetch upstream
+    $ git checkout dev
+    $ git merge upstream/dev
+  ```
 
 * Choose the correct branch to develop your changes against.
 
@@ -87,13 +102,6 @@ the [development mailing list](http://dev.list.galaxyproject.org/).
 
 * The pull request should pass all the continuous integration tests which are
   automatically run by GitHub using e.g. Travis CI.
-
-## Ideas
-
-Galaxy's [Trello board](http://bit.ly/gxytrello) is filled with bugs and ideas
-for enhancements, but we maintain a [card](https://trello.com/c/eFdPIdIB) with
-links to smaller issues we believe would make the best entry points for new
-developers.
 
 ## A Quick Note about Tools
 
