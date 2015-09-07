@@ -759,6 +759,8 @@ def get_installed_repository( app, tool_shed, name, owner, changeset_revision=No
     repository owner and either current or originally installed changeset_revision.
     """
     query = app.install_model.context.query( app.install_model.ToolShedRepository )
+    # We store the port, if one exists, in the database.
+    tool_shed = common_util.remove_protocol_from_tool_shed_url( tool_shed )
     clause_list = [ app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
                     app.install_model.ToolShedRepository.table.c.name == name,
                     app.install_model.ToolShedRepository.table.c.owner == owner ]
