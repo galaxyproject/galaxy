@@ -55,6 +55,8 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
 
         /** Display content */
         display: function ( $el, target ) {
+            // TODO: Remove this line after select2 update
+            $( '.select2-hidden-accessible' ).remove();
             this.panels && this.panels[ target || 'center' ].display( $el );
         },
 
