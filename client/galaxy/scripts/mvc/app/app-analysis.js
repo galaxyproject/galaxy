@@ -18,7 +18,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
             var self = this;
             this.$( '#galaxy_main' ).on( 'load', function() {
                 $( this ).show();
-                self.$( '#center-panel' ).hide();
+                self.$( '#center-panel' ).empty().hide();
             });
         },
         display: function( $el ) {
