@@ -121,11 +121,17 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
         _makeSection: function(output_id, datatypes){
             // format datatypes
             var extensions = [];
+            var input_terminal_names = [];
+
             for (key in datatypes) {
                 extensions.push({
                     0 : datatypes[key],
                     1 : datatypes[key]
                 });
+            }
+
+            for (key in this.node.input_terminals){
+                input_terminal_names.push(this.node.input_terminals[key].name);
             }
 
             // sort extensions
@@ -159,7 +165,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     type        : 'text',
                     value       : '',
                     ignore      : '',
-                    help        : 'This action will rename the output dataset. Click <a href="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more information.'
+                    help        : 'This action will rename the output dataset. Click <a href="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more information. Valid inputs are: <strong>' + input_terminal_names.join(", ") + '</strong>.'
                 },{
                     action      : 'ChangeDatatypeAction',
                     pja_arg     : 'newtype',
