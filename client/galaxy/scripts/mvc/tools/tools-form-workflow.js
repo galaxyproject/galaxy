@@ -155,14 +155,16 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 inputs  : [{
                     action      : 'RenameDatasetAction',
                     argument    : 'newname',
+                    show_arg    : false,
                     label       : 'Rename dataset',
                     type        : 'text',
                     value       : '',
                     ignore      : '',
-                    help        : 'This action will rename the result dataset. Click <a href="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more information.'
+                    help        : 'This action will rename the output dataset. Click <a href="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more information.'
                 },{
                     action      : 'ChangeDatatypeAction',
                     argument    : 'newtype',
+                    show_arg    : false,
                     label       : 'Change datatype',
                     type        : 'select',
                     ignore      : '__empty__',
@@ -172,6 +174,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 },{
                     action      : 'TagDatasetAction',
                     argument    : 'tags',
+                    show_arg    : false,
                     label       : 'Tags',
                     type        : 'text',
                     value       : '',

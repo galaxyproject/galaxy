@@ -124,12 +124,12 @@ define([], function() {
             tmp +=              '<div class="ui-table-form-info">';
             if (options.help) {
                 tmp +=              options.help;
-                if (options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
+                if (options.show_arg !== false && options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
                     tmp += ' (' + options.argument + ')';
                 }
             }
             tmp +=              '</div>';
-            
+
             // finalize
             tmp +=          '</div>' +
                         '</div>';
