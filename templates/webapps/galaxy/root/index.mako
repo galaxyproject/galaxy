@@ -44,13 +44,14 @@ ${h.css("base")}
         'user_requests'                 : bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) ),
         'stored_workflow_menu_entries'  : []
     }
-    for m in trans.user.stored_workflow_menu_entries:
-        app_config[ 'stored_workflow_menu_entries' ].append({
-            'encoded_stored_workflow_id' : trans.security.encode_id( m.stored_workflow_id ),
-            'stored_workflow' : {
-                'name' : util.unicodify( m.stored_workflow.name )
-            }
-        })
+    if hasattr( trans.user, 'stored_workflow_menu_entries' ):
+        for m in trans.user.stored_workflow_menu_entries:
+            app_config[ 'stored_workflow_menu_entries' ].append({
+                'encoded_stored_workflow_id' : trans.security.encode_id( m.stored_workflow_id ),
+                'stored_workflow' : {
+                    'name' : util.unicodify( m.stored_workflow.name )
+                }
+            })
 %>
 <script>
     require(['mvc/app/app-view'], function( App ){
