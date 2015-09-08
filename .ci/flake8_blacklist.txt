@@ -1,5 +1,4 @@
 .venv/
-contrib/
 client/
 database/
 doc/patch.py

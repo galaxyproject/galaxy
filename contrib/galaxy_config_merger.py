@@ -24,14 +24,15 @@ THE ORIGINAL WORK IS WITH YOU.
 Script for merging specific local Galaxy config galaxy.ini.cri with default Galaxy galaxy.ini.sample
 '''
 import ConfigParser
-import sys
-import optparse
 import logging
+import optparse
+import sys
+
 
 def main():
     # logging configuration
     logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.INFO)
-    
+
     # get the options
     parser = optparse.OptionParser()
     parser.add_option("-s", "--sample", dest="sample", action="store", help="path to Galaxy galaxy.ini.sample file")
@@ -40,18 +41,18 @@ def main():
     (options, args) = parser.parse_args()
 
     for option in ['sample', 'config']:
-        if getattr(options, option) == None:
+        if getattr(options, option) is None:
             print "Please supply a --%s parameter.\n" % (option)
             parser.print_help()
-            sys.exit()    
+            sys.exit()
 
     config_sample = ConfigParser.RawConfigParser()
     config_sample.read(options.sample)
     config_sample_content = open(options.sample, 'r').read()
-    
+
     config = ConfigParser.RawConfigParser()
     config.read(options.config)
-    
+
     logging.info("Merging your own config file %s into the sample one %s." % (options.config, options.sample))
     logging.info("---------- DIFFERENCE ANALYSIS BEGIN ----------")
     for section in config.sections():
@@ -70,18 +71,18 @@ def main():
                         logging.info("- diff - section [%s] option '%s' has different value ('%s':'%s'). It will be modified." % (section, name, config_sample.get(section, name), value))
                         config_sample.set(section, name, value)
     logging.info("---------- DIFFERENCE ANALYSIS END   ----------")
-    
+
     if options.output:
         outputfile = open(options.output, 'w')
         config_sample.write(outputfile)
         outputfile.close()
     else:
-        #print "----------"
-        #config_sample.write(sys.stdout)
-        #print "----------"
+        # print "----------"
+        # config_sample.write(sys.stdout)
+        # print "----------"
         logging.info("use -o OUTPUT to write the merged configuration into a file.")
 
     logging.info("read Galaxy galaxy.ini.sample for detailed information.")
-    
+
 if __name__ == '__main__':
     main()
