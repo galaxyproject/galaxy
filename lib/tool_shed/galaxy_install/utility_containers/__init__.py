@@ -1,5 +1,4 @@
 import logging
-import os
 import threading
 
 from tool_shed.utility_containers import utility_container_manager

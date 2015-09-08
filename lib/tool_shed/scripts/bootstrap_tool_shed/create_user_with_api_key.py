@@ -5,19 +5,12 @@ import logging
 import os
 import re
 import sys
-
 from optparse import OptionParser
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
-eggs.require( 'mercurial' )
-
-from galaxy.web import security
 import galaxy.webapps.tool_shed.config as tool_shed_config
+from galaxy.web import security
 from galaxy.webapps.tool_shed.model import mapping
 from tool_shed.util import xml_util
 
@@ -57,6 +50,7 @@ class BootstrapApplication( object ):
     def shutdown( self ):
         pass
 
+
 def create_api_key( app, user ):
     api_key = app.security.get_new_guid()
     new_key = app.model.APIKeys()
@@ -65,7 +59,8 @@ def create_api_key( app, user ):
     app.sa_session.add( new_key )
     app.sa_session.flush()
     return api_key
-    
+
+
 def create_user( app ):
     user_info_config = os.path.abspath( os.path.join( app.config.root, 'lib/tool_shed/scripts/bootstrap_tool_shed', 'user_info.xml' ) )
     email = None
@@ -102,6 +97,7 @@ def create_user( app ):
         print "Missing required values for email: ", email, ", password: ", password, ", username: ", username
     return None
 
+
 def validate( email, password, username ):
     message = validate_email( email )
     if not message:
@@ -109,6 +105,7 @@ def validate( email, password, username ):
     if not message:
         message = validate_publicname( username )
     return message
+
 
 def validate_email( email ):
     """Validates the email format."""
@@ -119,10 +116,12 @@ def validate_email( email ):
         message = "Email address exceeds maximum allowable length."
     return message
 
+
 def validate_password( password ):
     if len( password ) < 6:
         return "Use a password of at least 6 characters"
     return ''
+
 
 def validate_publicname( username ):
     """Validates the public username."""
@@ -141,8 +140,8 @@ if __name__ == "__main__":
         ini_file = args[ 0 ]
     except IndexError:
         print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
-        exit( 127 )
-    config_parser = ConfigParser.ConfigParser( { 'here':os.getcwd() } )
+        sys.exit( 127 )
+    config_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     print "Reading ini file: ", ini_file
     config_parser.read( ini_file )
     config_dict = {}
@@ -154,7 +153,6 @@ if __name__ == "__main__":
     if user is not None:
         api_key = create_api_key( app, user )
         print "Created new user with public username '", user.username, ".  An API key was also created and associated with the user."
-        exit(0)
+        sys.exit(0)
     else:
-        print "Problem creating a new user and an associated API key."
-        exit(1)
+        sys.exit("Problem creating a new user and an associated API key.")

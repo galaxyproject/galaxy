@@ -1,35 +1,36 @@
 import logging
-import os
 import sys
 import tempfile
-from galaxy.util import listify
-from xml.etree import ElementTree as XmlET
 import xml.etree.ElementTree
+from xml.etree import ElementTree as XmlET
+
+from galaxy.util import listify
 
 log = logging.getLogger( __name__ )
 using_python_27 = sys.version_info[ :2 ] >= ( 2, 7 )
 
 
-class Py26CommentedTreeBuilder ( XmlET.XMLTreeBuilder ):
+class Py26CommentedTreeBuilder( XmlET.XMLTreeBuilder ):
     # Python 2.6 uses ElementTree 1.2.x.
 
-    def __init__ ( self, html=0, target=None ):
+    def __init__( self, html=0, target=None ):
         XmlET.XMLTreeBuilder.__init__( self, html, target )
         self._parser.CommentHandler = self.handle_comment
 
-    def handle_comment ( self, data ):
+    def handle_comment( self, data ):
         self._target.start( XmlET.Comment, {} )
         self._target.data( data )
         self._target.end( XmlET.Comment )
 
 
-class Py27CommentedTreeBuilder ( XmlET.TreeBuilder ):
+class Py27CommentedTreeBuilder( XmlET.TreeBuilder ):
     # Python 2.7 uses ElementTree 1.3.x.
 
     def comment( self, data ):
         self.start( XmlET.Comment, {} )
         self.data( data )
         self.end( XmlET.Comment )
+
 
 def create_and_write_tmp_file( elems, use_indent=False ):
     tmp_str = ''
@@ -43,6 +44,7 @@ def create_and_write_tmp_file( elems, use_indent=False ):
     fh.write( tmp_str )
     fh.close()
     return tmp_filename
+
 
 def create_element( tag, attributes=None, sub_elements=None ):
     """
@@ -87,6 +89,7 @@ def create_element( tag, attributes=None, sub_elements=None ):
         return elem
     return None
 
+
 def indent( elem, level=0 ):
     """
     Prints an XML tree with each node indented according to its depth.  This method is used to print the
@@ -102,7 +105,7 @@ def indent( elem, level=0 ):
         if not elem.tail or not elem.tail.strip():
             elem.tail = i
         for child in elem:
-            indent( child, level+1 )
+            indent( child, level + 1 )
         if not child.tail or not child.tail.strip():
             child.tail = i
         if not elem.tail or not elem.tail.strip():
@@ -110,6 +113,7 @@ def indent( elem, level=0 ):
     else:
         if level and ( not elem.tail or not elem.tail.strip() ):
             elem.tail = i
+
 
 def parse_xml( file_name ):
     """Returns a parsed xml tree with comments intact."""
@@ -133,6 +137,7 @@ def parse_xml( file_name ):
             return None, error_message
     fobj.close()
     return tree, error_message
+
 
 def xml_to_string( elem, encoding='utf-8', use_indent=False, level=0 ):
     if elem is not None:

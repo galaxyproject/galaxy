@@ -6,12 +6,10 @@ Here is a working example of how to use this script.
 python ./remove_repository_registry_entry.py -a <api key> -u <tool shed url> -n <repository name> -o <repository owner>
 """
 
-import os
-import sys
 import argparse
-import urllib2
-sys.path.insert( 0, os.path.dirname( __file__ ) )
+
 from common import submit
+
 
 def main( options ):
     api_key = options.api_key
