@@ -1,3 +1,4 @@
+import re
 from os.path import basename
 from os.path import join
 from os.path import dirname
@@ -6,6 +7,7 @@ from os import sep
 from ..util import PathHelper
 
 COMMAND_VERSION_FILENAME = "COMMAND_VERSION"
+DEFAULT_DYNAMIC_COLLECTION_PATTERN = [r"primary_.*|galaxy.json|metadata_.*|dataset_\d+\.dat|__instrument_.*|dataset_\d+_files.+"]
 
 
 class ClientJobDescription(object):
@@ -50,12 +52,12 @@ class ClientJobDescription(object):
 
     def __init__(
         self,
-        tool,
         command_line,
-        config_files,
-        input_files,
-        client_outputs,
-        working_directory,
+        tool=None,
+        config_files=[],
+        input_files=[],
+        client_outputs=None,
+        working_directory=None,  # More sensible default?
         dependencies_description=None,
         env=[],
         arbitrary_files=None,
@@ -65,7 +67,7 @@ class ClientJobDescription(object):
         self.command_line = command_line
         self.config_files = config_files
         self.input_files = input_files
-        self.client_outputs = client_outputs
+        self.client_outputs = client_outputs or ClientOutputs()
         self.working_directory = working_directory
         self.dependencies_description = dependencies_description
         self.env = env
@@ -95,18 +97,28 @@ class ClientOutputs(object):
     runner client.
     """
 
-    def __init__(self, working_directory, output_files, work_dir_outputs=None, version_file=None):
+    def __init__(
+        self,
+        working_directory=None,
+        output_files=[],
+        work_dir_outputs=None,
+        version_file=None,
+        dynamic_outputs=None
+    ):
         self.working_directory = working_directory
-        self.work_dir_outputs = work_dir_outputs
-        self.output_files = output_files
+        self.work_dir_outputs = work_dir_outputs or []
+        self.output_files = output_files or []
         self.version_file = version_file
+        self.dynamic_outputs = dynamic_outputs or DEFAULT_DYNAMIC_COLLECTION_PATTERN
+        self.__dynamic_patterns = list(map(re.compile, self.dynamic_outputs))
 
     def to_dict(self):
         return dict(
             working_directory=self.working_directory,
             work_dir_outputs=self.work_dir_outputs,
             output_files=self.output_files,
-            version_file=self.version_file
+            version_file=self.version_file,
+            dynamic_outputs=self.dynamic_outputs,
         )
 
     @staticmethod
@@ -116,7 +128,11 @@ class ClientOutputs(object):
             work_dir_outputs=config_dict.get('work_dir_outputs'),
             output_files=config_dict.get('output_files'),
             version_file=config_dict.get('version_file'),
+            dynamic_outputs=config_dict.get('dynamic_outputs'),
         )
+
+    def dynamic_match(self, filename):
+        return any(map(lambda pattern: pattern.match(filename), self.__dynamic_patterns))
 
 
 class PulsarOutputs(object):
