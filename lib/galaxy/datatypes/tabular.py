@@ -37,8 +37,8 @@ class TabularData( data.Text ):
     MetadataElement( name="column_names", default=[], desc="Column names", readonly=True, visible=False, optional=True, no_value=[] )
     MetadataElement( name="delimiter", default='\t', desc="Data delimiter", readonly=True, visible=False, optional=True, no_value=[] )
 
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False):
-        super(TabularData, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None ):
+        super(TabularData, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars)
         if dataset.metadata.comment_lines:
             dataset.blurb = "%s, %s comments" % ( dataset.blurb, util.commaify( str( dataset.metadata.comment_lines ) ) )
 
