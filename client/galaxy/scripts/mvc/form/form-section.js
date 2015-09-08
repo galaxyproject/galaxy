@@ -323,7 +323,6 @@ define(['utils/utils',
                 collapsible_value   : input_def.collapsible_value,
                 help                : input_def.help,
                 argument            : input_def.argument,
-                show_arg            : input_def.show_arg === false ? false : true,
                 field               : field
             });
 

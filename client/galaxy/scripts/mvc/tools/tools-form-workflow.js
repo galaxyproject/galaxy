@@ -154,8 +154,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                 flat    : true,
                 inputs  : [{
                     action      : 'RenameDatasetAction',
-                    argument    : 'newname',
-                    show_arg    : false,
+                    pja_arg     : 'newname',
                     label       : 'Rename dataset',
                     type        : 'text',
                     value       : '',
@@ -163,8 +162,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     help        : 'This action will rename the output dataset. Click <a href="https://wiki.galaxyproject.org/Learn/AdvancedWorkflow/Variables">here</a> for more information.'
                 },{
                     action      : 'ChangeDatatypeAction',
-                    argument    : 'newtype',
-                    show_arg    : false,
+                    pja_arg     : 'newtype',
                     label       : 'Change datatype',
                     type        : 'select',
                     ignore      : '__empty__',
@@ -173,8 +171,7 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     help        : 'This action will change the datatype of the output to the indicated value.'
                 },{
                     action      : 'TagDatasetAction',
-                    argument    : 'tags',
-                    show_arg    : false,
+                    pja_arg     : 'tags',
                     label       : 'Tags',
                     type        : 'text',
                     value       : '',
@@ -186,35 +183,35 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     flat    : true,
                     inputs  : [{
                         action      : 'ColumnSetAction',
-                        argument    : 'chromCol',
+                        pja_arg     : 'chromCol',
                         label       : 'Chrom column',
                         type        : 'integer',
                         value       : '',
                         ignore      : ''
                     },{
                         action      : 'ColumnSetAction',
-                        argument    : 'startCol',
+                        pja_arg     : 'startCol',
                         label       : 'Start column',
                         type        : 'integer',
                         value       : '',
                         ignore      : ''
                     },{
                         action      : 'ColumnSetAction',
-                        argument    : 'endCol',
+                        pja_arg     : 'endCol',
                         label       : 'End column',
                         type        : 'integer',
                         value       : '',
                         ignore      : ''
                     },{
                         action      : 'ColumnSetAction',
-                        argument    : 'strandCol',
+                        pja_arg     : 'strandCol',
                         label       : 'Strand column',
                         type        : 'integer',
                         value       : '',
                         ignore      : ''
                     },{
                         action      : 'ColumnSetAction',
-                        argument    : 'nameCol',
+                        pja_arg     : 'nameCol',
                         label       : 'Name column',
                         type        : 'integer',
                         value       : '',
@@ -234,8 +231,8 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                     if (input.action) {
                         // construct identifier as expected by backend
                         input.name = 'pja__' + output_id + '__' + input.action;
-                        if (input.argument) {
-                            input.name += '__' + input.argument;
+                        if (input.pja_arg) {
+                            input.name += '__' + input.pja_arg;
                         }
 
                         // modify names of payload arguments
@@ -256,8 +253,8 @@ define(['utils/utils', 'mvc/tools/tools-form-base'],
                             }
 
                             // update input field value
-                            if (input.argument) {
-                                input.value = d.action_arguments && d.action_arguments[input.argument] || input.value;
+                            if (input.pja_arg) {
+                                input.value = d.action_arguments && d.action_arguments[input.pja_arg] || input.value;
                             } else {
                                 input.value = 'true';
                             }
