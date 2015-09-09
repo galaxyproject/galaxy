@@ -1,4 +1,4 @@
-define([ 'static/app' ], function( App ){
+define([ 'plugin/app' ], function( App ){
     return Backbone.View.extend({
         el: $( '#mrh-heatmap' ),
 

@@ -1,4 +1,4 @@
-define([ 'static/controls-view', 'static/heatmap-view' ], function( ControlsView, HeatmapView ){
+define([ 'plugin/controls-view', 'plugin/heatmap-view' ], function( ControlsView, HeatmapView ){
     return Backbone.Model.extend({
 
         jsonableAttributes : [
@@ -79,7 +79,12 @@ define([ 'static/controls-view', 'static/heatmap-view' ], function( ControlsView
 
         /** create view for settings panel */
         addSettings : function(){
-            this.controls.settings = new ControlsView.Settings( { parent: this } );
+            this.controls.settings = new ControlsView.Settings({
+                parent: this,
+                mincolor: this.get( 'mincolor' ),
+                midcolor: this.get( 'midcolor' ),
+                maxcolor: this.get( 'maxcolor' ),
+            });
         },
 
         /** add views for horizontal and vertical scroll bars */
@@ -137,20 +142,23 @@ define([ 'static/controls-view', 'static/heatmap-view' ], function( ControlsView
 
         /** create views for displaying coordinates */
         addCoordinateDisplays : function(){
-            this.controls.chromDisplay1 = new ControlsView.CoordinateDisplay( {
+            this.controls.chromDisplay1 = new ControlsView.CoordinateRange( {
                 parent: this,
-                el: $( "#position-display1" ),
+                name: "position-display1",
+                axis: "1",
+                otherAxis: "2",
             });
-            this.controls.chromDisplay2 = new ControlsView.CoordinateDisplay( {
+            this.controls.chromDisplay2 = new ControlsView.CoordinateRange( {
                 parent: this,
-                el: $( "#position-display2" ),
+                name: "position-display2",
+                axis: "2",
+                otherAxis: "1",
             });
         },
 
         /** update the coordinates in the coordinate display view */
         updateDisplay : function( side ){
-            this.controls[ 'chromDisplay' + side ].updateDisplay( Math.round( this.get( 'start' + side ) ),
-                Math.round( this.get( 'stop' + side ) ) );
+            this.controls[ 'chromDisplay' + side ].updateDisplay();
         },
 
         /** update the coordinates in the cursor display view */
@@ -216,26 +224,33 @@ define([ 'static/controls-view', 'static/heatmap-view' ], function( ControlsView
             this.bpp = this.span / this.get( 'viewerSize' ); // bases per pixel
             this.set( 'maxresolution', Math.max( this.maxresolution, this.bpp ) );
             this.set( 'eff_maxres', this._findEffMaxRes() );
-            var element = $( "#mrh-maxcolor-score" ),
-                score = this.header.maxscore;
+            var element = $( "#mrh-mincolor-score" ),
+                score = this.header.minscore;
+            this.controls.settings.minScore = score;
             element[0].innerHTML = score.toFixed( 2 );
-            this.header.maxcolor = this._rgbToList( $( "#mrh-maxcolor-box" ).css('background-color') );
+            this.header.mincolor = this._hexToList( this.controls.settings.minColor );
             element = $( "#mrh-midcolor-score" );
             score = ( this.header.minscore + this.header.maxscore ) / 2.0;
+            this.controls.settings.midScore = score;
             this.header.midscore = score;
             this.header.scorespan = this.header.maxscore - this.header.minscore;
             element[0].innerHTML = score.toFixed( 2 );
-            this.header.midcolor = this._rgbToList( $( "#mrh-midcolor-box" ).css('background-color') );
-            element = $( "#mrh-mincolor-score" );
-            score = this.header.minscore;
+            this.header.midcolor = this._hexToList( this.controls.settings.midColor );
+            element = $( "#mrh-maxcolor-score" );
+            score = this.header.maxscore;
+            this.controls.settings.maxScore = score;
             element[0].innerHTML = score.toFixed( 2 );
-            this.header.mincolor = this._rgbToList( $( "#mrh-mincolor-box" ).css('background-color') );
+            this.header.maxcolor = this._hexToList( this.controls.settings.maxColor );
             this.minCanvasRes = this.get( 'eff_maxres' );
+            this.loadInitialHeatmap();
+            this.trigger( 'updateViewer' );
+        },
+
+        loadInitialHeatmap : function(){
             var JSON = this.toJSON();
             JSON.maxresolution = this.minresolution;
             JSON.eff_maxres = this.minresolution;
             this.heatmapView.model.loadNewCanvases( {}, JSON );
-            this.trigger( 'updateViewer' );
         },
 
         _rgbToList : function( color ){
@@ -261,6 +276,20 @@ define([ 'static/controls-view', 'static/heatmap-view' ], function( ControlsView
             values += this._padString( parseInt( value ).toString( 16 ) );
             value = temp[2];
             values += this._padString( parseInt( value ).toString( 16 ) );
+            return values;
+        },
+
+        _hexToList : function( color ){
+            var values = [];
+            if( color.length == 4 ){
+                values[0] = parseInt( '0x' + color.substring( 1, 2 ) + color.substring( 1, 2 ) );
+                values[1] = parseInt( '0x' + color.substring( 2, 3 ) + color.substring( 2, 3 ) );
+                values[2] = parseInt( '0x' + color.substring( 3, 4 ) + color.substring( 3, 4 ) );
+            } else {
+                values[0] = parseInt( '0x' + color.substring( 1, 3 ) );
+                values[1] = parseInt( '0x' + color.substring( 3, 5 ) );
+                values[2] = parseInt( '0x' + color.substring( 5, 7 ) );
+            };
             return values;
         },
 
@@ -301,28 +330,29 @@ define([ 'static/controls-view', 'static/heatmap-view' ], function( ControlsView
 
         /** if possible, zoom out view */
         updateZoomOut : function(){
-            if( this.span <= this.totalSpan / 2 ){
-                var start = this.midX - this.span,
-                    stop = this.midX + this.span;
+            if( this.span <= this.totalSpan ){
+                var newSpan = Math.min(this.totalSpan / 2, this.span),
+                    start = this.midX - newSpan,
+                    stop = this.midX + newSpan;
                 if( start < this.minX ){
                     start = this.minX;
-                    stop = start + this.span * 2;
+                    stop = start + newSpan * 2;
                 }
                 if( stop > this.maxX ){
                     stop = this.maxX;
-                    start = stop - this.span * 2;
+                    start = stop - newSpan * 2;
                 }
                 this.set( 'start1', start );
                 this.set( 'stop1', stop );
-                start = this.midY - this.span,
-                stop = this.midY + this.span;
+                start = this.midY - newSpan,
+                stop = this.midY + newSpan;
                 if( start < this.minY ){
                     start = this.minY;
-                    stop = start + this.span * 2;
+                    stop = start + newSpan * 2;
                 }
                 if( stop > this.maxY ){
                     stop = this.maxY;
-                    start = stop - this.span * 2;
+                    start = stop - newSpan * 2;
                 }
                 this.set( 'start2', start );
                 this.set( 'stop2', stop );

@@ -1,8 +1,13 @@
 
 <%
     dom_id = '-'.join([ visualization_name, query.get( 'dataset_id' ) ])
+    root        = h.url_for( "/" )
+    app_root    = root + "plugins/visualizations/mrheatmap/static/"
     canvasSize = 500
     viewerSize = 500
+    mincolor = '#0000ff'
+    midcolor = '#ffffff'
+    maxcolor = '#ff0000'
 %>
 
 ## ----------------------------------------------------------------------------
@@ -31,17 +36,22 @@
     <div id="mrheatmap" class="container" unselectable="on">
         <div id='mrh-mask' class='mrh-mask' unselectable="on"></div>
         <div id='mrh-settings' class='mrh-settings' unselectable='on'>
-            <div id='mrh-settings-close'></div>
+            <div id='mrh-settings-header'>
+                <div id='mrh-settings-close'></div>
+            </div>
             <div id='mrh-settings-body'>
                 <div class='mrh-settings-label-box'>Minimum Score</div>
-                <div id='mrh-mincolor-box' class='mrh-color-box'></div>
+                <div class='mrh-color-spacer'></div>
                 <div id='mrh-mincolor-score' class='mrh-score-box mrh-score-box-editable'>-10.0</div>
                 <div class='mrh-settings-label-box'>Middle Score</div>
-                <div id='mrh-midcolor-box' class='mrh-color-box'></div>
+                <div class='mrh-color-spacer'></div>
                 <div id='mrh-midcolor-score' class='mrh-score-box'>0.0</div>
                 <div class='mrh-settings-label-box'>Maximum Score</div>
-                <div id='mrh-maxcolor-box' class='mrh-color-box'></div>
+                <div class='mrh-color-spacer'></div>
                 <div id='mrh-maxcolor-score' class='mrh-score-box mrh-score-box-editable'>10.0</div>
+                <div id='mrh-mincolor-box' class='mrh-color-box'></div>
+                <div id='mrh-midcolor-box' class='mrh-color-box'></div>
+                <div id='mrh-maxcolor-box' class='mrh-color-box'></div>
             </div>
         </div>
         <div id="mrh-top" class="mrh-top" unselectable="on">
@@ -88,17 +98,15 @@
                 docHeight = $( document ).height(),
                 viewerSize = docWidth - 15,
                 scrollSize = viewerSize + 1,
-                settingsLeft = docWidth / 2 - 82,
+                settingsLeft = docWidth / 2 - 75,
                 maskHeight = docWidth + $( 'mrh-top' ).height(),
                 element = document.getElementById( 'mrh-top' ),
                 maskHeight = docWidth + $( '#mrh-top' ).height() + 3;
             element = document.getElementById( 'mrh-mask' ),
             element.style.width = docWidth.toString() + 'px';
             element.style.height = maskHeight.toString() + 'px';
-            element.style['z-index'] = '-1';
             element = document.getElementById( 'mrh-settings' );
             element.style.left = settingsLeft.toString() + 'px';
-            element.style['z-index'] = '-1';
             element = document.getElementById( 'mrh-display-container' );
             element.style.width = docWidth.toString() + 'px';
             element = document.getElementById( 'mrh-top' );
@@ -134,18 +142,24 @@
             element = document.getElementById( 'mrh-settings-close' );
             element.style.background = 'url(../../../static/images/fugue/cross-circle.png) center center no-repeat';
         });
+        var config = {
+            root     : '${root}',
+            app_root : '${app_root}'
+        };
         require.config({
-            baseUrl: '/plugins/visualizations/mrheatmap',
+            baseUrl: config.root + "static/scripts/",
             paths: {
-                'static' : 'static/'
+                "plugin"        : "${app_root}",
             },
         });
-        require( ['static/app-view'], function( AppView ) {
+        require( ['plugin/app-view'], function( AppView ) {
             window.view = new AppView({
                 dataset_id      : "${ query.get( 'dataset_id' ) }",
                 viewerSize     : ${ viewerSize },
                 canvasSize     : ${ canvasSize },
-                ##bson           : bson,
+                mincolor       : "${ mincolor }",
+                midcolor       : "${ midcolor }",
+                maxcolor       : "${ maxcolor }",
             });
         });
     </script>
