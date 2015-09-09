@@ -23,7 +23,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
         },
         display: function( $el ) {
             this.$( '#galaxy_main' ).hide();
-            this.$( '#center-panel' ).empty().append( $el ).show();
+            this.$( '#center-panel' ).empty().scrollTop( 0 ).append( $el ).show();
         },
         _template: function() {
             return  '<div style="position: absolute; width: 100%; height: 100%">' +
