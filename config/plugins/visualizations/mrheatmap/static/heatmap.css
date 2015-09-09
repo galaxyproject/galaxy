@@ -95,15 +95,15 @@ span, .chrom-menu-container {
     position: relative;
 }
 #Hscroll {
-    height: 16px;
+    height: 15.5px;
     border-top: solid 1px #999;
     border-left: solid 1px #999;
     border-bottom: solid 1px #999;
-    left: -1px;
+    left: -0.5px;
     top: -4px;
 }
 #Hscroll-box {
-    height: 14px;
+    height: 100%;
 }
 #Vscroll {
     width: 15px;
@@ -111,7 +111,7 @@ span, .chrom-menu-container {
     border-bottom: solid 1px #999;
 }
 #Vscroll-box {
-    width: 14px;
+    width: 100%;
 }
 h3 {
     margin: auto;
@@ -141,76 +141,83 @@ h5 {
     position: absolute;
     width: 100%;
     height: 100%;
+    z-index: 1;
+    visibility: hidden;
 }
 #mrh-settings {
-    opacity: 1;
+    z-index: 2;
     background: #fff;
     border-width: 2px;
     border-style: solid;
     border-color: #555;
     position: absolute;
     top: 120px;
-    width: 200px;
-    height: 180px;
+    width: 150px;
+    height: 200px;
+    visibility: hidden;
+}
+#mrh-settings-header {
+    width: 146px;
+    padding: 4px;
+    height: 24px;
 }
 #mrh-settings-close {
     border: 0px;
     float: right;
-    display: inline-block;
     height: 16px;
     width: 16px;
     cursor: pointer;
-    position: relative;
-    top: 4px;
-    right: 4px;
 }
 #mrh-settings-body {
     border: 0px;
-    width: 160px;
-    position: relative;
-    top: 18px;
-    left: 40px;
-    padding-left: 8px;
-    padding-right: 8px;
+    width: 146px;
 }
 .mrh-settings-label-box {
-    height: 24px;
     font-size: 12px;
     height: 18px;
     position: relative;
-    top: 6px;
+    top: 3px;
+    text-align: center;
 }
-.mrh-color-box {
-    border-width: 1px;
-    border-style: solid;
-    border-color: #000;
-    height: 18px;
-    width: 60px;
+.mrh-color-spacer {
+    border: 0;
+    height: 12px;
+    width: 218px;
     display: inline-block;
     position: relative;
-    left: 4px;
-    top: 5px;
-    cursor: pointer;
+    left: 67px;
+    top: 3px;
+}
+.mrh-color-box {
+    background: ;
+    border: 0;
+    height: 12px;
+    width: 218px;
+    display: inline-block;
+    position: relative;
 }
 #mrh-mincolor-box {
-    background: #00f;
+    bottom: 133px;
+    left: 67px;
 }
 #mrh-midcolor-box {
-    background: #fff;
+    bottom: 98px;
+    left: 67px;
 }
 #mrh-maxcolor-box {
-    background: #f00;
+    bottom: 63px;
+    left: 67px;
 }
 .mrh-score-box {
     display: inline-block;
     height: 17px;
-    width: 50px;
-    left: 6px;
+    width: 60px;
+    left: 43px;
     position: relative; 
     font-size: 12px;
-    text-align: left;
+    text-align: center;
     line-height: 14px;   
-    bottom: -2px;
+    bottom: -4px;
     vertical-align: middle; 
 }
 .mrh-score-box-editable {

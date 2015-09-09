@@ -1,4 +1,4 @@
-define([ 'static/controls' ], function( Controls ){
+define([ 'plugin/controls', 'mvc/ui/ui-color-picker' ], function( Controls, ColorPicker ){
 	var ChromosomeView = Backbone.View.extend({
 		tagName : 'option',
 		className : 'chrom_option',
@@ -62,11 +62,16 @@ define([ 'static/controls' ], function( Controls ){
 		initialize : function( options ) {
 			this.model = new Controls.Generic( { view: this } );
 			this.parent = options.parent;
+			this.minColor = options.mincolor;
+			this.midColor = options.midcolor;
+			this.maxColor = options.maxcolor;
+			this.minScore = -10.0;
+			this.midScore = 0.0;
+			this.maxScore = 10.0;
 			this.addScoreFields();
 			this.addOpenButton();
 			this.addCloseButton();
 			this.changed = false;
-			this.minScoreView.on( 'click', function(){console.log('clicked2!');}, this );
 		},
 
 		addOpenButton : function(){
@@ -78,16 +83,46 @@ define([ 'static/controls' ], function( Controls ){
 		},
 
 		addScoreFields : function(){
-			this.minScoreView = new ScoreView( { name : "mrh-mincolor-score", scoreName : "minscore",
+			this.minScoreView = new ScoreView( { name : "mrh-mincolor-score", scoreName : "minScore",
 				parent : this.parent, settings : this } );
-			this.maxScoreView = new ScoreView( { name : "mrh-maxcolor-score", scoreName : "maxscore",
+			this.maxScoreView = new ScoreView( { name : "mrh-maxcolor-score", scoreName : "maxScore",
 				parent : this.parent, settings : this } );
-			this.minColorView = new ScoreColorView( { name : "mrh-mincolor-box", scoreName : "mincolor",
-				parent : this.parent, settings : this } );
-			this.midColorView = new ScoreColorView( { name : "mrh-midcolor-box", scoreName : "midcolor",
-				parent : this.parent, settings : this } );
-			this.maxColorView = new ScoreColorView( { name : "mrh-maxcolor-box", scoreName : "maxcolor",
-				parent : this.parent, settings : this } );
+			var temp = $( "#mrh-mincolor-box" );
+			this.minColorView = new ColorPicker({
+				id: "mrh-mincolor-boxp",
+				value: this.minColor,
+				onchange: function(){}
+			});
+			temp[0].insertBefore( this.minColorView.el, temp[0].firstChild );
+			this.minColorView.$( ".ui-color-picker-label" )[0].innerHTML = '';
+			this.minColorView.$( ".ui-color-picker-view" )
+				.css( 'background-color', '#FFF' )
+				.css( 'left', '16px' )
+				.css( 'position', 'relative' );
+			temp = $( "#mrh-midcolor-box" );
+			this.midColorView = new ColorPicker({
+				id: "mrh-midcolor-boxp",
+				value: this.midColor,
+				onchange: function(){}
+			});
+			temp[0].appendChild( this.midColorView.el );
+			this.midColorView.$( ".ui-color-picker-label" )[0].innerHTML = '';
+			this.midColorView.$( ".ui-color-picker-view" )
+				.css( 'background-color', '#FFF' )
+				.css( 'left', '16px' )
+				.css( 'position', 'relative' );
+			temp = $( "#mrh-maxcolor-box" );
+			this.maxColorView = new ColorPicker({
+				id: "mrh-maxcolor-boxp",
+				value: this.maxColor,
+				onchange: function(){}
+			});
+			temp[0].appendChild( this.maxColorView.el );
+			this.maxColorView.$( ".ui-color-picker-label" )[0].innerHTML = '';
+			this.maxColorView.$( ".ui-color-picker-view" )
+				.css( 'background-color', '#FFF' )
+				.css( 'left', '16px' )
+				.css( 'position', 'relative' );
 		},
 	});
 
@@ -105,13 +140,9 @@ define([ 'static/controls' ], function( Controls ){
 		},
 
 		openSettingsPanel : function(){
-			var element = $( "#mrh-mask" )[0];
-			element.style[ 'z-index' ] = '1';
-			element = $( "#mrh-settings" )[0];
-			element.style[ 'z-index' ] = '1';
+			$( "#mrh-mask" ).css( "visibility", "visible" );
+			$( "#mrh-settings" ).css( "visibility", "visible" );
 			this.changed = false;
-			this.settings.minScoreView.value = this.parent.header.minscore;
-			this.settings.maxScoreView.value = this.parent.header.maxscore;
 		},
 	});
 	
@@ -129,37 +160,27 @@ define([ 'static/controls' ], function( Controls ){
 		},
 
 		closeSettingsPanel : function(){
-			var element = $( "#mrh-mask" )[0],
-				color;
-			element.style[ 'z-index' ] = '-1';
-			element = $( "#mrh-settings" )[0];
-			element.style[ 'z-index' ] = '-1';
-			if( this.settings.minScoreView.value != this.parent.header.minscore ||
-					this.settings.maxScoreView.value != this.parent.header.maxscore ||
-					this.settings.minColorView.color != this.parent._rgbToHex(
-						$( "#" + this.settings.minColorView.scoreName + 'ColorPicker' ).css('background-color') ) ||
-					this.settings.midColorView.color != this.parent._rgbToHex(
-						$( "#" + this.settings.midColorView.scoreName + 'ColorPicker' ).css('background-color') ) ||
-					this.settings.maxColorView.color != this.parent._rgbToHex(
-						$( "#" + this.settings.maxColorView.scoreName + 'ColorPicker' ).css('background-color') ) ){
-				this.parent.header.minscore = this.settings.minScoreView.value;
-				this.parent.header.midscore = ( this.settings.minScoreView.value +
-					this.settings.maxScoreView.value ) / 2.0;
-				this.parent.header.maxscore = this.settings.maxScoreView.value;
+			var color;
+			$( "#mrh-mask" ).css( "visibility", "hidden" )
+			$( "#mrh-settings" ).css( "visibility", "hidden" )
+			if( 	this.settings.minScore != this.parent.header.minscore ||
+					this.settings.maxScore != this.parent.header.maxscore ||
+					this.settings.minColorView.value() != this.settings.minColor ||
+					this.settings.midColorView.value() != this.settings.midColor ||
+					this.settings.maxColorView.value() != this.settings.maxColor ){
+				this.parent.header.minscore = this.settings.minScore;
+				this.parent.header.midscore = ( this.settings.minScore +
+					this.settings.maxScore ) / 2.0;
+				this.parent.header.maxscore = this.settings.maxScore;
 				this.parent.header.scorespan = this.parent.header.maxscore - this.parent.header.minscore;
-				color = $( "#" + this.settings.minColorView.scoreName + 'ColorPicker' ).css('background-color');
-				$( "#mrh-" + this.settings.minColorView.scoreName + "-box" ).css('background-color', color );
-				this.settings.minColorView.color = this.parent._rgbToHex( color );
-				this.parent.header.mincolor = this.parent._rgbToList( color );
-				color = $( "#" + this.settings.midColorView.scoreName + 'ColorPicker' ).css('background-color');
-				$( "#mrh-" + this.settings.midColorView.scoreName + "-box" ).css('background-color', color );
-				this.settings.midColorView.color = this.parent._rgbToHex( color );
-				this.parent.header.midcolor = this.parent._rgbToList( color );
-				color = $( "#" + this.settings.maxColorView.scoreName + 'ColorPicker' ).css('background-color');
-				$( "#mrh-" + this.settings.maxColorView.scoreName + "-box" ).css('background-color', color );
-				this.settings.maxColorView.color = this.parent._rgbToHex( color );
-				this.parent.header.maxcolor = this.parent._rgbToList( color );
+				this.settings.minColor = this.settings.minColorView.value();
+				this.parent.header.mincolor = this.parent._hexToList( this.settings.minColorView.value() );
+				this.settings.midColor = this.settings.midColorView.value();
+				this.parent.header.midcolor = this.parent._hexToList( this.settings.midColorView.value() );
+				this.settings.maxColor = this.settings.maxColorView.value();
+				this.parent.header.maxcolor = this.parent._hexToList( this.settings.maxColorView.value() );
 				this.parent.heatmapView.model.resetCanvases();
+				this.parent.loadInitialHeatmap();
 				this.parent.heatmapView.updateCanvas();
 			};
 		},
@@ -177,10 +198,13 @@ define([ 'static/controls' ], function( Controls ){
 			this.settings = options.settings;
 			var self = this;
 	        document.getElementById( this.name ).onclick = function(){ self.editField(); };
+		    $(document).on('blur','#' + self.name, function(){
+		    	self.finishField();
+			});
 		},
 
 		editField : function(){
-			var value = this.el[0].firstChild.textContent,
+			var value = this.settings[ this.scoreName ],
 				self = this;
 			this.el[0].innerHTML = '';
     		$('<input class="mrh-score-text-editable" unselectable="off"></input>')
@@ -191,23 +215,30 @@ define([ 'static/controls' ], function( Controls ){
 		            'value': value,
 		        })
 		        .appendTo( this.el[0] );
-		    this.el[0].style.bottom = "0px";
+		    this.el.css( 'bottom', "0px" );
 		    this.el[0].firstChild.focus();
 		    document.getElementById( this.name ).onclick = null;
-		    $(document).on('blur','#' + self.name, function(){
-		    	self.finishField();
-			});
 		},
 
 		finishField : function(){
 			var self = this,
-				value = parseFloat( this.el[0].firstChild.value );
-			this.value = value
+				value = this.el[0].firstChild.value;
+			try{
+				value = Number( value );
+			}
+			catch( err ){
+				value = this.settings[ this.scoreName ];
+			}
+			if( isNaN(value) == true ){
+				value = this.settings[ this.scoreName ];
+			};
+			this.settings[ this.scoreName ] = value;
 			this.el[0].innerHTML = value.toFixed(2);
 		    this.el[0].style.bottom = "-2px";
 	        document.getElementById( this.name ).onclick = function(){ self.editField(); };
-	        value = ( this.settings.minScoreView.value + this.settings.maxScoreView.value ) / 2.0;
+	        value = ( this.settings.minScore + this.settings.maxScore ) / 2.0;
 	        $( "#mrh-midcolor-score" )[0].innerHTML = value.toFixed(2)
+	        this.settings.midScore = value;
 		},
 	});
 
@@ -222,43 +253,20 @@ define([ 'static/controls' ], function( Controls ){
 			this.el = $( "#" + this.name );
 			this.color = this.parent._rgbToHex( $( "#mrh-" + this.scoreName + "-box" ).css('background-color') );
 			this.addColorPicker();
-			//var self = this;
-	        //document.getElementById( this.name ).onclick = function(){ self.openColorPicker(); };
 		},
 
 		addColorPicker : function(){
             var container_div = $("<div/>").appendTo( $( "#" + this.name )[0] ),
             	id = this.scoreName + 'ColorPicker',
             	value = this.color,
-                input = $('<input />').attr("id", id ).attr("name", id ).css("position", "relative")
-                	.css( "width", "60px" ).css( "top", "-3px" ).css( "left", "-1px" )
-                    .appendTo(container_div).click(function(e) {
-                    // Show input's color picker.
-                    var tip = $(this).siblings(".tooltip").addClass( "in" );
-                    tip.css( { 
-                        left: $(this).position().left + $(this).width() + 5,
-                        top: $(this).position().top - ( $(tip).height() / 2 ) + ( $(this).height() / 2 )
-                        } ).show();
-                    // Keep showing tip if clicking in tip.
-                    tip.click(function(e) {
-                        e.stopPropagation();
-                    });
-                    // Hide tip if clicking outside of tip.
-                    $(document).bind( "click.color-picker", function() {
-                        tip.hide();
-                        $(document).unbind( "click.color-picker" );
-                    });
-                    // No propagation to avoid triggering document click (and tip hiding) above.
-                    e.stopPropagation();
-                }),
-                // Color picker in tool tip style.
-                tip = $( "<div class='tooltip right' style='position: absolute;' />" ).appendTo(container_div).hide(),
-                // Inner div for padding purposes
-                tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip),
-                tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip),
-                farb_obj = $.farbtastic(tip_inner, { width: 100, height: 100, callback: input, color: value });
-            // Clear floating.
-            container_div.append( $("<div/>").css("clear", "both"));
+            	self = this,
+                picker = new ColorPicker({
+                	id:id,
+                	value:value,
+                	onchange:function( newcolor ){
+	                	self.color = newcolor;
+	                },
+	            });
         }, 
 	});
 
@@ -296,6 +304,100 @@ define([ 'static/controls' ], function( Controls ){
 		},
 	});
 
+	var CoordinateRangeView = Backbone.View.extend({
+		model : Controls.Generic,
+
+		initialize : function( options ){
+			this.name = options.name;
+			this.axis = options.axis;
+			this.otherAxis = options.otherAxis;
+			this.el = $( "#" + this.name );
+			this.model = new Controls.Generic( { view: this } );
+			this.parent = options.parent;
+			var self = this;
+	        document.getElementById( this.name ).onclick = function(){ self.editField(); };
+		    $(document).on('blur','#' + self.name, function(){
+		    	self.finishField();
+			});
+		},
+
+		editField : function(){
+			var value = this.parent.get( 'start' + this.axis ) + ' - ' + this.parent.get( 'stop' + this.axis ),
+				self = this;
+			this.el[0].innerHTML = '';
+    		$('<input class="mrh-position-text-editable" unselectable="off"></input>')
+        		.attr({
+		            'type': 'text',
+		            'name': 'coordrange',
+		            'id': 'txt_coordrange',
+		            'value': value,
+		        })
+		        .appendTo( this.el[0] );
+		    this.el.css( 'bottom', "0px" );
+		    this.el[0].firstChild.focus();
+		    document.getElementById( this.name ).onclick = null;
+		},
+
+		finishField : function(){
+			var self = this,
+				value = this.el[0].firstChild.value,
+				values = value.split(' - '),
+				changed = false;
+			try{
+				values[0] = parseInt( Number( values[0] ) );
+				values[1] = parseInt( Number( values[1] ) );
+			}
+			catch( err ){
+				values[0] = this.parent.get( 'start' + this.axis );
+				values[1] = this.parent.get( 'stop' + this.axis );
+			}
+			if( isNaN( values[0] ) == true || isNaN( values[1] ) == true || values[1] <= values[0] ){
+				values[0] = this.parent.get( 'start' + this.axis );
+				values[1] = this.parent.get( 'stop' + this.axis );
+			};
+		    this.el[0].style.bottom = "-2px";
+	        document.getElementById( this.name ).onclick = function(){ self.editField(); };
+	        this.updateDisplay()
+			if( values[0] != this.parent.get( 'start' + this.axis ) ||
+				values[1] != this.parent.get( 'stop' + this.axis ) ){
+				if( this.axis == '1' ){
+					values[0] = Math.max( this.parent.minX, values[0] );
+					values[1] = Math.min( this.parent.maxX, values[1] );
+				} else {
+					values[0] = Math.max( this.parent.minY, values[0] );
+					values[1] = Math.min( this.parent.maxY, values[1] );
+				};
+				if( values[0] < values[1] ){
+					var span = (values[1] - values[0]) / 2,
+						mid = (this.parent.get( 'start' + this.otherAxis ) +
+							   this.parent.get( 'stop' + this.otherAxis) ) / 2,
+						start = mid - span,
+						stop = mid + span;
+					if( this.axis == '1' ){
+						start = Math.max( this.parent.minY, start );
+						stop = Math.min( this.parent.maxY, start + span * 2 );
+						start = stop - span * 2;
+					} else {
+						start = Math.max( this.parent.minX, start );
+						stop = Math.min( this.parent.maxX, start + span * 2 );
+						start = stop - span * 2;
+					};
+					this.parent.set( 'start' + this.otherAxis, start );
+					this.parent.set( 'stop' + this.otherAxis, stop );
+					this.parent.set( 'start' + this.axis, values[0] );
+					this.parent.set( 'stop' + this.axis, values[1] );
+					this.parent.update();
+				};
+			};
+		},
+
+		updateDisplay : function(){
+			var value0 = parseInt(this.parent.get( 'start' + this.axis )).toString(),
+				value1 = parseInt(this.parent.get( 'stop' + this.axis )).toString();
+			this.el[0].innerHTML = value0 + ' - ' + value1;
+		},
+	});
+
 	var CoordinateDisplayView = Backbone.View.extend({
 		model : Controls.Generic,
 
@@ -303,11 +405,6 @@ define([ 'static/controls' ], function( Controls ){
 			this.model = new Controls.Generic( { view: this } );
 			this.parent = options.parent;
 			this.el = options.el;
-		},
-
-		updateDisplay : function( start, stop ){
-			this.$el.html( start + ' - ' + stop );
-			this.render();
 		},
 
 		updateCursor : function( chrom, mid ){
@@ -489,6 +586,7 @@ define([ 'static/controls' ], function( Controls ){
 		Settings          : SettingsView,
 		ZoomIn            : ZoomInView,
 		ZoomOut           : ZoomOutView,
+		CoordinateRange : CoordinateRangeView,
 		CoordinateDisplay : CoordinateDisplayView,
 		HScroll           : HScrollView,
 		VScroll           : VScrollView,

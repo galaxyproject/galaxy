@@ -1,4 +1,4 @@
-define([ 'static/heatmap' ], function( Heatmap ){
+define([ 'plugin/heatmap' ], function( Heatmap ){
 	return Backbone.View.extend({
 		el : $( '#mrh-display-viewer' ),
 		model : Heatmap,
