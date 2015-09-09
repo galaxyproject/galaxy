@@ -1,6 +1,8 @@
 <tool id="axt_to_fasta" name="AXT to FASTA" version="1.0.0">
   <description>Converts an AXT formatted file to FASTA format</description>
-  <command interpreter="python">axt_to_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1</command>
+  <command interpreter="python" detect_errors="exit_code">
+      axt_to_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1
+  </command>
   <inputs>
     <param format="axt" name="axt_input" type="data" label="AXT file"/>
     <param name="dbkey_1" type="genomebuild" label="Genome"/>
@@ -66,4 +68,5 @@ This tool converts an AXT formatted file to the FASTA format.
     CACAGTCTTCACATTGAGGTACCAAGTTGTGGATCAGAATGGAAAGCTAGGCTATGATGAGGGACAGTGCGCTGTCACA
 
   </help>
+  <citations />
 </tool>

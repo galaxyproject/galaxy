@@ -4,7 +4,7 @@
   <requirements>
       <requirement type="package">perm</requirement>
   </requirements>
-  <command>
+  <command detect_errors="exit_code">
     echo -n "PerM "; PerM 2>&amp;1 | grep "Version";
     PerM
       #if $s.sourceOfRef.refSource == "history"
@@ -148,7 +148,7 @@
           <option value="_">Underscore</option>
         </param>
         <param label="Use the first n bases of each read for alignment (-T)" name="sTrimL" type="integer" size="5" value="50" />
-        <param name="includeReadsWN" type="boolean" checked="true" truevalue="--includeReadsWN" falsevalue="" label="Include reads with 'N' or '.' by encoding '.' as 3, 'N' as 'A' (--includeReadsWN)" /> 
+        <param name="includeReadsWN" type="boolean" checked="true" truevalue="--includeReadsWN" falsevalue="" label="Include reads with 'N' or '.' by encoding '.' as 3, 'N' as 'A' (--includeReadsWN)" />
         <param name="statsOnly" type="boolean" checked="false" truevalue="--statsOnly" falsevalue="" label="Output mapping stats only. Don't output alignments (--statsOnly)" />
         <param name="ignoreQS" type="boolean" checked="false" truevalue="--ignoreQS" falsevalue="" label="Ignore quality scores (--ignoreQS)" />
       </when>
@@ -270,7 +270,7 @@ The input files are read files and a reference. Users can use the pre-indexed re
 
 The uploaded reference file should be in the fasta format. Multiple sequences like transcriptions should be concatenated together separated by a header line that starts with the ">" character.
 
-Reads files must be in either fastqsanger or fastqcssanger format to use in PerM. However, there are several possible starting formats that can be converted to one of those two: fastq (any type), color-space fastq, fasta, csfasta, or csfasta+qualsolid. 
+Reads files must be in either fastqsanger or fastqcssanger format to use in PerM. However, there are several possible starting formats that can be converted to one of those two: fastq (any type), color-space fastq, fasta, csfasta, or csfasta+qualsolid.
 
 An uploaded base-space fastq file MUST be checked/transformed with FASTQGroomer tools in Galaxy to be converted to the fastqsanger format (this is true even if the original file is in Sanger format).
 
@@ -366,4 +366,5 @@ See the PerM `algorithm page`__ for information on algorithms and seeds.
 
  .. __: http://code.google.com/p/perm/wiki/Algorithms
   </help>
+  <citations />
 </tool>

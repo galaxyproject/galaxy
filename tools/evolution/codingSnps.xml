@@ -1,10 +1,13 @@
 <tool id="hgv_codingSnps" name="aaChanges" version="1.0.0">
   <description>amino-acid changes caused by a set of SNPs</description>
-
-  <command interpreter="perl">
+  <requirements>
+    <requirement type="package">gnu_coreutils</requirement>
+    <requirement type="package">ucsc_tools</requirement>
+  </requirements>
+  <code file="codingSnps_filter.py"></code>
+  <command interpreter="perl" detect_errors="exit_code">
     codingSnps.pl $input1 $input2 Galaxy build=${input1.metadata.dbkey} loc=${GALAXY_DATA_INDEX_DIR}/codingSnps.loc chr=${input1.metadata.chromCol} start=${input1.metadata.startCol} end=${input1.metadata.endCol} snp=$col1 keepColumns=$keep strand=${strand_source.strand_col} unique=$uniqpos > $out_file1
   </command>
-
   <inputs>
     <param format="interval" name="input1" type="data" label="SNP dataset">
       <validator type="dataset_metadata_in_file" filename="codingSnps.loc" metadata_name="dbkey" metadata_column="0" message="Sequences are not currently available for the specified build." split="\t" />
@@ -38,18 +41,9 @@
       </when>
     </conditional>
   </inputs>
-
   <outputs>
     <data format="interval" name="out_file1" />
   </outputs>
-
-  <code file="codingSnps_filter.py"></code>
-
-  <requirements>
-    <requirement type="package">gnu_coreutils</requirement>
-    <requirement type="package">ucsc_tools</requirement>
-  </requirements>
-
   <tests>
     <test>
       <param name="input1" ftype="interval" value="codingSnps_input1.interval" dbkey="hg18" />
@@ -78,7 +72,6 @@
       <output name="output" file="codingSnps_output3.interval" />
     </test>
   </tests>
-
   <help>
 .. class:: infomark
 
@@ -101,19 +94,19 @@ The gene dataset is in BED_ format with 12 columns.  The output dataset is also 
 
 **What it does**
 
-This tool identifies which SNPs create amino-acid changes in the specified 
+This tool identifies which SNPs create amino-acid changes in the specified
 coding regions.  The first input file contains the SNPs and must be an interval file.
-It needs the chromosome, start, and end position as well as the SNP.  The 
+It needs the chromosome, start, and end position as well as the SNP.  The
 SNP can be given using ambiguous-nucleotide symbols or a list of two to four
-alleles 
+alleles
 separated by '/'.  Any other columns in the first input file will not be
 used but will be kept for the output.  The second input file contains the genes
 to be used for defining the coding regions.  This file must be a BED file with
 the first 12 columns standard BED columns.  The output is the same as the
 first input file with
 several columns added: the name field from the line of the gene input file
-used, the amino acids, the codon number, the reference nucleotide that 
-changed in the amino acid (in the same strand as the gene), and the codons 
+used, the amino acids, the codon number, the reference nucleotide that
+changed in the amino acid (in the same strand as the gene), and the codons
 that go with the amino acids.
 The amino acids are listed with the reference amino acid first, then a colon,
 and then the amino acids for the alleles.  If a SNP is not in a coding region
@@ -174,4 +167,5 @@ or is synonymous then it is not included in the output file.
     etc.
 
   </help>
+  <citations />
 </tool>

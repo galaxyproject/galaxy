@@ -3,7 +3,9 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_limit_size.py $input1 $out_file1 $min_size $max_size</command>
+  <command interpreter="python" detect_errors="exit_code">
+      maf_limit_size.py $input1 $out_file1 $min_size $max_size
+  </command>
   <inputs>
     <page>
         <param format="maf" name="input1" label="MAF File" type="data"/>

@@ -3,7 +3,9 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_reverse_complement.py $input1 $out_file1 $species</command>
+  <command interpreter="python" detect_errors="exit_code">
+      maf_reverse_complement.py $input1 $out_file1 $species
+  </command>
   <inputs>
     <page>
         <param format="maf" name="input1" label="Alignment File" type="data"/>

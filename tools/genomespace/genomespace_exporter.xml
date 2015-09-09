@@ -1,7 +1,9 @@
 <?xml version="1.0"?>
 <tool name="GenomeSpace Exporter" id="genomespace_exporter" require_login="True" version="0.0.4">
     <description> - send data to GenomeSpace</description>
-    <command interpreter="python">genomespace_exporter.py 
+    <code file="genomespace_exporter.py" />
+    <command interpreter="python" detect_errors="exit_code">
+        genomespace_exporter.py
         --genomespace_site "prod"
         #assert $__user__, Exception( 'You must be logged in to use this tool.' )
         #set $username = $__user__.preferences.get( 'genomespace_username', None )
@@ -47,7 +49,7 @@ This Tool allows you to export data to GenomeSpace. You must have logged in usin
 If you are having trouble with this tool, click here_ to refresh your GenomeSpace token before reporting errors.
 
 .. _here:  ${static_path}/../user/openid_auth?openid_provider=genomespace&amp;auto_associate=True
-    </help>
-    <options refresh="True"/>
-    <code file="genomespace_exporter.py" />
+  </help>
+  <citations />
+  <options refresh="True"/>
 </tool>

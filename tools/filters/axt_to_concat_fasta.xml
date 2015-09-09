@@ -1,6 +1,8 @@
 <tool id="axt_to_concat_fasta" name="AXT to concatenated FASTA" version="1.0.0">
   <description>Converts an AXT formatted file to a concatenated FASTA alignment</description>
-  <command interpreter="python">axt_to_concat_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1</command>
+  <command interpreter="python" detect_errors="exit_code">
+      axt_to_concat_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1
+  </command>
   <inputs>
     <param format="axt" name="axt_input" type="data" label="AXT file"/>
     <param name="dbkey_1" type="genomebuild" label="Genome"/>
@@ -29,7 +31,7 @@
 
 This tool converts an AXT formatted file to the FASTA format, and concatenates the results in the same build.
 
-- **AXT format** The alignments are produced from Blastz, an alignment tool available from Webb Miller's lab at Penn State University. The lav format Blastz output, which does not include the sequence, was converted to AXT format with lavToAxt. Each alignment block in an AXT file contains three lines: a summary line and 2 sequence lines. Blocks are separated from one another by blank lines. 
+- **AXT format** The alignments are produced from Blastz, an alignment tool available from Webb Miller's lab at Penn State University. The lav format Blastz output, which does not include the sequence, was converted to AXT format with lavToAxt. Each alignment block in an AXT file contains three lines: a summary line and 2 sequence lines. Blocks are separated from one another by blank lines.
 
 - **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
 
@@ -60,4 +62,5 @@ This tool converts an AXT formatted file to the FASTA format, and concatenates t
     TCTGTTCATAAACCACCTGCCATGACAAGCCTGGCCTGTTCCCAAGACAATGTCCAGGCTCAGACACAGTCTTCACATTGAGGTACCAAGTTGTGGATCAGAATGGAAAGCTAGGCTATGATGAGGGACAGTGCGCTGTCACA
 
   </help>
+  <citations />
 </tool>

@@ -1,9 +1,8 @@
 <tool id="ChangeCase" name="Change Case" version="1.0.0">
   <description> of selected columns</description>
-  <stdio>
-    <exit_code range="1:" err_level="fatal" />
-  </stdio>
-  <command interpreter="perl">changeCase.pl $input "$cols" $delimiter $casing $out_file1</command>
+  <command interpreter="perl" detect_errors="exit_code">
+      changeCase.pl $input "$cols" $delimiter $casing $out_file1
+  </command>
   <inputs>
     <param name="input" format="txt" type="data" label="From"/>
     <param name="cols" size="10" type="text" value="c1,c2" label="Change case of columns"/>
@@ -74,4 +73,5 @@ will result in::
   WINDOWS is BAD
 
   </help>
+  <citations />
 </tool>

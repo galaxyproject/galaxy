@@ -3,18 +3,29 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">
+  <command interpreter="python" detect_errors="exit_code">
     maf_stats.py
+
+    $maf_source_type.maf_source
     #if $maf_source_type.maf_source == "user":
-      $maf_source_type.maf_source $input2 $input1 $out_file1 $dbkey ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} $summary
+      $input2
     #else:
-      $maf_source_type.maf_source $maf_source_type.mafType $input1 $out_file1 $dbkey ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} $summary
+      $maf_source_type.mafType
     #end if
+
+    $input1
+    $out_file1
+    $dbkey
+    ${input1.metadata.chromCol}
+    ${input1.metadata.startCol}
+    ${input1.metadata.endCol}
+    $summary
     ${GALAXY_DATA_INDEX_DIR}
+
     #if $maf_source_type.maf_source == "user":
-    $input2.metadata.maf_index
+        $input2.metadata.maf_index
     #end if
-  </command>
+</command>
   <inputs>
     <param format="interval" name="input1" label="Interval File" type="data">
       <validator type="unspecified_build" />
@@ -41,7 +52,7 @@
             <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
             <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
           </options>
-        </param> 
+        </param>
       </when>
     </conditional>
     <param name="summary" type="select" label="Type of Output">
@@ -82,23 +93,23 @@ If a column does not exist in the reference genome, it is not included in the ou
 Consider the interval: "chrX 1000 1100 myInterval"
   Let's suppose we want to do stats on three way alignments for H, M, and R. The result look like this:
 
-    chrX 1000 1100 myInterval H XXX YYY 
-    
-    chrX 1000 1100 myInterval M XXX YYY 
-    
-    chrX 1000 1100 myInterval R XXX YYY 
-    
+    chrX 1000 1100 myInterval H XXX YYY
+
+    chrX 1000 1100 myInterval M XXX YYY
+
+    chrX 1000 1100 myInterval R XXX YYY
+
 
   where XXX and YYY are:
 
     XXX = number of nucleotides
-    
+
     YYY = number of gaps
 
 ----
 
 Alternatively, you can request only summary information for a set of intervals:
-  
+
   ========  ===========  ========
   #species  nucleotides  coverage
   ========  ===========  ========

@@ -3,10 +3,10 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">
-    #if $fasta_target_type.fasta_type == "multiple" #maf_to_fasta_multiple_sets.py $input1 $out_file1 $fasta_target_type.species $fasta_target_type.complete_blocks
-    #else                                           #maf_to_fasta_concat.py $fasta_target_type.species $input1 $out_file1
-    #end if#
+  <command interpreter="python" detect_errors="exit_code">
+#if $fasta_target_type.fasta_type == "multiple" #maf_to_fasta_multiple_sets.py $input1 $out_file1 $fasta_target_type.species $fasta_target_type.complete_blocks
+#else                                           #maf_to_fasta_concat.py $fasta_target_type.species $input1 $out_file1
+#end if#
   </command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file to convert"/>

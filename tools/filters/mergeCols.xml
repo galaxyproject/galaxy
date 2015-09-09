@@ -1,7 +1,7 @@
 <tool id="mergeCols1" name="Merge Columns" version="1.0.1">
   <description>together</description>
-  <command interpreter="python">
-   mergeCols.py 
+  <command interpreter="python" detect_errors="exit_code">
+   mergeCols.py
       $input1
       $out_file1
       $col1
@@ -57,7 +57,8 @@ merging columns "**c5,c1**" will return::
    2 100  1500  gene2 chr chr2
 
 .. class:: warningmark
-   
+
 Note that all original columns are preserved and the result of merge is added as the rightmost column.
   </help>
+  <citations />
 </tool>

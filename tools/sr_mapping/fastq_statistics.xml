@@ -1,6 +1,8 @@
 <tool id="cshl_fastq_statistics" name="FASTQ Statistics" version="1.0.0">
   <description>for Solexa file</description>
-  <command>cat $input | solexa_quality_statistics -o $output</command>
+  <command detect_errors="exit_code">
+      cat $input | solexa_quality_statistics -o $output
+  </command>
   <inputs>
     <param format="fastqsolexa" name="input" type="data" label="Library to analyze" />
   </inputs>
@@ -33,7 +35,7 @@ Creates quality statistics report for the given Solexa/FASTQ library.
 * C_Count	= Count of 'C' nucleotides found in this column.
 * G_Count	= Count of 'G' nucleotides found in this column.
 * T_Count	= Count of 'T' nucleotides found in this column.
-* N_Count = Count of 'N' nucleotides found in this column.  
+* N_Count = Count of 'N' nucleotides found in this column.
 
 
 .. class:: infomark
@@ -83,7 +85,8 @@ Creates quality statistics report for the given Solexa/FASTQ library.
     34	6362991	-5	40	140638447	22.10	10	20	40	30	-5	40	1501615	1637357	18113	3205237	669
     35	6362991	-5	40	138910532	21.83	10	20	40	30	-5	40	1532519	3495057	23229	1311834	352
     36	6362991	-5	40	117158566	18.41	7	15	30	23	-5	40	4074444	1402980	63287	822035	245
-    
 
-</help>
+
+  </help>
+  <citations />
 </tool>

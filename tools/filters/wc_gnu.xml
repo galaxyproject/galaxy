@@ -1,6 +1,6 @@
 <tool id="wc_gnu" name="Line/Word/Character count" version="1.0.0">
     <description>of a dataset</description>
-    <command>
+    <command detect_errors="exit_code"><![CDATA[
         #set $word_to_arg = { 'characters':'m', 'words':'w', 'lines':'l' }
         #set $arg_order = [ 'lines', 'words', 'characters' ]
         #if not isinstance( $options.value, list ):
@@ -9,15 +9,18 @@
             #set $args = $options.value
         #end if
         #if $include_header.value:
-            echo "#${ "\t".join( [ i for i in $arg_order if i in $args ] ) }" &gt; $out_file1
-            &amp;&amp;
+            echo "#${ "\t".join( [ i for i in $arg_order if i in $args ] ) }" > $out_file1
+            &&
         #end if
         wc
         #for $option in $args:
            -${ word_to_arg[ str(option) ] }
         #end for
+
         $input1 | awk '{ print ${ '"\\t"'.join( [ "$%i" % ( i+1 ) for i in range( len( $args ) ) ] ) } }'
-        &gt;&gt; $out_file1
+
+        >> $out_file1
+        ]]>
     </command>
     <inputs>
         <param format="txt" name="input1" type="data" label="Text file"/>
@@ -51,7 +54,7 @@
 
 **What it does**
 
-This tool outputs counts of specified attributes (lines, words, characters) of a dataset. 
+This tool outputs counts of specified attributes (lines, words, characters) of a dataset.
 
 -----
 
@@ -69,4 +72,5 @@ This tool outputs counts of specified attributes (lines, words, characters) of a
 If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
 
     </help>
+    <citations />
 </tool>

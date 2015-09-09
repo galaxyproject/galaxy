@@ -1,14 +1,14 @@
 <tool id="bed_to_bigBed" name="BED-to-bigBed" version="1.0.0">
   <description>converter</description>
-  <command>bedToBigBed $input1 $chromInfo $out_file1 
+  <requirements>
+    <requirement type="package">ucsc_tools</requirement>
+  </requirements>
+  <command>bedToBigBed $input1 $chromInfo $out_file1
     #if $settings.settingsType == "full":
       -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.unc}
     #end if
     2&gt;&amp;1 || echo "Error running bedToBigBed." >&amp;2
   </command>
-  <requirements>
-    <requirement type="package">ucsc_tools</requirement>
-  </requirements>
   <inputs>
     <param format="bed" name="input1" type="data" label="Convert">
       <validator type="unspecified_build" />
@@ -51,5 +51,6 @@ This tool converts a **sorted** BED file into a bigBed file.
 Currently, the bedFields option to specify the number of non-standard fields is not supported as an AutoSQL file must be provided, which is a format
 currently not supported by Galaxy.
 
-</help>
+  </help>
+  <citations />
 </tool>

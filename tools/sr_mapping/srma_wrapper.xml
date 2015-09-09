@@ -1,6 +1,7 @@
 <tool id="srma_wrapper" name="Re-align with SRMA" version="0.2.5">
   <description></description>
-  <command interpreter="python">srma_wrapper.py 
+  <command interpreter="python" detect_errors="exit_code">
+srma_wrapper.py
     #if $refGenomeSource.refGenomeSource_type == "history":
       --ref=$refGenomeSource.ownFile
     #else:
@@ -136,7 +137,7 @@ SRMA is a short read micro re-aligner for next-generation high throughput sequen
 
 Sequence alignment algorithms examine each read independently. When indels occur towards the ends of reads, the alignment can lead to false SNPs as well as improperly placed indels. This tool aims to perform a re-alignment of each read to a graphical representation of all alignments within a local region to provide a better overall base-resolution consensus.
 
-Currently this tool works well with and has been tested on 30x diploid coverage genome sequencing data from Illumina and ABI SOLiD technology. This tool may not work well with 454 data, as indels are a significant error mode for 454 data. 
+Currently this tool works well with and has been tested on 30x diploid coverage genome sequencing data from Illumina and ABI SOLiD technology. This tool may not work well with 454 data, as indels are a significant error mode for 454 data.
 
 ------
 
@@ -181,38 +182,39 @@ This is an exhaustive list of SRMA options:
 For **SRMA**::
 
   INPUT=File
-  I=File                        The input SAM or BAM file. Required. 
-  
+  I=File                        The input SAM or BAM file. Required.
+
   OUTPUT=File
-  O=File                        The output SAM or BAM file. Default value: null. 
-  
+  O=File                        The output SAM or BAM file. Default value: null.
+
   REFERENCE=File
-  R=File                        The reference FASTA file. Required. 
-  
-  OFFSET=Integer                The alignment offset. Default value: 20. This option can be set to 'null' to clear the 
-                                default value. 
-  
-  MIN_MAPQ=Integer              The minimum mapping quality. Default value: 0. This option can be set to 'null' to clear 
-                                the default value. 
-  
+  R=File                        The reference FASTA file. Required.
+
+  OFFSET=Integer                The alignment offset. Default value: 20. This option can be set to 'null' to clear the
+                                default value.
+
+  MIN_MAPQ=Integer              The minimum mapping quality. Default value: 0. This option can be set to 'null' to clear
+                                the default value.
+
   MINIMUM_ALLELE_PROBABILITY=Double
-                                The minimum allele probability conditioned on coverage (for the binomial quantile). 
-                                Default value: 0.1. This option can be set to 'null' to clear the default value. 
-  
+                                The minimum allele probability conditioned on coverage (for the binomial quantile).
+                                Default value: 0.1. This option can be set to 'null' to clear the default value.
+
   MINIMUM_ALLELE_COVERAGE=Integer
-                                The minimum haploid coverage for the consensus. Default value: 3. This option can be set 
-                                to 'null' to clear the default value. 
-  
-  RANGE=String                  A range to examine. Default value: null. 
-  
-  CORRECT_BASES=Boolean         Correct bases. Default value: false. This option can be set to 'null' to clear the 
-                                default value. Possible values: {true, false} 
-  
-  USE_SEQUENCE_QUALITIES=BooleanUse sequence qualities Default value: true. This option can be set to 'null' to clear the 
-                                default value. Possible values: {true, false} 
-  
-  MAX_HEAP_SIZE=Integer         The maximum number of nodes on the heap before re-alignment is ignored Default value: 
-                                8192. This option can be set to 'null' to clear the default value. 
+                                The minimum haploid coverage for the consensus. Default value: 3. This option can be set
+                                to 'null' to clear the default value.
+
+  RANGE=String                  A range to examine. Default value: null.
+
+  CORRECT_BASES=Boolean         Correct bases. Default value: false. This option can be set to 'null' to clear the
+                                default value. Possible values: {true, false}
+
+  USE_SEQUENCE_QUALITIES=BooleanUse sequence qualities Default value: true. This option can be set to 'null' to clear the
+                                default value. Possible values: {true, false}
+
+  MAX_HEAP_SIZE=Integer         The maximum number of nodes on the heap before re-alignment is ignored Default value:
+                                8192. This option can be set to 'null' to clear the default value.
 
   </help>
+  <citations />
 </tool>

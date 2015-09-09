@@ -1,9 +1,10 @@
 <tool id="random_lines1" name="Select random lines" version="2.0.1">
   <description>from a file</description>
-  <command interpreter="python">random_lines_two_pass.py "${input}" "${out_file1}" "${num_lines}"
-  #if str( $seed_source.seed_source_selector ) == "set_seed":
-      --seed "${seed_source.seed}"
-  #end if
+  <command interpreter="python" detect_errors="exit_code">
+random_lines_two_pass.py "${input}" "${out_file1}" "${num_lines}"
+#if str( $seed_source.seed_source_selector ) == "set_seed":
+    --seed "${seed_source.seed}"
+#end if
   </command>
   <inputs>
     <param name="num_lines" size="5" type="integer" value="1" label="Randomly select" help="lines"/>
@@ -16,13 +17,13 @@
       <when value="no_seed">
         <!-- Do nothing here -->
       </when>
-      <when value="set_seed"> 
+      <when value="set_seed">
         <param name="seed" type="text" label="Random seed" />
       </when>
     </conditional>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data format_source="input" name="out_file1" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -62,5 +63,6 @@ Selecting 2 random lines might return this::
     chr7  56736  56756   D17003_CTCF_R7  354  +
     chr7  56775  56795   D17003_CTCF_R4  207  +
 
-    </help>
+  </help>
+  <citations />
 </tool>

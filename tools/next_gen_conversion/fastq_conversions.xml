@@ -1,7 +1,7 @@
 <tool id="fastq_conversions" name="FASTQ Conversions" version="1.0.0">
   <description>converts between FASTQ data and other data formats</description>
-  <command interpreter="python">
-    fastq_conversions.py 
+  <command interpreter="python" detect_errors="exit_code">
+    fastq_conversions.py
     --command=$conversionType.type
     --input=$input
     #if $conversionType.type == "sol2std":
@@ -69,7 +69,7 @@
   <help>
 **What it does**
 
-This tool offers several conversions options relating to the FASTQ format. 
+This tool offers several conversions options relating to the FASTQ format.
 
 -----
 
@@ -88,9 +88,9 @@ This tool offers several conversions options relating to the FASTQ format.
 	GGACTCAGATAGTAATCCACGCTCCTTTAAAATATC
 	+
 	++!+++++++!!!!!"+++++++!!!!)!%!!+!!%!
-	
+
 - Converting standard Sanger FASTQ::
-    
+
     @1831_573_1004/1
 	AATACTTTCGGCGCCCTAAACCAGCTCACTGGGG
 	+
@@ -121,7 +121,7 @@ This tool offers several conversions options relating to the FASTQ format.
 	TTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
 	+
 	;@@17?@=>7??@A8?==@4A?A4)&amp;+.'&amp;+'1,
-	
+
 - will produce the following FASTA data::
 
 	>1831_573_1004/1
@@ -130,4 +130,5 @@ This tool offers several conversions options relating to the FASTQ format.
 	TTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
 
   </help>
+  <citations />
 </tool>

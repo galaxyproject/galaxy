@@ -1,23 +1,20 @@
 <?xml version="1.0"?>
 <tool name="Fix errors" id="fix_errors" hidden="true" version="1.0.0">
-	
-	<description>in data validation</description>
-	
-	<command interpreter="python">
-		fix_errors.py $input $errorsfile $output -x $ext --methods=$methods
-	</command>
-	
-	<inputs>
-		<param name="errorsfile" type="text" />
-	        <param type="data" name="input" />
-		<param name="ext" type="text" />
-		<param name="methods" type="text" />
-	</inputs>
-	
-	<code file="fix_errors_code.py"/>
-	
-	<outputs>
-		<data name="output" format="input" metadata="input" />
-	</outputs>
-
+    <description>in data validation</description>
+    <code file="fix_errors_code.py"/>
+    <command interpreter="python" detect_errors="exit_code">
+        fix_errors.py $input $errorsfile $output -x $ext --methods=$methods
+    </command>
+    <inputs>
+        <param name="errorsfile" type="text" />
+        <param type="data" name="input" format="data"/>
+        <param name="ext" type="text" />
+        <param name="methods" type="text" />
+    </inputs>
+    <outputs>
+        <data name="output" format_source="input" metadata="input" />
+    </outputs>
+    <help>
+    </help>
+    <citations />
 </tool>

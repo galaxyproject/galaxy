@@ -1,20 +1,21 @@
 <tool id="gene2intron1" name="Gene BED To Intron BED" version="1.0.0">
 <description>expander</description>
-  <command interpreter="python">ucsc_gene_bed_to_intron_bed.py --input=$input1 --output=$out_file1</command>
+  <command interpreter="python" detect_errors="exit_code">
+    ucsc_gene_bed_to_intron_bed.py --input=$input1 --output=$out_file1
+  </command>
   <inputs>
     <param name="input1" type="data" format="interval" label="UCSC Gene Table"/>
-    
   </inputs>
   <outputs>
     <data name="out_file1" format="bed"/>
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="3.bed" /> 
+      <param name="input1" value="3.bed" />
       <output name="out_file1" file="cf-gene2intron.dat"/>
     </test>
   </tests>
-<help>
+  <help>
 
 **Syntax**
 
@@ -56,5 +57,6 @@ This tool converts a UCSC gene bed format file to a list of bed format lines cor
     chr7 127486167 127488406 NM_000230 0 +
     chr7 127486167 127488409 D49487    0 +
 
-</help>
+  </help>
+  <citations />
 </tool>

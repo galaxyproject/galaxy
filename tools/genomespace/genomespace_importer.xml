@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <tool name="GenomeSpace Importer" id="genomespace_importer" tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.1">
     <description> - receive data from GenomeSpace</description>
-    <command interpreter="python">genomespace_importer.py
+    <command interpreter="python" detect_errors="exit_code">genomespace_importer.py
         --genomespace_site "prod"
         #assert $__user__, Exception( 'You must be logged in to use this tool.' )
         #set $username = $__user__.preferences.get( 'genomespace_username', None )
@@ -19,7 +19,8 @@
         <data format="auto" name="output_file1" />
     </outputs>
     <help>
-       some help text here...
+        Import data from GenomeSpace
     </help>
+    <citations />
     <options refresh="True"/>
 </tool>

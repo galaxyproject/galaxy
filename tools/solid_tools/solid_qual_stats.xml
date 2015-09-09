@@ -1,7 +1,8 @@
 <tool id="solid_qual_stats" name="Compute quality statistics" version="1.0.0">
     <description>for SOLiD data</description>
-    <command interpreter="python">solid_qual_stats.py $input $output1</command>
-
+    <command interpreter="python" detect_errors="exit_code">
+        solid_qual_stats.py $input $output1
+    </command>
     <inputs>
         <param format="qualsolid" name="input" type="data" label="SOLiD qual file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
     </inputs>
@@ -14,8 +15,7 @@
             <output name="output1" file="qualsolid.stats" />
         </test>
     </tests>
-
-<help>
+    <help>
 
 **What it does**
 
@@ -54,16 +54,17 @@ Creates quality statistics report for the given SOLiD quality score file.
     3   6362991 2  34  248722469   19.09  10  26 30  20   5  31
     4   6362991 2  34  247654797   18.92  10  26 30  20   5  31
     .
-    .    
+    .
     32  6362991 2  31  143436943   16.54   3  10  25  22  2  31
     33  6362991 2  32  114269843   16.96   3  10  25  22  2  31
     34  6362991 2  29  140638447   12.10   3  10  25  22  2  29
     35  6362991 2  29  138910532   11.83   3  10  25  22  2  29
-    
+
 ------
 
 This tool is based on `FASTX-toolkit`__ by Assaf Gordon.
 
  .. __: http://hannonlab.cshl.edu/fastx_toolkit/
-</help>
+    </help>
+    <citations />
 </tool>

@@ -1,8 +1,13 @@
 <?xml version="1.0"?>
 <tool name="ZebrafishMine" id="zebrafishmine" tool_type="data_source" version="1.0.0">
     <description>server</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-    <inputs action="http://zebrafishmine.org/begin.do" check_values="false" method="get"> 
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command interpreter="python" detect_errors="exit_code">
+        data_source.py $output $__app__.config.output_size_limit
+    </command>
+    <inputs action="http://zebrafishmine.org/begin.do" check_values="false" method="get">
         <display>go to ZebrafishMine server $GALAXY_URL</display>
     </inputs>
     <request_param_translation>
@@ -12,9 +17,12 @@
             </value_translation>
         </request_param>
     </request_param_translation>
-    <uihints minwidth="800"/>
+    <expand macro="uihints" />
     <outputs>
         <data name="output" format="txt" />
     </outputs>
-    <options sanitize="False"/>
+    <expand macro="nosanitize" />
+    <help>Obtain data from ZebrafishMine
+    </help>
+    <citations />
 </tool>

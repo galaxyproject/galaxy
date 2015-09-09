@@ -1,5 +1,11 @@
 <tool id="microbial_import1" name="Get Microbial Data" version="1.0.0">
-  <command interpreter="python">microbial_import.py $CDS,$tRNA,$rRNA,$sequence,$GeneMark,$GeneMarkHMM,$Glimmer3 $output ${GALAXY_DATA_INDEX_DIR}/microbial_data.loc</command>
+  <code file="microbial_import_code.py"/>
+  <macros>
+    <import>macros.xml</import>
+  </macros>
+  <command interpreter="python" detect_errors="exit_code">
+    microbial_import.py $CDS,$tRNA,$rRNA,$sequence,$GeneMark,$GeneMarkHMM,$Glimmer3 $output ${GALAXY_DATA_INDEX_DIR}/microbial_data.loc
+  </command>
   <inputs>
       <param name="kingdom" type="select" label="Select the Desired Kingdom">
         <options from_file="microbial_data.loc" startswith="ORG">
@@ -83,7 +89,6 @@
   <outputs>
     <data format="bed" name="output"/>
   </outputs>
-  <code file="microbial_import_code.py"/>
   <help>
 
 This tool will allow you to obtain various genomic datasets for any completed Microbial Genome Project as listed at NCBI_.
@@ -111,4 +116,5 @@ Organisms in **bold** are available at the UCSC Browser.
 
 .. _here: https://wiki.galaxyproject.org/Main/Data%20Libraries/Microbes
   </help>
+  <citations />
 </tool>

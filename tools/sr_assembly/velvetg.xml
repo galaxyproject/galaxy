@@ -1,8 +1,11 @@
 <tool id="velvetg" name="velvetg" version="1.0.0">
   <description>Velvet sequence assembler for very short reads</description>
+  <requirements>
+    <requirement type="package">velvet</requirement>
+  </requirements>
   <version_command>velvetg 2&gt;&amp;1 | grep "Version" | sed -e 's/Version //'</version_command>
-  <command interpreter="python">
-    velvetg_wrapper.py 
+  <command interpreter="python" detect_errors="exit_code">
+    velvetg_wrapper.py
            '$input.extra_files_path'
            #if $generate_amos.afg  == "yes":
                -amos_file $generate_amos.afg
@@ -100,7 +103,7 @@
     <conditional name="coverage">
       <param name="cutoff" type="select" label="Coverage cutoff" help="">
         <option value="none">None</option>
-        <option value="auto">Automatically Determined</option> 
+        <option value="auto">Automatically Determined</option>
         <option value="value">Specify Cutoff Value</option>
       </param>
       <when value="none"/>
@@ -113,7 +116,7 @@
     <conditional name="expected">
       <param name="coverage" type="select" label="Expected Coverage of Unique Regions" help="">
         <option value="none">None</option>
-        <option value="auto">Automatically Determined</option> 
+        <option value="auto">Automatically Determined</option>
         <option value="value">Specify Expected Value</option>
       </param>
       <when value="none"/>
@@ -183,9 +186,6 @@
     <data format="tabular" name="stats" label="${tool.name} on ${on_string}: Stats" from_work_dir="stats.txt" />
     <data format="fasta" name="contigs" label="${tool.name} on ${on_string}: Contigs" from_work_dir="contigs.fa" />
   </outputs>
-  <requirements>
-    <requirement type="package">velvet</requirement>
-  </requirements>
   <tests>
     <test>
       <param name="input" value="velveth_test1/output.html" ftype="velvet" >
@@ -217,7 +217,7 @@ Velvet_ is a de novo genomic assembler specially designed for short read sequenc
 
 Velvet currently takes in short read sequences, removes errors then produces high quality unique contigs. It then uses paired-end read and long read information, when available, to retrieve the repeated areas between contigs.
 
-Read the Velvet `documentation`__ for details on using the Velvet Assembler. 
+Read the Velvet `documentation`__ for details on using the Velvet Assembler.
 
 .. _Velvet: http://www.ebi.ac.uk/~zerbino/velvet/
 
@@ -237,14 +237,14 @@ The input files are prepared for the velvet assembler using **velveth**.
 
 **Contigs**
 
-The *contigs.fa* file.  
+The *contigs.fa* file.
 This fasta file contains the sequences of the contigs longer than 2k, where k is the word-length used in velveth. If you have specified a min contig length threshold, then the contigs shorter than that value are omitted.
 Note that the length and coverage information provided in the header of each contig should therefore be understood in k-mers and in k-mer coverage (cf. 5.1) respectively.
 The N's in the sequence correspond to gaps between scaffolded contigs. The number of N's corresponds to the estimated length of the gap. For reasons of compatibility with the archives, any gap shorter than 10bp is represented by a sequence of 10 N's.
 
 **Stats**
 
-The *stats.txt* file.  
+The *stats.txt* file.
 This file is a simple tabbed-delimited description of the nodes. The column names are pretty much self-explanatory. Note however that node lengths are given in k-mers. To obtain the length in nucleotides of each node you simply need to add k - 1, where k is the word-length used in velveth.
 The in and out columns correspond to the number of arcs on the 5' and 3' ends of the contig respectively.
 The coverages in columns short1 cov, short1 Ocov, short2 cov, and short2 Ocov are provided in k-mer coverage (5.1).
@@ -252,12 +252,12 @@ Also, the difference between # cov and # Ocov is the way these values are comput
 
 **LastGraph**
 
-The *LastGraph* file.  
-This file describes in its entirety the graph produced by Velvet. 
+The *LastGraph* file.
+This file describes in its entirety the graph produced by Velvet.
 
 **AMOS.afg**
 
-The *velvet_asm.afg* file.  
+The *velvet_asm.afg* file.
 This file is mainly designed to be read by the open-source AMOS genome assembly package. Nonetheless, a number of programs are available to transform this kind of file into other assembly file formats (namely ACE, TIGR, Arachne and Celera). See http://amos.sourceforge.net/ for more information.
 The file describes all the contigs contained in the contigs.fa file (cf 4.2.1).
 
@@ -276,7 +276,7 @@ This is a list of implemented Velvetg options::
         -amos_file  yes|no               : export assembly to AMOS file (default: no export)
         -exp_cov  floating point|auto    : expected coverage of unique regions or allow the system to infer it
                 (default: no long or paired-end read resolution)
-   
+
   Advanced options:
         -ins_length2  integer            : expected distance between two paired-end reads in the second short-read dataset (default: no read pairing)
         -ins_length_long  integer        : expected distance between two long paired-end reads (default: no read pairing)
@@ -290,7 +290,7 @@ This is a list of implemented Velvetg options::
         -max_coverage  floating point    : removal of high coverage nodes AFTER tour bus (default: no removal)
         -long_mult_cutoff  int           : minimum number of long reads required to merge contigs (default: 2)
         -unused_reads  yes|no            : export unused reads in UnusedReads.fa file (default: no)
-   
+
   Output:
         directory/contigs.fa             : fasta file of contigs longer than twice hash length
         directory/stats.txt              : stats file (tab-spaced) useful for determining appropriate coverage cutoff
@@ -298,4 +298,5 @@ This is a list of implemented Velvetg options::
         directory/velvet_asm.afg         : (if requested) AMOS compatible assembly file
 
   </help>
+  <citations />
 </tool>

@@ -1,0 +1,16 @@
+<macros>
+    <xml name="uihints">
+        <uihints minwidth="800" />
+    </xml>
+
+    <xml name="tabular_output">
+        <outputs>
+            <data name="output" format="tabular" />
+            <yield />
+        </outputs>
+    </xml>
+
+    <xml name="nosanitize">
+        <options sanitize="False" refresh="True" />
+    </xml>
+</macros>

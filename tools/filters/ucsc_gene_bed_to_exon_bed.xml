@@ -1,6 +1,8 @@
 <tool id="gene2exon1" name="Gene BED To Exon/Intron/Codon BED" version="1.0.0">
 <description>expander</description>
-  <command interpreter="python">ucsc_gene_bed_to_exon_bed.py --input=$input1 --output=$out_file1 --region=$region "--exons"</command>
+  <command interpreter="python" detect_errors="exit_code">
+    ucsc_gene_bed_to_exon_bed.py --input=$input1 --output=$out_file1 --region=$region "--exons"
+  </command>
   <inputs>
     <param name="region" type="select">
       <label>Extract</label>
@@ -18,7 +20,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="3.bed" /> 
+      <param name="input1" value="3.bed" />
       <param name="region" value="transcribed" />
       <output name="out_file1" file="cf-gene2exon.dat"/>
     </test>
@@ -33,7 +35,7 @@ This tool works only on a BED file that contains at least 12 fields (see **Examp
 
 **What it does**
 
-BED format can be used to represent a single gene in just one line, which contains the information about exons, coding sequence location (CDS), and positions of untranslated regions (UTRs).  This tool *unpacks* this information by converting a single line describing a gene into a collection of lines representing individual exons, introns, UTRs, etc. 
+BED format can be used to represent a single gene in just one line, which contains the information about exons, coding sequence location (CDS), and positions of untranslated regions (UTRs).  This tool *unpacks* this information by converting a single line describing a gene into a collection of lines representing individual exons, introns, UTRs, etc.
 
 -------
 
@@ -72,7 +74,6 @@ will return::
    10. blockCount - The number of blocks (exons) in the BED line.
    11. blockSizes - A comma-separated list of the block sizes. The number of items in this list should correspond to blockCount.
    12. blockStarts - A comma-separated list of block starts. All of the blockStart positions should be calculated relative to chromStart. The number of items in this list should correspond to blockCount.
-
-
-</help>
+  </help>
+  <citations />
 </tool>

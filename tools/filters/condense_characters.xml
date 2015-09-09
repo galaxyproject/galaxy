@@ -1,6 +1,8 @@
 <tool id="Condense characters1" name="Condense" version="1.0.0">
   <description>consecutive characters</description>
-  <command interpreter="perl">condense_characters.pl $input $character $out_file1</command>
+  <command interpreter="perl" detect_errors="exit_code">
+      condense_characters.pl $input $character $out_file1
+  </command>
   <inputs>
 <!--    <display>condense all consecutive $character from $input</display> -->
     <param name="character" type="select" label="Condense all consecutive">
@@ -15,7 +17,7 @@
     <param format="txt" name="input" type="data" label="in this Dataset"/>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input" />
+    <data format="txt" name="out_file1" metadata_source="input" />
   </outputs>
   <tests>
     <test>
@@ -44,5 +46,6 @@ This tool condenses all consecutive characters of a specified type.
     geneX,10,20
     geneY,5,12,15,9
 
-</help>
+  </help>
+  <citations />
 </tool>

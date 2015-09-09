@@ -3,7 +3,18 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType=$mafType --interval_file=$input1 --output_file=$out_file1 --indexLocation=${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc</command>
+  <command interpreter="python" detect_errors="exit_code">
+interval2maf.py
+--dbkey=${input1.dbkey}
+--chromCol=${input1.metadata.chromCol}
+--startCol=${input1.metadata.startCol}
+--endCol=${input1.metadata.endCol}
+--strandCol=${input1.metadata.strandCol}
+--mafType=$mafType
+--interval_file=$input1
+--output_file=$out_file1
+--indexLocation=${GALAXY_DATA_INDEX_DIR}/maf_pairwise.loc
+  </command>
   <inputs>
     <param name="input1" type="data" format="interval" label="Interval File">
       <validator type="unspecified_build" />

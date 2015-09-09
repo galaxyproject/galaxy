@@ -1,9 +1,24 @@
 <tool id="solid2fastq" name="Convert" version="1.0.0">
   <description>SOLiD output to fastq</description>
-  <command interpreter="python">
-    #if   $is_run.paired == "no"    #solid2fastq.py --fr=$input1 --fq=$input2 --fout=$out_file1 -q $qual $trim_name $trim_first_base $double_encode
-    #elif $is_run.paired == "yes"   #solid2fastq.py --fr=$input1 --fq=$input2 --fout=$out_file1 --rr=$input3 --rq=$input4 --rout=$out_file2 -q $qual $trim_name $trim_first_base $double_encode
-    #end if#
+  <command interpreter="python" detect_errors="exit_code">
+solid2fastq.py --fr=$input1 --fq=$input2 --fout=$out_file1
+
+#if $is_run.paired == "no":
+    -q
+    $qual
+    $trim_name
+    $trim_first_base
+    $double_encode
+#elif $is_run.paired == "yes":
+    --rr=$input3
+    --rq=$input4
+    --rout=$out_file2
+    -q
+    $qual
+    $trim_name
+    $trim_first_base
+    $double_encode
+#end if#
   </command>
   <inputs>
     <param name="input1" type="data" format="csfasta" label="Select reads"/>
@@ -64,8 +79,8 @@
       <output name="out_file1" file="solid2fastq_out_2.fastq"/>
       <output name="out_file2" file="solid2fastq_out_3.fastq"/>
     </test>
- </tests>
-<help>
+  </tests>
+  <help>
 **What it does**
 
 Converts output of SOLiD instrument (versions 3.5 and earlier) to fastq format suitable for bowtie, bwa, and PerM mappers.
@@ -109,7 +124,7 @@ The reads are guaranteed to be paired -- mated reads will be in the same positio
 
     &gt;1831_573_1004_F3
     T00030133312212111300011021310132222
-  
+
 this option removes this base leaving only color calls. Not necessary for bowtie. Required for BWA.
 
 **Double encode?** - converts color calls (0123.) to pseudo-nucleotides (ACGTN). Not necessary for bowtie. Required for BWA.
@@ -150,5 +165,6 @@ Finally, setting *Double encode* to **Yes** will yield::
  TATTTATGGGTATGGCCGCTCACAGGCCAGCGGCCT
  +
  );@@17?@=&gt;7??@A8?==@4A?A4)A+.'A+'1,
-</help>
+  </help>
+  <citations />
 </tool>

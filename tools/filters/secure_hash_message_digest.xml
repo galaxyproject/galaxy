@@ -1,6 +1,7 @@
 <tool id="secure_hash_message_digest" name="Secure Hash / Message Digest" version="0.0.1">
     <description>on a dataset</description>
-    <command interpreter="python">secure_hash_message_digest.py --input "${input1}" --output "${out_file1}"
+    <command interpreter="python" detect_errors="exit_code">
+        secure_hash_message_digest.py --input "${input1}" --output "${out_file1}"
         #if $algorithms.value:
             #for $algorithm in str( $algorithms ).split( "," ):
                 --algorithm "${algorithm}"
@@ -41,5 +42,6 @@ This tool outputs Secure Hashes / Message Digests of a dataset using the user se
 
 If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
 
-    </help>
+  </help>
+  <citations />
 </tool>

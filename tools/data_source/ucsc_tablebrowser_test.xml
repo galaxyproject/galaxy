@@ -6,7 +6,12 @@
 -->
 <tool name="UCSC Test" id="ucsc_table_direct_test1" tool_type="data_source" version="1.0.0">
     <description>table browser</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command interpreter="python" detect_errors="exit_code">
+        data_source.py $output $__app__.config.output_size_limit
+    </command>
     <inputs action="http://genome-test.cse.ucsc.edu/cgi-bin/hgTables" check_values="false" method="get">
         <display>go to UCSC Table Browser $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner" />
@@ -34,9 +39,12 @@
             </value_translation>
         </request_param>
     </request_param_translation>
-    <uihints minwidth="800"/>
+    <expand macro="uihints" />
     <outputs>
         <data name="output" format="tabular" label="${tool.name} on ${organism}: ${table} (#if $description == 'range' then $getVar( 'position', 'unknown position' ) else $description#)"/>
     </outputs>
-    <options sanitize="False" refresh="True"/>
+    <expand macro="nosanitize" />
+    <help>Obtain data from UCSC Test
+    </help>
+    <citations />
 </tool>

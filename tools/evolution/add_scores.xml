@@ -1,25 +1,20 @@
 <tool id="hgv_add_scores" name="phyloP" version="1.0.0">
   <description>interspecies conservation scores</description>
-
-  <command interpreter="python">
+  <requirements>
+    <requirement type="package">add_scores</requirement>
+  </requirements>
+  <command interpreter="python" detect_errors="exit_code">
     add_scores.py "$input1" "$out_file1" "${GALAXY_DATA_INDEX_DIR}/add_scores.loc" "${input1.metadata.dbkey}" "${input1.metadata.chromCol}" "${input1.metadata.startCol}"
   </command>
-
   <inputs>
     <param format="interval" name="input1" type="data" label="Dataset">
       <validator type="unspecified_build"/>
       <validator type="dataset_metadata_in_file" filename="add_scores.loc" metadata_name="dbkey" metadata_column="0" message="Data is currently not available for the specified build."/>
     </param>
   </inputs>
-
   <outputs>
     <data format="input" name="out_file1" />
   </outputs>
-
-  <requirements>
-    <requirement type="package">add_scores</requirement>
-  </requirements>
-
   <tests>
     <test>
       <param name="input1" value="add_scores_input1.interval" ftype="interval" dbkey="hg18" />
@@ -30,7 +25,6 @@
       <output name="output" file="add_scores_output2.interval" />
     </test>
   </tests>
-
   <help>
 .. class:: warningmark
 
@@ -50,10 +44,10 @@ The input can be any interval_ format dataset.  The output is also in interval f
 
 **What it does**
 
-This tool adds a column that measures interspecies conservation at each SNP 
-position, using conservation scores for primates pre-computed by the 
-phyloP program.  PhyloP performs an exact P-value computation under a 
-continuous Markov substitution model. 
+This tool adds a column that measures interspecies conservation at each SNP
+position, using conservation scores for primates pre-computed by the
+phyloP program.  PhyloP performs an exact P-value computation under a
+continuous Markov substitution model.
 
 The chromosome and start position
 are used to look up the scores, so if a larger interval is in the input,
@@ -103,4 +97,5 @@ In Proceedings of the 10th International Conference on Research in Computational
 Molecular Biology (RECOMB 2006), pp. 190-205.
 
   </help>
+  <citations />
 </tool>
