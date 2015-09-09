@@ -277,7 +277,7 @@ class ToolShedRepository( object ):
             if tool_dependency.status not in [ ToolDependency.installation_status.INSTALLED ]:
                 metadata_tool_dependencies = self.metadata["tool_dependencies"]
                 for metadata_tool_dependency in metadata_tool_dependencies.values():
-                    if tool_dependency.name ==  metadata_tool_dependency["name"]:
+                    if tool_dependency.name == metadata_tool_dependency["name"]:
                         missing_dependencies.append( tool_dependency )
         return missing_dependencies
 
