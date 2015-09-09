@@ -530,7 +530,9 @@ var ToolLinkView = BaseView.extend({
             $link.find('a').on('click', function(e) {
                 e.preventDefault();
                 var form = new ToolsForm.View( { id : self.model.id, version : self.model.get('version') } );
-                Galaxy.app.display( form.$el );
+                form.deferred.execute(function() {
+                    Galaxy.app.display( form.$el );
+                });
             });
         }
 
