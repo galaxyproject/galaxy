@@ -262,7 +262,7 @@ class MessageQueueUUIDStore(object):
             raise
 
     def keys(self):
-        return iter(os.listdir(self.__store))
+        return iter(listdir(self.__store))
 
     def get_time(self, key):
         try:
