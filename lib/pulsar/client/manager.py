@@ -93,7 +93,8 @@ class MessageQueueClientManager(object):
 
     def callback_wrapper(self, callback, body, message):
         if message.acknowledged:
-            log.info("Message is already acknowledged (by an upstream callback?), Pulsar client will not handle this message")
+            log.info("Message is already acknowledged (by an upstream "
+                     "callback?), Pulsar client will not handle this message")
             return
         if not self.active:
             log.debug("Obtained update message for inactive client manager, attempting requeue.")
@@ -121,9 +122,12 @@ class MessageQueueClientManager(object):
         try:
             self.exchange.consume("status_update", callback_wrapper, check=self)
         except Exception:
-            log.exception("Exception while handling status update messages, this shouldn't really happen. Handler should be restarted.")
+            log.exception("Exception while handling status update messages, "
+                          "this shouldn't really happen. Handler should be "
+                          "restarted.")
         finally:
-            log.debug("Leaving Pulsar client status update thread, no additional Pulsar updates will be processed.")
+            log.debug("Leaving Pulsar client status update thread, no "
+                      "additional Pulsar updates will be processed.")
 
     def ensure_has_status_update_callback(self, callback):
         with self.callback_lock:
@@ -144,9 +148,13 @@ class MessageQueueClientManager(object):
         try:
             self.exchange.consume(queue_name + '_ack', None, check=self)
         except Exception:
-            log.exception("Exception while handling %s acknowledgement messages, this shouldn't really happen. Handler should be restarted.", queue_name)
+            log.exception("Exception while handling %s acknowledgement "
+                          "messages, this shouldn't really happen. Handler "
+                          "should be restarted.", queue_name)
         finally:
-            log.debug("Leaving Pulsar client %s acknowledgement thread, no additional acknowledgements will be processed.", queue_name)
+            log.debug("Leaving Pulsar client %s acknowledgement thread, no "
+                      "additional acknowledgements will be processed.",
+                      queue_name)
 
     def ensure_has_ack_consumers(self):
         with self.callback_lock:

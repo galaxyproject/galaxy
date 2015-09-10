@@ -9,7 +9,7 @@ def get_exchange(url, manager_name, params):
         connect_ssl=connect_ssl,
         publish_kwds=parse_amqp_publish_kwds(params)
     )
-    if params.get('amqp_acknowledge', True):
+    if params.get('amqp_acknowledge', False):
         exchange_kwds.update(parse_ack_kwds(params, manager_name))
     timeout = params.get('amqp_consumer_timeout', False)
     if timeout is not False:

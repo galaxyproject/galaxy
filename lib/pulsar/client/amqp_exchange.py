@@ -104,8 +104,7 @@ class PulsarExchange(object):
                         # repbulishes, but if that changes, need to drain the
                         # queue once before the ack manager starts doing its
                         # thing
-                        if self.acks_enabled and queue_name.endswith(ACK_QUEUE_SUFFIX):
-                            self.__start_ack_manager(queue_name)
+                        self.__start_ack_manager(queue_name)
                         while check and connection.connected:
                             try:
                                 connection.drain_events(timeout=self.__timeout)
@@ -129,8 +128,8 @@ class PulsarExchange(object):
             self.publish(ack_queue, response)
             if self.consume_uuid_store is None:
                 log.warning('Received an ack request (UUID: %s, response queue: '
-                    '%s) but ack UUID persistence is not enabled, check your '
-                    'config', ack_uuid, ack_queue)
+                            '%s) but ack UUID persistence is not enabled, check '
+                            'your config', ack_uuid, ack_queue)
             elif ack_uuid not in self.consume_uuid_store:
                 # This message has not been seen before, store the uuid so it
                 # is not operated on more than once
@@ -276,8 +275,9 @@ class PulsarExchange(object):
         return thread
 
     def __start_ack_manager(self, queue_name):
-        thread_name = "acknowledgement-manager-%s" % (self.__queue_name(queue_name))
-        thread = threading.Thread(name=thread_name, target=self.ack_manager, args=(queue_name,))
-        thread.daemon = True
-        thread.start()
-        return thread
+        if self.acks_enabled and queue_name.endswith(ACK_QUEUE_SUFFIX):
+            thread_name = "acknowledgement-manager-%s" % (self.__queue_name(queue_name))
+            thread = threading.Thread(name=thread_name, target=self.ack_manager, args=(queue_name,))
+            thread.daemon = True
+            thread.start()
+            return thread

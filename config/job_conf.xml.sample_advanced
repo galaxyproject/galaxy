@@ -58,7 +58,7 @@
                the AMQP server, so Galaxy/Pulsar can request that the consumer
                acknowledge messages and will resend them if acknowledgement is
                not received after a configurable timeout.  -->
-          <!-- <param id="amqp_acknowledge">True</param> -->
+          <!-- <param id="amqp_acknowledge">False</param> -->
           <!-- Galaxy reuses Pulsar's persistence_directory parameter (via the
                Pulsar client lib) to store a record of received
                acknowledgements, and to keep track of messages which have not
