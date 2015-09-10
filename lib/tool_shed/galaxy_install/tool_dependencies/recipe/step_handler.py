@@ -10,7 +10,6 @@ import time
 import urllib2
 import zipfile
 import hashlib
-import re
 
 from galaxy.util import asbool
 from galaxy.util.template import fill_template
