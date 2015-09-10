@@ -10,6 +10,7 @@
         --username "${username}"
         --token "${token}"
         --json_parameter_file "${output_file1}"
+        --genomespace_toolname="\${GENOMESPACE_TOOLNAME:-Galaxy}"
     </command>
     <inputs check_values="False">
         <!-- <param name="file_name" type="text" value="" /> -->

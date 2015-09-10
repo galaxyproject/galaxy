@@ -31,6 +31,7 @@
         --file_type "${input1.ext}"
         --content_type "${input1.get_mime()}"
         --log "${output_log}"
+        --genomespace_toolname="\${GENOMESPACE_TOOLNAME:-Galaxy}"
     </command>
     <inputs>
         <param format="data" name="input1" type="data" label="Send this dataset to GenomeSpace" />
