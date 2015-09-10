@@ -2,16 +2,11 @@ import argparse
 import os
 import sys
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[ 1: ] )
-sys.path = new_path
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
-
+import galaxy.config as galaxy_config
 import galaxy.model
 import galaxy.model.tool_shed_install.mapping as install_mapper
-import galaxy.config as galaxy_config
 
 
 class CleanUpDependencyApplication( object ):
@@ -30,6 +25,7 @@ class CleanUpDependencyApplication( object ):
     def shutdown( self ):
         pass
 
+
 def main( args, app ):
     if not os.path.exists( args.basepath ):
         print 'Tool dependency base path %s does not exist.' % str( args.basepath )
@@ -44,12 +40,13 @@ def main( args, app ):
                 print 'Found non-empty tool dependency installation directory %s.' % path
                 print 'Directory has the following contents: \n   %s' % '\n   '.join( path_contents )
 
+
 def get_tool_dependency_dirs( app ):
     dependency_paths = []
     for tool_dependency in app.sa_session.query( galaxy.model.tool_shed_install.ToolDependency ).all():
         dependency_paths.append( tool_dependency.installation_directory( app ) )
     return dependency_paths
-        
+
 if __name__ == '__main__':
     description = 'Clean out or list the contents any tool dependency directory under the provided'
     description += 'tool dependency path. Remove any non-empty directories found if the '

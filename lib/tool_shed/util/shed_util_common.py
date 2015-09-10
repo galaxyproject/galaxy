@@ -15,7 +15,6 @@ from sqlalchemy import and_, false, or_, true
 from galaxy import util
 from galaxy.web import url_for
 from galaxy.datatypes import checkers
-
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -753,6 +752,7 @@ def get_tool_shed_from_clone_url( repository_clone_url ):
     tmp_url = common_util.remove_protocol_and_user_from_clone_url( repository_clone_url )
     return tmp_url.split( '/repos/' )[ 0 ].rstrip( '/' )
 
+
 def get_installed_repository( app, tool_shed, name, owner, changeset_revision=None, installed_changeset_revision=None ):
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
@@ -770,12 +770,14 @@ def get_installed_repository( app, tool_shed, name, owner, changeset_revision=No
         clause_list.append( app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision )
     return query.filter( and_( *clause_list ) ).first()
 
+
 def get_tool_shed_repository_by_id( app, repository_id ):
     """Return a tool shed repository database record defined by the id."""
     # This method is used only in Galaxy, not the tool shed.
     return app.install_model.context.query( app.install_model.ToolShedRepository ) \
                                     .filter( app.install_model.ToolShedRepository.table.c.id == app.security.decode_id( repository_id ) ) \
                                     .first()
+
 
 def get_tool_shed_status_for_installed_repository( app, repository ):
     """

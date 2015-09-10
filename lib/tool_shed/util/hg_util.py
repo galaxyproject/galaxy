@@ -2,31 +2,27 @@ import json
 import logging
 import os
 import struct
-
+import tempfile
 from datetime import datetime
 from time import gmtime
-from time import strftime
-import tempfile
 
-from galaxy.util import listify
 from galaxy import eggs
 eggs.require( 'mercurial' )
-
-from mercurial import cmdutil
-from mercurial import commands
-from mercurial import hg
-from mercurial import ui
-from mercurial.exchange import readbundle
+from mercurial import cmdutil, commands, hg, ui
 from mercurial.changegroup import readexactly
+from mercurial.exchange import readbundle
 
+from galaxy.util import listify
 from tool_shed.util import basic_util
 
 log = logging.getLogger( __name__ )
 
 INITIAL_CHANGELOG_HASH = '000000000000'
 
+
 def add_changeset( repo_ui, repo, path_to_filename_in_archive ):
     commands.add( repo_ui, repo, str( path_to_filename_in_archive ) )
+
 
 def archive_repository_revision( app, repository, archive_dir, changeset_revision ):
     '''Create an un-versioned archive of a repository.'''
@@ -43,6 +39,7 @@ def archive_repository_revision( app, repository, archive_dir, changeset_revisio
         log.exception( error_message )
     return return_code, error_message
 
+
 def bundle_to_json( fh ):
     """
     Convert the received HG10xx data stream (a mercurial 1.0 bundle created using hg push from the
@@ -52,6 +49,7 @@ def bundle_to_json( fh ):
     hg_unbundle10_obj = readbundle( None, fh, None )
     groups = [ group for group in unpack_groups( hg_unbundle10_obj ) ]
     return json.dumps( groups, indent=4 )
+
 
 def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
     """
@@ -71,8 +69,10 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
         log.debug( error_message )
         return False, error_message
 
+
 def commit_changeset( repo_ui, repo, full_path_to_changeset, username, message ):
     commands.commit( repo_ui, repo, full_path_to_changeset, user=username, message=message )
+
 
 def copy_file_from_manifest( repo, ctx, filename, dir ):
     """
@@ -90,6 +90,7 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
             return file_path
     return None
 
+
 def create_hgrc_file( app, repository ):
     # At this point, an entry for the repository is required to be in the hgweb.config
     # file so we can call repository.repo_path( trans.app ).  Since we support both
@@ -97,7 +98,7 @@ def create_hgrc_file( app, repository ):
     # in the mercurial api.  The hg purge extension purges all files and directories
     # not being tracked by mercurial in the current repository.  It'll remove unknown
     # files and empty directories.  This is not currently used because it is not supported
-    #in the mercurial API.
+    # in the mercurial API.
     repo = get_repo_for_repository( app, repository=repository, repo_path=None, create=False )
     fp = repo.opener( 'hgrc', 'wb' )
     fp.write( '[paths]\n' )
@@ -111,6 +112,7 @@ def create_hgrc_file( app, repository ):
     fp.write( 'hgext.purge=' )
     fp.close()
 
+
 def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
     """Retrieve a specified changectx from a repository."""
     for changeset in repo.changelog:
@@ -118,6 +120,7 @@ def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
         if str( ctx ) == changeset_revision:
             return ctx
     return None
+
 
 def get_config( config_file, repo, ctx, dir ):
     """Return the latest version of config_filename from the repository manifest."""
@@ -130,6 +133,7 @@ def get_config( config_file, repo, ctx, dir ):
                 return get_named_tmpfile_from_ctx( changeset_ctx, ctx_file, dir )
     return None
 
+
 def get_config_from_disk( config_file, relative_install_dir ):
     for root, dirs, files in os.walk( relative_install_dir ):
         if root.find( '.hg' ) < 0:
@@ -137,6 +141,7 @@ def get_config_from_disk( config_file, relative_install_dir ):
                 if name == config_file:
                     return os.path.abspath( os.path.join( root, name ) )
     return None
+
 
 def get_configured_ui():
     """Configure any desired ui settings."""
@@ -148,6 +153,7 @@ def get_configured_ui():
     _ui.setconfig( 'ui', 'quiet', True )
     return _ui
 
+
 def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
     """
     Get the ctx file path for the latest revision of filename from the repository manifest up
@@ -155,7 +161,6 @@ def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
     """
     stripped_filename = basic_util.strip_path( filename )
     for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
-        manifest_changeset_revision = str( repo.changectx( changeset ) )
         manifest_ctx = repo.changectx( changeset )
         for ctx_file in manifest_ctx.files():
             ctx_file_name = basic_util.strip_path( ctx_file )
@@ -163,11 +168,12 @@ def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
                 return manifest_ctx, ctx_file
     return None, None
 
+
 def get_file_context_from_ctx( ctx, filename ):
     """Return the mercurial file context for a specified file."""
     # We have to be careful in determining if we found the correct file because multiple files with
     # the same name may be in different directories within ctx if the files were moved within the change
-    # set.  For example, in the following ctx.files() list, the former may have been moved to the latter: 
+    # set.  For example, in the following ctx.files() list, the former may have been moved to the latter:
     # ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].
     # Another scenario is that the file has been deleted.
     deleted = False
@@ -179,12 +185,13 @@ def get_file_context_from_ctx( ctx, filename ):
                 # If the file was moved, its destination will be returned here.
                 fctx = ctx[ ctx_file ]
                 return fctx
-            except LookupError, e:
+            except LookupError:
                 # Set deleted for now, and continue looking in case the file was moved instead of deleted.
                 deleted = True
     if deleted:
         return 'DELETED'
     return None
+
 
 def get_mercurial_default_options_dict( command, command_table=None, **kwd ):
     '''Borrowed from repoman - get default parameters for a mercurial command.'''
@@ -192,11 +199,12 @@ def get_mercurial_default_options_dict( command, command_table=None, **kwd ):
         command_table = commands.table
     possible = cmdutil.findpossible( command, command_table )
     if len( possible ) != 1:
-        raise Exception, 'unable to find mercurial command "%s"' % command
+        raise Exception('unable to find mercurial command "%s"' % command)
     default_options_dict = dict( ( r[ 1 ].replace( '-', '_' ), r[ 2 ] ) for r in possible[ possible.keys()[ 0 ] ][ 1 ][ 1 ] )
     for option in kwd:
         default_options_dict[ option ] = kwd[ option ]
     return default_options_dict
+
 
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
     """
@@ -210,7 +218,7 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
             try:
                 # If the file was moved, its destination file contents will be returned here.
                 fctx = ctx[ ctx_file ]
-            except LookupError, e:
+            except LookupError:
                 # Continue looking in case the file was moved.
                 fctx = None
                 continue
@@ -224,6 +232,7 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
                 return tmp_filename
     return None
 
+
 def get_readable_ctx_date( ctx ):
     """Convert the date of the changeset (the received ctx) to a human-readable date."""
     t, tz = ctx.date()
@@ -231,16 +240,19 @@ def get_readable_ctx_date( ctx ):
     ctx_date = date.strftime( "%Y-%m-%d" )
     return ctx_date
 
+
 def get_repo_for_repository( app, repository=None, repo_path=None, create=False ):
     if repository is not None:
         return hg.repository( get_configured_ui(), repository.repo_path( app ), create=create )
     if repo_path is not None:
         return hg.repository( get_configured_ui(), repo_path, create=create )
 
+
 def get_repository_heads( repo ):
     """Return current repository heads, which are changesets with no child changesets."""
     heads = [ repo[ h ] for h in repo.heads( None ) ]
     return heads
+
 
 def get_reversed_changelog_changesets( repo ):
     """Return a list of changesets in reverse order from that provided by the repository manifest."""
@@ -248,6 +260,7 @@ def get_reversed_changelog_changesets( repo ):
     for changeset in repo.changelog:
         reversed_changelog.insert( 0, changeset )
     return reversed_changelog
+
 
 def get_revision_label( app, repository, changeset_revision, include_date=True, include_hash=True ):
     """
@@ -263,6 +276,7 @@ def get_revision_label( app, repository, changeset_revision, include_date=True, 
             return "-1:%s" % changeset_revision
         else:
             return "-1"
+
 
 def get_rev_label_changeset_revision_from_repository_metadata( app, repository_metadata, repository=None,
                                                                include_date=True, include_hash=True ):
@@ -292,6 +306,7 @@ def get_rev_label_changeset_revision_from_repository_metadata( app, repository_m
             label = "-1"
     return rev, label, changeset_revision
 
+
 def get_revision_label_from_ctx( ctx, include_date=True, include_hash=True ):
     if include_date:
         if include_hash:
@@ -305,6 +320,7 @@ def get_revision_label_from_ctx( ctx, include_date=True, include_hash=True ):
             return '%s:%s' % ( str( ctx.rev() ), str( ctx ) )
         else:
             return '%s' % str( ctx.rev() )
+
 
 def get_rev_label_from_changeset_revision( repo, changeset_revision, include_date=True, include_hash=True ):
     """
@@ -320,12 +336,15 @@ def get_rev_label_from_changeset_revision( repo, changeset_revision, include_dat
         label = "-1:%s" % changeset_revision
     return rev, label
 
+
 def pull_repository( repo, repository_clone_url, ctx_rev ):
     """Pull changes from a remote repository to a local one."""
     commands.pull( get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )
 
+
 def remove_file( repo_ui, repo, selected_file, force=True ):
     commands.remove( repo_ui, repo, selected_file, force=force )
+
 
 def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
     """
@@ -352,12 +371,14 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
             break
     return reversed_changelog
 
+
 def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
     """
     Return a reversed list of changesets in the repository changelog up to and including the
     included_upper_bounds_changeset_revision.
     """
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
+
 
 def unpack_chunks( hg_unbundle10_obj ):
     """
@@ -379,6 +400,7 @@ def unpack_chunks( hg_unbundle10_obj ):
                 'cs': cs.encode( 'hex' ),
                 'data': [ patch for patch in unpack_patches( hg_unbundle10_obj, length - 84 ) ] }
 
+
 def unpack_groups( hg_unbundle10_obj ):
     """
     This method provides a generator of parsed groups from a mercurial unbundle10 object which is
@@ -394,9 +416,10 @@ def unpack_groups( hg_unbundle10_obj ):
         if length <= 4:
             # We found a "null meta chunk", which ends the changegroup.
             break
-        filename = readexactly( hg_unbundle10_obj, length-4 ).encode( 'string_escape' )
+        filename = readexactly( hg_unbundle10_obj, length - 4 ).encode( 'string_escape' )
         # Process the file group.
         yield ( filename, [ chunk for chunk in unpack_chunks( hg_unbundle10_obj ) ] )
+
 
 def unpack_patches( hg_unbundle10_obj, remaining ):
     """
@@ -417,6 +440,7 @@ def unpack_patches( hg_unbundle10_obj, remaining ):
     if remaining > 0:
         print remaining
         raise Exception( "unexpected end of patch stream" )
+
 
 def update_repository( repo, ctx_rev=None ):
     """

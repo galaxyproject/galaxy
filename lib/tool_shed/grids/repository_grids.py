@@ -9,12 +9,10 @@ from sqlalchemy import and_, false, or_, true
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-from galaxy.util import json
-from galaxy.util import listify
+from galaxy.util import json, listify
 from galaxy.web.framework.helpers import grids
 from galaxy.webapps.tool_shed import model
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
+from tool_shed.util import hg_util, metadata_util
 
 log = logging.getLogger( __name__ )
 
@@ -1525,7 +1523,6 @@ class DatatypesGrid( RepositoryMetadataGrid ):
                             if extension and dtype:
                                 datatype_tups.append( ( extension, dtype ) )
                         sorted_datatype_tups = sorted( datatype_tups, key=lambda datatype_tup: datatype_tup[ 0 ] )
-                        num_datatype_tups = len( sorted_datatype_tups )
                         for datatype_tup in sorted_datatype_tups:
                             extension, datatype = datatype_tup[:2]
                             datatype_str = '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )

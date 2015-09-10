@@ -574,8 +574,8 @@ class ToolMigrationManager( object ):
                     irm.update_tool_shed_repository_status( tool_shed_repository,
                                                             self.app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                     # Get the tool_versions from the tool shed for each tool in the installed change set.
-                    params = dict( name=tool_shed_repository.name, 
-                                   owner=self.repository_owner, 
+                    params = dict( name=tool_shed_repository.name,
+                                   owner=self.repository_owner,
                                    changeset_revision=tool_shed_repository.installed_changeset_revision )
                     pathspec = [ 'repository', 'get_tool_versions' ]
                     text = common_util.tool_shed_get( self.app, self.tool_shed_url, pathspec=pathspec, params=params )

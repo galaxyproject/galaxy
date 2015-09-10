@@ -6,13 +6,14 @@ import os
 import shutil
 import tempfile
 
-from galaxy.datatypes import checkers
+from galaxy import eggs
+eggs.require('SQLAlchemy')
+from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
+from galaxy.datatypes import checkers
 from tool_shed.tools import data_table_manager
-from tool_shed.util import basic_util
-from tool_shed.util import hg_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import basic_util, hg_util, shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -55,7 +56,7 @@ def check_file_contents_for_email_alerts( app ):
     sa_session = app.model.context.current
     admin_users = app.config.get( "admin_users", "" ).split( "," )
     for repository in sa_session.query( app.model.Repository ) \
-                                .filter( app.model.Repository.table.c.email_alerts != None ):
+                                .filter( app.model.Repository.table.c.email_alerts != null() ):
         email_alerts = json.loads( repository.email_alerts )
         for user_email in email_alerts:
             if user_email in admin_users:

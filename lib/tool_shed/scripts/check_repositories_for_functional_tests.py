@@ -10,10 +10,8 @@ import time
 from optparse import OptionParser
 from time import strftime
 
-new_path = [ os.path.join( os.getcwd(), "lib" ),
-             os.path.join( os.getcwd(), "test" ) ]
-new_path.extend( sys.path[ 1: ] )
-sys.path = new_path
+sys.path[1:1] = [ os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ),
+                  os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, 'test' ) ]
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
@@ -334,7 +332,7 @@ def main():
         ini_file = args[ 0 ]
     except IndexError:
         print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
-        exit( 127 )
+        sys.exit( 127 )
     config_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     config_parser.read( ini_file )
     config_dict = {}

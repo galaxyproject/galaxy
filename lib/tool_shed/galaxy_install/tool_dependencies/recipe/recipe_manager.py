@@ -1,5 +1,4 @@
 import logging
-import os
 
 from tool_shed.galaxy_install.tool_dependencies.recipe import step_handler
 from tool_shed.galaxy_install.tool_dependencies.recipe import tag_handler
@@ -74,6 +73,7 @@ class StepManager( object ):
                                                      install_environment=install_environment,
                                                      is_binary_download=is_binary_download )
         return action_dict
+
 
 class TagManager( object ):
 
