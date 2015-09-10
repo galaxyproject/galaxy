@@ -1,5 +1,6 @@
 import time
-import json
+
+from .util import json_loads
 
 MAX_RETRY_COUNT = 5
 RETRY_SLEEP_TIME = 0.1
@@ -10,7 +11,7 @@ class parseJson(object):
     def __call__(self, func):
         def replacement(*args, **kwargs):
             response = func(*args, **kwargs)
-            return json.loads(response)
+            return json_loads(response)
         return replacement
 
 

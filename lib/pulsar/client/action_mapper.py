@@ -83,7 +83,9 @@ class FileActionMapper(object):
     ...     f.close()
     ...     mock_client = Bunch(default_file_action=default_action, action_config_path=f.name, files_endpoint=None)
     ...     mapper = FileActionMapper(mock_client)
-    ...     mapper = FileActionMapper(config=mapper.to_dict()) # Serialize and deserialize it to make sure still works
+    ...     as_dict = config=mapper.to_dict()
+    ...     # print(as_dict["paths"])
+    ...     mapper = FileActionMapper(config=as_dict) # Serialize and deserialize it to make sure still works
     ...     unlink(f.name)
     ...     return mapper
     >>> mapper = mapper_for(default_action='none', config_contents=json_string)
@@ -171,7 +173,7 @@ class FileActionMapper(object):
             ssh_user=self.ssh_user,
             ssh_port=self.ssh_port,
             ssh_host=self.ssh_host,
-            paths=map(lambda m: m.to_dict(), self.mappers)
+            paths=list(map(lambda m: m.to_dict(), self.mappers))
         )
 
     def __client_to_config(self, client):
@@ -261,7 +263,7 @@ class BaseAction(object):
         if self.staging_needed:
             # To ensure uniqueness, prepend unique prefix to each name
             prefix = unique_path_prefix(self.path)
-            for path, name in unstructured_map.iteritems():
+            for path, name in unstructured_map.items():
                 unstructured_map[path] = join(prefix, name)
         else:
             path_rewrites = {}
@@ -279,6 +281,16 @@ class BaseAction(object):
     @property
     def staging_action_local(self):
         return self.staging == STAGING_ACTION_LOCAL
+
+    def to_dict(self):
+        return dict(action_type=self.action_type)
+
+    def __str__(self):
+        as_dict = self.to_dict()
+        attribute_str = ""
+        for key, value in as_dict.items():
+            attribute_str += "%s=%s" % (key, value)
+        return "FileAction[%s]" % attribute_str
 
 
 class NoneAction(BaseAction):
@@ -446,7 +458,7 @@ class PubkeyAuthenticatedTransferAction(BaseAction):
     def __serialize_ssh_key(self):
         f = tempfile.NamedTemporaryFile(delete=False)
         if self.ssh_key is not None:
-            f.write(self.ssh_key)
+            f.write(self.ssh_key.encode("utf-8"))
         else:
             raise Exception("SSH_KEY not available")
         return f.name
@@ -644,7 +656,7 @@ MAPPER_CLASS_DICT = dict(map(lambda c: (c.match_type, c), MAPPER_CLASSES))
 
 
 def mappers_from_dicts(mapper_def_list):
-    return map(lambda m: _mappper_from_dict(m), mapper_def_list)
+    return list(map(lambda m: _mappper_from_dict(m), mapper_def_list))
 
 
 def _mappper_from_dict(mapper_dict):
