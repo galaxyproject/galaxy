@@ -908,3 +908,83 @@ class RData( Binary ):
             return False
 
 Binary.register_sniffable_binary_format('RData', 'RData', RData)
+
+
+class OxliBinary(Binary):
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+
+    def sniff(self, filename, filetype):
+        try:
+            with open(filename) as fileobj:
+                header = fileobj.read(4)
+                if binascii.b2a_hex(header) == binascii.hexlify('OXLI'):
+                    fileobj.seek(1)
+                    ftype = fileobj.read(1)
+                    if binascii.b2a_hex(ftype) == filetype:
+                        return True
+            return False
+        except IOError:
+            return False
+
+
+class OxliCountGraph(OxliBinary):
+
+    def __init__(self, **kwd):
+        OxliBinary.__init__(self, **kwd)
+
+    def sniff(self, filename):
+        return OxliBinary.sniff(self, filename, "01")
+
+
+class OxliNodeGraph(OxliBinary):
+
+    def __init__(self, **kwd):
+        OxliBinary.__init__(self, **kwd)
+
+    def sniff(self, filename):
+        return OxliBinary.sniff(self, filename, "02")
+
+
+class OxliTagSet(OxliBinary):
+
+    def __init__(self, **kwd):
+        OxliBinary.__init__(self, **kwd)
+
+    def sniff(self, filename):
+        return OxliBinary.sniff(self, filename, "03")
+
+
+class OxliStopTags(OxliBinary):
+
+    def __init__(self, **kwd):
+        OxliBinary.__init__(self, **kwd)
+
+    def sniff(self, filename):
+        return OxliBinary.sniff(self, filename, "04")
+
+
+class OxliSubset(OxliBinary):
+
+    def __init__(self, **kwd):
+        OxliBinary.__init__(self, **kwd)
+
+    def sniff(self, filename):
+        return OxliBinary.sniff(self, filename, "05")
+
+
+class OxliLabelSet(OxliBinary):
+
+    def __init__(self, **kwd):
+        OxliBinary.__init__(self, **kwd)
+
+    def sniff(self, filename):
+        return OxliBinary.sniff(self, filename, "06")
+
+Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg", OxliCountGraph)
+Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling", OxliNodeGraph)
+Binary.register_sniffable_binary_format("oxli.tagset", "oxlits", OxliTagSet)
+Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist", OxliStopTags)
+Binary.register_sniffable_binary_format("oxli.subset", "oxliss", OxliSubset)
+Binary.register_sniffable_binary_format("oxli.labelset", "oxlils", OxliLabelSet)
