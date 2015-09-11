@@ -1060,7 +1060,7 @@ class WorkflowModuleInjector(object):
         if not module:
             step.module = None
             step.state = None
-            raise MissingToolException()
+            raise MissingToolException(step.tool_id)
 
         # Fix any missing parameters
         step.upgrade_messages = module.check_and_update_state()

@@ -8,13 +8,10 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-cwd = os.getcwd()
-sys.path.append( cwd )
-new_path = [ os.path.join( cwd, "lib" ),
-             os.path.join( cwd, 'test' ),
-             os.path.join( cwd, 'lib', 'tool_shed', 'scripts', 'api' ) ]
-new_path.extend( sys.path )
-sys.path = new_path
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir))
+sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ),
+                  os.path.join( galaxy_root, 'test' ),
+                  os.path.join( galaxy_root, 'lib', 'tool_shed', 'scripts', 'api' ) ]
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
@@ -455,8 +452,7 @@ def get_static_settings():
     Return a dictionary of the settings necessary for a Galaxy application to be wrapped in the static
     middleware.  This mainly consists of the file system locations of url-mapped static resources.
     """
-    cwd = os.getcwd()
-    static_dir = os.path.join( cwd, 'static' )
+    static_dir = os.path.join( galaxy_root, 'static' )
     # TODO: these should be copied from galaxy.ini
     # TODO: static_enabled needed here?
     return dict( static_enabled=True,
