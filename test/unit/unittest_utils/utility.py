@@ -14,12 +14,12 @@ else:
 
 # =============================================================================
 def get_unittest_utils_path():
-    return os.path.normpath( os.path.join( os.getcwd(), os.path.dirname( __file__ ) ) )
+    return os.path.abspath( os.path.dirname( __file__ ) )
 
 
 def get_galaxy_root():
     # precondition: this file must be at <GALAXY_ROOT>/test/unit/unittest_utils/utility.py
-    return os.path.normpath( os.path.join( get_unittest_utils_path(), '../../../' ) )
+    return os.path.normpath( os.path.join( get_unittest_utils_path(), os.pardir, os.pardir, os.pardir ) )
 
 
 def get_galaxy_libpath():
@@ -42,8 +42,7 @@ def clean_multiline_string( multiline_string, sep='\n' ):
 
 
 # =============================================================================
-sys.path.insert( 0, get_galaxy_libpath() )
-sys.path.insert( 1, get_unittest_utils_path() )
+sys.path[1:1] = [ get_galaxy_libpath(), get_unittest_utils_path() ]
 
 
 __all__ = [

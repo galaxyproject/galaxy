@@ -11,12 +11,14 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os, datetime
+import datetime
+import os
+import sys
 
 
 ####### REQUIRED GALAXY INCLUDES
 
-sys.path.append(os.path.join(os.getcwd(), '../../lib'))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 #######
 
