@@ -2333,8 +2333,8 @@ class Tool( object, Dictifiable ):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
-        job_id = kwd.get('__job_id__', None)
-        dataset_id = kwd.get('__dataset_id__', None)
+        job_id = kwd.get('job_id', None)
+        dataset_id = kwd.get('dataset_id', None)
         history_id = kwd.get('history_id', None)
 
         # history id
@@ -2669,6 +2669,7 @@ class Tool( object, Dictifiable ):
 
         # add additional properties
         tool_model.update({
+            'id'            : self.id,
             'help'          : tool_help,
             'citations'     : tool_citations,
             'biostar_url'   : trans.app.config.biostar_url,
@@ -2678,7 +2679,9 @@ class Tool( object, Dictifiable ):
             'requirements'  : tool_requirements,
             'errors'        : state_errors,
             'state_inputs'  : state_inputs,
-            'job_remap'     : self._get_job_remap(job)
+            'job_id'        : trans.security.encode_id( job.id ) if job else None,
+            'job_remap'     : self._get_job_remap( job ),
+            'history_id'    : trans.security.encode_id( history.id )
         })
 
         # check for errors

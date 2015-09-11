@@ -44,6 +44,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 }
             }, this.options);
 
+            // allow option customization
+            this.options.customize && this.options.customize( this.options );
+
             // create form
             this.form = new Form(this.options);
 
