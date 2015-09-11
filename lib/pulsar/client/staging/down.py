@@ -94,7 +94,7 @@ class ResultsCollector(object):
             if output_generated:
                 self._attempt_collect_output('output', output_file)
 
-            for galaxy_path, pulsar in self.pulsar_outputs.output_extras(output_file).iteritems():
+            for galaxy_path, pulsar in self.pulsar_outputs.output_extras(output_file).items():
                 self._attempt_collect_output('output', path=galaxy_path, name=pulsar)
             # else not output generated, do not attempt download.
 
@@ -110,7 +110,8 @@ class ResultsCollector(object):
         for name in self.working_directory_contents:
             if name in self.downloaded_working_directory_files:
                 continue
-            if COPY_FROM_WORKING_DIRECTORY_PATTERN.match(name):
+            if self.client_outputs.dynamic_match(name):
+                log.debug("collecting dynamic output %s" % name)
                 output_file = join(working_directory, self.pulsar_outputs.path_helper.local_name(name))
                 if self._attempt_collect_output(output_type='output_workdir', path=output_file, name=name):
                     self.downloaded_working_directory_files.append(name)
@@ -128,6 +129,7 @@ class ResultsCollector(object):
         return collected
 
     def _collect_output(self, output_type, action, name):
+        log.info("collecting output %s with action %s" % (name, action))
         return self.output_collector.collect_output(self, output_type, action, name)
 
 
