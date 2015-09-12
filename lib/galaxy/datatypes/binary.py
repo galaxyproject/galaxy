@@ -945,7 +945,7 @@ class OxliCountGraph(OxliBinary):
     """
 
     def sniff(self, filename):
-        return OxliBinary._sniff(filename, "01") 
+        return OxliBinary._sniff(filename, "01")
 
 Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg",
                                         OxliCountGraph)
