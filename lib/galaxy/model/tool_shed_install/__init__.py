@@ -313,7 +313,10 @@ class ToolShedRepository( object ):
                 if self.metadata:
                     repository_dependencies = self.metadata["repository_dependencies"]
                     for item in repository_dependencies["repository_dependencies"]:
-                        if item[1] == repository_dependency.repository.name:
+                        if ( item[1], item[2], item[3] ) == \
+                                (repository_dependency.repository.name,
+                                 repository_dependency.repository.owner,
+                                 repository_dependency.repository.installed_changeset_revision ):
                             required_repository = repository_dependency.repository
                             if required_repository:
                                 required_repositories.append( required_repository )
