@@ -417,7 +417,7 @@
     <datatype extension="oxlits" type="galaxy.datatypes.binary:OxliTagSet" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxlist" type="galaxy.datatypes.binary:OxliStopTags" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxliss" type="galaxy.datatypes.binary:OxliSubset" mimetype="application/octet-stream" display_in_upload="true"/>
-    <datatype extension="oxlils" type="galaxy.datatypes.binary:OxliLabelSet" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="oxligl" type="galaxy.datatypes.binary:OxliGraphLabels" mimetype="application/octet-stream" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
@@ -511,7 +511,7 @@
     <sniffer type="galaxy.datatypes.binary:OxliTagSet"/>
     <sniffer type="galaxy.datatypes.binary:OxliStopTags"/>
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
-    <sniffer type="galaxy.datatypes.binary:OxliLabelSet"/>
+    <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
   </sniffers>
   <build_sites>
       <!--
