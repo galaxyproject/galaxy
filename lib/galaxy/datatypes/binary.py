@@ -912,17 +912,15 @@ Binary.register_sniffable_binary_format('RData', 'RData', RData)
 
 class OxliBinary(Binary):
 
-    def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
-
-    def sniff(self, filename, filetype):
+    @staticmethod
+    def _sniff(filename, oxlitype):
         try:
             with open(filename) as fileobj:
                 header = fileobj.read(4)
                 if binascii.b2a_hex(header) == binascii.hexlify('OXLI'):
-                    fileobj.seek(1)
+                    fileobj.read(1)  # skip the version number
                     ftype = fileobj.read(1)
-                    if binascii.b2a_hex(ftype) == filetype:
+                    if binascii.b2a_hex(ftype) == oxlitype:
                         return True
             return False
         except IOError:
@@ -930,61 +928,143 @@ class OxliBinary(Binary):
 
 
 class OxliCountGraph(OxliBinary):
-
-    def __init__(self, **kwd):
-        OxliBinary.__init__(self, **kwd)
+    """
+    OxliCountGraph starts with "OXLI" + one byte version number +
+    8-bit binary '1'
+    Test file generated via `load-into-counting.py --n_tables 1 \
+            --max-tablesize 1 oxli_countgraph.oxlicg \
+            khmer/tests/test-data/100-reads.fq.bz2`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliCountGraph().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_countgraph.oxlicg" )
+    >>> OxliCountGraph().sniff( fname )
+    True
+    """
 
     def sniff(self, filename):
-        return OxliBinary.sniff(self, filename, "01")
+        return OxliBinary._sniff(filename, "01") 
+
+Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg",
+                                        OxliCountGraph)
 
 
 class OxliNodeGraph(OxliBinary):
-
-    def __init__(self, **kwd):
-        OxliBinary.__init__(self, **kwd)
+    """
+    OxliNodeGraph starts with "OXLI" + one byte version number +
+    8-bit binary '2'
+    Test file generated via `load-graph.py --n_tables 1 \
+            --max-tablesize 1 oxli_nodegraph.oxling \
+            khmer/tests/test-data/100-reads.fq.bz2`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliNodeGraph().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_nodegraph.oxling" )
+    >>> OxliNodeGraph().sniff( fname )
+    True
+    """
 
     def sniff(self, filename):
-        return OxliBinary.sniff(self, filename, "02")
+        return OxliBinary._sniff(filename, "02")
+
+Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling",
+                                        OxliNodeGraph)
 
 
 class OxliTagSet(OxliBinary):
-
-    def __init__(self, **kwd):
-        OxliBinary.__init__(self, **kwd)
+    """
+    OxliTagSet starts with "OXLI" + one byte version number +
+    8-bit binary '3'
+    Test file generated via `load-graph.py --n_tables 1 \
+            --max-tablesize 1 oxli_nodegraph.oxling \
+            khmer/tests/test-data/100-reads.fq.bz2; \
+            mv oxli_nodegraph.oxling.tagset oxli_tagset.oxlits`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliTagSet().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_tagset.oxlits" )
+    >>> OxliTagSet().sniff( fname )
+    True
+    """
 
     def sniff(self, filename):
-        return OxliBinary.sniff(self, filename, "03")
+        return OxliBinary._sniff(filename, "03")
+
+Binary.register_sniffable_binary_format("oxli.tagset", "oxlits", OxliTagSet)
 
 
 class OxliStopTags(OxliBinary):
-
-    def __init__(self, **kwd):
-        OxliBinary.__init__(self, **kwd)
+    """
+    OxliStopTags starts with "OXLI" + one byte version number +
+    8-bit binary '4'
+    Test file adapted from khmer 2.0's
+    "khmer/tests/test-data/goodversion-k32.stoptags"
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliStopTags().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_stoptags.oxlist" )
+    >>> OxliStopTags().sniff( fname )
+    True
+    """
 
     def sniff(self, filename):
-        return OxliBinary.sniff(self, filename, "04")
+        return OxliBinary._sniff(filename, "04")
+
+Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist",
+                                        OxliStopTags)
 
 
 class OxliSubset(OxliBinary):
-
-    def __init__(self, **kwd):
-        OxliBinary.__init__(self, **kwd)
+    """
+    OxliSubset starts with "OXLI" + one byte version number +
+    8-bit binary '5'
+    Test file generated via `load-graph.py -k 20 example \
+            tests/test-data/random-20-a.fa; \
+            partition-graph.py example; \
+            mv example.subset.0.pmap oxli_subset.oxliss`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliSubset().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_subset.oxliss" )
+    >>> OxliSubset().sniff( fname )
+    True
+    """
 
     def sniff(self, filename):
-        return OxliBinary.sniff(self, filename, "05")
+        return OxliBinary._sniff(filename, "05")
 
-
-class OxliLabelSet(OxliBinary):
-
-    def __init__(self, **kwd):
-        OxliBinary.__init__(self, **kwd)
-
-    def sniff(self, filename):
-        return OxliBinary.sniff(self, filename, "06")
-
-Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg", OxliCountGraph)
-Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling", OxliNodeGraph)
-Binary.register_sniffable_binary_format("oxli.tagset", "oxlits", OxliTagSet)
-Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist", OxliStopTags)
 Binary.register_sniffable_binary_format("oxli.subset", "oxliss", OxliSubset)
-Binary.register_sniffable_binary_format("oxli.labelset", "oxlils", OxliLabelSet)
+
+
+class OxliGraphLabels(OxliBinary):
+    """
+    OxliGraphLabels starts with "OXLI" + one byte version number +
+    8-bit binary '6'
+    Test file generated via `python -c "from khmer import GraphLabels; \
+        gl = GraphLabels(20, 1e7, 4); gl.consume_fasta_and_tag_with_labels(
+            'tests/test-data/test-labels.fa'); \
+        gl.save_labels_and_tags('oxli_graphlabels.oxligl')"`
+    using khmer 2.0
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> OxliGraphLabels().sniff( fname )
+    False
+    >>> fname = get_test_fname( "oxli_graphlabels.oxligl" )
+    >>> OxliGraphLabels().sniff( fname )
+    True
+    """
+
+    def sniff(self, filename):
+        return OxliBinary._sniff(filename, "06")
+
+Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
+                                        OxliGraphLabels)
