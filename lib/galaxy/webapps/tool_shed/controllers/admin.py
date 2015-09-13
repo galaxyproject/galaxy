@@ -262,9 +262,9 @@ class AdminController( BaseUIController, Admin ):
                 message = "The information has been saved for category '%s'" % escape( category.name )
                 status = 'done'
                 return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                      action='manage_categories',
-                                                                      message=message,
-                                                                      status=status ) )
+                                                                  action='manage_categories',
+                                                                  message=message,
+                                                                  status=status ) )
         return trans.fill_template( '/webapps/tool_shed/category/edit_category.mako',
                                     category=category,
                                     message=message,
