@@ -6,19 +6,13 @@ import sys
 from threading import Thread
 from uuid import uuid4
 
-script_dir = os.path.dirname(__file__)
-galaxy_root = os.path.join(script_dir, os.path.pardir, os.path.pardir)
-new_path = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
+sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ), os.path.join( galaxy_root, "test" ) ]
 
 try:
     from argparse import ArgumentParser
 except ImportError:
     ArgumentParser = None
-
-from api import yaml_to_workflow
-from api import helpers
 
 try:
     from galaxy import eggs
@@ -28,6 +22,8 @@ except ImportError:
     pass
 import requests
 from bioblend import galaxy
+
+from api import helpers, yaml_to_workflow
 
 LONG_TIMEOUT = 1000000000
 DESCRIPTION = "Script to exercise the workflow engine."

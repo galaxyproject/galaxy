@@ -4,14 +4,13 @@ import shutil
 
 from xml.etree import ElementTree as XmlET
 
-from tool_shed.util import hg_util
-from tool_shed.util import xml_util
+from tool_shed.util import hg_util, xml_util
 
 log = logging.getLogger( __name__ )
 
 
 class ToolDataTableManager( object ):
-    
+
     def __init__( self, app ):
         self.app = app
 
@@ -30,8 +29,8 @@ class ToolDataTableManager( object ):
         repository_owner_elem.text = owner
         changeset_revision_elem = XmlET.SubElement( elem, 'installed_changeset_revision' )
         changeset_revision_elem.text = changeset_revision
-        #add additional values
-        #TODO: enhance additional values to allow e.g. use of dict values that will recurse
+        # add additional values
+        # TODO: enhance additional values to allow e.g. use of dict values that will recurse
         for key, value in kwd.iteritems():
             new_elem = XmlET.SubElement( elem, key )
             new_elem.text = value
@@ -128,7 +127,7 @@ class ToolDataTableManager( object ):
         SAMPLE_SUFFIX_OFFSET = -len( SAMPLE_SUFFIX )
         target_dir, tool_path, relative_target_dir = self.get_target_install_dir( tool_shed_repository )
         for sample_file in tool_index_sample_files:
-            path, filename = os.path.split ( sample_file )
+            path, filename = os.path.split( sample_file )
             target_filename = filename
             if target_filename.endswith( SAMPLE_SUFFIX ):
                 target_filename = target_filename[ : SAMPLE_SUFFIX_OFFSET ]
@@ -164,7 +163,7 @@ class ToolDataTableManager( object ):
                     if path:
                         file_elem.set( 'path', os.path.normpath( os.path.join( target_dir, os.path.split( path )[1] ) ) )
                 # Store repository info in the table tag set for trace-ability.
-                repo_elem = self.generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=elem )
+                self.generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=elem )
         if elems:
             # Remove old data_table
             os.unlink( tool_data_table_conf_filename )

@@ -7,19 +7,21 @@ Here is a working example of how to use this script to export a repository from 
 ./export.py --url http://testtoolshed.g2.bx.psu.edu --name chemicaltoolbox --owner bgruening --revision 4133dbf7ff4d --export_repository_dependencies True --download_dir /tmp
 """
 
+import argparse
 import os
 import sys
 import tempfile
-import argparse
 import urllib2
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-from common import display
-from common import submit
+
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 from tool_shed.util import basic_util
+
+from common import display, submit
 
 CAPSULE_FILENAME = 'capsule'
 CAPSULE_WITH_DEPENDENCIES_FILENAME = 'capsule_with_dependencies'
-CHUNK_SIZE = 2**20 # 1Mb
+CHUNK_SIZE = 2 ** 20  # 1Mb
+
 
 def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_revision, file_type,
                                           export_repository_dependencies, use_tmp_archive_dir=False ):
@@ -42,17 +44,20 @@ def generate_repository_archive_filename( tool_shed_url, name, owner, changeset_
         repositories_archive_filename = os.path.join( tmp_archive_dir, repositories_archive_filename )
     return repositories_archive_filename
 
+
 def remove_protocol_from_tool_shed_url( tool_shed_url ):
     protocol, base = tool_shed_url.split( '://' )
     base = base.replace( ':', '_colon_' )
     base = base.rstrip( '/' )
     return base
 
+
 def string_as_bool( string ):
     if str( string ).lower() in ( 'true', 'yes', 'on' ):
         return True
     else:
         return False
+
 
 def main( options ):
     """Collect all user data and export the repository via the Tool Shed API."""

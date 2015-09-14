@@ -1,5 +1,5 @@
 // dependencies
-define(['utils/utils', 'mvc/ui/ui-button-check'], function(Utils, ButtonCheck) {
+define(['utils/utils', 'mvc/ui/ui-buttons'], function(Utils, Buttons) {
 
 /** Base class for options based ui elements **/
 var Base = Backbone.View.extend({
@@ -8,18 +8,15 @@ var Base = Backbone.View.extend({
         // link this
         var self = this;
 
-        // options
-        this.optionsDefault = {
+        // configure options
+        this.options = Utils.merge(options, {
             visible     : true,
             data        : [],
             id          : Utils.uid(),
             error_text  : 'No data available.',
             wait_text   : 'Please wait...',
             multiple    : false
-        };
-
-        // configure options
-        this.options = Utils.merge(options, this.optionsDefault);
+        });
 
         // create new element
         this.setElement('<div class="ui-options"/>');
@@ -36,7 +33,7 @@ var Base = Backbone.View.extend({
 
         // add select/unselect all button
         if (this.options.multiple) {
-            this.all_button = new ButtonCheck({
+            this.all_button = new Buttons.ButtonCheck({
                 onclick: function() {
                     self.$('input').prop('checked', self.all_button.value() !== 0);
                     self.trigger('change');
