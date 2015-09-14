@@ -12,7 +12,6 @@ sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pard
 import galaxy.webapps.tool_shed.config as tool_shed_config
 from galaxy.web import security
 from galaxy.webapps.tool_shed.model import mapping
-from tool_shed.util import xml_util
 from .bootstrap_util import admin_user_info
 
 log = logging.getLogger( __name__ )

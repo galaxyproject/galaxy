@@ -93,7 +93,6 @@ def admin_user_info( ):
     return (username, email, password)
 
 
-
 def get_local_tool_shed_url( config_parser ):
     port = '9009'
     if config_parser.has_section( 'server:main' ):
