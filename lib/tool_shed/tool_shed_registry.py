@@ -1,6 +1,6 @@
 import logging
-import sys
 import urllib2
+
 from galaxy.util.odict import odict
 from galaxy.util import xml_util
 from tool_shed.util import common_util

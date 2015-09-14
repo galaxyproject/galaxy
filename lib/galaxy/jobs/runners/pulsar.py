@@ -61,6 +61,14 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
+    persistence_directory=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_acknowledge=dict(
+        map=specs.to_bool_or_none,
+        default=None
+    ),
     amqp_consumer_timeout=dict(
         map=lambda val: None if val == "None" else float(val),
         default=None,
@@ -145,7 +153,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
     def __init_client_manager( self ):
         client_manager_kwargs = {}
-        for kwd in 'manager', 'cache', 'transport':
+        for kwd in 'manager', 'cache', 'transport', 'persistence_directory':
             client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
         for kwd in self.runner_params.keys():
             if kwd.startswith( 'amqp_' ):
@@ -611,6 +619,7 @@ class PulsarMQJobRunner( PulsarJobRunner ):
         # This is a message queue driven runner, don't monitor
         # just setup required callback.
         self.client_manager.ensure_has_status_update_callback(self.__async_update)
+        self.client_manager.ensure_has_ack_consumers()
 
     def __async_update( self, full_status ):
         job_id = None

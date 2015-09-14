@@ -29,7 +29,7 @@ define(['utils/utils',
 
             // create table
             this.table = new Table.View(options);
-            
+
             // create parameter handler
             this.parameters = new Parameters(app, options);
 
@@ -179,7 +179,7 @@ define(['utils/utils',
                 onnew           : function() {
                     // create
                     create(input_def.inputs);
-                            
+
                     // trigger refresh
                     self.app.trigger('change');
                 }
@@ -202,7 +202,7 @@ define(['utils/utils',
                     ondel   : function() {
                         // delete repeat block
                         repeat.del(sub_section_id);
-                        
+
                         // trigger refresh
                         self.app.trigger('change');
                     }
@@ -245,7 +245,7 @@ define(['utils/utils',
         _addSection: function(input_def) {
             // link this
             var self = this;
-            
+
             // create sub section
             var sub_section = new View(self.app, {
                 inputs  : input_def.inputs

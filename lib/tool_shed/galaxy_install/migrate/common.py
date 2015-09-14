@@ -1,6 +1,7 @@
 import ConfigParser
 import os
 import sys
+
 import galaxy.config
 from tool_shed.galaxy_install import tool_migration_manager, installed_repository_manager
 
@@ -41,7 +42,7 @@ class MigrateToolsApplication( object, galaxy.config.ConfiguresGalaxyMixin ):
         self._configure_toolbox()
 
         self._configure_tool_shed_registry()
-        
+
         self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager( self )
 
         # Get the latest tool migration script number to send to the Install manager.

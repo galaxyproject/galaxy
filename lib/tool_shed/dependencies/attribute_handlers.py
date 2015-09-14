@@ -201,5 +201,5 @@ class ToolDependencyAttributeHandler( object ):
             log.exception( str( parse_error ) )
             return False, None, str( parse_error )
         root = tree.getroot()
-        altered, new_root, error_message = tah.process_config( root )
+        altered, new_root, error_message = tah.process_config( root, skip_actions_tags=False )
         return altered, new_root, error_message

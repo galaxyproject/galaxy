@@ -2,20 +2,13 @@
 Contains implementations of the authentication logic.
 """
 
-from collections import namedtuple
+import logging
 import xml.etree.ElementTree
+from collections import namedtuple
 
 from galaxy.security.validate_user_input import validate_publicname
+from galaxy.util import plugin_config, string_as_bool, string_as_bool_or_none
 
-from galaxy.util import (
-    string_as_bool,
-    string_as_bool_or_none,
-)
-
-from galaxy.util import plugin_config
-
-
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -26,9 +19,6 @@ class AuthManager(object):
         import galaxy.auth.providers
         self.__plugins_dict = plugin_config.plugins_dict(galaxy.auth.providers, 'plugin_type' )
         auth_config_file = app.config.auth_config_file
-        self.__init_authenticators(auth_config_file)
-
-    def __init_authenticators(self, auth_config_file):
         # parse XML
         ct = xml.etree.ElementTree.parse(auth_config_file)
         conf_root = ct.getroot()
@@ -116,7 +106,7 @@ class AuthManager(object):
                 elif auth_result is None:
                     log.debug( "Email: %s, Username %s, stopping due to failed non-continue" % (auto_email, auto_username) )
                     break  # end authentication (skip rest)
-        return (False, '')
+        return (False, '', '')
 
     def check_password(self, user, password):
         """Checks the username/email and password using auth providers."""

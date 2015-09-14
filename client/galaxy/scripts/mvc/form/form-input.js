@@ -129,7 +129,7 @@ define([], function() {
                 }
             }
             tmp +=              '</div>';
-            
+
             // finalize
             tmp +=          '</div>' +
                         '</div>';

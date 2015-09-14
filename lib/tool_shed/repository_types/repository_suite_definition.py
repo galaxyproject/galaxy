@@ -1,14 +1,15 @@
 import logging
-from tool_shed.repository_types.metadata import TipOnly
-import tool_shed.repository_types.util as rt_util
-from tool_shed.util import basic_util
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
-from mercurial import hg
-from mercurial import ui
+from mercurial import hg, ui
+
+import tool_shed.repository_types.util as rt_util
+from tool_shed.repository_types.metadata import TipOnly
+from tool_shed.util import basic_util
 
 log = logging.getLogger( __name__ )
+
 
 class RepositorySuiteDefinition( TipOnly ):
 
@@ -29,7 +30,6 @@ class RepositorySuiteDefinition( TipOnly ):
         else:
             changeset_revisions = repo.changelog
         for changeset in changeset_revisions:
-            changeset_revision = str( repo.changectx( changeset ) )
             ctx = repo.changectx( changeset )
             # Inspect all files in the changeset (in sorted order) to make sure there is only one and it
             # is named repository_dependencies.xml.

@@ -142,7 +142,9 @@ def transform_tool(context, step):
 
     __ensure_defaults( step, {
         "annotation": "",
+        "name": step['tool_id'],
         "post_job_actions": {},
+        "tool_version": None,
     } )
     post_job_actions = step["post_job_actions"]
 

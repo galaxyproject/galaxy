@@ -64,7 +64,7 @@ class DataManagerHandler( object ):
                     data_manager_id = elem.get( 'id', None )
                     if data_manager_id is None:
                         log.error( "A data manager was defined that does not have an id and will not be installed:\n%s" %
-                                    xml_util.xml_to_string( elem ) )
+                                   xml_util.xml_to_string( elem ) )
                         continue
                     data_manager_dict = metadata_dict['data_manager'].get( 'data_managers', {} ).get( data_manager_id, None )
                     if data_manager_dict is None:

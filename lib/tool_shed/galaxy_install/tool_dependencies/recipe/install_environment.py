@@ -17,7 +17,6 @@ eggs.require( 'Fabric' )
 
 from fabric.operations import _AttributeString
 from fabric import state
-from fabric.api import prefix
 
 from galaxy.util import DATABASE_MAX_STRING_SIZE
 from galaxy.util import DATABASE_MAX_STRING_SIZE_PRETTY
@@ -33,7 +32,6 @@ log = logging.getLogger( __name__ )
 
 class InstallEnvironment( object ):
     """Object describing the environment built up as part of the process of building and installing a package."""
-
 
     def __init__( self, app, tool_shed_repository_install_dir, install_dir  ):
         """
@@ -141,7 +139,7 @@ class InstallEnvironment( object ):
                 tool_dependency.error_message = unicodify( stdout )
             else:
                 # We have a problem if there was no stdout and no stderr.
-                tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % \
+                tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s" % \
                     ( str( cmd ), str( output.return_code ) )
             context.add( tool_dependency )
             context.flush()
@@ -215,7 +213,7 @@ class InstallEnvironment( object ):
             current_wait_time = time.time() - start_timer
             if stdout_queue.empty() and stderr_queue.empty() and current_wait_time > basic_util.NO_OUTPUT_TIMEOUT:
                 err_msg = "\nShutting down process id %s because it generated no output for the defined timeout period of %.1f seconds.\n" % \
-                        ( pid, basic_util.NO_OUTPUT_TIMEOUT )
+                          ( pid, basic_util.NO_OUTPUT_TIMEOUT )
                 stderr_reader.lines.append( err_msg )
                 process_handle.kill()
                 break
@@ -226,8 +224,8 @@ class InstallEnvironment( object ):
         stdout_reader.join( basic_util.NO_OUTPUT_TIMEOUT )
         stderr_reader.join( basic_util.NO_OUTPUT_TIMEOUT )
         # Close subprocess' file descriptors.
-        error = self.close_file_descriptor( process_handle.stdout )
-        error = self.close_file_descriptor( process_handle.stderr )
+        self.close_file_descriptor( process_handle.stdout )
+        self.close_file_descriptor( process_handle.stderr )
         stdout = '\n'.join( stdout_reader.lines )
         stderr = '\n'.join( stderr_reader.lines )
         # Handle error condition (deal with stdout being None, too)

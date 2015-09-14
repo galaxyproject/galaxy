@@ -43,8 +43,7 @@ def getchrominfo(url, db):
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        print "Path to place chromInfo tables must be specified."
-        sys.exit(1)
+        sys.exit("Path to place chromInfo tables must be specified.")
     dbpath = sys.argv[1]
     builds = []
     if len(sys.argv) > 2:
@@ -55,15 +54,13 @@ if __name__ == "__main__":
                     continue
                 builds.append(line.split("\t")[0])
         except:
-            print "Bad input file."
-            sys.exit(1)
+            sys.exit("Bad input file.")
     else:
         try:
             for build in parse_builds.getbuilds("http://genome-test.cse.ucsc.edu/cgi-bin/das/dsn"):
                 builds.append(build[0])
         except:
-            print "Unable to retrieve builds."
-            sys.exit(1)
+            sys.exit("Unable to retrieve builds.")
     for build in builds:
         if build == "?":
             continue  # no lengths for unspecified chrom

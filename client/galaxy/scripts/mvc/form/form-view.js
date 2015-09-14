@@ -114,9 +114,14 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
 
                 // scroll to first input element
                 if (!silent) {
-                    $('html, body').animate({
-                        scrollTop: input_element.$el.offset().top - 20
-                    }, 500);
+                    if (self==top) {
+                        var $panel = this.$el.parents().filter(function() {
+                            return $(this).css('overflow') == 'auto';
+                        }).first();
+                        $panel.animate({ scrollTop : $panel.scrollTop() + input_element.$el.offset().top - 50 }, 500);
+                    } else {
+                        $('html, body').animate({ scrollTop : input_element.$el.offset().top - 20 }, 500);
+                    }
                 }
             }
         },

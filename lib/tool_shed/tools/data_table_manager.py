@@ -164,7 +164,7 @@ class ToolDataTableManager( object ):
                     if path:
                         file_elem.set( 'path', os.path.normpath( os.path.join( target_dir, os.path.split( path )[1] ) ) )
                 # Store repository info in the table tag set for trace-ability.
-                repo_elem = self.generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=elem )
+                self.generate_repository_info_elem_from_repository( tool_shed_repository, parent_elem=elem )
         if elems:
             # Remove old data_table
             os.unlink( tool_data_table_conf_filename )

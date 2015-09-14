@@ -30,11 +30,9 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import E
 from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment import InstallEnvironment
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
-from tool_shed.galaxy_install.tools import data_manager
-from tool_shed.galaxy_install.tools import tool_panel_manager
+from tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
 
-from tool_shed.tools import data_table_manager
-from tool_shed.tools import tool_version_manager
+from tool_shed.tools import data_table_manager, tool_version_manager
 
 log = logging.getLogger( __name__ )
 
@@ -57,9 +55,8 @@ class InstallToolDependencyManager( object ):
     def get_tool_shed_repository_install_dir( self, tool_shed_repository ):
         return os.path.abspath( tool_shed_repository.repo_files_directory( self.app ) )
 
-    def install_and_build_package( self, install_environment, tool_shed_repository, tool_dependency, actions_dict ):
+    def install_and_build_package( self, install_environment, tool_dependency, actions_dict ):
         """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
-        tool_shed_repository_install_dir = self.get_tool_shed_repository_install_dir( tool_shed_repository )
         install_dir = actions_dict[ 'install_dir' ]
         package_name = actions_dict[ 'package_name' ]
         actions = actions_dict.get( 'actions', None )
@@ -133,7 +130,7 @@ class InstallToolDependencyManager( object ):
     def install_and_build_package_via_fabric( self, install_environment, tool_shed_repository, tool_dependency, actions_dict ):
         try:
             # There is currently only one fabric method.
-            tool_dependency = self.install_and_build_package( install_environment, tool_shed_repository, tool_dependency, actions_dict )
+            tool_dependency = self.install_and_build_package( install_environment, tool_dependency, actions_dict )
         except Exception, e:
             log.exception( 'Error installing tool dependency %s version %s.', str( tool_dependency.name ), str( tool_dependency.version ) )
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
@@ -795,7 +792,7 @@ class InstallRepositoryManager( object ):
                 shed_tool_conf=shed_tool_conf,
                 tool_path=tool_path,
                 tool_panel_section_keys=tool_panel_section_keys,
-                repo_info_dicts=repo_info_dicts,
+                repo_info_dicts=filtered_repo_info_dicts,
                 install_tool_dependencies=install_tool_dependencies,
             )
             return self.install_repositories(tsr_ids, decoded_kwd, reinstalling=False)

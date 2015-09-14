@@ -1,14 +1,12 @@
 import logging
-import os
 import threading
 
 from galaxy import util
-
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import readme_util
 
-from tool_shed.utility_containers import utility_container_manager
+from . import utility_container_manager
 
 log = logging.getLogger( __name__ )
 
@@ -581,8 +579,8 @@ class ToolShedUtilityContainerManager( utility_container_manager.UtilityContaine
                     repository_dependency_installation_error_dicts = installation_error_dict.get( 'repository_dependencies', [] )
                     tool_dependency_installation_error_dicts = installation_error_dict.get( 'tool_dependencies', [] )
                     if len( current_repository_installation_error_dicts ) > 0 or \
-                        len( repository_dependency_installation_error_dicts ) > 0 or \
-                        len( tool_dependency_installation_error_dicts ) > 0:
+                            len( repository_dependency_installation_error_dicts ) > 0 or \
+                            len( tool_dependency_installation_error_dicts ) > 0:
                         repository_installation_error_id = 0
                         folder_id += 1
                         installation_error_base_folder = utility_container_manager.Folder( id=folder_id,
@@ -689,7 +687,7 @@ class ToolShedUtilityContainerManager( utility_container_manager.UtilityContaine
                     repository_dependency_successful_installation_dicts = successful_installation_dict.get( 'repository_dependencies', [] )
                     tool_dependency_successful_installation_dicts = successful_installation_dict.get( 'tool_dependencies', [] )
                     if len( repository_dependency_successful_installation_dicts ) > 0 or \
-                        len( tool_dependency_successful_installation_dicts ) > 0:
+                            len( tool_dependency_successful_installation_dicts ) > 0:
                         repository_installation_success_id = 0
                         folder_id += 1
                         successful_installation_base_folder = \

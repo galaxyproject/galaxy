@@ -15,6 +15,7 @@ from galaxy.datatypes.registry import Registry
 
 GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
+DEFAULT_GENOMESPACE_TOOLNAME = 'Galaxy'
 
 CHUNK_SIZE = 2**20 #1mb
 
@@ -60,7 +61,7 @@ def chunk_write( source_stream, target_stream, source_method = "read", target_me
         else:
             break
 
-def get_cookie_opener( gs_username, gs_token  ):
+def get_cookie_opener( gs_username, gs_token, gs_toolname=None ):
     """ Create a GenomeSpace cookie opener """
     cj = cookielib.CookieJar()
     for cookie_name, cookie_value in [ ( 'gs-token', gs_token ), ( 'gs-username', gs_username ) ]:
@@ -68,6 +69,7 @@ def get_cookie_opener( gs_username, gs_token  ):
         cookie = cookielib.Cookie(version=0, name=cookie_name, value=cookie_value, port=None, port_specified=False, domain='', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False )
         cj.set_cookie( cookie )
     cookie_opener = urllib2.build_opener( urllib2.HTTPCookieProcessor( cj ) )
+    cookie_opener.addheaders.append( ( 'gs-toolname', gs_toolname or DEFAULT_GENOMESPACE_TOOLNAME ) )
     return cookie_opener
 
 def get_galaxy_ext_from_genomespace_format_url( url_opener, file_format_url ):
@@ -102,7 +104,7 @@ def set_genomespace_format_identifiers( url_opener, dm_site ):
     global GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN
     GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN = dict( map( lambda x: ( x[1], x[0] ) , GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT.iteritems() ) ).get( GENOMESPACE_UNKNOWN_FORMAT_KEY, GENOMESPACE_FORMAT_IDENTIFIER_UNKNOWN )
 
-def download_from_genomespace_file_browser( json_parameter_file, genomespace_site ):
+def download_from_genomespace_file_browser( json_parameter_file, genomespace_site, gs_toolname ):
     json_params = json.loads( open( json_parameter_file, 'r' ).read() )
     datasource_params = json_params.get( 'param_dict' )
     username = datasource_params.get( "gs-username", None )
@@ -111,7 +113,7 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
     output_filename = datasource_params.get( "output", None )
     dataset_id = json_params['output_data'][0]['dataset_id']
     hda_id = json_params['output_data'][0]['hda_id']
-    url_opener = get_cookie_opener( username, token )
+    url_opener = get_cookie_opener( username, token, gs_toolname=gs_toolname )
     #load and set genomespace format ids to galaxy exts
     genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
     set_genomespace_format_identifiers( url_opener, genomespace_site_dict['dmServer'] )
@@ -208,6 +210,7 @@ if __name__ == '__main__':
     parser = optparse.OptionParser()
     parser.add_option( '-p', '--json_parameter_file', dest='json_parameter_file', action='store', type="string", default=None, help='json_parameter_file' )
     parser.add_option( '-s', '--genomespace_site', dest='genomespace_site', action='store', type="string", default=None, help='genomespace_site' )
+    parser.add_option( '', '--genomespace_toolname', dest='genomespace_toolname', action='store', type="string", default=DEFAULT_GENOMESPACE_TOOLNAME, help='value to use for gs-toolname, used in GenomeSpace internal logging' )
     (options, args) = parser.parse_args()
     
-    download_from_genomespace_file_browser( options.json_parameter_file, options.genomespace_site )
+    download_from_genomespace_file_browser( options.json_parameter_file, options.genomespace_site, options.genomespace_toolname )

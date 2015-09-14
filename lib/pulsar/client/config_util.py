@@ -1,12 +1,14 @@
 """ Generic interface for reading YAML/INI/JSON config files into nested dictionaries.
 """
 
+import codecs
 try:
     from galaxy import eggs
     eggs.require('PyYAML')
 except Exception:
     # If not in Galaxy, ignore this.
     pass
+
 try:
     import yaml
 except ImportError:
@@ -70,8 +72,9 @@ def __read_ini(path):
 
 
 def __read_json(path):
+    reader = codecs.getreader("utf-8")
     with open(path, "rb") as f:
-        return json.load(f)
+        return json.load(reader(f))
 
 EXT_READERS = {
     CONFIG_TYPE_JSON: __read_json,

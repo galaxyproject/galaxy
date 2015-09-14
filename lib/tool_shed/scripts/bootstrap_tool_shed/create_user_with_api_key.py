@@ -5,20 +5,14 @@ import logging
 import os
 import re
 import sys
-
 from optparse import OptionParser
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
-
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
-eggs.require( 'mercurial' )
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 
 from galaxy.util import xml_util
 from galaxy.web import security
 import galaxy.webapps.tool_shed.config as tool_shed_config
+from galaxy.web import security
 from galaxy.webapps.tool_shed.model import mapping
 
 log = logging.getLogger( __name__ )
@@ -148,7 +142,7 @@ if __name__ == "__main__":
         ini_file = args[ 0 ]
     except IndexError:
         print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
-        exit( 127 )
+        sys.exit( 127 )
     config_parser = ConfigParser.ConfigParser( { 'here': os.getcwd() } )
     print "Reading ini file: ", ini_file
     config_parser.read( ini_file )
@@ -161,7 +155,6 @@ if __name__ == "__main__":
     if user is not None:
         api_key = create_api_key( app, user )
         print "Created new user with public username '", user.username, ".  An API key was also created and associated with the user."
-        exit(0)
+        sys.exit(0)
     else:
-        print "Problem creating a new user and an associated API key."
-        exit(1)
+        sys.exit("Problem creating a new user and an associated API key.")

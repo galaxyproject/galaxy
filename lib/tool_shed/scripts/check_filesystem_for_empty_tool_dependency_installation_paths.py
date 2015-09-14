@@ -1,14 +1,13 @@
 import argparse
 import os
-import sys
 import shutil
+import sys
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
 
 from tool_shed.util.basic_util import INSTALLATION_LOG
-    
+
+
 def main( args ):
     empty_installation_paths = []
     if not os.path.exists( args.basepath ):
@@ -22,7 +21,7 @@ def main( args ):
             dirs.remove( '__virtualenv_src' )
         if 'environment_settings' in dirs:
             dirs.remove( 'environment_settings' )
-        # Do not process the current path if it does not match the pattern 
+        # Do not process the current path if it does not match the pattern
         # <name>/<version>/<owner>/<repository>/<changeset>.
         if len( path_parts ) != 5:
             continue

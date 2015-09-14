@@ -29,14 +29,8 @@
             'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
             'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
             'datatypes_disable_auto'    : app.config.get_bool("datatypes_disable_auto",  False),
-
-            ## user details
-            'user'          : {
-                'requests'  : bool(trans.user and (trans.user.requests or trans.app.security_agent.get_accessible_request_types(trans, trans.user))),
-                'email'     : escape( trans.user.email ) if (trans.user) else "",
-                'valid'     : bool(trans.user != None),
-                'json'      : get_user_dict()
-            }
+            'user_requests'             : bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) ),
+            'user_json'                 : get_user_dict()
         }
     %>
 
@@ -60,7 +54,7 @@
         ], function( mod_masthead, mod_menu, mod_modal, mod_frame, GalaxyUpload, user, quotameter ){
             if( !Galaxy.currUser ){
                 // this doesn't need to wait for the page being readied
-                Galaxy.currUser = new user.User(${ h.dumps( masthead_config[ 'user' ][ 'json' ], indent=2 ) });
+                Galaxy.currUser = new user.User(${ h.dumps( masthead_config[ 'user_json' ], indent=2 ) });
             }
 
             $(function() {

@@ -744,7 +744,7 @@ class Text( Data ):
                 data_lines += 1
         return data_lines
 
-    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=[] ):
+    def set_peek( self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None ):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
@@ -952,7 +952,7 @@ def get_test_fname( fname ):
     return full_path
 
 
-def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=[] ):
+def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=None ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
 
@@ -966,6 +966,8 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     # long lines.
     if WIDTH == 'unlimited':
         WIDTH = -1
+    if skipchars is None:
+        skipchars = []
     lines = []
     count = 0
     file_type = None

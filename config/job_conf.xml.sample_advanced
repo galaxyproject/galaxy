@@ -54,6 +54,19 @@
                galaxy_infrastructure_url is set in galaxy.ini.
           -->
           <param id="galaxy_url">http://localhost:8080</param>
+          <!-- AMQP does not guarantee that a published message is received by
+               the AMQP server, so Galaxy/Pulsar can request that the consumer
+               acknowledge messages and will resend them if acknowledgement is
+               not received after a configurable timeout.  -->
+          <!-- <param id="amqp_acknowledge">False</param> -->
+          <!-- Galaxy reuses Pulsar's persistence_directory parameter (via the
+               Pulsar client lib) to store a record of received
+               acknowledgements, and to keep track of messages which have not
+               been acknowledged. -->
+          <!-- <param id="persistence_directory">/path/to/dir</param> -->
+          <!-- Number of seconds to wait for an acknowledgement before
+               republishing a message. -->
+          <!-- <param id="amqp_republish_time">30</param> -->
           <!-- Pulsar job manager to communicate with (see Pulsar
                docs for information on job managers). -->
           <!-- <param id="manager">_default_</param> -->

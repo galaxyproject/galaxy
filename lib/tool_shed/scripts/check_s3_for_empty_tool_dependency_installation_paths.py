@@ -2,20 +2,18 @@ import argparse
 import os
 import sys
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
 
-from galaxy.util import asbool
 from galaxy import eggs
 eggs.require( 'boto' )
-
 import boto
 
+from galaxy.util import asbool
 from tool_shed.util.basic_util import INSTALLATION_LOG
 
+
 class BucketList( object ):
-    
+
     def __init__( self, amazon_id, amazon_secret, bucket ):
         # Connect to S3 using the provided Amazon access key and secret identifier.
         self.s3 = boto.connect_s3( amazon_id, amazon_secret )
@@ -24,7 +22,7 @@ class BucketList( object ):
         self.bucket = boto.s3.bucket.Bucket( self.s3, bucket )
         self.install_dirs = self.get_tool_dependency_install_paths()
         self.empty_installation_paths = self.check_for_empty_tool_dependency_installation_paths()
-        
+
     def display_empty_installation_paths( self ):
         for empty_installation_path in self.empty_installation_paths:
             print empty_installation_path
@@ -36,7 +34,7 @@ class BucketList( object ):
             for path_to_delete in self.bucket.list( prefix=empty_installation_path ):
                 self.bucket.delete_key( path_to_delete.key )
                 print 'Deleted empty path %s' % str( empty_installation_path )
-    
+
     def get_tool_dependency_install_paths( self ):
         found_paths = []
         for item in self.bucket.list():
@@ -53,7 +51,7 @@ class BucketList( object ):
                 if td_install_dir not in found_paths:
                     found_paths.append( name )
         return found_paths
-        
+
     def check_for_empty_tool_dependency_installation_paths( self ):
         empty_directories = []
         for item in self.install_dirs:
@@ -76,15 +74,16 @@ class BucketList( object ):
             # This would not be the case in a Galaxy instance, since the Galaxy admin will need to verify the contents of
             # the installation path in order to determine which action should be taken.
             elif len( tool_dependency_path_contents ) == 2 and \
-                tool_dependency_path_contents[1].name.endswith( INSTALLATION_LOG ):
+                    tool_dependency_path_contents[1].name.endswith( INSTALLATION_LOG ):
                 empty_directories.append( tool_dependency_path_contents[ 0 ] )
         return [ item.name for item in empty_directories ]
-    
+
+
 def main( args ):
     '''
     Amazon credentials can be provided in one of three ways:
     1. By specifying them on the command line with the --id and --secret arguments.
-    2. By specifying a path to a file that contains the credentials in the form ACCESS_KEY:SECRET_KEY 
+    2. By specifying a path to a file that contains the credentials in the form ACCESS_KEY:SECRET_KEY
        using the --s3passwd argument.
     3. By specifying the above path in the 's3passwd' environment variable.
     Each listed option will override the ones below it, if present.

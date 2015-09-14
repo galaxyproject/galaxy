@@ -4,16 +4,15 @@ import shutil
 import sys
 from string import Template
 
-from galaxy.util import unicodify, nice_size
-
 from galaxy import eggs
-
 eggs.require( 'MarkupSafe' )
 import markupsafe
 
+from galaxy.util import nice_size, unicodify
+
 log = logging.getLogger( __name__ )
 
-CHUNK_SIZE = 2**20  # 1Mb
+CHUNK_SIZE = 2 ** 20  # 1Mb
 INSTALLATION_LOG = 'INSTALLATION.log'
 # Set no activity timeout to 20 minutes.
 NO_OUTPUT_TIMEOUT = 3600.0
@@ -74,7 +73,7 @@ def get_env_var_values( install_environment ):
     env_var_dict[ 'TMP_WORK_DIR' ] = install_environment.tmp_work_dir
     env_var_dict[ 'system_install' ] = install_environment.install_dir
     # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
-    env_var_dict[ '__is64bit__' ] = sys.maxsize > 2**32
+    env_var_dict[ '__is64bit__' ] = sys.maxsize > 2 ** 32
     return env_var_dict
 
 
