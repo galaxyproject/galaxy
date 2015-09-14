@@ -3,7 +3,6 @@ import logging
 import os
 import tempfile
 
-from galaxy import util
 from galaxy.util import xml_util
 from galaxy.tools import Tool
 from galaxy.tools import parameters
