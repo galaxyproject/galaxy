@@ -296,6 +296,38 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 kwd[ 'f-tool_id' ] = kwd[ 'tool_id' ]
         return self.specified_date_list_grid( trans, **kwd )
 
+    def _calculate_trends_for_jobs( self, jobs_query ):
+        trends = dict()
+        for job in jobs_query.execute():
+            job_day = int(job.date.strftime("%-d")) - 1
+            job_month = int(job.date.strftime("%-m"))
+            job_month_name = job.date.strftime("%B")
+            job_year = job.date.strftime("%Y")
+            key = str( job_month_name + job_year)
+
+            try:
+                trends[key][job_day] += 1
+            except KeyError:
+                job_year = int(job_year)
+                wday, day_range = calendar.monthrange(job_year, job_month)
+                trends[key] = [0] * day_range
+                trends[key][job_day] += 1
+        return trends
+
+    def _calculate_job_table( self, jobs_query ):
+        jobs = []
+        for row in jobs_query.execute():
+            month_name = row.date.strftime("%B")
+            year = int(row.date.strftime("%Y"))
+
+            jobs.append( (
+                row.date.strftime( "%Y-%m" ),
+                row.total_jobs,
+                month_name,
+                year
+            ) )
+        return jobs
+
     @web.expose
     def specified_month_all( self, trans, **kwd ):
         """
@@ -554,33 +586,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         all_jobs = sa.select( ( self.select_day(model.Job.table.c.create_time).label('date'),
                                model.Job.table.c.id.label('id') ) )
 
-        trends = dict()
-        for job in all_jobs.execute():
-            job_day = int(job.date.strftime("%-d")) - 1
-            job_month = int(job.date.strftime("%-m"))
-            job_month_name = job.date.strftime("%B")
-            job_year = job.date.strftime("%Y")
-            key = str( job_month_name + job_year)
-
-            try:
-                trends[key][job_day] += 1
-            except KeyError:
-                job_year = int(job_year)
-                wday, day_range = calendar.monthrange(job_year, job_month)
-                trends[key] = [0] * day_range
-                trends[key][job_day] += 1
-
-        jobs = []
-        for row in jobs_by_month.execute():
-            month_name = row.date.strftime("%B")
-            year = int(row.date.strftime("%Y"))
-
-            jobs.append( (
-                row.date.strftime( "%Y-%m" ),
-                row.total_jobs,
-                month_name,
-                year
-            ) )
+        trends = self._calculate_trends_for_jobs( all_jobs )
+        jobs = self._calculate_job_table( jobs_by_month )
 
         pages_found = ceil(len(jobs) / float(entries))
         page_specs = PageSpec(entries, offset, page, pages_found)
@@ -650,35 +657,8 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                              whereclause=sa.and_( model.Job.table.c.state == 'error',
                                                  model.Job.table.c.user_id != monitor_user_id ) )
 
-        trends = dict()
-        for job in all_jobs.execute():
-            job_day = int(job.date.strftime("%-d")) - 1
-            job_month = int(job.date.strftime("%-m"))
-            job_month_name = job.date.strftime("%B")
-            job_year = job.date.strftime("%Y")
-            key = str( job_month_name + job_year)
-
-            try:
-                trends[key][job_day] += 1
-            except KeyError:
-                job_year = int(job_year)
-                wday, day_range = calendar.monthrange(job_year, job_month)
-                trends[key] = [0] * day_range
-                trends[key][job_day] += 1
-
-        jobs = []
-        for row in jobs_in_error_by_month.execute():
-            month = int(row.date.strftime("%-m"))
-            month_name = row.date.strftime("%B")
-            year = int(row.date.strftime("%Y"))
-            wday, day_range = calendar.monthrange(year, month)
-
-            jobs.append( (
-                row.date.strftime( "%Y-%m" ),
-                row.total_jobs,
-                month_name,
-                year
-            ) )
+        trends = self._calculate_trends_for_jobs( all_jobs )
+        jobs = self._calculate_job_table( jobs_in_error_by_month  )
 
         pages_found = ceil(len(jobs) / float(entries))
         page_specs = PageSpec(entries, offset, page, pages_found)

@@ -8,6 +8,7 @@ from Queue import Queue
 
 from galaxy import model
 from galaxy.util.bunch import Bunch
+from galaxy.util.sleeper import Sleeper
 
 log = logging.getLogger( __name__ )
 
@@ -146,25 +147,6 @@ class DeferredJobQueue( object ):
     def shutdown( self ):
         self.running = False
         self.sleeper.wake()
-
-
-class Sleeper( object ):
-    """
-    Provides a 'sleep' method that sleeps for a number of seconds *unless*
-    the notify method is called (from a different thread).
-    """
-    def __init__( self ):
-        self.condition = threading.Condition()
-
-    def sleep( self, seconds ):
-        self.condition.acquire()
-        self.condition.wait( seconds )
-        self.condition.release()
-
-    def wake( self ):
-        self.condition.acquire()
-        self.condition.notify()
-        self.condition.release()
 
 
 class FakeTrans( object ):

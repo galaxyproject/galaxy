@@ -70,9 +70,12 @@ def check_db( config_parser ):
     sys.exit(0)
 
 
-def admin_user_info( config_parser ):
+def admin_user_info( ):
     user_info_config = os.path.abspath( os.path.join( os.getcwd(), 'lib/tool_shed/scripts/bootstrap_tool_shed', 'user_info.xml' ) )
     tree, error_message = xml_util.parse_xml( user_info_config )
+    username = None
+    email = None
+    password = None
     if tree is None:
         print "The XML file ", user_info_config, " seems to be invalid, using defaults."
         email = 'admin@test.org'
@@ -87,8 +90,8 @@ def admin_user_info( config_parser ):
                 password = elem.text
             elif elem.tag == 'username':
                 username = elem.text
-    print '%s__SEP__%s__SEP__%s' % ( username, email, password )
-    return 0
+    return (username, email, password)
+
 
 
 def get_local_tool_shed_url( config_parser ):
@@ -112,7 +115,9 @@ def main( args ):
     if args.method == 'check_db':
         return check_db( config_parser )
     elif args.method == 'admin_user_info':
-        return admin_user_info( config_parser )
+        (username, email, password) = admin_user_info()
+        print '%s__SEP__%s__SEP__%s' % ( username, email, password )
+        return 0
     elif args.method == 'get_url':
         return get_local_tool_shed_url( config_parser )
     else:
