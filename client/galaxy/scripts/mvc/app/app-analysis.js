@@ -170,7 +170,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
             // build history options menu
             Galaxy.historyOptionsMenu = optionsMenu( buttonOptions.$el, {
                 anonymous    : !Galaxy.user.id,
-                purgeAllowed : Galaxy.config.allow_user_dataset_purge && 'true' || 'false',
+                purgeAllowed : Galaxy.config.allow_user_dataset_purge,
                 root         : Galaxy.root
             });
 
