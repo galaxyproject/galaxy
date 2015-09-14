@@ -57,7 +57,7 @@ class DataManagers( object ):
         try:
             data_manager = DataManager( self, data_manager_elem, tool_path=tool_path )
         except Exception, e:
-            log.error( "Error loading data_manager '%s':\n%s" % ( e, util.xml_to_string( data_manager_elem ) ) )
+            log.error( "Error loading data_manager '%s':\n%s" % ( e, xml_util.xml_to_string( data_manager_elem ) ) )
             return None
         if add_manager:
             self.add_manager( data_manager, replace_existing=replace_existing )
@@ -132,7 +132,7 @@ class DataManager( object ):
         tool_guid = None
         if path is None:
             tool_elem = elem.find( 'tool' )
-            assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % ( util.xml_to_string( elem ) )
+            assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % ( xml_util.xml_to_string( elem ) )
             path = tool_elem.get( "file", None )
             tool_guid = tool_elem.get( "guid", None )
             # need to determine repository info so that dependencies will work correctly
@@ -171,7 +171,7 @@ class DataManager( object ):
                 shed_conf = self.data_managers.app.toolbox.get_shed_config_dict_by_filename( shed_conf_file, None )
                 if shed_conf:
                     tool_path = shed_conf.get( "tool_path", tool_path )
-        assert path is not None, "A tool file path could not be determined:\n%s" % ( util.xml_to_string( elem ) )
+        assert path is not None, "A tool file path could not be determined:\n%s" % ( xml_util.xml_to_string( elem ) )
         self.load_tool( os.path.join( tool_path, path ),
                         guid=tool_guid,
                         data_manager_id=self.id,

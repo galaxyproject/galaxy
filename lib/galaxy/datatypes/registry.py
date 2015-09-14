@@ -858,11 +858,11 @@ class Registry( object ):
         os.write( fd, '<datatypes>\n' )
         os.write( fd, '<registration%s%s>\n' % ( converters_path_str, display_path_str ) )
         for elem in self.datatype_elems:
-            os.write( fd, '%s' % galaxy.util.xml_to_string( elem ) )
+            os.write( fd, '%s' % galaxy.util.xml_util.xml_to_string( elem ) )
         os.write( fd, '</registration>\n' )
         os.write( fd, '<sniffers>\n' )
         for elem in self.sniffer_elems:
-            os.write( fd, '%s' % galaxy.util.xml_to_string( elem ) )
+            os.write( fd, '%s' % galaxy.util.xml_util.xml_to_string( elem ) )
         os.write( fd, '</sniffers>\n' )
         os.write( fd, '</datatypes>\n' )
         os.close( fd )

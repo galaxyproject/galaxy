@@ -173,20 +173,6 @@ def parse_xml_string(xml_string):
     return tree
 
 
-def xml_to_string( elem, pretty=False ):
-    """Returns a string from an xml tree"""
-    if pretty:
-        elem = pretty_print_xml( elem )
-    try:
-        return ElementTree.tostring( elem )
-    except TypeError, e:
-        # we assume this is a comment
-        if hasattr( elem, 'text' ):
-            return "<!-- %s -->\n" % ( elem.text )
-        else:
-            raise e
-
-
 def xml_element_compare( elem1, elem2 ):
     if not isinstance( elem1, dict ):
         elem1 = xml_element_to_dict( elem1 )

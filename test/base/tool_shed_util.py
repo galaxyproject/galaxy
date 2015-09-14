@@ -11,7 +11,7 @@ if new_path not in sys.path:
     new_path.extend( sys.path )
     sys.path = new_path
 
-from galaxy.util import parse_xml
+from galaxy.util import xml_util
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ def parse_tool_panel_config( config, shed_tools_dict ):
     last_tested_changeset_revision = None
     tool_path = None
     has_test_data = False
-    tree = parse_xml( config )
+    tree, parse_error = xml_util.parse_xml( config )
     root = tree.getroot()
     tool_path = root.get('tool_path')
     for elem in root:
