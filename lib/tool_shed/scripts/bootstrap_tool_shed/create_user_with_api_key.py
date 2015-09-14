@@ -9,7 +9,6 @@ from optparse import OptionParser
 
 sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 
-from galaxy.util import xml_util
 from galaxy.web import security
 import galaxy.webapps.tool_shed.config as tool_shed_config
 from galaxy.webapps.tool_shed.model import mapping
