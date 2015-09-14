@@ -531,11 +531,9 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
                     this.remove( history );
                 }
             },
-            // listen for a history copy, adding it to the beginning of the collection
+            // listen for a history copy, setting it to current
             'copied' : function( original, newData ){
-                var history = new History( newData, [] );
-                this.unshift( history );
-                this.trigger( 'new-current', history, this );
+                this.setCurrent( new History( newData, [] ) );
             },
             // when a history is made current, track the id in the collection
             'set-as-current' : function( history ){
@@ -582,10 +580,8 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
      *  and set allFetched/fire 'all-fetched' when xhr returns
      */
     fetch : function( options ){
-        console.debug( 'fetch', this.allFetched );
         options = options || {};
         if( this.allFetched ){ return jQuery.when({}); }
-        console.debug( 'fetching' );
         var collection = this,
             fetchOptions = _.defaults( options, {
                 remove : false,
@@ -615,11 +611,23 @@ var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).ext
         var collection = this,
             xhr = jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
         return xhr.done( function( newData ){
-            var history = new History( newData, [], historyOptions || {} );
-            // new histories go in the front
-            collection.unshift( history );
-            collection.trigger( 'new-current', history, this );
+            collection.setCurrent( new History( newData, [], historyOptions || {} ) );
         });
+    },
+
+    /** set the current history to the given history, placing it first in the collection.
+     *  Pass standard bbone options for use in unshift.
+     *  @triggers new-current passed history and this collection
+     */
+    setCurrent : function( history, options ){
+        options = options || {};
+        // new histories go in the front
+        this.unshift( history, options );
+        this.currentHistoryId = history.get( 'id' );
+        if( !options.silent ){
+            this.trigger( 'new-current', history, this );
+        }
+        return this;
     },
 
     /** override to reset allFetched flag to false */
