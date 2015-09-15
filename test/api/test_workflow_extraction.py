@@ -142,6 +142,7 @@ test_data:
         collection_step_state = loads( collection_step[ "tool_state" ] )
         self.assertEquals( collection_step_state[ "collection_type" ], u"paired" )
 
+    @skip_without_tool( "cat_collection" )
     def test_subcollection_mapping( self ):
         jobs_summary = self._run_jobs("""
 steps:
@@ -180,6 +181,7 @@ test_data:
         collection_step_state = loads( collection_step[ "tool_state" ] )
         self.assertEquals( collection_step_state[ "collection_type" ], u"list:paired" )
 
+    @skip_without_tool( "collection_split_on_column" )
     def test_extract_workflow_with_output_collections( self ):
         jobs_summary = self._run_jobs("""
 steps:
@@ -223,6 +225,7 @@ test_data:
             tool_ids=tool_ids,
         )
 
+    @skip_without_tool( "collection_creates_pair" )
     def test_extract_with_mapped_output_collections( self ):
         jobs_summary = self._run_jobs("""
 steps:
