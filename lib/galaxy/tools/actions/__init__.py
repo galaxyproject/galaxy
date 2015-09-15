@@ -441,6 +441,9 @@ class DefaultToolAction( object ):
                     assert old_job.session_id == galaxy_session.id, '(%s/%s): Old session id (%s) does not match rerun session id (%s)' % (old_job.id, job.id, old_job.session_id, galaxy_session.id)
                 else:
                     raise Exception('(%s/%s): Remapping via the API is not (yet) supported' % (old_job.id, job.id))
+                # Duplicate PJAs before remap.
+                for pjaa in old_job.post_job_actions:
+                    job.add_post_job_action(pjaa.post_job_action)
                 for jtod in old_job.output_datasets:
                     for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
                         if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (trans.user is None and job_to_remap.session_id == galaxy_session.id):
