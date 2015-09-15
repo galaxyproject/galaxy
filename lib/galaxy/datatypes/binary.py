@@ -115,9 +115,6 @@ class Idat( Binary ):
     """Binary data in idat format"""
     file_ext = "idat"
 
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
-
     def sniff( self, filename ):
         try:
             header = open( filename ).read(4)
@@ -563,9 +560,6 @@ class Sff( Binary ):
     edam_format = "format_3284"
     file_ext = "sff"
 
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
-
     def sniff( self, filename ):
         # The first 4 bytes of any sff file is '.sff', and the file is binary. For details
         # about the format, see http://www.ncbi.nlm.nih.gov/Traces/trace.cgi?cmd=show&f=formats&m=doc&s=format
@@ -854,9 +848,6 @@ class Sra( Binary ):
     """ Sequence Read Archive (SRA) datatype originally from mdshw5/sra-tools-galaxy"""
     file_ext = 'sra'
 
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
-
     def sniff( self, filename ):
         """ The first 8 bytes of any NCBI sra file is 'NCBI.sra', and the file is binary.
         For details about the format, see http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure
@@ -890,9 +881,6 @@ Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 class RData( Binary ):
     """Generic R Data file datatype implementation"""
     file_ext = 'RData'
-
-    def __init__( self, **kwd ):
-        Binary.__init__( self, **kwd )
 
     def sniff( self, filename ):
         rdata_header = binascii.hexlify('RDX2\nX\n')
