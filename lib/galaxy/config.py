@@ -697,7 +697,9 @@ def configure_logging( config ):
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
-    if not config.global_conf_parser.has_section( "loggers" ):
+    paste_configures_logging = config.global_conf_parser.has_section( "loggers" )
+    auto_configure_logging = not paste_configures_logging and string_as_bool( config.get( "auto_configure_logging", "True" ) )
+    if auto_configure_logging:
         format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
         level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
         destination = config.get( "log_destination", "stdout" )
