@@ -191,11 +191,10 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
-        id = job.tool_id
+        tool_id = job.tool_id
         tool_version = job.tool_version
-        inputs = job.get_param_values( trans.app )
-        tool = self.app.toolbox.get_tool( id, tool_version )
-        return tool.to_json(trans, inputs)
+        tool = self.app.toolbox.get_tool( tool_id, tool_version )
+        return tool.to_json(trans, kwd={'__job_id__' : id})
 
     def __dictify_associations( self, trans, *association_lists ):
         rval = []
