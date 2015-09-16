@@ -1039,6 +1039,10 @@ class JobWrapper( object ):
     def change_state( self, state, info=False ):
         job = self.get_job()
         self.sa_session.refresh( job )
+        if job.state in model.Job.terminal_states:
+            log.warning( "(%s) Ignoring state change from '%s' to '%s' for job "
+                         "that is already terminal", job.id, job.state, state )
+            return
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
             self.sa_session.refresh( dataset )
