@@ -2,7 +2,6 @@ import urllib
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.exceptions import InternalServerError
-from galaxy.exceptions import MalformedId
 from galaxy import web, util
 from galaxy import managers
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
@@ -94,17 +93,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         """
         if 'payload' in kwd:
             kwd = kwd.get('payload')
-        if id == 'undefined' and 'job_id' in kwd:
-            # We don't know the tool, but we do have a job id.  This is a rerun.
-            job = self.__get_job(trans, kwd['job_id'])
-            if not job:
-                raise ObjectNotFound("Could not access job with id '%s'" % kwd['job_id'])
-            id = job.tool_id
-            tool_version = job.tool_version
-            inputs = job.get_param_values( trans.app )
-            kwd['inputs'] = inputs
-        else:
-            tool_version = kwd.get( 'tool_version', None )
+        tool_version = kwd.get( 'tool_version', None )
         tool = self._get_tool( id, tool_version=tool_version, user=trans.user )
         return tool.to_json(trans, kwd.get('inputs', kwd))
 
@@ -598,23 +587,3 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         dataset_dict[ 'id' ] = trans.security.encode_id( dataset_dict[ 'id' ] )
         dataset_dict[ 'track_config' ] = self.get_new_track_config( trans, output_dataset )
         return dataset_dict
-
-    def __get_job( self, trans, id ):
-        try:
-            decoded_job_id = self.decode_id( id )
-        except Exception:
-            raise MalformedId()
-        query = trans.sa_session.query( trans.app.model.Job )
-        if trans.user_is_admin():
-            query = query.filter(
-                trans.app.model.Job.id == decoded_job_id
-            )
-        else:
-            query = query.filter(
-                trans.app.model.Job.user == trans.user,
-                trans.app.model.Job.id == decoded_job_id
-            )
-        job = query.first()
-        if job is None:
-            raise ObjectNotFound()
-        return job

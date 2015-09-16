@@ -17,6 +17,7 @@ from galaxy import managers
 from galaxy import model
 from galaxy import util
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixinItems
 
@@ -184,6 +185,17 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         """
         job = self.__get_job( trans, id )
         return self.__dictify_associations( trans, job.output_datasets, job.output_library_datasets )
+
+    @expose_api_anonymous
+    def build_for_rerun( self, trans, id, **kwd ):
+        job = self.__get_job(trans, id)
+        if not job:
+            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+        id = job.tool_id
+        tool_version = job.tool_version
+        inputs = job.get_param_values( trans.app )
+        tool = self.app.toolbox.get_tool( id, tool_version )
+        return tool.to_json(trans, inputs)
 
     def __dictify_associations( self, trans, *association_lists ):
         rval = []
