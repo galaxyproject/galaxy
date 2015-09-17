@@ -1,3 +1,4 @@
+
 define([
     "mvc/history/history-contents",
     "utils/utils",
@@ -243,7 +244,7 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
      *  @fires copied               passed this history and the response JSON from the copy
      *  @returns {xhr}
      */
-    copy : function( current, name ){
+    copy : function( current, name, allDatasets ){
         current = ( current !== undefined )?( current ):( true );
         if( !this.id ){
             throw new Error( 'You must set the history ID before copying it.' );
@@ -256,8 +257,9 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         if( name ){
             postData.name = name;
         }
-
-        //TODO:?? all datasets?
+        if( !allDatasets ){
+            postData.all_datasets = false;
+        }
 
         var history = this,
             copy = jQuery.post( this.urlRoot, postData );

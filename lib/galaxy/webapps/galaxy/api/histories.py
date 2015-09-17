@@ -22,6 +22,7 @@ from galaxy.web.base.controller import ImportsHistoryMixin
 
 from galaxy.managers import histories, citations, users
 
+from galaxy import util
 from galaxy.util import string_as_bool
 from galaxy.util import restore_text
 from galaxy.web import url_for
@@ -286,6 +287,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
         :param  payload: (optional) dictionary structure containing:
             * name:             the new history's name
             * history_id:       the id of the history to copy
+            * all_datasets:     copy deleted hdas/hdcas? 'True' or 'False', defaults to True
             * archive_source:   the url that will generate the archive to import
             * archive_type:     'url' (default)
 
@@ -300,6 +302,8 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             hist_name = restore_text( payload['name'] )
         copy_this_history_id = payload.get( 'history_id', None )
 
+        all_datasets = util.string_as_bool( payload.get( 'all_datasets', True ) )
+
         if "archive_source" in payload:
             archive_source = payload[ "archive_source" ]
             archive_type = payload.get( "archive_type", "url" )
@@ -312,7 +316,7 @@ class HistoriesController( BaseAPIController, ExportsHistoryMixin, ImportsHistor
             decoded_id = self.decode_id( copy_this_history_id )
             original_history = self.history_manager.get_accessible( decoded_id, trans.user, current_history=trans.history )
             hist_name = hist_name or ( "Copy of '%s'" % original_history.name )
-            new_history = original_history.copy( name=hist_name, target_user=trans.user )
+            new_history = original_history.copy( name=hist_name, target_user=trans.user, all_datasets=all_datasets )
 
         # otherwise, create a new empty history
         else:
