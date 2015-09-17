@@ -1,3 +1,4 @@
+import os
 from markupsafe import escape
 from sqlalchemy import and_, desc, false, true
 
@@ -9,6 +10,17 @@ from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids
 
+import json
+
+try:
+    eggs.require('PyYAML')
+except Exception:
+    # If not in Galaxy, ignore this.
+    pass
+try:
+    import yaml
+except ImportError:
+    yaml = None
 
 def format_bool( b ):
     if b:
@@ -338,6 +350,43 @@ class PageController( BaseUIController, SharableMixin,
 
         # Render grid wrapped in panels
         return trans.fill_template( "page/index.mako", embedded_grid=grid, shared_by_others=shared_by_others )
+
+    @web.expose
+    def get_tutorial_content( self, trans, tutorial_config_file ):
+        """
+        Reads a yaml file with intro.js configurations.
+        """
+        conf = yaml.load( open( os.path.join(trans.app.config.introduction_tutorials_config_dir, tutorial_config_file )) )
+        return json.dumps( conf )
+
+    @web.expose
+    def list_tutorials( self, trans, *args, **kwargs ):
+
+        from galaxy.util import bunch
+
+        tutorials = list()
+        tutorial_dir = trans.app.config.introduction_tutorials_config_dir
+        for tutorial in os.listdir(tutorial_dir):
+            if tutorial.endswith('yaml') or tutorial.endswith('yml'):
+                tutorial_path = os.path.join( tutorial_dir, tutorial )
+                with open(tutorial_path) as handle:
+                    conf = yaml.load( handle )
+                icon = conf.get('icon', None)
+                if icon:
+                    icon_path = os.path.join( tutorial_dir, icon )
+                if not icon or not os.path.exists(icon_path):
+                    icon_path = os.path.join( tutorial_dir, 'default_icon.png')
+
+                tutorials.append(
+                    bunch.Bunch(
+                        path=tutorial_path,
+                        description=conf.get('description', tutorial),
+                        icon=os.path.abspath(icon_path),
+                        filename=tutorial
+                        )
+                    )
+        return trans.fill_template( "page/list_tutorials.mako", tutorials=tutorials )
+
 
     @web.expose
     def list_published( self, trans, *args, **kwargs ):

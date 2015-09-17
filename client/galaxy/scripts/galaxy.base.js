@@ -67,8 +67,8 @@ $.fn.makeAbsolute = function(rebase) {
 
 /**
  * Sets up popupmenu rendering and binds options functions to the appropriate links.
- * initial_options is a dict with text describing the option pointing to either (a) a 
- * function to perform; or (b) another dict with two required keys, 'url' and 'action' (the 
+ * initial_options is a dict with text describing the option pointing to either (a) a
+ * function to perform; or (b) another dict with two required keys, 'url' and 'action' (the
  * function to perform. (b) is useful for exposing the underlying URL of the option.
  */
 function make_popupmenu(button_element, initial_options) {
@@ -77,14 +77,14 @@ function make_popupmenu(button_element, initial_options) {
     */
     var element_menu_exists = (button_element.data("menu_options"));
     button_element.data("menu_options", initial_options);
-    
+
     // If element already has menu, nothing else to do since HTML and actions are already set.
     if (element_menu_exists) { return; }
-    
+
     button_element.bind("click.show_popup", function(e) {
         // Close existing visible menus
         $(".popmenu-wrapper").remove();
-        
+
         // Need setTimeouts so clicks don't interfere with each other
         setTimeout( function() {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
@@ -104,7 +104,7 @@ function make_popupmenu(button_element, initial_options) {
             });
             var wrapper = $( "<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'></div>" )
                 .append( menu_element ).appendTo( "body" );
-                   
+
             var x = e.pageX - wrapper.width() / 2 ;
             x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 5 );
             x = Math.max( x, $(document).scrollLeft() + 5 );
@@ -114,7 +114,7 @@ function make_popupmenu(button_element, initial_options) {
                left: x
             });
         }, 10);
-        
+
         setTimeout( function() {
             // Bind click event to current window and all frames to remove any visible menus
             // Bind to document object instead of window object for IE compat
@@ -131,10 +131,10 @@ function make_popupmenu(button_element, initial_options) {
                 close_popup(frame);
             }
         }, 50);
-        
+
         return false;
     });
-    
+
 }
 
 /**
@@ -155,7 +155,7 @@ function make_popup_menus( parent ) {
     $( parent ).find( "div[popupmenu]" ).each( function() {
         var options = {};
         var menu = $(this);
-        
+
         // find each anchor in the menu, convert them into an options map: { a.text : click_function }
         menu.find( "a" ).each( function() {
             var link = $(this),
@@ -163,11 +163,11 @@ function make_popup_menus( parent ) {
                 confirmtext = link_dom.getAttribute( "confirm" ),
                 href = link_dom.getAttribute( "href" ),
                 target = link_dom.getAttribute( "target" );
-            
+
             // no href - no function (gen. a label)
             if (!href) {
                 options[ link.text() ] = null;
-                
+
             } else {
                 options[ link.text() ] = {
                     url: href,
@@ -175,8 +175,8 @@ function make_popup_menus( parent ) {
 
                         // if theres confirm text, send the dialog
                         if ( !confirmtext || confirm( confirmtext ) ) {
-                            // link.click() doesn't use target for some reason, 
-                            // so manually do it here. 
+                            // link.click() doesn't use target for some reason,
+                            // so manually do it here.
                             if (target) {
                                 window.open(href, target);
                                 return false;
@@ -195,14 +195,14 @@ function make_popup_menus( parent ) {
         });
         // locate the element with the id corresponding to the menu's popupmenu attr
         var box = $( parent ).find( "#" + menu.attr( 'popupmenu' ) );
-        
+
         // For menus with clickable link text, make clicking on the link go through instead
         // of activating the popup menu
         box.find("a").bind("click", function(e) {
             e.stopPropagation(); // Stop bubbling so clicking on the link goes through
             return true;
         });
-        
+
         // attach the click events and menu box building to the box element
         make_popupmenu(box, options);
         box.addClass("popup");
@@ -227,7 +227,7 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
     if (!jQuery.fn.select2) {
         return;
     }
-    
+
     // Set default for min_length and max_length
     if (min_length === undefined) {
         min_length = 20;
@@ -245,7 +245,7 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
         if ( (num_options < min_length) || (num_options > max_length) ) {
             return;
         }
-        
+
         if (select_elt.hasClass("no-autocomplete")) {
             return;
         }
@@ -274,7 +274,7 @@ $.fn.make_text_editable = function(config_dict) {
         use_textarea = ("use_textarea" in config_dict ? config_dict.use_textarea : false),
         on_finish = ("on_finish" in config_dict ? config_dict.on_finish : null),
         help_text = ("help_text" in config_dict ? config_dict.help_text : null);
-    
+
     // Add element behavior.
     var container = $(this);
     container.addClass("editable-text").click(function(e) {
@@ -282,13 +282,13 @@ $.fn.make_text_editable = function(config_dict) {
         if ($(this).children(":input").length > 0) {
             return;
         }
-        
+
         container.removeClass("editable-text");
-        
+
         // Handler for setting element text.
         var set_text = function(new_text) {
             container.find(":input").remove();
-            
+
             if (new_text !== "") {
                 container.text(new_text);
             }
@@ -302,11 +302,11 @@ $.fn.make_text_editable = function(config_dict) {
                 on_finish(new_text);
             }
         };
-        
+
         // Create input element(s) for editing.
         var cur_text = ("cur_text" in config_dict ? config_dict.cur_text : container.text() ),
             input_elt, button_elt;
-            
+
         if (use_textarea) {
             input_elt = $("<textarea/>")
                 .attr({ rows: num_rows, cols: num_cols }).text($.trim(cur_text))
@@ -339,7 +339,7 @@ $.fn.make_text_editable = function(config_dict) {
                 e.stopPropagation();
             });
         }
-                                
+
         // Replace text with input object(s) and focus & select.
         container.text("");
         container.append(input_elt);
@@ -348,16 +348,16 @@ $.fn.make_text_editable = function(config_dict) {
         }
         input_elt.focus();
         input_elt.select();
-        
+
         // Do not propogate to elements below b/c that blurs input and prevents it from being used.
         e.stopPropagation();
     });
-    
+
     // Add help text if there some.
     if (help_text) {
         container.attr("title", help_text).tooltip();
     }
-    
+
     return container;
 };
 
@@ -373,7 +373,7 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
     if (num_rows === undefined) {
         num_rows = 4;
     }
-    
+
     // Set up input element.
     $("#" + click_to_edit_elt).click(function() {
         // Check if this is already active
@@ -383,7 +383,7 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
         var text_elt = $("#" + text_elt_id),
             old_text = text_elt.text(),
             t;
-            
+
         if (use_textarea) {
             t = $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text( $.trim(old_text) );
         } else {
@@ -427,7 +427,7 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
                 });
             }
         });
-        
+
         if (on_start) {
             on_start(t);
         }
@@ -436,7 +436,7 @@ function async_save_text( click_to_edit_elt, text_elt_id, save_url,
         t.insertAfter(text_elt);
         t.focus();
         t.select();
-        
+
         return;
     });
 }
@@ -458,11 +458,11 @@ function reset_tool_search( initValue ) {
     if (tool_menu_frame.length === 0) {
         tool_menu_frame = $(document);
     }
-        
+
     // Remove classes that indicate searching is active.
     $(this).removeClass("search_active");
     tool_menu_frame.find(".toolTitle").removeClass("search_match");
-    
+
     // Reset visibility of tools and labels.
     tool_menu_frame.find(".toolSectionBody").hide();
     tool_menu_frame.find(".toolTitle").show();
@@ -476,7 +476,7 @@ function reset_tool_search( initValue ) {
         }
     });
     tool_menu_frame.find("#search-no-results").hide();
-    
+
     // Reset search input.
     tool_menu_frame.find("#search-spinner").hide();
     if (initValue) {
@@ -500,26 +500,26 @@ GalaxyAsync.prototype.set_user_pref = function( pref_name, pref_value ) {
     // Get URL.
     var url = this.url_dict[arguments.callee];
     if (url === undefined) { return false; }
-    $.ajax({                   
+    $.ajax({
         url: url,
         data: { "pref_name" : pref_name, "pref_value" : pref_value },
         error: function() { return false; },
-        success: function() { return true; }                                           
+        success: function() { return true; }
     });
 };
 
 // Log user action asynchronously.
 GalaxyAsync.prototype.log_user_action = function( action, context, params ) {
     if (!this.log_action) { return; }
-        
+
     // Get URL.
     var url = this.url_dict[arguments.callee];
     if (url === undefined) { return false; }
-    $.ajax({                   
+    $.ajax({
         url: url,
         data: { "action" : action, "context" : context, "params" : params },
         error: function() { return false; },
-        success: function() { return true; }                                           
+        success: function() { return true; }
     });
 };
 
@@ -543,7 +543,7 @@ function init_refresh_on_change () {
             $(document).trigger("convert_to_values"); // Convert autocomplete text to values
             select_field.get(0).form.submit();
         });
-    
+
     // checkboxes refresh on change
     $(":checkbox[refresh_on_change='true']")
         .off('click')
@@ -562,13 +562,40 @@ function init_refresh_on_change () {
             $(window).trigger("refresh_on_change");
             select_field.get(0).form.submit();
         });
-    
+
     // Links with confirmation
     $( "a[confirm]" )
         .off('click')
         .click( function() {
             return confirm( $(this).attr("confirm") );
         });
+};
+
+function start_tutorial_from_url( url ){
+    var intro = introJs();
+    $.getJSON( url, function( data ) {
+        intro.setOptions(
+            data
+        ).oncomplete(function() {
+            window.location.href = '/library/index?multipage=true';
+        });
+        intro.start();
+    });
+};
+
+var getUrlParameter = function getUrlParameter(sParam) {
+    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+        sURLVariables = sPageURL.split('&'),
+        sParameterName,
+        i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return sParameterName[1] === undefined ? true : sParameterName[1];
+        }
+    }
 };
 
 
@@ -595,23 +622,23 @@ $(document).ready( function() {
 
     // Refresh events for form fields.
     init_refresh_on_change();
-    
+
     // Tooltips
     if ( $.fn.tooltip ) {
         // Put tooltips below items in panel header so that they do not overlap masthead.
         $(".unified-panel-header [title]").tooltip( { placement: 'bottom' } );
-        
+
         // default tooltip initialization, it will follow the data-placement tag for tooltip location
         // and fallback to 'top' if not present
         $("[title]").tooltip();
     }
     // Make popup menus.
     make_popup_menus();
-    
+
     // Replace big selects.
     replace_big_select_inputs(20, 1500);
-    
-    // If galaxy_main frame does not exist and link targets galaxy_main, 
+
+    // If galaxy_main frame does not exist and link targets galaxy_main,
     // add use_panels=True and set target to self.
     $("a").click( function() {
         var anchor = $(this);

@@ -68,7 +68,6 @@ var GalaxyMenu = Backbone.Model.extend({
         tab_shared.add({
             title   : 'Published Workflows',
             content : 'workflow/list_published'
-
         });
 
         tab_shared.add({
@@ -79,6 +78,12 @@ var GalaxyMenu = Backbone.Model.extend({
         tab_shared.add({
             title   : 'Published Pages',
             content : 'page/list_published'
+        });
+
+        tab_shared.add({
+            title   : 'Interactive Tutorials',
+            content : 'page/list_tutorials',
+            target  : 'galaxy_main'
         });
 
         this.masthead.append(tab_shared);

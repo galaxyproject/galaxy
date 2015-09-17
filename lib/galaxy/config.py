@@ -93,7 +93,7 @@ class Configuration( object ):
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path( kwargs.get( 'integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.root )
 
-        self.introduction_config = resolve_path( kwargs.get( "introduction_config", "" ), self.root )
+        self.introduction_tutorials_config_dir = resolve_path( kwargs.get( "introduction_tutorials_config_dir", "" ), self.root )
 
         integrated_tool_panel_tracking_directory = kwargs.get( 'integrated_tool_panel_tracking_directory', None )
         if integrated_tool_panel_tracking_directory:

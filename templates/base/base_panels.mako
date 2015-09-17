@@ -64,29 +64,6 @@
         'libs/require'
     )}
 
-    <script type="text/javascript">
-        // is the configuration file enabled and available
-        %if trans.webapp.name == 'galaxy' and app.config.introduction_config:
-            // is the user __not__ logged in
-            %if not trans.user or trans.user.active is False:
-                // If we have a left and a right panel we assume we are on the main page and not
-                // redirected from anywhere else. For example after logout.
-                %if self.has_left_panel and self.has_right_panel:
-
-                    window.onload = function startIntro(){
-                        var intro = introJs();
-                            intro.setOptions(
-                                ${h.get_intro_configuration( app.config.introduction_config )}
-                            );
-
-                        intro.start();
-                    };
-
-                %endif
-            %endif
-        %endif
-
-
         ## global configuration object
         var galaxy_config =
         {

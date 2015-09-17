@@ -59,4 +59,47 @@ ${h.css("base")}
             var app = new App( ${ h.dumps( app_config ) } );
         } );
     });
+
+        // is the configuration file enabled and available
+        //%if trans.webapp.name == 'galaxy' and app.config.introduction_config:
+            // is the user __not__ logged in
+        //%if not trans.user or trans.user.active is False:
+                // If we have a left and a right panel we assume we are on the main page and not
+                // redirected from anywhere else. For example after logout.
+alert('begin tour');
+
+                var tech = getUrlParameter('tutorial_url');
+                if (tech) {
+                    window.onload = function startIntro(){
+                        var url = '${h.url_for(controller='page', action='get_tutorial_content', tutorial_config_file='')}'
+
+                        $.getJSON( url + tech, function( data ) {
+                            var intro = introJs();
+                            intro.setOptions(
+                                data
+                            )
+                            //.oncomplete(function() {
+                            //    window.location.href = '/library/index?multipage=true';
+                            //})
+                            //).onafterchange(function() {
+                            //    var ln = document.querySelector('#tool-panel-upload-button');
+                            //    ln.click();
+                            //    var ln = document.querySelector('#title_filter a');
+                            //    ln.click();
+                            //})
+
+                            ;
+
+                            intro.start();
+                        });
+
+                    };
+                }
+
+
+            //%endif
+        //%endif
+
+
+
 </script>

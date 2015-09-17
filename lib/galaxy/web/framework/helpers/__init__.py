@@ -139,6 +139,7 @@ def get_intro_configuration( introduction_config_file ):
     """
     Reads a yaml file with intro.js configurations.
     """
+    print introduction_config_file
     conf = yaml.load( open( introduction_config_file ) )
     print conf
     return json.dumps( conf )
