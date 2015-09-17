@@ -188,6 +188,19 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
 
     @expose_api_anonymous
     def build_for_rerun( self, trans, id, **kwd ):
+        """
+        * GET /api/jobs/{job_id}/build_for_rerun
+            returns a tool input/param template preopoulated with this job's
+            information, suitable for rerunning or rendering parameters of the
+            job.
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing output dataset associations
+        """
+
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
