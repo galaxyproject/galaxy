@@ -614,6 +614,10 @@ nglims_config_file = tool-data/nglims.yaml
 
 # -- Logging and Debugging
 
+# If True, Galaxy will attempt to configure a simple root logger if a
+# "loggers" section does not appear in this configuration file.
+#auto_configure_logging = True
+
 # Verbosity of console log messages.  Acceptable values can be found here:
 # https://docs.python.org/2/library/logging.html#logging-levels
 #log_level = DEBUG

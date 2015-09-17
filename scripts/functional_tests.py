@@ -13,6 +13,7 @@ new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
+from base.test_logging import logging_config_file
 from base.tool_shed_util import parse_tool_panel_config
 
 from galaxy import eggs
@@ -337,6 +338,7 @@ def main():
                        use_tasked_jobs=True,
                        cleanup_job='onsuccess',
                        enable_beta_tool_formats=True,
+                       auto_configure_logging=logging_config_file is None,
                        data_manager_config_file=data_manager_config_file )
         if install_database_connection is not None:
             kwargs[ 'install_database_connection' ] = install_database_connection
