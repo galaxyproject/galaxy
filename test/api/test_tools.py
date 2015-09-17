@@ -804,9 +804,41 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( outputs ), 4 )
 
         self.assertEquals( len( response_object[ 'jobs' ] ), 4 )
-        # Implicit collections not created with unlinked inputs yet - this may
-        # be problematic.
-        self.assertEquals( len( response_object[ 'implicit_collections' ] ), 0 )
+        implicit_collections = response_object[ 'implicit_collections' ]
+        self.assertEquals( len( implicit_collections ), 1 )
+        implicit_collection = implicit_collections[ 0 ]
+        self.assertEquals( implicit_collection[ "collection_type" ], "paired:paired" )
+
+        outer_elements = implicit_collection[ "elements" ]
+        assert len( outer_elements ) == 2
+        element0, element1 = outer_elements
+        assert element0[ "element_identifier" ] == "forward"
+        assert element1[ "element_identifier" ] == "reverse"
+
+        elements0 = element0[ "object" ][ "elements" ]
+        elements1 = element1[ "object" ][ "elements" ]
+
+        assert len( elements0 ) == 2
+        assert len( elements1 ) == 2
+
+        element00, element01 = elements0
+        assert element00[ "element_identifier" ] == "forward"
+        assert element01[ "element_identifier" ] == "reverse"
+
+        element10, element11 = elements1
+        assert element10[ "element_identifier" ] == "forward"
+        assert element11[ "element_identifier" ] == "reverse"
+
+        expected_contents_list = [
+            (element00, "123\n789\n"),
+            (element01, "123\n0ab\n"),
+            (element10, "456\n789\n"),
+            (element11, "456\n0ab\n"),
+        ]
+        for (element, expected_contents) in expected_contents_list:
+            dataset_id = element["object"]["id"]
+            contents = self.dataset_populator.get_history_dataset_content( history_id, dataset_id=dataset_id )
+            self.assertEquals(expected_contents, contents)
 
     @skip_without_tool( "cat1" )
     def test_map_over_collected_and_individual_datasets( self ):
