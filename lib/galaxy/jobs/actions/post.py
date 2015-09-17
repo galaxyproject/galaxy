@@ -404,6 +404,9 @@ class DeleteIntermediatesAction(DefaultJobAction):
         # POTENTIAL ISSUES:  When many outputs are being finish()ed
         # concurrently, sometimes non-terminal steps won't be cleaned up
         # because of the lag in job state updates.
+        if not job.workflow_invocation_step:
+            log.debug("This job is not part of a workflow invocation, delete intermediates aborted.")
+            return
         wfi = job.workflow_invocation_step.workflow_invocation
         if wfi.active:
             log.debug("Workflow still scheduling so new jobs may appear, skipping deletion of intermediate files.")
