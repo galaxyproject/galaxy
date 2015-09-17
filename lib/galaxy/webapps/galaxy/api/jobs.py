@@ -190,7 +190,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def build_for_rerun( self, trans, id, **kwd ):
         """
         * GET /api/jobs/{job_id}/build_for_rerun
-            returns a tool input/param template preopoulated with this job's
+            returns a tool input/param template prepopulated with this job's
             information, suitable for rerunning or rendering parameters of the
             job.
 
