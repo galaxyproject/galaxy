@@ -1504,8 +1504,6 @@ class SetupPythonEnvironment( Download, RecipeStep ):
         and returned and the installation directory (i.e., dir) will be defined and returned.  If we're not
         in the initial download stage, these actions will not occur, and None values will be returned for them.
 
-        Warning: easy_install is configured that it will not be install any dependency, the tool developer needs
-        to specify every dependency explicitly
         """
         # <action type="setup_python_environment">
         #       <repository name="package_python_2_7" owner="bgruening">
@@ -1553,6 +1551,7 @@ class SetupPythonEnvironment( Download, RecipeStep ):
                     archive = CompressedFile(package_to_install)
                     uncompressed_path = archive.extract( work_dir )
                     cmd = r'''PATH=$PYTHONHOME/bin:$PATH; export PATH;
+                            mkdir -p $INSTALL_DIR/lib/python;
                             export PYTHONPATH=$INSTALL_DIR/lib/python:$PYTHONPATH;
                             cd %s;
                             python setup.py install --install-lib $INSTALL_DIR/lib/python --install-scripts $INSTALL_DIR/bin
