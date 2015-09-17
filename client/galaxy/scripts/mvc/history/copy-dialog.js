@@ -1,12 +1,10 @@
 define([
-    "mvc/history/history-model",
-    "mvc/history/history-panel-edit",
-    "mvc/base-mvc",
-    "utils/ajax-queue",
-    "ui/mode-button",
-    "ui/search-input"
-], function( HISTORY_MODEL, HPANEL_EDIT, baseMVC, ajaxQueue ){
-//==============================================================================
+    "utils/localization"
+], function( _l ){
+/* =============================================================================
+Wrapper function around the global Galaxy.modal for use when copying histories.
+
+==============================================================================*/
 function _renderBody( vars ){
     return [
         '<form action="">',
@@ -39,7 +37,15 @@ function _validateName( name ){
     return name;
 }
 
-/**  */
+function _renderCopyIndicator(){
+    return $([
+            '<p>', '<span class="fa fa-spinner fa-spin"></span> ', _l( 'Copying history' ), '...', '</p>'
+        ].join( '' ))
+        //TODO: move out of inline
+        .css({ 'margin-top': '8px' });
+}
+
+/** show the dialog and handle validation, ajax, and callbacks */
 function historyCopyDialog( history, options ){
     options = options || {};
     // fall back to un-notifying copy
@@ -53,12 +59,11 @@ function historyCopyDialog( history, options ){
 
     function copyHistory( name ){
         var copyAllDatasets = Galaxy.modal.$( 'input[name="copy-what"]:checked' ).val() === 'copy-all',
-            $copyIndicator = $( '<p><span class="fa fa-spinner fa-spin"></span> Copying history...</p>' )
-                .css({ 'margin-top': '8px' });
+            $copyIndicator = _renderCopyIndicator();
         Galaxy.modal.$( '.modal-body' ).children().replaceWith( $copyIndicator );
         Galaxy.modal.$( 'button' ).prop( 'disabled', true );
-        history.copy( true, name, 'blah' )
-            //TODO: make this unneccessary with pub-sub error
+        history.copy( true, name, copyAllDatasets )
+            //TODO: make this unneccessary with pub-sub error or handling via Galaxy
             .fail( function(){
                 alert( _l( 'History could not be copied. Please contact a Galaxy administrator' ) );
             })
@@ -87,6 +92,7 @@ function historyCopyDialog( history, options ){
             checkNameAndCopy();
         }
     });
+    // TODO: return a promise completed on copy, close, or error
 }
 
 //==============================================================================
