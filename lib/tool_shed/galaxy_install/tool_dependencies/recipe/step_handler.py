@@ -1577,8 +1577,6 @@ class SetupPythonEnvironment( Download, RecipeStep ):
         and returned and the installation directory (i.e., dir) will be defined and returned.  If we're not
         in the initial download stage, these actions will not occur, and None values will be returned for them.
 
-        Warning: easy_install is configured that it will not be install any dependency, the tool developer needs
-        to specify every dependency explicitly
         """
         # <action type="setup_python_environment">
         #       <repository name="package_python_2_7" owner="bgruening">
@@ -1611,26 +1609,27 @@ class SetupPythonEnvironment( Download, RecipeStep ):
                     package, package_version = python_package_tup
                     package_path = os.path.join( install_environment.tool_shed_repository_install_dir, package )
                     if os.path.isfile( package_path ):
-                        # we assume a local shipped python package
-
-                        cmd = r'''PATH=$PATH:$PYTHONHOME/bin; export PATH;
-                                export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR;
-                                easy_install --no-deps --install-dir $INSTALL_DIR --script-dir $INSTALL_DIR/bin %s
-                        ''' % ( package_path )
+                        # We assume a local shipped python package.
+                        package_to_install = package_path
                     elif package.find( '://' ) != -1:
                         # We assume a URL to a python package.
                         url = package
                         package_name = url.split( '/' )[ -1 ]
                         checksums = python_package_tup_dict.get('checksums', {})
                         self.url_download( work_dir, package_name, url, extract=False, checksums=checksums )
-
-                        cmd = r'''PATH=$PATH:$PYTHONHOME/bin; export PATH;
-                                export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR;
-                                easy_install --no-deps --install-dir $INSTALL_DIR --script-dir $INSTALL_DIR/bin %s
-                            ''' % ( package_name )
+                        package_to_install = os.path.join( work_dir, package_name )
                     else:
+                        # pypi support is currently not working - pip can not install wheels into user specified directories
                         pass
-                        # pypi can be implemented or for > python3.4 we can use the build-in system
+                    archive = CompressedFile(package_to_install)
+                    uncompressed_path = archive.extract( work_dir )
+                    cmd = r'''PATH=$PYTHONHOME/bin:$PATH; export PATH;
+                            mkdir -p $INSTALL_DIR/lib/python;
+                            export PYTHONPATH=$INSTALL_DIR/lib/python:$PYTHONPATH;
+                            cd %s;
+                            python setup.py install --install-lib $INSTALL_DIR/lib/python --install-scripts $INSTALL_DIR/bin
+                        ''' % ( uncompressed_path )
+
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                       cmd=cmd,
@@ -1644,6 +1643,9 @@ class SetupPythonEnvironment( Download, RecipeStep ):
                 env_file_builder.append_line( name="PYTHONPATH",
                                               action="prepend_to",
                                               value=os.path.join( install_environment.install_dir, 'lib', 'python') )
+                env_file_builder.append_line( name="PYTHONPATH",
+                                              action="prepend_to",
+                                              value=os.path.join( install_environment.install_dir) )
                 env_file_builder.append_line( name="PATH",
                                               action="prepend_to",
                                               value=os.path.join( install_environment.install_dir, 'bin' ) )
