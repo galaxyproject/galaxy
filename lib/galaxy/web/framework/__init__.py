@@ -3,7 +3,6 @@ Galaxy web application framework
 """
 
 from galaxy import eggs
-eggs.require( "pexpect" )
 eggs.require( "amqp" )
 
 import base
