@@ -46,7 +46,7 @@ var HDCAListItemView = _super.extend(
     _swapNewRender : function( $newRender ){
         _super.prototype._swapNewRender.call( this, $newRender );
 //TODO: model currently has no state
-        var state = this.model.get( 'state' ) || STATES.OK;
+        var state = !this.model.get( 'populated' ) ? STATES.RUNNING : STATES.OK;
         //if( this.model.has( 'state' ) ){
         this.$el.addClass( 'state-' + state );
         //}
