@@ -1,0 +1,239 @@
+html, body, * {
+    margin: 0;
+    padding: 0;
+
+}
+canvas {
+    border: 0;
+    margin: 0;
+}
+.container {
+    margin: 0px;
+    border: 0px;
+    padding: 0px;
+    background: #fff;
+}
+#mrh-top {
+    text-align: center;
+    min-width: 400px;
+}
+#mrh-label {
+    height: 30px;
+    padding-top: 5px;
+    font-size: 20px;
+    border-bottom: 1px solid #999;
+    background: #eee;
+}
+#mrh-controls-container {
+    padding: 2px;
+    vertical-align: top;
+    margin: 0px;
+    min-height: 30px;
+    background: #dfe5f9;
+    border-bottom: 1px solid #999;
+}
+#mrh-button-container {
+    background: #dfe5f9;
+    display: inline-block;
+}
+.mrh-cursor-container {
+    display: inline-block;
+    height: 16px;
+}
+.mrh-cursor-label {
+    display: inline-block;
+    width: 110px;
+    height: 16px;
+}
+span, .chrom-menu-container {
+    vertical-align: middle;
+    display: inline-block;
+}
+.position-display {
+    width: 175px;
+}
+.chrom-menu-container {
+    width: 80px;
+}
+.mrh-display {
+    padding: 0;
+    border: 0;
+}
+#mrh-display-right {
+    float: right;
+    position: relative;
+}
+#mrh-display-left {
+    float: left;
+}
+#mrh-display-viewer {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    background: #000;
+}
+#mrh-display-bottom {
+    height: 400px;
+    background: white;
+    margin: 0px;
+    border: 0px;
+    padding: 0px;
+    position: static;
+}
+.scroll {
+    display: inline-block;
+    position: relative;
+    border: 0;
+    background: #eee;
+}
+.scroll-box {
+    margin-top: 0px;
+    cursor: pointer;
+    background: #c1c9e5;
+    border: solid #666 1px;
+    position: relative;
+}
+#Hscroll {
+    height: 15.5px;
+    border-top: solid 1px #999;
+    border-left: solid 1px #999;
+    border-bottom: solid 1px #999;
+    left: -0.5px;
+    top: -4px;
+}
+#Hscroll-box {
+    height: 100%;
+}
+#Vscroll {
+    width: 15px;
+    border-right: solid 1px #999;
+    border-bottom: solid 1px #999;
+}
+#Vscroll-box {
+    width: 100%;
+}
+h3 {
+    margin: auto;
+    text-align: center;
+}
+h5 {
+    display: inline-block;
+    margin: auto;
+    text-align: left;
+    position: relative;
+    top: 2px;
+}
+#chrom-display2 {
+    font-size: 12px;
+}
+.buttons {
+    display: inline-block;
+    height: 16px;
+    width: 20px;
+    cursor: pointer;
+    position: relative;
+    top: 4px;
+}
+#mrh-mask {
+    background: #555;
+    opacity: 0.3;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    visibility: hidden;
+}
+#mrh-settings {
+    z-index: 2;
+    background: #fff;
+    border-width: 2px;
+    border-style: solid;
+    border-color: #555;
+    position: absolute;
+    top: 120px;
+    width: 150px;
+    height: 200px;
+    visibility: hidden;
+}
+#mrh-settings-header {
+    width: 146px;
+    padding: 4px;
+    height: 24px;
+}
+#mrh-settings-close {
+    border: 0px;
+    float: right;
+    height: 16px;
+    width: 16px;
+    cursor: pointer;
+}
+#mrh-settings-body {
+    border: 0px;
+    width: 146px;
+}
+.mrh-settings-label-box {
+    font-size: 12px;
+    height: 18px;
+    position: relative;
+    top: 3px;
+    text-align: center;
+}
+.mrh-color-spacer {
+    border: 0;
+    height: 12px;
+    width: 218px;
+    display: inline-block;
+    position: relative;
+    left: 67px;
+    top: 3px;
+}
+.mrh-color-box {
+    background: ;
+    border: 0;
+    height: 12px;
+    width: 218px;
+    display: inline-block;
+    position: relative;
+}
+#mrh-mincolor-box {
+    bottom: 133px;
+    left: 67px;
+}
+#mrh-midcolor-box {
+    bottom: 98px;
+    left: 67px;
+}
+#mrh-maxcolor-box {
+    bottom: 63px;
+    left: 67px;
+}
+.mrh-score-box {
+    display: inline-block;
+    height: 17px;
+    width: 60px;
+    left: 43px;
+    position: relative; 
+    font-size: 12px;
+    text-align: center;
+    line-height: 14px;   
+    bottom: -4px;
+    vertical-align: middle; 
+}
+.mrh-score-box-editable {
+    cursor: pointer;
+}
+.mrh-score-text {
+    line-height: 14px;
+}
+.mrh-score-text-editable {
+    line-height: 14px;
+    height: 17px;
+    width: 50px;
+}
+html.progress, html.progress * {
+    cursor: progress;
+}
+html.grabbing, html.grabbing * {
+    cursor: -webkit-grabbing;
+}
