@@ -880,7 +880,7 @@ class RData( Binary ):
     file_ext = 'RData'
 
     def sniff( self, filename ):
-        rdata_header = binascii.hexlify('\x1f\x8b\x08\x00\x00\x00\x00')
+        rdata_header = binascii.hexlify('RDX2\nX\n')
         try:
             header = open(filename).read(7)
             if binascii.b2a_hex(header) == rdata_header:
