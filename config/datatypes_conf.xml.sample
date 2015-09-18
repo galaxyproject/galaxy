@@ -412,6 +412,12 @@
     <datatype extension="xmfa" type="galaxy.datatypes.msa:MauveXmfa" display_in_upload="True" />
 
     <datatype extension="RData" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
+    <datatype extension="oxlicg" type="galaxy.datatypes.binary:OxliCountGraph" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="oxling" type="galaxy.datatypes.binary:OxliNodeGraph" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="oxlits" type="galaxy.datatypes.binary:OxliTagSet" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="oxlist" type="galaxy.datatypes.binary:OxliStopTags" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="oxliss" type="galaxy.datatypes.binary:OxliSubset" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="oxligl" type="galaxy.datatypes.binary:OxliGraphLabels" mimetype="application/octet-stream" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
@@ -500,6 +506,12 @@
     module is fixed to not read the entire file.
     <sniffer type="galaxy.datatypes.assembly:Amos"/>
     -->
+    <sniffer type="galaxy.datatypes.binary:OxliCountGraph"/>
+    <sniffer type="galaxy.datatypes.binary:OxliNodeGraph"/>
+    <sniffer type="galaxy.datatypes.binary:OxliTagSet"/>
+    <sniffer type="galaxy.datatypes.binary:OxliStopTags"/>
+    <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
+    <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
   </sniffers>
   <build_sites>
       <!--
