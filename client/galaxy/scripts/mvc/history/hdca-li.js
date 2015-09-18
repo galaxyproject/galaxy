@@ -21,11 +21,9 @@ var HDCAListItemView = _super.extend(
     /** event listeners */
     _setUpListeners : function(){
         _super.prototype._setUpListeners.call( this );
-        // re-rendering on deletion
+
         this.model.on( 'change', function( model, options ){
-            if( _.isEqual( _.keys( model.changed ), [ 'visible' ] ) ){
-                this.render();
-            }
+            this.render();
         }, this );
     },
 
