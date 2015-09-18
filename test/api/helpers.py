@@ -13,7 +13,7 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
 
 
-DEFAULT_HISTORY_TIMEOUT = 10  # Secs to wait on history to turn ok
+DEFAULT_TIMEOUT = 15  # Secs to wait for state to turn ok
 
 
 def skip_without_tool( tool_id ):
@@ -75,14 +75,14 @@ class BaseDatasetPopulator( object ):
         run_response = self._post( "tools", data=payload )
         return run_response.json()["outputs"][0]
 
-    def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_HISTORY_TIMEOUT ):
+    def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
         try:
             return wait_on_state( lambda: self._get( "histories/%s" % history_id ), assert_ok=assert_ok, timeout=timeout )
         except AssertionError:
             self._summarize_history_errors( history_id )
             raise
 
-    def wait_for_job( self, job_id, assert_ok=False, timeout=DEFAULT_HISTORY_TIMEOUT ):
+    def wait_for_job( self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
         return wait_on_state( lambda: self._get( "jobs/%s" % job_id ), assert_ok=assert_ok, timeout=timeout )
 
     def _summarize_history_errors( self, history_id ):
@@ -224,11 +224,11 @@ class BaseWorkflowPopulator( object ):
         upload_response = self._post( "workflows/upload", data=data )
         return upload_response
 
-    def wait_for_invocation( self, workflow_id, invocation_id, timeout=10 ):
+    def wait_for_invocation( self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT ):
         url = "workflows/%s/usage/%s" % ( workflow_id, invocation_id )
         return wait_on_state( lambda: self._get( url ), timeout=timeout  )
 
-    def wait_for_workflow( self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_HISTORY_TIMEOUT ):
+    def wait_for_workflow( self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT ):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
         self.wait_for_invocation( workflow_id, invocation_id, timeout=timeout )
@@ -317,7 +317,7 @@ class LibraryPopulator( object ):
         def show():
             return self.api_test_case.galaxy_interactor.get( "libraries/%s/contents/%s" % ( library[ "id" ], dataset[ "id" ] ) )
 
-        wait_on_state(show)
+        wait_on_state(show, timeout=DEFAULT_TIMEOUT)
         return show().json()
 
 

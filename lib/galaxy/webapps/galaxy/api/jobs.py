@@ -117,7 +117,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def show( self, trans, id, **kwd ):
         """
         show( trans, id )
-        * GET /api/jobs/{job_id}:
+        * GET /api/jobs/{id}:
             return jobs for current user
 
         :type   id: string
@@ -158,7 +158,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def inputs( self, trans, id, **kwd ):
         """
         show( trans, id )
-        * GET /api/jobs/{job_id}/inputs
+        * GET /api/jobs/{id}/inputs
             returns input datasets created by job
 
         :type   id: string
@@ -174,7 +174,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def outputs( self, trans, id, **kwd ):
         """
         show( trans, id )
-        * GET /api/jobs/{job_id}/outputs
+        * GET /api/jobs/{id}/outputs
             returns output datasets created by job
 
         :type   id: string
@@ -189,7 +189,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     @expose_api_anonymous
     def build_for_rerun( self, trans, id, **kwd ):
         """
-        * GET /api/jobs/{job_id}/build_for_rerun
+        * GET /api/jobs/{id}/build_for_rerun
             returns a tool input/param template prepopulated with this job's
             information, suitable for rerunning or rendering parameters of the
             job.
