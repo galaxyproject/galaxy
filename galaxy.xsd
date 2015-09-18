@@ -168,6 +168,7 @@
     <xs:sequence>
       <xs:element name="param" type="TestParam" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="output" type="TestOutput" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="output_collection" type="TestOutputCollection" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="TestParam">
@@ -239,6 +240,24 @@
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  <xs:complexType name="TestOutputCollection">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for TestOutputCollection</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="element" type="TestCollectionElement" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for type</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="TestAssertions">
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for TestAssertion</xs:documentation>
@@ -250,6 +269,7 @@
   <xs:group name="TestAssertion">
     <xs:choice>
       <xs:element name="has_line" type="TestAssertionHasLine"/>
+      <xs:element name="has_text" type="TestAssertionHasText"/>
       <!-- TODO: implement something to auto generate rest of valid assetions from Python. -->
     </xs:choice>
   </xs:group>
@@ -257,6 +277,28 @@
     <xs:attribute name="line" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Line the test output must contain.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="TestAssertionHasText">
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text the test output must contain.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="TestCollectionElement">
+    <xs:sequence>
+      <xs:element name="assert_contents" type="TestAssertions" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="file" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -817,6 +859,7 @@
     </xs:annotation>
     <xs:sequence>
       <xs:element name="data" type="Data" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="collection" type="Collection" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="Data">
@@ -865,6 +908,44 @@
     <xs:attribute name="hidden" type="xs:boolean">
       <xs:annotation>
         <xs:documentation xml:lang="en">Documentation for hidden</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="Collection">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for Collection</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="discover_datasets" type="DiscoverDatasets" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for format</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="DiscoverDatasets">
+     <xs:annotation>
+      <xs:documentation xml:lang="en">Documentation for DiscoverDatasets</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="pattern" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for pattern</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="directory" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Documentation for directory</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
