@@ -2484,9 +2484,9 @@ class TwillTestCase( unittest.TestCase ):
         temp_local = tempfile.NamedTemporaryFile( suffix='.sam', prefix='local_bam_converted_to_sam_' )
         fd, temp_temp = tempfile.mkstemp( suffix='.sam', prefix='history_bam_converted_to_sam_' )
         os.close( fd )
-        command = 'samtools view -h -o "%s" "%s"' % ( temp_local.name, local_name  )
+        command = 'samtools sort -o "%s" - |samtools view -h -o "%s" -' % ( local_name, temp_local.name )
         self._check_command( command, 'Converting local (test-data) bam to sam' )
-        command = 'samtools view -h -o "%s" "%s"' % ( temp_temp, temp_name  )
+        command = 'samtools sort -o "%s" - |samtools view -h -o "%s" -' % ( temp_name, temp_temp )
         self._check_command( command, 'Converting history bam to sam ' )
         os.remove( temp_name )
         return temp_local, temp_temp
