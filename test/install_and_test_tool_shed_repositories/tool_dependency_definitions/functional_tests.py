@@ -15,15 +15,11 @@ import tempfile
 import threading
 import time
 
-# Assume we are run from the galaxy root directory, add lib to the python path
-cwd = os.getcwd()
-sys.path.append( cwd )
-new_path = [ os.path.join( cwd, "scripts" ),
-             os.path.join( cwd, "lib" ),
-             os.path.join( cwd, 'test' ),
-             os.path.join( cwd, 'scripts', 'api' ) ]
-new_path.extend( sys.path )
-sys.path = new_path
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir))
+sys.path[1:1] = [ os.path.join( galaxy_root, "scripts" ),
+                  os.path.join( galaxy_root, "lib" ),
+                  os.path.join( galaxy_root, 'test' ),
+                  os.path.join( galaxy_root, 'scripts', 'api' ) ]
 
 from galaxy import eggs
 eggs.require( "Paste" )
@@ -43,7 +39,7 @@ from galaxy.web import buildapp
 log = logging.getLogger( 'install_and_test_tool_dependency_definitions' )
 
 assert sys.version_info[ :2 ] >= ( 2, 6 )
-test_home_directory = os.path.join( cwd, 'test', 'install_and_test_tool_shed_repositories', 'tool_dependency_definitions' )
+test_home_directory = os.path.join( galaxy_root, 'test', 'install_and_test_tool_shed_repositories', 'tool_dependency_definitions' )
 
 # Here's the directory where everything happens.  Temporary directories are created within this directory to contain
 # the database, new repositories, etc.

@@ -19,12 +19,15 @@ from string import Template
 from uuid import UUID, uuid4
 
 from galaxy import eggs
-eggs.require("pexpect")
-import pexpect
 eggs.require('SQLAlchemy')
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy.ext import hybrid
+
+try:
+    import pexpect
+except ImportError:
+    pexpect = None
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
@@ -56,6 +59,9 @@ datatypes_registry.load_datatypes()
 # are going to have different limits so it is likely best to not let
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
+
+PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
+                          'feature, please install it')
 
 
 class NoConverterException(Exception):
@@ -322,6 +328,9 @@ class Job( object, HasJobMetrics, Dictifiable ):
                     PAUSED='paused',
                     DELETED='deleted',
                     DELETED_NEW='deleted_new' )
+    terminal_states = [ states.OK,
+                        states.ERROR,
+                        states.DELETED ]
 
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__( self ):
@@ -4242,6 +4251,8 @@ class Sample( object, Dictifiable ):
     def get_untransferred_dataset_size( self, filepath, scp_configs ):
         def print_ticks( d ):
             pass
+        if pexpect is None:
+            return PEXPECT_IMPORT_MESSAGE
         error_msg = 'Error encountered in determining the file size of %s on the external_service.' % filepath
         if not scp_configs['host'] or not scp_configs['user_name'] or not scp_configs['password']:
             return error_msg

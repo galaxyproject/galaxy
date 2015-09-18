@@ -143,38 +143,7 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners(){
         };
         //TODO:?? we might somehow manage to *retry* ajax using either this hook or Backbone.sync
     });
-    self._listenToGalaxyMain();
     return self;
-};
-
-/** trigger an event when the main frame loads a new page */
-GalaxyApp.prototype._listenToGalaxyMain = function _listenToGalaxyMain(){
-    var self = this,
-        selector = 'iframe#galaxy_main',
-        galaxy_main = $( selector );
-    galaxy_main = galaxy_main.size()? galaxy_main.get( 0 ).contentWindow : undefined ;
-    if( galaxy_main ){
-        // TODO: this would be better external to this function so it can be removed
-        var handler = function __galaxyMainOnLoadHandler( ev ){
-            try {
-                var _galaxy_main = $( selector ).get( 0 ).contentWindow,
-                    full = _galaxy_main.location.pathname + _galaxy_main.location.search + _galaxy_main.location.hash;
-                self.trigger( 'galaxy_main:load', {
-                    fullpath: full,
-                    pathname: _galaxy_main.location.pathname,
-                    search  : _galaxy_main.location.search,
-                    hash    : _galaxy_main.location.hash
-                });
-
-            } catch( err ){
-                self.debug( 'Error handling main frame load:', err );
-            }
-        };
-        $( selector ).on( 'load', handler );
-
-    } else {
-        self.debug( 'No galaxy_main found' );
-    }
 };
 
 /** string rep */

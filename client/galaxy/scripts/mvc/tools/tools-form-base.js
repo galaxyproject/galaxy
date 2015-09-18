@@ -68,11 +68,11 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.options.id = options.id;
             this.options.version = options.version;
 
-            // construct url
-            var build_url = Galaxy.root + 'api/tools/' + options.id + '/build?';
             if (options.job_id) {
-                build_url += 'job_id=' + options.job_id;
+                build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
             } else {
+                // construct url
+                var build_url = Galaxy.root + 'api/tools/' + options.id + '/build?';
                 if (options.dataset_id) {
                     build_url += 'dataset_id=' + options.dataset_id;
                 } else {

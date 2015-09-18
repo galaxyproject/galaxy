@@ -3,7 +3,7 @@ import uuid
 import socket
 import logging
 import threading
-from time import sleep
+from time import sleep, time
 
 try:
     import kombu
@@ -26,6 +26,14 @@ DEFAULT_RECONNECT_CONSUMER_WAIT = 1
 DEFAULT_HEARTBEAT_WAIT = 1
 DEFAULT_HEARTBEAT_JOIN_TIMEOUT = 10
 
+ACK_QUEUE_SUFFIX = "_ack"
+ACK_UUID_KEY = 'acknowledge_uuid'
+ACK_QUEUE_KEY = 'acknowledge_queue'
+ACK_UUID_RESPONSE_KEY = 'acknowledge_uuid_response'
+ACK_FORCE_NOACK_KEY = 'force_noack'
+DEFAULT_ACK_MANAGER_SLEEP = 15
+DEFAULT_REPUBLISH_TIME = 30
+
 
 class PulsarExchange(object):
     """ Utility for publishing and consuming structured Pulsar queues using kombu.
@@ -47,6 +55,9 @@ class PulsarExchange(object):
         connect_ssl=None,
         timeout=DEFAULT_TIMEOUT,
         publish_kwds={},
+        publish_uuid_store=None,
+        consume_uuid_store=None,
+        republish_time=DEFAULT_REPUBLISH_TIME,
     ):
         """
         """
@@ -57,27 +68,46 @@ class PulsarExchange(object):
         self.__connect_ssl = connect_ssl
         self.__exchange = kombu.Exchange(DEFAULT_EXCHANGE_NAME, DEFAULT_EXCHANGE_TYPE)
         self.__timeout = timeout
+        self.__republish_time = republish_time
         # Be sure to log message publishing failures.
         if publish_kwds.get("retry", False):
             if "retry_policy" not in publish_kwds:
                 publish_kwds["retry_policy"] = {}
-            if "errback" not in publish_kwds["retry_policy"]:
-                publish_kwds["retry_policy"]["errback"] = self.__publish_errback
         self.__publish_kwds = publish_kwds
+        self.publish_uuid_store = publish_uuid_store
+        self.consume_uuid_store = consume_uuid_store
+        self.publish_ack_lock = threading.Lock()
+
+    @staticmethod
+    def __publish_errback(exc, interval, publish_log_prefix=""):
+        log.error("%sConnection error while publishing: %r", publish_log_prefix, exc, exc_info=1)
+        log.info("%sRetrying in %s seconds", publish_log_prefix, interval)
 
     @property
     def url(self):
         return self.__url
 
+    @property
+    def acks_enabled(self):
+        return self.publish_uuid_store is not None
+
     def consume(self, queue_name, callback, check=True, connection_kwargs={}):
         queue = self.__queue(queue_name)
         log.debug("Consuming queue '%s'", queue)
+        callbacks = [self.__ack_callback]
+        if callback is not None:
+            callbacks.append(callback)
         while check:
             heartbeat_thread = None
             try:
                 with self.connection(self.__url, heartbeat=DEFAULT_HEARTBEAT, **connection_kwargs) as connection:
-                    with kombu.Consumer(connection, queues=[queue], callbacks=[callback], accept=['json']):
+                    with kombu.Consumer(connection, queues=[queue], callbacks=callbacks, accept=['json']):
                         heartbeat_thread = self.__start_heartbeat(queue_name, connection)
+                        # Ack manager should sleep before checking for
+                        # repbulishes, but if that changes, need to drain the
+                        # queue once before the ack manager starts doing its
+                        # thing
+                        self.__start_ack_manager(queue_name)
                         while check and connection.connected:
                             try:
                                 connection.drain_events(timeout=self.__timeout)
@@ -89,6 +119,41 @@ class PulsarExchange(object):
                 log.exception("Problem consuming queue, consumer quitting in problematic fashion!")
                 raise
         log.info("Done consuming queue %s" % queue_name)
+
+    def __ack_callback(self, body, message):
+        if ACK_UUID_KEY in body:
+            # The consumer of a normal queue has received a message requiring
+            # acknowledgement
+            ack_uuid = body[ACK_UUID_KEY]
+            ack_queue = body[ACK_QUEUE_KEY]
+            response = {ACK_UUID_RESPONSE_KEY: ack_uuid}
+            log.debug('Acknowledging UUID %s on queue %s', ack_uuid, ack_queue)
+            self.publish(ack_queue, response)
+            if self.consume_uuid_store is None:
+                log.warning('Received an ack request (UUID: %s, response queue: '
+                            '%s) but ack UUID persistence is not enabled, check '
+                            'your config', ack_uuid, ack_queue)
+            elif ack_uuid not in self.consume_uuid_store:
+                # This message has not been seen before, store the uuid so it
+                # is not operated on more than once
+                self.consume_uuid_store[ack_uuid] = time()
+            else:
+                # This message has been seen before, prevent downstream
+                # callbacks from processing normally by acknowledging it here,
+                # still send the ack reply
+                log.warning('Message with UUID %s on queue %s has already '
+                            'been performed, skipping callback', ack_uuid, ack_queue)
+                message.ack()
+        elif ACK_UUID_RESPONSE_KEY in body:
+            # The consumer of an ack queue has received an ack, remove it from the store
+            ack_uuid = body[ACK_UUID_RESPONSE_KEY]
+            log.debug('Got acknowledgement for UUID %s, will remove from store', ack_uuid)
+            try:
+                with self.publish_ack_lock:
+                    del self.publish_uuid_store[ack_uuid]
+            except KeyError:
+                log.warning('Cannot remove UUID %s from store, already removed', ack_uuid)
+            message.ack()
 
     def __handle_io_error(self, exc, heartbeat_thread):
         # In testing, errno is None
@@ -120,6 +185,16 @@ class PulsarExchange(object):
         key = self.__queue_name(name)
         publish_log_prefix = self.__publish_log_prefex(transaction_uuid)
         log.debug("%sBegin publishing to key %s", publish_log_prefix, key)
+        if (self.acks_enabled and not name.endswith(ACK_QUEUE_SUFFIX)
+                and ACK_FORCE_NOACK_KEY not in payload):
+            # Publishing a message on a normal queue and it's not a republish
+            # (or explicitly forced do-not-ack), so add ack keys
+            ack_uuid = str(transaction_uuid)
+            ack_queue = name + ACK_QUEUE_SUFFIX
+            payload[ACK_UUID_KEY] = ack_uuid
+            payload[ACK_QUEUE_KEY] = ack_queue
+            self.publish_uuid_store[ack_uuid] = payload
+            log.debug('Requesting acknowledgement of UUID %s on queue %s', ack_uuid, ack_queue)
         with self.connection(self.__url) as connection:
             with pools.producers[connection].acquire() as producer:
                 log.debug("%sHave producer for publishing to key %s", publish_log_prefix, key)
@@ -134,20 +209,35 @@ class PulsarExchange(object):
                 )
                 log.debug("%sPublished to key %s", publish_log_prefix, key)
 
+    def ack_manager(self, queue_name):
+        log.debug('Acknowledgement manager thread alive')
+        resubmit_queue = queue_name[:-len(ACK_QUEUE_SUFFIX)]
+        try:
+            while True:
+                sleep(DEFAULT_ACK_MANAGER_SLEEP)
+                with self.publish_ack_lock:
+                    for unack_uuid in self.publish_uuid_store.keys():
+                        if self.publish_uuid_store.get_time(unack_uuid) < time() - self.__republish_time:
+                            log.debug('UUID %s has not been acknowledged, republishing original message', unack_uuid)
+                            payload = self.publish_uuid_store[unack_uuid]
+                            payload[ACK_FORCE_NOACK_KEY] = True
+                            self.publish(resubmit_queue, payload)
+                            self.publish_uuid_store.set_time(unack_uuid)
+        except:
+            log.exception("Problem with acknowledgement manager, leaving ack_manager method in problematic state!")
+            raise
+        log.debug('Acknowledgedment manager thread exiting')
+
     def __prepare_publish_kwds(self, publish_log_prefix):
         if "retry_policy" in self.__publish_kwds:
             publish_kwds = copy.deepcopy(self.__publish_kwds)
 
             def errback(exc, interval):
-                return self.__publish_errback(exc, interval, publish_log_prefix)
+                return PulsarExchange.__publish_errback(exc, interval, publish_log_prefix)
             publish_kwds["retry_policy"]["errback"] = errback
         else:
             publish_kwds = self.__publish_kwds
         return publish_kwds
-
-    def __publish_errback(self, exc, interval, publish_log_prefix=""):
-        log.error("%sConnection error while publishing: %r", publish_log_prefix, exc, exc_info=1)
-        log.info("%sRetrying in %s seconds", publish_log_prefix, interval)
 
     def __publish_log_prefex(self, transaction_uuid=None):
         prefix = ""
@@ -182,3 +272,11 @@ class PulsarExchange(object):
         thread = threading.Thread(name=thread_name, target=self.heartbeat, args=(connection,))
         thread.start()
         return thread
+
+    def __start_ack_manager(self, queue_name):
+        if self.acks_enabled and queue_name.endswith(ACK_QUEUE_SUFFIX):
+            thread_name = "acknowledgement-manager-%s" % (self.__queue_name(queue_name))
+            thread = threading.Thread(name=thread_name, target=self.ack_manager, args=(queue_name,))
+            thread.daemon = True
+            thread.start()
+            return thread

@@ -19,6 +19,15 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
             this.$( '#galaxy_main' ).on( 'load', function() {
                 $( this ).show();
                 self.$( '#center-panel' ).empty().hide();
+                var galaxy_main = this.contentWindow;
+                if ( galaxy_main ) {
+                    Galaxy.trigger( 'galaxy_main:load', {
+                        fullpath: galaxy_main.location.pathname + galaxy_main.location.search + galaxy_main.location.hash,
+                        pathname: galaxy_main.location.pathname,
+                        search  : galaxy_main.location.search,
+                        hash    : galaxy_main.location.hash
+                    });
+                }
             });
         },
         display: function( $el ) {
@@ -169,8 +178,8 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
 
             // build history options menu
             Galaxy.historyOptionsMenu = optionsMenu( buttonOptions.$el, {
-                anonymous    : Galaxy.user.id && 'true' || 'false',
-                purgeAllowed : Galaxy.config.allow_user_dataset_purge && 'true' || 'false',
+                anonymous    : !Galaxy.user.id,
+                purgeAllowed : Galaxy.config.allow_user_dataset_purge,
                 root         : Galaxy.root
             });
 

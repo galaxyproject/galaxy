@@ -15,6 +15,7 @@ from galaxy.managers.collections_util import dictify_dataset_collection_instance
 
 import galaxy.queue_worker
 
+
 import logging
 log = logging.getLogger( __name__ )
 

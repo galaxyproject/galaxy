@@ -52,46 +52,7 @@ Not all dependencies are included for the tools provided in the sample
 
 https://wiki.galaxyproject.org/Admin/Tools/ToolDependencies
 
-Issues
-======
+Issues and Galaxy Development
+=============================
 
-Issues can be submitted to trello via the `galaxyproject
-website <https://galaxyproject.org/trello>`__ and viewed on the `Galaxy
-Trello Board <https://trello.com/b/75c1kASa/galaxy-development>`__.
-Alternatively you can `create an issue <https://github.com/galaxyproject/galaxy/issues>`__
-through GitHub interface.
-
-
-Galaxy Development
-==================
-
-Galaxy welcomes new development! There is extensive documentation on developing
-with Galaxy on the `wiki <https://wiki.galaxyproject.org/Develop>`__.
-
-Source Repository
------------------
-
-Galaxy development has moved to `Github
-<https://github.com/galaxyproject/galaxy>`__.
-
-**Developers** should develop against the ``dev`` branch in the Github
-repository.
-
-**Deployers** can continue to pull Galaxy changes from Bitbucket without
-interruption. Alternatively, deployers can track the ``master`` branch in
-Github.
-
-Syncing a Fork
---------------
-
-If you fork Galaxy to work on it, you may be interested in keeping your copy
-up to date with respect to the main repository. Github has `good documentation
-<https://help.github.com/articles/syncing-a-fork/>`__ on this.
-
-.. code:: console
-
-    $ git remote add upstream https://github.com/galaxyproject/galaxy
-    $ git fetch upstream
-    $ git checkout dev
-    $ git merge upstream/dev
-
+Please see `CONTRIBUTING.md <CONTRIBUTING.md>`_ .

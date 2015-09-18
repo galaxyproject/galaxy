@@ -279,6 +279,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'metadata', 'meta_files', 'data_type',
             'peek',
 
+            'creating_job',
+
             'uuid',
             'permissions',
             'file_name',
@@ -325,6 +327,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'file_path'     : self._remap_from( 'file_name' ),
 
             'resubmitted'   : lambda i, k, **c: self.hda_manager.has_been_resubmitted( i ),
+            'creating_job'  : self.serialize_creating_job,
 
             'display_apps'  : self.serialize_display_apps,
             'display_types' : self.serialize_old_display_applications,
@@ -429,6 +432,12 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                                        hda_id=encoded_id, metadata_name='' ),
         }
         return urls
+
+    def serialize_creating_job( self, hda, key, **context ):
+        if hda.creating_job:
+            self.app.security.encode_id(hda.creating_job.id),
+        else:
+            return None
 
 
 class HDADeserializer( datasets.DatasetAssociationDeserializer,

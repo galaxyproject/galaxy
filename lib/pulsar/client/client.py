@@ -1,12 +1,14 @@
 import os
-from json import dumps
-from json import loads
+
+from six import string_types
 
 from .destination import submit_params
 from .setup_handler import build as build_setup_handler
 from .job_directory import RemoteJobDirectory
 from .decorators import parseJson
 from .decorators import retry
+from .util import json_dumps
+from .util import json_loads
 from .util import copy
 from .util import ensure_directory
 from .util import to_base64_json
@@ -109,19 +111,19 @@ class JobClient(BaseJobClient):
         launch_params = dict(command_line=command_line, job_id=self.job_id)
         submit_params_dict = submit_params(self.destination_params)
         if submit_params_dict:
-            launch_params['params'] = dumps(submit_params_dict)
+            launch_params['params'] = json_dumps(submit_params_dict)
         if dependencies_description:
-            launch_params['dependencies_description'] = dumps(dependencies_description.to_dict())
+            launch_params['dependencies_description'] = json_dumps(dependencies_description.to_dict())
         if env:
-            launch_params['env'] = dumps(env)
+            launch_params['env'] = json_dumps(env)
         if remote_staging:
-            launch_params['remote_staging'] = dumps(remote_staging)
+            launch_params['remote_staging'] = json_dumps(remote_staging)
         if job_config and self.setup_handler.local:
             # Setup not yet called, job properties were inferred from
             # destination arguments. Hence, must have Pulsar setup job
             # before queueing.
             setup_params = _setup_params_from_job_config(job_config)
-            launch_params["setup_params"] = dumps(setup_params)
+            launch_params["setup_params"] = json_dumps(setup_params)
         return self._raw_execute("submit", launch_params)
 
     def full_status(self):
@@ -174,10 +176,12 @@ class JobClient(BaseJobClient):
         # action type == 'message' should either copy or transfer
         # depending on default not just fallback to transfer.
         if action_type in ['transfer', 'message']:
+            if isinstance(contents, string_types):
+                contents = contents.encode("utf-8")
             return self._upload_file(args, contents, input_path)
         elif action_type == 'copy':
             path_response = self._raw_execute('path', args)
-            pulsar_path = loads(path_response)['path']
+            pulsar_path = json_loads(path_response)['path']
             copy(path, pulsar_path)
             return {'path': pulsar_path}
 

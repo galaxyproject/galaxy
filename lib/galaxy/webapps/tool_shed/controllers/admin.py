@@ -222,6 +222,7 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def edit_category( self, trans, **kwd ):
+        '''Handle requests to edit TS category name or description'''
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
@@ -248,22 +249,22 @@ class AdminController( BaseUIController, Admin ):
                 else:
                     category.name = new_name
                     flush_needed = True
-                if original_category_description != new_description:
-                    category.description = new_description
-                    if not flush_needed:
-                        flush_needed = True
-                if flush_needed:
-                    trans.sa_session.add( category )
-                    trans.sa_session.flush()
-                    if original_category_name != new_name:
-                        # Update the Tool Shed's repository registry.
-                        trans.app.repository_registry.edit_category_entry( original_category_name, new_name )
-                    message = "The information has been saved for category '%s'" % escape( category.name )
-                    status = 'done'
-                    return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                      action='manage_categories',
-                                                                      message=message,
-                                                                      status=status ) )
+            if original_category_description != new_description:
+                category.description = new_description
+                if not flush_needed:
+                    flush_needed = True
+            if flush_needed:
+                trans.sa_session.add( category )
+                trans.sa_session.flush()
+                if original_category_name != new_name:
+                    # Update the Tool Shed's repository registry.
+                    trans.app.repository_registry.edit_category_entry( original_category_name, new_name )
+                message = "The information has been saved for category '%s'" % escape( category.name )
+                status = 'done'
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='manage_categories',
+                                                                  message=message,
+                                                                  status=status ) )
         return trans.fill_template( '/webapps/tool_shed/category/edit_category.mako',
                                     category=category,
                                     message=message,
