@@ -207,7 +207,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         tool_id = job.tool_id
         tool_version = job.tool_version
         tool = self.app.toolbox.get_tool( tool_id, tool_version )
-        return tool.to_json(trans, kwd={'__job_id__' : id})
+        return tool.to_json(trans, kwd={'job_id' : id})
 
     def __dictify_associations( self, trans, *association_lists ):
         rval = []
