@@ -435,7 +435,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
     def serialize_creating_job( self, hda, key, **context ):
         if hda.creating_job:
-            self.app.security.encode_id(hda.creating_job.id),
+            return self.app.security.encode_id(hda.creating_job.id),
         else:
             return None
 
