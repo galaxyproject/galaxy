@@ -13,7 +13,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input_bam" value="3unsorted.bam" ftype="bam" />
+      <param name="input_bam" value="3.bam" ftype="bam" />
       <!-- This output tests setting using bam reference name metadata above -->
       <param name="ref_names" value="chr10_random,chr11,chrM,chrX,chr16" />
       <output name="output_of_input_metadata" ftype="txt">
