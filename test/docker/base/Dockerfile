@@ -62,6 +62,16 @@ RUN cd $GALAXY_ROOT && \
     sh /opt/galaxy/start_mysql.sh && \
     GALAXY_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/galaxy?unix_socket=/var/run/mysqld/mysqld.sock" sh create_db.sh
 
+# bcftools for Galaxy.
+RUN mkdir -p /tmp/install && \
+    cd /tmp/install && \
+    wget https://github.com/samtools/bcftools/releases/download/1.2/bcftools-1.2.tar.bz2 && \
+    tar xvjf bcftools-1.2.tar.bz2 && \
+    cd bcftools-1.2 && \
+    make && \
+    make install && \
+    cd && rm -rf /tmp/install
+    
 ADD run_test_wrapper.sh /usr/local/bin/run_test_wrapper.sh
 EXPOSE :8080
 EXPOSE :80
