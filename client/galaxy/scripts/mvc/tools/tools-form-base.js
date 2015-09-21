@@ -2,8 +2,9 @@
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
 define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
-        'mvc/tools/tools-template', 'mvc/citation/citation-model', 'mvc/citation/citation-view'],
-    function(Utils, Deferred, Ui, Form, ToolTemplate, CitationModel, CitationView) {
+        'mvc/tools/tools-template', 'mvc/citation/citation-model', 'mvc/citation/citation-view',
+        'mvc/ui/ui-modal'],
+    function(Utils, Deferred, Ui, Form, ToolTemplate, CitationModel, CitationView, Modal) {
 
     // create form view
     return Backbone.View.extend({
@@ -11,6 +12,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         initialize: function(options) {
             this.options = Utils.merge(options, {});
             this.setElement('<div/>');
+            this.modal = Galaxy.modal;
 
             // create deferred processing queue handler
             // this handler reduces the number of requests to the api by filtering redundant requests
@@ -117,12 +119,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
 
                     // show error
                     var error_message = response.error || 'Uncaught error.';
-                    self.form.modal.show({
+                    self.modal.show({
                         title   : 'Tool cannot be executed',
                         body    : error_message,
                         buttons : {
                             'Close' : function() {
-                                self.form.modal.hide();
+                                self.modal.hide();
                             }
                         }
                     });
