@@ -126,15 +126,23 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
 
                     // show error
                     var error_message = response.error || response.err_msg || 'Uncaught error.';
-                    Galaxy.modal.show({
-                        title   : 'Tool request failed',
-                        body    : error_message,
-                        buttons : {
-                            'Close' : function() {
-                                Galaxy.modal.hide();
+                    if ( self.$el.is(':empty') ) {
+                        self.$el.prepend((new Ui.Message({
+                            message     : error_message,
+                            status      : 'danger',
+                            persistent  : true
+                        })).$el);
+                    } else {
+                        Galaxy.modal.show({
+                            title   : 'Tool request failed',
+                            body    : error_message,
+                            buttons : {
+                                'Close' : function() {
+                                    Galaxy.modal.hide();
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             });
         },
