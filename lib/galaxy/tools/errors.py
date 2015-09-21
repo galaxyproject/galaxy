@@ -60,7 +60,7 @@ class ErrorReporter( object ):
             try:
                 hda = sa_session.query( model.HistoryDatasetAssociation ).get( hda_id )
                 assert hda is not None, ValueError( "No HDA yet" )
-            except:
+            except Exception:
                 hda = sa_session.query( model.HistoryDatasetAssociation ).get( app.security.decode_id( hda_id ) )
         assert isinstance( hda, model.HistoryDatasetAssociation ), ValueError( "Bad value provided for HDA (%s)." % ( hda ) )
         self.hda = hda
@@ -135,7 +135,7 @@ class EmailErrorReporter( ErrorReporter ):
         subject = "Galaxy tool error report from %s" % email
         try:
             subject = "%s (%s)" % ( subject, self.app.toolbox.get_tool( self.job.tool_id, self.job.tool_version ).old_id )
-        except:
+        except Exception:
             pass
         # Send it
         return util.send_mail( frm, to, subject, self.report, self.app.config )
