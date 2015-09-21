@@ -355,6 +355,8 @@ class DatasetCollector( object ):
         self.pattern = pattern
         self.default_dbkey = kwargs.get( "dbkey", None )
         self.default_ext = kwargs.get( "ext", None )
+        if self.default_ext is None and "format" in kwargs:
+            self.default_ext = kwargs.get( "format" )
         self.default_visible = util.asbool( kwargs.get( "visible", None ) )
         self.directory = kwargs.get( "directory", None )
         self.assign_primary_output = util.asbool( kwargs.get( 'assign_primary_output', False ) )

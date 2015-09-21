@@ -25,7 +25,7 @@
       <discover_datasets pattern="__designation_and_ext__" directory="subdir1" visible="true" />
       <discover_datasets pattern="CUSTOM_(?P&lt;designation&gt;.+)\.(?P&lt;ext&gt;.+)" directory="subdir2" visible="true" />
       <discover_datasets pattern="__designation__" directory="subdir3" ext="input" visible="true" />
-      <discover_datasets pattern="split_bam_\.(?P&lt;designation&gt;([A-Z-])\w+)\.bam" ext="txt" visible="true" />
+      <discover_datasets pattern="split_bam_\.(?P&lt;designation&gt;([A-Z-])\w+)\.bam" format="txt" visible="true" /> <!-- can use ext or format attribute. -->
       <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" ext="tabular" visible="true" />
     </data>
   </outputs>
