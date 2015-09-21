@@ -14,6 +14,9 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
             // register this view
             Galaxy.app = this;
 
+            // shared backbone router
+            Galaxy.router = new Backbone.Router();
+
             // configure body
             $( 'body' ).append( this.$el );
             ensure_dd_helper();

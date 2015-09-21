@@ -71,16 +71,22 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             if (options.job_id) {
                 build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
             } else {
-                // construct url
-                var build_url = Galaxy.root + 'api/tools/' + options.id + '/build?';
                 if (options.dataset_id) {
-                    build_url += 'dataset_id=' + options.dataset_id;
+                    build_url = Galaxy.root + 'api/datasets/' + options.dataset_id + '/build_for_rerun';
                 } else {
-                    build_url += 'tool_version=' + options.version + '&';
-                    var loc = top.location.href;
-                    var pos = loc.indexOf('?');
-                    if (loc.indexOf('tool_id=') != -1 && pos !== -1) {
-                        build_url += loc.slice(pos + 1);
+                    // construct url
+                    var build_url = Galaxy.root + 'api/tools/' + options.id + '/build?';
+                    if (options.dataset_id) {
+                        build_url += 'dataset_id=' + options.dataset_id;
+                    } else {
+                        if ( options.version ) {
+                            build_url += 'tool_version=' + options.version + '&';
+                        }
+                        var loc = top.location.href;
+                        var pos = loc.indexOf('?');
+                        if (loc.indexOf('tool_id=') != -1 && pos !== -1) {
+                            build_url += loc.slice(pos + 1);
+                        }
                     }
                 }
             }
@@ -119,9 +125,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     console.debug(response);
 
                     // show error
-                    var error_message = response.error || 'Uncaught error.';
+                    var error_message = response.error || response.err_msg || 'Uncaught error.';
                     Galaxy.modal.show({
-                        title   : 'Tool cannot be executed',
+                        title   : 'Tool request failed',
                         body    : error_message,
                         buttons : {
                             'Close' : function() {

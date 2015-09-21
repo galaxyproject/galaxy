@@ -86,6 +86,40 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             trans.response.status = 500
         return rval
 
+    @web.expose_api_anonymous
+    def build_for_rerun( self, trans, dataset_id, **kwd ):
+        """
+        * GET /api/datasets/{id}/build_for_rerun
+            returns a tool input/param template prepopulated with this datasets creating
+            job's information, suitable for rerunning or rendering parameters of the
+            job.
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing output dataset associations
+        """
+        try:
+            dataset_id = trans.security.decode_id( dataset_id )
+            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+            if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
+                trans.response.status = 500
+                log.error('User has no access to dataset.')
+                return { 'error': 'User has no access to dataset.' }
+            job = data.creating_job
+            if not job:
+                trans.response.status = 500
+                log.error('Creating job not found.')
+                return { 'error': 'Creating job not found.' }
+            else:
+                tool = trans.app.toolbox.get_tool( job.tool_id, job.tool_version )
+                return tool.to_json(trans, {}, job=job)
+        except Exception, exception:
+            trans.response.status = 500
+            log.error('Failed to get job information.')
+            return { 'error': 'Failed to get job information.' }
+
     def _dataset_state( self, trans, dataset, **kwargs ):
         """
         Returns state of dataset.
