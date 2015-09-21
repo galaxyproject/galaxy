@@ -116,7 +116,10 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     console.debug(response);
 
                     // show error
-                    var error_message = response.error || 'Uncaught error.';
+                    var error_message = response.error || response.err_msg || 'Uncaught error.';
+                    if (self.form == undefined){
+                        self.form = new Form();
+                    }
                     self.form.modal.show({
                         title   : 'Tool cannot be executed',
                         body    : error_message,
