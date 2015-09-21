@@ -3,30 +3,16 @@
 
 import sys
 
-from os import pardir
-from os.path import abspath, join, dirname
-
 try:
     import configparser
 except:
     import ConfigParser as configparser
 
 
-BASE_REQUIREMENTS = []
 OPTIONAL_REQUIREMENTS = (
     'pysqlite',
     'psycopg2',
 )
-
-for line in open(join(abspath(dirname(__file__)), pardir, pardir, 'requirements.txt')):
-    line = line.strip()
-    try:
-        line = line.split()[0]
-    except:
-        continue
-    if line.startswith( '#' ) or line == '':
-        continue
-    BASE_REQUIREMENTS.append( line )
 
 
 class GalaxyConfig( object ):
@@ -57,12 +43,6 @@ class GalaxyConfig( object ):
                 return False
 
 
-def requirements( config_file ):
+def optional( config_file ):
     config = GalaxyConfig( config_file )
-    rval = list(BASE_REQUIREMENTS)
-
-    for opt in OPTIONAL_REQUIREMENTS:
-        if config.check(opt):
-            rval.append( opt )
-
-    return rval
+    return [ opt for opt in OPTIONAL_REQUIREMENTS if config.check( opt ) ]
