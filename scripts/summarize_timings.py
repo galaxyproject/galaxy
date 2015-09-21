@@ -1,8 +1,5 @@
 from __future__ import print_function
 
-import os
-import sys
-
 try:
     from argparse import ArgumentParser
 except ImportError:

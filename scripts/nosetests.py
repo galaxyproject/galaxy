@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # EASY-INSTALL-ENTRY-SCRIPT: 'nose','console_scripts','nosetests'
 # __requires__ = 'nose'
-import os
 import sys
 
 from pkg_resources import load_entry_point
