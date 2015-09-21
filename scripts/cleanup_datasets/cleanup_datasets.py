@@ -10,15 +10,13 @@ from datetime import datetime, timedelta
 from optparse import OptionParser
 from time import strftime
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
-
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 import sqlalchemy as sa
 from sqlalchemy import and_, false, null, true
 from sqlalchemy.orm import eagerload
+
+new_path = [ os.path.join( os.getcwd(), "lib" ) ]
+new_path.extend( sys.path[1:] )  # remove scripts/ from the path
+sys.path = new_path
 
 import galaxy.config
 import galaxy.model.mapping

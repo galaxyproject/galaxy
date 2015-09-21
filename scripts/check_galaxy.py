@@ -97,8 +97,6 @@ If the user does not exist, check_galaxy will create it for you.""" % login_file
 # find/import twill
 lib_dir = os.path.join( scripts_dir, os.pardir, "lib" )
 sys.path.insert( 1, lib_dir )
-from galaxy import eggs
-eggs.require( "twill" )
 import twill
 import twill.commands as tc
 

@@ -4,13 +4,10 @@ Fetch jobs using gops_intersect, gops_merge, gops_subtract, gops_complement, gop
 wherein the second dataset doesn't have chr, start and end in standard columns 1, 2 and 3.
 """
 
-from galaxy import eggs
 import sys, os, ConfigParser, tempfile
 import galaxy.app
 import galaxy.model.mapping
-import pkg_resources
-        
-pkg_resources.require( "SQLAlchemy >= 0.4" )
+
 import sqlalchemy as sa
 
 assert sys.version_info[:2] >= ( 2, 4 )
