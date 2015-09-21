@@ -205,6 +205,8 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
         tool = self.app.toolbox.get_tool( job.tool_id, job.tool_version )
+        if not tool.is_workflow_compatible:
+            raise exceptions.ConfigDoesNotAllowException( "Tool '%s' cannot be rerun." % ( tool_id ) )
         return tool.to_json(trans, {}, job=job)
 
     def __dictify_associations( self, trans, *association_lists ):
