@@ -1,15 +1,17 @@
 """
 Proteomics Datatypes
 """
+import binascii
 import logging
 import re
-import binascii
 
 from galaxy.datatypes import data
+from galaxy.datatypes.binary import Binary, SQlite
 from galaxy.datatypes.data import Text
-from galaxy.datatypes.xml import GenericXml
-from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.xml import GenericXml
+from galaxy.util import nice_size, sqlite
+
 
 log = logging.getLogger(__name__)
 
@@ -265,7 +267,7 @@ class ThermoRAW(Binary):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = "Thermo Finnigan RAW file"
-            dataset.blurb = data.nice_size(dataset.get_size())
+            dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -274,7 +276,7 @@ class ThermoRAW(Binary):
         try:
             return dataset.peek
         except:
-            return "Thermo Finnigan RAW file (%s)" % (data.nice_size(dataset.get_size()))
+            return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
 
 Binary.register_sniffable_binary_format("thermo.raw", "raw", ThermoRAW )
 
@@ -398,3 +400,28 @@ class XHunterAslFormat(Binary):
 class Sf3(Binary):
     """Class describing a Scaffold SF3 files"""
     file_ext = "sf3"
+
+
+class MzSQlite( SQlite ):
+    """Class describing a Proteomics Sqlite database """
+    file_ext = "mz.sqlite"
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( MzSQlite, self ).set_meta( dataset, overwrite=overwrite, **kwd )
+
+    def sniff( self, filename ):
+        if super( MzSQlite, self ).sniff( filename ):
+            mz_table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence", "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
+            try:
+                conn = sqlite.connect( filename )
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute( tables_query ).fetchall()
+                result = map( lambda x: x[0], result )
+                for table_name in mz_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception, e:
+                log.warn( '%s, sniff Exception: %s', self, e )
+        return False

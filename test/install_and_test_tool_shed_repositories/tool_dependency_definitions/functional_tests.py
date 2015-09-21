@@ -4,52 +4,42 @@ This script cannot be run directly, because it needs to have test/functional/tes
 order to run functional tests on repository tools after installation. The install_and_test_tool_shed_repositories.sh
 will execute this script with the appropriate parameters.
 """
+import httplib
+import logging
 import os
+import random
+import shutil
+import socket
 import sys
-# Assume we are run from the galaxy root directory, add lib to the python path
-cwd = os.getcwd()
-sys.path.append( cwd )
-new_path = [ os.path.join( cwd, "scripts" ),
-             os.path.join( cwd, "lib" ),
-             os.path.join( cwd, 'test' ),
-             os.path.join( cwd, 'scripts', 'api' ) ]
-new_path.extend( sys.path )
-sys.path = new_path
+import tempfile
+import threading
+import time
+
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir))
+sys.path[1:1] = [ os.path.join( galaxy_root, "scripts" ),
+                  os.path.join( galaxy_root, "lib" ),
+                  os.path.join( galaxy_root, 'test' ),
+                  os.path.join( galaxy_root, 'scripts', 'api' ) ]
 
 from galaxy import eggs
-eggs.require( "nose" )
 eggs.require( "Paste" )
 eggs.require( 'mercurial' )
 # This should not be required, but it is under certain conditions thanks to this bug:
 # http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
-
-import httplib
-import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
-import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
-import logging
-import nose
-import random
-import shutil
-import socket
-import tempfile
-import time
-import threading
+from paste import httpserver
 
 import install_and_test_tool_shed_repositories.base.util as install_and_test_base_util
-
+from functional import database_contexts
+from functional_tests import generate_config_file
 from galaxy.app import UniverseApplication
 from galaxy.util import asbool
 from galaxy.web import buildapp
-from functional_tests import generate_config_file
-from paste import httpserver
-
-from functional import database_contexts
 
 log = logging.getLogger( 'install_and_test_tool_dependency_definitions' )
 
 assert sys.version_info[ :2 ] >= ( 2, 6 )
-test_home_directory = os.path.join( cwd, 'test', 'install_and_test_tool_shed_repositories', 'tool_dependency_definitions' )
+test_home_directory = os.path.join( galaxy_root, 'test', 'install_and_test_tool_shed_repositories', 'tool_dependency_definitions' )
 
 # Here's the directory where everything happens.  Temporary directories are created within this directory to contain
 # the database, new repositories, etc.

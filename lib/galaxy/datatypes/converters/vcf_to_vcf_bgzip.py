@@ -7,8 +7,10 @@ Original ordering, which may be specifically needed  by tools or external displa
 
 usage: %prog in_file out_file
 """
+import pkg_resources
+import ctabix
+import optparse
 
-import ctabix, optparse
 
 def main():
     # Read options, args.

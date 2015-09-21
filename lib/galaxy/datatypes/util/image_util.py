@@ -1,7 +1,6 @@
-"""
-Provides utilities for working with image files.
-"""
-import logging, imghdr
+"""Provides utilities for working with image files."""
+import logging
+import imghdr
 
 try:
     import Image as PIL
@@ -12,6 +11,7 @@ except ImportError:
         PIL = None
 
 log = logging.getLogger(__name__)
+
 
 def image_type( filename, image=None ):
     format = ''
@@ -32,16 +32,20 @@ def image_type( filename, image=None ):
         else:
             return False
     return format
+
+
 def check_image_type( filename, types, image=None ):
     format = image_type( filename, image )
     # First check if we can  use PIL
     if format in types:
         return True
     return False
-def get_image_ext ( file_path, image ):
-    #determine ext
+
+
+def get_image_ext( file_path, image ):
+    # determine ext
     format = image_type( file_path, image )
-    if format in [ 'JPG','JPEG' ]:
+    if format in [ 'JPG', 'JPEG' ]:
         return 'jpg'
     if format == 'PNG':
         return 'png'

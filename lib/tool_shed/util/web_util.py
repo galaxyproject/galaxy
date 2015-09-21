@@ -1,4 +1,5 @@
 from markupsafe import escape as raw_escape
+from galaxy.util import smart_str
 
 ALLOWED_ELEMENTS = ["<b>", "</b>", "<br/>"]
 ALLOWED_MAP = dict(map(lambda x: (x, raw_escape(x)), ALLOWED_ELEMENTS))
@@ -14,7 +15,7 @@ def escape( string ):
     >>> escape("A <b>repo</b>")
     u'A <b>repo</b>'
     """
-    escaped = str( raw_escape( string ) )
+    escaped = smart_str( raw_escape( string ), encoding="ascii", errors="replace" )
     # Unescape few selected tags.
     for key, value in ALLOWED_MAP.iteritems():
         escaped = escaped.replace(value, key)

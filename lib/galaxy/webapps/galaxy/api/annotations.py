@@ -33,7 +33,7 @@ class BaseAnnotationsController( BaseAPIController, UsesStoredWorkflowMixin, Use
         item = self._get_item_from_id(trans, idnum)
         if item is not None:
             new_annotation = payload.get("text")
-            #TODO: sanitize on display not entry
+            # TODO: sanitize on display not entry
             new_annotation = sanitize_html.sanitize_html( new_annotation, 'utf-8', 'text/html' )
 
             self.add_item_annotation( trans.sa_session, trans.get_user(), item, new_annotation )

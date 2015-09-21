@@ -3,7 +3,7 @@ import os.path
 import sys
 
 from migrate.versioning import repository, schema
-from sqlalchemy import *
+from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
 
 log = logging.getLogger( __name__ )
@@ -11,6 +11,7 @@ log = logging.getLogger( __name__ )
 # path relative to galaxy
 migrate_repository_directory = os.path.dirname( __file__ ).replace( os.getcwd() + os.path.sep, '', 1 )
 migrate_repository = repository.Repository( migrate_repository_directory )
+
 
 def create_or_verify_database( url, engine_options={} ):
     """
@@ -29,7 +30,7 @@ def create_or_verify_database( url, engine_options={} ):
     meta = MetaData( bind=engine )
     # Try to load dataset table
     try:
-        galaxy_user_table = Table( "galaxy_user", meta, autoload=True )
+        Table( "galaxy_user", meta, autoload=True )
     except NoSuchTableError:
         # No 'galaxy_user' table means a completely uninitialized database, which
         # is fine, init the database in a versioned state
@@ -45,12 +46,12 @@ def create_or_verify_database( url, engine_options={} ):
         migrate_to_current_version( engine, db_schema )
         return
     try:
-        version_table = Table( "migrate_version", meta, autoload=True )
+        Table( "migrate_version", meta, autoload=True )
     except NoSuchTableError:
         # The database exists but is not yet under migrate version control, so init with version 1
         log.info( "Adding version control to existing database" )
         try:
-            metadata_file_table = Table( "metadata_file", meta, autoload=True )
+            Table( "metadata_file", meta, autoload=True )
             schema.ControlledSchema.create( engine, migrate_repository, version=2 )
         except NoSuchTableError:
             schema.ControlledSchema.create( engine, migrate_repository, version=1 )
@@ -64,6 +65,7 @@ def create_or_verify_database( url, engine_options={} ):
     else:
         log.info( "At database version %d" % db_schema.version )
 
+
 def migrate_to_current_version( engine, schema ):
     # Changes to get to current version
     changeset = schema.changeset( None )
@@ -71,11 +73,14 @@ def migrate_to_current_version( engine, schema ):
         nextver = ver + changeset.step
         log.info( 'Migrating %s -> %s... ' % ( ver, nextver ) )
         old_stdout = sys.stdout
+
         class FakeStdout( object ):
             def __init__( self ):
                 self.buffer = []
+
             def write( self, s ):
                 self.buffer.append( s )
+
             def flush( self ):
                 pass
         sys.stdout = FakeStdout()

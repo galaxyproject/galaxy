@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import string
@@ -5,6 +6,7 @@ import tarfile
 import tempfile
 
 from sqlalchemy import and_
+from markupsafe import escape
 
 from galaxy.model.item_attrs import Dictifiable
 
@@ -29,9 +31,7 @@ from .filters import FilterFactory
 from .watcher import get_watcher
 
 from galaxy.web.form_builder import SelectField
-from galaxy.web.framework.helpers import escape
 
-import logging
 log = logging.getLogger( __name__ )
 
 

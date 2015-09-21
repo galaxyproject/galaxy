@@ -1,14 +1,16 @@
-import logging, os, sys
+import os
+import logging
 from galaxy.util.odict import odict
-from galaxy.util.bunch import Bunch
-from galaxy import util, jobs, model
+from galaxy import util, model
 from galaxy.forms.forms import form_factory
 from galaxy.external_services.service import ExternalServiceActionsGroup
 from galaxy.sample_tracking.data_transfer import data_transfer_factories
 log = logging.getLogger( __name__ )
 
+
 class ExternalServiceTypeNotFoundException( Exception ):
     pass
+
 
 class ExternalServiceTypesCollection( object ):
 
@@ -20,6 +22,7 @@ class ExternalServiceTypesCollection( object ):
             self.load_all( config_filename )
         except:
             log.exception( "ExternalServiceTypesCollection error reading %s", config_filename )
+
     def load_all( self, config_filename ):
         self.visible_external_service_types = []
         tree = util.parse_xml( config_filename )
@@ -36,11 +39,13 @@ class ExternalServiceTypesCollection( object ):
                         self.visible_external_service_types.append( external_service_type.id )
             except:
                 log.exception( "error reading external_service_type from path: %s" % file_path )
+
     def load_external_service_type( self, config_file, visible=True ):
         # Parse XML configuration file and get the root element
         tree = util.parse_xml( config_file )
         root = tree.getroot()
         return ExternalServiceType( config_file, root, visible )
+
     def reload( self, external_service_type_id ):
         """
         Attempt to reload the external_service_type identified by 'external_service_type_id', if successful
@@ -51,8 +56,9 @@ class ExternalServiceTypesCollection( object ):
         old_external_service_type = self.all_external_service_types[ external_service_type_id ]
         new_external_service_type = self.load_external_service_type( old_external_service_type.config_file )
         self.all_external_service_types[ external_service_type_id ] = new_external_service_type
-        log.debug( "Reloaded external_service_type %s" %( external_service_type_id ) )
+        log.debug( "Reloaded external_service_type %s" % ( external_service_type_id ) )
         return new_external_service_type
+
 
 class ExternalServiceType( object ):
     def __init__( self, external_service_type_xml_config, root, visible=True ):
@@ -60,15 +66,16 @@ class ExternalServiceType( object ):
         self.parse( root )
         self.visible = visible
         root.clear()
+
     def parse( self, root ):
         # Get the name
         self.name = root.get( "name" )
         if not self.name:
-            raise Exception, "Missing external_service_type 'name'"
+            raise Exception( "Missing external_service_type 'name'" )
         # Get the UNIQUE id for the tool
         self.id = root.get( "id" )
         if not self.id:
-            raise Exception, "Missing external_service_type 'id'"
+            raise Exception( "Missing external_service_type 'id'" )
         self.config_version = root.get( "version" )
         if not self.config_version:
             self.config_version = '1.0.0'
@@ -78,8 +85,9 @@ class ExternalServiceType( object ):
         self.form_definition = form_factory.from_elem( root.find( 'form' ) )
         self.parse_data_transfer_settings( root )
         self.parse_run_details( root )
-        #external services actions
+        # external services actions
         self.actions = ExternalServiceActionsGroup.from_elem( root.find( 'actions' ), parent=self )
+
     def parse_data_transfer_settings( self, root ):
         self.data_transfer = {}
         data_transfer_settings_elem = root.find( 'data_transfer_settings' )
@@ -93,6 +101,7 @@ class ExternalServiceType( object ):
                 http_data_transfer = data_transfer_factories[ model.ExternalService.data_transfer_protocol.HTTP ]
                 http_data_transfer.parse( self.config_file, data_transfer_elem  )
                 self.data_transfer[ model.ExternalService.data_transfer_protocol.HTTP ] = http_data_transfer
+
     def parse_run_details( self, root ):
         self.run_details = {}
         run_details_elem = root.find( 'run_details' )
@@ -102,6 +111,7 @@ class ExternalServiceType( object ):
                 # Get the list of resulting datatypes
                 # TODO: the 'results_urls' attribute is only useful if the transfer protocol is http(s), so check if that is the case.
                 self.run_details[ 'results' ], self.run_details[ 'results_urls' ] = self.parse_run_details_results( results_elem )
+
     def parse_run_details_results( self, root ):
         datatypes_dict = {}
         urls_dict = {}

@@ -2,7 +2,11 @@ import sys
 import os.path
 import logging
 
-from sqlalchemy import *
+# from sqlalchemy import *
+from sqlalchemy import create_engine
+from sqlalchemy import MetaData
+from sqlalchemy import Table
+
 from sqlalchemy.exc import NoSuchTableError
 from migrate.versioning import repository, schema
 

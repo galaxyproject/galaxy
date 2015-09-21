@@ -7,29 +7,24 @@ Going forward, these ids will be generated for all new datasets. This
 script fixes datasets that were generated before the change.
 """
 
-import sys, os, ConfigParser
-import galaxy.app
-from galaxy.util.bunch import Bunch
-import galaxy.datatypes.tabular
-from galaxy.model.orm.scripts import get_config
-from galaxy import eggs
-from galaxy.model import mapping
+import sys
 import uuid
 
-eggs.require( "SQLAlchemy" )
-
-from sqlalchemy import *
+from galaxy.model import mapping
+from galaxy.model.orm.scripts import get_config
 
 assert sys.version_info[:2] >= ( 2, 4 )
+
 
 def usage(prog) :
     print "usage: %s galaxy.ini" % prog
     print """
 Populates blank uuid fields in datasets with randomly generated values.
-            
+
 Going forward, these ids will be generated for all new datasets. This
 script fixes datasets that were generated before the change.
     """
+
 
 def main():
     if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help" :
@@ -38,14 +33,14 @@ def main():
     ini_file = sys.argv.pop(1)
     config = get_config(ini_file)
 
-    model = mapping.init( ini_file, config['db_url'], create_tables = False )
+    model = mapping.init( ini_file, config['db_url'], create_tables=False )
 
     for row in model.context.query( model.Dataset ):
         if row.uuid is None:
             row.uuid = uuid.uuid4()
             print "Setting dataset:", row.id, " UUID to ", row.uuid
     model.context.flush()
-    
+
     for row in model.context.query( model.Workflow ):
         if row.uuid is None:
             row.uuid = uuid.uuid4()

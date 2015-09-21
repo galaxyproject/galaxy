@@ -37,7 +37,7 @@ def __resource_with_deleted( self, member_name, collection_name, **kwargs ):
     elements in Galaxy's "deleted but not really deleted" fashion.
     """
     collection_path = kwargs.get( 'path_prefix', '' ) + '/' + collection_name + '/deleted'
-    member_path = collection_path + '/:id'
+    member_path = collection_path + '/{id}'
     self.connect( 'deleted_' + collection_name, collection_path, controller=collection_name, action='index', deleted=True, conditions=dict( method=['GET'] ) )
     self.connect( 'deleted_' + member_name, member_path, controller=collection_name, action='show', deleted=True, conditions=dict( method=['GET'] ) )
     self.connect( 'undelete_deleted_' + member_name, member_path + '/undelete', controller=collection_name, action='undelete',
@@ -353,7 +353,7 @@ class Request( webob.Request ):
 
     @lazy_property
     def path( self ):
-        return self.environ['SCRIPT_NAME'] + self.environ['PATH_INFO']
+        return self.environ.get('SCRIPT_NAME', '') + self.environ['PATH_INFO']
 
     @lazy_property
     def browser_url( self ):

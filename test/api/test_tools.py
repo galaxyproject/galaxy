@@ -780,6 +780,7 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( outputs ), 2 )
         output1 = outputs[ 0 ]
         output2 = outputs[ 1 ]
+        self.dataset_populator.wait_for_history( history_id, timeout=25 )
         output1_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output1 )
         output2_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output2 )
         self.assertEquals( output1_content.strip(), "123\n789" )

@@ -1,6 +1,7 @@
-from tool_shed.base.twilltestcase import ShedTwillTestCase, common
-
 import logging
+
+from tool_shed.base.twilltestcase import common, ShedTwillTestCase
+
 log = logging.getLogger( __name__ )
 
 filtering_repository_name = 'filtering_0520'
@@ -24,19 +25,19 @@ category_description = 'Test script 0520 for importing and exporting repositorie
 
 class TestExportImportRepository( ShedTwillTestCase ):
     '''Test exporting and importing repositories.'''
-    
+
     def test_0000_initiate_users( self ):
         """Create necessary user accounts and login as an admin user."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
-        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
+        self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
+        self.test_db_util.get_private_role( admin_user )
 
     def test_0005_import_repository_capsule( self ):
         """Import the filter_0520 repository capsule with dependencies."""
@@ -64,11 +65,11 @@ class TestExportImportRepository( ShedTwillTestCase ):
         freebayes_repository = self.test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         filtering_repository = self.test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
         strings_displayed = [ 'Ignoring repository dependency definition', self.url, 'filtering_0520', 'name is invalid' ]
-        self.display_manage_repository_page( freebayes_repository, 
-                                             strings_displayed=strings_displayed, 
+        self.display_manage_repository_page( freebayes_repository,
+                                             strings_displayed=strings_displayed,
                                              strings_not_displayed=[ 'Repository dependencies' ] )
-        self.display_manage_repository_page( filtering_repository, 
-                                             strings_displayed=[ 'Repository dependencies', self.get_repository_tip( freebayes_repository ) ], 
+        self.display_manage_repository_page( filtering_repository,
+                                             strings_displayed=[ 'Repository dependencies', self.get_repository_tip( freebayes_repository ) ],
                                              strings_not_displayed=[] )
 
     def test_0015_verify_repository_metadata( self ):

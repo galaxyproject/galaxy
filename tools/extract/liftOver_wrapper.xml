@@ -1,4 +1,4 @@
-<tool id="liftOver1" name="Convert genome coordinates" version="1.0.3">
+<tool id="liftOver1" name="Convert genome coordinates" version="1.0.4">
   <description> between assemblies and genomes</description>
   <command interpreter="python">
   liftOver_wrapper.py
@@ -20,10 +20,7 @@
       <validator type="dataset_metadata_in_file" filename="liftOver.loc" metadata_name="dbkey" metadata_column="0" message="Liftover mappings are currently not available for the specified build." />
     </param>
     <param name="to_dbkey" type="select" label="To">
-      <options from_file="liftOver.loc">
-        <column name="name" index="1"/>
-        <column name="value" index="2"/>
-        <column name="dbkey" index="0"/>
+      <options from_data_table="liftOver">
         <filter type="data_meta" ref="input" key="dbkey" column="0" />
       </options>
     </param>
@@ -49,7 +46,7 @@
     <data format="input" name="out_file1" label="${tool.name} on ${on_string} [ MAPPED COORDINATES ]">
       <actions>
         <action type="metadata" name="dbkey">
-          <option type="from_file" name="liftOver.loc" column="1" offset="0">
+          <option type="from_data_table" name="liftOver" key="name" column="1" offset="0">
             <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
             <filter type="param_value" ref="to_dbkey" column="2"/>
           </option>

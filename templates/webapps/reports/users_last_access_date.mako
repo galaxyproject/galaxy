@@ -8,13 +8,17 @@
 
 ${get_css()}
 
-<div class="toolForm">
+<div class="report">
     <h3 align="center">Date of Last Galaxy Login</h3>
-    <h4 align="center">Listed in descending order by access date ( oldest date first )</h4>
-    <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
+    <h4 align="center">
+        Listed in descending order by access date ( oldest date first )
+    </h4>
+    <table class="lastAccessForm colored" >
         <tr>
             <td>
-                <form method="post" controller="users" action="last_access_date">
+                <form method="post"
+                      controller="users"
+                      action="last_access_date">
                     <p>
                         %if users:
                             ${len( users ) }
@@ -22,24 +26,49 @@ ${get_css()}
                             0
                         %endif 
                         &nbsp;users have not logged in to Galaxy for 
-                        <input type="textfield" value="${days_not_logged_in}" size="3" name="days_not_logged_in"> days.
+                        <input type="textfield" 
+                               value="${days_not_logged_in}"
+                               size="3"
+                               name="days_not_logged_in">
+                        days.
                         <input type="hidden" value=${sort_id} name="sort_id">
                         <input type="hidden" value=${order} name="order">
-                        &nbsp;<button name="action" value="days_not_logged_in">Go</button>
+                        &nbsp;
+                        <button name="action" value="days_not_logged_in">
+                            Go
+                        </button>
                     </p>
                 </form>
             </td>
         </tr>
     </table>
-    <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
+    <table class="lastAccessForm colored">
         %if users:
             <tr class="header">
-                <td>
-                    ${get_sort_url(sort_id, order, 'zero', 'users', 'last_access_date', 'Email', days_not_logged_in=days_not_logged_in)}
+                <td class="half_width">
+                    ${
+                        get_sort_url(
+                            sort_id,
+                            order,
+                            'zero',
+                            'users',
+                            'last_access_date',
+                            'Email',
+                            days_not_logged_in=days_not_logged_in)
+                    }
                     <span class='dir_arrow zero'>${arrow}</span>
                 </td>
-                <td>
-                    ${get_sort_url(sort_id, order, 'one', 'users', 'last_access_date', 'Date of last Login', days_not_logged_in=days_not_logged_in)}
+                <td class="half_width">
+                    ${
+                        get_sort_url(
+                            sort_id,
+                            order,
+                            'one',
+                            'users',
+                            'last_access_date',
+                            'Date of last Login',
+                            days_not_logged_in=days_not_logged_in)
+                    }
                     <span class='dir_arrow one'>${arrow}</span>
                 </td>
             </tr>
@@ -56,7 +85,12 @@ ${get_css()}
                 <% ctr += 1 %>
             %endfor
         %else:
-            <tr><td>All users have logged in to Galaxy within the past ${days_not_logged_in} days</td></tr>
+            <tr>
+                <td>
+                    All users have logged in to Galaxy within the past
+                    ${days_not_logged_in} days
+                </td>
+            </tr>
         %endif
     </table>
 </div>

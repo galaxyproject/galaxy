@@ -13,10 +13,10 @@ where location is formatted as:
 
 and symbols are sorted in lexigraphical order.
 '''
-
-import sys, optparse
+import optparse
 from bx.tabular.io import Comment
 from galaxy.datatypes.util.gff_util import GFFReaderWrapper, read_unordered_gtf, convert_gff_coords_to_bed
+
 
 def main():
     # Process arguments.
@@ -34,7 +34,7 @@ def main():
         # Create reader.
         if input_format == 'gff':
             in_reader = GFFReaderWrapper( open( in_fname, 'r' ) )
-        else: #input_format == 'gtf'
+        else:  # input_format == 'gtf'
             in_reader = read_unordered_gtf( open( in_fname, 'r' ) )
 
         for feature in in_reader:
@@ -80,7 +80,7 @@ def main():
             name_loc_dict[ fields[3] ] = {
                 'contig': fields[0],
                 'start': int( fields[1] ),
-                'end': int ( fields[2] )
+                'end': int( fields[2] )
             }
 
     # Create sorted list of entries.

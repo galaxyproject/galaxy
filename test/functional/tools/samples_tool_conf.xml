@@ -16,6 +16,8 @@
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
   <tool file="multi_output_assign_primary.xml" />
+  <tool file="dbkey_filter_input.xml" />
+  <tool file="dbkey_filter_multi_input.xml" />
   <tool file="composite_output.xml" />
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
@@ -27,6 +29,7 @@
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
   <tool file="disambiguate_repeats.xml" />
   <tool file="min_repeat.xml" />
@@ -54,9 +57,11 @@
   <tool file="collection_creates_pair_from_type.xml" />
   <tool file="collection_creates_list.xml" />
   <tool file="collection_creates_list_2.xml" />
+  <tool file="collection_creates_list_of_pairs.xml" />
   <tool file="collection_optional_param.xml" />
   <tool file="collection_split_on_column.xml" />
-
+  <tool file="collection_creates_dynamic_nested.xml" />
+  <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="cheetah_casting.xml" />
 
   <tool file="multiple_versions_v01.xml" />

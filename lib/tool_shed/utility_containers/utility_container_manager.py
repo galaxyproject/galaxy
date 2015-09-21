@@ -1,8 +1,6 @@
 import logging
-import os
 
 from galaxy import util
-
 from tool_shed.util import common_util
 from tool_shed.util import container_util
 from tool_shed.util import shed_util_common as suc
@@ -328,14 +326,12 @@ class UtilityContainerManager( object ):
                                                        index=0,
                                                        error=error_message )
                     folder.invalid_data_managers.append( data_manager )
-                    has_errors = True
             for data_manager_dict in data_managers:
                 data_manager_id += 1
                 data_manager = InvalidDataManager( id=data_manager_id,
                                                    index=data_manager_dict.get( 'index', 0 ) + 1,
                                                    error=data_manager_dict.get( 'error_message', '' ) )
                 folder.invalid_data_managers.append( data_manager )
-                has_errors = True
         else:
             data_managers_root_folder = None
         return folder_id, data_managers_root_folder
@@ -469,7 +465,7 @@ class UtilityContainerManager( object ):
                 container_object_tool_id += 1
                 requirements = tool_dict.get( 'requirements', None )
                 if requirements is not None:
-                    # 'requirements': [{'version': '1.56.0', 'type': 'package', 'name': 'picard'}], 
+                    # 'requirements': [{'version': '1.56.0', 'type': 'package', 'name': 'picard'}],
                     requirements_str = ''
                     for requirement_dict in requirements:
                         try:
@@ -552,7 +548,6 @@ class UtilityContainerManager( object ):
                                                   repository_id=None,
                                                   tool_dependency_id=None )
             folder.tool_dependencies.append( tool_dependency )
-            not_used_by_local_tools_description = "these dependencies may not be required by tools in this repository"
             for dependency_key, requirements_dict in tool_dependencies.items():
                 tool_dependency_id += 1
                 if dependency_key in [ 'set_environment' ]:
@@ -643,7 +638,7 @@ class UtilityContainerManager( object ):
                                  repository_id=repository_id )
             folder.workflows.append( workflow )
             for workflow_tup in workflows:
-                workflow_dict=workflow_tup[ 1 ]
+                workflow_dict = workflow_tup[ 1 ]
                 steps = workflow_dict.get( 'steps', [] )
                 if steps:
                     steps = str( len( steps ) )
@@ -779,12 +774,7 @@ class UtilityContainerManager( object ):
                 installation_status = None
             can_create_dependency = not self.is_subfolder_of( sub_folder, repository_dependency )
             if can_create_dependency:
-                toolshed, \
-                repository_name, \
-                repository_owner, \
-                changeset_revision, \
-                prior_installation_required, \
-                only_if_compiling_contained_td = \
+                toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
                     common_util.parse_repository_dependency_tuple( repository_dependency )
                 repository_dependency_id += 1
                 repository_dependency = RepositoryDependency( id=repository_dependency_id,
@@ -801,12 +791,7 @@ class UtilityContainerManager( object ):
         return repository_dependencies_folder, folder_id, repository_dependency_id
 
     def is_subfolder_of( self, folder, repository_dependency ):
-        toolshed, \
-        repository_name, \
-        repository_owner, \
-        changeset_revision, \
-        prior_installation_required, \
-        only_if_compiling_contained_td = \
+        toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = \
             common_util.parse_repository_dependency_tuple( repository_dependency )
         key = container_util.generate_repository_dependencies_key_for_repository( toolshed,
                                                                                   repository_name,
@@ -834,11 +819,11 @@ class UtilityContainerManager( object ):
         elif len( components_list ) == 6:
             key_prior_installation_required = components_list[ 4 ]
             key_only_if_compiling_contained_td = components_list[ 5 ]
-        if repository_name == key_name and \
-            repository_owner == key_owner and \
-            changeset_revision == key_changeset_revision and \
-            prior_installation_required == key_prior_installation_required and \
-            only_if_compiling_contained_td == key_only_if_compiling_contained_td:
+        if ( repository_name == key_name and
+             repository_owner == key_owner and
+             changeset_revision == key_changeset_revision and
+             prior_installation_required == key_prior_installation_required and
+             only_if_compiling_contained_td == key_only_if_compiling_contained_td ):
             return True
         return False
 

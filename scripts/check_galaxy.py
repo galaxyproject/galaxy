@@ -4,16 +4,23 @@ check_galaxy can be run by hand, although it is meant to run from cron
 via the check_galaxy.sh script in Galaxy's cron/ directory.
 """
 
-import socket, sys, os, time, tempfile, filecmp, htmllib, formatter, getopt
-from user import home
+import filecmp
+import formatter
+import getopt
+import htmllib
+import os
+import socket
+import sys
+import tempfile
+import time
 
 # options
-if os.environ.has_key( "DEBUG" ):
+if "DEBUG" in os.environ:
     debug = os.environ["DEBUG"]
 else:
     debug = False
 scripts_dir = os.path.abspath( os.path.dirname( sys.argv[0] ) )
-test_data_dir = os.path.join( scripts_dir, "..", "test-data" )
+test_data_dir = os.path.join( scripts_dir, os.pardir, "test-data" )
 # what tools to run - not so pretty
 tools = {
     "gops_intersect_1" :
@@ -38,10 +45,10 @@ tools = {
     ]
 }
 
+
 # handle arg(s)
 def usage():
-    print "usage: check_galaxy.py <server>"
-    sys.exit(1)
+    sys.exit("usage: check_galaxy.py <server>")
 
 try:
     opts, args = getopt.getopt( sys.argv[1:], 'n' )
@@ -67,7 +74,7 @@ for o, a in opts:
         usage()
 
 # state information
-var_dir = os.path.join( home, ".check_galaxy", server )
+var_dir = os.path.join( os.path.expanduser('~'), ".check_galaxy", server )
 if not os.access( var_dir, os.F_OK ):
     os.makedirs( var_dir, 0700 )
 
@@ -76,24 +83,22 @@ login_file = os.path.join( var_dir, "login" )
 try:
     f = open( login_file, 'r' )
 except:
-    print "Please create the file:"
-    print " ", login_file
-    print "This should contain a username and password to log in to"
-    print "Galaxy with, on one line, separated by whitespace, e.g.:"
-    print ""
-    print "check_galaxy@example.com password"
-    print ""
-    print "If the user does not exist, check_galaxy will create it"
-    print "for you."
-    sys.exit(1)
+    message = """Please create the file:
+%s
+This should contain a username and password to log in to Galaxy with,
+on one line, separated by whitespace, e.g.:
+
+check_galaxy@example.com password
+
+If the user does not exist, check_galaxy will create it for you.""" % login_file
+    sys.exit(message)
 ( username, password ) = f.readline().split()
 
 # find/import twill
-lib_dir = os.path.join( scripts_dir, "..", "lib" )
+lib_dir = os.path.join( scripts_dir, os.pardir, "lib" )
 sys.path.insert( 1, lib_dir )
 from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "twill" )
+eggs.require( "twill" )
 import twill
 import twill.commands as tc
 
@@ -103,6 +108,7 @@ socket.setdefaulttimeout(300)
 # user-agent
 tc.agent("Mozilla/5.0 (compatible; check_galaxy/0.1)")
 tc.config('use_tidy', 0)
+
 
 class Browser:
 
@@ -138,7 +144,7 @@ class Browser:
         p.feed(tc.browser.get_html())
         if len(p.dids) > 0:
             print "Remaining datasets ids:", " ".join( p.dids )
-            raise Exception, "History still contains datasets after attempting to delete them"
+            raise Exception("History still contains datasets after attempting to delete them")
         if new_history:
             self.get("/history/delete_current")
             tc.save_cookies(self.cookie_jar)
@@ -161,19 +167,18 @@ class Browser:
                     dprint( "Galaxy is down, but a maint file was found, so not sending alert" )
                     sys.exit(0)
                 else:
-                    print "Galaxy is down (code 502)"
-                    sys.exit(1)
+                    sys.exit("Galaxy is down (code 502)")
             return(False)
 
     # checks for a maint file
     def check_maint(self):
         if self.maint is None:
-            #dprint( "Warning: unable to check maint file for %s" % self.server )
+            # dprint( "Warning: unable to check maint file for %s" % self.server )
             return(False)
         try:
             self.get(self.maint)
             return(True)
-        except twill.errors.TwillAssertionError, e:
+        except twill.errors.TwillAssertionError:
             return(False)
 
     def login(self, user, pw):
@@ -190,9 +195,9 @@ class Browser:
                 dprint("user does not exist, will try creating")
                 self.create_user(user, pw)
             elif p.bad_pw:
-                raise Exception, "Password is incorrect"
+                raise Exception("Password is incorrect")
             else:
-                raise Exception, "Unknown error logging in"
+                raise Exception("Unknown error logging in")
         tc.save_cookies(self.cookie_jar)
 
     def create_user(self, user, pw):
@@ -206,12 +211,12 @@ class Browser:
             p = userParser()
             p.feed(tc.browser.get_html())
             if p.already_exists:
-                raise Exception, 'The user you were trying to create already exists'
+                raise Exception('The user you were trying to create already exists')
 
     def upload(self, file):
         self.get("/tool_runner/index?tool_id=upload1")
-        tc.fv("1","file_type", "bed")
-        tc.formfile("1","file_data", file)
+        tc.fv("1", "file_type", "bed")
+        tc.formfile("1", "file_data", file)
         tc.submit("runtool_btn")
         tc.code(200)
 
@@ -236,17 +241,17 @@ class Browser:
             else:
                 break
         if count == maxiter:
-            raise Exception, "Tool never finished"
+            raise Exception("Tool never finished")
 
     def check_status(self):
         self.get("/root/history")
         p = historyParser()
         p.feed(tc.browser.get_html())
         if p.status != "ok":
-            raise Exception, "JOB %s NOT OK: %s" % (p.id, p.status)
+            raise Exception("JOB %s NOT OK: %s" % (p.id, p.status))
         self.id = p.id
         self.status = p.status
-        #return((p.id, p.status))
+        # return((p.id, p.status))
 
     def diff(self):
         self.get("/datasets/%s/display/display?to_ext=bed" % self.id)
@@ -261,7 +266,7 @@ class Browser:
         else:
             if not debug:
                 os.remove(tmp[1])
-            raise Exception, "Tool output differs from expected"
+            raise Exception("Tool output differs from expected")
         if not debug:
             os.remove(tmp[1])
 
@@ -279,6 +284,7 @@ class Browser:
         p.feed(tc.browser.get_html())
         return p.logged_in
 
+
 class userParser(htmllib.HTMLParser):
     def __init__(self):
         htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
@@ -287,14 +293,19 @@ class userParser(htmllib.HTMLParser):
         self.no_user = False
         self.bad_pw = False
         self.already_exists = False
+
     def start_span(self, attrs):
         self.in_span = True
+
     def start_div(self, attrs):
         self.in_div = True
+
     def end_span(self):
         self.in_span = False
+
     def end_div(self):
         self.in_div = False
+
     def handle_data(self, data):
         if self.in_span or self.in_div:
             if data == "No such user (please note that login is case sensitive)":
@@ -304,11 +315,13 @@ class userParser(htmllib.HTMLParser):
             elif data == "User with that email already exists":
                 self.already_exists = True
 
+
 class historyParser(htmllib.HTMLParser):
     def __init__(self):
         htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
         self.status = None
         self.id = None
+
     def start_div(self, attrs):
         # find the top history item
         for i in attrs:
@@ -321,31 +334,38 @@ class historyParser(htmllib.HTMLParser):
         if self.status is not None:
             self.reset()
 
+
 class didParser(htmllib.HTMLParser):
     def __init__(self):
         htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
         self.dids = []
+
     def start_div(self, attrs):
         for i in attrs:
             if i[0] == "id" and i[1].startswith("historyItemContainer-"):
                 self.dids.append( i[1].rsplit("historyItemContainer-", 1)[1] )
                 dprint("got a dataset id: %s" % self.dids[-1])
 
+
 class loggedinParser(htmllib.HTMLParser):
     def __init__(self):
         htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
         self.in_p = False
         self.logged_in = False
+
     def start_p(self, attrs):
         self.in_p = True
+
     def end_p(self):
         self.in_p = False
+
     def handle_data(self, data):
         if self.in_p:
             if data == "You are currently not logged in.":
                 self.logged_in = False
             elif data.startswith( "You are currently logged in as " ):
                 self.logged_in = True
+
 
 def dprint(str):
     if debug:
@@ -384,7 +404,7 @@ if __name__ == "__main__":
                 elif k == 'tool_run_options':
                     b.tool_opts = v
                 else:
-                    raise Exception, "Unknown key in tools dict: %s" % k
+                    raise Exception("Unknown key in tools dict: %s" % k)
 
         b.runtool()
         b.wait()
@@ -395,7 +415,6 @@ if __name__ == "__main__":
         # by this point, everything else has succeeded.  there should be no maint.
         is_maint = b.check_maint()
         if is_maint:
-            print "Galaxy is up and fully functional, but a maint file is in place."
-            sys.exit(1)
+            sys.exit("Galaxy is up and fully functional, but a maint file is in place.")
 
     sys.exit(0)

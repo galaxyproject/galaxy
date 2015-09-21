@@ -1,5 +1,4 @@
 import logging
-import tool_shed.repository_types.util as rt_util
 
 from mercurial import hg
 from mercurial import ui

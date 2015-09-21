@@ -6,14 +6,15 @@ hand.
 """
 import os, sys, optparse, ConfigParser, socket, SocketServer, threading, logging, random, urllib2, tempfile, time
 
-galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..' ) )
+galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
 sys.path.insert( 0, os.path.abspath( os.path.join( galaxy_root, 'lib' ) ) )
 
 from galaxy import eggs
 
-import pkg_resources
-pkg_resources.require( "pexpect" )
-import pexpect
+try:
+    import pexpect
+except ImportError:
+    pexpect = None
 
 eggs.require( "SQLAlchemy >= 0.4" )
 
@@ -26,6 +27,9 @@ from galaxy.util import json, bunch
 
 eggs.require( 'python_daemon' )
 from daemon import DaemonContext
+
+PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
+                          'feature, please install it')
 
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
@@ -247,6 +251,8 @@ def scp_transfer( transfer_job ):
     user_name = transfer_job.params[ 'user_name' ]
     password = transfer_job.params[ 'password' ]
     file_path = transfer_job.params[ 'file_path' ]
+    if pexpect is None:
+        return dict( state = transfer_job.states.ERROR, info = PEXPECT_IMPORT_MESSAGE )
     try:
         fh, fn = tempfile.mkstemp()
     except Exception, e:

@@ -335,6 +335,11 @@ class WorkflowContentsManager(UsesAnnotations):
             annotation_str = ""
             if step_annotation:
                 annotation_str = step_annotation.annotation
+            form_html = None
+            if trans.history:
+                # If in a web session, attach form html. No reason to do
+                # so for API requests.
+                form_html = module.get_config_form()
             # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
@@ -346,7 +351,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'tool_errors': module.get_errors(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
-                'form_html': module.get_config_form(),
+                'form_html': form_html,
                 'annotation': annotation_str,
                 'post_job_actions': {},
                 'uuid': str(step.uuid) if step.uuid else None,
@@ -455,9 +460,10 @@ class WorkflowContentsManager(UsesAnnotations):
             if module.type == 'tool':
                 pja_dict = {}
                 for pja in step.post_job_actions:
-                    pja_dict[pja.action_type + pja.output_name] = dict( action_type=pja.action_type,
-                                                                        output_name=pja.output_name,
-                                                                        action_arguments=pja.action_arguments )
+                    pja_dict[pja.action_type + pja.output_name] = dict(
+                        action_type=pja.action_type,
+                        output_name=pja.output_name,
+                        action_arguments=pja.action_arguments )
                 step_dict[ 'post_job_actions' ] = pja_dict
             # Data inputs
             step_dict['inputs'] = module.get_runtime_input_dicts( annotation_str )

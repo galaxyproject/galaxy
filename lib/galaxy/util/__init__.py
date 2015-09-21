@@ -66,10 +66,10 @@ def is_multi_byte( chars ):
             # Probably binary
             return False
         if ( wchartype.is_asian( char ) or wchartype.is_full_width( char ) or
-             wchartype.is_kanji( char ) or wchartype.is_hiragana( char ) or
-             wchartype.is_katakana( char ) or wchartype.is_half_katakana( char )
-             or wchartype.is_hangul( char ) or wchartype.is_full_digit( char )
-             or wchartype.is_full_letter( char )):
+                wchartype.is_kanji( char ) or wchartype.is_hiragana( char ) or
+                wchartype.is_katakana( char ) or wchartype.is_half_katakana( char ) or
+                wchartype.is_hangul( char ) or wchartype.is_full_digit( char ) or
+                wchartype.is_full_letter( char )):
             return True
     return False
 
@@ -1248,6 +1248,24 @@ def galaxy_directory():
     return os.path.abspath(galaxy_root_path)
 
 
+def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False):
+    try:
+        value = int(value)
+        if min_val is not None and value < min_val:
+            return min_val
+        if max_val is not None and value > max_val:
+            return max_val
+        return value
+    except ValueError:
+        if allow_none:
+            if default is None or value == "None":
+                return None
+        if default:
+            return default
+        else:
+            raise
+
+
 class ExecutionTimer(object):
 
     def __init__(self):
@@ -1256,7 +1274,6 @@ class ExecutionTimer(object):
     def __str__(self):
         elapsed = (time.time() - self.begin) * 1000.0
         return "(%0.3f ms)" % elapsed
-
 
 if __name__ == '__main__':
     import doctest

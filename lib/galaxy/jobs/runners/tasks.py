@@ -1,5 +1,4 @@
 import logging
-import subprocess
 
 from galaxy import model
 
@@ -54,7 +53,7 @@ class TaskedJobRunner( BaseJobRunner ):
             # Split with the defined method.
             parallelism = job_wrapper.get_parallelism()
             try:
-                splitter = getattr(__import__('galaxy.jobs.splitters',  globals(),  locals(),  [parallelism.method]),  parallelism.method)
+                splitter = getattr(__import__('galaxy.jobs.splitters', globals(), locals(), [parallelism.method]), parallelism.method)
             except:
                 job_wrapper.change_state( model.Job.states.ERROR )
                 job_wrapper.fail("Job Splitting Failed, no match for '%s'" % parallelism)
@@ -78,8 +77,8 @@ class TaskedJobRunner( BaseJobRunner ):
             sleep_time = 1
             # sleep/loop until no more progress can be made. That is when
             # all tasks are one of { OK, ERROR, DELETED }. If a task
-            completed_states = [ model.Task.states.OK, \
-                                 model.Task.states.ERROR, \
+            completed_states = [ model.Task.states.OK,
+                                 model.Task.states.ERROR,
                                  model.Task.states.DELETED ]
 
             # TODO: Should we report an error (and not merge outputs) if
@@ -100,11 +99,11 @@ class TaskedJobRunner( BaseJobRunner ):
                     if ( model.Task.states.ERROR == task_state ):
                         job_exit_code = tw.get_exit_code()
                         log.debug( "Canceling job %d: Task %s returned an error"
-                                 % ( tw.job_id, tw.task_id ) )
+                                   % ( tw.job_id, tw.task_id ) )
                         self._cancel_job( job_wrapper, task_wrappers )
                         tasks_complete = True
                         break
-                    elif not task_state in completed_states:
+                    elif task_state not in completed_states:
                         tasks_complete = False
                     else:
                         job_exit_code = tw.get_exit_code()
@@ -115,15 +114,15 @@ class TaskedJobRunner( BaseJobRunner ):
                         sleep_time *= 2
             job_wrapper.reclaim_ownership()      # if running as the actual user, change ownership before merging.
             log.debug('execution finished - beginning merge: %s' % command_line)
-            stdout,  stderr = splitter.do_merge(job_wrapper,  task_wrappers)
+            stdout, stderr = splitter.do_merge(job_wrapper, task_wrappers)
         except Exception:
             job_wrapper.fail( "failure running job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
 
-        #run the metadata setting script here
-        #this is terminate-able when output dataset/job is deleted
-        #so that long running set_meta()s can be canceled without having to reboot the server
+        # run the metadata setting script here
+        # this is terminate-able when output dataset/job is deleted
+        # so that long running set_meta()s can be canceled without having to reboot the server
         self._handle_metadata_externally(job_wrapper, resolve_requirements=True )
         # Finish the job
         try:
@@ -147,7 +146,7 @@ class TaskedJobRunner( BaseJobRunner ):
         # this if the tasks runner is used but the tool does not use
         # parallelism.
         else:
-            #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+            # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
             if job.external_output_metadata:
                 pid = job.external_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             else:
@@ -191,7 +190,7 @@ class TaskedJobRunner( BaseJobRunner ):
             task_state = task.get_state()
             if ( model.Task.states.QUEUED == task_state ):
                 log.debug( "_cancel_job for job %d: Task %d is not running; setting state to DELETED"
-                         % ( job.get_id(), task.get_id() ) )
+                           % ( job.get_id(), task.get_id() ) )
                 task_wrapper.change_state( task.states.DELETED )
         # If a task failed, then the caller will have waited a few seconds
         # before recognizing the failure. In that time, a queued task could
@@ -203,7 +202,7 @@ class TaskedJobRunner( BaseJobRunner ):
             if ( model.Task.states.RUNNING == task_wrapper.get_state() ):
                 task = task_wrapper.get_task()
                 log.debug( "_cancel_job for job %d: Stopping running task %d"
-                         % ( job.get_id(), task.get_id() ) )
+                           % ( job.get_id(), task.get_id() ) )
                 job_wrapper.app.job_manager.job_handler.dispatcher.stop( task )
 
     def _check_pid( self, pid ):
@@ -212,7 +211,7 @@ class TaskedJobRunner( BaseJobRunner ):
         try:
             os.kill( pid, 0 )
             return True
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 log.debug( "_check_pid(): PID %d is dead" % pid )
             else:
@@ -234,7 +233,7 @@ class TaskedJobRunner( BaseJobRunner ):
         for sig in [ 15, 9 ]:
             try:
                 os.killpg( pid, sig )
-            except OSError, e:
+            except OSError as e:
                 # This warning could be bogus; many tasks are stopped with
                 # SIGTERM (signal 15), but ymmv depending on the platform.
                 log.warning( "_stop_pid(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job_id, errno.errorcode[e.errno], sig, pid, e.strerror ) )

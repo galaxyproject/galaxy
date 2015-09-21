@@ -101,6 +101,29 @@ class HDAManagerTestCase( HDATestCase ):
         self.assertIsNone( hda3.history, msg="history will be None" )
         self.assertEqual( hda3.hid, None, msg="should allow setting hid to None (or any other value)" )
 
+    def test_hda_tags( self ):
+        owner = self.user_manager.create( **user2_data )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        hda1 = self.hda_manager.create( history=history1, dataset=dataset1 )
+
+        self.log( "should be able to set tags on an hda" )
+        tags_to_set = [ u'tag-one', u'tag-two' ]
+        self.hda_manager.set_tags( hda1, tags_to_set, user=owner )
+        tag_str_array = self.hda_manager.get_tags( hda1 )
+        self.assertEqual( sorted( tags_to_set ), sorted( tag_str_array ) )
+
+    def test_hda_annotation( self ):
+        owner = self.user_manager.create( **user2_data )
+        history1 = self.history_manager.create( name='history1', user=owner )
+        dataset1 = self.dataset_manager.create()
+        hda1 = self.hda_manager.create( history=history1, dataset=dataset1 )
+
+        self.log( "should be able to set annotation on an hda" )
+        annotation = u'an annotation or анотація'
+        self.hda_manager.annotate( hda1, annotation, user=owner )
+        self.assertEqual( self.hda_manager.annotation( hda1 ), annotation )
+
     def test_copy_from_hda( self ):
         owner = self.user_manager.create( **user2_data )
         history1 = self.history_manager.create( name='history1', user=owner )
@@ -115,6 +138,24 @@ class HDAManagerTestCase( HDATestCase ):
         self.assertEqual( hda2.history, hda1.history )
         self.assertEqual( hda2.dataset, hda1.dataset )
         self.assertNotEqual( hda2, hda1 )
+
+        self.log( "tags should be copied between HDAs" )
+        tagged = self.hda_manager.create( history=history1, dataset=self.dataset_manager.create() )
+        tags_to_set = [ u'tag-one', u'tag-two' ]
+        self.hda_manager.set_tags( tagged, tags_to_set, user=owner )
+
+        hda2 = self.hda_manager.copy( tagged, history=history1 )
+        tag_str_array = self.hda_manager.get_tags( hda2 )
+        self.assertEqual( sorted( tags_to_set ), sorted( tag_str_array ) )
+
+        self.log( "annotations should be copied between HDAs" )
+        annotated = self.hda_manager.create( history=history1, dataset=self.dataset_manager.create() )
+        annotation = u'( ͡° ͜ʖ ͡°)'
+        self.hda_manager.annotate( annotated, annotation, user=owner )
+
+        hda3 = self.hda_manager.copy( annotated, history=history1 )
+        hda3_annotation = self.hda_manager.annotation( hda3 )
+        self.assertEqual( annotation, hda3_annotation )
 
     # def test_copy_from_ldda( self ):
     #    owner = self.user_manager.create( self.trans, **user2_data )
@@ -207,13 +248,13 @@ class HDAManagerTestCase( HDATestCase ):
         accessible = self.hda_manager.get_accessible( item1.id, owner, current_history=self.trans.history )
         self.assertEqual( accessible, item1 )
 
-        self.log( "after setting a dataset to private (one user) permissions, "
-                + "access should be not allowed for other users" )
+        self.log( "after setting a dataset to private (one user) permissions, " +
+            "access should be not allowed for other users" )
         self.assertRaises( exceptions.ItemAccessibilityException,
             self.hda_manager.get_accessible, item1.id, non_owner, current_history=self.trans.history )
 
-        self.log( "a copy of a restricted dataset in another users history should be inaccessible even to "
-                + "the histories owner" )
+        self.log( "a copy of a restricted dataset in another users history should be inaccessible even to " +
+            "the histories owner" )
         history2 = self.history_manager.create( name='history2', user=non_owner )
         self.trans.set_history( history2 )
         item2 = self.hda_manager.copy( item1, history=history2 )
@@ -269,14 +310,14 @@ class HDAManagerTestCase( HDATestCase ):
         dataset_owner = self.user_manager.create( **user3_data )
         self.dataset_manager.permissions.set_private_to_one_user( dataset1, dataset_owner )
 
-        self.log( "anonymous users should not be able to access datasets within their own histories if "
-                + "permissions do not allow" )
+        self.log( "anonymous users should not be able to access datasets within their own histories if " +
+            "permissions do not allow" )
         self.assertFalse( self.hda_manager.is_accessible( item1, anon_user ) )
         self.assertRaises( exceptions.ItemAccessibilityException,
             self.hda_manager.error_unless_accessible, item1, anon_user )
 
-        self.log( "those users with access permissions should still be allowed access to datasets "
-                + "within anon users' histories" )
+        self.log( "those users with access permissions should still be allowed access to datasets " +
+            "within anon users' histories" )
         self.assertTrue( self.hda_manager.is_accessible( item1, dataset_owner ) )
 
     def test_error_if_uploading( self ):
@@ -311,7 +352,9 @@ class HDAManagerTestCase( HDATestCase ):
 
 # =============================================================================
 # web.url_for doesn't work well in the framework
-testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
+def testable_url_for(*a, **k):
+    return '(fake url): %s, %s' % ( a, k )
+
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 
 
@@ -346,15 +389,15 @@ class HDASerializerTestCase( HDATestCase ):
 
         # skip metadata for this test
         def is_metadata( key ):
-            return ( key == 'metadata'
-                  or key.startswith( 'metadata_' ) )
+            return ( key == 'metadata' or
+                key.startswith( 'metadata_' ) )
 
         self.log( 'should have a serializer for all serializable keys' )
         for key in self.hda_serializer.serializable_keyset:
             instantiated_attribute = getattr( hda, key, None )
-            if not ( ( key in self.hda_serializer.serializers )
-                  or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) )
-                  or ( is_metadata( key ) ) ):
+            if not ( ( key in self.hda_serializer.serializers ) or
+                   ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) or
+                   ( is_metadata( key ) ) ):
                 self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
         else:
             self.assertTrue( True, 'all serializable keys have a serializer' )
@@ -376,7 +419,7 @@ class HDASerializerTestCase( HDATestCase ):
     def test_serializers( self ):
         hda = self._create_vanilla_hda()
         all_keys = list( self.hda_serializer.serializable_keyset )
-        serialized = self.hda_serializer.serialize( hda, all_keys )
+        serialized = self.hda_serializer.serialize( hda, all_keys, user=hda.history.user )
 
         self.log( 'everything serialized should be of the proper type' )
         # base
@@ -390,7 +433,6 @@ class HDASerializerTestCase( HDATestCase ):
         self.assertUUID( serialized[ 'uuid' ] )
         self.assertIsInstance( serialized[ 'file_name' ], basestring )
         self.assertIsInstance( serialized[ 'extra_files_path' ], basestring )
-        self.assertIsInstance( serialized[ 'permissions' ], dict )
         self.assertIsInstance( serialized[ 'size' ], int )
         self.assertIsInstance( serialized[ 'file_size' ], int )
         self.assertIsInstance( serialized[ 'nice_size' ], basestring )
@@ -612,11 +654,11 @@ class HDAFilterParserTestCase( HDATestCase ):
         # annotatable
         self.assertFnFilter( self.filter_parser.parse_filter( 'annotation', 'has', 'wot' ) )
 
-    def test_genome_build_filters( self ):
-        pass
+#     def test_genome_build_filters( self ):
+#         pass
 
-    def test_data_type_filters( self ):
-        pass
+#     def test_data_type_filters( self ):
+#         pass
 
 
 # =============================================================================

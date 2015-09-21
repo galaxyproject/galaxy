@@ -17,7 +17,7 @@ Results can also be restricted to the latest downloadable revision of each repos
 This script is useful for analyzing the Tool Shed's install and test framework.
 
 Here is a working example of how to use this script.
-./get_filtered_repository_revisions.py --url http://testtoolshed.g2.bx.psu.edu 
+./get_filtered_repository_revisions.py --url http://testtoolshed.g2.bx.psu.edu
 """
 
 import argparse
@@ -25,16 +25,12 @@ import os
 import sys
 import urllib
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
-
-from common import get
-from common import get_api_url
-from common import get_repository_dict
-from common import json_from_url
-
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir ) )
 from galaxy.util import asbool
-from galaxy.util.json import loads
 from tool_shed.util import hg_util
+
+from common import get_api_url, get_repository_dict, json_from_url
+
 
 def main( options ):
     base_tool_shed_url = options.tool_shed_url.rstrip( '/' )
@@ -47,7 +43,7 @@ def main( options ):
     skip_tool_test = str( options.skip_tool_test )
     test_install_error = str( options.test_install_error )
     tools_functionally_correct = str( options.tools_functionally_correct )
-    parts=[ 'repository_revisions' ]
+    parts = [ 'repository_revisions' ]
     params = urllib.urlencode( dict( do_not_test=do_not_test,
                                      downloadable=downloadable,
                                      includes_tools=includes_tools,
@@ -96,6 +92,6 @@ if __name__ == '__main__':
     parser.add_argument( "-c", "--missing_test_components", help="missing_test_components", default=False )
     parser.add_argument( "-s", "--skip_tool_test", help="skip_tool_test", default=False )
     parser.add_argument( "-e", "--test_install_error", help="test_install_error", default=False )
-    parser.add_argument( "-t", "--tools_functionally_correct", help="tools_functionally_correct", default=True )    
+    parser.add_argument( "-t", "--tools_functionally_correct", help="tools_functionally_correct", default=True )
     options = parser.parse_args()
     main( options )

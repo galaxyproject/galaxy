@@ -2,19 +2,22 @@
 API operations for samples in the Galaxy sample tracking system.
 """
 import logging
+
 from galaxy import util
-from galaxy.web.base.controller import *
-from galaxy.model.orm import *
 from galaxy.util.bunch import Bunch
+from galaxy.web import url_for
+from galaxy.web.base.controller import BaseAPIController, web
 
 log = logging.getLogger( __name__ )
 
+
 class SamplesAPIController( BaseAPIController ):
-    update_types = Bunch( SAMPLE = [ 'sample_state', 'run_details' ],
-                          SAMPLE_DATASET = [ 'sample_dataset_transfer_status' ] )
+    update_types = Bunch( SAMPLE=[ 'sample_state', 'run_details' ],
+                          SAMPLE_DATASET=[ 'sample_dataset_transfer_status' ] )
     update_type_values = []
     for k, v in update_types.items():
         update_type_values.extend( v )
+
     @web.expose_api
     def index( self, trans, **kwd ):
         """
@@ -25,7 +28,7 @@ class SamplesAPIController( BaseAPIController ):
             request_id = trans.security.decode_id( kwd[ 'request_id' ] )
         except TypeError:
             trans.response.status = 400
-            return "Malformed  request id ( %s ) specified, unable to decode." % str( encoded_request_id )
+            return "Malformed request id ( %s ) specified, unable to decode." % str( kwd[ 'request_id' ] )
         try:
             request = trans.sa_session.query( trans.app.model.Request ).get( request_id )
         except:
@@ -42,6 +45,7 @@ class SamplesAPIController( BaseAPIController ):
             item['id'] = trans.security.encode_id( item['id'] )
             rval.append( item )
         return rval
+
     @web.expose_api
     def update( self, trans, id, payload, **kwd ):
         """
@@ -120,6 +124,7 @@ class SamplesAPIController( BaseAPIController ):
                                                                        new_state=new_state,
                                                                        comment=comment )
         return status, output
+
     def __update_sample_dataset_status( self, trans, **payload ):
         # only admin user may transfer sample datasets in Galaxy sample tracking
         if not trans.user_is_admin():
@@ -138,4 +143,3 @@ class SamplesAPIController( BaseAPIController ):
                                                                                new_status=new_status,
                                                                                error_msg=error_msg )
         return status, output
-

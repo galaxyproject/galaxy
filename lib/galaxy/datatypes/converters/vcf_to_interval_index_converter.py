@@ -10,6 +10,7 @@ import optparse
 import galaxy_utils.sequence.vcf
 from bx.interval_index_file import Indexes
 
+
 def main():
     # Read options, args.
     parser = optparse.OptionParser()
@@ -23,7 +24,7 @@ def main():
     for vcf_line in reader:
         # VCF format provides a chrom and 1-based position for each variant.
         # IntervalIndex expects 0-based coordinates.
-        index.add( vcf_line.chrom, vcf_line.pos-1, vcf_line.pos, offset )
+        index.add( vcf_line.chrom, vcf_line.pos - 1, vcf_line.pos, offset )
         offset += len( vcf_line.raw_line )
 
     index.write( open( out_file, "w" ) )

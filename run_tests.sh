@@ -34,7 +34,7 @@ Run all TestUserInfo functional tests:
     ./run_tests.sh test/functional/test_user_info.py:TestUserInfo
 
 Run a specific API test requiring the framework test tools:
-    ./run_tests.sh -api -with_framework_test_tools test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
+    ./run_tests.sh -with_framework_test_tools -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
 
 
 Extra options:
@@ -91,7 +91,7 @@ then
     fi
     DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
     DOCKER_RUN_EXTRA_ARGS=${DOCKER_ARGS:-""}
-    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxyprojectdotorg/testing-base"}
+    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxy/testing-base"}
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi

@@ -4,6 +4,9 @@
 // Galaxy specific variables
 @import "galaxy_variables.less";
 
+// Galaxy Report Webapp
+@import "reports";
+
 @white: #fff;
 @black: #000;
 
@@ -133,14 +136,6 @@ body  {
 }
 #left-border  {
     left: 250px;
-}
-.reports-panel-container {
-    position: absolute;
-    top: @panel_header_height;
-    bottom: 10px;
-    overflow: scroll;
-    width: 100%;
-    padding: 10px;
 }
 #center  {
     left:250 + @border-default-color_padding;
@@ -295,6 +290,11 @@ div.unified-panel-body {
     top: @panel_header_height;
     bottom: 0;
     width: 100%;
+    overflow: auto;
+    padding: 0px;
+}
+div.unified-panel-body-background {
+    background: none repeat scroll 0 0 #DFE5F9;
 }
 
 #left > div.unified-panel-body, #right > div.unified-panel-body {
@@ -762,7 +762,7 @@ input[type="submit"], button {
 
 // Messages
 
-.errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge {
+.errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge, .toolHelpBody .error, .toolHelpBody .warning, .toolHelpBody .note {
     .alert();
     min-height: 36px;
     padding-left: 52px;
@@ -800,7 +800,7 @@ input[type="submit"], button {
     background-image: none;
 }
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall {
+.errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall, toolHelpBody .error, .toolHelpBody .warning, .toolHelpBody .note {
     .alert();
     padding: 5px;
     padding-left: 25px;
@@ -812,11 +812,11 @@ input[type="submit"], button {
     background-position: 5px 5px;
 }
 
-.errormessage, .errormessagesmall {
+.errormessage, .errormessagesmall, .toolHelpBody .error {
     .alert-danger();
 }
 
-.warningmessage, .warningmessagesmall {
+.warningmessage, .warningmessagesmall, .toolHelpBody .warning {
     .alert-warning();
     background-image: url(warn_small.png);
 }
@@ -826,7 +826,7 @@ input[type="submit"], button {
     background-image: url(ok_small.png);
 }
 
-.infomessage, .infomessagesmall {
+.infomessage, .infomessagesmall, .toolHelpBody .note {
     .alert-info();
     background-image: url(info_small.png);
 }
@@ -1447,9 +1447,6 @@ div.permissionContainer {
 }
 
 // ============================================================================ History
-@import "sprite-history-states.less";
-@import "sprite-history-buttons.less";
-
 @import "ui/icon-btn.less";
 @import "list-item.less";
 @import "history.less";
@@ -1628,7 +1625,7 @@ div.toolTitleNoSection
     .sprite(@tags);
 }
 .icon-button.tag--plus {
-    .sprite(@tag--plus);
+    .sprite(@tag-plus);
 }
 .icon-button.toggle-expand {
     .sprite(@toggle-expand);
@@ -1676,10 +1673,10 @@ div.toolTitleNoSection
     .sprite(@chart);
 }
 .icon-button.disk--arrow {
-    .sprite(@disk--arrow-bw);
+    .sprite(@disk-arrow-bw);
 }
 .icon-button.disk--arrow:hover {
-    .sprite(@disk--arrow);
+    .sprite(@disk-arrow);
 }
 .icon-button.cross-circle {
     .sprite(@cross-circle-bw);

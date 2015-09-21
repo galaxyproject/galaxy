@@ -155,7 +155,7 @@ def calculateLD(loci, rsqthreshold):
             converged         = False
             convergentcounter = 0
             if p11 > 0.0:
-                while converged == False and convergentcounter < 100:
+                while converged is False and convergentcounter < 100:
                     if (1.0 - p - q + p11) != 0.0 and oldp11 != 0.0:    
                         num = matrix[8] * p11 * (1.0 - p - q + p11)
                         den = p11 * (1.0 - p - q + p11) + (p - p11)*(q - p11)
@@ -169,7 +169,7 @@ def calculateLD(loci, rsqthreshold):
                         converged = True
  
             dvalue = 0.0
-            if converged == True:
+            if converged is True:
                 dvalue = p11 - (p * q)
     
             if dvalue != 0.0:
@@ -222,7 +222,7 @@ def main(inputfile, snpsfile, neigborhoodfile, \
 
     for k,v in snps.items():
         ldv = ldvals[k]
-        if debug_flag == True:
+        if debug_flag is True:
             print >> file, "%s\t%s\t%s" % (k, ",".join(v), ",".join(ldv))
         else:            
             print >> file, "%s\t%s" % (k, ",".join(v))

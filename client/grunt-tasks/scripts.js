@@ -17,15 +17,25 @@ module.exports = function( grunt ){
                 src : '**/*.js',
                 dest : paths.dist
             }],
-            options : {
-                sourceMap : true,
-                sourceMapName : function( path ){
-                    // rewrite name to have all source maps in 'static/maps'
-                    return path.replace( paths.dist, paths.maps ) + '.map';
-                }
+        }
+    });
+
+    if (grunt.option('develop')){
+        grunt.config( 'uglify.options', {
+            beautify : true,
+            compress : {
+                drop_debugger : false
             }
-        },
-        options : {
+        });
+    } else {
+        grunt.config( 'uglify.target.options', {
+            sourceMap : true,
+            sourceMapName : function( path ){
+                // rewrite name to have all source maps in 'static/maps'
+                return path.replace( paths.dist, paths.maps ) + '.map';
+            }
+        });
+        grunt.config( 'uglify.options', {
             mangle : {
                 screw_ie8 : true
             },
@@ -45,10 +55,11 @@ module.exports = function( grunt ){
                 if_return : true,
                 join_vars : true,
                 cascade : true,
-                // drop_console : true
+                drop_console : true
             }
-        }
-    });
+        });
+    }
+
 
     // -------------------------------------------------------------------------- decompress for easier debugging
     grunt.registerTask( 'decompress', function(){
@@ -72,6 +83,7 @@ module.exports = function( grunt ){
             }
         }
     });
+
 
     // outer scope variable for the event handler and onChange fn - begin with empty hash
     var changedFiles = Object.create(null);

@@ -70,4 +70,9 @@
         <columns>name, url, value</columns>
         <file url="http://igv.broadinstitute.org/genomes/genomes.txt" />
     </table>
+    <!-- Available liftOver chain file -->
+    <table name="liftOver" comment_char="#">
+        <columns>dbkey, name, value</columns>
+        <file path="tool-data/liftOver.loc" />
+    </table>
 </tables>

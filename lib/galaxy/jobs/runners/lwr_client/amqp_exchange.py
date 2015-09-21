@@ -79,7 +79,7 @@ class LwrExchange(object):
                                 connection.drain_events(timeout=self.__timeout)
                             except socket.timeout:
                                 pass
-            except (IOError, socket.error), exc:
+            except (IOError, socket.error) as exc:
                 # In testing, errno is None
                 log.warning('Got %s, will retry: %s', exc.__class__.__name__, exc)
                 if heartbeat_thread:

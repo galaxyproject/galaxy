@@ -7,7 +7,11 @@ Supported presets: bed, gff, vcf
 usage: %prog in_file out_file
 """
 
-import ctabix, subprocess, tempfile, sys, os, optparse
+import ctabix
+import sys
+import os
+import optparse
+
 
 def main():
     # Read options, args.

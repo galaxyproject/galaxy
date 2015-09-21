@@ -7,8 +7,8 @@ raven.middleware
 """
 
 from raven import Client
-from raven.utils.wsgi import get_current_url, get_headers, \
-  get_environ
+from raven.utils.wsgi import get_current_url, get_headers, get_environ
+
 
 class Sentry(object):
     """

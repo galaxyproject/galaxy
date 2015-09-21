@@ -1,5 +1,31 @@
-from base.twilltestcase import *
-from base.test_db_util import *
+import os
+
+from base.twilltestcase import TwillTestCase
+from base.test_db_util import library1, \
+    get_user, \
+    get_private_role, \
+    refresh, \
+    get_library, \
+    get_folder, \
+    escape, \
+    folder1, \
+    folder2, \
+    subfolder1, \
+    get_latest_ldda_by_name, \
+    ldda4, \
+    get_latest_hda, \
+    regular_user1, \
+    admin_user, \
+    regular_user1_private_role, \
+    regular_user3_private_role, \
+    regular_user3, \
+    ldda2, \
+    library2, \
+    ldda7, \
+    folder5, \
+    folder4, \
+    library3, \
+    regular_user2
 
 
 class TestLibraryFeatures( TwillTestCase ):
@@ -59,19 +85,19 @@ class TestLibraryFeatures( TwillTestCase ):
         new_description = "library1 new description"
         new_synopsis = "library1 new synopsis"
         self.library_info( 'library_admin',
-                            self.security.encode_id( library1.id ),
-                            library1.name,
-                            new_name=new_name,
-                            new_description=new_description,
-                            new_synopsis=new_synopsis )
+                           self.security.encode_id( library1.id ),
+                           library1.name,
+                           new_name=new_name,
+                           new_description=new_description,
+                           new_synopsis=new_synopsis )
         self.browse_libraries_admin( strings_displayed=[ new_name, new_description ] )
         # Reset the library back to the original name and description
         self.library_info( 'library_admin',
-                            self.security.encode_id( library1.id ),
-                            library1.name,
-                            new_name='library1',
-                            new_description='library1 description',
-                            new_synopsis='library1 synopsis' )
+                           self.security.encode_id( library1.id ),
+                           library1.name,
+                           new_name='library1',
+                           new_description='library1 description',
+                           new_synopsis='library1 synopsis' )
         refresh( library1 )
 
     def test_030_add_folder_to_library1( self ):
@@ -149,7 +175,7 @@ class TestLibraryFeatures( TwillTestCase ):
     def test_050_add_2nd_public_dataset_to_folder2( self ):
         """Testing adding a 2nd public dataset folder2"""
         # Logged in as admin_user
-        filename='3.bed'
+        filename = '3.bed'
         ldda_message = "Testing uploading %s" % filename
         self.upload_library_dataset( cntrller='library_admin',
                                      library_id=self.security.encode_id( library1.id ),
@@ -266,7 +292,7 @@ class TestLibraryFeatures( TwillTestCase ):
                                      upload_option='upload_directory',
                                      server_dir=regular_user1.email,
                                      ldda_message=ldda_message,
-                                     strings_displayed = [ "Upload a directory of files" ] )
+                                     strings_displayed=[ "Upload a directory of files" ] )
         self.logout()
         self.login( regular_user3.email )
         ldda_message = 'Uploaded all files in test-data/users/test3.../run1'
@@ -413,7 +439,7 @@ class TestLibraryFeatures( TwillTestCase ):
         refresh( library1 )
         if not ( library1.deleted and library1.purged ):
             raise AssertionError( 'The library id %s named "%s" has not been marked as deleted and purged.' % ( str( library1.id ), library1.name ) )
-    
+
         def check_folder( library_folder ):
             for folder in library_folder.folders:
                 refresh( folder )
@@ -429,16 +455,16 @@ class TestLibraryFeatures( TwillTestCase ):
                 if ldda:
                     refresh( ldda )
                     if not ldda.deleted:
-                        raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as deleted.' % \
+                        raise AssertionError( 'The library_dataset_dataset_association id %s named "%s" has not been marked as deleted.' %
                                               ( str( ldda.id ), ldda.name ) )
                     # Make sure all of the datasets have been deleted
                     dataset = ldda.dataset
                     refresh( dataset )
                     if not dataset.deleted:
-                        raise AssertionError( 'The dataset with id "%s" has not been marked as deleted when it should have been.' % \
+                        raise AssertionError( 'The dataset with id "%s" has not been marked as deleted when it should have been.' %
                                               str( ldda.dataset.id ) )
                 if not library_dataset.deleted:
-                    raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted.' % \
+                    raise AssertionError( 'The library_dataset id %s named "%s" has not been marked as deleted.' %
                                           ( str( library_dataset.id ), library_dataset.name ) )
         check_folder( library1.root_folder )
 

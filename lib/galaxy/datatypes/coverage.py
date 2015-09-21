@@ -12,6 +12,7 @@ from galaxy.datatypes.tabular import Tabular
 
 log = logging.getLogger(__name__)
 
+
 class LastzCoverage( Tabular ):
     file_ext = "coverage"
 
@@ -52,5 +53,3 @@ class LastzCoverage( Tabular ):
         resolution = min( resolution, 10000 )
         resolution = max( resolution, 1 )
         return resolution
-
-

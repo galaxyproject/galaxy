@@ -1,40 +1,34 @@
 #!/usr/bin/env python
 
+import ConfigParser
 import logging
 import os
 import string
 import sys
 import textwrap
-
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
-
-log = logging.getLogger()
-log.setLevel( 10 )
-log.addHandler( logging.StreamHandler( sys.stdout ) )
-
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-
 import time
-import ConfigParser
 from datetime import datetime, timedelta
 from time import strftime
 from optparse import OptionParser
 
-from tool_shed.util.common_util import url_join
+sys.path.insert(1, os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
+
+import sqlalchemy as sa
+from sqlalchemy import and_, distinct, false, not_
+
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping
-import sqlalchemy as sa
-from sqlalchemy import and_, distinct, not_
 from galaxy.util import send_mail as galaxy_send_mail
+from tool_shed.util.common_util import url_join
 
+log = logging.getLogger()
+log.setLevel( 10 )
+log.addHandler( logging.StreamHandler( sys.stdout ) )
 assert sys.version_info[:2] >= ( 2, 4 )
 
 
 def build_citable_url( host, repository ):
-    return url_join( host, 'view', repository.user.username, repository.name )
+    return url_join( host, pathspec=[ 'view', repository.user.username, repository.name ] )
 
 
 def main():
@@ -46,7 +40,10 @@ def main():
     parser.add_option( "-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False )
     parser.add_option( "-v", "--verbose", action="store_true", dest="verbose", help="verbose mode, print the name of each repository", default=False )
     ( options, args ) = parser.parse_args()
-    ini_file = args[0]
+    try:
+        ini_file = args[0]
+    except IndexError:
+        sys.exit( "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ] )
     config_parser = ConfigParser.ConfigParser( {'here': os.getcwd()} )
     config_parser.read( ini_file )
     config_dict = {}
@@ -116,8 +113,8 @@ def deprecate_repositories( app, cutoff_time, days=14, info_only=False, verbose=
     # This will yield a list of repositories that have been created more than n days ago, but never populated.
     repository_query = sa.select( [ app.model.Repository.table.c.id ],
                                   whereclause=and_( app.model.Repository.table.c.create_time < cutoff_time,
-                                                    app.model.Repository.table.c.deprecated == False,
-                                                    app.model.Repository.table.c.deleted == False,
+                                                    app.model.Repository.table.c.deprecated == false(),
+                                                    app.model.Repository.table.c.deleted == false(),
                                                     not_( app.model.Repository.table.c.id.in_( repository_ids_to_not_check ) ) ),
                                   from_obj=[ app.model.Repository.table ] )
     query_result = repository_query.execute()
