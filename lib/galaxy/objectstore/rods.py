@@ -15,7 +15,14 @@ from posixpath import dirname as path_dirname
 from galaxy.exceptions import ObjectNotFound
 from ..objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
 
-import irods
+try:
+    import irods
+except ImportError:
+    irods = None
+
+
+IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this '
+                        'feature, please install it')
 
 log = logging.getLogger( __name__ )
 
@@ -26,6 +33,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
     """
     def __init__( self, config, file_path=None, extra_dirs=None ):
         super( IRODSObjectStore, self ).__init__( config, file_path=file_path, extra_dirs=extra_dirs )
+        assert irods is not None, IRODS_IMPORT_MESSAGE
         self.cache_path = config.object_store_cache_path
         self.default_resource = config.irods_default_resource or None
 
