@@ -6,10 +6,11 @@ Uses pysam to bgzip a file
 usage: %prog in_file out_file
 """
 
-import ctabix
 import tempfile
 import optparse
 import subprocess
+
+from pysam import ctabix
 
 
 def main():

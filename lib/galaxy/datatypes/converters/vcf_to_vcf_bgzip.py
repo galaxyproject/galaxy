@@ -7,8 +7,9 @@ Original ordering, which may be specifically needed  by tools or external displa
 
 usage: %prog in_file out_file
 """
-import ctabix
 import optparse
+
+from pysam import ctabix
 
 
 def main():
