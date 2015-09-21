@@ -120,12 +120,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
 
                     // show error
                     var error_message = response.error || 'Uncaught error.';
-                    self.form.modal.show({
+                    Galaxy.modal.show({
                         title   : 'Tool cannot be executed',
                         body    : error_message,
                         buttons : {
                             'Close' : function() {
-                                self.form.modal.hide();
+                                Galaxy.modal.hide();
                             }
                         }
                     });
