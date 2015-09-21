@@ -308,7 +308,11 @@ class GalaxyInteractorApi( object ):
         except Exception:
             print "*TEST FRAMEWORK FAILED TO FETCH HISTORY DETAILS*"
 
-        for dataset in history_contents:
+        for history_content in history_contents:
+            if history_content[ 'history_content_type'] != 'dataset':
+                continue
+
+            dataset = history_content
             if dataset[ 'state' ] != 'error':
                 continue
 
