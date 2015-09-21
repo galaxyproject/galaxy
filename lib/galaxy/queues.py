@@ -4,8 +4,6 @@ All message queues used by Galaxy
 
 """
 
-import sys
-
 from galaxy.config import process_is_uwsgi
 
 from kombu import Exchange, Queue, Connection

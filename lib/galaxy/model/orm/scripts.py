@@ -6,7 +6,6 @@ import os.path
 
 from galaxy.util.properties import load_app_properties
 
-import pkg_resources
 
 log = logging.getLogger( __name__ )
 

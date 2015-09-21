@@ -8,7 +8,6 @@ import shutil
 import struct
 import subprocess
 import tempfile
-import warnings
 import zipfile
 
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE

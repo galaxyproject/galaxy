@@ -5,7 +5,6 @@ reloading the toolbox, etc., across multiple processes.
 
 import logging
 import threading
-import sys
 
 import galaxy.queues
 from galaxy import util

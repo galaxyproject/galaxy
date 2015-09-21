@@ -11,7 +11,12 @@ try:
 except ImportError:
     from urllib.request import Request
 
-import poster
+try:
+    import poster
+except ImportError:
+    poster = None
+
+POSTER_UNAVAILABLE_MESSAGE = "Pulsar configured to use poster module - but it is unavailable. Please install poster."
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +26,7 @@ if poster is not None:
 
 
 def post_file(url, path):
+    __ensure_poster()
     try:
         datagen, headers = poster.encode.multipart_encode({"file": open(path, "rb")})
         request = Request(url, datagen, headers)
@@ -40,3 +46,8 @@ def get_file(url, path):
             if not buffer:
                 break
             output.write(buffer)
+
+
+def __ensure_poster():
+    if poster is None:
+        raise ImportError(POSTER_UNAVAILABLE_MESSAGE)
