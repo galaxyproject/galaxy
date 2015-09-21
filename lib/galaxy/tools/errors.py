@@ -133,5 +133,9 @@ class EmailErrorReporter( ErrorReporter ):
         else:
             to = to_address
         subject = "Galaxy tool error report from %s" % email
+        try:
+            subject = "%s (%s)" % ( subject, self.app.toolbox.get_tool( self.job.tool_id, self.job.tool_version ).old_id )
+        except:
+            pass
         # Send it
         return util.send_mail( frm, to, subject, self.report, self.app.config )
