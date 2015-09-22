@@ -451,7 +451,7 @@ class Tool( object, Dictifiable ):
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
-    default_template = 'tool_form.mako'
+    default_template = ''
 
     def __init__( self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True ):
         """Load a tool from the config named by `config_file`"""
