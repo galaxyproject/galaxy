@@ -68,17 +68,19 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.options.id = options.id;
             this.options.version = options.version;
 
-            if (options.job_id) {
+            if ( options.job_id ) {
                 build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
             } else {
                 var build_url = Galaxy.root + 'api/tools/' + options.id + '/build?';
                 if ( options.version ) {
                     build_url += 'tool_version=' + options.version + '&';
                 }
-                var loc = top.location.href;
-                var pos = loc.indexOf('?');
-                if (loc.indexOf('tool_id=') != -1 && pos !== -1) {
-                    build_url += loc.slice(pos + 1);
+                if ( Galaxy.params && Galaxy.params.tool_id == options.id ) {
+                    _.each( Galaxy.params, function ( item, key ) {
+                        if ( [ 'tool_version', 'tool_id' ].indexOf( key ) == -1 ) {
+                            build_url += key + '=' + item + '&';
+                        }
+                    } );
                 }
             }
 
