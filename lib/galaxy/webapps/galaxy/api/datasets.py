@@ -1,8 +1,8 @@
 """
 API operations on the contents of a history dataset.
 """
+from galaxy import exceptions
 from galaxy import model
-from galaxy import exceptions as galaxy_exceptions
 from galaxy import web
 from galaxy.web.framework.helpers import is_true
 from galaxy import util
@@ -86,7 +86,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             trans.response.status = 500
         return rval
 
-    @web.expose_api_anonymous
+    @web._future_expose_api_anonymous
     def build_for_rerun( self, trans, dataset_id, **kwd ):
         """
         * GET /api/datasets/{id}/build_for_rerun
@@ -100,25 +100,18 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         :rtype:     dictionary
         :returns:   dictionary containing output dataset associations
         """
-        try:
-            dataset_id = trans.security.decode_id( dataset_id )
-            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
-            if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
-                trans.response.status = 500
-                log.error('User has no access to dataset.')
-                return { 'error': 'User has no access to dataset.' }
-            job = data.creating_job
-            if not job:
-                trans.response.status = 500
-                log.error('Creating job not found.')
-                return { 'error': 'Creating job not found.' }
-            else:
-                tool = trans.app.toolbox.get_tool( job.tool_id, job.tool_version )
-                return tool.to_json(trans, {}, job=job)
-        except Exception, exception:
-            trans.response.status = 500
-            log.error('Failed to get job information.')
-            return { 'error': 'Failed to get job information.' }
+        dataset_id = trans.security.decode_id( dataset_id )
+        data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
+        if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
+            raise exceptions.InsufficientPermissionsException( 'User has no access to dataset.' )
+        job = data.creating_job
+        if not job:
+            raise exceptions.ObjectNotFound( 'Creating job not found.' )
+        else:
+            tool = trans.app.toolbox.get_tool( job.tool_id, job.tool_version )
+            if not tool.is_workflow_compatible:
+                raise exceptions.ConfigDoesNotAllowException( 'Tool \'%s\' cannot be rerun.' % ( job.tool_id ) )
+            return tool.to_json( trans, {}, job=job )
 
     def _dataset_state( self, trans, dataset, **kwargs ):
         """
@@ -392,4 +385,4 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         except model.NoConverterException:
             exc_data = dict( source=original.ext, target=target_ext, available=original.get_converter_types().keys() )
-            raise galaxy_exceptions.RequestParameterInvalidException( 'Conversion not possible', **exc_data )
+            raise exceptions.RequestParameterInvalidException( 'Conversion not possible', **exc_data )

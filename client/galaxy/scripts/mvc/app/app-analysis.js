@@ -7,6 +7,20 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
             this.setElement( this._template() );
+            var self = this;
+            this.$( '#galaxy_main' ).on( 'load', function() {
+                var location = this.contentWindow && this.contentWindow.location;
+                if ( location && location.host ) {
+                    $( this ).show();
+                    self.$( '#center-panel' ).empty().hide();
+                    Galaxy.trigger( 'galaxy_main:load', {
+                        fullpath: location.pathname + location.search + location.hash,
+                        pathname: location.pathname,
+                        search  : location.search,
+                        hash    : location.hash
+                    });
+                }
+            });
             var params = this.options.params;
             if ( params.tool_id || params.action_id == 'tool_runner/rerun' ) {
                 params.tool_id && ( params.id = params.tool_id );
@@ -18,20 +32,6 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                     ( Galaxy.config.require_login && !Galaxy.user.id && 'user/login') ||
                     'root/welcome'
                 ));
-                var self = this;
-                this.$( '#galaxy_main' ).on( 'load', function() {
-                    $( this ).show();
-                    self.$( '#center-panel' ).empty().hide();
-                    var galaxy_main = this.contentWindow;
-                    if ( galaxy_main ) {
-                        Galaxy.trigger( 'galaxy_main:load', {
-                            fullpath: galaxy_main.location.pathname + galaxy_main.location.search + galaxy_main.location.hash,
-                            pathname: galaxy_main.location.pathname,
-                            search  : galaxy_main.location.search,
-                            hash    : galaxy_main.location.hash
-                        });
-                    }
-                });
             }
         },
         display: function( $el ) {
