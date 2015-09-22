@@ -91,7 +91,7 @@ class ToolRunner( BaseUIController ):
                 job_id = trans.security.encode_id( job.id )
             else:
                 raise Exception("Failed to get job information for dataset hid %d" % data.hid)
-        return trans.response.send_redirect( url_for( controller="root", action_id="tool_runner/rerun", job_id=job_id ) )
+        return trans.response.send_redirect( url_for( controller="root", job_id=job_id ) )
 
     @web.expose
     def data_source_redirect( self, trans, tool_id=None ):

@@ -22,7 +22,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                 }
             });
             var params = this.options.params;
-            if ( params.tool_id || params.action_id == 'tool_runner/rerun' ) {
+            if ( params.tool_id || params.job_id ) {
                 params.tool_id && ( params.id = params.tool_id );
                 this.display( ( new ToolsForm.View( params ) ).$el );
             } else {
