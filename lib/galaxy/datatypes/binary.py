@@ -39,11 +39,11 @@ class Binary( data.Data ):
 
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
-        Binary.sniffable_binary_formats.append({"type": data_type, "ext": ext, "class": type_class})
+        Binary.sniffable_binary_formats.append({"type": data_type, "ext": ext.lower(), "class": type_class})
 
     @staticmethod
     def register_unsniffable_binary_ext(ext):
-        Binary.unsniffable_binary_formats.append(ext)
+        Binary.unsniffable_binary_formats.append(ext.lower())
 
     @staticmethod
     def is_sniffable_binary( filename ):
