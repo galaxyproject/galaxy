@@ -9,16 +9,17 @@ This migration script adds the following new tables for supporting Galaxy forms:
 7) sample_state
 8) sample_event
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
-import sys, logging
+from migrate import ForeignKeyConstraint
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import JSONType, TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -26,11 +27,8 @@ format = "%(name)s %(levelname)s %(asctime)s %(message)s"
 formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
-
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
 metadata = MetaData()
+
 
 def display_migration_details():
     print "========================================"
@@ -115,8 +113,8 @@ SampleEvent_table = Table('sample_event', metadata,
                           Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ),
                           Column( "comment", TEXT ) )
 
+
 def upgrade(migrate_engine):
-    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
     metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
@@ -166,8 +164,8 @@ def upgrade(migrate_engine):
     except Exception, e:
         log.debug( "Creating sample_event table failed: %s" % str( e ) )
 
+
 def downgrade(migrate_engine):
-    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
     metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()

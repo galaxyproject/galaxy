@@ -1,18 +1,13 @@
 """
 Migration script to allow invalidation of job external output metadata temp files
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, MetaData, Table
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 
@@ -29,7 +24,7 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    __drop_column( isvalid_column, "job_external_output_metadata", metadata )
+    __drop_column( "is_valid", "job_external_output_metadata", metadata )
 
 
 def __add_column(column, table_name, metadata, **kwds):

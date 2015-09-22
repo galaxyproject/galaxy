@@ -2,23 +2,19 @@
 This migration script provides support for (a) ordering tags by recency and
 (b) tagging pages. This script deletes all existing tags.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-import migrate.changeset
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+
+from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table
+from sqlalchemy.exc import OperationalError
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import TrimmedString
 
-import logging
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
-
 metadata = MetaData()
+
 
 def display_migration_details():
     print ""
@@ -56,6 +52,7 @@ PageTagAssociation_table = Table( "page_tag_association", metadata,
                                   Column( "user_tname", TrimmedString(255), index=True),
                                   Column( "value", TrimmedString(255), index=True),
                                   Column( "user_value", TrimmedString(255), index=True) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -103,6 +100,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Creating page_tag_association table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

@@ -2,18 +2,16 @@
 Migration script to add column to openid table for provider.
 Remove any OpenID entries with nonunique GenomeSpace Identifier
 """
+import logging
 
-BAD_IDENTIFIER = 'https://identity.genomespace.org/identityServer/xrd.jsp'
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Column, MetaData, Table
+
 from galaxy.model.custom_types import TrimmedString
 
-import logging
 log = logging.getLogger( __name__ )
-
+BAD_IDENTIFIER = 'https://identity.genomespace.org/identityServer/xrd.jsp'
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -34,6 +32,7 @@ def upgrade(migrate_engine):
         migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Deleting bad Identifiers from galaxy_user_openid failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
