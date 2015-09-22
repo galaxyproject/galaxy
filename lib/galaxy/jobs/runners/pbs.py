@@ -1,10 +1,19 @@
+from __future__ import absolute_import
+
 import os
 import logging
 import time
 import traceback
 from datetime import timedelta
 
-import pbs
+try:
+    import pbs
+    PBS_IMPORT_MESSAGE = None
+except ImportError as exc:
+    pbs = None
+    PBS_IMPORT_MESSAGE = ('The Python pbs-python package is required to use '
+                          'this feature, please install it or correct the '
+                          'following error:\nImportError %s' % str(exc))
 
 from galaxy import model
 from galaxy import util
@@ -82,8 +91,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
     def __init__( self, app, nworkers ):
         """Start the job runner """
         # Check if PBS was importable, fail if not
-        if pbs is None:
-            raise Exception( "PBSJobRunner requires pbs_python which was not found" )
+        assert pbs is not None, PBS_IMPORT_MESSAGE
         if app.config.pbs_application_server and app.config.outputs_to_working_directory:
             raise Exception( "pbs_application_server (file staging) and outputs_to_working_directory options are mutually exclusive" )
 

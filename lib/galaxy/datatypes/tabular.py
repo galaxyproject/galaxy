@@ -2,8 +2,6 @@
 Tabular datatype
 
 """
-import pkg_resources
-pkg_resources.require( "bx-python" )
 import gzip
 import logging
 import os

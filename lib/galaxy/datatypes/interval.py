@@ -2,9 +2,6 @@
 Interval datatypes
 """
 
-import pkg_resources
-pkg_resources.require( "bx-python" )
-
 import os
 import sys
 import logging
@@ -1249,8 +1246,6 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         Assumes we have a numpy file.
         """
         # Maybe if we import here people will still be able to use Galaxy when numpy kills it
-        pkg_resources.require("numpy>=1.2.1")
-
         import numpy
 
         range = end - start
