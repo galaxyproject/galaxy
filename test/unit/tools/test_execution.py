@@ -414,7 +414,7 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         )
 
     def __assert_no_errors( self, template_vars ):
-        assert "errors" in template_vars, "tool form rendered without errors defintion."
+        assert "errors" in template_vars, "Tool form rendered without error definition."
         errors = template_vars[ "errors" ]
         assert not errors, "Template rendered unexpected errors - %s" % errors
 
