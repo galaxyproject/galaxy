@@ -933,7 +933,11 @@ var FolderToolbarView = Backbone.View.extend({
       var dataset_ids = [];
       checkedValues.each(function(){
           if (this.parentElement.parentElement.id !== '') {
-              dataset_ids.push(this.parentElement.parentElement.id);
+              if (this.parentElement.parentElement.id.substring(0,1) == 'F'){
+                mod_toastr.error('Deleting folders is not implemented yet');
+              } else {
+                dataset_ids.push(this.parentElement.parentElement.id);
+              }
           }
       });
       // init the progress bar
@@ -1099,6 +1103,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('<p><%- library.get("description") %></p>');
     tmpl_array.push('<h3>Library synopsis:</h3>');
     tmpl_array.push('<p><%- library.get("synopsis") %></p>');
+    tmpl_array.push('<p data-toggle="tooltip" data-placement="top" title="<%- library.get("create_time") %>">created <%- library.get("create_time_pretty") %></p>');
 
     tmpl_array.push('</div>');
 
