@@ -94,7 +94,7 @@ fi
 
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    pip install -e git+https://github.com/natefoo/pip@linux-wheels#egg=pip
-    pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/simple/
-    PYTHONPATH=lib python -c "import galaxy.wheels; print '\n'.join(galaxy.wheels.optional('$GALAXY_CONFIG_FILE'))" | pip install -r /dev/stdin --index-url https://wheels.galaxyproject.org/simple/
+    pip install -e git+https://github.com/natefoo/pip@linux-wheels#egg=pip &&
+    pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/simple/ &&
+    PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))" | pip install -r /dev/stdin --index-url https://wheels.galaxyproject.org/simple/ || exit 1
 fi

@@ -17,7 +17,7 @@ fi
 python ./scripts/check_python.py
 [ $? -ne 0 ] && exit 1
 
-./scripts/common_startup.sh
+./scripts/common_startup.sh || exit 1
 
 # If there is a .venv/ directory, assume it contains a virtualenv that we
 # should run this instance in.
