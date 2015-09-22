@@ -6,8 +6,15 @@ raven.middleware
 :license: BSD, see LICENSE for more details.
 """
 
-from raven import Client
-from raven.utils.wsgi import get_current_url, get_headers, get_environ
+try:
+    from raven import Client
+    from raven.utils.wsgi import get_current_url, get_headers, get_environ
+except:
+    Client = None
+
+
+RAVEN_IMPORT_MESSAGE = ('The Python raven package is required to use this '
+                        'feature, please install it')
 
 
 class Sentry(object):
@@ -16,6 +23,7 @@ class Sentry(object):
     uncaught exceptions and send them to Sentry.
     """
     def __init__(self, application, dsn):
+        assert Client is not None, RAVEN_IMPORT_MESSAGE
         self.application = application
         self.client = Client( dsn )
 

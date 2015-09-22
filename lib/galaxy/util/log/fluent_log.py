@@ -4,11 +4,19 @@ Provides a `TraceLogger` implementation that logs to a fluentd collector
 
 import threading
 
-from fluent.sender import FluentSender
+try:
+    from fluent.sender import FluentSender
+except ImportError:
+    FluentSender = None
+
+
+FLUENT_IMPORT_MESSAGE = ('The Python fluent package is required to use this '
+                         'feature, please install it')
 
 
 class FluentTraceLogger( object ):
     def __init__( self, name, host='localhost', port=24224 ):
+        assert FluentSender is not None, FLUENT_IMPORT_MESSAGE
         self.lock = threading.Lock()
         self.thread_local = threading.local()
         self.name = name
