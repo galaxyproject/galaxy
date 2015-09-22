@@ -35,7 +35,12 @@ return {
             success : function(response) {
                 callback && callback();
                 form.reciept(ToolTemplate.success(response));
-                self._refreshHdas();
+                // Get hda ids from response, request detailed refresh of these.
+                var detailIds = [];
+                response.outputs.forEach(function(e, i, a){
+                    detailIds.push(e.id);
+                });
+                self._refreshHdas(detailIds);
             },
             error   : function(response, response_full) {
                 callback && callback();
@@ -135,9 +140,9 @@ return {
 
     /** Refreshes the history panel
     */
-    _refreshHdas: function() {
+    _refreshHdas: function(detailIds) {
         if (parent.Galaxy && parent.Galaxy.currHistoryPanel) {
-            parent.Galaxy.currHistoryPanel.refreshContents();
+            parent.Galaxy.currHistoryPanel.refreshContents(detailIds);
         }
     }
 };
