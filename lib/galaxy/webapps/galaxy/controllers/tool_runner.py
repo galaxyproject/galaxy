@@ -12,13 +12,7 @@ from galaxy import web
 from galaxy.tools import DefaultToolState
 from galaxy.tools import DataSourceTool
 from galaxy.tools.actions import upload_common
-from galaxy.tools.parameters import params_to_incoming
-from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters.basic import DataToolParameter
-from galaxy.tools.parameters.basic import DataCollectionToolParameter
-from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.bunch import Bunch
-from galaxy.util.hash_util import is_hashable
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController
 
