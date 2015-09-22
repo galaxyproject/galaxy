@@ -1,16 +1,16 @@
 """
 Adds the repository, repository_rating_association and repository_category_association tables.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
 handler = logging.StreamHandler( sys.stdout )
@@ -18,9 +18,6 @@ format = "%(name)s %(levelname)s %(asctime)s %(message)s"
 formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
-
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
 
 metadata = MetaData()
 
@@ -48,6 +45,7 @@ RepositoryCategoryAssociation_table = Table( "repository_category_association", 
                                              Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
                                              Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
 
+
 def upgrade(migrate_engine):
     print __doc__
     # Load existing tables
@@ -65,6 +63,7 @@ def upgrade(migrate_engine):
         RepositoryCategoryAssociation_table.create()
     except Exception, e:
         log.debug( "Creating repository_category_association table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     # Load existing tables
