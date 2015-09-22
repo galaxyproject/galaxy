@@ -1402,7 +1402,7 @@ class JobWrapper( object ):
         job = has_metrics.get_job()
         per_plugin_properties = self.app.job_metrics.collect_properties( job.destination_id, self.job_id, self.working_directory )
         if per_plugin_properties:
-            log.info( "Collecting job metrics for %s" % has_metrics )
+            log.info( "Collecting job metrics for %s: %s" % ( has_metrics, getattr( has_metrics, 'id', None ) ) )
         for plugin, properties in per_plugin_properties.iteritems():
             for metric_name, metric_value in properties.iteritems():
                 if metric_value is not None:
