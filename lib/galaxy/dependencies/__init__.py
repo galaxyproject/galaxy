@@ -31,10 +31,10 @@ class ConditionalDependencies( object ):
         try:
             job_conf_xml = self.config.get( "app:main", "job_config_file" )
         except configparser.NoOptionError:
-            job_conf_xml = join( dirname( self.config_file ), 'config/job_conf.xml')
+            job_conf_xml = join( dirname( self.config_file ), 'job_conf.xml')
         try:
             for plugin in ElementTree.parse( job_conf_xml ).find( 'plugins' ):
-                self.job_runners.append( plugin.attrib.load )
+                self.job_runners.append( plugin.attrib['load'] )
         except (OSError, IOError):
             pass
 
@@ -65,7 +65,7 @@ class ConditionalDependencies( object ):
     def check_drmaa( self ):
         return "galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners
 
-    def check_pbs( self ):
+    def check_pbs_python( self ):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
 
     def check_python_openid( self ):

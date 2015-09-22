@@ -6,4 +6,6 @@ python-openid
 MySQL-python
 fluent-logger
 raven
+pbs_python
+drmaa
 # PyRods not in PyPI
