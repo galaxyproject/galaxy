@@ -13,9 +13,6 @@ sys.path[1:1] = [ os.path.join( galaxy_root, "lib" ),
                   os.path.join( galaxy_root, 'test' ),
                   os.path.join( galaxy_root, 'lib', 'tool_shed', 'scripts', 'api' ) ]
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
-eggs.require( "nose" )
 import nose
 from mercurial import hg, ui
 from nose.plugins import Plugin

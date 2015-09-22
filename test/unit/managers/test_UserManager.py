@@ -8,8 +8,6 @@ import unittest
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
 import sqlalchemy
 
 from galaxy import model

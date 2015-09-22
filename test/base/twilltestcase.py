@@ -17,10 +17,7 @@ from json import loads
 from urlparse import urlparse
 from xml.etree import ElementTree
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require( 'twill' )
 import twill
 import twill.commands as tc
 from twill.other_packages._mechanize_dist import ClientForm

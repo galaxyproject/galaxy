@@ -4,8 +4,6 @@ from json import dumps
 from logging import getLogger
 from StringIO import StringIO
 
-from galaxy import eggs
-eggs.require( "requests" )
 from requests import get, post
 
 from galaxy import util
