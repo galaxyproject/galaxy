@@ -68,10 +68,30 @@ class ToolRunner( BaseUIController ):
         the dataset, extract the parameters, and display the appropriate tool
         form with parameters already filled in.
         """
-        if job_id:
-            return trans.response.send_redirect( url_for( controller="root", action_id="tool_runner/rerun", job_id=job_id ) )
-        else:
-            return trans.response.send_redirect( url_for( controller="root", action_id="tool_runner/rerun", dataset_id=id ) )
+
+        if job_id is None:
+            if not id:
+                error( "'id' parameter is required" )
+            try:
+                id = int( id )
+            except:
+                # it's not an un-encoded id, try to parse as encoded
+                try:
+                    id = trans.security.decode_id( id )
+                except:
+                    error( "Invalid value for 'id' parameter" )
+            # Get the dataset object
+            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
+            # only allow rerunning if user is allowed access to the dataset.
+            if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
+                error( "You are not allowed to access this dataset" )
+            # Get the associated job, if any.
+            job = data.creating_job
+            if job:
+                job_id = trans.security.encode_id( job.id )
+            else:
+                raise Exception("Failed to get job information for dataset hid %d" % data.hid)
+        return trans.response.send_redirect( url_for( controller="root", action_id="tool_runner/rerun", job_id=job_id ) )
 
     @web.expose
     def data_source_redirect( self, trans, tool_id=None ):
