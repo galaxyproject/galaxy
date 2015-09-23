@@ -152,13 +152,13 @@ class FolderManager( object ):
         changed = False
         if not trans.user_is_admin():
             if not self.check_manageable( trans, folder ):
-                raise InsufficientPermissionsException( "Only admins can update library folders." )
+                raise InsufficientPermissionsException( "You do not have proper permission to update library folders." )
         if folder.deleted == True:
             raise ItemAccessibilityException( "You cannot update deleted library folder. Undelete it first." )
-        if name is not None:
+        if name is not None and name != folder.name:
             folder.name = name
             changed = True
-        if description is not None:
+        if description is not None and description != folder.description:
             folder.description = description
             changed = True
         if changed:
