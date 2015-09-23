@@ -61,10 +61,12 @@ class InteractiveEnviornmentRequest(object):
         # will need to be recorded here. The ConfigParser doesn't provide a
         # .get() that will ignore missing sections, so we must make use of
         # their defaults dictionary instead.
-        default_dict['command_inject'] = '--sig-proxy=true'
-        default_dict['docker_hostname'] = 'localhost'
-        default_dict['wx_tempdir'] = 'False'
-        default_dict['command_wrapper'] = ''
+        default_dict = {
+            'command': 'docker run {docker_args}',
+            'command_inject': '--sig-proxy=true -e DEBUG=false',
+            'docker_hostname': 'localhost',
+            'wx_tempdir': 'False',
+        }
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
         if not os.path.exists( conf_path ):

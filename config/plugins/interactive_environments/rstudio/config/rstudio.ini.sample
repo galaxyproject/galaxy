@@ -1,5 +1,5 @@
 [main]
-# This cannot be changed
+# This CANNOT be changed. Eventually will be deprecated
 password_auth = True
 # Following options are ignored if using the Galaxy dynamic proxy but
 # are useful if mapping a range of ports for environment consumption.
@@ -15,13 +15,13 @@ password_auth = True
 # additional parameters. This command string is re-used for a `docker inspect`
 # command and will likely cause errors if it is extensively modified, past the
 # usual group/sudo changes.
-command = docker run {docker_args}
+#command = docker run {docker_args}
 
 # The docker image name that should be started.
 image = erasche/docker-rstudio-notebook:dev
 
 # Additional arguments that are passed to the `docker run` command.
-command_inject = --sig-proxy=true -e DEBUG=false
+#command_inject = --sig-proxy=true -e DEBUG=false
 
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
 # this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the
@@ -35,4 +35,4 @@ command_inject = --sig-proxy=true -e DEBUG=false
 # Try to set the tempdirectory to world execute - this can fix the issue 
 # where	  'sudo docker' is not able to mount the folder otherwise.
 # "finalize namespace chdir to /import permission denied"
-wx_tempdir = False
+#wx_tempdir = False
