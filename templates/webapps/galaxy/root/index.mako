@@ -3,6 +3,7 @@
 ${h.js("libs/bibtex", "libs/jquery/jquery-ui")}
 ${h.css("jquery-ui/smoothness/jquery-ui")}
 ${h.css("base")}
+<%def name="title()">Galaxy</%def>
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.templates("tool_link", "panel_section", "tool_search")}
