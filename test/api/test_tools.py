@@ -62,6 +62,19 @@ class ToolsTestCase( api.ApiTestCase ):
         self._assert_has_keys( case2_inputs[ 0 ], 'name', 'type', 'label', 'help', 'argument' )
         assert case2_inputs[ 0 ][ "name" ] == "seed"
 
+    @skip_without_tool( "multi_data_param" )
+    def test_show_multi_data( self ):
+        tool_info = self._show_valid_tool( "multi_data_param" )
+
+        f1_info, f2_info = tool_info[ "inputs" ][ 0 ], tool_info[ "inputs" ][ 1 ]
+        self._assert_has_keys( f1_info, "min", "max" )
+        assert f1_info["min"] == 1
+        assert f1_info["max"] == 1235
+
+        self._assert_has_keys( f2_info, "min", "max" )
+        assert f2_info["min"] is None
+        assert f2_info["max"] is None
+
     def _show_valid_tool( self, tool_id ):
         tool_show_response = self._get( "tools/%s" % tool_id, data=dict( io_details=True ) )
         self._assert_status_code_is( tool_show_response, 200 )
