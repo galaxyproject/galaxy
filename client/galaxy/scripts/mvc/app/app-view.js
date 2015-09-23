@@ -8,11 +8,16 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
     return Backbone.View.extend({
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
-            this.params  = this.options.params;
             this.setElement( this._template( options ) );
 
             // register this view
             Galaxy.app = this;
+
+            // url request parameters
+            Galaxy.params = this.options.params;
+
+            // shared backbone router
+            Galaxy.router = new Backbone.Router();
 
             // configure body
             $( 'body' ).append( this.$el );

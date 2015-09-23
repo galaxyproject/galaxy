@@ -1,8 +1,8 @@
 """
 API operations on the contents of a history dataset.
 """
+from galaxy import exceptions
 from galaxy import model
-from galaxy import exceptions as galaxy_exceptions
 from galaxy import web
 from galaxy.web.framework.helpers import is_true
 from galaxy import util
@@ -358,4 +358,4 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         except model.NoConverterException:
             exc_data = dict( source=original.ext, target=target_ext, available=original.get_converter_types().keys() )
-            raise galaxy_exceptions.RequestParameterInvalidException( 'Conversion not possible', **exc_data )
+            raise exceptions.RequestParameterInvalidException( 'Conversion not possible', **exc_data )

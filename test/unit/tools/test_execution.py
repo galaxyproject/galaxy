@@ -399,13 +399,13 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         return hdca
 
     def __assert_rerenders_tool_without_errors( self, template, template_vars ):
-        assert template == "tool_form.mako"
+        assert template == ""
         self.__assert_no_errors( template_vars )
         state = template_vars[ "tool_state" ]
         return state
 
     def __assert_exeuted( self, template, template_vars ):
-        if template == "tool_form.mako":
+        if template == "":
             self.__assert_no_errors( template_vars )
         self.assertEquals(
             template,
@@ -414,7 +414,7 @@ class ToolExecutionTestCase( TestCase, tools_support.UsesApp, tools_support.Uses
         )
 
     def __assert_no_errors( self, template_vars ):
-        assert "errors" in template_vars, "tool_form.mako rendered without errors defintion."
+        assert "errors" in template_vars, "Tool form rendered without error definition."
         errors = template_vars[ "errors" ]
         assert not errors, "Template rendered unexpected errors - %s" % errors
 

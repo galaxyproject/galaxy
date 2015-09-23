@@ -100,14 +100,11 @@ define([], function() {
         /** Main Template
         */
         _template: function(options) {
-            // create table element
-            var tmp =   '<div class="ui-table-form-element">' +
+            var tmp =   '<div class="ui-table-form-element input-name-' + options.name + '">' +
                             '<div class="ui-table-form-error ui-error">' +
                                 '<span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"/>' +
                             '</div>' +
                             '<div class="ui-table-form-title">';
-
-            // is optional
             if (options.collapsible) {
                 tmp +=          '<div class="ui-table-form-optional">' +
                                     '<i class="icon"/>' + options.label +
@@ -115,12 +112,8 @@ define([], function() {
             } else {
                 tmp += options.label;
             }
-
-            // finalize title
             tmp +=          '</div>' +
                             '<div class="ui-table-form-field">';
-
-            // add help
             tmp +=              '<div class="ui-table-form-info">';
             if (options.help) {
                 tmp +=              options.help;
@@ -129,12 +122,8 @@ define([], function() {
                 }
             }
             tmp +=              '</div>';
-
-            // finalize
             tmp +=          '</div>' +
                         '</div>';
-
-            // return input element
             return tmp;
         }
     });

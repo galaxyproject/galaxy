@@ -48,12 +48,12 @@ return {
                 } else {
                     // show error message with details
                     console.debug(response);
-                    response && form.modal.show({
+                    response && Galaxy.modal.show({
                         title   : 'Job submission failed',
                         body    : ToolTemplate.error(job_def),
                         buttons : {
                             'Close' : function() {
-                                form.modal.hide();
+                                Galaxy.modal.hide();
                             }
                         }
                     });
