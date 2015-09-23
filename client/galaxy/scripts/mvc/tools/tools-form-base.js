@@ -120,12 +120,12 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     if (self.form == undefined){
                         self.form = new Form();
                     }
-                    self.form.modal.show({
+                    Galaxy.modal.show({
                         title   : 'Tool cannot be executed',
                         body    : error_message,
                         buttons : {
                             'Close' : function() {
-                                self.form.modal.hide();
+                                Galaxy.modal.hide();
                             }
                         }
                     });
