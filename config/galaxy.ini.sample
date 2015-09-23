@@ -574,6 +574,12 @@ nglims_config_file = tool-data/nglims.yaml
 # nodejs to wrap connections in SSL).
 #dynamic_proxy_external_proxy=False
 
+# Additionally, when the dynamic proxy is proxied by an upstream server, you'll
+# want to specify a prefixed URL so both Galaxy and the proxy reside under the
+# same path that your cookies are under. This will result in a url like
+# https://FQDN/galaxy-prefix/gie_proxy for proxying
+#dynamic_proxy_prefix=gie_proxy
+
 # -- Logging and Debugging
 
 # If True, Galaxy will attempt to configure a simple root logger if a
