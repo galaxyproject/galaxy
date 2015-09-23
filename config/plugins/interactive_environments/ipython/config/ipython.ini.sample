@@ -17,6 +17,12 @@ image = bgruening/docker-ipython-notebook:dev
 # Additional arguments that are passed to the `docker run` command.
 command_inject = --sig-proxy=true -e DEBUG=false
 
+# Command to wrap around the full docker command.
+# For example, `sg 'docker' '{cmd}'` where {cmd} will be replaced by the full
+# docker command. Make sure to surround the {cmd} with single quotes(').
+# Default: empty
+#command_wrapper = 
+
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
 # this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the
 # Docker host of the spawned container if that is also not set.
