@@ -165,7 +165,6 @@ var DatasetListItemEdit = _super.extend(
                 href        : this.model.urls.rerun,
                 classes     : 'rerun-btn',
                 target      : this.linkTarget,
-                disabled    : !rerunnable,
                 faIcon      : 'fa-refresh',
                 onclick     : function(ev) {
                     ev.preventDefault();
