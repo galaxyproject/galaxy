@@ -51,7 +51,9 @@ class InteractiveEnviornmentRequest(object):
         self.notebook_pw_salt = self.generate_password(length=12)
         self.notebook_pw = self.generate_password(length=24)
 
-        self.temp_dir = os.path.abspath( tempfile.mkdtemp() )
+        ie_parent_temp_dir = self.attr.viz_config.get("docker", "docker_galaxy_temp_dir") or None
+        self.temp_dir = os.path.abspath( tempfile.mkdtemp( dir=ie_parent_temp_dir ) )
+
         if self.attr.viz_config.getboolean("docker", "wx_tempdir"):
             # Ensure permissions are set
             try:
@@ -70,6 +72,7 @@ class InteractiveEnviornmentRequest(object):
             'command_inject': '--sig-proxy=true -e DEBUG=false',
             'docker_hostname': 'localhost',
             'wx_tempdir': 'False',
+            'docker_galaxy_temp_dir': None
         }
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
