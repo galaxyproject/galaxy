@@ -317,6 +317,9 @@ class Job( object, HasJobMetrics, Dictifiable ):
                     PAUSED = 'paused',
                     DELETED = 'deleted',
                     DELETED_NEW = 'deleted_new' )
+    terminal_states = [ states.OK,
+                        states.ERROR,
+                        states.DELETED ]
     # Please include an accessor (get/set pair) for any new columns/members.
     def __init__( self ):
         self.session_id = None

@@ -1,19 +1,46 @@
+from functools import wraps
 from threading import Lock, Event
 from weakref import WeakValueDictionary
 from os import walk
 from os import curdir
+from os import listdir
+from os import makedirs
+from os import unlink
 from os.path import relpath
 from os.path import join
+from os.path import abspath
+from os.path import exists
+from errno import ENOENT, EEXIST
 import os.path
 import hashlib
 import shutil
 import json
-import base64
+import sys
+
+from six import binary_type
+
+# Variant of base64 compat layer inspired by BSD code from Bcfg2
+# https://github.com/Bcfg2/bcfg2/blob/maint/src/lib/Bcfg2/Compat.py
+if sys.version_info >= (3, 0):
+    from base64 import b64encode as _b64encode, b64decode as _b64decode
+
+    @wraps(_b64encode)
+    def b64encode(val, **kwargs):
+        try:
+            return _b64encode(val, **kwargs)
+        except TypeError:
+            return _b64encode(val.encode('UTF-8'), **kwargs).decode('UTF-8')
+
+    @wraps(_b64decode)
+    def b64decode(val, **kwargs):
+        return _b64decode(val.encode('UTF-8'), **kwargs).decode('UTF-8')
+else:
+    from base64 import b64encode, b64decode
 
 
 def unique_path_prefix(path):
     m = hashlib.md5()
-    m.update(path)
+    m.update(path.encode('utf-8'))
     return m.hexdigest()
 
 
@@ -75,15 +102,17 @@ def filter_destination_params(destination_params, prefix):
 def to_base64_json(data):
     """
 
-    >>> x = from_base64_json(to_base64_json(dict(a=5)))
-    >>> x["a"]
+    >>> enc = to_base64_json(dict(a=5))
+    >>> dec = from_base64_json(enc)
+    >>> dec["a"]
     5
     """
-    return base64.b64encode(json.dumps(data))
+    dumped = json_dumps(data)
+    return b64encode(dumped)
 
 
 def from_base64_json(data):
-    return json.loads(base64.b64decode(data))
+    return json.loads(b64decode(data))
 
 
 class PathHelper(object):
@@ -175,3 +204,78 @@ class EventHolder(object):
 
     def fail(self):
         self.failed = True
+
+
+def json_loads(obj):
+    if isinstance(obj, binary_type):
+        obj = obj.decode("utf-8")
+    return json.loads(obj)
+
+
+def json_dumps(obj):
+    if isinstance(obj, binary_type):
+        obj = obj.decode("utf-8")
+    return json.dumps(obj, cls=ClientJsonEncoder)
+
+
+class ClientJsonEncoder(json.JSONEncoder):
+
+    def default(self, obj):
+        if isinstance(obj, binary_type):
+            return obj.decode("utf-8")
+        return json.JSONEncoder.default(self, obj)
+
+
+class MessageQueueUUIDStore(object):
+    """Persistent dict-like object for persisting message queue UUIDs that are
+    awaiting acknowledgement or that have been operated on.
+    """
+
+    def __init__(self, persistence_directory, subdirs=None):
+        if subdirs is None:
+            subdirs = ['acknowledge_uuids']
+        self.__store = abspath(join(persistence_directory, *subdirs))
+        try:
+            makedirs(self.__store)
+        except (OSError, IOError) as exc:
+            if exc.errno != EEXIST:
+                raise
+
+    def __path(self, item):
+        return join(self.__store, item)
+
+    def __contains__(self, item):
+        return exists(self.__path(item))
+
+    def __setitem__(self, key, value):
+        open(self.__path(key), 'w').write(json.dumps(value))
+
+    def __getitem__(self, key):
+        return json.loads(open(self.__path(key)).read())
+
+    def __delitem__(self, key):
+        try:
+            unlink(self.__path(key))
+        except (OSError, IOError) as exc:
+            if exc.errno == ENOENT:
+                raise KeyError(key)
+            raise
+
+    def keys(self):
+        return iter(listdir(self.__store))
+
+    def get_time(self, key):
+        try:
+            return os.stat(self.__path(key)).st_mtime
+        except (OSError, IOError) as exc:
+            if exc.errno == ENOENT:
+                raise KeyError(key)
+            raise
+
+    def set_time(self, key):
+        try:
+            os.utime(self.__path(key), None)
+        except (OSError, IOError) as exc:
+            if exc.errno == ENOENT:
+                raise KeyError(key)
+            raise

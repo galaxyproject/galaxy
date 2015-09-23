@@ -65,9 +65,14 @@ class FileStager(object):
         self.config_files = client_job_description.config_files
         self.input_files = client_job_description.input_files
         self.output_files = client_job_description.output_files
-        self.tool_id = client_job_description.tool.id
-        self.tool_version = client_job_description.tool.version
-        self.tool_dir = abspath(client_job_description.tool.tool_dir)
+        if client_job_description.tool is not None:
+            self.tool_id = client_job_description.tool.id
+            self.tool_version = client_job_description.tool.version
+            self.tool_dir = abspath(client_job_description.tool.tool_dir)
+        else:
+            self.tool_id = None
+            self.tool_version = None
+            self.tool_dir = None
         self.working_directory = client_job_description.working_directory
         self.version_file = client_job_description.version_file
         self.arbitrary_files = client_job_description.arbitrary_files
@@ -142,7 +147,7 @@ class FileStager(object):
             for path in paths:
                 if path not in referenced_arbitrary_path_mappers:
                     referenced_arbitrary_path_mappers[path] = mapper
-        for path, mapper in referenced_arbitrary_path_mappers.iteritems():
+        for path, mapper in referenced_arbitrary_path_mappers.items():
             action = self.action_mapper.action(path, path_type.UNSTRUCTURED, mapper)
             unstructured_map = action.unstructured_map(self.path_helper)
             self.arbitrary_files.update(unstructured_map)
@@ -152,7 +157,7 @@ class FileStager(object):
             self.transfer_tracker.handle_transfer(referenced_tool_file, path_type.TOOL)
 
     def __upload_arbitrary_files(self):
-        for path, name in self.arbitrary_files.iteritems():
+        for path, name in self.arbitrary_files.items():
             self.transfer_tracker.handle_transfer(path, path_type.UNSTRUCTURED, name=name)
 
     def __upload_input_files(self):
@@ -180,10 +185,16 @@ class FileStager(object):
     def __upload_working_directory_files(self):
         # Task manager stages files into working directory, these need to be
         # uploaded if present.
-        working_directory_files = listdir(self.working_directory) if exists(self.working_directory) else []
+        working_directory_files = self.__working_directory_files()
         for working_directory_file in working_directory_files:
             path = join(self.working_directory, working_directory_file)
             self.transfer_tracker.handle_transfer(path, path_type.WORKDIR)
+
+    def __working_directory_files(self):
+        if self.working_directory and exists(self.working_directory):
+            return listdir(self.working_directory)
+        else:
+            return []
 
     def __initialize_version_file_rename(self):
         version_file = self.version_file
@@ -298,6 +309,9 @@ class JobInputs(object):
             Full path to directory to search.
 
         """
+        if directory is None:
+            return []
+
         pattern = r"(%s%s\S+)" % (directory, sep)
         return self.find_pattern_references(pattern)
 
