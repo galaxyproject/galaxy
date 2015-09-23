@@ -56,6 +56,14 @@ class InteractiveEnviornmentRequest(object):
                 log.error( "Could not change permissions of tmpdir %s" % self.temp_dir )
                 # continue anyway
 
+        # This duplicates the logic in the proxy manager
+        if self.attr.galaxy_config.dynamic_proxy_external_proxy:
+            self.attr.proxy_prefix = '%s/%s' % (
+                self.attr.galaxy_config.cookie_path,
+                self.attr.galaxy_config.dynamic_proxy_prefix)
+        else:
+            self.attr.proxy_prefix = ''
+
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
         # will need to be recorded here. The ConfigParser doesn't provide a
@@ -103,6 +111,7 @@ class InteractiveEnviornmentRequest(object):
             # DOCKER_PORT is NO LONGER AVAILABLE. All IEs must update.
             'cors_origin': request.host_url,
             'user_email': self.trans.user.email,
+            'proxy_prefix': self.attr.proxy_prefix,
         }
 
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
@@ -137,18 +146,15 @@ class InteractiveEnviornmentRequest(object):
             return "false"
 
     def url_template(self, url_template):
+        """Process a URL template
+
+        There are several variables accessible to the user:
+
+            - ${PROXY_URL} will be replaced with the dynamically create proxy's url
+            - ${PROXY_PREFIX} will be replaced with the prefix that may occur
         """
-            Process a URL template
-
-            There are several variables accessible to the user:
-
-                - ${PROXY_URL} will be replaced with dynamically create proxy
-        """
-        # Figure out our substitutions
-
         # Next several lines for older style replacements (not used with Galaxy dynamic
         # proxy)
-
         if self.attr.SSL_URLS:
             protocol = 'https'
         else:
@@ -159,7 +165,8 @@ class InteractiveEnviornmentRequest(object):
 
         # Only the following replacements are used with Galaxy dynamic proxy
         # URLs
-        url = url_template.replace('${PROXY_URL}', str(self.attr.proxy_url))
+        url = url_template.replace('${PROXY_URL}', str(self.attr.proxy_url)) \
+            .replace('${PROXY_PREFIX}', str(self.attr.proxy_prefix.replace('/', '%2F')))
         return url
 
     def volume(self, host_path, container_path, **kwds):
@@ -220,6 +227,7 @@ class InteractiveEnviornmentRequest(object):
                 self.trans,
                 host=self.attr.docker_hostname,
                 port=host_port,
+                proxy_prefix=self.attr.proxy_prefix,
             )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
@@ -247,10 +255,7 @@ class InteractiveEnviornmentRequest(object):
         containers with multiple ports working.
         """
         command = self.attr.viz_config.get("docker", "command")
-        command = command.replace(
-            "run {docker_args}",
-            "inspect %s" % container_id
-        )
+        command = command.format(docker_args="inspect %s" % container_id)
         log.info("Inspecting docker container {0} with command [{1}]".format(
             container_id,
             command

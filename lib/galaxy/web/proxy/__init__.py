@@ -31,7 +31,7 @@ class ProxyManager(object):
     def shutdown( self ):
         self.lazy_process.shutdown()
 
-    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None ):
+    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="" ):
         if self.manage_dynamic_proxy:
             log.info("Attempting to start dynamic proxy process")
             self.lazy_process.start_process()
@@ -46,9 +46,9 @@ class ProxyManager(object):
             host = host[0:host.index(':')]
         scheme = trans.request.scheme
         if not self.dynamic_proxy_external_proxy:
-            proxy_url = '%s://%s:%d/%s' % (scheme, host, self.dynamic_proxy_bind_port, self.dynamic_proxy_prefix)
+            proxy_url = '%s://%s:%d' % (scheme, host, self.dynamic_proxy_bind_port)
         else:
-            proxy_url = '%s://%s/%s' % (scheme, host, self.dynamic_proxy_prefix)
+            proxy_url = '%s://%s%s' % (scheme, host, proxy_prefix)
         return {
             'proxy_url': proxy_url,
             'proxied_port': proxy_requests.port,
