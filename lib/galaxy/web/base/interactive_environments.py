@@ -62,7 +62,7 @@ class InteractiveEnviornmentRequest(object):
         # .get() that will ignore missing sections, so we must make use of
         # their defaults dictionary instead.
         default_dict = {
-            'command': 'docker run {docker_args}',
+            'command': 'docker {docker_args}',
             'command_inject': '--sig-proxy=true -e DEBUG=false',
             'docker_hostname': 'localhost',
             'wx_tempdir': 'False',
