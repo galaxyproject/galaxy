@@ -10,6 +10,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import exceptions
+from galaxy.managers import folders
 from galaxy.util import pretty_print_time_interval
 
 log = logging.getLogger( __name__ )
@@ -73,6 +74,9 @@ class LibraryManager( object ):
         if name is not None:
             library.name = name
             changed = True
+            #  When library is renamed the root folder has to be renamed too.
+            folder_manager = folders.FolderManager()
+            folder_manager.update( trans, library.root_folder, name=name )
         if description is not None:
             library.description = description
             changed = True

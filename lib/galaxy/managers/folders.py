@@ -2,7 +2,13 @@
 Manager and Serializer for Library Folders.
 """
 
-import galaxy.exceptions
+from galaxy.exceptions import ItemAccessibilityException
+from galaxy.exceptions import InconsistentDatabase
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import InternalServerError
+from galaxy.exceptions import AuthenticationRequired
+from galaxy.exceptions import InsufficientPermissionsException
+from galaxy.exceptions import MalformedId
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 import logging
@@ -34,11 +40,11 @@ class FolderManager( object ):
         try:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).filter( trans.app.model.LibraryFolder.table.c.id == decoded_folder_id ).one()
         except MultipleResultsFound:
-            raise galaxy.exceptions.InconsistentDatabase( 'Multiple folders found with the same id.' )
+            raise InconsistentDatabase( 'Multiple folders found with the same id.' )
         except NoResultFound:
-            raise galaxy.exceptions.RequestParameterInvalidException( 'No folder found with the id provided.' )
+            raise RequestParameterInvalidException( 'No folder found with the id provided.' )
         except Exception, e:
-            raise galaxy.exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
+            raise InternalServerError( 'Error loading from the database.' + str( e ) )
         folder = self.secure( trans, folder, check_manageable, check_accessible )
         return folder
 
@@ -75,10 +81,10 @@ class FolderManager( object ):
         :raises: AuthenticationRequired, InsufficientPermissionsException
         """
         if not trans.user:
-            raise galaxy.exceptions.AuthenticationRequired( "Must be logged in to manage Galaxy items.", type='error' )
+            raise AuthenticationRequired( "Must be logged in to manage Galaxy items.", type='error' )
         current_user_roles = trans.get_current_user_roles()
         if not trans.app.security_agent.can_manage_library_item( current_user_roles, folder ):
-            raise galaxy.exceptions.InsufficientPermissionsException( "You don't have permissions to manage this folder.", type='error' )
+            raise InsufficientPermissionsException( "You don't have permissions to manage this folder.", type='error' )
         else:
             return folder
 
@@ -126,7 +132,7 @@ class FolderManager( object ):
         parent_folder = self.get( trans, parent_folder_id )
         current_user_roles = trans.get_current_user_roles()
         if not ( trans.user_is_admin or trans.app.security_agent.can_add_library_item( current_user_roles, parent_folder ) ):
-            raise galaxy.exceptions.InsufficientPermissionsException( 'You do not have proper permission to create folders under given folder.' )
+            raise InsufficientPermissionsException( 'You do not have proper permission to create folders under given folder.' )
         new_folder = trans.app.model.LibraryFolder( name=new_folder_name, description=new_folder_description )
         # We are associating the last used genome build with folders, so we will always
         # initialize a new folder with the first dbkey in genome builds list which is currently
@@ -138,6 +144,28 @@ class FolderManager( object ):
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions( trans, parent_folder, new_folder )
         return new_folder
+
+    def update( self, trans, folder, name=None, description=None):
+        """
+        Update the given folder's name or description.
+        """
+        changed = False
+        if not trans.user_is_admin():
+            if not self.check_manageable( trans, folder ):
+                raise InsufficientPermissionsException( "Only admins can update library folders." )
+        if folder.deleted == True:
+            raise ItemAccessibilityException( "You cannot update deleted library folder. Undelete it first." )
+        if name is not None:
+            folder.name = name
+            changed = True
+        if description is not None:
+            folder.description = description
+            changed = True
+        if changed:
+            trans.sa_session.add( folder )
+            trans.sa_session.flush()
+        return folder
+        
 
     def delete( self, trans, folder, undelete=False ):
         """
@@ -214,7 +242,7 @@ class FolderManager( object ):
         if ( ( len( encoded_folder_id ) % 16 == 1 ) and encoded_folder_id.startswith( 'F' ) ):
             cut_id = encoded_folder_id[ 1: ]
         else:
-            raise galaxy.exceptions.MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
+            raise MalformedId( 'Malformed folder id ( %s ) specified, unable to decode.' % str( encoded_folder_id ) )
         return cut_id
 
     def decode_folder_id( self, trans, encoded_folder_id ):
@@ -232,7 +260,7 @@ class FolderManager( object ):
         try:
             decoded_id = trans.security.decode_id( encoded_folder_id )
         except ValueError:
-            raise galaxy.exceptions.MalformedId( "Malformed folder id ( %s ) specified, unable to decode" % ( str( encoded_folder_id ) ) )
+            raise MalformedId( "Malformed folder id ( %s ) specified, unable to decode" % ( str( encoded_folder_id ) ) )
         return decoded_id
 
     def cut_and_decode( self, trans, encoded_folder_id ):
