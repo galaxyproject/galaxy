@@ -102,6 +102,7 @@ class InteractiveEnviornmentRequest(object):
             'remote_host': request.remote_addr,
             # DOCKER_PORT is NO LONGER AVAILABLE. All IEs must update.
             'cors_origin': request.host_url,
+            'user_email': self.trans.user.email,
         }
 
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
