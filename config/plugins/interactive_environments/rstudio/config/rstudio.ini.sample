@@ -10,10 +10,18 @@ password_auth = True
 # Command to launch docker container. For example `sudo docker` or `docker-lxc`.
 # If you need to use a command like `sg` you can do that here, just be sure to
 # wrap all of the docker portion in single quotes. E.g. `sg 'docker' 'docker {docker_args}'`
-command = docker run --sig-proxy=true -e DEBUG=false {docker_args} 
+#
+# It is recommended that you use command_inject if you need to inject
+# additional parameters. This command string is re-used for a `docker inspect`
+# command and will likely cause errors if it is extensively modified, past the
+# usual group/sudo changes.
+command = docker run {docker_args}
 
 # The docker image name that should be started.
 image = erasche/docker-rstudio-notebook:dev
+
+# Additional arguments that are passed to the `docker run` command.
+command_inject = --sig-proxy=true -e DEBUG=false
 
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
 # this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the

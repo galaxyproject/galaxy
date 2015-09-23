@@ -65,6 +65,7 @@ class InteractiveEnviornmentRequest(object):
         # will need to be recorded here. The ConfigParser doesn't provide a
         # .get() that will ignore missing sections, so we must make use of
         # their defaults dictionary instead.
+        default_dict['command_inject'] = '--sig-proxy=true'
         default_dict['docker_hostname'] = 'localhost'
         default_dict['wx_tempdir'] = 'False'
         default_dict['command_wrapper'] = ''
@@ -187,9 +188,10 @@ class InteractiveEnviornmentRequest(object):
         # Then we format in the entire docker command in place of
         # {docker_args}, so as to let the admin not worry about which args are
         # getting passed
-        command = command.format(docker_args='{environment} -d -p {port_ext}:{port_int} -v "{temp_dir}:/import/" {volume_str} {image}')
+        command = command.format(docker_args='{command_inject} {environment} -d -p {port_ext}:{port_int} -v "{temp_dir}:/import/" {volume_str} {image}')
         # Once that's available, we format again with all of our arguments
         command = command.format(
+            command_inject=self.attr.viz_config.get("docker", "command_inject"),
             environment=env_str,
             port_ext=self.attr.PORT,
             port_int=self.attr.docker_port,
