@@ -194,6 +194,7 @@ class InteractiveEnviornmentRequest(object):
         if cmd_wrapper != '' and '{cmd}' in cmd_wrapper:
             cmd = cmd_wrapper.format( cmd=cmd )
         return cmd
+
     def launch(self, raw_cmd=None, env_override={}, volumes=[]):
         if raw_cmd is None:
             raw_cmd = self.docker_cmd(env_override=env_override, volumes=volumes)
