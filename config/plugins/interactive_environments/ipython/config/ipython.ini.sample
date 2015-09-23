@@ -35,3 +35,10 @@ image = bgruening/docker-ipython-notebook:dev
 # where 'sudo docker' is not able to mount the folder otherwise.
 # "finalize namespace chdir to /import permission denied"
 #wx_tempdir = False
+
+# Overwride the IE tempdirectory. This can be useful if you regular tempdir is
+# located on an NFS share, which does not work well as Docker volume. In this case
+# you can have a shared sshfs share which you can use as temporary directory to
+# share data between the IE and Galaxy.
+#docker_galaxy_temp_dir = None
+
