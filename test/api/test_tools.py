@@ -5,6 +5,7 @@ from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
 from .helpers import LibraryPopulator
 from .helpers import skip_without_tool
+from base.test_data import TestDataResolver
 
 
 class ToolsTestCase( api.ApiTestCase ):
@@ -108,6 +109,12 @@ class ToolsTestCase( api.ApiTestCase ):
         table = "1 2 3\n4 5 6\n"
         result_content = self._upload_and_get_content( table )
         self.assertEquals( result_content, table )
+
+    def test_rdata_not_decompressed( self ):
+        # Prevent regression of https://github.com/galaxyproject/galaxy/issues/753
+        rdata_path = TestDataResolver().get_filename("1.RData")
+        rdata_metadata = self._upload_and_get_details( open(rdata_path, "rb"), file_type="auto" )
+        self.assertEquals( rdata_metadata[ "file_ext" ], "rdata" )
 
     @skip_without_tool( "multi_select" )
     def test_multi_select_as_list( self ):
@@ -1042,11 +1049,19 @@ class ToolsTestCase( api.ApiTestCase ):
         else:
             return create_response
 
-    def _upload_and_get_content( self, content, **upload_kwds ):
+    def _upload( self, content, **upload_kwds ):
         history_id = self.dataset_populator.new_history()
         new_dataset = self.dataset_populator.new_dataset( history_id, content=content, **upload_kwds )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        return history_id, new_dataset
+
+    def _upload_and_get_content( self, content, **upload_kwds ):
+        history_id, new_dataset = self._upload( content, **upload_kwds )
         return self.dataset_populator.get_history_dataset_content( history_id, dataset=new_dataset )
+
+    def _upload_and_get_details( self, content, **upload_kwds ):
+        history_id, new_dataset = self._upload( content, **upload_kwds )
+        return self.dataset_populator.get_history_dataset_details( history_id, dataset=new_dataset )
 
     def __tool_ids( self ):
         index = self._get( "tools" )
