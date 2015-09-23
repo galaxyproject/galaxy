@@ -67,7 +67,7 @@ class InteractiveEnviornmentRequest(object):
         # their defaults dictionary instead.
         default_dict['command_inject'] = '--sig-proxy=true'
         default_dict['docker_hostname'] = 'localhost'
-        default_dict['wx_tempdir'] = False
+        default_dict['wx_tempdir'] = 'False'
         default_dict['command_wrapper'] = ''
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
