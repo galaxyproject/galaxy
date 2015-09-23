@@ -1,5 +1,4 @@
 [main]
-
 # Following options are ignored if using the Galaxy dynamic proxy but
 # are useful if mapping a range of ports for environment consumption.
 #apache_urls = False
@@ -7,26 +6,18 @@
 #ssl = False
 
 [docker]
-
-# Command to execute docker. For example `sudo docker` or `docker-lxc`.
-command = docker
+# Command to launch docker container. For example `sudo docker` or `docker-lxc`.
+# If you need to use a command like `sg` you can do that here, just be sure to
+# wrap all of the docker portion in single quotes. E.g. `sg 'docker' 'docker {docker_args}'`
+command = docker run --sig-proxy=true -e DEBUG=false {docker_args}
 
 # The docker image name that should be started.
 image = bgruening/docker-ipython-notebook:dev
 
-# Additional arguments that are passed to the `docker run` command.
-command_inject = --sig-proxy=true -e DEBUG=false
-
-# Command to wrap around the full docker command.
-# For example, `sg 'docker' '{cmd}'` where {cmd} will be replaced by the full
-# docker command. Make sure to surround the {cmd} with single quotes(').
-# Default: empty
-#command_wrapper = 
-
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
 # this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the
 # Docker host of the spawned container if that is also not set.
-#galaxy_url = 
+#galaxy_url =
 
 # The Docker hostname. It can be useful to run the Docker daemon on a different
 # host than Galaxy.
