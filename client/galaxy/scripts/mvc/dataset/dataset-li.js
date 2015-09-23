@@ -37,19 +37,18 @@ var DatasetListItemView = _super.extend(
 
         /** where should pages from links be displayed? (default to new tab/window) */
         this.linkTarget = attributes.linkTarget || '_blank';
-
-        this._setUpListeners();
     },
 
     /** event listeners */
     _setUpListeners : function(){
+        // this.debug( 'dataset-li: _setUpListeners', this.model.id );
         _super.prototype._setUpListeners.call( this );
-
         // re-rendering on any model changes
         this.model.on( 'change', function( model, options ){
-            // if the model moved into the ready state and is expanded without details, fetch those details now
-            if( this.model.changedAttributes().state && this.model.inReadyState()
-            &&  this.expanded && !this.model.hasDetails() ){
+            // if the model changed into a ready state and is expanded, fetch details now
+            if( this.model.changedAttributes().state
+            &&  this.model.inReadyState()
+            &&  this.expanded ){
                 // will render automatically (due to fetch -> change)
                 this.model.fetch();
 
