@@ -246,11 +246,15 @@ class InteractiveEnviornmentRequest(object):
         containers with multiple ports working.
         """
         command = self.attr.viz_config.get("docker", "command")
-        command.replace(
+        command = command.replace(
             "run {docker_args}",
             "inspect %s" % container_id
         )
-        output = check_output(command)
+        log.info("Inspecting docker container {0} with command [{1}]".format(
+            container_id,
+            command
+        ))
+        output = check_output(command, shell=True)
         inspect_data = json.loads(output)
         # [{
         #     "NetworkSettings" : {
@@ -267,7 +271,7 @@ class InteractiveEnviornmentRequest(object):
             for binding in port_mappings[port_name]:
                 mappings.append((
                     port_name.replace('/tcp', '').replace('/udp', ''),
-                    port_mappings[port_name][binding]['HostIp'],
-                    port_mappings[port_name][binding]['HostPort']
+                    binding['HostIp'],
+                    binding['HostPort']
                 ))
         return mappings
