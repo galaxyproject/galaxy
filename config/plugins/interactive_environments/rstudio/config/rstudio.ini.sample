@@ -33,6 +33,6 @@ image = erasche/docker-rstudio-notebook:dev
 #docker_hostname = localhost
 
 # Try to set the tempdirectory to world execute - this can fix the issue 
-# where	  'sudo docker' is not able to mount the folder otherwise.
+# where 'sudo docker' is not able to mount the folder otherwise.
 # "finalize namespace chdir to /import permission denied"
 #wx_tempdir = False
