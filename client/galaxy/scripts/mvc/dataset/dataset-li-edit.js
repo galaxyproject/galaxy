@@ -159,25 +159,23 @@ var DatasetListItemEdit = _super.extend(
     /** Render icon-button to re-run the job that created this dataset. */
     _renderRerunButton : function(){
         var creating_job = this.model.get('creating_job');
-        var rerunnable = this.model.get('rerunnable');
-        if (!rerunnable){
-            return;
+        if (this.model.get('rerunnable')){
+            return faIconButton({
+                title       : _l( 'Run this job again' ),
+                href        : this.model.urls.rerun,
+                classes     : 'rerun-btn',
+                target      : this.linkTarget,
+                disabled    : !rerunnable,
+                faIcon      : 'fa-refresh',
+                onclick     : function(ev) {
+                    ev.preventDefault();
+                    var form = new ToolsForm.View({'job_id' : creating_job});
+                    form.deferred.execute(function(){
+                        Galaxy.app.display(form.$el);
+                    });
+                }
+            });
         }
-        else return faIconButton({
-            title       : _l( 'Run this job again' ),
-            href        : this.model.urls.rerun,
-            classes     : 'rerun-btn',
-            target      : this.linkTarget,
-            disabled    : !rerunnable,
-            faIcon      : 'fa-refresh',
-            onclick     : function(ev) {
-                ev.preventDefault();
-                var form = new ToolsForm.View({'job_id' : creating_job});
-                form.deferred.execute(function(){
-                    Galaxy.app.display(form.$el);
-                });
-            }
-        });
     },
 
     /** Render an icon-button or popupmenu of links based on the applicable visualizations */
