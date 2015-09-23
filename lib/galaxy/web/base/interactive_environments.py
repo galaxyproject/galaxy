@@ -68,6 +68,7 @@ class InteractiveEnviornmentRequest(object):
         default_dict['command_inject'] = '--sig-proxy=true'
         default_dict['docker_hostname'] = 'localhost'
         default_dict['wx_tempdir'] = False
+        default_dict['command_wrapper'] = ''
         viz_config = ConfigParser.SafeConfigParser(default_dict)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
         if not os.path.exists( conf_path ):
@@ -181,7 +182,7 @@ class InteractiveEnviornmentRequest(object):
         conf.update(env_override)
         env_str = ' '.join(['-e "%s=%s"' % (key.upper(), item) for key, item in conf.items()])
         volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
-        return '%s run %s -d %s -p %s:%s -v "%s:/import/" %s %s' % \
+        cmd = '%s run %s -d %s -p %s:%s -v "%s:/import/" %s %s' % \
             (self.attr.viz_config.get("docker", "command"),
              env_str,
              self.attr.viz_config.get("docker", "command_inject"),
@@ -189,7 +190,10 @@ class InteractiveEnviornmentRequest(object):
              temp_dir,
              volume_str,
              self.attr.viz_config.get("docker", "image"))
-
+        cmd_wrapper = self.attr.viz_config.get("docker", "command_wrapper")
+        if cmd_wrapper != '' and '{cmd}' in cmd_wrapper:
+            cmd = cmd_wrapper.format( cmd=cmd )
+        return cmd
     def launch(self, raw_cmd=None, env_override={}, volumes=[]):
         if raw_cmd is None:
             raw_cmd = self.docker_cmd(env_override=env_override, volumes=volumes)
