@@ -7,7 +7,7 @@ ssl = False
 
 [docker]
 command = docker
-image = erasche/docker-rstudio-notebook:dev
+image = erasche/docker-rstudio-notebook:15.07
 
 # Additional arguments that are passed to the `docker run` command. `-u`
 # settings are completely ignored.
