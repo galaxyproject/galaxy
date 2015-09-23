@@ -15,7 +15,7 @@ password_auth = True
 # additional parameters. This command string is re-used for a `docker inspect`
 # command and will likely cause errors if it is extensively modified, past the
 # usual group/sudo changes.
-#command = docker run {docker_args}
+#command = docker {docker_args}
 
 # The docker image name that should be started.
 image = erasche/docker-rstudio-notebook:dev

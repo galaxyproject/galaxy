@@ -180,7 +180,7 @@ class InteractiveEnviornmentRequest(object):
         # Then we format in the entire docker command in place of
         # {docker_args}, so as to let the admin not worry about which args are
         # getting passed
-        command = command.format(docker_args='{command_inject} {environment} -d -P -v "{temp_dir}:/import/" {volume_str} {image}')
+        command = command.format(docker_args='run {command_inject} {environment} -d -P -v "{temp_dir}:/import/" {volume_str} {image}')
         # Once that's available, we format again with all of our arguments
         command = command.format(
             command_inject=self.attr.viz_config.get("docker", "command_inject"),
