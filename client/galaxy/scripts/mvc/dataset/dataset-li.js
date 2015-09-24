@@ -66,11 +66,10 @@ var DatasetListItemView = _super.extend(
         if( view.model.inReadyState() && !view.model.hasDetails() ){
             return view.model.fetch({ silent: true });
 
-        // special case the need for the rerunnable attribute
+        // special case the need for the rerunnable and creating_job attributes
         // needed for rendering re-run button on queued, running datasets
         } else if( !view.model.has( 'rerunnable' ) ){
             return view.model.fetch({ silent: true, data: {
-                view: 'summary',
                 // only fetch rerunnable and creating_job to keep overhead down
                 keys: [ 'rerunnable', 'creating_job' ].join(',')
             }});
