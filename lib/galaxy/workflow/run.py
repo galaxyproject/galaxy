@@ -285,7 +285,10 @@ class WorkflowProgress( object ):
                 raise modules.DelayedWorkflowEvaluation()
         return replacement
 
-    def set_outputs_for_input( self, step, outputs={} ):
+    def set_outputs_for_input( self, step, outputs=None ):
+        if outputs is None:
+            outputs = {}
+
         if self.inputs_by_step_id:
             outputs[ 'output' ] = self.inputs_by_step_id[ step.id ]
 
