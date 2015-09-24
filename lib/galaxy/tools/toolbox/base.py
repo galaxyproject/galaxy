@@ -807,18 +807,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             else:
                 tool_tup = ( os.path.abspath( tool.config_file ), os.path.split( tool.config_file )[-1]  )
             tarball_files.append( tool_tup )
-            # TODO: This feels hacky.
-            tool_command = tool.command.strip().split()[0]
-            tool_path = os.path.dirname( os.path.abspath( tool.config_file ) )
-            # Add the tool XML to the tuple that will be used to populate the tarball.
-            if os.path.exists( os.path.join( tool_path, tool_command ) ):
-                tarball_files.append( ( os.path.join( tool_path, tool_command ), tool_command ) )
-            # Find and add macros and code files.
-            for external_file in tool.get_externally_referenced_paths( os.path.abspath( tool.config_file ) ):
-                external_file_abspath = os.path.abspath( os.path.join( tool_path, external_file ) )
-                tarball_files.append( ( external_file_abspath, external_file ) )
-            if os.path.exists( os.path.join( tool_path, "Dockerfile" ) ):
-                tarball_files.append( ( os.path.join( tool_path, "Dockerfile" ), "Dockerfile" ) )
+
             # Find tests, and check them for test data.
             tests = tool.tests
             if tests is not None:
@@ -864,6 +853,21 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                                 file( table_conf, 'w' ).write( table_definition )
                                 tarball_files.append( ( table_conf, os.path.join( 'tool-data', 'tool_data_table_conf.xml.sample' ) ) )
                                 temp_files.append( table_conf )
+
+            tool_dir_path = os.path.dirname( os.path.abspath( tool.config_file ) )
+            if tool_dir_path[-1] != os.sep:
+                tool_dir_path += os.sep
+            for walk_base_dir, walk_dirs, walk_files in os.walk(tool_dir_path):
+                for walk_file in walk_files:
+                    walk_path = os.path.join(walk_base_dir, walk_file)
+                    found = False
+                    for fspath, tarpath in tarball_files:
+                        if fspath == walk_path:
+                            found = True
+                    if not found:
+                        tarpath = re.sub('^' + tool_dir_path, "", walk_path)
+                        tarball_files.append( [walk_path, tarpath] )
+
             # Create the tarball.
             fd, tarball_archive = tempfile.mkstemp( suffix='.tgz' )
             os.close( fd )
