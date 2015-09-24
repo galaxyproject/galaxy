@@ -71,8 +71,8 @@ var DatasetListItemView = _super.extend(
         } else if( !view.model.has( 'rerunnable' ) ){
             return view.model.fetch({ silent: true, data: {
                 view: 'summary',
-                // only fetch rerunnable to keep overhead down
-                keys: 'rerunnable'
+                // only fetch rerunnable and creating_job to keep overhead down
+                keys: [ 'rerunnable', 'creating_job' ].join(',')
             }});
         }
         return jQuery.when();
