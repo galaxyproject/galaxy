@@ -84,8 +84,18 @@ class CompressedFile( object ):
                 external_attributes = self.archive.getinfo( filename ).external_attr
                 # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
                 unix_permissions = external_attributes >> 16
-                if unix_permissions != 0 and os.path.exists( absolute_filepath ):
-                    os.chmod( absolute_filepath, unix_permissions )
+                if unix_permissions != 0:
+                    if os.path.exists( absolute_filepath ):
+                        os.chmod( absolute_filepath, unix_permissions )
+                    else:
+                        #absolute_filepath could be wrong because:
+                            #it contains the common prefix twice so use path
+                            #is actually not absolute so use os.path.abspath
+                        absolute_filepath = os.path.abspath(os.path.join(path, filename ))
+                        if os.path.exists( absolute_filepath ):
+                            os.chmod( absolute_filepath, unix_permissions )
+                        else:
+                            log.debug( 'Unable to change permission on extracted file %s as it could not be found.', str( filename )  )
         return os.path.abspath( os.path.join( extraction_path, common_prefix ) )
 
     def getmembers_tar( self ):
