@@ -34,7 +34,7 @@ hurdle, most find that GIEs require little to no maintenance.
 Setting up the Proxy
 ^^^^^^^^^^^^^^^^^^^^
 
-Currently the Galaxy proxy is a NodeJS+Sqlite3 proxy. 
+Currently the Galaxy proxy is a NodeJS+Sqlite3 proxy.
 
 - Node has recently upgraded, and our proxy is pinned to an old version of
   sqlite3. As such you'll currently need to have an older version of Node
@@ -45,12 +45,16 @@ Currently the Galaxy proxy is a NodeJS+Sqlite3 proxy.
   installs to ``/usr/bin/nodejs``, whereas ``npm`` expects it to be
   ``/usr/bin/node``. You will need to create that symlink yourself.
 
-Once Node and npm are ready to go, you'll need to install the dependencies::
+Once Node and npm are ready to go, you'll need to install the dependencies
+
+.. code-block:: console
 
     $ cd $GALAXY_ROOT/lib/galaxy/web/proxy/js
     $ npm install
 
-Running ``node lib/main.js --help`` should produce some useful help text::
+Running ``node lib/main.js --help`` should produce some useful help text
+
+.. code-block::
 
     Usage: main [options]
 
@@ -67,7 +71,9 @@ Running ``node lib/main.js --help`` should produce some useful help text::
 There are two ways to handle actually running the proxy. The first is to have
 Galaxy automatically launch the proxy as needed, the second is to manage it
 with something like Supervisord. The command for launching the proxy manually
-(or via supervisord) is::
+(or via supervisord) is
+
+.. code-block::  console
 
     $ node $GALAXY_ROOT/lib/galaxy/web/proxy/js/main.js --ip 0.0.0.0 \
         --port 8800 --sessions $GALAXY_ROOT/database/session_map.sqlite \
@@ -76,7 +82,9 @@ with something like Supervisord. The command for launching the proxy manually
 Configuring the Proxy
 ^^^^^^^^^^^^^^^^^^^^^
 
-Configuration is all managed in ``galaxy.ini``::
+Configuration is all managed in ``galaxy.ini``
+
+.. code-block::  ini
 
     dynamic_proxy_manage=True
     dynamic_proxy_session_map=database/session_map.sqlite
@@ -86,7 +94,9 @@ Configuration is all managed in ``galaxy.ini``::
 
 As you can see most of these variables map directly to the command line
 arguments to the NodeJS script. There are a few extra parameters which merit
-individual discussion::
+individual discussion
+
+.. code-block:: ini
 
     dynamic_proxy_external_proxy=True
     dynamic_proxy_prefix=gie_proxy
@@ -113,7 +123,9 @@ to Galaxy. You will need to add special upstream proxy configuration to handle
 this, and you'll need to use the same ``dynamic_proxy_prefix`` in your
 ``galaxy.ini`` that you use in your URL routes.
 
-Apache::
+Apache
+
+.. code-block:: apache
 
     # IPython specific. Other IEs may require their own routes.
     ProxyPass        /galaxy/gie_proxy/ipython/api/kernels ws://localhost:8800/galaxy/gie_proxy/ipython/api/kernels
@@ -128,7 +140,9 @@ Apache::
 
 Please note you will need to be using apache2.4 with ``mod_proxy_wstunnel``.
 
-Nginx::
+Nginx
+
+.. code-block::
 
     # TODO, please PR / ping erasche on IRC if you have samples
 
@@ -143,22 +157,28 @@ not on your webserver, serving Galaxy. This feature has been available since
 First you need to configure a second host to be Docker enabled. In the
 following we call this host ``gx-docker`` You need to start the Docker daemon
 and bind it to a TCP port, not to a socket as is the default. For example
-you can start the daemon with::
+you can start the daemon with
 
-    docker -H 0.0.0.0:4243 -d
+.. code-block:: console
+
+    $ docker -H 0.0.0.0:4243 -d
 
 On your client, the Galaxy webserver, you can now install a Docker client. This
 can also be done on older Systems like Scientific-Linux, CentOS 6, which does
 not have Docker support by default. The client just talks to the Docker daemon
 on host ``gx-docker``, and does not run anything itself, locally. You can test
 your configuration for example by starting busybox from your client on the
-Docker host with::
+Docker host with
 
-    docker -H tcp://gx-docker:4243 run -it busybox sh
+.. code-block:: console
+
+    $ docker -H tcp://gx-docker:4243 run -it busybox sh
 
 So far so good! Now we need to configure Galaxy to use our new Docker host
 to start the Interactive Environments. For that we need to edit the IPython GIE
-configuration, ``ipython.ini`` to use our custom docker host::
+configuration, ``ipython.ini`` to use our custom docker host
+
+.. code-block:: ini
 
     [main]
 
@@ -171,7 +191,9 @@ Please adapt your ``command`` and the ``image`` as needed.
 
 As next step we need to configure a share mount point between the Docker host
 and Galaxy. Unfortunately, this can not be a NFS mount. Docker does not like
-NFS yet. You could for example use a sshfs mount with the following script::
+NFS yet. You could for example use a sshfs mount with the following script
+
+.. code-block:: bash
 
     if mount | grep ^gx-docker:/var/tmp/gx-docker; then
         echo "/var/tmp/gx-docker already mounted."
@@ -194,7 +216,9 @@ Directory Layout
 ^^^^^^^^^^^^^^^^
 
 The GIE directory layout looks identical to that of normal visualization
-plugins, for those familiar with developing those::
+plugins, for those familiar with developing those
+
+.. code-block:: console
 
     $ tree $GALAXY_ROOT/config/plugins/interactive_environments/ipython/
     config/plugins/interactive_environments/ipython/
@@ -226,12 +250,16 @@ First Steps, Configuration
 
 We will name our GIE "helloworld", but you are free to name your's differently.
 We'll first need to create the directory structure and set up our
-configuration::
+configuration
+
+.. code-block:: console
 
     $ mkdir -p $GALAXY_ROOT/config/plugins/interactive_environments/helloworld/{config,static,templates}
     $ cd $GALAXY_ROOT/config/plugins/interactive_environments/helloworld/
 
-Next, you'll need to create the GIE plugin XML file ``config/helloworld.xml``::
+Next, you'll need to create the GIE plugin XML file ``config/helloworld.xml``
+
+.. code-block:: xml
 
     <?xml version="1.0" encoding="UTF-8"?>
     <!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
@@ -255,7 +283,9 @@ Next, you'll need to create the GIE plugin XML file ``config/helloworld.xml``::
         <entry_point entry_point_type="mako">helloworld.mako</entry_point>
     </interactive_environment>
 
-Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` which controlls docker interaction::
+Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` which controlls docker interaction
+
+.. code-block:: ini
 
     [main]
     # Unused
@@ -289,19 +319,29 @@ flexibility than many other templating languages. It's because of this
 flexibility (and ability to write plain python code in them) that GIEs were
 possible to develop easily.
 
-In our ``templates/helloworld.mako``, we'll add the following::
+In our ``templates/helloworld.mako``, we'll add the following
+
+.. code-block:: html+mako
 
     <%namespace name="ie" file="ie.mako" />
 
-This line says to inherit from the ``ie.mako`` file that's available elsewhere. Next we'll add the following::
+This line says to inherit from the ``ie.mako`` file that's available in
+``$GALAXY_ROOT/config/plugins/interactive_environments/common/templates/ie.mako``.
+Next we'll add the following
+
+.. code-block:: html+mako
 
     <%
     # Sets ID and sets up a lot of other variables
     ie_request.load_deploy_config()
 
+    # Define a volume that will be mounted into the container.
+    # This is a useful way to provide access to large files in the container,
+    # if the user knows ahead of time that they will need it.
     user_file = ie_request.volume(
         hda.file_name, '/input/file.dat', how='ro')
 
+    # Launch the IE. This builds and runs the docker command in the background.
     ie_request.launch(
         volumes=[user_file],
         env_override={
@@ -309,6 +349,8 @@ This line says to inherit from the ``ie.mako`` file that's available elsewhere. 
         }
     )
 
+    # Only once the container is launched can we template our URLs. The ie_request
+    # doesn't have all of the information needed until the container is running.
     url = ie_request.url_template('${PROXY_URL}/helloworld/')
     %>
 
@@ -316,7 +358,9 @@ That mako snippet loaded the configuration from the INI files, launched the
 docker container, and then built a URL to the correct endpoint, through the
 Galaxy NodeJS proxy. Additionally we've set an environment variable named ``CUSTOM`` with the value ``42`` to be passed to the container, and we've attached the dataset the user selected (available in ``hda``) to the container as a read-only volume.
 
-We'll continue appending to our ``helloworld.mako`` the HTML code that's actually displayed to the user, when this template is rendered::
+We'll continue appending to our ``helloworld.mako`` the HTML code that's actually displayed to the user, when this template is rendered
+
+.. code-block:: html+mako
 
     <html>
     <head>
@@ -374,12 +418,12 @@ assume that only the correct user will have access to a given notebook.
 
 In the ``static/`` directory, we generally create a ``js/`` directory below that, and create a ``{gie}.js`` (so, ``static/js/helloworld.js``) file in there. That file will have a function, ``load_notebook`` which will check if the GIE is available, and when it is, display it to the user.
 
-We start by writing the load notebook function, which is pretty generic::
+We start by writing the load notebook function, which is pretty generic
 
-    /**
-    * Load an interactive environment (IE) from a remote URL
-    * @param {String} notebook_access_url: the URL embeded in the page and loaded
-    */
+.. code-block:: javascript
+
+    // Load an interactive environment (IE) from a remote URL
+    // @param {String} notebook_access_url: the URL embeded in the page and loaded 
     function load_notebook(notebook_access_url){
         // When the page has completely loaded...
         $( document ).ready(function() {
@@ -393,11 +437,10 @@ We start by writing the load notebook function, which is pretty generic::
 
 This function will display a spinner to the user to indicate process, and then make multiple requests to ``notebook_access_url``. That MUST return a 200 OK for the ``_handle_notebook_loading`` function to ever be called. 302s do not count!
 
-With that, we've almost completed the Javascript portion, just need to implement the function to display the GIE to the user in an iframe::
+With that, we've almost completed the Javascript portion, just need to implement the function to display the GIE to the user in an iframe
 
-    /**
-    * Must be implemented by IEs
-    */
+.. code-block:: javascript
+
     function _handle_notebook_loading(notebook_access_url){
         append_notebook(notebook_access_url);
     }
@@ -406,19 +449,24 @@ With that, we've almost completed the Javascript portion, just need to implement
 This function is very short. Historically, the GIE process involved a complex dance of:
 
 - generating a random password in the mako template
-- setting it as a javascript variable 
+- setting it as a javascript variable
 - passing it to the docker container
 - once the container was available, have the javascript automatically log a
   user in (something browsers try to prevent since that's otherwise an XSS
   vulnerability.)
 - hope everything worked
 
-Since the NodeJS proxy takes care of authentication/authorization, you can omit any of that code. You may wish to look at the IPython and RStudio GIEs for examples of the complex things that can be done at every step.
+Since the NodeJS proxy takes care of authentication/authorization, we can
+reduce the helloworld ``_handle_notebook_loading`` function to a simple
+``append_notebook`` call. You may wish to look at the IPython and RStudio GIEs
+for examples of the complex things that can be done at every step.
 
 The GIE Container
 ^^^^^^^^^^^^^^^^^
 
-We'll build a simple container that just displays the dataset a user has selected to them. Remember when we attached a volume to the container? We'll make use of that now.
+We'll build a simple container that just displays the dataset a user has
+selected to them. Remember when we attached a volume to the container? We'll
+make use of that now.
 
 GIE Containers (often) consist of:
 
@@ -427,9 +475,15 @@ GIE Containers (often) consist of:
 - A custom startup script/entrypoint
 - A script to monitor traffic and kill unused containers
 
-We have to monitor the container's traffic and kill off unused containers, bceause no one is watching them. The user launches the container in Galaxy, and Galaxy immediately forgets the container exists. Thus, we say that if a container has no connections to TCP connections to itself, then it should commit suicide by killing the root process.
+We have to monitor the container's traffic and kill off unused containers,
+bceause no one is watching them. The user launches the container in Galaxy, and
+Galaxy immediately forgets the container exists. Thus, we say that if a
+container has no connections to TCP connections to itself, then it should
+commit suicide by killing the root process.
 
-Here's an example Dockerfile for our helloworld container::
+Here's an example Dockerfile for our helloworld container
+
+.. code-block:: dockerfile
 
     FROM nginx
     # These environment variables are passed from Galaxy to the container
@@ -443,33 +497,40 @@ Here's an example Dockerfile for our helloworld container::
         GALAXY_WEB_PORT=10000 \
         HISTORY_ID=none \
         REMOTE_HOST=none
-        RUN apt-get -qq update && \
-            apt-get install --no-install-recommends -y \
-            wget procps nginx python python-pip net-tools
+    RUN apt-get -qq update && \
+        apt-get install --no-install-recommends -y \
+        wget procps nginx python python-pip net-tools
 
-        # Our very important scripts. Make sure you've run `chmod +x *.sh`
-        # outside of the container!
-        ADD ./startup.sh /startup.sh
-        ADD ./monitor_traffic.sh /monitor_traffic.sh
+    # Our very important scripts. Make sure you've run `chmod +x startup.sh
+    # monitor_traffic.sh` outside of the container!
+    ADD ./startup.sh /startup.sh
+    ADD ./monitor_traffic.sh /monitor_traffic.sh
 
-        # /import will be the universal mount-point for IPython
-        # The Galaxy instance can copy in data that needs to be present to the
-        # container
-        RUN mkdir /import
+    # /import will be the universal mount-point for IPython
+    # The Galaxy instance can copy in data that needs to be present to the
+    # container
+    RUN mkdir /import
 
-        # Nginx configuration
-        COPY ./proxy.conf /proxy.conf
+    # Nginx configuration
+    COPY ./proxy.conf /proxy.conf
 
-        VOLUME ["/import"]
-        WORKDIR /import/
+    VOLUME ["/import"]
+    WORKDIR /import/
 
-        # EXTREMELY IMPORTANT! You must expose a SINGLE port on your container.
-        EXPOSE 80
-        CMD /startup.sh
+    # EXTREMELY IMPORTANT! You must expose a SINGLE port on your container.
+    EXPOSE 80
+    CMD /startup.sh
 
-If you have questions on this, please feel free to contact us on IRC (freenode#galaxyproject).
+If you have questions on this, please feel free to contact us on IRC
+(`irc.freenode.net#galaxyproject <https://webchat.freenode.net/?channels=galaxyproject>`__).
 
-The proxy configuration is interesting, here we'll point NGINX to reverse proxy a service running on ``:8000`` inside the container. That port will be hosting a python process which serves up the directory contents of ``/import``, i.e. the file the user selected which was mounted as a volume into ``/import/file.dat``::
+The proxy configuration is interesting, here we'll point NGINX to reverse proxy
+a service running on ``:8000`` inside the container. That port will be hosting
+a python process which serves up the directory contents of ``/import``, i.e.
+the file the user selected which was mounted as a volume into
+``/import/file.dat``
+
+.. code-block:: nginx
 
     server {
         listen 80;
@@ -484,7 +545,9 @@ The proxy configuration is interesting, here we'll point NGINX to reverse proxy 
     }
 
 
-And here we'll run that service in our ``startup.sh`` file::
+And here we'll run that service in our ``startup.sh`` file
+
+.. code-block:: bash
 
     #!/bin/bash
     cp /proxy.conf /etc/nginx/conf.d/default.conf;
@@ -500,7 +563,9 @@ And here we'll run that service in our ``startup.sh`` file::
     # easier as logs will be available from `docker logs ...`
     nginx -g 'daemon off;'
 
-Lastly, our ``monitor_traffic.sh`` file is often re-used between containers, the only adjustment being the port that is looked at::
+Lastly, our ``monitor_traffic.sh`` file is often re-used between containers, the only adjustment being the port that is looked at
+
+.. code-block:: bash
 
     #!/bin/bash
     while true; do
@@ -511,7 +576,9 @@ Lastly, our ``monitor_traffic.sh`` file is often re-used between containers, the
         fi
     done
 
-With those files, ``monitor_traffic.sh``, ``Dockerfile``, ``startup.sh``, and ``proxy.conf``, you should be able to build your ``hello-ie`` container::
+With those files, ``monitor_traffic.sh``, ``Dockerfile``, ``startup.sh``, and ``proxy.conf``, you should be able to build your ``hello-ie`` container
+
+.. code-block:: bash
 
     $ cd hello-ie
     $ docker build -t hello-ie .
