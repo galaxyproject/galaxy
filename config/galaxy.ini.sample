@@ -654,6 +654,14 @@ use_interactive = True
 # lot of CPU.
 #use_heartbeat = False
 
+
+# Log to Sentry
+# Sentry is an open source logging and error aggregation platform.  Setting
+# sentry_dsn will enable the Sentry middleware and errors will be sent to the
+# indicated sentry instance.  This connection string is available in your
+# sentry instance under <project_name> -> Settings -> API Keys.
+#sentry_dsn = None
+
 # -- Data Libraries
 
 # These library upload options are described in much more detail in the wiki:
