@@ -75,7 +75,7 @@ class YamlToolSource(ToolSource):
         for output in output_defs:
             outputs[output.name] = output
         # TODO: parse outputs collections
-        return output_defs, odict()
+        return outputs, odict()
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format

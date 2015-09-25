@@ -241,10 +241,12 @@ var DatasetCollection = Backbone.Model
         return json;
     },
 
-    /** is the collection done with updates and ready to be used? (finished running, etc.) */
+    /** Is this collection in a 'ready' state no processing (for the collection) is left
+     *  to do on the server.
+     */
     inReadyState : function(){
-//TODO: state currenly unimplemented for collections
-        return true;
+        var populated = this.get( 'populated' );
+        return ( this.isDeletedOrPurged() || populated );
     },
 
     //TODO:?? the following are the same interface as DatasetAssociation - can we combine?

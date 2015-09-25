@@ -35,6 +35,7 @@ return {
             success : function(response) {
                 callback && callback();
                 form.reciept(ToolTemplate.success(response));
+                // begin checking the history for updates
                 self._refreshHdas();
             },
             error   : function(response, response_full) {
@@ -135,9 +136,9 @@ return {
 
     /** Refreshes the history panel
     */
-    _refreshHdas: function() {
+    _refreshHdas: function(detailIds, options) {
         if (parent.Galaxy && parent.Galaxy.currHistoryPanel) {
-            parent.Galaxy.currHistoryPanel.refreshContents();
+            parent.Galaxy.currHistoryPanel.refreshContents(detailIds, options);
         }
     }
 };
