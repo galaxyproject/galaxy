@@ -136,12 +136,48 @@ Nginx::
 Docker on Another Host
 ^^^^^^^^^^^^^^^^^^^^^^
 
+There are many reasons to run Interactive Environments on a separate host and
+not on your webserver, serving Galaxy. This feature has been available since
+15.07 and is used in production at the University of Freiburg.
 
+First you need to configure a second host to be Docker enabled. In the
+following we call this host ``gx-docker`` You need to start the Docker daemon
+and bind it to a TCP port, not to a socket as is the default. For example
+you can start the daemon with::
 
+    docker -H 0.0.0.0:4243 -d
 
+On your client, the Galaxy webserver, you can now install a Docker client. This
+can also be done on older Systems like Scientific-Linux, CentOS 6, which does
+not have Docker support by default. The client just talks to the Docker daemon
+on host ``gx-docker``, and does not run anything itself, locally. You can test
+your configuration for example by starting busybox from your client on the
+Docker host with::
 
+    docker -H tcp://gx-docker:4243 run -it busybox sh
 
+So far so good! Now we need to configure Galaxy to use our new Docker host
+to start the Interactive Environments. For that we need to edit the IPython GIE
+configuration, ``ipython.ini`` to use our custom docker host::
 
+    [main]
 
+    [docker]
+    command = docker -H tcp://gx-docker:4243 {docker_args}
+    image = bgruening/docker-ipython-notebook:dev
+    docker_hostname = gx-docker
 
+Please adapt your ``command`` and the ``image`` as needed.
 
+As next step we need to configure a share mount point between the Docker host
+and Galaxy. Unfortunately, this can not be a NFS mount. Docker does not like
+NFS yet. You could for example use a sshfs mount with the following script::
+
+    if mount | grep ^gx-docker:/var/tmp/gx-docker; then
+        echo "/var/tmp/gx-docker already mounted."
+    else
+        sshfs gx-docker:/var/tmp/gx-docker /var/tmp/gx-docker
+        echo 'Mounting ...'
+    fi
+
+This will let Galaxy and the Docker host share temporary files.
