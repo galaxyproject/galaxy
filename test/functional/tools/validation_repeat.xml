@@ -13,6 +13,7 @@
     </repeat>
     <repeat name="r2" label="Repeat 2">
       <param name="text" type="text" label="text input">
+        <validator type="empty_field" />
         <sanitizer>
           <valid initial="none">
             <add value="a"/>
