@@ -38,6 +38,8 @@ Contents
 
    Developer Documentation <dev/index>
 
+   Admin Documentation <admin/index>
+
 Indices and tables
 ==================
 
