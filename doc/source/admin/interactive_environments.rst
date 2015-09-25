@@ -292,7 +292,7 @@ Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` 
 
     [docker]
     # Command to execute docker. For example `sudo docker` or `docker-lxc`.
-    #command = docker run {docker_args}
+    command = docker run {docker_args}
 
     # The docker image name that should be started.
     image = hello-ie
@@ -492,11 +492,12 @@ Here's an example Dockerfile for our helloworld container
     ENV DEBIAN_FRONTEND=noninteractive \
         API_KEY=none \
         DEBUG=false \
-        DOCKER_PORT=none \
+        PROXY_PREFIX=none \
         GALAXY_URL=none \
         GALAXY_WEB_PORT=10000 \
         HISTORY_ID=none \
         REMOTE_HOST=none
+
     RUN apt-get -qq update && \
         apt-get install --no-install-recommends -y \
         wget procps nginx python python-pip net-tools
