@@ -443,6 +443,7 @@ class Configuration( object ):
         self.dynamic_proxy_bind_port = int( kwargs.get( "dynamic_proxy_bind_port", "8800" ) )
         self.dynamic_proxy_bind_ip = kwargs.get( "dynamic_proxy_bind_ip", "0.0.0.0" )
         self.dynamic_proxy_external_proxy = string_as_bool( kwargs.get( "dynamic_proxy_external_proxy", "False" ) )
+        self.dynamic_proxy_prefix = kwargs.get( "dynamic_proxy_prefix", "gie_proxy" )
 
         # Default chunk size for chunkable datatypes -- 64k
         self.display_chunk_size = int( kwargs.get( 'display_chunk_size', 65536) )

@@ -1,6 +1,7 @@
 import ConfigParser
 
 import os
+import json
 import stat
 import random
 import tempfile
@@ -40,11 +41,6 @@ class InteractiveEnviornmentRequest(object):
 
         self.load_deploy_config()
         self.attr.docker_hostname = self.attr.viz_config.get("docker", "docker_hostname")
-        self.attr.proxy_request = trans.app.proxy_manager.setup_proxy(
-            trans, host=self.attr.docker_hostname
-        )
-        self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
-        self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
         # Generate per-request passwords the IE plugin can use to configure
         # the destination container.
@@ -61,6 +57,14 @@ class InteractiveEnviornmentRequest(object):
             except Exception:
                 log.error( "Could not change permissions of tmpdir %s" % self.temp_dir )
                 # continue anyway
+
+        # This duplicates the logic in the proxy manager
+        if self.attr.galaxy_config.dynamic_proxy_external_proxy:
+            self.attr.proxy_prefix = '%s/%s' % (
+                self.attr.galaxy_config.cookie_path,
+                self.attr.galaxy_config.dynamic_proxy_prefix)
+        else:
+            self.attr.proxy_prefix = ''
 
     def load_deploy_config(self, default_dict={}):
         # For backwards compat, any new variables added to the base .ini file
@@ -107,8 +111,10 @@ class InteractiveEnviornmentRequest(object):
             'history_id': self.attr.history_id,
             'api_key': api_key,
             'remote_host': request.remote_addr,
-            'docker_port': self.attr.PORT,
+            # DOCKER_PORT is NO LONGER AVAILABLE. All IEs must update.
             'cors_origin': request.host_url,
+            'user_email': self.trans.user.email,
+            'proxy_prefix': self.attr.proxy_prefix,
         }
 
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
@@ -143,28 +149,19 @@ class InteractiveEnviornmentRequest(object):
             return "false"
 
     def url_template(self, url_template):
+        """Process a URL template
+
+        There are several variables accessible to the user:
+
+            - ${PROXY_URL} will be replaced with the dynamically create proxy's url
+            - ${PROXY_PREFIX} will be replaced with the prefix that may occur
         """
-            Process a URL template
-
-            There are several variables accessible to the user:
-
-                - ${PROXY_URL} will be replaced with dynamically create proxy
-                - ${PORT} will be replaced with the port the docker image is attached to
-        """
-        # Figure out our substitutions
-
         # Next several lines for older style replacements (not used with Galaxy dynamic
         # proxy)
-
         if self.attr.SSL_URLS:
             protocol = 'https'
         else:
             protocol = 'http'
-
-        if not self.attr.APACHE_URLS:
-            # If they are not using apache URLs, that implies there's a port attached to the host
-            # string, thus we replace just the first instance of host that we see.
-            url_template = url_template.replace('${HOST}', '${HOST}:${PORT}', 1)
 
         url_template = url_template.replace('${PROTO}', protocol) \
             .replace('${HOST}', self.attr.HOST)
@@ -172,7 +169,7 @@ class InteractiveEnviornmentRequest(object):
         # Only the following replacements are used with Galaxy dynamic proxy
         # URLs
         url = url_template.replace('${PROXY_URL}', str(self.attr.proxy_url)) \
-            .replace('${PORT}', str(self.attr.PORT))
+            .replace('${PROXY_PREFIX}', str(self.attr.proxy_prefix.replace('/', '%2F')))
         return url
 
     def volume(self, host_path, container_path, **kwds):
@@ -193,13 +190,11 @@ class InteractiveEnviornmentRequest(object):
         # Then we format in the entire docker command in place of
         # {docker_args}, so as to let the admin not worry about which args are
         # getting passed
-        command = command.format(docker_args='run {command_inject} {environment} -d -p {port_ext}:{port_int} -v "{temp_dir}:/import/" {volume_str} {image}')
+        command = command.format(docker_args='run {command_inject} {environment} -d -P -v "{temp_dir}:/import/" {volume_str} {image}')
         # Once that's available, we format again with all of our arguments
         command = command.format(
             command_inject=self.attr.viz_config.get("docker", "command_inject"),
             environment=env_str,
-            port_ext=self.attr.PORT,
-            port_int=self.attr.docker_port,
             temp_dir=temp_dir,
             volume_str=volume_str,
             image=self.attr.viz_config.get("docker", "image")
@@ -217,5 +212,81 @@ class InteractiveEnviornmentRequest(object):
         stdout, stderr = p.communicate()
         if p.returncode != 0 or len(stderr):
             log.error( "%s\n%s" % (stdout, stderr) )
+            return None
         else:
             log.debug( "Container id: %s" % stdout)
+            port_mappings = self.get_proxied_ports(stdout)
+            if len(port_mappings) > 1:
+                log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first")
+            elif len(port_mappings) == 0:
+                log.warning("No exposed ports to map! Images MUST EXPOSE")
+                return None
+            # Fetch the first port_mapping
+            (service, host_ip, host_port) = port_mappings[0]
+
+            # Now we configure our proxy_requst object and we manually specify
+            # the port to map to and ensure the proxy is available.
+            self.attr.proxy_request = self.trans.app.proxy_manager.setup_proxy(
+                self.trans,
+                host=self.attr.docker_hostname,
+                port=host_port,
+                proxy_prefix=self.attr.proxy_prefix,
+            )
+            # These variables then become available for use in templating URLs
+            self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
+            # Commented out because it needs to be documented and visible that
+            # this variable was moved here. Usually would remove commented
+            # code, but again, needs to be clear where this went. Remove at a
+            # later time.
+            #
+            # PORT is no longer exposed internally. All requests are forced to
+            # go through the proxy we ship.
+            # self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
+
+    def get_proxied_ports(self, container_id):
+        """Run docker inspect on a container to figure out which ports were
+        mapped where.
+
+        :type container_id: str
+        :param container_id: a docker container ID
+
+        :returns: a list of triples containing (internal_port, external_ip,
+                  external_port), of which the ports are probably the only
+                  useful information.
+
+        Someday code that calls this should be refactored whenever we get
+        containers with multiple ports working.
+        """
+        command = self.attr.viz_config.get("docker", "command")
+        command = command.format(docker_args="inspect %s" % container_id)
+        log.info("Inspecting docker container {0} with command [{1}]".format(
+            container_id,
+            command
+        ))
+
+        p = Popen(command, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        stdout, stderr = p.communicate()
+        if p.returncode != 0 or len(stderr):
+            log.error( "%s\n%s" % (stdout, stderr) )
+            return None
+
+        inspect_data = json.loads(stdout)
+        # [{
+        #     "NetworkSettings" : {
+        #         "Ports" : {
+        #             "3306/tcp" : [
+        #                 {
+        #                     "HostIp" : "127.0.0.1",
+        #                     "HostPort" : "3306"
+        #                 }
+        #             ]
+        mappings = []
+        port_mappings = inspect_data[0]['NetworkSettings']['Ports']
+        for port_name in port_mappings:
+            for binding in port_mappings[port_name]:
+                mappings.append((
+                    port_name.replace('/tcp', '').replace('/udp', ''),
+                    binding['HostIp'],
+                    binding['HostPort']
+                ))
+        return mappings
