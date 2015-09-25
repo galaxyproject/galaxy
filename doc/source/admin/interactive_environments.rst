@@ -292,7 +292,7 @@ Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` 
 
     [docker]
     # Command to execute docker. For example `sudo docker` or `docker-lxc`.
-    command = docker run {docker_args}
+    command = docker {docker_args}
 
     # The docker image name that should be started.
     image = hello-ie
@@ -339,7 +339,7 @@ Next we'll add the following
     # This is a useful way to provide access to large files in the container,
     # if the user knows ahead of time that they will need it.
     user_file = ie_request.volume(
-        hda.file_name, '/input/file.dat', how='ro')
+        hda.file_name, '/import/file.dat', how='ro')
 
     # Launch the IE. This builds and runs the docker command in the background.
     ie_request.launch(
@@ -485,7 +485,7 @@ Here's an example Dockerfile for our helloworld container
 
 .. code-block:: dockerfile
 
-    FROM nginx
+    FROM ubuntu:14.04
     # These environment variables are passed from Galaxy to the container
     # and help you enable connectivity to Galaxy from within the container.
     # This means your user can import/export data from/to Galaxy.
@@ -500,7 +500,7 @@ Here's an example Dockerfile for our helloworld container
 
     RUN apt-get -qq update && \
         apt-get install --no-install-recommends -y \
-        wget procps nginx python python-pip net-tools
+        wget procps nginx python python-pip net-tools nginx
 
     # Our very important scripts. Make sure you've run `chmod +x startup.sh
     # monitor_traffic.sh` outside of the container!
@@ -538,10 +538,11 @@ the file the user selected which was mounted as a volume into
         server_name localhost;
         access_log /var/log/nginx/localhost.access.log;
 
-        location / {
+        # Note the trailing slash used everywhere!
+        location PROXY_PREFIX/helloworld/ {
             proxy_buffering off;
-            proxy_pass         http://127.0.0.1:8000;
-            proxy_redirect     http://127.0.0.1:8000/ /;
+            proxy_pass         http://127.0.0.1:8000/;
+            proxy_redirect     http://127.0.0.1:8000/ PROXY_PREFIX/helloworld/;
         }
     }
 
@@ -551,7 +552,11 @@ And here we'll run that service in our ``startup.sh`` file
 .. code-block:: bash
 
     #!/bin/bash
-    cp /proxy.conf /etc/nginx/conf.d/default.conf;
+    # First, replace the PROXY_PREFIX value in /proxy.conf with the value from
+    # the environment variable.
+    sed -i "s|PROXY_PREFIX|${PROXY_PREFIX}|" /proxy.conf;
+    # Then copy into the default location for ubuntu+nginx
+    cp /proxy.conf /etc/nginx/sites-enabled/default;
 
     # Here you would normally start whatever service you want to start. In our
     # example we start a simple directory listing service on port 8000
@@ -585,3 +590,96 @@ With those files, ``monitor_traffic.sh``, ``Dockerfile``, ``startup.sh``, and ``
     $ docker build -t hello-ie .
 
 Now, if everything went smoothly, you should be able to restart Galaxy and try out your new GIE on a tabular or text file!
+
+Debugging
+^^^^^^^^^
+
+When you launch your new GIE in Galaxy, your Galaxy logs should show something like the following:
+
+.. code-block:: console
+
+    Starting docker container for IE helloworld with command [docker run --sig-proxy=true -e DEBUG=false -e "GALAXY_URL=http://localhost/galaxy/" -e "CORS_ORIGIN=http://localhost" -e "GALAXY_WEB_PORT=8000" -e "HISTORY_ID=f2db41e1fa331b3e" -e "CUSTOM=42" -e "GALAXY_PASTER_PORT=8000" -e "PROXY_PREFIX=/galaxy/gie_proxy" -e "API_KEY=1712364174a0ff79b34e9a78fee3ca1c" -e "REMOTE_HOST=127.0.0.1" -e "USER_EMAIL=hxr@local.host" -d -P -v "/home/hxr/work/galaxy/database/tmp/tmp5HaqZy:/import/" -v "/home/hxr/work/galaxy/database/files/000/dataset_68.dat:/import/file.dat:ro" hello-ie]
+
+Here's the docker command written out in a more readable manner:
+
+.. code-block:: console
+
+    $ docker run --sig-proxy=true \
+        -d -P \
+        -e "API_KEY=1712364174a0ff79b34e9a78fee3ca1c" \
+        -e "CORS_ORIGIN=http://localhost" \
+        -e "CUSTOM=42" \
+        -e "DEBUG=false" \
+        -e "GALAXY_PASTER_PORT=8000" \
+        -e "GALAXY_URL=http://localhost/galaxy/" \
+        -e "GALAXY_WEB_PORT=8000" \
+        -e "HISTORY_ID=f2db41e1fa331b3e" \
+        -e "PROXY_PREFIX=/galaxy/gie_proxy" \
+        -e "REMOTE_HOST=127.0.0.1" \
+        -e "USER_EMAIL=hxr@local.host" \
+        -v "/home/hxr/work/galaxy/database/tmp/tmp5HaqZy:/import/" \
+        -v "/home/hxr/work/galaxy/database/files/000/dataset_68.dat:/import/file.dat:ro" \
+      hello-ie
+
+As you can see, a LOT is going on! We'll break it down further:
+
+- ``-d`` runs the container in daemon mode, it launches and the client
+  submitting the container finished
+- ``-P`` randomly assigns an unused port to the container for each ``EXPOSE``d
+  port from our ``Dockerfile``. This is why you must expose a port, and only
+  one port.
+- A large number of environment variables are set:
+
+    - The user's API key is provided, allowing you to access datasets and
+      submit jobs on their behalf. If you have an environment like
+      IPython/RStudio, it is **highly recommended** that you provide some magic
+      by which the user can use their API key without embedding it in the
+      ntoebook. If you do embed it somehow in a document that gets saved to
+      their history, anyone can impersonate that user if they get a hold of it.
+      In the IPython GIE we have a variable that just runs
+      ``os.environ.get('API_KEY')`` to avoid embedding it in their notebook.
+    - A CORS Origin is provided for very strict servers, but it may be easier
+      to simply void CORS requirements within the nginx proxy in your
+      container.
+    - Custom variables specified in your ``launch()`` command are available
+    - A ``DEBUG`` environment variable should be used to help admins debug
+      existing containers. You should use it to increase logging, not cleanup
+      temporary files, and so on.
+    - ``GALAXY_PASTER_PORT`` (deprecated) and ``GALAXY_WEB_PORT`` are the raw
+      port that Galaxy is listening on. You can use this to help decide how to
+      takl to Galaxy.
+    - ``GALAXY_URL`` is the URL that Galaxy should be accessible at. For
+      various reasons this may not be true. We recommend looking at our
+      implementation of `galaxy.py
+      <https://github.com/bgruening/docker-ipython-notebook/blob/15.07/galaxy.py>`__
+      which is a small utility script to provide API access to Galaxy to get
+      and fetch data, based on those environment variables.
+    - The ``HISTORY_ID`` of the current history the user is on is provided. In
+      the IPython/RStudio containers, we provide a dead simple method for users
+      to download datasets from their current history which will be visible to
+      them on the right hand side of their screen.
+    - A ``PROXY_PREFIX`` is provided which should be used in the nginx conf.
+    - ``REMOTE_HOST`` is another component used to test for a possible Galaxy
+      access path
+    - The user's email is made available, very convenient for webservices like
+      Entrez which require the user's email address. You can pre-fill it out
+      for them, making their life easier.
+    - Two volumes are mounted, one a temporary directory from Galaxy (rw), and one
+      the dataset the user selected (ro).
+
+- and finally the image is specified.
+
+Most of this information is usually required to build friendly, easy-to-use
+GIEs. One of the strong points of GIEs is their magic interaction with Galaxy.
+Here we've mounted a volume read-only, but in real life you may wish to provide
+connectivity like IPython and RStudio provide, allowing the user to load
+datasets on demand for interactive analysis, and then to store analysis
+artefacts (and a log of what was done inside the container, à la IPython's
+"notebooks") back to their current history.
+
+If everything went well, at this point you should see a directory listing show up:
+
+.. image:: interactive_environments_success.png
+
+If you find yourself encountering difficulties, the "Hello, World" IE is
+available in a `GitHub repo <https://github.com/erasche/hello-world-interactive-environment/releases/tag/v15.10>`__, and there are people on the IRC channel who can help debug.
