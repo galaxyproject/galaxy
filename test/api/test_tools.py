@@ -237,6 +237,18 @@ class ToolsTestCase( api.ApiTestCase ):
         response = self._run( "validation_default", history_id, inputs )
         self._assert_status_code_is( response, 400 )
 
+    @skip_without_tool( "validation_repeat" )
+    def test_validation_in_repeat( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+            'r1_0|text': "123",
+            'r2_0|text': "",
+        }
+        response = self._run( "validation_repeat", history_id, inputs )
+        import time
+        time.sleep(10)
+        self._assert_status_code_is( response, 400 )
+
     @skip_without_tool( "multi_select" )
     def test_select_legal_values( self ):
         history_id = self.dataset_populator.new_history()
