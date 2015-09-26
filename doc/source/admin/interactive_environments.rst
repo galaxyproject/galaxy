@@ -21,7 +21,7 @@ into Galaxy which helps coordinate a 1:1 mapping of users and their docker conta
 
 Here's a simple diagram recapping the above:
 
-.. image:: interactive_environments.*
+.. image:: interactive_environments.png
 
 Deploying GIEs
 --------------
