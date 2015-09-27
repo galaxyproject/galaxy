@@ -2541,7 +2541,7 @@ class Tool( object, Dictifiable ):
             other_values = ExpressionContext( state_inputs, other_values )
             for input_index, input in enumerate( inputs.itervalues() ):
                 # create model dictionary
-                tool_dict = input.to_dict(trans)
+                tool_dict = input.to_dict(trans, other_values=other_values)
                 if tool_dict is None:
                     continue
 
