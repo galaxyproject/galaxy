@@ -129,11 +129,9 @@ define(['utils/utils',
         _template: function(options) {
             var cls_status = 'ui-message alert alert-' + options.status;
             if (options.large) {
-                if (options.status == 'success') {
-                    cls_status = 'donemessagelarge';
-                } else {
-                    cls_status = 'errormessagelarge';
-                }
+                cls_status = ( ( options.status == 'success' && 'done' ) ||
+                               ( options.status == 'danger' && 'error' ) ||
+                                 options.status ) + 'messagelarge';
             }
             return  '<div class="' + cls_status + '" >' +
                         options.message +
