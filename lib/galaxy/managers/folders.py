@@ -153,7 +153,7 @@ class FolderManager( object ):
         if not trans.user_is_admin():
             if not self.check_manageable( trans, folder ):
                 raise InsufficientPermissionsException( "You do not have proper permission to update the library folder." )
-        if folder.deleted == True:
+        if folder.deleted is True:
             raise ItemAccessibilityException( "You cannot update deleted library folder. Undelete it first." )
         if name is not None and name != folder.name:
             folder.name = name
@@ -165,7 +165,6 @@ class FolderManager( object ):
             trans.sa_session.add( folder )
             trans.sa_session.flush()
         return folder
-        
 
     def delete( self, trans, folder, undelete=False ):
         """
