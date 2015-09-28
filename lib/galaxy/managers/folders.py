@@ -148,13 +148,25 @@ class FolderManager( object ):
     def update( self, trans, folder, name=None, description=None):
         """
         Update the given folder's name or description.
+
+        :param  folder:        the model object
+        :type   folder:        LibraryFolder
+        :param  name:          new name for the library folder
+        :type   name:          str
+        :param  description:   new description for the library folder
+        :type   description:   str
+
+        :returns:   the folder
+        :rtype:     LibraryFolder
+
+        :raises: ItemAccessibilityException, InsufficientPermissionsException
         """
         changed = False
         if not trans.user_is_admin():
             if not self.check_manageable( trans, folder ):
                 raise InsufficientPermissionsException( "You do not have proper permission to update the library folder." )
         if folder.deleted is True:
-            raise ItemAccessibilityException( "You cannot update deleted library folder. Undelete it first." )
+            raise ItemAccessibilityException( "You cannot update a deleted library folder. Undelete it first." )
         if name is not None and name != folder.name:
             folder.name = name
             changed = True
@@ -170,8 +182,8 @@ class FolderManager( object ):
         """
         Mark given folder deleted/undeleted based on the flag.
 
-        :param  folder:      the model object
-        :type   folder:      LibraryFolder
+        :param  folder:        the model object
+        :type   folder:        LibraryFolder
         :param  undelete:      flag whether to delete (when False) or undelete
         :type   undelete:      Bool
 

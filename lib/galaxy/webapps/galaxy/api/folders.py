@@ -277,21 +277,17 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         """
         decoded_folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
         folder = self.folder_manager.get( trans, decoded_folder_id )
-
         payload = kwd.get( 'payload', None )
         if payload:
             name = payload.get( 'name', None )
             if not name:
-                raise exceptions.RequestParameterMissingException( "Parameter 'name' of folder is required. You cannot remove it." )
-            if payload.get( 'description', None ) or payload.get( 'description', None ) == '':
-                description = payload.get( 'description', None )
+                raise exceptions.RequestParameterMissingException( "Parameter 'name' of library folder is required. You cannot remove it." )
+            description = payload.get( 'description', None )
         else:
             raise exceptions.RequestParameterMissingException( "You did not specify any payload." )
         updated_folder = self.folder_manager.update( trans, folder, name, description )
         folder_dict = self.folder_manager.get_folder_dict( trans, updated_folder )
         return folder_dict
-
-        raise exceptions.NotImplemented( 'Updating folder through this endpoint is not implemented yet.' )
 
     # TODO move to Role manager
     def _load_role( self, trans, role_name ):
