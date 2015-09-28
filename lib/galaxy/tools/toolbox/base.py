@@ -7,6 +7,7 @@ import tempfile
 
 from sqlalchemy import and_
 from markupsafe import escape
+from urlparse import urlparse
 
 from galaxy.model.item_attrs import Dictifiable
 
@@ -365,6 +366,40 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             elif elem.tag == 'label':
                 self._integrated_tool_panel.stub_label( key )
 
+    def try_other_tool_sheds(func):
+        """
+        Wrapper function for get_tool that enables looking up tools whose tool
+        shed location, and hence tool_id, changed. If a tool corresponding to
+        the original tool_id cannot be found, the portion in tool_id that
+        corresponds to the tool shed is subsequently replaced with all other active
+        tool sheds and get_tool() is called again with the new tool_id.
+        """
+        def _manage_get_tool(self, *args, **kwargs):
+            tool = func(self, *args, **kwargs)
+            if not tool:
+                # As a last resort, try to fetch a tool that has been moved to a different toolshed.
+                tool_id = kwargs.get("tool_id", None)
+                if not tool_id:
+                    tool_id = args[0]
+                if "/repos/" in tool_id:  # test if tool came from a toolshed
+                    tool_id_without_tool_shed = tool_id.split("/repos/")[1]
+                    available_tool_sheds = self.app.tool_shed_registry.tool_sheds.values()
+                    available_tool_sheds = [ urlparse(tool_shed) for tool_shed in available_tool_sheds ]
+                    available_tool_sheds = [ url.geturl().replace(url.scheme + "://", '', 1) for url in available_tool_sheds]
+                    alternate_tool_ids = [ tool_shed + "repos/" + tool_id_without_tool_shed for tool_shed in available_tool_sheds]
+                    for alternate_tool_id in alternate_tool_ids:
+                        if "tool_id" in kwargs:
+                            kwargs["tool_id"] = alternate_tool_id
+                        else:
+                            args = list(args)
+                            args[0] = alternate_tool_id
+                        tool = func(self, *args, **kwargs)
+                        if tool:
+                            return tool
+            return tool
+        return _manage_get_tool
+
+    @try_other_tool_sheds
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False, exact=False ):
         """Attempt to locate a tool in the tool box."""
         if tool_version:
