@@ -229,16 +229,16 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         return self.folder_manager.get_current_roles( trans, folder )
 
     @expose_api
-    def delete( self, trans, id, **kwd ):
+    def delete( self, trans, encoded_folder_id, **kwd ):
         """
-        delete( self, trans, id, **kwd )
-        * DELETE /api/folders/{id}
-            marks the folder with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
+        delete( self, trans, encoded_folder_id, **kwd )
+        * DELETE /api/folders/{encoded_folder_id}
+            marks the folder with the given ``encoded_folder_id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
 
         .. note:: Currently, only admin users can un/delete folders.
 
-        :param  id:     the encoded id of the folder to un/delete
-        :type   id:     an encoded id string
+        :param  encoded_folder_id:     the encoded id of the folder to un/delete
+        :type   encoded_folder_id:     an encoded id string
 
         :param  undelete:    (optional) flag specifying whether the item should be deleted or undeleted, defaults to false:
         :type   undelete:    bool
@@ -247,10 +247,11 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         :rtype:     dictionary
 
         """
-        folder = self.folder_manager.get( trans, self.folder_manager.cut_and_decode( trans, id ), True )
+        folder = self.folder_manager.get( trans, self.folder_manager.cut_and_decode( trans, encoded_folder_id ), True )
         undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         folder = self.folder_manager.delete( trans, folder, undelete )
         folder_dict = self.folder_manager.get_folder_dict( trans, folder )
+        folder_dict['update_time'] = folder.update_time.strftime( "%Y-%m-%d %I:%M %p" )
         return folder_dict
 
     @expose_api
