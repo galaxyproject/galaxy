@@ -87,6 +87,7 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         pair_1_object = pair_1_element[ "object" ]
         self._assert_has_keys( pair_1_object, "collection_type", "elements" )
         self.assertEquals( pair_1_object[ "collection_type" ], "paired" )
+        self.assertEquals( pair_1_object[ "populated" ], True )
         pair_elements = pair_1_object[ "elements" ]
         assert len( pair_elements ) == 2
         pair_1_element_1 = pair_elements[ 0 ]

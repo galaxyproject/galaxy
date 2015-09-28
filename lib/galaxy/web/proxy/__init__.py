@@ -17,7 +17,9 @@ SECURE_COOKIE = "galaxysession"
 class ProxyManager(object):
 
     def __init__( self, config ):
-        for option in [ "manage_dynamic_proxy", "dynamic_proxy_bind_port", "dynamic_proxy_bind_ip", "dynamic_proxy_debug", "dynamic_proxy_external_proxy" ]:
+        for option in ["manage_dynamic_proxy", "dynamic_proxy_bind_port",
+                       "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
+                       "dynamic_proxy_external_proxy", "dynamic_proxy_prefix"]:
             setattr( self, option, getattr( config, option ) )
         self.launch_by = "node"  # TODO: Support docker
         if self.manage_dynamic_proxy:
@@ -29,7 +31,7 @@ class ProxyManager(object):
     def shutdown( self ):
         self.lazy_process.shutdown()
 
-    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None ):
+    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="" ):
         if self.manage_dynamic_proxy:
             log.info("Attempting to start dynamic proxy process")
             self.lazy_process.start_process()
@@ -46,7 +48,7 @@ class ProxyManager(object):
         if not self.dynamic_proxy_external_proxy:
             proxy_url = '%s://%s:%d' % (scheme, host, self.dynamic_proxy_bind_port)
         else:
-            proxy_url = '%s://%s' % (scheme, host)
+            proxy_url = '%s://%s%s' % (scheme, host, proxy_prefix)
         return {
             'proxy_url': proxy_url,
             'proxied_port': proxy_requests.port,

@@ -3047,6 +3047,9 @@ class DatasetCollectionInstance( object, HasName ):
             id=self.id,
             name=self.name,
             collection_type=self.collection.collection_type,
+            populated=self.collection.populated,
+            populated_state=self.collection.populated_state,
+            populated_state_message=self.collection.populated_state_message,
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 

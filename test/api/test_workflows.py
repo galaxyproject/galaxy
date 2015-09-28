@@ -575,6 +575,48 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         content = self.dataset_populator.get_history_dataset_content( history_id, hid=0 )
         self.assertEquals("10.0\n30.0\n20.0\n40.0\n", content )
 
+    @skip_without_tool( "collection_split_on_column" )
+    @skip_without_tool( "min_repeat" )
+    def test_workflow_run_dynamic_output_collections_2( self ):
+        # A more advanced output collection workflow, testing regression of
+        # https://github.com/galaxyproject/galaxy/issues/776
+        history_id = self.dataset_populator.new_history()
+        workflow_id = self._upload_yaml_workflow("""
+- label: test_input_1
+  type: input
+- label: test_input_2
+  type: input
+- label: test_input_3
+  type: input
+- label: split_up
+  tool_id: collection_split_on_column
+  state:
+    input1:
+      $link: test_input_2
+- label: min_repeat
+  tool_id: min_repeat
+  state:
+    queries:
+      - input:
+          $link: test_input_1
+    queries2:
+      - input2:
+          $link: split_up#split_output
+""")
+        hda1 = self.dataset_populator.new_dataset( history_id, content="samp1\t10.0\nsamp2\t20.0\n" )
+        hda2 = self.dataset_populator.new_dataset( history_id, content="samp1\t20.0\nsamp2\t40.0\n" )
+        hda3 = self.dataset_populator.new_dataset( history_id, content="samp1\t30.0\nsamp2\t60.0\n" )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        inputs = {
+            '0': self._ds_entry(hda1),
+            '1': self._ds_entry(hda2),
+            '2': self._ds_entry(hda3),
+        }
+        invocation_id = self.__invoke_workflow( history_id, workflow_id, inputs )
+        self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
+        content = self.dataset_populator.get_history_dataset_content( history_id, hid=7 )
+        self.assertEquals(content.strip(), "samp1\t10.0\nsamp2\t20.0")
+
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
         workflow_request, history_id = self._setup_workflow_run( workflow )

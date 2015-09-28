@@ -50,7 +50,7 @@ class TwillTestCase( unittest.TestCase ):
         self.host = os.environ.get( 'GALAXY_TEST_HOST' )
         self.port = os.environ.get( 'GALAXY_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
-        self.test_data_resolver = TestDataResolver( 'GALAXY_TEST_FILE_DIR' )
+        self.test_data_resolver = TestDataResolver( )
         self.tool_shed_test_file = os.environ.get( 'GALAXY_TOOL_SHED_TEST_FILE', None )
         if self.tool_shed_test_file:
             f = open( self.tool_shed_test_file, 'r' )

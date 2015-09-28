@@ -33,17 +33,15 @@ if hda.datatype.__class__.__name__ != "Ipynb":
 else:
     shutil.copy( hda.file_name, empty_nb_path )
 
-
-## General IE specific
-# Access URLs for the notebook from within galaxy.
-notebook_access_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/notebooks/ipython_galaxy_notebook.ipynb')
-notebook_login_url = ie_request.url_template('${PROXY_URL}/ipython/${PORT}/login?next=%2Fipython%2F${PORT}%2Ftree')
-
-
 # Add all environment variables collected from Galaxy's IE infrastructure
 ie_request.launch(env_override={
     'notebook_password': PASSWORD,
 })
+
+## General IE specific
+# Access URLs for the notebook from within galaxy.
+notebook_access_url = ie_request.url_template('${PROXY_URL}/ipython/notebooks/ipython_galaxy_notebook.ipynb')
+notebook_login_url = ie_request.url_template('${PROXY_URL}/ipython/login?next=${PROXY_PREFIX}%2Fipython%2Ftree')
 
 %>
 <html>

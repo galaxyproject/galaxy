@@ -263,7 +263,7 @@
                options should be reserved for defining cluster
                specific options.
           -->
-          <env id="_JAVA_OPTIONS">-Xmx=6GB</env>
+          <env id="_JAVA_OPTIONS">-Xmx6G</env>
           <env id="ANOTHER_OPTION" raw="true">'5'</env> <!-- raw disables auto quoting -->
           <env file="/mnt/java_cluster/environment_setup.sh" /> <!-- will be sourced -->
           <env exec="module load javastuff/2.10" /> <!-- will be sourced -->

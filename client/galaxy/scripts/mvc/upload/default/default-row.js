@@ -110,7 +110,7 @@ return Backbone.View.extend({
                             .on('mousedown', function(e) { e.preventDefault(); });
 
         // handle text editing event
-        this.$('#text-content').on('keyup', function(e) {
+        this.$('#text-content').on('change input', function(e) {
             self.model.set('url_paste', $(e.target).val());
             self.model.set('file_size', $(e.target).val().length);
         });
