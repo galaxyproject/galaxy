@@ -251,7 +251,6 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         folder = self.folder_manager.delete( trans, folder, undelete )
         folder_dict = self.folder_manager.get_folder_dict( trans, folder )
-        folder_dict['update_time'] = folder.update_time.strftime( "%Y-%m-%d %I:%M %p" )
         return folder_dict
 
     @expose_api

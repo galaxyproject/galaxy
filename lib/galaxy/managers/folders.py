@@ -111,6 +111,7 @@ class FolderManager( object ):
         folder_dict[ 'id' ] = 'F' + folder_dict[ 'id' ]
         if folder_dict[ 'parent_id' ] is not None:
             folder_dict[ 'parent_id' ] = 'F' + folder_dict[ 'parent_id' ]
+        folder_dict['update_time'] = folder.update_time.strftime( "%Y-%m-%d %I:%M %p" )
         return folder_dict
 
     def create( self, trans, parent_folder_id, new_folder_name, new_folder_description='' ):
