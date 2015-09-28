@@ -49,11 +49,67 @@ class ToolRunner( BaseUIController ):
         return self.get_toolbox().get_tool_components( tool_id, tool_version, get_loaded_tools_by_lineage, set_selected )
 
     @web.expose
-    def index( self, trans, tool_id=None, **kwd ):
+    def index( self, trans, tool_id=None, from_noframe=None, **kwd ):
+        # No tool id passed, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect( url_for( controller="root", action="welcome" ) )
-        else:
+        tool_version_select_field, tools, tool = self.__get_tool_components( tool_id )
+        # No tool matching the tool id, display an error (shouldn't happen)
+        if not tool or not tool.allow_user_access( trans.user ):
+            log.error( "index called with tool id '%s' but no such tool exists", tool_id )
+            trans.log_event( "Tool id '%s' does not exist" % tool_id )
+            trans.response.status = 404
+            return trans.show_error_message("Tool '%s' does not exist." % ( escape(tool_id) ))
+        if tool.require_login and not trans.user:
+            message = "You must be logged in to use this tool."
+            status = "info"
+            redirect = url_for( controller='tool_runner', action='index', tool_id=tool_id, **kwd )
+            return trans.response.send_redirect( url_for( controller='user',
+                                                          action='login',
+                                                          cntrller='user',
+                                                          message=message,
+                                                          status=status,
+                                                          redirect=redirect ) )
+        if tool.tool_type == 'default':
             return trans.response.send_redirect( url_for( controller="root", tool_id=tool_id ) )
+
+        def _validated_params_for( kwd ):
+            params = galaxy.util.Params( kwd, sanitize=False )  # Sanitize parameters when substituting into command line via input wrappers
+            # do param translation here, used by datasource tools
+            if tool.input_translator:
+                tool.input_translator.translate( params )
+            return params
+
+        params = _validated_params_for( kwd )
+        # We may be visiting Galaxy for the first time ( e.g., sending data from UCSC ),
+        # so make sure to create a new history if we've never had one before.
+        history = tool.get_default_history_by_trans( trans, create=True )
+        try:
+            template, vars = tool.handle_input( trans, params.__dict__ )
+        except KeyError:
+            # This error indicates (or at least can indicate) there was a
+            # problem with the stored tool_state - it is incompatible with
+            # this variant of the tool - possibly because the tool changed
+            # or because the tool version changed.
+            del kwd[ "tool_state" ]
+            params = _validated_params_for( kwd )
+            template, vars = tool.handle_input( trans, params.__dict__ )
+        if len( params ) > 0:
+            trans.log_event( "Tool params: %s" % ( str( params ) ), tool_id=tool_id )
+        add_frame = AddFrameData()
+        add_frame.debug = trans.debug
+        if from_noframe is not None:
+            add_frame.wiki_url = trans.app.config.wiki_url
+            add_frame.from_noframe = True
+        return trans.fill_template( template,
+                                    history=history,
+                                    toolbox=self.get_toolbox(),
+                                    tool_version_select_field=tool_version_select_field,
+                                    tool=tool,
+                                    util=galaxy.util,
+                                    add_frame=add_frame,
+                                    form_input_auto_focus=True,
+                                    **vars )
 
     @web.expose
     def rerun( self, trans, id=None, job_id=None, **kwd ):
