@@ -123,7 +123,8 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                         self.$el.prepend((new Ui.Message({
                             message     : error_message,
                             status      : 'danger',
-                            persistent  : true
+                            persistent  : true,
+                            large       : true
                         })).$el);
                     } else {
                         Galaxy.modal.show({
