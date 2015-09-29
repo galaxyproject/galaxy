@@ -13,7 +13,8 @@ var LibraryToolbarView = Backbone.View.extend({
   events: {
     'click #create_new_library_btn' : 'showLibraryModal',
     'click #include_deleted_chk'    : 'includeDeletedChecked',
-    'click #page_size_prompt'       : 'showPageSizePrompt'
+    'click #page_size_prompt'       : 'showPageSizePrompt',
+    'keyup .library-search-input'   : 'searchLibraries'
   },
 
   initialize: function( options ){
@@ -134,36 +135,48 @@ var LibraryToolbarView = Backbone.View.extend({
     }
   },
 
+  searchLibraries: function(event){
+    var search_term = $(".library-search-input").val();
+    Galaxy.libraries.libraryListView.searchLibraries(search_term);
+  },
+
   templateToolBar: function(){
-    tmpl_array = [];
-
-
-    tmpl_array.push('<div class="library_style_container">');
-    tmpl_array.push('  <div id="toolbar_form">');
-    tmpl_array.push('      <div id="library_toolbar">');
-    tmpl_array.push('      <form class="form-inline" role="form">');
-    tmpl_array.push('          <span><strong><a href="#" title="Go to first page">DATA LIBRARIES</a></strong></span>');
-    tmpl_array.push('          <% if(admin_user === true) { %>');
-    tmpl_array.push('              <div class="checkbox" style="height: 20px;">');
-    tmpl_array.push('                  <label>');
-    tmpl_array.push('                      <input id="include_deleted_chk" type="checkbox"> include deleted </input>');
-    tmpl_array.push('                   </label>');
-    tmpl_array.push('              </div>');
-    tmpl_array.push('              <span data-toggle="tooltip" data-placement="top" title="Create New Library"><button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button></span>');
-    tmpl_array.push('          <% } %>');
-    tmpl_array.push('          <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/ListOfLibraries" target="_blank"><button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
-    tmpl_array.push('          <span id="library_paginator" class="library-paginator">');
-    // paginator will append here
-    tmpl_array.push('          </span>');
-    tmpl_array.push('      </form>');
-    tmpl_array.push('      </div>');
-    tmpl_array.push('  </div>');
-    tmpl_array.push('  <div id="libraries_element">');
-    // table with libraries will append here
-    tmpl_array.push('  </div>');
-    tmpl_array.push('</div>');
-
-    return _.template(tmpl_array.join(''));
+    return _.template([
+      '<div class="library_style_container">',
+        '<div id="toolbar_form">',
+          '<div id="library_toolbar">',
+            '<form class="form-inline" role="form">',
+              '<span><strong><a href="#" title="Go to first page">DATA LIBRARIES</a></strong></span>',
+              '<span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki">',
+                '<a href="https://wiki.galaxyproject.org/DataLibraries/screen/ListOfLibraries" target="_blank">',
+                  '<button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button>',
+                '</a>',
+                '</span>',
+              '<span id="library_paginator" class="library-paginator">',
+              // paginator will append here
+              '</span>',
+              '<div class="form-group">',
+                '<input type="text" class="form-control library-search-input" placeholder="Search">',
+              '</div>',
+              // only admins see the following
+              '<% if(admin_user === true) { %>',
+                '<div class="checkbox" style="height: 20px;">',
+                  '<label>',
+                    '<input id="include_deleted_chk" type="checkbox"> include deleted </input>',
+                  '</label>',
+                '</div>',
+                '<span data-toggle="tooltip" data-placement="top" title="Create New Library">',
+                  '<button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button>',
+                '</span>',
+              '<% } %>',
+            '</form>',
+          '</div>',
+        '</div>',
+        '<div id="libraries_element">',
+        // table with libraries will append here
+        '</div>',
+      '</div>'
+    ].join(''));
   },
 
   templatePaginator: function(){
