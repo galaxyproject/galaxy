@@ -28,6 +28,7 @@ from galaxy.util import json
 from datetime import datetime
 
 from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
 
 from os.path import relpath
 from hashlib import md5
@@ -1161,12 +1162,18 @@ def size_to_bytes( size ):
         return int( size )
 
 
-def send_mail( frm, to, subject, body, config ):
+def send_mail( frm, to, subject, body, config, html=None ):
     """
     Sends an email.
     """
     to = listify( to )
-    msg = MIMEText(  body.encode( 'ascii', 'replace' ) )
+    msg = MIMEMultipart('alternative')
+    # Record the MIME types of both parts - text/plain and text/html.
+    part1 = MIMEText(body.encode('ascii', 'replace'), 'plain')
+    msg.attach(part1)
+    if html is not None:
+        part2 = MIMEText(html, 'html')
+        msg.attach(part2)
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject

@@ -48,7 +48,7 @@ PASSWORD_RESET_TEMPLATE = """
 To reset your Galaxy password for the instance at %s use the following link,
 which will expire %s.
 
-<a href="%s">%s</a>
+%s
 
 If you did not make this request, no action is necessary on your part, though
 you may want to notify an administrator.
@@ -56,7 +56,6 @@ you may want to notify an administrator.
 If you're having trouble using the link when clicking it from email client, you
 can also copy and paste it into your browser.
 """
-
 
 class UserOpenIDGrid( grids.Grid ):
     use_panels = False
@@ -1199,11 +1198,14 @@ class User( BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Creat
                                          action="change_password",
                                          token=prt.token, qualified=True)
                     body = PASSWORD_RESET_TEMPLATE % ( host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
-                                                       reset_url, reset_url )
+                                                       reset_url )
+                    reset_url_link = '<a href="%s">%s</a>' % ( reset_url, reset_url )
+                    html_body = PASSWORD_RESET_TEMPLATE % ( host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
+                                                            reset_url_link )
                     frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
                     subject = 'Galaxy Password Reset'
                     try:
-                        util.send_mail( frm, email, subject, body, trans.app.config )
+                        util.send_mail( frm, email, subject, body, trans.app.config, html=html_body.replace('\n','<br />') )
                         trans.sa_session.add( reset_user )
                         trans.sa_session.flush()
                         trans.log_event( "User reset password: %s" % email )
