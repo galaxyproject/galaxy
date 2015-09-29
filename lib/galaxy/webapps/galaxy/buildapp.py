@@ -487,6 +487,18 @@ def populate_api_routes( webapp, app ):
                            action='create',
                            conditions=dict( method=[ "POST" ] ) )
 
+    webapp.mapper.connect( 'delete_folder',
+                           '/api/folders/{encoded_folder_id}',
+                           controller='folders',
+                           action='delete',
+                           conditions=dict( method=[ "DELETE" ] ) )
+
+    webapp.mapper.connect( 'update_folder',
+                           '/api/folders/{encoded_folder_id}',
+                           controller='folders',
+                           action='update',
+                           conditions=dict( method=[ "PATCH", "PUT" ] ) )
+
     webapp.mapper.resource( 'folder',
                             'folders',
                             path_prefix='/api' )

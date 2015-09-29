@@ -229,16 +229,16 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         return self.folder_manager.get_current_roles( trans, folder )
 
     @expose_api
-    def delete( self, trans, id, **kwd ):
+    def delete( self, trans, encoded_folder_id, **kwd ):
         """
-        delete( self, trans, id, **kwd )
-        * DELETE /api/folders/{id}
-            marks the folder with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
+        delete( self, trans, encoded_folder_id, **kwd )
+        * DELETE /api/folders/{encoded_folder_id}
+            marks the folder with the given ``encoded_folder_id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
 
         .. note:: Currently, only admin users can un/delete folders.
 
-        :param  id:     the encoded id of the folder to un/delete
-        :type   id:     an encoded id string
+        :param  encoded_folder_id:     the encoded id of the folder to un/delete
+        :type   encoded_folder_id:     an encoded id string
 
         :param  undelete:    (optional) flag specifying whether the item should be deleted or undeleted, defaults to false:
         :type   undelete:    bool
@@ -246,21 +246,47 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         :returns:   detailed folder information
         :rtype:     dictionary
 
-        :raises: ItemAccessibilityException, MalformedId, ObjectNotFound
         """
-        folder = self.folder_manager.get( trans, self.folder_manager.cut_and_decode( trans, id ), True )
+        folder = self.folder_manager.get( trans, self.folder_manager.cut_and_decode( trans, encoded_folder_id ), True )
         undelete = util.string_as_bool( kwd.get( 'undelete', False ) )
         folder = self.folder_manager.delete( trans, folder, undelete )
         folder_dict = self.folder_manager.get_folder_dict( trans, folder )
         return folder_dict
 
     @expose_api
-    def update( self, trans, id, library_id, payload, **kwd ):
+    def update( self, trans, encoded_folder_id, **kwd ):
         """
-        PUT /api/folders/{encoded_folder_id}
+        * PATCH /api/folders/{encoded_folder_id}
+           Updates the folder defined by an ``encoded_folder_id`` with the data in the payload.
 
+       .. note:: Currently, only admin users can update library folders. Also the folder must not be `deleted`.
+
+        :param  id:      the encoded id of the folder
+        :type   id:      an encoded id string
+
+        :param  payload: (required) dictionary structure containing::
+            'name':         new folder's name, cannot be empty
+            'description':  new folder's description
+        :type   payload: dict
+
+        :returns:   detailed folder information
+        :rtype:     dict
+
+        :raises: RequestParameterMissingException
         """
-        raise exceptions.NotImplemented( 'Updating folder through this endpoint is not implemented yet.' )
+        decoded_folder_id = self.folder_manager.cut_and_decode( trans, encoded_folder_id )
+        folder = self.folder_manager.get( trans, decoded_folder_id )
+        payload = kwd.get( 'payload', None )
+        if payload:
+            name = payload.get( 'name', None )
+            if not name:
+                raise exceptions.RequestParameterMissingException( "Parameter 'name' of library folder is required. You cannot remove it." )
+            description = payload.get( 'description', None )
+        else:
+            raise exceptions.RequestParameterMissingException( "You did not specify any payload." )
+        updated_folder = self.folder_manager.update( trans, folder, name, description )
+        folder_dict = self.folder_manager.get_folder_dict( trans, updated_folder )
+        return folder_dict
 
     # TODO move to Role manager
     def _load_role( self, trans, role_name ):
