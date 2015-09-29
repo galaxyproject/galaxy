@@ -292,7 +292,7 @@ Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` 
 
     [docker]
     # Command to execute docker. For example `sudo docker` or `docker-lxc`.
-    command = docker {docker_args}
+    #command = docker {docker_args}
 
     # The docker image name that should be started.
     image = hello-ie
