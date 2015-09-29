@@ -351,7 +351,10 @@ def pretty_print_time_interval( time=False, precise=False ):
         diff = now - datetime.fromtimestamp( time )
     elif isinstance( time, datetime ):
         diff = now - time
-    elif not time:
+    elif isinstance( time, basestring ):
+        time = datetime.strptime( time, "%Y-%m-%dT%H:%M:%S.%f" )
+        diff = now - time
+    else:
         diff = now - now
     second_diff = diff.seconds
     day_diff = diff.days

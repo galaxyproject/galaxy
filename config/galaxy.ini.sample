@@ -574,6 +574,12 @@ nglims_config_file = tool-data/nglims.yaml
 # nodejs to wrap connections in SSL).
 #dynamic_proxy_external_proxy=False
 
+# Additionally, when the dynamic proxy is proxied by an upstream server, you'll
+# want to specify a prefixed URL so both Galaxy and the proxy reside under the
+# same path that your cookies are under. This will result in a url like
+# https://FQDN/galaxy-prefix/gie_proxy for proxying
+#dynamic_proxy_prefix=gie_proxy
+
 # -- Logging and Debugging
 
 # If True, Galaxy will attempt to configure a simple root logger if a
@@ -647,6 +653,14 @@ use_interactive = True
 # space rapidly!).  Useful to determine why your processes may be consuming a
 # lot of CPU.
 #use_heartbeat = False
+
+
+# Log to Sentry
+# Sentry is an open source logging and error aggregation platform.  Setting
+# sentry_dsn will enable the Sentry middleware and errors will be sent to the
+# indicated sentry instance.  This connection string is available in your
+# sentry instance under <project_name> -> Settings -> API Keys.
+#sentry_dsn = None
 
 # -- Data Libraries
 

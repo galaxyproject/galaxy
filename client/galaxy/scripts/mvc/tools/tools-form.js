@@ -7,7 +7,8 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
         initialize: function( options ) {
             var self = this;
             ToolFormBase.prototype.initialize.call( this, Utils.merge({
-                customize: function( options ) {
+                initial_errors  : true,
+                customize       : function( options ) {
                     // build execute button
                     options.buttons = {
                         execute : execute_btn = new Ui.Button({

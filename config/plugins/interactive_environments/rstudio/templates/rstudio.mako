@@ -12,14 +12,6 @@ temp_dir = ie_request.temp_dir
 PASSWORD = ie_request.notebook_pw
 USERNAME = "galaxy"
 
-## General IE specific
-# Access URLs for the notebook from within galaxy.
-# TODO: Make this work without pointing directly to IE. Currently does not work
-# through proxy.
-notebook_pubkey_url = ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth-public-key')
-notebook_access_url = ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/')
-notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/${PORT}/auth-do-sign-in')
-
 # Did the user give us an RData file?
 if hda.datatype.__class__.__name__ == "RData":
     shutil.copy( hda.file_name, os.path.join(temp_dir, '.RData') )
@@ -27,8 +19,16 @@ if hda.datatype.__class__.__name__ == "RData":
 ie_request.launch(env_override={
     'notebook_username': USERNAME,
     'notebook_password': PASSWORD,
-    'cors_origin': ie_request.attr.proxy_url,
 })
+
+## General IE specific
+# Access URLs for the notebook from within galaxy.
+# TODO: Make this work without pointing directly to IE. Currently does not work
+# through proxy.
+notebook_pubkey_url = ie_request.url_template('${PROXY_URL}/rstudio/auth-public-key')
+notebook_access_url = ie_request.url_template('${PROXY_URL}/rstudio/')
+notebook_login_url =  ie_request.url_template('${PROXY_URL}/rstudio/auth-do-sign-in')
+
 %>
 <html>
 <head>

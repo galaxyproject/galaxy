@@ -1538,6 +1538,8 @@ class Tool( object, Dictifiable ):
                         group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
                         any_group_errors = True
                     rep_index += 1
+                if any_group_errors:
+                    errors[ input.name ] = group_errors
             elif isinstance( input, Conditional ):
                 group_state = state[input.name]
                 group_prefix = "%s|" % ( key )
@@ -2975,10 +2977,6 @@ class ExportHistoryTool( Tool ):
 
 class ImportHistoryTool( Tool ):
     tool_type = 'import_history'
-
-
-class GenomeIndexTool( Tool ):
-    tool_type = 'index_genome'
 
 
 class DataManagerTool( OutputParameterJSONTool ):
