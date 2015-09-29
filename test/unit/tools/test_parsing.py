@@ -1,11 +1,11 @@
 from math import isinf
 
+import os
 import os.path
 import tempfile
 import shutil
 
 from galaxy.tools.parser.factory import get_tool_source
-from galaxy.tools.imp_exp import EXPORT_HISTORY_TEXT
 
 import unittest
 
@@ -111,8 +111,11 @@ class BaseLoaderTestCase(unittest.TestCase):
             source_file_name = self.source_file_name
         if source_contents is None:
             source_contents = self.source_contents
-        path = os.path.join(self.temp_directory, source_file_name)
-        open(path, "w").write(source_contents)
+        if not os.path.isabs(source_file_name):
+            path = os.path.join(self.temp_directory, source_file_name)
+            open(path, "w").write(source_contents)
+        else:
+            path = source_file_name
         tool_source = get_tool_source(path)
         return tool_source
 
@@ -404,8 +407,8 @@ class DataSourceLoaderTestCase(BaseLoaderTestCase):
 
 
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):
-    source_file_name = "export.xml"
-    source_contents = EXPORT_HISTORY_TEXT
+    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
+    source_contents = None
 
     def test_tool_type(self):
         tool_module = self._tool_source.parse_tool_module()
