@@ -1173,7 +1173,7 @@ def send_mail( frm, to, subject, body, config, html=None ):
     msg.attach(part1)
     if html is not None:
         part2 = MIMEText(html, 'html')
-    msg.attach(part2)
+        msg.attach(part2)
     msg[ 'To' ] = ', '.join( to )
     msg[ 'From' ] = frm
     msg[ 'Subject' ] = subject
