@@ -20,10 +20,8 @@ class StatsdMiddleware(object):
         self.statsd_client = statsd.StatsClient(statsd_host, statsd_port, prefix='galaxy')
 
     def __call__(self, environ, start_response):
-        import pprint
-        pprint.pprint(environ)
         start_time = time.time()
         req = self.application(environ, start_response)
         dt = int((time.time() - start_time) * 1000)
-        self.statsd_client.timing(environ.get('PATH_INFO', "NOPATH"), dt)
+        self.statsd_client.timing(environ.get('PATH_INFO', "NOPATH").strip('/').replace('/', '.'), dt)
         return req
