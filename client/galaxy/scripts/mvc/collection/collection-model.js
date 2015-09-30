@@ -126,6 +126,14 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
+    /** root api url */
+    urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' )) + 'api/datasets',
+
+    /** url fn */
+    url : function(){
+        return this.urlRoot + '/' + this.id;
+    },
+
     defaults : _.extend( {},
         DATASET_MODEL.DatasetAssociation.prototype.defaults,
         DatasetCollectionElementMixin.defaults
