@@ -3008,10 +3008,6 @@ class ImportHistoryTool( Tool ):
     tool_type = 'import_history'
 
 
-class GenomeIndexTool( Tool ):
-    tool_type = 'index_genome'
-
-
 class DataManagerTool( OutputParameterJSONTool ):
     tool_type = 'manage_data'
     default_tool_action = DataManagerToolAction

@@ -741,6 +741,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             self._tool_watcher.watch_file( config_file, tool.id )
         return tool
 
+    def load_hidden_lib_tool( self, path ):
+        tool_xml = os.path.join( os.getcwd(), "lib", path )
+        return self.load_hidden_tool( tool_xml )
+
     def load_hidden_tool( self, config_file, **kwds ):
         """ Load a hidden tool (in this context meaning one that does not
         appear in the tool panel) and register it in _tools_by_id.

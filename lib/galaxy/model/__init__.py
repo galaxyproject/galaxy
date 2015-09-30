@@ -2375,7 +2375,7 @@ class HistoryDatasetAssociationSubset( object ):
 class Library( object, Dictifiable, HasName ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     dict_collection_visible_keys = ( 'id', 'name' )
-    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id' )
+    dict_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id', 'create_time' )
 
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"

@@ -1,14 +1,12 @@
 """Migration script to add the type column to the repository table."""
+import logging
+import sys
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Column, MetaData, Table
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import TrimmedString
 
-import sys, logging
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -18,6 +16,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade( migrate_engine ):
     print __doc__
@@ -34,6 +33,7 @@ def upgrade( migrate_engine ):
     # Update the type column to have the default unrestricted value.
     cmd = "UPDATE repository SET type = 'unrestricted'"
     migrate_engine.execute( cmd )
+
 
 def downgrade( migrate_engine ):
     metadata.bind = migrate_engine

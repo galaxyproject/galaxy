@@ -40,9 +40,10 @@ define(['utils/utils', 'mvc/ui/ui-misc', 'mvc/tools/tools-form-base', 'mvc/tools
             }
             // create options dictionary
             options = Utils.merge(options, {
-                buttons     : {
+                buttons        : {
                     execute : execute
-                }
+                },
+                initial_errors : true
             });
             ToolFormBase.prototype.initialize.call(this, options);
         }

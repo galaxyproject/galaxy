@@ -263,6 +263,11 @@ var FolderListView = Backbone.View.extend({
      *  Currently supports only sorting by name. 
      */
     sortFolder: function(sort_by, order){
+        console.log('sorting');
+        // default to asc sort by name
+        if (sort_by === 'undefined' && order === 'undefined'){
+            return this.collection.sortByNameAsc();
+        }
         if (sort_by === 'name'){
             if (order === 'asc'){
                 return this.collection.sortByNameAsc();
