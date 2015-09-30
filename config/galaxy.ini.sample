@@ -654,13 +654,19 @@ use_interactive = True
 # lot of CPU.
 #use_heartbeat = False
 
-
 # Log to Sentry
 # Sentry is an open source logging and error aggregation platform.  Setting
 # sentry_dsn will enable the Sentry middleware and errors will be sent to the
 # indicated sentry instance.  This connection string is available in your
 # sentry instance under <project_name> -> Settings -> API Keys.
 #sentry_dsn = None
+
+# Log to statsd
+# Statsd is an external statistics aggregator (https://github.com/etsy/statsd)
+# Enabling the following options will cause galaxy to log request timing and
+# other statistics to the configured statsd instance.
+#statsd_host=
+#statsd_port=8125
 
 # -- Data Libraries
 
