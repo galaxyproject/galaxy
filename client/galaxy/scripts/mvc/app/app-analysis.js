@@ -1,34 +1,38 @@
 define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
-        'mvc/history/options-menu', 'mvc/history/history-panel-edit-current'],
-    function( Utils, Tools, Upload, Ui, optionsMenu, HistoryPanel ) {
+        'mvc/history/options-menu', 'mvc/history/history-panel-edit-current', 'mvc/tools/tools-form'],
+    function( Utils, Tools, Upload, Ui, optionsMenu, HistoryPanel, ToolsForm ) {
 
     /* Builds the center panel */
     var CenterPanel = Backbone.View.extend({
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );
             this.setElement( this._template() );
-            var params = this.options.params;
-            this.$( '#galaxy_main' ).prop( 'src', Galaxy.root + (
-                ( params.tool_id && ( 'tool_runner?' + $.param( params ) ) ) ||
-                ( params.workflow_id && ( 'workflow/run?id=' + params.workflow_id ) ) ||
-                ( params.m_c && ( params.m_c + '/' + params.m_a ) ) ||
-                ( Galaxy.config.require_login && !Galaxy.user.id && 'user/login') ||
-                'root/welcome'
-            ));
             var self = this;
             this.$( '#galaxy_main' ).on( 'load', function() {
-                $( this ).show();
-                self.$( '#center-panel' ).empty().hide();
-                var galaxy_main = this.contentWindow;
-                if ( galaxy_main ) {
+                var location = this.contentWindow && this.contentWindow.location;
+                if ( location && location.host ) {
+                    $( this ).show();
+                    self.$( '#center-panel' ).empty().hide();
                     Galaxy.trigger( 'galaxy_main:load', {
-                        fullpath: galaxy_main.location.pathname + galaxy_main.location.search + galaxy_main.location.hash,
-                        pathname: galaxy_main.location.pathname,
-                        search  : galaxy_main.location.search,
-                        hash    : galaxy_main.location.hash
+                        fullpath: location.pathname + location.search + location.hash,
+                        pathname: location.pathname,
+                        search  : location.search,
+                        hash    : location.hash
                     });
                 }
             });
+            var params = $.extend( {}, Galaxy.params );
+            if ( params.tool_id !== 'upload1' && ( params.tool_id || params.job_id ) ) {
+                params.tool_id && ( params.id = params.tool_id );
+                this.display( ( new ToolsForm.View( params ) ).$el );
+            } else {
+                this.$( '#galaxy_main' ).prop( 'src', Galaxy.root + (
+                    ( params.workflow_id && ( 'workflow/run?id=' + params.workflow_id ) ) ||
+                    ( params.m_c && ( params.m_c + '/' + params.m_a ) ) ||
+                    ( Galaxy.config.require_login && !Galaxy.user.id && 'user/login') ||
+                    'root/welcome'
+                ));
+            }
         },
         display: function( $el ) {
             this.$( '#galaxy_main' ).hide();
