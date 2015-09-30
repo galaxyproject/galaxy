@@ -328,9 +328,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'file_path'     : self._remap_from( 'file_name' ),
 
             'resubmitted'   : lambda i, k, **c: self.hda_manager.has_been_resubmitted( i ),
-            'creating_job'  : self.serialize_creating_job,
-            'rerunnable' : self.rerunnable,
-
             'display_apps'  : self.serialize_display_apps,
             'display_types' : self.serialize_old_display_applications,
             'visualizations': self.serialize_visualization_links,
@@ -434,19 +431,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                                        hda_id=encoded_id, metadata_name='' ),
         }
         return urls
-
-    def serialize_creating_job( self, hda, key, **context ):
-        if hda.creating_job:
-            return self.app.security.encode_id(hda.creating_job.id),
-        else:
-            return None
-
-    def rerunnable( self, hda, key, **context ):
-        if hda.creating_job:
-            tool = self.app.toolbox.get_tool(hda.creating_job.tool_id, hda.creating_job.tool_version)
-            if tool and tool.is_workflow_compatible:
-                return True
-        return False
 
 
 class HDADeserializer( datasets.DatasetAssociationDeserializer,
