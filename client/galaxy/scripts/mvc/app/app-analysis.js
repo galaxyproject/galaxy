@@ -22,7 +22,7 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                 }
             });
             var params = $.extend( {}, Galaxy.params );
-            if ( params.tool_id || params.job_id ) {
+            if ( params.tool_id !== 'upload1' && ( params.tool_id || params.job_id ) ) {
                 params.tool_id && ( params.id = params.tool_id );
                 this.display( ( new ToolsForm.View( params ) ).$el );
             } else {

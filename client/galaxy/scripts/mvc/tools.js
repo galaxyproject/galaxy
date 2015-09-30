@@ -525,7 +525,7 @@ var ToolLinkView = BaseView.extend({
         }
 
         // regular tools
-        if (this.model.get('model_class') === 'Tool') {
+        if ( this.model.id !== 'upload1' && this.model.get( 'model_class' ) === 'Tool' ) {
             var self = this;
             $link.find('a').on('click', function(e) {
                 e.preventDefault();
