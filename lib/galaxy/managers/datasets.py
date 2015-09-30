@@ -383,6 +383,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             'meta_files'    : self.serialize_meta_files,
             'metadata'      : self.serialize_metadata,
 
+            'creating_job'  : self.serialize_creating_job,
+            'rerunnable'    : self.serialize_rerunnable,
+
             'parent_id'     : self.serialize_id,
             'designation'   : lambda i, k, **c: i.designation,
 
@@ -445,6 +448,27 @@ class _UnflattenedMetadataDatasetAssociationSerializer( base.ModelSerializer,
             metadata[ name ] = val
 
         return metadata
+
+    def serialize_creating_job( self, dataset, key, **context ):
+        """
+        Return the id of the Job that created this dataset (or its original)
+        or None if no `creating_job` is found.
+        """
+        if dataset.creating_job:
+            return self.serialize_id( dataset.creating_job, 'id' )
+        else:
+            return None
+
+    def serialize_rerunnable( self, dataset, key, **context ):
+        """
+        Return False if this tool that created this dataset can't be re-run
+        (e.g. upload).
+        """
+        if dataset.creating_job:
+            tool = self.app.toolbox.get_tool( dataset.creating_job.tool_id, dataset.creating_job.tool_version )
+            if tool and tool.is_workflow_compatible:
+                return True
+        return False
 
     def serialize_converted_datasets( self, dataset_assoc, key, **context ):
         """
