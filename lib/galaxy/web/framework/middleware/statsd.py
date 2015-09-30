@@ -8,7 +8,7 @@ import statsd
 
 class StatsdMiddleware(object):
     """
-    This logging middleware will log request durations to the configured statsd
+    This middleware will log request durations to the configured statsd
     instance.
     """
 
