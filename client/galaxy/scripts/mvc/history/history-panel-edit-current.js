@@ -87,14 +87,6 @@ var CurrentHistoryPanel = _super.extend(
         _super.prototype._setUpListeners.call( this );
 
         var panel = this;
-        // cache the scroll position (only if visible)
-        this.$scrollContainer().on( 'scroll', function( ev ){
-            if( panel.$el.is( ':visible' ) ){
-                panel.preferences.set( 'scrollPosition', $( this ).scrollTop() );
-            }
-        });
-
-        //TODO: doesn't work
         // reset scroll position when there's a new history
         this.on( 'new-model', function(){
             panel.preferences.set( 'scrollPosition', 0 );
@@ -191,6 +183,29 @@ var CurrentHistoryPanel = _super.extend(
     },
 
     // ------------------------------------------------------------------------ panel rendering
+    /** override to add a handler to capture the scroll position when the parent scrolls */
+    _setUpBehaviors : function(){
+        // we need to call this in _setUpBehaviors which is called after render since the $el
+        // may not be attached to $el.parent and $scrollContainer() may not work
+        var panel = this;
+        _super.prototype._setUpBehaviors.call( panel );
+
+        // cache the handler to remove and re-add so we don't pile up the handlers
+        if( !this._debouncedScrollCaptureHandler ){
+            this._debouncedScrollCaptureHandler = _.debounce( function scrollCapture(){
+                // cache the scroll position (only if visible)
+                if( panel.$el.is( ':visible' ) ){
+                    panel.preferences.set( 'scrollPosition', $( this ).scrollTop() );
+                }
+            }, 40 );
+        }
+
+        panel.$scrollContainer()
+            .off( 'scroll', this._debouncedScrollCaptureHandler )
+            .on( 'scroll', this._debouncedScrollCaptureHandler );
+        return panel;
+    },
+
     /** In this override, handle null models and move the search input to the top */
     _buildNewRender : function(){
         if( !this.model ){ return $(); }
