@@ -426,7 +426,7 @@ class Configuration( object ):
         self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get( 'statsd_host', '')
-        self.statsd_port = int( kwargs.get( 'statsd_port', 24224 ) )
+        self.statsd_port = int( kwargs.get( 'statsd_port', 8125 ) )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
