@@ -12,6 +12,10 @@ from galaxy import web
 from galaxy.managers import api_keys
 from galaxy.tools.deps.docker_util import DockerVolume
 
+from galaxy import eggs
+eggs.require( "Mako" )
+from mako.template import Template
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -74,15 +78,18 @@ class InteractiveEnviornmentRequest(object):
         # will need to be recorded here. The ConfigParser doesn't provide a
         # .get() that will ignore missing sections, so we must make use of
         # their defaults dictionary instead.
-        default_dict = {
+        builtin_defaults = {
             'command': 'docker {docker_args}',
+            'compose_command': 'docker-compose up -d',
             'command_inject': '--sig-proxy=true -e DEBUG=false',
             'docker_hostname': 'localhost',
             'wx_tempdir': 'False',
             'docker_galaxy_temp_dir': None
         }
-        viz_config = ConfigParser.SafeConfigParser(default_dict)
+        builtin_defaults.update(default_dict)
+        viz_config = ConfigParser.SafeConfigParser(builtin_defaults)
         conf_path = os.path.join( self.attr.our_config_dir, self.attr.viz_id + ".ini" )
+        log.debug("Reading GIE configuration from %s", conf_path)
         if not os.path.exists( conf_path ):
             conf_path = "%s.sample" % conf_path
         viz_config.read( conf_path )
@@ -205,6 +212,45 @@ class InteractiveEnviornmentRequest(object):
         )
         return command
 
+    def docker_compose_cmd(self, env_override={}, volumes=[]):
+        """Generate and return the docker-compose command to execute.
+        """
+        # Get environment stuff, this will go into the mako template of a docker-compose.yml
+        env = self.get_conf_dict()
+        env.update(env_override)
+        env = {key.upper(): value for (key, value) in env.items()}
+        # volume_str = ' '.join(['-v "%s"' % volume for volume in volumes])
+        # TODO: this works very poorly. What if we want to mount N volumes? Or
+        # mount them with non-keys or something? It's not friendly
+        volume_keyed = {key: volume_path for (key, volume_path) in volumes}
+
+        # Get our template docker-compose.yml file.
+        compose_template = os.path.join(self.attr.our_config_dir, "docker-compose.yml.mako")
+        compose_output_path = os.path.join(self.temp_dir, "docker-compose.yml")
+        with open(compose_output_path, 'w') as output_handle, open(compose_template, 'r') as input_handle:
+            output_handle.write(
+                Template(input_handle.read()).render(
+                    env=env,
+                    volumes=volume_keyed,
+                )
+            )
+        # This is the basic docker command such as "cd /tmp/dir && sudo -u docker docker-compose {docker_args}"
+        # or just "cd /tmp/dir && docker-compose {docker_args}"
+        command = ('cd %s && ' % self.temp_dir) + self.attr.viz_config.get("docker", "compose_command")
+        # Then we format in the entire docker command in place of
+        # {docker_args}, so as to let the admin not worry about which args are
+        # getting passed
+        #
+        # Additionally we don't specify which docker-compose.yml file it is as
+        # we want it to fail horribly if something is wrong. (TODO: this
+        # comment should be removed once debugging is done.)
+        command = command.format(docker_args='up -d')
+        # Once that's available, we format again with all of our arguments
+        command = command.format(
+            compose_file=compose_output_path
+        )
+        return command
+
     def launch(self, raw_cmd=None, env_override={}, volumes=[]):
         if raw_cmd is None:
             raw_cmd = self.docker_cmd(env_override=env_override, volumes=volumes)
@@ -246,6 +292,42 @@ class InteractiveEnviornmentRequest(object):
             # PORT is no longer exposed internally. All requests are forced to
             # go through the proxy we ship.
             # self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
+
+    def launch_multi(self, raw_cmd=None, env_override={}, volumes=[]):
+        if raw_cmd is None:
+            raw_cmd = self.docker_compose_cmd(env_override=env_override, volumes=volumes)
+        log.info("Starting docker-compose container(s) for IE {0} with command [{1}]".format(
+            self.attr.viz_id,
+            raw_cmd
+        ))
+        p = Popen( raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+        stdout, stderr = p.communicate()
+        if p.returncode != 0:
+            log.error("===\n%s\n===\n%s\n===" % (stdout, stderr))
+            return None
+        else:
+            # Container ID is NOT available, so we have to do this another way.
+            # We make a hard requirement that a single service be named
+            # "external" and listen on port 8080. TODO: make this nicer for people.
+            port_cmd = "cd %s && docker-compose port external 80" % self.temp_dir
+            find_ports = Popen(port_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+            stdout, stderr = find_ports.communicate()
+            if find_ports.returncode != 0:
+                log.error("===\n%s\n===\n%s\n===" % (stdout, stderr))
+            else:
+                # Watch this fail horrifically for anyone on IPv6
+                (proxy_host, proxy_port) = stdout.strip().split(':')
+
+            # Now we configure our proxy_requst object and we manually specify
+            # the port to map to and ensure the proxy is available.
+            self.attr.proxy_request = self.trans.app.proxy_manager.setup_proxy(
+                self.trans,
+                host=self.attr.docker_hostname,
+                port=proxy_port,
+                proxy_prefix=self.attr.proxy_prefix,
+            )
+            # These variables then become available for use in templating URLs
+            self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
 
     def get_proxied_ports(self, container_id):
         """Run docker inspect on a container to figure out which ports were
