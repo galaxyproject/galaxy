@@ -692,9 +692,15 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # Statsd request timing and profiling
     statsd_host = conf.get('statsd_host', None)
     if statsd_host:
-        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
-        app = StatsdMiddleware( app, statsd_host, conf.get('statsd_port'))
-        log.debug( "Enabling 'statsd' middleware" )
+        try:
+            import statsd  # noqa -- we simply ensure availability of the statsd module here before wrapping middleware
+            from galaxy.web.framework.middleware.statsd import StatsdMiddleware
+            app = StatsdMiddleware( app, statsd_host, conf.get('statsd_port'))
+            log.debug( "Enabling 'statsd' middleware" )
+        except ImportError:
+            log.error( "Statsd middleware configured, but no statsd python module found. "
+                       "Please install the python statsd module to use this functionality." )
+
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
