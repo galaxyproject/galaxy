@@ -138,7 +138,7 @@ do
           ;;
       -t|-toolshed|--toolshed)
           test_script="./test/tool_shed/functional_tests.py"
-          report_file="./test/tool_shed/run_functional_tests.html"
+          report_file="run_toolshed_tests.html"
           if [ $# -gt 1 ]; then
               toolshed_script=$2
               shift 2
@@ -162,6 +162,7 @@ do
           fi
           ;;
       -f|-framework|--framework)
+          report_file="run_framework_tests.html"
           framework_test=1;
           shift 1
           ;;
@@ -172,6 +173,7 @@ do
       -j|-casperjs|--casperjs)
           # TODO: Support running casper tests against existing
           # Galaxy instances.
+          report_file="run_casperjs_tests.html"
           casperjs_test=1;
           shift
           ;;
