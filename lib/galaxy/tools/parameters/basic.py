@@ -816,7 +816,6 @@ class SelectToolParameter( ToolParameter ):
         self.display = input_source.get( 'display', None )
         self.separator = input_source.get( 'separator', ',' )
         self.legal_values = set()
-        # TODO: the <dynamic_options> tag is deprecated and should be replaced with the <options> tag.
         self.dynamic_options = input_source.get( "dynamic_options", None )
         self.options = input_source.parse_dynamic_options(self)
         if self.options is not None:
@@ -979,17 +978,14 @@ class SelectToolParameter( ToolParameter ):
         return super( SelectToolParameter, self ).value_from_basic( value, app, ignore_errors=ignore_errors )
 
     def get_initial_value( self, trans, context, history=None ):
-        # More working around dynamic options for workflow
         options = list( self.get_options( trans, context ) )
         if len(options) == 0 and (trans is None or trans.workflow_building_mode):
-            # Really the best we can do?
             return UnvalidatedValue( None )
         value = [ optval for _, optval, selected in options if selected ]
         if len( value ) == 0:
-            if not self.multiple and options:
-                # Nothing selected, but not a multiple select, with some values,
+            if not self.optional and not self.multiple and options:
+                # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
-                # TODO: deal with optional parameters in a better way
                 value = options[0][1]
             else:
                 value = None

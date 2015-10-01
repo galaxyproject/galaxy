@@ -8,7 +8,7 @@ var View = Backbone.View.extend({
         id          : Utils.uid(),
         cls         : 'ui-select',
         error_text  : 'No data available',
-        empty_text  : 'No selection',
+        empty_text  : 'Nothing selected',
         visible     : true,
         wait        : false,
         multiple    : false,
