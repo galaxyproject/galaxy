@@ -50,12 +50,6 @@ class ConditionalDependencies( object ):
         except:
             return False
 
-    def check_pysqlite( self ):
-        try:
-            return self.config.get( "app:main", "database_connection" ).startswith( "sqlite://" )
-        except:
-            return True
-
     def check_psycopg2( self ):
         return self.config.get( "app:main", "database_connection" ).startswith( "postgres" )
 
