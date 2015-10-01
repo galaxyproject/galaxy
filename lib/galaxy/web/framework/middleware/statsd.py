@@ -3,7 +3,13 @@ Middleware for sending request statistics to statsd
 """
 from __future__ import absolute_import
 import time
-import statsd
+
+try:
+    import statsd
+except ImportError:
+    # This middleware will never be used without statsd.  This block allows
+    # unit tests pass on systems without it.
+    statsd = None
 
 
 class StatsdMiddleware(object):
