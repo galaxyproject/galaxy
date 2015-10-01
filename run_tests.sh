@@ -24,7 +24,7 @@ cat <<EOF
 '${0##*/} -unit (test_path)'        for running all unit tests (doctests in lib and tests in test/unit)
 '${0##*/} -qunit'                   for running qunit JavaScript tests
 '${0##*/} -qunit testname'          for running single JavaScript test with given name
-
+'${0##*/} -casperjs (py_test_path)' for running casperjs JavaScript tests using a Python wrapper for consistency. py_test_path in casperjs_runner.py e.g. 'Test_04_HDAs' or 'Test_04_HDAs.test_00_HDA_states'.
 
 Nose tests will allow specific tests to be selected per the documentation at
 https://nose.readthedocs.org/en/latest/usage.html#selecting-tests.  These are
@@ -138,7 +138,7 @@ do
           ;;
       -t|-toolshed|--toolshed)
           test_script="./test/tool_shed/functional_tests.py"
-          report_file="./test/tool_shed/run_functional_tests.html"
+          report_file="run_toolshed_tests.html"
           if [ $# -gt 1 ]; then
               toolshed_script=$2
               shift 2
@@ -162,6 +162,7 @@ do
           fi
           ;;
       -f|-framework|--framework)
+          report_file="run_framework_tests.html"
           framework_test=1;
           shift 1
           ;;
@@ -172,8 +173,14 @@ do
       -j|-casperjs|--casperjs)
           # TODO: Support running casper tests against existing
           # Galaxy instances.
+          if [ $# -gt 1 ]; then
+              casperjs_test_name=$2
+              shift 2
+          else
+              shift 1
+          fi
+          report_file="run_casperjs_tests.html"
           casperjs_test=1;
-          shift
           ;;
       -m|-migrated|--migrated)
           migrated_test=1;
@@ -304,7 +311,11 @@ elif [ -n "$casperjs_test" ]; then
     # TODO: Ensure specific versions of casperjs and phantomjs are
     # available. Some option for leveraging npm to automatically
     # install these dependencies would be nice as well.
-    extra_args="test/casperjs/casperjs_runner.py"
+    if [ -n "$casperjs_test_name" ]; then
+        extra_args="test/casperjs/casperjs_runner.py:$casperjs_test_name"
+    else
+        extra_args="test/casperjs/casperjs_runner.py"
+    fi
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id` 
 elif [ -n "$test_id" ]; then
