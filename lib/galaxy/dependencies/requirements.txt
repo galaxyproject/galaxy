@@ -8,7 +8,6 @@ mercurial==3.5
 numpy==1.9.2
 pycrypto==2.6.1
 python_lzo==1.8
-psycopg2==2.6.1
 
 # extra functionality from Dannon
 pysam==0.8.3gx1
