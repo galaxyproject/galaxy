@@ -27,6 +27,7 @@ Mako==1.0.2
 pytz==2015.4
 Babel==2.0
 Beaker==1.7.0
+WebError==0.11
 
 # kombu and dependencies
 kombu==3.0.26
