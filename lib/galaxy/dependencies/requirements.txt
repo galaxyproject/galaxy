@@ -3,7 +3,7 @@ Cheetah==2.4.4
 bx-python==0.7.3
 MarkupSafe==0.23
 PyYAML==3.11
-SQLAlchemy==1.0.6
+SQLAlchemy==1.0.8
 mercurial==3.4.2
 numpy==1.9.2
 pycrypto==2.6.1
@@ -27,7 +27,10 @@ Mako==1.0.2
 pytz==2015.4
 Babel==2.0
 Beaker==1.7.0
+
+# WebError and dependences
 WebError==0.11
+Pygments==2.0.2
 
 # kombu and dependencies
 kombu==3.0.26
