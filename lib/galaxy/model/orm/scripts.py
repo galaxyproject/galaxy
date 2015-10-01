@@ -71,8 +71,10 @@ def read_config_file_arg( argv, default, old_default ):
     else:
         if not os.path.exists( default ) and os.path.exists( old_default ):
             config_file = old_default
-        else:
+        elif os.path.exists( default ):
             config_file = default
+        else:
+            config_file = default + ".sample"
     return config_file
 
 
