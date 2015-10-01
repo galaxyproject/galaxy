@@ -22,6 +22,9 @@ class StatsdMiddleware(object):
                  application,
                  statsd_host,
                  statsd_port):
+        if not statsd:
+            raise ImportError( "Statsd middleware configured, but no statsd python module found. "
+                           "Please install the python statsd module to use this functionality." )
         self.application = application
         self.statsd_client = statsd.StatsClient(statsd_host, statsd_port, prefix='galaxy')
 
