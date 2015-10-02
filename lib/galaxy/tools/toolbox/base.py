@@ -373,7 +373,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
 
         if get_all_versions and exact:
             raise AssertionError("Cannot specify get_tool with both get_all_versions and exact as True")
-        
+
         if "/repos/" in tool_id:  # test if tool came from a toolshed
             tool_id_without_tool_shed = tool_id.split("/repos/")[1]
             available_tool_sheds = self.app.tool_shed_registry.tool_sheds.values()
