@@ -45,7 +45,7 @@ from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.toolbox import AbstractToolBox
-from galaxy.util import rst_to_html, string_as_bool, string_to_object
+from galaxy.util import rst_to_html, string_as_bool
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
