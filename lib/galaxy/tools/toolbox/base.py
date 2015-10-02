@@ -366,40 +366,6 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             elif elem.tag == 'label':
                 self._integrated_tool_panel.stub_label( key )
 
-    def try_other_tool_sheds(func):
-        """
-        Wrapper function for get_tool that enables looking up tools whose tool
-        shed location, and hence tool_id, changed. If a tool corresponding to
-        the original tool_id cannot be found, the portion in tool_id that
-        corresponds to the tool shed is subsequently replaced with all other active
-        tool sheds and get_tool() is called again with the new tool_id.
-        """
-        def _manage_get_tool(self, *args, **kwargs):
-            tool = func(self, *args, **kwargs)
-            if not tool:
-                # As a last resort, try to fetch a tool that has been moved to a different toolshed.
-                tool_id = kwargs.get("tool_id", None)
-                if not tool_id:
-                    tool_id = args[0]
-                if "/repos/" in tool_id:  # test if tool came from a toolshed
-                    tool_id_without_tool_shed = tool_id.split("/repos/")[1]
-                    available_tool_sheds = self.app.tool_shed_registry.tool_sheds.values()
-                    available_tool_sheds = [ urlparse(tool_shed) for tool_shed in available_tool_sheds ]
-                    available_tool_sheds = [ url.geturl().replace(url.scheme + "://", '', 1) for url in available_tool_sheds]
-                    alternate_tool_ids = [ tool_shed + "repos/" + tool_id_without_tool_shed for tool_shed in available_tool_sheds]
-                    for alternate_tool_id in alternate_tool_ids:
-                        if "tool_id" in kwargs:
-                            kwargs["tool_id"] = alternate_tool_id
-                        else:
-                            args = list(args)
-                            args[0] = alternate_tool_id
-                        tool = func(self, *args, **kwargs)
-                        if tool:
-                            return tool
-            return tool
-        return _manage_get_tool
-
-    @try_other_tool_sheds
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False, exact=False ):
         """Attempt to locate a tool in the tool box."""
         if tool_version:
@@ -407,41 +373,53 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
 
         if get_all_versions and exact:
             raise AssertionError("Cannot specify get_tool with both get_all_versions and exact as True")
-
-        if tool_id in self._tools_by_id and not get_all_versions:
-            if tool_version and tool_version in self._tool_versions_by_id[ tool_id ]:
-                return self._tool_versions_by_id[ tool_id ][ tool_version ]
-            # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
-            return self._tools_by_id[ tool_id ]
-        # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
-        rval = []
-        tool_lineage = self._lineage_map.get( tool_id )
-        if tool_lineage:
-            lineage_tool_versions = tool_lineage.get_versions( )
-            for lineage_tool_version in lineage_tool_versions:
-                lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
-                if lineage_tool:
-                    rval.append( lineage_tool )
-        if not rval:
-            # still no tool, do a deeper search and try to match by old ids
-            for tool in self._tools_by_id.itervalues():
-                if tool.old_id == tool_id:
-                    rval.append( tool )
-        if rval:
-            if get_all_versions:
-                return rval
-            else:
-                if tool_version:
-                    # return first tool with matching version
-                    for tool in rval:
-                        if tool.version == tool_version:
-                            return tool
-                # No tool matches by version, simply return the first available tool found
-                return rval[0]
-        # We now likely have a Toolshed guid passed in, but no supporting database entries
-        # If the tool exists by exact id and is loaded then provide exact match within a list
-        if tool_id in self._tools_by_id:
-            return[ self._tools_by_id[ tool_id ] ]
+        
+        if "/repos/" in tool_id:  # test if tool came from a toolshed
+            tool_id_without_tool_shed = tool_id.split("/repos/")[1]
+            available_tool_sheds = self.app.tool_shed_registry.tool_sheds.values()
+            available_tool_sheds = [ urlparse(tool_shed) for tool_shed in available_tool_sheds ]
+            available_tool_sheds = [ url.geturl().replace(url.scheme + "://", '', 1) for url in available_tool_sheds]
+            tool_ids = [ tool_shed + "repos/" + tool_id_without_tool_shed for tool_shed in available_tool_sheds]
+            if tool_id in tool_ids:  # move original tool_id to the top of tool_ids
+                tool_ids.remove(tool_id)
+            tool_ids.insert(0, tool_id)
+        else:
+            tool_ids = [tool_id]
+        for tool_id in tool_ids:
+            if tool_id in self._tools_by_id and not get_all_versions:
+                if tool_version and tool_version in self._tool_versions_by_id[ tool_id ]:
+                    return self._tool_versions_by_id[ tool_id ][ tool_version ]
+                # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
+                return self._tools_by_id[ tool_id ]
+            # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
+            rval = []
+            tool_lineage = self._lineage_map.get( tool_id )
+            if tool_lineage:
+                lineage_tool_versions = tool_lineage.get_versions( )
+                for lineage_tool_version in lineage_tool_versions:
+                    lineage_tool = self._tool_from_lineage_version( lineage_tool_version )
+                    if lineage_tool:
+                        rval.append( lineage_tool )
+            if not rval:
+                # still no tool, do a deeper search and try to match by old ids
+                for tool in self._tools_by_id.itervalues():
+                    if tool.old_id == tool_id:
+                        rval.append( tool )
+            if rval:
+                if get_all_versions:
+                    return rval
+                else:
+                    if tool_version:
+                        # return first tool with matching version
+                        for tool in rval:
+                            if tool.version == tool_version:
+                                return tool
+                    # No tool matches by version, simply return the first available tool found
+                    return rval[0]
+            # We now likely have a Toolshed guid passed in, but no supporting database entries
+            # If the tool exists by exact id and is loaded then provide exact match within a list
+            if tool_id in self._tools_by_id:
+                return[ self._tools_by_id[ tool_id ] ]
         return None
 
     def has_tool( self, tool_id, tool_version=None, exact=False ):
