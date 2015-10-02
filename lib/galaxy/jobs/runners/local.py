@@ -68,7 +68,8 @@ class LocalJobRunner( BaseJobRunner ):
             'working_directory': job_wrapper.working_directory,
         }
         job_file_contents = self.get_job_file( job_wrapper, **job_script_props )
-        open( job_file, 'w' ).write( job_file_contents )
+        with open( job_file, 'w' ) as f:
+            f.write( job_file_contents )
         os.chmod( job_file, 0o755 )
         return job_file, exit_code_path
 
