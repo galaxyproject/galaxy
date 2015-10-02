@@ -701,6 +701,13 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
+    # Statsd request timing and profiling
+    statsd_host = conf.get('statsd_host', None)
+    if statsd_host:
+        from galaxy.web.framework.middleware.statsd import StatsdMiddleware
+        app = StatsdMiddleware( app, statsd_host, conf.get('statsd_port'))
+        log.debug( "Enabling 'statsd' middleware" )
+
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
