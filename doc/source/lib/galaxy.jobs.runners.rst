@@ -11,7 +11,6 @@ Subpackages
 
 .. toctree::
 
-    galaxy.jobs.runners.lwr_client
     galaxy.jobs.runners.state_handlers
     galaxy.jobs.runners.util
 
@@ -50,13 +49,6 @@ galaxy.jobs.runners.local module
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.lwr module
-------------------------------
-
-.. automodule:: galaxy.jobs.runners.lwr
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 galaxy.jobs.runners.pbs module
 ------------------------------

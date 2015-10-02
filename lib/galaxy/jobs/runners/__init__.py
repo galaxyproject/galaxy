@@ -188,8 +188,6 @@ class BaseJobRunner( object ):
         raise NotImplementedError()
 
     def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
-        # TODO: Eliminate extra kwds no longer used (since LWR skips
-        # abstraction and calls build_command directly).
         container = self._find_container( job_wrapper )
         return build_command(
             self,
@@ -248,8 +246,8 @@ class BaseJobRunner( object ):
 
     def _handle_metadata_externally( self, job_wrapper, resolve_requirements=False ):
         """
-        Set metadata externally. Used by the local and lwr job runners where this
-        shouldn't be attached to command-line to execute.
+        Set metadata externally. Used by the Pulsar job runner where this
+        shouldn't be attached to command line to execute.
         """
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
