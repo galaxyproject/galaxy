@@ -12,6 +12,11 @@ if [ "$GALAXY_LIB" != "None" ]; then
     export PYTHONPATH
 fi
 $env_setup_commands
+GALAXY_VIRTUAL_ENV="$galaxy_virtual_env"
+if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" \
+     -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then
+    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+fi
 $instrument_pre_commands
 cd $working_directory
 $command

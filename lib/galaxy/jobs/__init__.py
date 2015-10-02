@@ -799,6 +799,10 @@ class JobWrapper( object ):
             self.__galaxy_lib_dir = os.path.abspath( "lib" )  # cwd = galaxy root
         return self.__galaxy_lib_dir
 
+    @property
+    def galaxy_virtual_env(self):
+        return os.environ.get('VIRTUAL_ENV', None)
+
     # legacy naming
     get_job_runner = get_job_runner_url
 
