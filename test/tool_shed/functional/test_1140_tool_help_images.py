@@ -17,12 +17,6 @@ category_description = 'Test 0140 Tool Help Images'
 similar to the following string where the encoded repository_id is previously determined:
 
 src="/repository/static/images/<id>/count_modes.png"
-
-Galaxy side:
-1) Install the htseq_count repository from the tool shed into Galaxy.
-2) In the center tool panel, look for the image string similar to the following string where the encoded_repository_id is previously determined as the installed ToolShedRepository id:
-
-src="/tool_runner/static/images/<id>/count_modes.png"
 '''
 
 
@@ -86,34 +80,3 @@ class TestToolHelpImages( ShedTwillTestCase ):
         repository_metadata = repository.metadata_revisions[ 0 ].metadata
         tool_path = repository_metadata[ 'tools' ][ 0 ][ 'tool_config' ]
         self.load_display_tool_page( repository, tool_path, changeset_revision, strings_displayed=[ image_path ], strings_not_displayed=[] )
-
-    def test_0015_install_htseq_count_repository( self ):
-        '''Install the htseq_count_0140 repository into Galaxy.'''
-        '''
-        We are at step 1 - Install the htseq_count_0140 repository from the tool shed into Galaxy.
-        '''
-        self.galaxy_logout()
-        self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        self.install_repository( 'htseq_count_0140',
-                                 'user1',
-                                 category_name,
-                                 strings_displayed=[],
-                                 install_tool_dependencies=False,
-                                 install_repository_dependencies=False )
-
-    def test_0020_verify_tool_image_link( self ):
-        '''Load the tool page and verify the image link.'''
-        '''
-        We are at step 2
-
-        In the center tool panel, look for the image string similar to the following string where the
-        encoded_repository_id is previously determined as the installed ToolShedRepository id:
-
-        src="admin_toolshed/static/images/<id>/count_modes.png"
-        '''
-        repository = self.test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
-        image_path = 'admin_toolshed/static/images/%s/count_modes.png' % self.security.encode_id( repository.id )
-        # The repository uploaded in this test should only define one tool, which should be the tool that contains a link to an image.
-        repository_metadata = repository.metadata
-        tool_id = repository_metadata[ 'tools' ][ 0 ][ 'guid' ]
-        self.load_page_for_installed_tool( tool_id, strings_displayed=[ image_path ] )
