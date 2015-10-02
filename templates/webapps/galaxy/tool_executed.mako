@@ -6,46 +6,13 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <link href="${h.url_for('/static/style/base.css')}" rel="stylesheet" type="text/css" />
 <script type="text/javascript">
-  var inside_galaxy_frameset = false;
-
-  // refresh the history panel to include any new datasets created by the tool
-  if( top.Galaxy && top.Galaxy.currHistoryPanel ){
-        top.Galaxy.currHistoryPanel.refreshContents();
-  }
-
-  %if trans.user:  
-      if (inside_galaxy_frameset)
-      {
-            //parent.frames.galaxy_tools.update_recently_used();
-      }
-  %endif
-  
-  if ( parent.handle_minwidth_hint ) {
-      parent.handle_minwidth_hint( -1 );
-  }
-
-  function main() {
-    // If called from outside the galaxy frameset, redirect there
-    %if tool.options.refresh:
-      if ( ! inside_galaxy_frameset ) {
-        setTimeout( "refresh()", 1000 );
-        document.getElementById( "refresh_message" ).style.display = "block";
-      }
-    %endif
-  }
-
-  function refresh() {
-    top.location.href = '${h.url_for( "/" )}';
-  }  
-
+    setTimeout( function() { top.location.href = '${h.url_for( "/" )}'; }, 1000 );
 </script>
-
 </head>
 
 <body onLoad="main()">
 
 <div class="donemessagelarge">
-
 %if num_jobs > 1:
   <% jobs_str = "%d jobs have" % num_jobs %>
 %else:
@@ -56,25 +23,13 @@
 %else:
   <% datasets_str = "datasets" %>
 %endif
-
 <p>
   ${jobs_str} been successfully added to the queue - resulting in the following ${datasets_str}:
 </p>
 %for _, data in out_data:
    <div style="padding: 10px"><b> ${data.hid}: ${data.name | h}</b></div>
 %endfor
-
-<p>
-You can check the status of queued jobs and view the resulting 
-data by refreshing the <b>History</b> pane. When the job has been run
-the status will change from 'running' to 'finished' if completed 
-successfully or 'error' if problems were encountered.
-</p>
-
-%if tool.options.refresh:
-<p id="refresh_message" style="display: none;">You are now being redirected back to <a href="${h.url_for( '/' )}">Galaxy</a></div>
-%endif
-
+<p> You can check the status of queued jobs and view the resulting data by refreshing the <b>History</b> pane. When the job has been run the status will change from 'running' to 'finished' if completed successfully or 'error' if problems were encountered. You are now being redirected back to <a href="${h.url_for( '/' )}">Galaxy</a>.</p>
 </div>
 
 %if job_errors:

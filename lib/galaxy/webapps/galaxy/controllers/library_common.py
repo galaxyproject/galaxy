@@ -1044,7 +1044,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin, UsesExtendedMet
         tool_id = 'upload1'
         tool = trans.app.toolbox.get_tool( tool_id )
         state = tool.new_state( trans )
-        tool.update_state( trans, tool.inputs_by_page[0], state.inputs, kwd )
+        tool.populate_state( trans, tool.inputs, state.inputs, kwd )
         tool_params = state.inputs
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.iteritems():
