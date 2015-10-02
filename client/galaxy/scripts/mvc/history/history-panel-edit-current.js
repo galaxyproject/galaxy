@@ -184,11 +184,12 @@ var CurrentHistoryPanel = _super.extend(
 
     // ------------------------------------------------------------------------ panel rendering
     /** override to add a handler to capture the scroll position when the parent scrolls */
-    _setUpBehaviors : function(){
+    _setUpBehaviors : function( $where ){
+        $where = $where || this.$el;
         // we need to call this in _setUpBehaviors which is called after render since the $el
         // may not be attached to $el.parent and $scrollContainer() may not work
         var panel = this;
-        _super.prototype._setUpBehaviors.call( panel );
+        _super.prototype._setUpBehaviors.call( panel, $where );
 
         // cache the handler to remove and re-add so we don't pile up the handlers
         if( !this._debouncedScrollCaptureHandler ){
@@ -296,7 +297,7 @@ var CurrentHistoryPanel = _super.extend(
         _.delay( function(){
             var pos = panel.preferences.get( 'scrollPosition' );
             if( pos ){
-                panel.scrollTo( pos );
+                panel.scrollTo( pos, 0 );
             }
         }, 10 );
         //TODO: is this enough of a delay on larger histories?
