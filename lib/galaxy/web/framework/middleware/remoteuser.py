@@ -88,7 +88,7 @@ class RemoteUser( object ):
                 access Galaxy.
                 """
                 return self.error( start_response, title, message )
-            
+                
             if not safe_str_cmp(environ.get('HTTP_GX_SECRET'), self.config_secret_header):
                 title = "Access to Galaxy is denied"
                 message = """
