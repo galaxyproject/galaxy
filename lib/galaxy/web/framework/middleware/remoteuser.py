@@ -102,7 +102,7 @@ class RemoteUser( object ):
                 access Galaxy.
                 """
                 return self.error( start_response, title, message )
-
+                
         if not environ.get(self.remote_user_header, '(null)').startswith('(null)'):
             if not environ[ self.remote_user_header ].count( '@' ):
                 if self.maildomain is not None:
