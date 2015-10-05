@@ -108,7 +108,7 @@ class GoProxyLauncher(object):
 
     def launch_proxy_command(self, config):
         args = [
-            '/home/hxr/go/src/github.com/erasche/gie-proxy/gxproxy',
+            'gxproxy',
             '-api_key', API_KEY,
             '-cookie_name', SECURE_COOKIE,
             '-listen', '%s:%s' % (config.dynamic_proxy_bind_ip, config.dynamic_proxy_bind_port),
