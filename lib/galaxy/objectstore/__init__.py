@@ -48,7 +48,7 @@ class ObjectStore(object):
 
         FIELD DESCRIPTIONS (these apply to all the methods in this class):
 
-        :type obj: object
+        :type obj: StorableObject
         :param obj: A Galaxy object with an assigned database ID accessible via
                     the .id attribute.
 
