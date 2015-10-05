@@ -52,13 +52,12 @@ class ToolRunner( BaseUIController ):
             trans.response.status = 404
             return trans.show_error_message('Tool \'%s\' does not exist.' % ( escape(tool_id) ))
         if tool.require_login and not trans.user:
-            message = 'You must be logged in to use this tool.'
             redirect = url_for( controller='tool_runner', action='index', tool_id=tool_id, **kwd )
             return trans.response.send_redirect( url_for( controller='user',
                                                           action='login',
                                                           cntrller='user',
                                                           status='info',
-                                                          message=message,
+                                                          message='You must be logged in to use this tool.',
                                                           redirect=redirect ) )
         if tool.tool_type == 'default':
             return trans.response.send_redirect( url_for( controller='root', tool_id=tool_id ) )
@@ -75,8 +74,6 @@ class ToolRunner( BaseUIController ):
             vars = tool.handle_input( trans, params.__dict__, history=history )
         except Exception, e:
             error( str( e ) )
-        if 'error' in vars and 'message' in vars:
-            error( vars[ 'message' ] )
         if len( params ) > 0:
             trans.log_event( 'Tool params: %s' % ( str( params ) ), tool_id=tool_id )
         return trans.fill_template( 'root/tool_runner.mako', **vars )

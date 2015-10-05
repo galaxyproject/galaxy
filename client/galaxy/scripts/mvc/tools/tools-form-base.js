@@ -118,7 +118,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     console.debug(response);
 
                     // show error
-                    var error_message = response.error || response.err_msg || 'Uncaught error.';
+                    var error_message = ( response && response.error) || (response && response.err_msg) || 'Uncaught error.';
                     if ( self.$el.is(':empty') ) {
                         self.$el.prepend((new Ui.Message({
                             message     : error_message,

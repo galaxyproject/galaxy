@@ -1279,8 +1279,7 @@ class Tool( object, Dictifiable ):
                 rerun_remap_job_id = trans.app.security.decode_id( incoming[ 'rerun_remap_job_id' ] )
             except Exception, exception:
                 log.error( str( exception ) )
-                message = 'Failure executing tool (attempting to rerun invalid job).'
-                return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
+                raise exceptions.MessageException( 'Failure executing tool (attempting to rerun invalid job).' )
 
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
@@ -1291,8 +1290,7 @@ class Tool( object, Dictifiable ):
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
         if rerun_remap_job_id and len( expanded_incomings ) > 1:
-            message = 'Failure executing tool (cannot create multiple jobs when remapping existing job).'
-            return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
+            raise exceptions.MessageException( 'Failure executing tool (cannot create multiple jobs when remapping existing job).' )
 
         all_errors = []
         all_params = []
@@ -1320,8 +1318,7 @@ class Tool( object, Dictifiable ):
         # If there were errors, we stay on the same page and display
         # error messages
         if any( all_errors ):
-            error_message = 'One or more errors were found in the input you provided. The specific errors are marked below.'
-            return dict( errors=all_errors[ 0 ], error_message=error_message )
+            raise exceptions.MessageException( err_data=all_errors[ 0 ] )
         else:
             execution_tracker = execute_job( trans, self, all_params, history=history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
             if execution_tracker.successful_jobs:
@@ -1332,7 +1329,7 @@ class Tool( object, Dictifiable ):
                              output_collections=execution_tracker.output_collections,
                              implicit_collections=execution_tracker.implicit_collections )
             else:
-                return dict( error=True, message=execution_tracker.execution_errors[ 0 ] )
+                raise exceptions.MessageException( execution_tracker.execution_errors[ 0 ] )
 
     def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection ):
         """
