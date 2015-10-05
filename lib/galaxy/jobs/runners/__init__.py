@@ -311,6 +311,18 @@ class BaseJobRunner( object ):
         options.update(**kwds)
         return job_script(**options)
 
+    def write_executable_script( self, path, contents, mode=0o755 ):
+        with open( path, 'w' ) as f:
+            f.write( contents )
+        os.chmod( path, mode )
+        try:
+            # sync file system to avoid "Text file busy" problems.
+            # These have occurred both in Docker containers and on EC2 clusters
+            # under high load.
+            subprocess.check_call(["sync"])
+        except Exception:
+            pass
+
     def _complete_terminal_job( self, ajs, **kwargs ):
         if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
             self.work_queue.put( ( self.finish_job, ajs ) )
