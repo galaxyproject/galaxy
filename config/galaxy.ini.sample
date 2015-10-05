@@ -632,8 +632,7 @@ nglims_config_file = tool-data/nglims.yaml
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
 # also causes the files used by PBS/SGE (submission script, output, and error)
-# to remain on disk after the job is complete.  Debug mode is disabled if
-# commented, but is uncommented by default in the sample config.
+# to remain on disk after the job is complete.
 #debug = False
 
 # Check for WSGI compliance.
