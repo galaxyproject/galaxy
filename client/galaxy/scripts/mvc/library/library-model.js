@@ -31,6 +31,19 @@ define([], function() {
           options = options || {};
       },
 
+      search : function(search_term){
+        /**
+         * Search the collection and return only the models that have
+         * the search term in their names.
+         * [the term to search]
+         * @type {string}
+         */
+        if (search_term == "") return this;
+        return this.filter(function(data) {
+          return data.get("name").indexOf(search_term) !== -1;
+        });
+      },
+
       /** Get every 'shown' library in this collection based on deleted filter
        *  @param {Boolean} show_deleted are we including deleted libraries?
        *  @returns array of library models
