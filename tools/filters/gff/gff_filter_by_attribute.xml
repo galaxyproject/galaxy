@@ -48,6 +48,7 @@ The filter tool allows you to restrict the dataset using simple conditional stat
 - Make sure that multi-character operators contain no white space ( e.g., **&lt;=** is valid while **&lt; =** is not valid )
 - When using 'equal-to' operator **double equal sign '==' must be used** ( e.g., **attribute_name=='chr1'** )
 - Non-numerical values must be included in single or double quotes ( e.g., **attribute_name=='XX22'** )
+- You can combine multiple conditional statements using **and** or **or** ( e.g., **attribute_name=='XX22' or attribute_name=='XX21'** )
 
 </help>
 </tool>
