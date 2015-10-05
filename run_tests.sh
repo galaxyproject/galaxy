@@ -126,6 +126,7 @@ do
           fi 
           ;;
     -a|-api|--api)
+          with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="./scripts/functional_tests.py"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
@@ -173,6 +174,7 @@ do
       -j|-casperjs|--casperjs)
           # TODO: Support running casper tests against existing
           # Galaxy instances.
+          with_framework_test_tools_arg="-with_framework_test_tools"
           if [ $# -gt 1 ]; then
               casperjs_test_name=$2
               shift 2
