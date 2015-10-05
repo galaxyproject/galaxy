@@ -1,5 +1,5 @@
-import pkg_resources
-pkg_resources.require( "pycrypto" )
+from galaxy import eggs
+eggs.require( "pycrypto" )
 from Crypto.Cipher import Blowfish
 
 
