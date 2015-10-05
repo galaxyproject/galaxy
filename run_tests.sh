@@ -83,15 +83,25 @@ driver="python"
 if [ "$1" = "--dockerize" ];
 then
     shift
+    DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
+    DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
+    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxy/testing-base"}
     if [ "$1" = "--db" ]; then
        db_type=$2
        shift 2
     else
        db_type="sqlite"
     fi
-    DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
-    DOCKER_RUN_EXTRA_ARGS=${DOCKER_ARGS:-""}
-    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxy/testing-base"}
+    if [ "$1" = "--external_tmp" ]; then
+       # If /tmp is a tmpfs there may be better performance by reusing
+       # the parent's temp file system. Also, it seems to decrease the
+       # frequency or errors such as the following:
+       # /bin/sh: 1: /tmp/tmpiWU3kJ/tmp_8zLxx/job_working_directory_mwwDmg/000/274/galaxy_274.sh: Text file busy
+       tmp=$(mktemp -d)
+       chmod 1777 $tmp
+       DOCKER_RUN_EXTRA_ARGS="-v ${tmp}:/tmp ${DOCKER_RUN_EXTRA_ARGS}"
+       shift
+    fi
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi
