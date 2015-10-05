@@ -30,14 +30,17 @@ class ProxyManager(object):
     def shutdown( self ):
         self.lazy_process.shutdown()
 
-    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="" ):
+    def setup_proxy( self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="", container_ids=None ):
         if self.manage_dynamic_proxy:
             log.info("Attempting to start dynamic proxy process")
             self.lazy_process.start_process()
 
+        if container_ids is None:
+            container_ids = []
+
         authentication = AuthenticationToken(trans)
         proxy_requests = ProxyRequests(host=host, port=port)
-        self.register_proxy_route(authentication, proxy_requests, route_name)
+        self.register_proxy_route(authentication, proxy_requests, route_name, container_ids)
         # TODO: These shouldn't need to be request.host and request.scheme -
         # though they are reasonable defaults.
         host = trans.request.host
@@ -54,14 +57,15 @@ class ProxyManager(object):
             'proxied_host': proxy_requests.host,
         }
 
-    def register_proxy_route( self, auth, proxy_requests, route_name, sleep=0 ):
+    def register_proxy_route( self, auth, proxy_requests, route_name, containerIds, sleep=1 ):
         """Make a POST request to the GO proxy to register a route
         """
         url = 'http://127.0.0.1:%s/api?api_key=%s' % (self.dynamic_proxy_bind_port, API_KEY)
         values = {
-            'frontend': route_name,
-            'backendAddr': "%s:%s" % ( proxy_requests.host, proxy_requests.port ),
-            'cookie': auth.cookie_value,
+            'FrontendPath': route_name,
+            'BackendAddr': "%s:%s" % ( proxy_requests.host, proxy_requests.port ),
+            'AuthorizedCookie': auth.cookie_value,
+            'ContainerIds': containerIds,
         }
 
         log.debug(values)
@@ -74,16 +78,18 @@ class ProxyManager(object):
         # going, so if this fails, re-call ourselves with an increased timeout.
         try:
             urllib2.urlopen(req, json.dumps(values))
-        except urllib2.URLError:
+        except urllib2.URLError, err:
+            log.debug(err)
             if sleep > 5:
                 excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))
                 raise Exception(excp)
             time.sleep(sleep)
-            self.register_proxy_route(auth, proxy_requests, route_name, sleep=sleep + 1)
+            self.register_proxy_route(auth, proxy_requests, route_name, containerIds, sleep=sleep + 1)
 
     def __setup_lazy_process( self, config ):
         launcher = proxy_launcher(self)
         command = launcher.launch_proxy_command(config)
+        print ' '.join(command)
         return LazyProcess(command)
 
 
@@ -102,7 +108,7 @@ class GoProxyLauncher(object):
 
     def launch_proxy_command(self, config):
         args = [
-            '/home/hxr/work/galaxy/gxproxy',
+            '/home/hxr/go/src/github.com/erasche/gie-proxy/gxproxy',
             '-api_key', API_KEY,
             '-cookie_name', SECURE_COOKIE,
             '-listen', '%s:%s' % (config.dynamic_proxy_bind_ip, config.dynamic_proxy_bind_port),

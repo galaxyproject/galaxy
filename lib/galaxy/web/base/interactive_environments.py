@@ -264,8 +264,9 @@ class InteractiveEnviornmentRequest(object):
             log.error( "%s\n%s" % (stdout, stderr) )
             return None
         else:
-            log.debug( "Container id: %s" % stdout)
-            port_mappings = self.get_proxied_ports(stdout)
+            container_id = stdout.strip()
+            log.debug( "Container id: %s" % container_id)
+            port_mappings = self.get_proxied_ports(container_id)
             if len(port_mappings) > 1:
                 log.warning("Don't know how to handle proxies to containers with multiple exposed ports. Arbitrarily choosing first")
             elif len(port_mappings) == 0:
@@ -282,6 +283,7 @@ class InteractiveEnviornmentRequest(object):
                 port=host_port,
                 proxy_prefix=self.attr.proxy_prefix,
                 route_name='/%s/' % self.attr.viz_id,
+                container_ids=[container_id],
             )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
@@ -319,6 +321,15 @@ class InteractiveEnviornmentRequest(object):
                 # Watch this fail horrifically for anyone on IPv6
                 (proxy_host, proxy_port) = stdout.strip().split(':')
 
+            container_id_cmd = "cd %s && docker-compose ps -q" % self.temp_dir
+            find_ids = Popen(container_id_cmd, stdout=PIPE, stderr=PIPE, close_fds=True, shell=True)
+            stdout, stderr = find_ids.communicate()
+            if find_ids.returncode != 0:
+                log.error("===\n%s\n===\n%s\n===" % (stdout, stderr))
+            else:
+                # Pick out and strip container IDs
+                ids = [container_id.strip() for container_id in stdout.strip().split('\n')]
+
             # Now we configure our proxy_requst object and we manually specify
             # the port to map to and ensure the proxy is available.
             self.attr.proxy_request = self.trans.app.proxy_manager.setup_proxy(
@@ -326,6 +337,8 @@ class InteractiveEnviornmentRequest(object):
                 host=self.attr.docker_hostname,
                 port=proxy_port,
                 proxy_prefix=self.attr.proxy_prefix,
+                route_name='/%s/' % self.attr.viz_id,
+                container_ids=ids,
             )
             # These variables then become available for use in templating URLs
             self.attr.proxy_url = self.attr.proxy_request[ 'proxy_url' ]
