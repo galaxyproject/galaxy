@@ -29,4 +29,14 @@ Laj is a tool for viewing and manipulating the output from pairwise alignment pr
 
   </help>
   <code file="LAJ_code.py"/>
+  <citations>
+    <citation type="bibtex">
+      @misc{Miller2005,
+author = {Miller Lab},
+year = {2005},
+title = {Laj},
+url = {http://globin.bx.psu.edu/dist/laj/},
+}
+    </citation>
+  </citations>
 </tool>
