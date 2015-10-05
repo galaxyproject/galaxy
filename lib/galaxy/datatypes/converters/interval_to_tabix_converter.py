@@ -6,13 +6,13 @@ Supported presets: bed, gff, vcf
 
 usage: %prog in_file out_file
 """
-
-import pkg_resources
-pkg_resources.require( "pysam" )
-import ctabix
-import sys
-import os
 import optparse
+import os
+import sys
+
+from galaxy import eggs
+eggs.require( "pysam" )
+import ctabix
 
 
 def main():

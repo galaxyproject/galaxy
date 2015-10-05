@@ -1,23 +1,21 @@
 """
 Tabular datatype
-
 """
-import pkg_resources
-pkg_resources.require( "bx-python" )
+import csv
 import gzip
 import logging
 import os
-import csv
+import re
 from cgi import escape
+
 from galaxy import util
-from galaxy.datatypes import data
-from galaxy.datatypes import metadata
+from galaxy.datatypes import data, metadata
 from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import dumps
+
 import dataproviders
-import re
 
 log = logging.getLogger(__name__)
 
