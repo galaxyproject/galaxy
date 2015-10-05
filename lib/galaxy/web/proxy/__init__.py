@@ -1,6 +1,7 @@
 import logging
 import json
 import urllib2
+import time
 
 from galaxy.util import sockets
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
@@ -53,7 +54,7 @@ class ProxyManager(object):
             'proxied_host': proxy_requests.host,
         }
 
-    def register_proxy_route( self, auth, proxy_requests, route_name ):
+    def register_proxy_route( self, auth, proxy_requests, route_name, sleep=0 ):
         """Make a POST request to the GO proxy to register a route
         """
         url = 'http://127.0.0.1:%s/api?api_key=%s' % (self.dynamic_proxy_bind_port, API_KEY)
@@ -68,7 +69,17 @@ class ProxyManager(object):
 
         req = urllib2.Request(url)
         req.add_header('Content-Type', 'application/json')
-        urllib2.urlopen(req, json.dumps(values))
+
+        # Sometimes it takes our poor little proxy a second or two to get
+        # going, so if this fails, re-call ourselves with an increased timeout.
+        try:
+            urllib2.urlopen(req, json.dumps(values))
+        except urllib2.URLError:
+            if sleep > 5:
+                excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))
+                raise Exception(excp)
+            time.sleep(sleep)
+            self.register_proxy_route(auth, proxy_requests, route_name, sleep=sleep + 1)
 
     def __setup_lazy_process( self, config ):
         launcher = proxy_launcher(self)
@@ -120,5 +131,4 @@ class ProxyRequests(object):
         self.port = port
 
 
-# TODO: RESTful API driven proxy?
 # TODO: MQ diven proxy?
