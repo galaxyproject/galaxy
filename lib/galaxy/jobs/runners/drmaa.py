@@ -147,10 +147,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         # fill in the DRM's job run template
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file)
         try:
-            fh = file( ajs.job_file, "w" )
-            fh.write( script )
-            fh.close()
-            os.chmod( ajs.job_file, 0o755 )
+            self.write_executable_script( ajs.job_file, script )
         except:
             job_wrapper.fail( "failure preparing job script", exception=True )
             log.exception( "(%s) failure writing job script" % galaxy_id_tag )
