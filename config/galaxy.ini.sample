@@ -634,7 +634,7 @@ nglims_config_file = tool-data/nglims.yaml
 # also causes the files used by PBS/SGE (submission script, output, and error)
 # to remain on disk after the job is complete.  Debug mode is disabled if
 # commented, but is uncommented by default in the sample config.
-debug = True
+#debug = False
 
 # Check for WSGI compliance.
 #use_lint = False
