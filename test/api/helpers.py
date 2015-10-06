@@ -440,7 +440,7 @@ class DatasetCollectionPopulator( BaseDatasetCollectionPopulator ):
         return create_response
 
 
-def wait_on_state( state_func, assert_ok=False, timeout=5 ):
+def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
     def get_state( ):
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."
