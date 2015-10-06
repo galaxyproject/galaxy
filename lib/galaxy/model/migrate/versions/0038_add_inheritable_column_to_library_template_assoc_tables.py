@@ -4,23 +4,24 @@ library_info_association, library_folder_info_association.
 Also, in case of sqlite check if the previous migration script deleted the
 request table and if so, restore the table.
 """
-
-from sqlalchemy import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import *
 import datetime
-now = datetime.datetime.utcnow
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def get_false_value(migrate_engine):
     if migrate_engine.name == 'sqlite':
         return '0'
     else:
         return 'false'
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -36,15 +37,15 @@ def upgrade(migrate_engine):
             metadata.reflect(only=['form_values', 'request_type', 'galaxy_user'])
             # create a temporary table
             Request_table = Table( 'request', metadata,
-                                    Column( "id", Integer, primary_key=True),
-                                    Column( "create_time", DateTime, default=now ),
-                                    Column( "update_time", DateTime, default=now, onupdate=now ),
-                                    Column( "name", TrimmedString( 255 ), nullable=False ),
-                                    Column( "desc", TEXT ),
-                                    Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
-                                    Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
-                                    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-                                    Column( "deleted", Boolean, index=True, default=False ) )
+                                   Column( "id", Integer, primary_key=True),
+                                   Column( "create_time", DateTime, default=now ),
+                                   Column( "update_time", DateTime, default=now, onupdate=now ),
+                                   Column( "name", TrimmedString( 255 ), nullable=False ),
+                                   Column( "desc", TEXT ),
+                                   Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+                                   Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
+                                   Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                   Column( "deleted", Boolean, index=True, default=False ) )
             try:
                 Request_table.create()
             except Exception, e:
@@ -71,6 +72,7 @@ def upgrade(migrate_engine):
         migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Setting value of column inheritable to false in library_folder_info_association failed: %s" % ( str( e ) ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

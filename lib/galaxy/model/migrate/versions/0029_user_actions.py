@@ -1,17 +1,15 @@
 """
 This migration script adds a user actions table to Galaxy.
 """
-
-from sqlalchemy import *
-from migrate import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table, Unicode
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def display_migration_details():
     print ""
@@ -29,6 +27,7 @@ UserAction_table = Table( "user_action", metadata,
                           Column( "context", Unicode( 512 ) ),
                           Column( "params", Unicode( 1024 ) ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     display_migration_details()
@@ -38,6 +37,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Creating user_action table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

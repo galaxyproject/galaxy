@@ -1,17 +1,13 @@
 """
 Migration script to add the request_type_permissions table.
 """
-
-from sqlalchemy import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 RequestTypePermissions_table = Table( "request_type_permissions", metadata,
@@ -22,6 +18,7 @@ RequestTypePermissions_table = Table( "request_type_permissions", metadata,
                                       Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), nullable=True, index=True ),
                                       Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -30,6 +27,7 @@ def upgrade(migrate_engine):
         RequestTypePermissions_table.create()
     except Exception, e:
         log.debug( "Creating request_type_permissions table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

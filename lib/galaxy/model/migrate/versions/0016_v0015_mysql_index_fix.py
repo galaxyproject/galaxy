@@ -3,20 +3,18 @@ This script fixes a problem introduced in 0015_tagging.py. MySQL has a name leng
 limit and thus the index "ix_hda_ta_history_dataset_association_id" has to be
 manually created.
 """
-
-from sqlalchemy import *
-from migrate import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+
+from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import TrimmedString
 
-import logging
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
-
 metadata = MetaData()
+
 
 def display_migration_details():
     print ""
@@ -31,6 +29,7 @@ HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_associat
                                                        Column( "value", TrimmedString(255), index=True),
                                                        Column( "user_value", TrimmedString(255), index=True) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     display_migration_details()
@@ -41,6 +40,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Adding index 'ix_hdata_history_dataset_association_id' to table 'history_dataset_association_tag_association' table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

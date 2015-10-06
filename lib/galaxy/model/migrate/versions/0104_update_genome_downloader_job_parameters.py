@@ -1,18 +1,16 @@
 """
 Migration script to update the deferred job parameters for liftover transfer jobs.
 """
-
 import datetime
-import logging, sys
+import logging
+import sys
+
+from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table
+from sqlalchemy.orm import mapper, scoped_session, sessionmaker
+
+# Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import JSONType
 from galaxy.util.bunch import Bunch
-from sqlalchemy import *
-from sqlalchemy import Integer, Table, MetaData, Column
-from sqlalchemy.orm import *
-from sqlalchemy.orm import scoped_session, sessionmaker
-from migrate import *
-# Need our custom types, but don't import anything else from model
-
 
 now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
@@ -26,17 +24,20 @@ log.addHandler( handler )
 metadata = MetaData()
 context = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
 
+
 class DeferredJob( object ):
-    states = Bunch( NEW = 'new',
-                    WAITING = 'waiting',
-                    QUEUED = 'queued',
-                    RUNNING = 'running',
-                    OK = 'ok',
-                    ERROR = 'error' )
+    states = Bunch( NEW='new',
+                    WAITING='waiting',
+                    QUEUED='queued',
+                    RUNNING='running',
+                    OK='ok',
+                    ERROR='error' )
+
     def __init__( self, state=None, plugin=None, params=None ):
         self.state = state
         self.plugin = plugin
         self.params = params
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -49,7 +50,7 @@ def upgrade(migrate_engine):
                                Column( "plugin", String( 128 ), index=True ),
                                Column( "params", JSONType ) )
 
-    mapper( DeferredJob, DeferredJob.table, properties = {} )
+    mapper( DeferredJob, DeferredJob.table, properties={} )
 
     liftoverjobs = dict()
 
@@ -66,6 +67,7 @@ def upgrade(migrate_engine):
         deferred.params[ 'liftover' ] = lifts
 
     context.flush()
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

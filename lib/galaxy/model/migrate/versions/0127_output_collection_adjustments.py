@@ -1,19 +1,15 @@
 """
 Migration script updating collections tables for output collections.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, TEXT, Unicode
+
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 JobToImplicitOutputDatasetCollectionAssociation_table = Table(
