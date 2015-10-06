@@ -2508,21 +2508,16 @@ class Tool( object, Dictifiable ):
         def iterate(group_inputs, inputs, state_inputs, other_values=None):
             other_values = ExpressionContext( state_inputs, other_values )
             for input_index, input in enumerate( inputs.itervalues() ):
-                # create model dictionary
-                tool_dict = input.to_dict(trans)
-                if tool_dict is None:
-                    continue
-
-                # state for subsection/group
+                tool_dict = None
                 group_state = state_inputs.get(input.name, {})
-
-                # iterate and update values
                 if input.type == 'repeat':
+                    tool_dict = input.to_dict(trans)
                     group_cache = tool_dict['cache'] = {}
                     for i in range( len( group_state ) ):
                         group_cache[i] = {}
                         iterate( group_cache[i], input.inputs, group_state[i], other_values )
                 elif input.type == 'conditional':
+                    tool_dict = input.to_dict(trans)
                     if 'test_param' in tool_dict:
                         test_param = tool_dict['test_param']
                         test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
@@ -2533,29 +2528,27 @@ class Tool( object, Dictifiable ):
                                 current_state = group_state
                             iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, current_state, other_values)
                 elif input.type == 'section':
+                    tool_dict = input.to_dict(trans)
                     iterate( tool_dict['inputs'], input.inputs, group_state, other_values )
                 else:
-                    # identify name
-                    input_name = tool_dict.get('name')
-
-                    # expand input dictionary incl. repeats and dynamic_parameters
+                    # expand input dictionary, resolve dynamic parameters
                     try:
                         tool_dict = input.to_dict(trans, other_values=other_values)
                     except Exception:
-                        log.exception('tools::to_json() - Skipping parameter expansion for %s.' % input_name)
+                        tool_dict = input.to_dict(trans)
+                        log.exception('tools::to_json() - Skipping parameter expansion for %s.' % input.name)
                         pass
 
                     # backup default value
                     try:
                         tool_dict['default_value'] = input.get_initial_value(trans, other_values, history=history)
                     except Exception:
-                        log.exception('tools::to_json() - Getting initial value failed %s.' % input_name)
-                        # get initial value failed due to improper late validation
                         tool_dict['default_value'] = None
+                        log.exception('tools::to_json() - Getting initial value failed %s.' % input.name)
                         pass
 
                     # update input value from tool state
-                    tool_dict['value'] = state_inputs.get(input_name, tool_dict['default_value'])
+                    tool_dict['value'] = state_inputs.get(input.name, tool_dict['default_value'])
 
                     # sanitize values
                     sanitize(tool_dict, 'value')
