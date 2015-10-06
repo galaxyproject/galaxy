@@ -8,7 +8,6 @@ import os
 import re
 import tempfile
 import subprocess
-import shutil
 
 from cgi import escape
 
