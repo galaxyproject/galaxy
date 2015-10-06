@@ -698,19 +698,18 @@ class Vcf( Tabular ):
     @staticmethod
     def merge(split_files, output_file):
         tmp_dir = tempfile.mkdtemp()
-        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
-        command = ["bcftools", "concat"] + split_files + ["-o", output_file]
-        log.info("Merging vcf files with command [%s]" % " ".join(command))
-        proc = subprocess.Popen( args=command, stderr=open( stderr_name, 'wb' ) )
-        exit_code = proc.wait()
-        # Did merge succeed?
-        stderr = open(stderr_name).read().strip()
-        if stderr:
+        try:
+            stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
+            command = ["bcftools", "concat"] + split_files + ["-o", output_file]
+            log.info("Merging vcf files with command [%s]" % " ".join(command))
+            exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
+            with open(stderr_name, "rb") as f:
+                stderr = f.read().strip()
+            # Did merge succeed?
             if exit_code != 0:
-                shutil.rmtree(tmp_dir)  # clean up
                 raise Exception("Error merging VCF files: %s" % stderr)
-        os.unlink(stderr_name)
-        os.rmdir(tmp_dir)
+        finally:
+            shutil.rmtree(tmp_dir)
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
