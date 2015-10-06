@@ -195,6 +195,17 @@ var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
         DATASET_LI.DatasetListItemView.prototype.initialize.call( this, attributes );
     },
 
+    /** In this override, only get details if in the ready state.
+     *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
+     */
+    _fetchModelDetails : function(){
+        var view = this;
+        if( view.model.inReadyState() && !view.model.hasDetails() ){
+            return view.model.fetch({ silent: true });
+        }
+        return jQuery.when();
+    },
+
     // ......................................................................... misc
     /** String representation */
     toString : function(){
