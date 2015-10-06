@@ -42,7 +42,7 @@ class ObjectStore(object):
         directory in which this object should be created, or `None` to specify
         the default directory.
 
-    :type dir_only: bool
+    :type dir_only: boolean
     :param dir_only: If `True`, check only the path where the file identified
         by `obj` should be located, not the dataset itself. This option applies
         to `extra_dir` argument as well.
@@ -50,13 +50,13 @@ class ObjectStore(object):
     :type extra_dir: string
     :param extra_dir: Append `extra_dir` to the directory structure where the
         dataset identified by `obj` should be located. (e.g.,
-        000/extra_dir/obj.id). Valid values include
-            'job_work' (defaulting to config.job_working_directory ==
-                '$GALAXY_ROOT/database/job_working_directory')
-            'temp' (defaulting to config.new_file_path ==
-                '$GALAXY_ROOT/database/tmp').
+        000/extra_dir/obj.id). Valid values include 'job_work' (defaulting to
+        config.job_working_directory =
+        '$GALAXY_ROOT/database/job_working_directory');
+        'temp' (defaulting to config.new_file_path =
+        '$GALAXY_ROOT/database/tmp').
 
-    :type extra_dir_at_root: bool
+    :type extra_dir_at_root: boolean
     :param extra_dir_at_root: Applicable only if `extra_dir` is set. If True,
         the `extra_dir` argument is placed at root of the created directory
         structure rather than at the end (e.g., extra_dir/000/obj.id vs.
@@ -66,7 +66,7 @@ class ObjectStore(object):
     :param alt_name: Use this name as the alternative name for the created
         dataset rather than the default.
 
-    :type obj_dir: bool
+    :type obj_dir: boolean
     :param obj_dir: Append a subdirectory named with the object's ID (e.g.
         000/obj.id)
     """
@@ -116,10 +116,9 @@ class ObjectStore(object):
             extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
         Mark the object (`obj`) as existing in the store, but with no content.
- 
+
         This method will create a proper directory structure for
         the file if the directory does not already exist.
-        See `exists` method for the description of other fields.
         """
         raise NotImplementedError()
 
@@ -129,7 +128,6 @@ class ObjectStore(object):
         Test if the object identified by `obj` has content.
 
         If the object does not exist raises `ObjectNotFound`.
-        See `exists` method for the description of the fields.
         """
         raise NotImplementedError()
 
@@ -139,7 +137,6 @@ class ObjectStore(object):
         Return size of the object identified by `obj`.
 
         If the object does not exist, return 0.
-        See `exists` method for the description of the fields.
         """
         raise NotImplementedError()
 
@@ -148,9 +145,7 @@ class ObjectStore(object):
         """
         Delete the object identified by `obj`.
 
-        See `exists` method for the description of other fields.
-
-        :type entire_dir: bool
+        :type entire_dir: boolean
         :param entire_dir: If True, delete the entire directory pointed to by
                            extra_dir. For safety reasons, this option applies
                            only for and in conjunction with the extra_dir or
@@ -164,7 +159,6 @@ class ObjectStore(object):
         Fetch `count` bytes of data offset by `start` bytes using `obj.id`.
 
         If the object does not exist raises `ObjectNotFound`.
-        See `exists` method for the description of other fields.
 
         :type start: int
         :param start: Set the position to start reading the dataset file
@@ -180,8 +174,6 @@ class ObjectStore(object):
         Get the expected filename with absolute path for object with id `obj.id`.
 
         This can be used to access the contents of the object.
-
-        See `exists` method for the description of the fields.
         """
         raise NotImplementedError()
 
@@ -194,13 +186,12 @@ class ObjectStore(object):
         If `file_name` is provided, update from that file instead of the
         default.
         If the object does not exist raises `ObjectNotFound`.
-        See `exists` method for the description of other fields.
 
         :type file_name: string
         :param file_name: Use file pointed to by `file_name` as the source for
                           updating the dataset identified by `obj`
 
-        :type create: bool
+        :type create: boolean
         :param create: If True and the default dataset does not exist, create
             it first.
         """
@@ -212,7 +203,6 @@ class ObjectStore(object):
         Return the URL for direct acces if supported, otherwise return None.
 
         Note: need to be careful to not bypass dataset security with this.
-        See `exists` method for the description of the fields.
         """
         raise NotImplementedError()
 
@@ -300,7 +290,7 @@ class DiskObjectStore(ObjectStore):
                          directory in which this object should be created, or
                          None to specify the default directory.
 
-        :type dir_only: bool
+        :type dir_only: boolean
         :param dir_only: If True, check only the path where the file
                          identified by `obj` should be located, not the
                          dataset itself. This option applies to `extra_dir`
@@ -315,7 +305,7 @@ class DiskObjectStore(ObjectStore):
         :param alt_name: Use this name as the alternative name for the returned
                          dataset rather than the default.
 
-        :type old_style: bool
+        :type old_style: boolean
         param old_style: This option is used for backward compatibility. If
             `True` then the composed directory structure does not include a
             hash id (e.g., /files/dataset_10.dat (old) vs.
@@ -341,10 +331,8 @@ class DiskObjectStore(ObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
             path = os.path.join(base, rel_path)
         if not dir_only:
-            path = os.path.join(
-                    path,
-                    alt_name if alt_name
-                    else "dataset_%s.dat" % obj.id)
+            path = os.path.join(path, alt_name if alt_name
+                else "dataset_%s.dat" % obj.id)
         return os.path.abspath(path)
 
     def exists(self, obj, **kwargs):
@@ -372,7 +360,7 @@ class DiskObjectStore(ObjectStore):
                 umask_fix_perms(path, self.config.umask, 0666)
 
     def empty(self, obj, **kwargs):
-        """Override `ObjectStore's stub by checking file size on disk."""
+        """Override `ObjectStore`'s stub by checking file size on disk."""
         return os.path.getsize(self.get_filename(obj, **kwargs)) == 0
 
     def size(self, obj, **kwargs):
@@ -509,12 +497,12 @@ class NestedObjectStore(ObjectStore):
     def get_data(self, obj, **kwargs):
         """For the first backend that has this `obj`, get data from it."""
         return self._call_method(
-                'get_data', obj, ObjectNotFound, True, **kwargs)
+            'get_data', obj, ObjectNotFound, True, **kwargs)
 
     def get_filename(self, obj, **kwargs):
         """For the first backend that has this `obj`, get its filename."""
         return self._call_method(
-                'get_filename', obj, ObjectNotFound, True, **kwargs)
+            'get_filename', obj, ObjectNotFound, True, **kwargs)
 
     def update_from_file(self, obj, **kwargs):
         """For the first backend that has this `obj`, update it from the given file."""
@@ -522,7 +510,7 @@ class NestedObjectStore(ObjectStore):
             self.create(obj, **kwargs)
             kwargs['create'] = False
         return self._call_method(
-                'update_from_file', obj, ObjectNotFound, True, **kwargs)
+            'update_from_file', obj, ObjectNotFound, True, **kwargs)
 
     def get_object_url(self, obj, **kwargs):
         """For the first backend that has this `obj`, get its URL."""
@@ -536,8 +524,8 @@ class NestedObjectStore(ObjectStore):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default(
-                    'objectstore, _call_method failed: %s on %s, kwargs: %s'
-                    % ( method, str( obj ), str( kwargs ) ) )
+                'objectstore, _call_method failed: %s on %s, kwargs: %s'
+                % ( method, str( obj ), str( kwargs ) ) )
         else:
             return default
 
@@ -568,11 +556,11 @@ class DistributedObjectStore(NestedObjectStore):
                 config_xml=config_xml)
         if config_xml is None:
             self.distributed_config = \
-                    config.distributed_object_store_config_file
+                config.distributed_object_store_config_file
             assert self.distributed_config is not None, \
-                    "distributed object store ('object_store = distributed') " \
-                    "requires a config file, please set one in " \
-                    "'distributed_object_store_config_file')"
+                "distributed object store ('object_store = distributed') " \
+                "requires a config file, please set one in " \
+                "'distributed_object_store_config_file')"
         self.backends = {}
         self.weighted_backend_ids = []
         self.original_weighted_backend_ids = []
@@ -585,7 +573,7 @@ class DistributedObjectStore(NestedObjectStore):
                 filter( lambda x: x != 0.0, self.max_percent_full.values() ) ):
             self.sleeper = Sleeper()
             self.filesystem_monitor_thread = threading.Thread(
-                    target=self.__filesystem_monitor)
+                target=self.__filesystem_monitor)
             self.filesystem_monitor_thread.setDaemon( True )
             self.filesystem_monitor_thread.start()
             log.info("Filesystem space monitor started")
@@ -640,11 +628,11 @@ class DistributedObjectStore(NestedObjectStore):
             new_weighted_backend_ids = self.original_weighted_backend_ids
             for id, backend in self.backends.items():
                 maxpct = self.max_percent_full[id] or \
-                        self.global_max_percent_full
+                    self.global_max_percent_full
                 pct = backend.get_store_usage_percent()
                 if pct > maxpct:
                     new_weighted_backend_ids = filter(
-                            lambda x: x != id, new_weighted_backend_ids)
+                        lambda x: x != id, new_weighted_backend_ids)
             self.weighted_backend_ids = new_weighted_backend_ids
             self.sleeper.sleep(120)  # Test free space every 2 minutes
 
@@ -655,12 +643,12 @@ class DistributedObjectStore(NestedObjectStore):
                     obj.object_store_id not in self.weighted_backend_ids:
                 try:
                     obj.object_store_id = random.choice(
-                            self.weighted_backend_ids)
+                        self.weighted_backend_ids)
                 except IndexError:
                     raise ObjectInvalid(
-                            'objectstore.create, could not generate '
-                            'obj.object_store_id: %s, kwargs: %s'
-                            % ( str( obj ), str( kwargs ) ) )
+                        'objectstore.create, could not generate '
+                        'obj.object_store_id: %s, kwargs: %s'
+                        % ( str( obj ), str( kwargs ) ) )
                 _create_object_in_session( obj )
                 log.debug("Selected backend '%s' for creation of %s %s"
                         % (obj.object_store_id,
@@ -679,8 +667,8 @@ class DistributedObjectStore(NestedObjectStore):
                     **kwargs)
         if default_is_exception:
             raise default(
-                    'objectstore, _call_method failed: %s on %s, kwargs: %s'
-                    % ( method, str( obj ), str( kwargs ) ) )
+                'objectstore, _call_method failed: %s on %s, kwargs: %s'
+                % ( method, str( obj ), str( kwargs ) ) )
         else:
             return default
 
@@ -693,14 +681,14 @@ class DistributedObjectStore(NestedObjectStore):
             # distributed object store, or if the object's store id is invalid,
             # try to locate the object
             log.warning(
-                    'The backend object store ID (%s) for %s object with ID "
-                    "%s is invalid'
-                    % (obj.object_store_id, obj.__class__.__name__, obj.id))
+                'The backend object store ID (%s) for %s object with ID '
+                '%s is invalid'
+                % (obj.object_store_id, obj.__class__.__name__, obj.id))
             for id, store in self.backends.items():
                 if store.exists(obj, **kwargs):
-                    log.warning('%s object with ID %s found in backend object "
-                            "store with ID %s'
-                            % (obj.__class__.__name__, obj.id, id))
+                    log.warning('%s object with ID %s found in backend object '
+                        'store with ID %s'
+                        % (obj.__class__.__name__, obj.id, id))
                     obj.object_store_id = id
                     _create_object_in_session( obj )
                     return id
@@ -719,13 +707,13 @@ class HierarchicalObjectStore(NestedObjectStore):
     def __init__(self, config, config_xml=None, fsmon=False):
         """The default contructor. Extends `NestedObjectStore`."""
         super(HierarchicalObjectStore, self).__init__(
-                config, config_xml=config_xml)
+            config, config_xml=config_xml)
         self.backends = odict()
         for b in sorted(config_xml.find('backends'),
                 key=lambda b: int(b.get('order'))):
-            self.backends[
-                    int(b.get('order'))] = build_object_store_from_config(
-                            config, fsmon=fsmon, config_xml=b)
+            self.backends[int(b.get('order'))] = \
+                build_object_store_from_config(
+                    config, fsmon=fsmon, config_xml=b)
 
     def exists(self, obj, **kwargs):
         """Check all child object stores."""
@@ -763,7 +751,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
         return SwiftObjectStore(config=config, config_xml=config_xml)
     elif store == 'distributed':
         return DistributedObjectStore(
-                config=config, fsmon=fsmon, config_xml=config_xml)
+            config=config, fsmon=fsmon, config_xml=config_xml)
     elif store == 'hierarchical':
         return HierarchicalObjectStore(config=config, config_xml=config_xml)
     elif store == 'irods':
@@ -786,9 +774,9 @@ def local_extra_dirs( func ):
                 if c.__name__ == 'DiskObjectStore':
                     return getattr( c, func.__name__ )( self, *args, **kwargs )
             raise Exception(
-                    "Could not call DiskObjectStore's %s method, does your "
-                    "Object Store plugin inherit from DiskObjectStore?"
-                    % func.__name__ )
+                "Could not call DiskObjectStore's %s method, does your "
+                "Object Store plugin inherit from DiskObjectStore?"
+                % func.__name__ )
     return wraps
 
 

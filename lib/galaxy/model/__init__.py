@@ -3492,7 +3492,7 @@ class WorkflowInvocation( object, Dictifiable ):
     def active( self ):
         """ Indicates the workflow invocation is somehow active - and in
         particular valid actions may be performed on its
-        `WorkflowInvocationStep`s.
+        WorkflowInvocationSteps.
         """
         states = WorkflowInvocation.states
         return self.state in [ states.NEW, states.READY ]
