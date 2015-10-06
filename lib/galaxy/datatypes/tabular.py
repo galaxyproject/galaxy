@@ -6,6 +6,9 @@ import gzip
 import logging
 import os
 import re
+import tempfile
+import subprocess
+
 from cgi import escape
 
 from galaxy import util
@@ -690,6 +693,19 @@ class Vcf( Tabular ):
         if line and line.startswith( '#' ):
             # Found header line, get sample names.
             dataset.metadata.sample_names = line.split()[ 9: ]
+
+    @staticmethod
+    def merge(split_files, output_file):
+        stderr_f = tempfile.NamedTemporaryFile(prefix="bam_merge_stderr")
+        stderr_name = stderr_f.name
+        command = ["bcftools", "concat"] + split_files + ["-o", output_file]
+        log.info("Merging vcf files with command [%s]" % " ".join(command))
+        exit_code = subprocess.call( args=command, stderr=open( stderr_name, 'wb' ) )
+        with open(stderr_name, "rb") as f:
+            stderr = f.read().strip()
+        # Did merge succeed?
+        if exit_code != 0:
+            raise Exception("Error merging VCF files: %s" % stderr)
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory( 'genomic-region',
