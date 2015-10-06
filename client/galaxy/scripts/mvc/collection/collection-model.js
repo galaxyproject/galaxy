@@ -126,12 +126,16 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-    /** root api url */
-    urlRoot : (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' )) + 'api/datasets',
-
     /** url fn */
     url : function(){
-        return this.urlRoot + '/' + this.id;
+        var galaxyRoot = (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' ));
+        // won't always be an hda
+        if( !this.has( 'history_id' ) ){
+            console.warn( 'no endpoint for non-hdas within a collection yet' );
+            // (a little silly since this api endpoint *also* points at hdas)
+            return galaxyRoot + 'api/datasets';
+        }
+        return galaxyRoot + 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
     },
 
     defaults : _.extend( {},
@@ -141,7 +145,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
 
     // because all objects have constructors (as this hashmap would even if this next line wasn't present)
     //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
-    //  - re-apply manually it now
+    //  - re-apply manually for now
     /** call the mixin constructor */
     constructor : function( attributes, options ){
         this.debug( '\t DatasetDCE.constructor:', attributes, options );
@@ -154,6 +158,12 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
     initialize : function( attributes, options ){
         this.debug( this + '(DatasetDCE).initialize:', attributes, options );
         DATASET_MODEL.DatasetAssociation.prototype.initialize.call( this, attributes, options );
+    },
+
+    /** Does this model already contain detailed data (as opposed to just summary level data)? */
+    hasDetails : function(){
+        // dataset collection api does return genome_build but doesn't return annotation
+        return _.has( this.attributes, 'annotation' );
     },
 
     /** String representation. */

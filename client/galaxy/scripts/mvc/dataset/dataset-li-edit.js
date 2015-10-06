@@ -109,25 +109,6 @@ var DatasetListItemEdit = _super.extend(
     },
 
     // ......................................................................... details
-    /** In this override, only get details if in the ready state, get rerunnable if in other states.
-     *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
-     */
-    _fetchModelDetails : function(){
-        var view = this;
-        if( view.model.inReadyState() && !view.model.hasDetails() ){
-            return view.model.fetch({ silent: true });
-
-        // special case the need for the rerunnable and creating_job attributes
-        // needed for rendering re-run button on queued, running datasets
-        } else if( !view.model.has( 'rerunnable' ) ){
-            return view.model.fetch({ silent: true, data: {
-                // only fetch rerunnable and creating_job to keep overhead down
-                keys: [ 'rerunnable', 'creating_job' ].join(',')
-            }});
-        }
-        return jQuery.when();
-    },
-
     /** In this override, add tags and annotations controls, make the ? dbkey a link to editing page */
     _renderDetails : function(){
         //TODO: generalize to be allow different details for each state
