@@ -289,9 +289,8 @@ class JobConfiguration( object ):
         """
         log.debug('Loading job configuration from %s' % self.app.config.config_file)
 
-        # Always load local and lwr
-        self.runner_plugins = [dict(id='local', load='local', workers=self.app.config.local_job_queue_workers),
-                               dict(id='lwr', load='lwr', workers=self.app.config.cluster_job_queue_workers)]
+        # Always load local
+        self.runner_plugins = [dict(id='local', load='local', workers=self.app.config.local_job_queue_workers)]
         # Load tasks if configured
         if self.app.config.use_tasked_jobs:
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
