@@ -573,8 +573,7 @@ class Conditional( Group ):
         current_case = rval['__current_case__'] = value['__current_case__']
         rval[ self.test_param.name ] = self.test_param.value_to_basic( value[ self.test_param.name ], app )
         for input in self.cases[current_case].inputs.itervalues():
-            if input.name in value:  # parameter might be absent in unverified workflow
-                rval[ input.name ] = input.value_to_basic( value[ input.name ], app )
+            rval[ input.name ] = input.value_to_basic( value.get([ input.name ], None), app )
         return rval
 
     def value_from_basic( self, value, app, ignore_errors=False ):
