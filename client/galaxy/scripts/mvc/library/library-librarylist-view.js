@@ -95,14 +95,16 @@ var LibraryListView = Backbone.View.extend({
             }
             this.$el.html( template({
                 length: 1,
-                order: Galaxy.libraries.preferences.get( 'sort_order' )
+                order: Galaxy.libraries.preferences.get( 'sort_order' ),
+                search_term: Galaxy.libraries.libraryToolbarView.options.search_term
             }));
             Galaxy.libraries.libraryToolbarView.renderPaginator( this.options );
             this.renderRows( libraries_to_render );
         } else {
             this.$el.html( template({
                 length: 0,
-                order: Galaxy.libraries.preferences.get( 'sort_order' )
+                order: Galaxy.libraries.preferences.get( 'sort_order' ),
+                search_term: Galaxy.libraries.libraryToolbarView.options.search_term
             }));
             Galaxy.libraries.libraryToolbarView.renderPaginator( this.options );
         }
@@ -176,6 +178,7 @@ var LibraryListView = Backbone.View.extend({
 
     searchLibraries: function(search_term){
         var results = this.collection.search(search_term);
+        this.options.searching = true;
         this.render({'models': results});
     },
 
@@ -188,7 +191,11 @@ var LibraryListView = Backbone.View.extend({
 
         tmpl_array.push('<div class="library_container table-responsive">');
         tmpl_array.push('<% if(length === 0) { %>');
+        tmpl_array.push('<% if(search_term.length > 0) { %>');
+        tmpl_array.push('<div>There are no libraries matching your search. Try different keyword.</div>');
+        tmpl_array.push('<% } else{ %>');
         tmpl_array.push('<div>There are no libraries visible to you here. If you expected some to show up please consult the <a href="https://wiki.galaxyproject.org/Admin/DataLibraries/LibrarySecurity" target="_blank">library security wikipage</a> or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.</div>');
+        tmpl_array.push('<% }%>');
         tmpl_array.push('<% } else{ %>');
         tmpl_array.push('<table class="grid table table-condensed">');
         tmpl_array.push('   <thead>');

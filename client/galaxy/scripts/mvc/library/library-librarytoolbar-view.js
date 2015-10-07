@@ -10,6 +10,10 @@ function(mod_toastr,
 var LibraryToolbarView = Backbone.View.extend({
   el: '#center',
 
+  defaults: {
+    search_term: ''
+  }
+
   events: {
     'click #create_new_library_btn' : 'showLibraryModal',
     'click #include_deleted_chk'    : 'includeDeletedChecked',
@@ -18,7 +22,7 @@ var LibraryToolbarView = Backbone.View.extend({
   },
 
   initialize: function( options ){
-    this.options = _.defaults( this.options || {}, options );
+    this.options = _.defaults( this.options || {}, this.defaults, options );
     this.render();
   },
 
@@ -157,6 +161,7 @@ var LibraryToolbarView = Backbone.View.extend({
    */
   searchLibraries: function(event){
     var search_term = $(".library-search-input").val();
+    this.options.search_term = search_term;
     Galaxy.libraries.libraryListView.searchLibraries(search_term);
   },
 
