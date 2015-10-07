@@ -91,13 +91,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
         },
 
-        /** Shows the final message (usually upon successful job submission)
-        */
-        reciept: function($el) {
-            this.$el.empty();
-            this.$el.append($el);
-        },
-
         /** Highlight and scroll to input element (currently only used for error notifications)
         */
         highlight: function (input_id, message, silent) {
