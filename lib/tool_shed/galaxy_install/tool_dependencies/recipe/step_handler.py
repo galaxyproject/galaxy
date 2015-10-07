@@ -998,6 +998,10 @@ class SetEnvironment( RecipeStep ):
         # Currently the only action supported in this category is "environment_variable".
         cmds = install_environment.environment_commands( 'set_environment' )
         env_var_dicts = action_dict.get( 'environment_variable', [] )
+        root_dir_dict = dict( action='set_to',
+                              name='%s_ROOT_DIR' % tool_dependency.name.upper(),
+                              value=install_environment.install_dir )
+        env_var_dicts.append( root_dir_dict )
         for env_var_dict in env_var_dicts:
             # Check for the presence of the $ENV[] key string and populate it if possible.
             env_var_dict = self.handle_environment_variables( install_environment=install_environment,
