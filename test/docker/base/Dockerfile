@@ -40,13 +40,13 @@ RUN mkdir /etc/galaxy && \
     cd /tmp/ansible && \
     mkdir roles && \
     mkdir roles/galaxyprojectdotorg.galaxy-os && \
-    wget -qO- https://github.com/galaxyproject/ansible-galaxy-os/archive/master.tar.gz | tar -xzvf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy-os && \
+    wget -qO- https://github.com/galaxyproject/ansible-galaxy-os/archive/master.tar.gz | tar -xzf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy-os && \
     mkdir roles/galaxyprojectdotorg.cloudman-database && \
-    wget -qO- https://github.com/galaxyproject/ansible-cloudman-database/archive/master.tar.gz | tar -xzvf- --strip-components=1 -C roles/galaxyprojectdotorg.cloudman-database && \
+    wget -qO- https://github.com/galaxyproject/ansible-cloudman-database/archive/master.tar.gz | tar -xzf- --strip-components=1 -C roles/galaxyprojectdotorg.cloudman-database && \
     mkdir roles/galaxyprojectdotorg.galaxy && \
-    wget -qO- https://github.com/galaxyproject/ansible-galaxy/archive/master.tar.gz | tar -xzvf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy && \
+    wget -qO- https://github.com/galaxyproject/ansible-galaxy/archive/master.tar.gz | tar -xzf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy && \
     mkdir roles/galaxyprojectdotorg.galaxy-extras && \
-    wget -qO- https://github.com/galaxyproject/ansible-galaxy-extras/archive/dynamic_uwsgi_config.tar.gz | tar -xzvf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy-extras && \
+    wget -qO- https://github.com/galaxyproject/ansible-galaxy-extras/archive/dynamic_uwsgi_config.tar.gz | tar -xzf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy-extras && \
     ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 ansible-playbook /tmp/ansible/provision.yml --tags=image -c local -e "@ansible_vars.yml" && \
     ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 ansible-playbook /tmp/ansible/provision.yml --tags=database -c local -e "@ansible_vars.yml" && \
     ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 ansible-playbook /tmp/ansible/provision.yml --tags=galaxy -c local -e "@ansible_vars.yml" && \
