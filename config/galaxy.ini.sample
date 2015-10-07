@@ -262,6 +262,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # used for the cache
 #template_cache_path = database/compiled_templates
 
+# Set to false to disable various checks Galaxy will do to ensure it
+# can run job scripts before attempting to execute or submit them.
+#check_job_script_integrity = True
+
 # Citation related caching.  Tool citations information maybe fetched from
 # external sources such as http://dx.doi.org/ by Galaxy - the following
 # parameters can be used to control the caching used to store this information.

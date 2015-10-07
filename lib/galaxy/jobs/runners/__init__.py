@@ -313,13 +313,36 @@ class BaseJobRunner( object ):
         with open( path, 'w' ) as f:
             f.write( contents )
         os.chmod( path, mode )
-        try:
-            # sync file system to avoid "Text file busy" problems.
-            # These have occurred both in Docker containers and on EC2 clusters
-            # under high load.
-            subprocess.check_call(["sync"])
-        except Exception:
-            pass
+        self._handle_script_integrity( path )
+
+    def _handle_script_integrity( self, path ):
+        if not getattr( self.app.config, "check_job_script_integrity", True ):
+            return
+
+        script_integrity_verified = False
+        for i in range(5):
+            try:
+                proc = subprocess.Popen( [path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"} )
+                proc.wait()
+                if proc.returncode == 42:
+                    script_integrity_verified = True
+                    break
+
+                # Else we will sync and wait to see if the script becomes
+                # executable.
+                try:
+                    # sync file system to avoid "Text file busy" problems.
+                    # These have occurred both in Docker containers and on EC2 clusters
+                    # under high load.
+                    subprocess.check_call(["/bin/sync"])
+                except Exception:
+                    pass
+                time.sleep( .1 )
+            except Exception:
+                pass
+
+        if not script_integrity_verified:
+            raise Exception("Failed to write job script, could not verify job script integrity.")
 
     def _complete_terminal_job( self, ajs, **kwargs ):
         if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
