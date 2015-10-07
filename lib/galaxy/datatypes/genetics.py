@@ -176,7 +176,7 @@ class GenomeGraphs( Tabular ):
         f.readline()  # header
         rows = [f.readline().split()[1:] for x in range(3)]  # small sample, trimming first column
         for row in rows:
-            if len(row) < 2:
+            if len(row) < 1:
                 # Must actually have at least one value
                 return False
             try:
