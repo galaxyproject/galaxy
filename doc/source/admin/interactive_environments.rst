@@ -75,7 +75,7 @@ with something like Supervisord. The command for launching the proxy manually
 
 .. code-block::  console
 
-    $ node $GALAXY_ROOT/lib/galaxy/web/proxy/js/main.js --ip 0.0.0.0 \
+    $ node $GALAXY_ROOT/lib/galaxy/web/proxy/js/lib/main.js --ip 0.0.0.0 \
         --port 8800 --sessions $GALAXY_ROOT/database/session_map.sqlite \
         --cookie galaxysession --verbose
 
