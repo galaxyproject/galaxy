@@ -12,7 +12,7 @@ var LibraryToolbarView = Backbone.View.extend({
 
   defaults: {
     search_term: ''
-  }
+  },
 
   events: {
     'click #create_new_library_btn' : 'showLibraryModal',
@@ -22,7 +22,7 @@ var LibraryToolbarView = Backbone.View.extend({
   },
 
   initialize: function( options ){
-    this.options = _.defaults( this.options || {}, this.defaults, options );
+    this.options = _.defaults( this.options || {}, options, this.defaults );
     this.render();
   },
 

@@ -32,7 +32,7 @@ var LibraryListView = Backbone.View.extend({
      * @param  {object} options an object with options
      */
     initialize : function( options ){
-        this.options = _.defaults( this.options || {}, this.defaults, options );
+        this.options = _.defaults( this.options || {}, options, this.defaults );
         var that = this;
         this.modal = null;
         // map of library model ids to library views = cache
