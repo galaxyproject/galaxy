@@ -172,6 +172,7 @@ class Configuration( object ):
         self.outputs_to_working_directory = string_as_bool( kwargs.get( 'outputs_to_working_directory', False ) )
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
+        self.check_job_script_integrity = string_as_bool( kwargs.get( "check_job_script_integrity", True ) )
         self.job_walltime = kwargs.get( 'job_walltime', None )
         self.job_walltime_delta = None
         if self.job_walltime is not None:
