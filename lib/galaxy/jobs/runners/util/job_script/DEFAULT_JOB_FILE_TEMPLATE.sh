@@ -3,7 +3,7 @@
 # The following block can be used by the job creation system
 # to ensure this script is runnable before running it directly
 # or submitting it to a cluster manager.
-if [ ! -z "$ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ" ]; then
+if [ -n "$ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ" ]; then
     exit 42
 fi
 
