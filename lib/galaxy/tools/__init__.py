@@ -1507,6 +1507,210 @@ class Tool( object, Dictifiable ):
                 state[ input.name ] = value
         return errors
 
+    def update_state( self, trans, inputs, state, incoming, source='html', prefix="", context=None,
+                      update_only=False, old_errors={}, item_callback=None ):
+        """
+        Update the tool state in `state` using the user input in `incoming`.
+        This is designed to be called recursively: `inputs` contains the
+        set of inputs being processed, and `prefix` specifies a prefix to
+        add to the name of each input to extract its value from `incoming`.
+
+        If `update_only` is True, values that are not in `incoming` will
+        not be modified. In this case `old_errors` can be provided, and any
+        errors for parameters which were *not* updated will be preserved.
+        """
+        errors = dict()
+        # Push this level onto the context stack
+        context = ExpressionContext( state, context )
+        # Iterate inputs and update (recursively)
+        for input in inputs.itervalues():
+            key = prefix + input.name
+            if isinstance( input, Repeat ):
+                group_state = state[input.name]
+                # Create list of empty errors for each previously existing state
+                group_errors = [ {} for i in range( len( group_state ) ) ]
+                group_old_errors = old_errors.get( input.name, None )
+                any_group_errors = False
+                # Check any removals before updating state -- only one
+                # removal can be performed, others will be ignored
+                for i, rep_state in enumerate( group_state ):
+                    rep_index = rep_state['__index__']
+                    if key + "_" + str(rep_index) + "_remove" in incoming:
+                        if len( group_state ) > input.min:
+                            del group_state[i]
+                            del group_errors[i]
+                            if group_old_errors:
+                                del group_old_errors[i]
+                            break
+                        else:
+                            group_errors[i] = { '__index__': 'Cannot remove repeat (min size=%i).' % input.min }
+                            any_group_errors = True
+                            # Only need to find one that can't be removed due to size, since only
+                            # one removal is processed at # a time anyway
+                            break
+                    elif group_old_errors and group_old_errors[i]:
+                        group_errors[i] = group_old_errors[i]
+                        any_group_errors = True
+                # Update state
+                max_index = -1
+                for i, rep_state in enumerate( group_state ):
+                    rep_index = rep_state['__index__']
+                    max_index = max( max_index, rep_index )
+                    rep_prefix = "%s_%d|" % ( key, rep_index )
+                    if group_old_errors:
+                        rep_old_errors = group_old_errors[i]
+                    else:
+                        rep_old_errors = {}
+                    rep_errors = self.update_state( trans,
+                                                    input.inputs,
+                                                    rep_state,
+                                                    incoming,
+                                                    source=source,
+                                                    prefix=rep_prefix,
+                                                    context=context,
+                                                    update_only=update_only,
+                                                    old_errors=rep_old_errors,
+                                                    item_callback=item_callback )
+                    if rep_errors:
+                        any_group_errors = True
+                        group_errors[i].update( rep_errors )
+                # Check for addition
+                if key + "_add" in incoming:
+                    if len( group_state ) < input.max:
+                        new_state = {}
+                        new_state['__index__'] = max_index + 1
+                        self.fill_in_new_state( trans, input.inputs, new_state, context )
+                        group_state.append( new_state )
+                        group_errors.append( {} )
+                    else:
+                        group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
+                        any_group_errors = True
+                # Were there *any* errors for any repetition?
+                if any_group_errors:
+                    errors[input.name] = group_errors
+            elif isinstance( input, Conditional ):
+                group_state = state[input.name]
+                group_old_errors = old_errors.get( input.name, {} )
+                old_current_case = group_state['__current_case__']
+                group_prefix = "%s|" % ( key )
+                # Deal with the 'test' element and see if its value changed
+                if input.value_ref and not input.value_ref_in_group:
+                    # We are referencing an existent parameter, which is not
+                    # part of this group
+                    test_param_key = prefix + input.test_param.name
+                else:
+                    test_param_key = group_prefix + input.test_param.name
+                test_param_error = None
+                test_incoming = get_incoming_value( incoming, test_param_key, None )
+                if test_param_key not in incoming \
+                   and "__force_update__" + test_param_key not in incoming \
+                   and update_only:
+                    # Update only, keep previous value and state, but still
+                    # recurse in case there are nested changes
+                    value = group_state[ input.test_param.name ]
+                    current_case = old_current_case
+                    if input.test_param.name in old_errors:
+                        errors[ input.test_param.name ] = old_errors[ input.test_param.name ]
+                else:
+                    # Get value of test param and determine current case
+                    value, test_param_error = \
+                        check_param( trans, input.test_param, test_incoming, context, source=source )
+                    try:
+                        current_case = input.get_current_case( value, trans )
+                    except ValueError, e:
+                        if input.is_job_resource_conditional:
+                            # Unless explicitly given job resource parameters
+                            # (e.g. from the run tool form) don't populate the
+                            # state. Along with other hacks prevents workflow
+                            # saving from populating resource defaults - which
+                            # are meant to be much more transient than the rest
+                            # of tool state.
+                            continue
+                        # load default initial value
+                        if not test_param_error:
+                            test_param_error = str( e )
+                        if trans is not None:
+                            history = trans.get_history()
+                        else:
+                            history = None
+                        value = input.test_param.get_initial_value( trans, context, history=history )
+                        current_case = input.get_current_case( value, trans )
+                case_changed = current_case != old_current_case
+                if case_changed:
+                    # Current case has changed, throw away old state
+                    group_state = state[input.name] = {}
+                    # TODO: we should try to preserve values if we can
+                    self.fill_in_new_state( trans, input.cases[current_case].inputs, group_state, context )
+                    group_errors = dict()
+                    group_old_errors = dict()
+
+                # If we didn't just change the current case and are coming from HTML - the values
+                # in incoming represent the old values and should not be replaced. If being updated
+                # from the API (json) instead of HTML - form values below the current case
+                # may also be supplied and incoming should be preferred to case defaults.
+                if (not case_changed) or (source != "html"):
+                    # Current case has not changed, update children
+                    group_errors = self.update_state( trans,
+                                                      input.cases[current_case].inputs,
+                                                      group_state,
+                                                      incoming,
+                                                      prefix=group_prefix,
+                                                      context=context,
+                                                      source=source,
+                                                      update_only=update_only,
+                                                      old_errors=group_old_errors,
+                                                      item_callback=item_callback )
+                    if input.test_param.name in group_old_errors and not test_param_error:
+                        test_param_error = group_old_errors[ input.test_param.name ]
+                if test_param_error:
+                    group_errors[ input.test_param.name ] = test_param_error
+                if group_errors:
+                    errors[ input.name ] = group_errors
+                # Store the current case in a special value
+                group_state['__current_case__'] = current_case
+                # Store the value of the test element
+                group_state[ input.test_param.name ] = value
+            elif isinstance( input, Section ):
+                group_state = state[input.name]
+                group_old_errors = old_errors.get( input.name, {} )
+                group_prefix = "%s|" % ( key )
+                group_errors = self.update_state( trans,
+                                                  input.inputs,
+                                                  group_state,
+                                                  incoming,
+                                                  prefix=group_prefix,
+                                                  context=context,
+                                                  source=source,
+                                                  update_only=update_only,
+                                                  old_errors=group_old_errors,
+                                                  item_callback=item_callback )
+                if group_errors:
+                    errors[ input.name ] = group_errors
+            else:
+                if key not in incoming \
+                   and "__force_update__" + key not in incoming \
+                   and update_only:
+                    # No new value provided, and we are only updating, so keep
+                    # the old value (which should already be in the state) and
+                    # preserve the old error message.
+                    if input.name in old_errors:
+                        errors[ input.name ] = old_errors[ input.name ]
+                else:
+                    incoming_value = get_incoming_value( incoming, key, None )
+                    value, error = check_param( trans, input, incoming_value, context, source=source )
+                    # If a callback was provided, allow it to process the value
+                    input_name = input.name
+                    if item_callback:
+                        old_value = state.get( input_name, None )
+                        value, error = item_callback( trans, key, input, value, error, old_value, context )
+                    if error:
+                        errors[ input_name ] = error
+
+                    state[ input_name ] = value
+                    meta_properties = self.__meta_properties_for_state( key, incoming, incoming_value, value, input_name )
+                    state.update( meta_properties )
+        return errors
+
     def __remove_meta_properties( self, incoming ):
         result = incoming.copy()
         meta_property_suffixes = [
@@ -1517,6 +1721,19 @@ class Tool( object, Dictifiable ):
             if any( map( lambda s: key.endswith(s), meta_property_suffixes ) ):
                 del result[ key ]
         return result
+
+    def __meta_properties_for_state( self, key, incoming, incoming_val, state_val, input_name ):
+        meta_properties = {}
+        meta_property_suffixes = [
+            "__multirun__",
+            "__collection_multirun__",
+        ]
+        for meta_property_suffix in meta_property_suffixes:
+            multirun_key = "%s|%s" % ( key, meta_property_suffix )
+            if multirun_key in incoming:
+                multi_value = incoming[ multirun_key ]
+                meta_properties[ "%s|%s" % ( input_name, meta_property_suffix ) ] = multi_value
+        return meta_properties
 
     @property
     def params_with_missing_data_table_entry( self ):
