@@ -506,7 +506,7 @@ class ToolModule( WorkflowModule ):
         if module.tool is None:
             error_message = "Attempted to create new workflow module for invalid tool_id, no tool with id - %s." % tool_id
             raise Exception( error_message )
-        module.state = module.tool.new_state( trans, all_pages=True )
+        module.state = module.tool.new_state( trans )
         return module
 
     @classmethod
