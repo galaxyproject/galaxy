@@ -1686,56 +1686,6 @@ class Tool( object, Dictifiable ):
                                                   item_callback=item_callback )
                 if group_errors:
                     errors[ input.name ] = group_errors
-            elif isinstance( input, UploadDataset ):
-                group_state = state[input.name]
-                group_errors = []
-                group_old_errors = old_errors.get( input.name, None )
-                any_group_errors = False
-                d_type = input.get_datatype( trans, context )
-                writable_files = d_type.writable_files
-                # remove extra files
-                while len( group_state ) > len( writable_files ):
-                    del group_state[-1]
-                    if group_old_errors:
-                        del group_old_errors[-1]
-                # Update state
-                max_index = -1
-                for i, rep_state in enumerate( group_state ):
-                    rep_index = rep_state['__index__']
-                    max_index = max( max_index, rep_index )
-                    rep_prefix = "%s_%d|" % ( key, rep_index )
-                    if group_old_errors:
-                        rep_old_errors = group_old_errors[i]
-                    else:
-                        rep_old_errors = {}
-                    rep_errors = self.update_state( trans,
-                                                    input.inputs,
-                                                    rep_state,
-                                                    incoming,
-                                                    prefix=rep_prefix,
-                                                    context=context,
-                                                    source=source,
-                                                    update_only=update_only,
-                                                    old_errors=rep_old_errors,
-                                                    item_callback=item_callback )
-                    if rep_errors:
-                        any_group_errors = True
-                        group_errors.append( rep_errors )
-                    else:
-                        group_errors.append( {} )
-                # Add new fileupload as needed
-                offset = 1
-                while len( writable_files ) > len( group_state ):
-                    new_state = {}
-                    new_state['__index__'] = max_index + offset
-                    offset += 1
-                    self.fill_in_new_state( trans, input.inputs, new_state, context )
-                    group_state.append( new_state )
-                    if any_group_errors:
-                        group_errors.append( {} )
-                # Were there *any* errors for any repetition?
-                if any_group_errors:
-                    errors[input.name] = group_errors
             else:
                 if key not in incoming \
                    and "__force_update__" + key not in incoming \
