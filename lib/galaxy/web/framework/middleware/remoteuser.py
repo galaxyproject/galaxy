@@ -118,6 +118,8 @@ class RemoteUser( object ):
                 pass  # Admin users need to be able to change user information
             elif path_info.startswith( '/user/edit_info' ) and environ[ self.remote_user_header ] in self.admin_users:
                 pass  # Admin users need to be able to change user information
+            elif path_info.startswith( '/userskeys/all_users' ) and environ[ self.remote_user_header ] in self.admin_users:
+                pass  # Admin users need to be able to manage API keys for all users.
             elif path_info.startswith( '/user/api_keys' ):
                 pass  # api keys can be managed when remote_user is in use
             elif path_info.startswith( '/user/edit_username' ):
