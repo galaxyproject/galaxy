@@ -97,6 +97,13 @@ Pull requests modifying pre-existing releases should be restricted to bug fixes
 and require at least 2 *+1* binding votes from someone other than the author of
 the pull request with no *-1* binding votes.
 
+In order to facilitate the construction of release notes, the individual
+merging a pull request is responsible for ensuring the pull request is tagged
+with at least one of the following tags - "bug", "enhancement", or "minor".
+The "minor" tag shoud be reserved for pull requests opened by committers
+modifying behavior altered in that release cycle (i.e. minor bug fixes or
+tweaks for pull requests merged during that release cycle).
+
 Pull requests changing or clarifying the procedures governing this repository:
 
 - Must be made to the ``dev`` branch of this repository.
