@@ -35,8 +35,6 @@ var LibraryListView = Backbone.View.extend({
         this.options = _.defaults( this.options || {}, options, this.defaults );
         var that = this;
         this.modal = null;
-        // map of library model ids to library views = cache
-        this.rowViews = {};
         // collection of {Item}s
         this.collection = new mod_library_model.Libraries();
         this.collection.fetch({
@@ -60,6 +58,7 @@ var LibraryListView = Backbone.View.extend({
      */
     render: function ( options ) {
         this.options = _.extend( this.options, options );
+        this.setElement('#libraries_element');
         var template = this.templateLibraryList();
         var libraries_to_render = null;
         var models = null;
@@ -119,14 +118,7 @@ var LibraryListView = Backbone.View.extend({
     renderRows: function( libraries_to_render ){
         for ( var i = 0; i < libraries_to_render.length; i++ ) {
           var library = libraries_to_render[i];
-          // search whether we have the item cached
-          var cachedView = _.findWhere( this.rowViews, { id: library.get( 'id' ) } );
-          if ( cachedView !== undefined && this instanceof Backbone.View ){
-            cachedView.delegateEvents();
-            this.$el.find( '#library_list_body' ).append( cachedView.el );
-          } else {
-            this.renderOne( { library: library } )
-          }
+            this.renderOne( { library: library } );
         }
     },
 
@@ -138,8 +130,6 @@ var LibraryListView = Backbone.View.extend({
         var library = options.library;
         var rowView = new mod_library_libraryrow_view.LibraryRowView( library );
         this.$el.find( '#library_list_body' ).append( rowView.el );
-        // save new rowView to cache
-        this.rowViews[ library.get( 'id' ) ] = rowView;
     },
 
     /**

@@ -17,7 +17,7 @@ var LibraryToolbarView = Backbone.View.extend({
   events: {
     'click #create_new_library_btn' : 'showLibraryModal',
     'click #include_deleted_chk'    : 'includeDeletedChecked',
-    'click #page_size_prompt'       : 'showPageSizePrompt',
+    'click #lib_page_size_prompt'   : 'showPageSizePrompt',
     'keyup .library-search-input'   : 'searchLibraries'
   },
 
@@ -230,8 +230,8 @@ var LibraryToolbarView = Backbone.View.extend({
         '<li class="disabled"><a href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
       '<% } %>',
     '</ul>',
-    '<span>',
-      ' showing <a data-toggle="tooltip" data-placement="top" title="Click to change the number of libraries on page" id="page_size_prompt"><%- libraries_shown %></a> of <%- total_libraries_count %> libraries',
+    '<span id="lib_page_size_prompt">',
+      ' showing <a data-toggle="tooltip" data-placement="top" title="Click to change the number of libraries on page"><%- libraries_shown %></a> of <%- total_libraries_count %> libraries',
     '</span>'
     ].join(''));
   },

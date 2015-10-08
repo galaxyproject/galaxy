@@ -1030,6 +1030,9 @@ var FolderToolbarView = Backbone.View.extend({
     }
   },
 
+  /**
+   * Show user the prompt to change the number of items shown on page.
+   */
   showPageSizePrompt: function(){
     var folder_page_size = prompt( 'How many items per page do you want to see?', Galaxy.libraries.preferences.get( 'folder_page_size' ) );
     if ( ( folder_page_size != null ) && ( folder_page_size == parseInt( folder_page_size ) ) ) {
