@@ -63,13 +63,16 @@ stop() {
 reload() {
     echo -n "Reloading $SERVICE_NAME... "
     cmd_uwsgi="cd $RUN_IN && (echo r > masterFifo)"
+    cmd_galaxy_daemons="GALAXY_RUN_ALL=1 ./run.sh --wait restart"
 
     case "$(id -un)" in
                 $RUN_AS)
                         eval "$cmd_uwsgi"
+                        eval "$cmd_galaxy_daemons"
                         ;;
                 root)
                         su - $RUN_AS -c "$cmd_uwsgi"
+                        su - $RUN_AS -c "$cmd_galaxy_daemons"
                         ;;
                 *)
                         echo "*** ERROR *** must be $RUN_AS or root in order to control this service" >&2
