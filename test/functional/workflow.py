@@ -3,7 +3,7 @@ import sys
 from base.twilltestcase import TwillTestCase
 from base.interactor import GalaxyInteractorApi, stage_data_in_history
 
-from galaxy.util import parse_xml
+from galaxy.util import xml_util
 from galaxy.util import bunch
 from galaxy.tools.test import parse_param_elem, require_file, test_data_iter, parse_output_elems
 from json import load, dumps
@@ -108,7 +108,7 @@ class WorkflowTestCase( TwillTestCase ):
 
 
 def parse_test_file( workflow_test_file ):
-    tree = parse_xml( workflow_test_file )
+    tree, parse_error = xml_util.parse_xml( workflow_test_file )
     root = tree.getroot()
     input_elems = root.findall( "input" )
     required_files = []

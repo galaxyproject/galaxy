@@ -137,8 +137,9 @@ def parse_xml( file_name, preserve_comments=False ):
             else:
                 tree = XmlET.parse( fh )
         except Exception, e:
-            log.exception( str( e ) )
-            return None, e
+            error_message = "Exception attempting to parse %s: %s" % ( str( file_name ), str( e ) )
+            log.exception( error_message )
+            return None, error_message
     return tree, None
 
 
