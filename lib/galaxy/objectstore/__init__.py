@@ -733,7 +733,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     Or you can specify the obect store type in the `object_store` attribute of
     the `config` object. Currently 'disk', 's3', 'swift', 'distributed',
     'hierarchical', 'irods', and 'pulsar' are supported values.
-    
+
     """
     if config_xml is None and os.path.exists( config.object_store_config_file ):
         # This is a top level invocation of build_object_store_from_config, and
