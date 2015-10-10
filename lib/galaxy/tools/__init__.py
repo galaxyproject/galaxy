@@ -2156,12 +2156,9 @@ class Tool( object, Dictifiable ):
             else:
                 history = trans.get_history()
             if history is None:
-                raise Exception('History unavailable. Please specify a valid history id')
+                raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
         except Exception, e:
-            trans.response.status = 500
-            error = '[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e))
-            log.exception('tools::to_json - %s.' % error)
-            return { 'error': error }
+            raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
 
         # load job parameters into incoming
         tool_message = ''
@@ -2172,10 +2169,8 @@ class Tool( object, Dictifiable ):
                 self._map_source_to_history( trans, self.inputs, job_params, history )
                 tool_message = self._compare_tool_version(trans, job)
                 params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
-            except Exception, exception:
-                trans.response.status = 500
-                log.error( str( exception ) )
-                return { 'error': str( exception ) }
+            except Exception, e:
+                raise exceptions.MessageException( str( e ) )
 
         # create parameter object
         params = galaxy.util.Params( kwd, sanitize=False )
@@ -2460,10 +2455,6 @@ class Tool( object, Dictifiable ):
             'history_id'    : trans.security.encode_id( history.id )
         })
 
-        # check for errors
-        if 'error' in tool_message:
-            return tool_message
-
         # return enriched tool model
         return tool_model
 
@@ -2553,8 +2544,7 @@ class Tool( object, Dictifiable ):
         try:
             select_field, tools, tool = self.app.toolbox.get_tool_components( tool_id, tool_version=tool_version, get_loaded_tools_by_lineage=False, set_selected=True )
             if tool is None:
-                trans.response.status = 500
-                return { 'error': 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id }
+                raise exceptions.MessageException( 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id )
             if ( self.id != tool_id and self.old_id != tool_id ) or self.version != tool_version:
                 if self.id == tool_id:
                     if tool_version is None:
@@ -2573,9 +2563,8 @@ class Tool( object, Dictifiable ):
                     else:
                         message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( tool_id, tool_version )
                         message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
-        except Exception, error:
-            trans.response.status = 500
-            return { 'error': str(error) }
+        except Exception, e:
+            raise exceptions.MessageException( str( e ) )
         return message
 
     def get_default_history_by_trans( self, trans, create=False ):
