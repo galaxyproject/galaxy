@@ -1030,6 +1030,9 @@ var FolderToolbarView = Backbone.View.extend({
     }
   },
 
+  /**
+   * Show user the prompt to change the number of items shown on page.
+   */
   showPageSizePrompt: function(){
     var folder_page_size = prompt( 'How many items per page do you want to see?', Galaxy.libraries.preferences.get( 'folder_page_size' ) );
     if ( ( folder_page_size != null ) && ( folder_page_size == parseInt( folder_page_size ) ) ) {
@@ -1045,8 +1048,16 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('<div class="library_style_container">');
     // TOOLBAR START
     tmpl_array.push(' <div id="library_toolbar">');
+    tmpl_array.push('<form class="form-inline" role="form">');
     tmpl_array.push('   <span><strong>DATA LIBRARIES</strong></span>');
-    tmpl_array.push('   <span data-toggle="tooltip" data-placement="top" class="logged-dataset-manipulation" title="Include deleted datasets" style="display:none;"> | <input id="include_deleted_datasets_chk" style="margin: 0;" type="checkbox"> include deleted | </input></span>');
+    tmpl_array.push('          <span id="folder_paginator" class="library-paginator">');
+    // paginator will append here
+    tmpl_array.push('          </span>');
+    tmpl_array.push('<div class="checkbox toolbar-item logged-dataset-manipulation" style="height: 20px; display:none;">');
+    tmpl_array.push('<label>');
+    tmpl_array.push('<input id="include_deleted_datasets_chk" type="checkbox"> include deleted </input>');
+    tmpl_array.push('</label>');
+    tmpl_array.push('</div>');
     tmpl_array.push('   <button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" id="toolbtn_create_folder" class="btn btn-default primary-button add-library-items" type="button"><span class="fa fa-plus"></span> <span class="fa fa-folder"></span></button>');
 
     tmpl_array.push('<% if(mutiple_add_dataset_options) { %>');
@@ -1092,12 +1103,9 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('   <button data-toggle="tooltip" data-placement="top" title="Mark selected datasets deleted" id="toolbtn_bulk_delete" class="primary-button logged-dataset-manipulation" style="margin-left: 0.5em; display:none; " type="button"><span class="fa fa-times"></span> Delete</button>');
     tmpl_array.push('   <button data-id="<%- id %>" data-toggle="tooltip" data-placement="top" title="Show library information" id="toolbtn_show_libinfo" class="primary-button" style="margin-left: 0.5em;" type="button"><span class="fa fa-info-circle"></span> Library Info</button>');
     tmpl_array.push('   <span class="help-button" data-toggle="tooltip" data-placement="top" title="Visit Libraries Wiki"><a href="https://wiki.galaxyproject.org/DataLibraries/screen/FolderContents" target="_blank"><button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button></a></span>');
-
-    tmpl_array.push('          <span id="folder_paginator" class="library-paginator">');
-    // paginator will append here
-    tmpl_array.push('          </span>');
-
     tmpl_array.push(' </div>');
+    tmpl_array.push('</form>');
+
     // TOOLBAR END
     tmpl_array.push(' <div id="folder_items_element">');
     tmpl_array.push(' </div>');
