@@ -152,9 +152,9 @@ class ToolsTestCase( api.ApiTestCase ):
         response = self._run( "library_data", history_id, inputs, assert_ok=True )
         output = response[ "outputs" ]
         output_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 0 ] )
-        assert output_content == "TestData", output_content
+        assert output_content == "TestData\n", output_content
         output_multiple_content = self.dataset_populator.get_history_dataset_content( history_id, dataset=output[ 1 ] )
-        assert output_multiple_content == "TestDataTestData", output_multiple_content
+        assert output_multiple_content == "TestData\nTestData\n", output_multiple_content
 
     @skip_without_tool( "multi_data_param" )
     def test_multidata_param( self ):
