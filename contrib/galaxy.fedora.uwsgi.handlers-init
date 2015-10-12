@@ -1,6 +1,9 @@
 #!/bin/bash
 #
 # Init file for launching Galaxy with uwsgi and multiple job handlers (http://galaxyproject.org/)
+# 
+# ------- WE STRONGLY ADVISE TO USE SUPERVISORD (http://supervisord.org/) ON PRODUCTION -------
+#
 #   Suitable for use on Fedora and derivatives (RedHat Enterprise Linux, Scientific Linux, CentOS)
 #
 # Contributed by Brad Chapman
