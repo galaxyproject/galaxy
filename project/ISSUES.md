@@ -121,7 +121,7 @@ there are several other labels that are be useful and/or have special purpose.
   larger-scale issue planning.  These issues are typically meta-issues
   containing checklists and references to other issues which are subcomponents
   and stepping stones necessary for issue resolution.  These *can* utilize the
-  `focus/*` tags but are not required to.  Status and type make little sense
+  `area/*` tags but are not required to.  Status and type make little sense
   here.
 
 * `roadmap` is a reserved tag for the primary project roadmap.  This is a
