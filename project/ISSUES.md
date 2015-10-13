@@ -4,19 +4,8 @@ Galaxy Issue Management
 The purpose of this document is to formalize how we manage the full cycle
 (reporting, tracking progress, resolution) of both feature/enhancement ideas
 and bugs, as well as providing a few general guidelines for longer term
-planning for various Galaxy related projects.  Significant inspiration taken
-from the way the [Docker](https://github.com/docker/docker) project manages
-issues.
-
-We've tried several different approaches over the course of the project and two
-common problems we've tried to address in this approach are:
-
-* The issue graveyard -- where, once off the first 'page' of issues or below
-  the 'fold' in Trello, things sometimes do not resurface and are lost to
-  history.
-
-* Difficulty clearly presenting and maintaining a high level project roadmap
-  and associated meta-issues.
+planning for various Galaxy related projects.  Some inspiration taken from the
+way the [Docker](https://github.com/docker/docker) project labels issues.
 
 
 Milestones
@@ -28,14 +17,13 @@ so on).  This, along with the tags applied, will be used to generate the
 release notes.
 
 Any non-PR issue assigned to a milestone *must* be resolved or reassigned prior
-to publishing that release -- that is, this is the new way to create and track
-"Issues Blocking Release".  This will be a primary way to report bugs and force
-them to be reconciled (fixed, closed, or intentionally postponed) prior to
-release.  In practice, bugs should almost always be tagged with a milestone
-which forces the reconciliation date.  Issues *may* be, but they don't
-necessarily have to be -- this is subjective and it depends on if the submitter
-(or any other contributor) wants to force the issue to be revisited at the next
-release.
+to publishing that release.  This is the primary mechanism by which we force
+reconciliation (issue/bug fixed, closed, or intentionally postponed) prior to
+release, and prevent things falling through the cracks.  In practice, bugs
+should almost always be tagged with a milestone which forces the reconciliation
+date.  Issues *may* be, but they don't necessarily have to be -- this is
+subjective and it depends on whether or not the issue should be revisited prior
+to the corresponding release.
 
 Effective use of milestones should prevent bugs from falling through the
 cracks, and will provide a mechanism for forcing the revisitation(and thus
