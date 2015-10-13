@@ -38,7 +38,7 @@ necessarily have to be -- this is subjective and it depends on if the submitter
 release.
 
 Effective use of milestones should prevent bugs from falling through the
-cracks, and will provide a mechanism for forcing the revisitation (and thus
+cracks, and will provide a mechanism for forcing the revisitation(and thus
 progress or even potential discard) of ideas for enhancements or features.
 
 
@@ -52,73 +52,81 @@ without these three tags will be automatically have a `triage` label applied
 indicating that it needs human intervention to be correctly tagged.  These
 `triage` tagged issues will be regularly reviewed and tagged as appropriate.
 
-Type Labels
+Kind Labels
 -----------
 
-The 'class' label set is used for classifying the type of contribution or
+The 'kind' label set is used for classifying the type of contribution or
 request/report to separate enhancements and new features from bugs, etc.
 
-* `class/bug` - something is broken, and it needs fixing
-* `class/documentation` - documentation is unclear or can be improved
-* `class/enhancement` - polish to an existing feature or interface
-* `class/feature` - something brand new
+* `kind/bug` - something is broken, and it needs fixing
+* `kind/documentation` - documentation is unclear or can be improved
+* `kind/enhancement` - polish to an existing feature or interface
+* `kind/feature` - something brand new
 
 Status Labels
 -------------
 
-The `status` of an issue should be tracked using the following stages:
+The `status` of an issue or PR should be tracked using the following labels:
 
-* `status/triage` - brand new issue/pr that doesn't offer a concrete plan or
-  solution
-* `status/planning` - issue reviewed and has a sufficiently detailed primary
-  message and/or commentary
-* `status/WIP` - this issue or PR is currently being worked on.  It should not
-  be merged (or closed) without pinging the owner/submitter.
-* `status/review` - issue is resolved or PR is complete and needs review
+* `status/new` - a brand new issue
+* `status/planning` - the issue planning phase, this issue may potentially need
+  more information (or just more thinking) to proceed to a work in progress
+* `status/WIP` - this issue or PR is currently being worked on and in the case
+  of a PR, it should not be merged until this tag is removed
+* `status/review` - PR is complete and ready for review, or when applied to an
+  issue it is thought to be resolved but needs verification
+
+We use the same set of status tags for PRs and issues to keep things simple,
+but not every PR or issue needs to go through every state.  For example, it'll
+be common for a PR to be submitted with the label 'status/review', and get
+merged without needing to go through the rest of the states.
 
 Note that there are no `status/complete`, `status/wontfix`, `status/duplicate`,
 or other terminal status indicators.  This is intentional to keep the tail end
-of bookkeeping from getting onerous.  These sorts of terminal states and their
-justifications should be indicated in the closing comment by the issue closer.
+of bookkeeping from getting onerous.  These sorts of terminal states *and their
+justifications* (e.g. the reason why it's a wontfix, or a reference to the
+duplicate issue) should be indicated in the closing comment by the issue
+closer.
 
-Focus Labels
+
+Area Labels
 ------------
 
-The 'focus' label is used for tagging issues and pull requests to a particular
+The 'area' label is used for tagging issues and pull requests to a particular
 focus area.  This allows for easy searching within that particular domain, as
 well as more organized release notes.  Some examples, not-exhaustive, are here:
 
-* `focus/API`
-* `focus/cleanup`
-* `focus/jobs`
-* `focus/tests`
-* `focus/GIEs`
-* `focus/toolshed`
-* `focus/UI-UX`
-* `focus/workflows`
+* `area/API`
+* `area/cleanup`
+* `area/jobs`
+* `area/tests`
+* `area/GIEs`
+* `area/toolshed`
+* `area/UI-UX`
+* `area/workflows`
 
 This list will definitely grow over time.
 
 Other Useful Labels
 -------------------
 
-While the three labels sets indicating status, focus, and type are required
+While the three labels sets indicating kind, status, and area are required
 there are several other labels that are be useful and/or have special purpose.
 
-* `Procedures` is a special tag that indicates that the issue is related to
+* `procedures` is a special tag that indicates that the issue is related to
   project governance, and it overrides the need for the trio of
-  class/status/focus tags, and these are never auto-flagged for triage.
+  kind/status/area tags, and these are never auto-flagged for triage.
 
-* `Planning` is also a special tag that indicates the issue is related to
+* `planning` is also a special tag that indicates the issue is related to
   larger-scale issue planning.  These issues are typically meta-issues
   containing checklists and references to other issues which are subcomponents
   and stepping stones necessary for issue resolution.  These *can* utilize the
   `focus/*` tags but are not required to.  Status and type make little sense
   here.
 
-* `Roadmap` is a reserved tag for the primary project roadmap.  This is a
+* `roadmap` is a reserved tag for the primary project roadmap.  This is a
   meta-issue that is not expected to be completed, but rather serves as an
-  entrypoint to the high level development of the project.
+  entry point to the high level development of the project.
 
 * `beginner-friendly` can be used to indicate a nice entry-level issue that
   only requires limited understanding of the larger Galaxy framework and
@@ -138,12 +146,12 @@ have its own checklists to even more subcomponent cards, and so on.
 This `Roadmap` issue will be assigned to every release milestone, forcing
 periodic review of the roadmap.
 
-To prevent the roadmap from being tied completely to github, and to facilitate
+To prevent the roadmap from being tied completely to GitHub, and to facilitate
 portable change tracking over time, we will also maintain the file
 project/ROADMAP.md within the repository.  Whenever the ROADMAP issue text is
 changed, ROADMAP.md should be updated correspondingly.
 
-This document won't have the organizational integration that a live github
+This document won't have the organizational integration that a live GitHub
 issue does, but this way we're be able to have a ROADMAP.md permanently
 attached to the code regardless of what issue tracking or organizational
 software we use in the future.
