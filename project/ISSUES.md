@@ -69,7 +69,6 @@ Status Labels
 
 The `status` of an issue or PR should be tracked using the following labels:
 
-* `status/new` - a brand new issue
 * `status/planning` - the issue planning phase, this issue may potentially need
   more information (or just more thinking) to proceed to a work in progress
 * `status/WIP` - this issue or PR is currently being worked on and in the case
