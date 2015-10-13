@@ -163,8 +163,8 @@ Voting
 Users can vote for issues by commenting with a +1.  It's possible to sort the
 issue list by 'most commented' which would be a good indicator of what issues
 are 'hot', though this doesn't necessarily indicate a high vote.  It's possible
-that that this is good enough good enough and in some ways potentially more
-useful to find 'hot' issues than a flat vote count.
+that that this is good enough and in some ways potentially more useful to find
+'hot' issues than a flat vote count.
 
 
 Automation
