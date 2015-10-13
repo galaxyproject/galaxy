@@ -6,10 +6,9 @@ Supported presets: bed, gff, vcf
 
 usage: %prog in_file out_file
 """
-
-import sys
-import os
 import optparse
+import os
+import sys
 
 from pysam import ctabix
 

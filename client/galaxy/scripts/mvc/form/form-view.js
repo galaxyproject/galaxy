@@ -91,13 +91,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
         },
 
-        /** Shows the final message (usually upon successful job submission)
-        */
-        reciept: function($el) {
-            this.$el.empty();
-            this.$el.append($el);
-        },
-
         /** Highlight and scroll to input element (currently only used for error notifications)
         */
         highlight: function (input_id, message, silent) {
@@ -206,12 +199,8 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 inputs : this.options.inputs
             });
 
-            // switch to classic tool form mako if the form definition is incompatible
-            if (this.incompatible) {
-                this.$el.hide();
-                $('#tool-form-classic').show();
-                return;
-            }
+            // remove tooltips
+            $( '.tooltip' ).remove();
 
             // create portlet
             this.portlet = new Portlet.View({

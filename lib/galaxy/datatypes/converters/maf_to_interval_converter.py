@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # Dan Blankenberg
-
 import sys
+
 import bx.align.maf
+
 from galaxy.tools.util import maf_utilities
 
 assert sys.version_info[:2] >= ( 2, 4 )

@@ -1,0 +1,197 @@
+
+
+#cy {
+  height: 100%;
+  width: 100%;
+  position: absolute; 
+  top: 0;
+}
+p {
+text-align:center;
+}
+
+
+.panel {
+
+	width:245px;
+	float:left;
+	height: 650px;
+	background:#d9dada;
+	position:relative;
+	left:-250px;
+	top: -10px;
+	font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+	padding-left:5px;
+	 font-size: 14px;
+	
+}
+.slider-arrow {
+	top: -10px;
+	padding:5px;
+	width:10px;
+	float:left;
+	background:#d9dada;
+	font:700 16px  Arial, "Helvetica Neue", Helvetica, sans-serif;
+	color:#3498db;
+	text-decoration:none;
+	position:relative;
+	left:-250px;
+	
+}
+
+
+.btn  {
+  background: #3498db;
+  background-image: -webkit-linear-gradient(top, #3498db, #2980b9);
+  background-image: -moz-linear-gradient(top, #3498db, #2980b9);
+  background-image: -ms-linear-gradient(top, #3498db, #2980b9);
+  background-image: -o-linear-gradient(top, #3498db, #2980b9);
+  background-image: linear-gradient(to bottom, #3498db, #2980b9);
+  -webkit-border-radius: 28;
+  -moz-border-radius: 28;
+  border-radius: 6px;
+  font-family:  Arial, "Helvetica Neue", Helvetica, sans-serif;
+  color: #ffffff;
+  font-size: 14px;
+  padding: 8px 15px 8px 15px;
+  text-decoration: none;
+  width: 200px;
+}
+
+.btn:hover {
+  background: #3cb0fd;
+  background-image: -webkit-linear-gradient(top, #3cb0fd, #3498db);
+  background-image: -moz-linear-gradient(top, #3cb0fd, #3498db);
+  background-image: -ms-linear-gradient(top, #3cb0fd, #3498db);
+  background-image: -o-linear-gradient(top, #3cb0fd, #3498db);
+  background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
+  text-decoration: none;
+  font-family:  Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+.btn:disabled {
+    background: #A4A4A4;
+}
+
+
+input[type=checkbox].css-checkbox {
+    display:none;
+}
+
+input[type=checkbox].css-checkbox + label.css-label {
+    padding-left:20px;
+    height:15px;
+    display:inline-block;
+    line-height:15px;
+    background-repeat:no-repeat;
+    background-position:0 0;
+    font-size:14px;
+    vertical-align:middle;
+    cursor:pointer;
+	font-family:  Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+input[type=checkbox].css-checkbox:checked + label.css-label {
+    background-position:0 -15px;
+}
+
+.css-label {
+    background-image: url(../img/lite-blue-check.png);
+}
+  
+
+.left {
+float: left;
+}
+
+
+#mainselection select {
+   border: 0;
+   color: #EEE;
+   background: transparent;
+   font-size: 14px;
+   font-family:  Arial, "Helvetica Neue", Helvetica, sans-serif;
+   width: 200px;
+   
+   -moz-appearance: none; /* Removes Default Firefox style*/
+  	-webkit-appearance: none;
+   padding: 5px 5px 5px 5px;
+}
+
+#mainselection {
+   overflow:hidden;
+   width:200px;
+   -moz-border-radius: 28px;
+   -webkit-border-radius: 28px;
+   border-radius: 9px 9px 9px 9px;
+   box-shadow: 1px 1px 1px #330033;
+   background: #3498db url(../img/15xvbd5.png) no-repeat
+	scroll 170px center;
+   
+}
+
+#nodeInfoDiv {
+  	width:250px;
+	float:right;
+	height: 650px;
+	background:#d9dada;
+	position:relative;
+	right:-255px;
+	top: -10px;
+	font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+	
+	padding-right:5px;
+	font-size: 14px;
+    
+     
+}
+.slider-arrow-forNode {
+	top: -10px;
+	padding:5px;
+	width:10px;
+	float:right;
+	background:#d9dada;
+	font:700 16px  Arial, "Helvetica Neue", Helvetica, sans-serif;
+	color:#3498db;
+	text-decoration:none;
+	position:relative;
+	right:-255px;
+	
+}
+
+#linkDiv{
+	width:245;
+	margin:8px;
+
+
+}
+
+
+.CSSTableGenerator {
+	margin:8px;
+	padding:0;
+	width:240px;
+	box-shadow: 3px 3px 1px #888888;
+	border:2px solid #000000;
+	table-layout: fixed;
+	
+}.CSSTableGenerator table{
+   
+    border-spacing: 0;
+	width:240px;
+	height:100%;
+	margin:0px;padding:0px;
+}
+.CSSTableGenerator tr:nth-child(odd){ background-color:#aad4ff; }
+.CSSTableGenerator tr:nth-child(even)    { background-color:#ffffff; }.CSSTableGenerator td{
+	vertical-align:middle;	
+	border:1px solid #000000;
+	border-width:0px 1px 1px 0px;
+	text-align:left;
+	padding:3px;
+	font-size:14px;
+	font-family:Arial;
+	font-weight:normal;
+	color:#000000;
+	overflow:hidden;
+}

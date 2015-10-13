@@ -136,17 +136,27 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
 
         empty_search_response = self._post( "jobs/search", data=search_payload )
         self._assert_status_code_is( empty_search_response, 200 )
-        assert len( empty_search_response.json() ) == 0
+        self.assertEquals( len( empty_search_response.json() ), 0 )
 
         self.__run_cat_tool( history_id, dataset_id )
         self._wait_for_history( history_id, assert_ok=True )
 
-        self.__assert_one_search_result( search_payload )
+        search_count = -1
+        # in case job and history aren't updated at exactly the same
+        # time give time to wait
+        for i in range(5):
+            search_count = self._search_count(search_payload)
+            if search_count == 1:
+                break
+            time.sleep(.1)
 
-    def __assert_one_search_result( self, search_payload ):
+        self.assertEquals( search_count, 1 )
+
+    def _search_count( self, search_payload ):
         search_response = self._post( "jobs/search", data=search_payload )
         self._assert_status_code_is( search_response, 200 )
-        assert len( search_response.json() ) == 1, search_response.json()
+        search_json = search_response.json()
+        return len(search_json)
 
     def __run_cat_tool( self, history_id, dataset_id ):
         # Code duplication with test_jobs.py, eliminate

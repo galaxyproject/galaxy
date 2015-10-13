@@ -100,10 +100,14 @@ class BaseDatasetPopulator( object ):
         file_type = kwds.get( "file_type", 'txt' )
         upload_params = {
             'files_0|NAME': name,
-            'files_0|url_paste': content,
             'dbkey': dbkey,
             'file_type': file_type,
         }
+        if isinstance( content, file ):
+            upload_params[ "files_0|file_data"] = content
+        else:
+            upload_params[ 'files_0|url_paste' ] = content
+
         if "to_posix_lines" in kwds:
             upload_params[ "files_0|to_posix_lines"] = kwds[ "to_posix_lines" ]
         if "space_to_tab" in kwds:
@@ -116,6 +120,10 @@ class BaseDatasetPopulator( object ):
         )
 
     def run_tool_payload( self, tool_id, inputs, history_id, **kwds ):
+        if "files_0|file_data" in inputs:
+            kwds[ "__files" ] = { "files_0|file_data": inputs[ "files_0|file_data" ] }
+            del inputs[ "files_0|file_data" ]
+
         return dict(
             tool_id=tool_id,
             inputs=json.dumps(inputs),
@@ -174,8 +182,12 @@ class DatasetPopulator( BaseDatasetPopulator ):
     def __init__( self, galaxy_interactor ):
         self.galaxy_interactor = galaxy_interactor
 
-    def _post( self, route, data={} ):
-        return self.galaxy_interactor.post( route, data )
+    def _post( self, route, data={}, files=None ):
+        files = data.get( "__files", None )
+        if files is not None:
+            del data[ "__files" ]
+
+        return self.galaxy_interactor.post( route, data, files=files )
 
     def _get( self, route ):
         return self.galaxy_interactor.get( route )
@@ -428,7 +440,7 @@ class DatasetCollectionPopulator( BaseDatasetCollectionPopulator ):
         return create_response
 
 
-def wait_on_state( state_func, assert_ok=False, timeout=5 ):
+def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
     def get_state( ):
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."

@@ -1,7 +1,7 @@
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-import sys, logging
+import logging
+import sys
+
+from sqlalchemy import Index, MetaData, Table
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -13,18 +13,19 @@ log.addHandler( handler )
 
 metadata = MetaData()
 
+
 def upgrade(migrate_engine):
-    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
     metadata.bind = migrate_engine
     User_table = Table( "galaxy_user", metadata, autoload=True )
     HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
+
     def boolean_false():
-       if migrate_engine.name == 'postgresql' or migrate_engine.name == 'mysql':
-           return False
-       elif migrate_engine.name == 'sqlite':
-           return 0
-       else:
-           raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
+            return False
+        elif migrate_engine.name == 'sqlite':
+            return 0
+        else:
+            raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name)
     # Load existing tables
     metadata.reflect()
     # Add 2 indexes to the galaxy_user table
@@ -42,13 +43,13 @@ def upgrade(migrate_engine):
     cmd = "UPDATE galaxy_user SET deleted = %s WHERE deleted is null"
     cmd = cmd % boolean_false()
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Setting default data for galaxy_user.deleted column failed: %s" % ( str( e ) ) )
     cmd = "UPDATE galaxy_user SET purged = %s WHERE purged is null"
     cmd = cmd % boolean_false()
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Setting default data for galaxy_user.purged column failed: %s" % ( str( e ) ) )
     # Add 1 index to the history_dataset_association table
@@ -57,6 +58,8 @@ def upgrade(migrate_engine):
         i.create()
     except Exception, e:
         log.debug( "Adding index 'ix_hda_copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed: %s" % ( str( e ) ) )
+
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     pass

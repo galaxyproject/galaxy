@@ -37,8 +37,6 @@ var DatasetListItemView = _super.extend(
 
         /** where should pages from links be displayed? (default to new tab/window) */
         this.linkTarget = attributes.linkTarget || '_blank';
-
-        this._setUpListeners();
     },
 
     /** event listeners */
@@ -60,7 +58,7 @@ var DatasetListItemView = _super.extend(
     },
 
     // ......................................................................... expandable
-    /** In this override, only get details if in the ready state.
+    /** In this override, only get details if in the ready state, get rerunnable if in other states.
      *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
      */
     _fetchModelDetails : function(){

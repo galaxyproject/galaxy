@@ -816,7 +816,6 @@ class SelectToolParameter( ToolParameter ):
         self.display = input_source.get( 'display', None )
         self.separator = input_source.get( 'separator', ',' )
         self.legal_values = set()
-        # TODO: the <dynamic_options> tag is deprecated and should be replaced with the <options> tag.
         self.dynamic_options = input_source.get( "dynamic_options", None )
         self.options = input_source.parse_dynamic_options(self)
         if self.options is not None:
@@ -979,17 +978,14 @@ class SelectToolParameter( ToolParameter ):
         return super( SelectToolParameter, self ).value_from_basic( value, app, ignore_errors=ignore_errors )
 
     def get_initial_value( self, trans, context, history=None ):
-        # More working around dynamic options for workflow
         options = list( self.get_options( trans, context ) )
         if len(options) == 0 and (trans is None or trans.workflow_building_mode):
-            # Really the best we can do?
             return UnvalidatedValue( None )
         value = [ optval for _, optval, selected in options if selected ]
         if len( value ) == 0:
-            if not self.multiple and options:
-                # Nothing selected, but not a multiple select, with some values,
+            if not self.optional and not self.multiple and options:
+                # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
-                # TODO: deal with optional parameters in a better way
                 value = options[0][1]
             else:
                 value = None
@@ -1764,6 +1760,22 @@ class DataToolParameter( BaseDataToolParameter ):
             self.validators.append( validation.MetadataValidator() )
         self._parse_formats( trans, tool, input_source )
         self.multiple = input_source.get_bool('multiple', False)
+        self.min = input_source.get( 'min' )
+        self.max = input_source.get( 'max' )
+        if self.min:
+            try:
+                self.min = int( self.min )
+            except:
+                raise ValueError( "An integer is required for min property." )
+        if self.max:
+            try:
+                self.max = int( self.max )
+            except:
+                raise ValueError( "An integer is required for max property." )
+        if not self.multiple and (self.min is not None):
+            raise ValueError( "Cannot specify min property on single data parameter '%s'. Set multiple=\"true\" to enable this option." % self.name )
+        if not self.multiple and (self.max is not None):
+            raise ValueError( "Cannot specify max property on single data parameter '%s'. Set multiple=\"true\" to enable this option." % self.name )
         self.is_dynamic = True
         self._parse_options( input_source )
         # Load conversions required for the dataset input
@@ -2052,16 +2064,30 @@ class DataToolParameter( BaseDataToolParameter ):
         return "No dataset"
 
     def validate( self, value, history=None ):
+        dataset_count = 0
         for validator in self.validators:
             if value and self.multiple:
-                if isinstance(value, list):
-                    for v in value:
-                        validator.validate( v, history )
-                elif isinstance(value, galaxy.model.HistoryDatasetCollectionAssociation):
-                    for v in value.collection.dataset_instances:
+                if not isinstance( value, list ):
+                    value = [ value ]
+                for v in value:
+                    if isinstance(v, galaxy.model.HistoryDatasetCollectionAssociation):
+                        for dataset_instance in v.collection.dataset_instances:
+                            dataset_count += 1
+                            validator.validate( dataset_instance, history )
+                    else:
+                        dataset_count += 1
                         validator.validate( v, history )
             else:
+                if value:
+                    dataset_count += 1
                 validator.validate( value, history )
+
+        if self.min is not None:
+            if self.min > dataset_count:
+                raise ValueError( "At least %d datasets are required." % self.min )
+        if self.max is not None:
+            if self.max < dataset_count:
+                raise ValueError( "At most %d datasets are required." % self.max )
 
     def get_dependencies( self ):
         """
@@ -2124,6 +2150,10 @@ class DataToolParameter( BaseDataToolParameter ):
         d['extensions'] = extensions
         d['edam_formats'] = edam_formats
         d['multiple'] = self.multiple
+        if self.multiple:
+            # For consistency, should these just always be in the dict?
+            d['min'] = self.min
+            d['max'] = self.max
         d['options'] = {'hda': [], 'hdca': []}
 
         # return default content if context is not available

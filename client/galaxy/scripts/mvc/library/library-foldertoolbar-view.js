@@ -863,37 +863,45 @@ var FolderToolbarView = Backbone.View.extend({
    * call them in chain. Update progress bar in between each.
    * @param  {array} lddas_set array of lddas to delete
    */
-  chainCallDeletingHdas: function( lddas_set ){
+  chainCallDeletingItems: function( items_to_delete ){
   var self = this;
-  this.deleted_lddas = new mod_library_model.Folder();
-  var popped_item = lddas_set.pop();
+  this.deleted_items = new mod_library_model.Folder();
+  var popped_item = items_to_delete.pop();
   if ( typeof popped_item === "undefined" ) {
     if ( this.options.chain_call_control.failed_number === 0 ){
-      mod_toastr.success( 'Selected datasets were deleted.' );
+      mod_toastr.success( 'Selected items were deleted.' );
     } else if ( this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number ){
-      mod_toastr.error( 'There was an error and no datasets were deleted. Please make sure you have sufficient permissions.' );
+      mod_toastr.error( 'There was an error and no items were deleted. Please make sure you have sufficient permissions.' );
     } else if ( this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number ){
-      mod_toastr.warning( 'Some of the datasets could not be deleted. Please make sure you have sufficient permissions.' );
+      mod_toastr.warning( 'Some of the items could not be deleted. Please make sure you have sufficient permissions.' );
     }
     Galaxy.modal.hide();
-    return this.deleted_lddas;
+    return this.deleted_items;
   }
   var promise = $.when( popped_item.destroy() );
 
-  promise.done( function( dataset ){
+  promise.done( function( item ){
             Galaxy.libraries.folderListView.collection.remove( popped_item.id );
             self.updateProgress();
-            // add the deleted dataset to collection, triggers rendering
+            // add the deleted item to collection, triggers rendering
             if ( Galaxy.libraries.folderListView.options.include_deleted ){
-              var updated_dataset = new mod_library_model.Item( dataset );
-              Galaxy.libraries.folderListView.collection.add( updated_dataset );
+              var updated_item = null;
+              if (item.type === 'folder' || item.model_class === 'LibraryFolder'){
+                updated_item = new mod_library_model.FolderAsModel( item );
+              } else if (item.type === 'file' || item.model_class === 'LibraryDataset'){
+                updated_item = new mod_library_model.Item( item );
+              } else {
+                console.error('Unknown library item type found.');
+                console.error(item.type || item.model_class);
+              }
+              Galaxy.libraries.folderListView.collection.add( updated_item );
             }
-            self.chainCallDeletingHdas( lddas_set );
+            self.chainCallDeletingItems( items_to_delete );
           })
           .fail( function(){
             self.options.chain_call_control.failed_number += 1;
             self.updateProgress();
-            self.chainCallDeletingHdas( lddas_set );
+            self.chainCallDeletingItems( items_to_delete );
           });
   },
 
@@ -931,25 +939,35 @@ var FolderToolbarView = Backbone.View.extend({
       this.options.chain_call_control.failed_number = 0;
 
       var dataset_ids = [];
+      var folder_ids = [];
       checkedValues.each(function(){
           if (this.parentElement.parentElement.id !== '') {
-              dataset_ids.push(this.parentElement.parentElement.id);
+              if (this.parentElement.parentElement.id.substring(0,1) == 'F'){
+                folder_ids.push(this.parentElement.parentElement.id);
+              } else {
+                dataset_ids.push(this.parentElement.parentElement.id);
+              }
           }
       });
       // init the progress bar
-      this.progressStep = 100 / dataset_ids.length;
+      var items_total = dataset_ids.length + folder_ids.length
+      this.progressStep = 100 / items_total;
       this.progress = 0;
       
       // prepare the dataset items to be added
-      var lddas_to_delete = [];
+      var items_to_delete = [];
       for (var i = dataset_ids.length - 1; i >= 0; i--) {
           var dataset = new mod_library_model.Item({id:dataset_ids[i]});
-          lddas_to_delete.push(dataset);
+          items_to_delete.push(dataset);
+      }
+      for (var i = folder_ids.length - 1; i >= 0; i--) {
+          var folder = new mod_library_model.FolderAsModel({id:folder_ids[i]});
+          items_to_delete.push(folder);
       }
 
-      this.options.chain_call_control.total_number = dataset_ids.length;
+      this.options.chain_call_control.total_number = items_total.length;
       // call the recursive function to call ajax one after each other (request FIFO queue)
-      this.chainCallDeletingHdas(lddas_to_delete);
+      this.chainCallDeletingItems(items_to_delete);
     }
   },
 
@@ -1099,6 +1117,7 @@ var FolderToolbarView = Backbone.View.extend({
     tmpl_array.push('<p><%- library.get("description") %></p>');
     tmpl_array.push('<h3>Library synopsis:</h3>');
     tmpl_array.push('<p><%- library.get("synopsis") %></p>');
+    tmpl_array.push('<p data-toggle="tooltip" data-placement="top" title="<%- library.get("create_time") %>">created <%- library.get("create_time_pretty") %></p>');
 
     tmpl_array.push('</div>');
 

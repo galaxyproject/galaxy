@@ -23,7 +23,7 @@ LIST_SEP = re.compile("\s*,\s*")
 
 class TestDataResolver(object):
 
-    def __init__(self, env_var, environ=os.environ):
+    def __init__(self, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
         file_dirs = environ.get(env_var, None)
         if file_dirs:
             self.resolvers = map(lambda u: build_resolver(u, environ), LIST_SEP.split(file_dirs))

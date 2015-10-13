@@ -58,7 +58,7 @@ Please visit <a href="https://wiki.galaxyproject.org/Admin" target="_blank">the 
                 </li>
             </ul>
 
-        <h4>Security</h4>
+        <h4>User Management</h4>
             <ul>
                 <li>
                     <strong>Users</strong> - A view of all users and all groups and non-private roles associated with each user.  

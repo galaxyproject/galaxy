@@ -75,7 +75,7 @@ class YamlToolSource(ToolSource):
         for output in output_defs:
             outputs[output.name] = output
         # TODO: parse outputs collections
-        return output_defs, odict()
+        return outputs, odict()
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format
@@ -156,6 +156,8 @@ def _parse_test(i, test_dict):
         _ensure_has(attributes, defaults)
 
     test_dict["outputs"] = new_outputs
+    # TODO: implement output collections for YAML tools.
+    test_dict["output_collections"] = []
     test_dict["command"] = __to_test_assert_list( test_dict.get( "command", [] ) )
     test_dict["stdout"] = __to_test_assert_list( test_dict.get( "stdout", [] ) )
     test_dict["stderr"] = __to_test_assert_list( test_dict.get( "stderr", [] ) )

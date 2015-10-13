@@ -1,18 +1,13 @@
 """
 Migration script to add the run and sample_run_association tables.
 """
-
-from sqlalchemy import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 Run_table = Table( "run", metadata,
@@ -33,6 +28,7 @@ SampleRunAssociation_table = Table( "sample_run_association", metadata,
                                     Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True, nullable=False ),
                                     Column( "run_id", Integer, ForeignKey( "run.id" ), index=True, nullable=False ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -49,6 +45,7 @@ def upgrade(migrate_engine):
         SampleRunAssociation_table.create()
     except Exception, e:
         log.debug( "Creating SampleRunAssociation table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

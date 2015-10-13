@@ -1,16 +1,11 @@
 """
 Migration script to add the long_description and times_downloaded columns to the repository table.
 """
+import logging
+import sys
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Column, Integer, MetaData, Table, TEXT
 
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
-import sys, logging
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -20,6 +15,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -49,6 +45,7 @@ def upgrade(migrate_engine):
     migrate_engine.execute( cmd )
     cmd = "UPDATE repository SET times_downloaded = 0"
     migrate_engine.execute( cmd )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

@@ -13,7 +13,7 @@ var Base = Backbone.View.extend({
             visible     : true,
             data        : [],
             id          : Utils.uid(),
-            error_text  : 'No data available.',
+            error_text  : 'No options available.',
             wait_text   : 'Please wait...',
             multiple    : false
         });

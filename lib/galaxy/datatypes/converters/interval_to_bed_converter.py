@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Dan Blankenberg
-
 import sys
+
 import bx.intervals.io
 
 assert sys.version_info[:2] >= ( 2, 4 )

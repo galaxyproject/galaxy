@@ -106,28 +106,34 @@ class RemoteUser( object ):
                         before you may access Galaxy.
                     """
                     return self.error( start_response, title, message )
+
+            user_accessible_paths = (
+                '/user/api_keys',
+                '/user/edit_username',
+                '/user/dbkeys',
+                '/user/toolbox_filters',
+                '/user/set_default_permissions',
+            )
+
+            admin_accessible_paths = (
+                '/user/create',
+                '/user/logout',
+                '/user/manage_user_info',
+                '/user/edit_info',
+                '/userskeys/all_users',
+            )
+
             if not path_info.startswith('/user'):
                 # shortcut the following whitelist for non-user-controller
                 # requests.
                 pass
-            elif path_info.startswith( '/user/create' ) and environ[ self.remote_user_header ] in self.admin_users:
-                pass  # admins can create users
-            elif path_info.startswith( '/user/logout' ) and environ[ self.remote_user_header ] in self.admin_users:
-                pass  # Admin users may be impersonating, allow logout.
-            elif path_info.startswith( '/user/manage_user_info' ) and environ[ self.remote_user_header ] in self.admin_users:
-                pass  # Admin users need to be able to change user information
-            elif path_info.startswith( '/user/edit_info' ) and environ[ self.remote_user_header ] in self.admin_users:
-                pass  # Admin users need to be able to change user information
-            elif path_info.startswith( '/user/api_keys' ):
-                pass  # api keys can be managed when remote_user is in use
-            elif path_info.startswith( '/user/edit_username' ):
-                pass  # username can be managed when remote_user is in use
-            elif path_info.startswith( '/user/dbkeys' ):
-                pass  # dbkeys can be managed when remote_user is in use
-            elif path_info.startswith( '/user/toolbox_filters' ):
-                pass  # toolbox filters can be managed when remote_user is in use
-            elif path_info.startswith( '/user/set_default_permissions' ):
-                pass  # default permissions can be managed when remote_user is in use
+            elif environ[self.remote_user_header] in self.admin_users and \
+                    any([path_info.startswith(prefix) for prefix in admin_accessible_paths]):
+                # If the user is an admin user, and any of the admin accessible paths match..., allow them to execute that action.
+                pass
+            elif any([path_info.startswith(prefix) for prefix in user_accessible_paths]):
+                # If the user is allowed to access the path, pass
+                pass
             elif path_info == '/user' or path_info == '/user/':
                 pass  # We do allow access to the root user preferences page.
             elif path_info.startswith( '/user' ):

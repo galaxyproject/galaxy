@@ -1,16 +1,13 @@
 """
 Add the ExtendedMetadata and ExtendedMetadataIndex tables
 """
+import logging
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table, TEXT
+
 from galaxy.model.custom_types import JSONType
 
-import logging
 log = logging.getLogger( __name__ )
-
 metadata = MetaData()
 
 ExtendedMetadata_table = Table("extended_metadata", metadata,
@@ -22,7 +19,7 @@ ExtendedMetadataIndex_table = Table("extended_metadata_index", metadata,
                                     Column( "extended_metadata_id", Integer, ForeignKey("extended_metadata.id",
                                                                                         onupdate="CASCADE",
                                                                                         ondelete="CASCADE" ),
-                                             index=True ),
+                                            index=True ),
                                     Column( "path", String( 255 )),
                                     Column( "value", TEXT))
 
@@ -31,6 +28,7 @@ extended_metadata_ldda_col = Column( "extended_metadata_id", Integer, ForeignKey
 
 def display_migration_details():
     print "This migration script adds a ExtendedMetadata tables"
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -74,5 +72,3 @@ def downgrade(migrate_engine):
         extended_metadata_id.drop()
     except Exception, e:
         log.debug( "Dropping 'extended_metadata_id' column from library_dataset_dataset_association table failed: %s" % ( str( e ) ) )
-
-

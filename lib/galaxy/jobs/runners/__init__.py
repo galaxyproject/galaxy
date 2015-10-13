@@ -188,8 +188,6 @@ class BaseJobRunner( object ):
         raise NotImplementedError()
 
     def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
-        # TODO: Eliminate extra kwds no longer used (since LWR skips
-        # abstraction and calls build_command directly).
         container = self._find_container( job_wrapper )
         return build_command(
             self,
@@ -248,8 +246,8 @@ class BaseJobRunner( object ):
 
     def _handle_metadata_externally( self, job_wrapper, resolve_requirements=False ):
         """
-        Set metadata externally. Used by the local and lwr job runners where this
-        shouldn't be attached to command-line to execute.
+        Set metadata externally. Used by the Pulsar job runner where this
+        shouldn't be attached to command line to execute.
         """
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
@@ -304,6 +302,41 @@ class BaseJobRunner( object ):
         log.debug( '(%s) command is: %s' % ( job_id, command_line ) )
         options.update(**kwds)
         return job_script(**options)
+
+    def write_executable_script( self, path, contents, mode=0o755 ):
+        with open( path, 'w' ) as f:
+            f.write( contents )
+        os.chmod( path, mode )
+        self._handle_script_integrity( path )
+
+    def _handle_script_integrity( self, path ):
+        if not getattr( self.app.config, "check_job_script_integrity", True ):
+            return
+
+        script_integrity_verified = False
+        for i in range(5):
+            try:
+                proc = subprocess.Popen( [path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"} )
+                proc.wait()
+                if proc.returncode == 42:
+                    script_integrity_verified = True
+                    break
+
+                # Else we will sync and wait to see if the script becomes
+                # executable.
+                try:
+                    # sync file system to avoid "Text file busy" problems.
+                    # These have occurred both in Docker containers and on EC2 clusters
+                    # under high load.
+                    subprocess.check_call(["/bin/sync"])
+                except Exception:
+                    pass
+                time.sleep( .1 )
+            except Exception:
+                pass
+
+        if not script_integrity_verified:
+            raise Exception("Failed to write job script, could not verify job script integrity.")
 
     def _complete_terminal_job( self, ajs, **kwargs ):
         if ajs.job_wrapper.get_state() != model.Job.states.DELETED:

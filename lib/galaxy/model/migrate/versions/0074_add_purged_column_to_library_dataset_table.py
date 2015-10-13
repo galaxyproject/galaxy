@@ -1,32 +1,31 @@
 """
 Migration script to add 'purged' column to the library_dataset table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, MetaData, Table
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
+
 def boolean_false(migrate_engine):
-   if migrate_engine.name in ['postgres','mysql', 'postgresql']:
-       return False
-   elif migrate_engine.name == 'sqlite':
-       return 0
-   else:
-       raise Exception( 'Unable to set True data value for unknown database type: %s' % str( migrate_engine.name ) )
+    if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
+        return False
+    elif migrate_engine.name == 'sqlite':
+        return 0
+    else:
+        raise Exception( 'Unable to set True data value for unknown database type: %s' % str( migrate_engine.name ) )
+
 
 def boolean_true(migrate_engine):
-   if migrate_engine.name in ['postgres','mysql', 'postgresql']:
-       return True
-   elif migrate_engine.name == 'sqlite':
-       return 1
-   else:
-       raise Exception( 'Unable to set False data value for unknown database type: %s' % str( migrate_engine.name ) )
+    if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
+        return True
+    elif migrate_engine.name == 'sqlite':
+        return 1
+    else:
+        raise Exception( 'Unable to set False data value for unknown database type: %s' % str( migrate_engine.name ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -57,6 +56,7 @@ def upgrade(migrate_engine):
             print "Updating purged column to True for LibraryDataset id : ", int( row.id )
             cmd = "UPDATE library_dataset SET purged = %s WHERE id = %d;" % ( boolean_true(migrate_engine), int( row.id ) )
             migrate_engine.execute( cmd )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

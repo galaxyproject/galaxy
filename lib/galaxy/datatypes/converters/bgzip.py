@@ -5,10 +5,9 @@ Uses pysam to bgzip a file
 
 usage: %prog in_file out_file
 """
-
-import tempfile
 import optparse
 import subprocess
+import tempfile
 
 from pysam import ctabix
 

@@ -3,13 +3,12 @@ Migration script to create the repository_role_association table, insert name-sp
 repository administrative roles into the role table and associate each repository and
 owner with the appropriate name-spaced role.
 """
-import datetime, logging, sys
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+import datetime
+import logging
+import sys
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+from sqlalchemy.exc import NoSuchTableError
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -31,6 +30,7 @@ RepositoryRoleAssociation_table = Table( "repository_role_association", metadata
                                          Column( "create_time", DateTime, default=NOW ),
                                          Column( "update_time", DateTime, default=NOW, onupdate=NOW ) )
 
+
 def nextval( migrate_engine, table, col='id' ):
     if migrate_engine.name in [ 'postgresql', 'postgres' ]:
         return "nextval('%s_%s_seq')" % ( table, col )
@@ -39,21 +39,24 @@ def nextval( migrate_engine, table, col='id' ):
     else:
         raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
+
 def localtimestamp( migrate_engine ):
-   if migrate_engine.name in [ 'postgresql', 'postgres', 'mysql' ]:
-       return "LOCALTIMESTAMP"
-   elif migrate_engine.name == 'sqlite':
-       return "current_date || ' ' || current_time"
-   else:
-       raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+    if migrate_engine.name in [ 'postgresql', 'postgres', 'mysql' ]:
+        return "LOCALTIMESTAMP"
+    elif migrate_engine.name == 'sqlite':
+        return "current_date || ' ' || current_time"
+    else:
+        raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
+
 
 def boolean_false( migrate_engine ):
-   if migrate_engine.name in [ 'postgresql', 'postgres', 'mysql' ]:
-       return False
-   elif migrate_engine.name == 'sqlite':
-       return 0
-   else:
-       raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+    if migrate_engine.name in [ 'postgresql', 'postgres', 'mysql' ]:
+        return False
+    elif migrate_engine.name == 'sqlite':
+        return 0
+    else:
+        raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
+
 
 def upgrade( migrate_engine ):
     print __doc__
@@ -117,6 +120,7 @@ def upgrade( migrate_engine ):
             cmd += "%s " % localtimestamp( migrate_engine )
             cmd += ");"
             migrate_engine.execute( cmd )
+
 
 def downgrade( migrate_engine ):
     metadata.bind = migrate_engine

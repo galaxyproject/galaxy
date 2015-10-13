@@ -992,6 +992,10 @@ class SetEnvironment( RecipeStep ):
         # Currently the only action supported in this category is "environment_variable".
         cmds = install_environment.environment_commands( 'set_environment' )
         env_var_dicts = action_dict.get( 'environment_variable', [] )
+        root_dir_dict = dict( action='set_to',
+                              name='%s_ROOT_DIR' % tool_dependency.name.replace( '-', '_' ).upper(),
+                              value=install_environment.install_dir )
+        env_var_dicts.append( root_dir_dict )
         for env_var_dict in env_var_dicts:
             # Check for the presence of the $ENV[] key string and populate it if possible.
             env_var_dict = self.handle_environment_variables( install_environment=install_environment,
@@ -1362,7 +1366,7 @@ class SetupREnvironment( Download, RecipeStep ):
                     # Use raw strings so that python won't automatically unescape the quotes before passing the command
                     # to subprocess.Popen.
                     cmd = r'''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR:$R_LIBS; export R_LIBS;
-                        Rscript -e "install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE)"''' % \
+                        Rscript -e "tryCatch( install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE), error = quit(status = 1))"''' % \
                         ( str( tarball_name ) )
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,

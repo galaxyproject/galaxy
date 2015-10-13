@@ -174,6 +174,11 @@ var LibraryListView = Backbone.View.extend({
         window.location = '/user/login';
     },
 
+    searchLibraries: function(search_term){
+        var results = this.collection.search(search_term);
+        this.render({'models': results});
+    },
+
 // MMMMMMMMMMMMMMMMMM
 // === TEMPLATES ====
 // MMMMMMMMMMMMMMMMMM

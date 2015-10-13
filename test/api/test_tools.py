@@ -5,6 +5,7 @@ from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
 from .helpers import LibraryPopulator
 from .helpers import skip_without_tool
+from base.test_data import TestDataResolver
 
 
 class ToolsTestCase( api.ApiTestCase ):
@@ -62,6 +63,19 @@ class ToolsTestCase( api.ApiTestCase ):
         self._assert_has_keys( case2_inputs[ 0 ], 'name', 'type', 'label', 'help', 'argument' )
         assert case2_inputs[ 0 ][ "name" ] == "seed"
 
+    @skip_without_tool( "multi_data_param" )
+    def test_show_multi_data( self ):
+        tool_info = self._show_valid_tool( "multi_data_param" )
+
+        f1_info, f2_info = tool_info[ "inputs" ][ 0 ], tool_info[ "inputs" ][ 1 ]
+        self._assert_has_keys( f1_info, "min", "max" )
+        assert f1_info["min"] == 1
+        assert f1_info["max"] == 1235
+
+        self._assert_has_keys( f2_info, "min", "max" )
+        assert f2_info["min"] is None
+        assert f2_info["max"] is None
+
     def _show_valid_tool( self, tool_id ):
         tool_show_response = self._get( "tools/%s" % tool_id, data=dict( io_details=True ) )
         self._assert_status_code_is( tool_show_response, 200 )
@@ -95,6 +109,12 @@ class ToolsTestCase( api.ApiTestCase ):
         table = "1 2 3\n4 5 6\n"
         result_content = self._upload_and_get_content( table )
         self.assertEquals( result_content, table )
+
+    def test_rdata_not_decompressed( self ):
+        # Prevent regression of https://github.com/galaxyproject/galaxy/issues/753
+        rdata_path = TestDataResolver().get_filename("1.RData")
+        rdata_metadata = self._upload_and_get_details( open(rdata_path, "rb"), file_type="auto" )
+        self.assertEquals( rdata_metadata[ "file_ext" ], "rdata" )
 
     @skip_without_tool( "multi_select" )
     def test_multi_select_as_list( self ):
@@ -215,6 +235,18 @@ class ToolsTestCase( api.ApiTestCase ):
             'select_param': "\" ; echo \"moo",
         }
         response = self._run( "validation_default", history_id, inputs )
+        self._assert_status_code_is( response, 400 )
+
+    @skip_without_tool( "validation_repeat" )
+    def test_validation_in_repeat( self ):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+            'r1_0|text': "123",
+            'r2_0|text': "",
+        }
+        response = self._run( "validation_repeat", history_id, inputs )
+        import time
+        time.sleep(10)
         self._assert_status_code_is( response, 400 )
 
     @skip_without_tool( "multi_select" )
@@ -805,9 +837,41 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( len( outputs ), 4 )
 
         self.assertEquals( len( response_object[ 'jobs' ] ), 4 )
-        # Implicit collections not created with unlinked inputs yet - this may
-        # be problematic.
-        self.assertEquals( len( response_object[ 'implicit_collections' ] ), 0 )
+        implicit_collections = response_object[ 'implicit_collections' ]
+        self.assertEquals( len( implicit_collections ), 1 )
+        implicit_collection = implicit_collections[ 0 ]
+        self.assertEquals( implicit_collection[ "collection_type" ], "paired:paired" )
+
+        outer_elements = implicit_collection[ "elements" ]
+        assert len( outer_elements ) == 2
+        element0, element1 = outer_elements
+        assert element0[ "element_identifier" ] == "forward"
+        assert element1[ "element_identifier" ] == "reverse"
+
+        elements0 = element0[ "object" ][ "elements" ]
+        elements1 = element1[ "object" ][ "elements" ]
+
+        assert len( elements0 ) == 2
+        assert len( elements1 ) == 2
+
+        element00, element01 = elements0
+        assert element00[ "element_identifier" ] == "forward"
+        assert element01[ "element_identifier" ] == "reverse"
+
+        element10, element11 = elements1
+        assert element10[ "element_identifier" ] == "forward"
+        assert element11[ "element_identifier" ] == "reverse"
+
+        expected_contents_list = [
+            (element00, "123\n789\n"),
+            (element01, "123\n0ab\n"),
+            (element10, "456\n789\n"),
+            (element11, "456\n0ab\n"),
+        ]
+        for (element, expected_contents) in expected_contents_list:
+            dataset_id = element["object"]["id"]
+            contents = self.dataset_populator.get_history_dataset_content( history_id, dataset_id=dataset_id )
+            self.assertEquals(expected_contents, contents)
 
     @skip_without_tool( "cat1" )
     def test_map_over_collected_and_individual_datasets( self ):
@@ -1029,11 +1093,19 @@ class ToolsTestCase( api.ApiTestCase ):
         else:
             return create_response
 
-    def _upload_and_get_content( self, content, **upload_kwds ):
+    def _upload( self, content, **upload_kwds ):
         history_id = self.dataset_populator.new_history()
         new_dataset = self.dataset_populator.new_dataset( history_id, content=content, **upload_kwds )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        return history_id, new_dataset
+
+    def _upload_and_get_content( self, content, **upload_kwds ):
+        history_id, new_dataset = self._upload( content, **upload_kwds )
         return self.dataset_populator.get_history_dataset_content( history_id, dataset=new_dataset )
+
+    def _upload_and_get_details( self, content, **upload_kwds ):
+        history_id, new_dataset = self._upload( content, **upload_kwds )
+        return self.dataset_populator.get_history_dataset_details( history_id, dataset=new_dataset )
 
     def __tool_ids( self ):
         index = self._get( "tools" )

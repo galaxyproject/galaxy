@@ -1,6 +1,6 @@
 from galaxy.util import bunch
 from galaxy import exceptions
-from .structure import get_structure
+from .structure import get_structure, leaf
 
 CANNOT_MATCH_ERROR_MESSAGE = "Cannot match collection types."
 
@@ -13,10 +13,11 @@ class CollectionsToMatch( object ):
     def __init__( self ):
         self.collections = {}
 
-    def add( self, input_name, hdca, subcollection_type=None ):
+    def add( self, input_name, hdca, subcollection_type=None, linked=True ):
         self.collections[ input_name ] = bunch.Bunch(
             hdca=hdca,
             subcollection_type=subcollection_type,
+            linked=linked,
         )
 
     def has_collections( self ):
@@ -37,21 +38,32 @@ class MatchingCollections( object ):
     """
 
     def __init__( self ):
-        self.structure = None
+        self.linked_structure = None
+        self.unlinked_structures = []
         self.collections = {}
 
-    def __attempt_add_to_match( self, input_name, hdca, collection_type_description, subcollection_type ):
+    def __attempt_add_to_linked_match( self, input_name, hdca, collection_type_description, subcollection_type ):
         structure = get_structure( hdca, collection_type_description, leaf_subcollection_type=subcollection_type )
-        if not self.structure:
-            self.structure = structure
+        if not self.linked_structure:
+            self.linked_structure = structure
             self.collections[ input_name ] = hdca
         else:
-            if not self.structure.can_match( structure ):
+            if not self.linked_structure.can_match( structure ):
                 raise exceptions.MessageException( CANNOT_MATCH_ERROR_MESSAGE )
             self.collections[ input_name ] = hdca
 
     def slice_collections( self ):
-        return self.structure.walk_collections( self.collections )
+        return self.linked_structure.walk_collections( self.collections )
+
+    @property
+    def structure( self ):
+        """Yield cross product of all unlinked datasets to linked dataset."""
+        effective_structure = leaf
+        for unlinked_structure in self.unlinked_structures:
+            effective_structure = effective_structure.multiply( unlinked_structure )
+        linked_structure = self.linked_structure or leaf
+        effective_structure = effective_structure.multiply( linked_structure )
+        return None if effective_structure.is_leaf else effective_structure
 
     @staticmethod
     def for_collections( collections_to_match, collection_type_descriptions ):
@@ -61,8 +73,13 @@ class MatchingCollections( object ):
         matching_collections = MatchingCollections()
         for input_key, to_match in collections_to_match.iteritems():
             hdca = to_match.hdca
-            subcollection_type = to_match.subcollection_type
             collection_type_description = collection_type_descriptions.for_collection_type( hdca.collection.collection_type )
-            matching_collections.__attempt_add_to_match( input_key, hdca, collection_type_description, subcollection_type )
+            subcollection_type = to_match.subcollection_type
+
+            if to_match.linked:
+                matching_collections.__attempt_add_to_linked_match( input_key, hdca, collection_type_description, subcollection_type )
+            else:
+                structure = get_structure( hdca, collection_type_description, leaf_subcollection_type=subcollection_type )
+                matching_collections.unlinked_structures.append( structure )
 
         return matching_collections

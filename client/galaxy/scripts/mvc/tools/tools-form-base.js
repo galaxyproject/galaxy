@@ -44,6 +44,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 }
             }, this.options);
 
+            // allow option customization
+            this.options.customize && this.options.customize( this.options );
+
             // create form
             this.form = new Form(this.options);
 
@@ -65,20 +68,19 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.options.id = options.id;
             this.options.version = options.version;
 
-            if (options.job_id) {
+            if ( options.job_id ) {
                 build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
             } else {
-                // construct url
                 var build_url = Galaxy.root + 'api/tools/' + options.id + '/build?';
-                if (options.dataset_id) {
-                    build_url += 'dataset_id=' + options.dataset_id;
-                } else {
+                if ( options.version ) {
                     build_url += 'tool_version=' + options.version + '&';
-                    var loc = top.location.href;
-                    var pos = loc.indexOf('?');
-                    if (loc.indexOf('tool_id=') != -1 && pos !== -1) {
-                        build_url += loc.slice(pos + 1);
-                    }
+                }
+                if ( Galaxy.params && Galaxy.params.tool_id == options.id ) {
+                    _.each( Galaxy.params, function ( item, key ) {
+                        if ( [ 'tool_version', 'tool_id' ].indexOf( key ) == -1 ) {
+                            build_url += key + '=' + item + '&';
+                        }
+                    } );
                 }
             }
 
@@ -116,16 +118,25 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     console.debug(response);
 
                     // show error
-                    var error_message = response.error || 'Uncaught error.';
-                    self.form.modal.show({
-                        title   : 'Tool cannot be executed',
-                        body    : error_message,
-                        buttons : {
-                            'Close' : function() {
-                                self.form.modal.hide();
+                    var error_message = ( response && response.err_msg ) || 'Uncaught error.';
+                    if ( self.$el.is(':empty') ) {
+                        self.$el.prepend((new Ui.Message({
+                            message     : error_message,
+                            status      : 'danger',
+                            persistent  : true,
+                            large       : true
+                        })).$el);
+                    } else {
+                        Galaxy.modal.show({
+                            title   : 'Tool request failed',
+                            body    : error_message,
+                            buttons : {
+                                'Close' : function() {
+                                    Galaxy.modal.hide();
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             });
         },

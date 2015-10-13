@@ -1,18 +1,15 @@
 """
 Migration script to add the api_keys table.
 """
-
-from sqlalchemy import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 APIKeys_table = Table( "api_keys", metadata,
@@ -20,6 +17,7 @@ APIKeys_table = Table( "api_keys", metadata,
                        Column( "create_time", DateTime, default=now ),
                        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
                        Column( "key", TrimmedString( 32 ), index=True, unique=True ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -29,6 +27,7 @@ def upgrade(migrate_engine):
         APIKeys_table.create()
     except Exception, e:
         log.debug( "Creating api_keys table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
