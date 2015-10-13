@@ -29,6 +29,21 @@ Effective use of milestones should prevent bugs from falling through the
 cracks, and will provide a mechanism for forcing the revisitation(and thus
 progress or even potential discard) of ideas for enhancements or features.
 
+Deferring Issues
+----------------
+To prevent the review of issues attached to milestones from becoming too
+cumbersome, and to encourage active review and handling of issues, any
+contributor can choose to 'defer' an issue attached to an upcoming release
+milestone to a later one.  To do this, simply reassign the issue to the new
+milestone and leave a comment so that others notice, something like 'Issue
+deferred to target_milestone_reference, does not block release
+current_milestone_reference'.
+
+Once deferred, an issue can't simply be reattached back to the earlier
+milestone -- this requires a PR.  The intent here is to make it such that if a
+contributor wants to force an issue to be handle with a release, they need to
+put the work forward to do so or convince someone else to.
+
 
 Labeling Structure
 ==================
