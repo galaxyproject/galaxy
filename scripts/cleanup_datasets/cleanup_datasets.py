@@ -483,7 +483,7 @@ def _purge_dataset( app, dataset, remove_from_disk, info_only=False ):
                                 if hda.history.user is not None and hda.history.user not in usage_users:
                                     usage_users.append( hda.history.user )
                         for user in usage_users:
-                            user.total_disk_usage -= dataset.get_total_size()
+                            user.adjust_total_disk_usage(-dataset.get_total_size())
                             app.sa_session.add( user )
                     print "Purging dataset id", dataset.id
                     dataset.purged = True

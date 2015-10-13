@@ -1107,7 +1107,7 @@ class History( object, Dictifiable, UsesAnnotations, HasName ):
             if set_hid:
                 dataset.hid = self._next_hid()
         if quota and self.user:
-            self.user.total_disk_usage += dataset.quota_amount( self.user )
+            self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
         dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
