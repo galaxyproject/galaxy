@@ -62,6 +62,7 @@ request/report to separate enhancements and new features from bugs, etc.
 * `kind/documentation` - documentation is unclear or can be improved
 * `kind/enhancement` - polish to an existing feature or interface
 * `kind/feature` - something brand new
+* `kind/refactoring` - refactoring of existing code, no functional changes
 
 Status Labels
 -------------
