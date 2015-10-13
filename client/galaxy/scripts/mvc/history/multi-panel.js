@@ -588,7 +588,9 @@ var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
                 multipanel._dropData = null;
 
                 var queue = new ajaxQueue.NamedAjaxQueue();
-                toCopy.forEach( function( content ){
+                // need to reverse to better match expected order
+                // TODO: reconsider order in list-panel._setUpItemViewListeners, dragstart (instead of here)
+                toCopy.reverse().forEach( function( content ){
                     queue.add({
                         name : 'copy-' + content.id,
                         fn : function(){
