@@ -418,6 +418,11 @@
     <datatype extension="oxlist" type="galaxy.datatypes.binary:OxliStopTags" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxliss" type="galaxy.datatypes.binary:OxliSubset" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxligl" type="galaxy.datatypes.binary:OxliGraphLabels" mimetype="application/octet-stream" display_in_upload="true"/>
+    <!-- Constructive solid geometry datatypes -->
+    <datatype extension="plyascii" type="galaxy.datatypes.constructive_solid_geometry:PlyAscii" display_in_upload="true" />
+    <datatype extension="plybinary" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true" />
+    <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
+    <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
   </registration>
   <sniffers>
     <!--
@@ -427,6 +432,10 @@
     defined format first, followed by next-most rigidly defined,
     and so on.
     -->
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyAscii"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkBinary"/>
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>
     <sniffer type="galaxy.datatypes.binary:TwoBit"/>
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
