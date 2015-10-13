@@ -55,8 +55,8 @@ if [ ! -f $GALAXY_CONFIG_FILE ]; then
 fi
 
 if [ $SET_VENV -eq 1 ]; then
-    # If not already in a virtualenv and .venv does not exist, attempt to create it.
-    if [ -z "$VIRTUAL_ENV" -a ! -d .venv ]
+    # If .venv does not exist, attempt to create it.
+    if [ ! -d .venv ]
     then
         vvers=13.1.0
         vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"

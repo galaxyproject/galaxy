@@ -3,8 +3,6 @@
 pwd_dir=$(pwd)
 cd `dirname $0`
 
-./scripts/common_startup.sh
-
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log
 
@@ -46,6 +44,7 @@ Extra options:
  --debug               On python test error or failure invoke a pdb shell for interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
+ --skip-venv           Do not create .venv (passes this flag to common_startup.sh)
  --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
  --db <type>           For use with --dockerize, run tests using partially migrated 'postgres', 'mysql', 
                        or 'sqlite' databases.
@@ -267,6 +266,10 @@ do
           watch=1
           shift
           ;;
+      --skip-venv)
+          skip_venv='--skip-venv'
+          shift
+          ;;
       --) 
           shift
           break
@@ -281,6 +284,8 @@ do
           ;;
     esac
 done
+
+./scripts/common_startup.sh $skip_venv
 
 if [ -n "$migrated_test" ] ; then
     [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
