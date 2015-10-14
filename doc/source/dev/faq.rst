@@ -2,7 +2,7 @@ How Do I...
 ===========
 
 This section contains a number of smaller topics with links and examples meant
-to provide relatively concrete answers for specific tool development scenarios.
+to provide relatively concrete answers for specific Galaxy development scenarios.
 
 ... interact with the Galaxy codebase interactively?
 ----------------------------------------------------
