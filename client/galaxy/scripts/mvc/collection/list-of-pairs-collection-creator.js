@@ -389,8 +389,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         strategy = strategy || this.strategy;
         split = this._splitByFilters();
         paired = paired.concat( this[ strategy ].call( this, {
-                listA : split[0],
-                listB : split[1]
+            listA : split[0],
+            listB : split[1]
         }));
         return paired;
     },
@@ -502,8 +502,8 @@ var PairedCollectionCreator = Backbone.View.extend( baseMVC.LoggableMixin ).exte
         var fwdName = fwd.name,
             revName = rev.name,
             lcs = this._naiveStartingAndEndingLCS(
-                fwdName.replace( this.filters[0], '' ),
-                revName.replace( this.filters[1], '' )
+                fwdName.replace( new RegExp( this.filters[0] ), '' ),
+                revName.replace( new RegExp( this.filters[1] ), '' )
             );
         if( removeExtensions ){
             var lastDotIndex = lcs.lastIndexOf( '.' );
