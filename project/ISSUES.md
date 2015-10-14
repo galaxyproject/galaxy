@@ -49,7 +49,7 @@ Labeling Structure
 ==================
 
 To allow for easy search, filtering, and general issue management every issue
-or PR (not tagged `Procedures` or `Planning`) is *required* to have three
+or PR (not tagged `procedures` or `planning`) is *required* to have three
 labels which indicate the type, status, and focus area of the issue.  Any issue
 without these three tags will be automatically have a `triage` label applied
 indicating that it needs human intervention to be correctly tagged.  These
@@ -140,14 +140,14 @@ there are several other labels that are be useful and/or have special purpose.
 The Roadmap
 ===========
 
-We will maintain a single `Roadmap` tagged meta-issue which will describe (at a
+We will maintain a single `roadmap` tagged meta-issue which will describe (at a
 very high level) the *current* major areas of focus for the project.  This is
 similar to our PRIORITIES 2014/15 cards on Trello.  Using [Task
 Lists](https://github.com/blog/1375-task-lists-in-gfm-issues-pulls-comments),
 this issue will link to sub-issues which will go into much more detail, might
 have its own checklists to even more subcomponent cards, and so on.  
 
-This `Roadmap` issue will be assigned to every release milestone, forcing
+This `roadmap` issue will be assigned to every release milestone, forcing
 periodic review of the roadmap.
 
 To prevent the roadmap from being tied completely to GitHub, and to facilitate
@@ -176,7 +176,7 @@ Automation
 
 For now, we will rely on a few simple automation rules:
 
-* All issues, unless tagged `Procedures` or `Planning` will automatically be
+* All issues, unless tagged `procedures` or `planning` will automatically be
   tagged `triage`, indicating that they require attention.
 
 * All PRs that are not assigned to a milestone will be tagged `triage` to
