@@ -110,7 +110,12 @@ def main():
             stop_err( "Computation resulted in the following error: %s" % str( s ) )
         summary = summary.as_py( BASIC_CONVERSION )
         outfile.write( "#%s\n" % headings_str )
-        outfile.write( "%s\n" % "\t".join( [ "%g" % k for k in summary ] ) )
+        if type(summary) is dict:
+            #using rpy
+            outfile.write( "%s\n" % "\t".join( [ "%g" % summary[k] for k in headings ] ) )
+        else:
+            #using rpy2
+            outfile.write( "%s\n" % "\t".join( [ "%g" % k for k in summary ] ) )
         outfile.close()
 
         if skipped_lines:
