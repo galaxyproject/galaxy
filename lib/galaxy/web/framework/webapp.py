@@ -603,7 +603,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                     if prev_galaxy_session.user is None:
                         # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already own it.
                         for hda in history.datasets:
-                            user.total_disk_usage += hda.quota_amount( user )
+                            user.adjust_total_disk_usage(hda.quota_amount(user))
             elif self.galaxy_session.current_history:
                 history = self.galaxy_session.current_history
             if (not history and users_last_session and
