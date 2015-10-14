@@ -66,6 +66,7 @@ request/report to separate enhancements and new features from bugs, etc.
 * `kind/enhancement` - polish to an existing feature or interface
 * `kind/feature` - something brand new
 * `kind/refactoring` - refactoring of existing code, no functional changes
+* `kind/tests` - issues related to tests and the testing framework
 
 Status Labels
 -------------
