@@ -1053,7 +1053,8 @@ class OxliGraphLabels(OxliBinary):
 
 Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
-                                        
+
+  
 class SearchGuiArchive ( CompressedArchive ):
     """Class describing a SearchGUI archive """
     MetadataElement( name="searchgui_version", default='1.28.0' , param=MetadataParameter, desc="SearchGui Version",
@@ -1061,6 +1062,7 @@ class SearchGuiArchive ( CompressedArchive ):
     MetadataElement( name="searchgui_major_version", default='1' , param=MetadataParameter, desc="SearchGui Major Version",
                      readonly=True, visible=True, no_value=None )
     file_ext = "searchgui_archive"
+    
     def set_meta( self, dataset, overwrite=True, **kwd ):
         super( SearchGuiArchive, self ).set_meta( dataset, overwrite=overwrite, **kwd )
         try:
@@ -1080,7 +1082,7 @@ class SearchGuiArchive ( CompressedArchive ):
 
     def sniff( self, filename ):
         try:
-            if  filename and zipfile.is_zipfile( filename ):
+            if filename and zipfile.is_zipfile( filename ):
                 tempzip = zipfile.ZipFile( filename, 'r' )
                 is_searchgui = 'searchgui.properties' in tempzip.namelist()
                 tempzip.close()
@@ -1104,4 +1106,3 @@ class SearchGuiArchive ( CompressedArchive ):
             return "SearchGUI Archive, version %s" % ( dataset.metadata.searchgui_version or 'unknown' )
 
 Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)
-                                        
