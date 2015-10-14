@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import argparse
 import os
 from bioblend import galaxy
@@ -6,9 +7,8 @@ from bioblend import galaxy
 
 class Uploader:
 
-    def __init__(self, url, api, local_dir, library_id, folder_id):
+    def __init__(self, url, api, library_id, folder_id):
         self.gi = galaxy.GalaxyInstance(url=url, key=api)
-        self.local_dir = local_dir
         self.library_id = library_id
         self.folder_id = folder_id
 
@@ -77,34 +77,8 @@ class Uploader:
             return tail,
         return self.rec_split(rest) + (tail,)
 
-    def file_filter(dirName, fname):
-        bad = [
-            '/x' in dirName,
-            '/x' in fname,
-            fname.startswith('xa'),
-            'CONTIG' in fname,
-            'NODE' in fname,
-        ]
-        if any(bad):
-            return False
-
-        good = [
-            fname.endswith('.fa'),
-            fname.endswith('.fna'),
-            fname.endswith('.fastq'),
-            fname.endswith('.sff'),
-        ]
-
-        return any(good)
-
-    def collect_files(self, rootDir):
-        for dirName, subdirList, fileList in os.walk(rootDir):
-            for fname in fileList:
-                if self.file_filter(dirName, fname):
-                    yield (dirName, fname)
-
     def upload(self):
-        all_files = list(self.collect_files(self.local_dir))
+        all_files = list(sys.stdin.readlines())
 
         for idx, (dirName, fname) in enumerate(all_files):
             if idx < 35:
@@ -122,10 +96,9 @@ class Uploader:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Upload a directory into a data library')
-    parser.add_argument( "-u", "--url", dest="uri", required=True, help="Galaxy URL" )
+    parser.add_argument( "-u", "--url", dest="url", required=True, help="Galaxy URL" )
     parser.add_argument( "-a", "--api", dest="api", required=True, help="API Key" )
 
-    parser.add_argument( "-d", "--dir", dest="local_dir", required=True, help="Local directory" )
     parser.add_argument( "-l", "--lib", dest="library_id", required=True, help="Library ID" )
     parser.add_argument( "-f", "--folder", dest="folder_id", help="Folder ID. If not specified, will go to root of library." )
     args = parser.parse_args()
