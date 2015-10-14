@@ -7,10 +7,11 @@ from bioblend import galaxy
 
 class Uploader:
 
-    def __init__(self, url, api, library_id, folder_id):
+    def __init__(self, url, api, library_id, folder_id, should_link):
         self.gi = galaxy.GalaxyInstance(url=url, key=api)
         self.library_id = library_id
         self.folder_id = folder_id
+        self.should_link
 
         self.memo_path = {}
 
@@ -91,6 +92,7 @@ class Uploader:
                 self.library_id,
                 os.path.join(dirName, fname),
                 folder_id=fid,
+                link_data_only=self.should_link,
             )
 
 
@@ -101,6 +103,8 @@ if __name__ == '__main__':
 
     parser.add_argument( "-l", "--lib", dest="library_id", required=True, help="Library ID" )
     parser.add_argument( "-f", "--folder", dest="folder_id", help="Folder ID. If not specified, will go to root of library." )
+
+    parser.add_argument( "--link", dest="should_link", action="store_true", default=False, help="Link datasets only, do not upload to Galaxy.")
     args = parser.parse_args()
 
     u = Uploader(**vars(args))
