@@ -62,7 +62,6 @@ The 'kind' label set is used for classifying the type of contribution or
 request/report to separate enhancements and new features from bugs, etc.
 
 * `kind/bug` - something is broken, and it needs fixing
-* `kind/documentation` - documentation is unclear or can be improved
 * `kind/enhancement` - polish to an existing feature or interface
 * `kind/feature` - something brand new
 * `kind/refactoring` - refactoring of existing code, no functional changes
@@ -103,7 +102,7 @@ well as more organized release notes.  Some examples, not-exhaustive, are here:
 * `area/API`
 * `area/cleanup`
 * `area/jobs`
-* `area/tests`
+* `area/documentation`
 * `area/GIEs`
 * `area/toolshed`
 * `area/UI-UX`
