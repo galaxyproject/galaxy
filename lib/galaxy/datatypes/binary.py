@@ -1054,7 +1054,7 @@ class OxliGraphLabels(OxliBinary):
 Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
 
-  
+
 class SearchGuiArchive ( CompressedArchive ):
     """Class describing a SearchGUI archive """
     MetadataElement( name="searchgui_version", default='1.28.0' , param=MetadataParameter, desc="SearchGui Version",
@@ -1062,7 +1062,7 @@ class SearchGuiArchive ( CompressedArchive ):
     MetadataElement( name="searchgui_major_version", default='1' , param=MetadataParameter, desc="SearchGui Major Version",
                      readonly=True, visible=True, no_value=None )
     file_ext = "searchgui_archive"
-    
+
     def set_meta( self, dataset, overwrite=True, **kwd ):
         super( SearchGuiArchive, self ).set_meta( dataset, overwrite=overwrite, **kwd )
         try:
