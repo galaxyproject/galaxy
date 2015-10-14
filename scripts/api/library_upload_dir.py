@@ -7,7 +7,8 @@ from bioblend import galaxy
 
 class Uploader:
 
-    def __init__(self, url, api, library_id, folder_id, should_link, non_local):
+    def __init__(self, url, api, library_id, folder_id, should_link,
+                 non_local):
         self.gi = galaxy.GalaxyInstance(url=url, key=api)
         self.library_id = library_id
         self.folder_id = folder_id
@@ -15,6 +16,39 @@ class Uploader:
         self.non_local = non_local
 
         self.memo_path = {}
+        self.prepopulate_memo()
+
+    def prepopulate_memo(self):
+        """
+        Because the Galaxy Data Libraries API/system does not act like any
+        other file system in existence, and allows multiple files/folders with
+        identical names in the same parent directory, we have to prepopulate
+        the memoization cache with everything currently in the target
+        directory.
+
+        Because the Galaxy Data Libraries API does not work from a perspective
+        of "show me what is in this directory", we are forced to get the entire
+        contents of the data library, and then filter out things that are
+        interesting to us based on a folder prefix.
+        """
+        existing = self.gi.libraries.show_library(self.library_id, contents=True)
+
+        uploading_to = [x for x in existing if x['id'] == self.folder_id]
+        if len(uploading_to) == 0:
+            raise Exception("Unknown folder [%s] in library [%s]" %
+                            (self.folder_id, self.library_id))
+        else:
+            uploading_to = uploading_to[0]
+
+        for x in existing:
+            # We only care if it's a subdirectory of where we're uploading to
+            if not x['name'].startswith(uploading_to['name']):
+                continue
+
+            name_part = x['name'].split(uploading_to['name'], 1)[-1]
+            if name_part.startswith('/'):
+                name_part = name_part[1:]
+            self.memo_path[name_part] = x['id']
 
     def memoized_path(self, path_parts, base_folder=None):
         """Get the folder ID for a given folder path specified by path_parts.
