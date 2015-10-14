@@ -90,7 +90,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             slots_statement=galaxy_slots_statement,
         )
         try:
-            self.write_executable_script( executable.job_file, script )
+            self.write_executable_script( executable, script )
         except:
             job_wrapper.fail( "failure preparing job script", exception=True )
             log.exception( "(%s) failure preparing job script" % galaxy_id_tag )
