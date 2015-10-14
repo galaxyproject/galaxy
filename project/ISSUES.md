@@ -150,16 +150,6 @@ have its own checklists to even more subcomponent cards, and so on.
 This `roadmap` issue will be assigned to every release milestone, forcing
 periodic review of the roadmap.
 
-To prevent the roadmap from being tied completely to GitHub, and to facilitate
-portable change tracking over time, we will also maintain the file
-project/ROADMAP.md within the repository.  Whenever the ROADMAP issue text is
-changed, ROADMAP.md should be updated correspondingly.
-
-This document won't have the organizational integration that a live GitHub
-issue does, but this way we're be able to have a ROADMAP.md permanently
-attached to the code regardless of what issue tracking or organizational
-software we use in the future.
-
 
 Voting
 ======
