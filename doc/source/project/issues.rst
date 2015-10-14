@@ -128,7 +128,7 @@ special purpose.
 -  ``procedures`` is a special tag that indicates that the issue is
    related to project governance, and it overrides the need for the trio
    of kind/status/area tags, and these are never auto-flagged for
-   triage.
+   triage.  More details are available in the ORGANIZATION_ document.
 
 -  ``planning`` is also a special tag that indicates the issue is
    related to larger-scale issue planning. These issues are typically
@@ -182,3 +182,5 @@ For now, we will rely on a few simple automation rules:
 
 -  All PRs that are not assigned to a milestone will be tagged
    ``triage`` to indicate that they require attention prior to merge.
+
+.. _ORGANIZATION: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst
