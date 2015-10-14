@@ -205,7 +205,6 @@ class User( object, Dictifiable ):
     total_disk_usage = property( get_disk_usage, set_disk_usage )
 
     def adjust_total_disk_usage( self, amount ):
-        from sqlalchemy import func
         self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
 
     @property
