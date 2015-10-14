@@ -78,7 +78,7 @@ class Uploader:
         return self.rec_split(rest) + (tail,)
 
     def upload(self):
-        all_files = list(sys.stdin.readlines())
+        all_files = [x.strip() for x in list(sys.stdin.readlines())]
 
         for idx, (dirName, fname) in enumerate(all_files):
             if idx < 35:
