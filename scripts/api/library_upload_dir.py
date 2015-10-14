@@ -7,11 +7,12 @@ from bioblend import galaxy
 
 class Uploader:
 
-    def __init__(self, url, api, library_id, folder_id, should_link):
+    def __init__(self, url, api, library_id, folder_id, should_link, non_local):
         self.gi = galaxy.GalaxyInstance(url=url, key=api)
         self.library_id = library_id
         self.folder_id = folder_id
-        self.should_link
+        self.should_link = should_link
+        self.non_local = non_local
 
         self.memo_path = {}
 
@@ -71,6 +72,9 @@ class Uploader:
 
     # http://stackoverflow.com/questions/13505819/python-split-path-recursively/13505966#13505966
     def rec_split(self, s):
+        if s == '/':
+            return ()
+
         rest, tail = os.path.split(s)
         if tail == '.':
             return ()
@@ -81,19 +85,26 @@ class Uploader:
     def upload(self):
         all_files = [x.strip() for x in list(sys.stdin.readlines())]
 
-        for idx, (dirName, fname) in enumerate(all_files):
-            if idx < 35:
-                continue
+        for idx, path in enumerate(all_files):
+            (dirName, fname) = path.rsplit(os.path.sep, 1)
             if not os.path.exists(os.path.join(dirName, fname)):
                 continue
             fid = self.memoized_path(self.rec_split(dirName), base_folder=self.folder_id)
-            print('[%s/%s] %s/%s' % (idx, len(all_files), fid, fname))
-            print self.gi.libraries.upload_file_from_local_path(
-                self.library_id,
-                os.path.join(dirName, fname),
-                folder_id=fid,
-                link_data_only=self.should_link,
-            )
+            print('[%s/%s] %s/%s' % (idx + 1, len(all_files), fid, fname))
+
+            if self.non_local:
+                self.gi.libraries.upload_file_from_local_path(
+                    self.library_id,
+                    os.path.join(dirName, fname),
+                    folder_id=fid,
+                )
+            else:
+                self.gi.libraries.upload_from_galaxy_filesystem(
+                    self.library_id,
+                    os.path.join(dirName, fname),
+                    folder_id=fid,
+                    link_data_only='link_to_files' if self.should_link else 'copy_files',
+                )
 
 
 if __name__ == '__main__':
@@ -104,7 +115,10 @@ if __name__ == '__main__':
     parser.add_argument( "-l", "--lib", dest="library_id", required=True, help="Library ID" )
     parser.add_argument( "-f", "--folder", dest="folder_id", help="Folder ID. If not specified, will go to root of library." )
 
-    parser.add_argument( "--link", dest="should_link", action="store_true", default=False, help="Link datasets only, do not upload to Galaxy.")
+    parser.add_argument( "--nonlocal", dest="non_local", action="store_true", default=False,
+                        help="Set this flag if you are NOT running this script on your Galaxy head node with access to the full filesystem" )
+    parser.add_argument( "--link", dest="should_link", action="store_true", default=False,
+                        help="Link datasets only, do not upload to Galaxy. ONLY Avaialble if you run 'locally' relative to your Galaxy head node/filesystem ")
     args = parser.parse_args()
 
     u = Uploader(**vars(args))
