@@ -140,7 +140,8 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
             this.options = Utils.merge( options, {} );
             this.setElement( this._template() );
 
-            // build buttons
+            var headerButtons = [];
+            // this button re-fetches the history and contents and re-renders the history panel
             var buttonRefresh = new Ui.ButtonLink({
                 id      : 'history-refresh-button',
                 title   : 'Refresh history',
@@ -152,6 +153,9 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                     }
                 }
             });
+            headerButtons.push( buttonRefresh );
+
+            // opens a drop down menu with history related functions (like view all, delete, share, etc.)
             var buttonOptions = new Ui.ButtonLink({
                 id      : 'history-options-button',
                 title   : 'History options',
@@ -160,29 +164,35 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                 icon    : 'fa fa-cog',
                 href    : Galaxy.root + 'root/history_options'
             });
-            var buttonViewMulti = new Ui.ButtonLink({
-                id      : 'history-view-multi-button',
-                title   : 'View all histories',
-                cls     : 'panel-header-button',
-                icon    : 'fa fa-columns',
-                href    : Galaxy.root + 'history/view_multiple'
-            });
+            headerButtons.push( buttonOptions );
+
+            // goes to a page showing all the users histories in panel form (for logged in users)
+            if( !Galaxy.user.isAnonymous() ){
+                var buttonViewMulti = new Ui.ButtonLink({
+                    id      : 'history-view-multi-button',
+                    title   : 'View all histories',
+                    cls     : 'panel-header-button',
+                    icon    : 'fa fa-columns',
+                    href    : Galaxy.root + 'history/view_multiple'
+                });
+                headerButtons.push( buttonViewMulti );
+            }
 
             // define components (is used in app-view.js)
             this.components = {
                 header  : {
                     title   : 'History',
                     cls     : 'history-panel-header',
-                    buttons : [ buttonRefresh, buttonOptions, buttonViewMulti ]
+                    buttons : headerButtons
                 },
                 body    : {
                     cls     : 'unified-panel-body-background',
                 }
-            }
+            };
 
             // build history options menu
             Galaxy.historyOptionsMenu = optionsMenu( buttonOptions.$el, {
-                anonymous    : !Galaxy.user.id,
+                anonymous    : Galaxy.user.isAnonymous(),
                 purgeAllowed : Galaxy.config.allow_user_dataset_purge,
                 root         : Galaxy.root
             });
@@ -209,5 +219,5 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
         left    : LeftPanel,
         center  : CenterPanel,
         right   : RightPanel
-    }
+    };
 });
