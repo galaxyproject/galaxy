@@ -123,22 +123,32 @@ class Uploader:
             (dirName, fname) = path.rsplit(os.path.sep, 1)
             if not os.path.exists(os.path.join(dirName, fname)):
                 continue
-            fid = self.memoized_path(self.rec_split(dirName), base_folder=self.folder_id)
-            print('[%s/%s] %s/%s' % (idx + 1, len(all_files), fid, fname))
-
-            if self.non_local:
-                self.gi.libraries.upload_file_from_local_path(
-                    self.library_id,
-                    os.path.join(dirName, fname),
-                    folder_id=fid,
-                )
+            # Figure out what the memo key will be early
+            basepath = self.rec_split(dirName)
+            if len(basepath) == 0:
+                memo_key = fname
             else:
-                self.gi.libraries.upload_from_galaxy_filesystem(
-                    self.library_id,
-                    os.path.join(dirName, fname),
-                    folder_id=fid,
-                    link_data_only='link_to_files' if self.should_link else 'copy_files',
-                )
+                memo_key = os.path.join(os.path.join(*basepath), fname)
+
+            # So that we can check if it really needs to be uploaded.
+            already_uploaded = memo_key in self.memo_path.keys()
+            fid = self.memoized_path(basepath, base_folder=self.folder_id)
+            print('[%s/%s] %s/%s uploaded=%' % (idx + 1, len(all_files), fid, fname, already_uploaded))
+
+            if not already_uploaded:
+                if self.non_local:
+                    self.gi.libraries.upload_file_from_local_path(
+                        self.library_id,
+                        os.path.join(dirName, fname),
+                        folder_id=fid,
+                    )
+                else:
+                    self.gi.libraries.upload_from_galaxy_filesystem(
+                        self.library_id,
+                        os.path.join(dirName, fname),
+                        folder_id=fid,
+                        link_data_only='link_to_files' if self.should_link else 'copy_files',
+                    )
 
 
 if __name__ == '__main__':
