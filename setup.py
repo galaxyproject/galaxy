@@ -37,9 +37,18 @@ setup(
         'jobs/runners/util/job_script/DEFAULT_JOB_FILE_TEMPLATE.sh',
         'jobs/runners/util/job_script/CLUSTER_SLOTS_STATEMENT.sh',
         'model/migrate/migrate.cfg',
-        'util/docutils_template.txt',
+        'dependencies/*.txt',
+        'datatypes/converters/*.xml',
+        'datatypes/set_metadata_tool.xml',
+        'tools/imp_exp/imp_history_from_archive.xml',
+        'tools/imp_exp/exp_history_to_archive.xml',
+        # FIXME: web/proxy/js/lib doesn't exist
+        #'web/proxy/js/*',
     ], 'tool_shed': [
         'galaxy_install/migrate/migrate.cfg',
+        'scripts/bootstrap_tool_shed/parse_run_sh_args.sh',
+        'scripts/bootstrap_tool_shed/bootstrap_tool_shed.sh',
+        'scripts/bootstrap_tool_shed/user_info.xml',
     ]},
     package_dir={'': 'lib'},
     include_package_data=True,
@@ -50,13 +59,15 @@ setup(
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
         'Environment :: Console',
-        'License :: OSI Approved :: Apache Software License',
+        'License :: OSI Approved :: Academic Free License (AFL)',
         'Operating System :: POSIX',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
+        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Topic :: Scientific/Engineering :: Bio-Informatics',
     ],
     test_suite='test'
 )
