@@ -14,8 +14,11 @@ import subprocess
 
 from multiprocessing.pool import IMapIterator
 
-import boto
-from boto.s3.connection import S3Connection
+try:
+    import boto
+    from boto.s3.connection import S3Connection
+except ImportError:
+    boto = None
 
 
 def map_wrap(f):
