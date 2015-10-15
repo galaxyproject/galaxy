@@ -59,11 +59,11 @@ if [ $SET_VENV -eq 1 ]; then
     # If .venv does not exist, attempt to create it.
     if [ ! -d .venv ]
     then
-        vvers=13.1.0
-        vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
         if command -v virtualenv >/dev/null; then
             virtualenv .venv
         else
+            vvers=13.1.0
+            vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
             vtmp=`mktemp -d -t galaxy-virtualenv-XXXXXX`
             vsrc="$vtmp/`basename $vurl`"
             ( if command -v curl >/dev/null; then
