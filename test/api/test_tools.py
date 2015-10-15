@@ -783,17 +783,6 @@ class ToolsTestCase( api.ApiTestCase ):
         self.assertEquals( outputs[ 0 ][ "id" ], first_object_forward_element[ "object" ][ "id" ] )
 
     @skip_without_tool( "cat1" )
-    def test_map_over_two_collections_legacy( self ):
-        history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
-        hdca2_id = self.__build_pair( history_id, [ "789", "0ab" ] )
-        inputs = {
-            "input1|__collection_multirun__": hdca1_id,
-            "queries_0|input2|__collection_multirun__": hdca2_id,
-        }
-        self._check_map_cat1_over_two_collections( history_id, inputs )
-
-    @skip_without_tool( "cat1" )
     def test_map_over_two_collections( self ):
         history_id = self.dataset_populator.new_history()
         hdca1_id = self.__build_pair( history_id, [ "123", "456" ] )
