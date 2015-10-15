@@ -983,26 +983,36 @@ def load_module_sections( trans ):
     """ Get abstract description of the workflow modules this Galaxy instance
     is configured with.
     """
-    inputs_section = {
+    module_sections = {}
+    module_sections['inputs'] = {
         "name": "inputs",
         "title": "Inputs",
         "modules": [
-            {"name": "data_input", "title": "Input Dataset", "description": "Input dataset"},
-            {"name": "data_collection_input", "title": "Input Dataset Collection", "description": "Input dataset collection"},
+            {
+                "name": "data_input",
+                "title": "Input Dataset",
+                "description": "Input dataset"
+            },
+            {
+                "name": "data_collection_input",
+                "title": "Input Dataset Collection",
+                "description": "Input dataset collection"
+            },
         ],
     }
-    module_sections = [
-        inputs_section
-    ]
+
     if trans.app.config.enable_beta_workflow_modules:
-        experimental_modules = {
+        module_sections['experimental'] = {
             "name": "experimental",
             "title": "Experimental",
             "modules": [
-                {"name": "pause", "title": "Pause Workflow for Dataset Review", "description": "Pause for Review"},
+                {
+                    "name": "pause",
+                    "title": "Pause Workflow for Dataset Review",
+                    "description": "Pause for Review"
+                },
             ],
         }
-        module_sections.append(experimental_modules)
 
     return module_sections
 
