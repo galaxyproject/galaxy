@@ -52,6 +52,9 @@ def __find_type(path, explicit_type, default_type):
 
 
 def __read_yaml(path):
+    if yaml is None:
+        raise ImportError("Attempting to read YAML configuration file - but PyYAML dependency unavailable.")
+
     with open(path, "rb") as f:
         return yaml.load(f)
 
