@@ -289,6 +289,10 @@ do
           skip_venv='--skip-venv'
           shift
           ;;
+      --skip-wheels)
+          skip_wheels='--skip-wheels'
+          shift
+          ;;
       --) 
           shift
           break
@@ -304,7 +308,13 @@ do
     esac
 done
 
-./scripts/common_startup.sh $skip_venv
+./scripts/common_startup.sh $skip_venv $skip_wheels
+
+if [ -z "$skip_venv" -a -d .venv ];
+then
+    printf "Activating virtualenv at %s/.venv\n" $(pwd)
+    . .venv/bin/activate
+fi
 
 if [ -n "$migrated_test" ] ; then
     [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
