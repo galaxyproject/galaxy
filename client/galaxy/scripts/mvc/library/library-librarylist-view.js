@@ -4,14 +4,16 @@ define([
     "utils/utils",
     "libs/toastr",
     "mvc/library/library-model",
-    "mvc/library/library-libraryrow-view" 
+    "mvc/library/library-libraryrow-view",
+    "libs/underscore"
 ], function(
     mod_masthead,
     mod_baseMVC,
     mod_utils,
     mod_toastr,
     mod_library_model,
-    mod_library_libraryrow_view
+    mod_library_libraryrow_view,
+    _
 ){
 
 var LibraryListView = Backbone.View.extend({
@@ -74,10 +76,17 @@ var LibraryListView = Backbone.View.extend({
               libraries_to_render = this.collection.where( { deleted: false } );
             }
         } else if ( models !== null ){
-            libraries_to_render = models;
+            console.log(models);
+            if ( Galaxy.libraries.preferences.get( 'with_deleted' ) ){
+                libraries_to_render = models;
+            } else {
+                var is_deleted = function(model){ return model.get('deleted') === false; }
+                libraries_to_render = _.filter(models, is_deleted );
+            }
         } else {
             libraries_to_render = [];
         }
+
         // pagination
         if ( this.options.show_page === null || this.options.show_page < 1 ){
             this.options.show_page = 1;
@@ -166,10 +175,22 @@ var LibraryListView = Backbone.View.extend({
         window.location = '/user/login';
     },
 
+    /**
+     * In case the search_term is not empty perform the search and render
+     * the result. Render all visible libraries otherwise.
+     * @param  {string} search_term string to search for
+     */
     searchLibraries: function(search_term){
-        var results = this.collection.search(search_term);
+      var trimmed_term = $.trim(search_term);
+      if (trimmed_term !== ''){
+        var results = null
+        results = this.collection.search( search_term );
         this.options.searching = true;
         this.render({'models': results});
+      } else {
+        this.options.searching = false;
+        this.render();
+      }
     },
 
 // MMMMMMMMMMMMMMMMMM
