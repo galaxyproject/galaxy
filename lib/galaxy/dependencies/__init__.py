@@ -31,7 +31,7 @@ class ConditionalDependencies( object ):
         try:
             job_conf_xml = self.config.get( "app:main", "job_config_file" )
         except configparser.NoOptionError:
-            job_conf_xml = join( dirname( self.config_file ), 'job_conf.xml')
+            job_conf_xml = join( dirname( self.config_file ), 'job_conf.xml' )
         try:
             for plugin in ElementTree.parse( job_conf_xml ).find( 'plugins' ):
                 self.job_runners.append( plugin.attrib['load'] )

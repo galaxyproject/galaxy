@@ -13,7 +13,6 @@ python_lzo==1.8
 pysam==0.8.3gx1
 
 # pure Python packages
-bioblend==0.6.1
 Paste==1.7.5.1
 PasteDeploy==1.5.2
 docutils==0.12
@@ -26,6 +25,10 @@ Mako==1.0.2
 pytz==2015.4
 Babel==2.0
 Beaker==1.7.0
+
+# BioBlend and dependencies
+bioblend==0.6.1
+boto==2.38.0
 
 # WebError and dependences
 WebError==0.11
