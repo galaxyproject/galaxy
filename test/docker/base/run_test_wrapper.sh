@@ -24,11 +24,13 @@ cd /galaxy
 GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI";
 export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
 
+[ ! -d .venv ] && ./scripts/common_startup.sh
+
 sh manage_db.sh upgrade
 
 if [ -z "$GALAXY_NO_TESTS" ];
 then
-    sh run_tests.sh $@
+    sh run_tests.sh --skip-common-startup $@
 else
     GALAXY_CONFIG_MASTER_API_KEY=${GALAXY_CONFIG_MASTER_API_KEY:-"testmasterapikey"}
     GALAXY_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/galaxy.ini.sample}
