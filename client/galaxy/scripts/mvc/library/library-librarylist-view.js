@@ -76,7 +76,6 @@ var LibraryListView = Backbone.View.extend({
               libraries_to_render = this.collection.where( { deleted: false } );
             }
         } else if ( models !== null ){
-            console.log(models);
             if ( Galaxy.libraries.preferences.get( 'with_deleted' ) ){
                 libraries_to_render = models;
             } else {
