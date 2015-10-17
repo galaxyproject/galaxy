@@ -72,6 +72,8 @@ ensure_grunt() {
 }
 
 
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.0'
+
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 xunit_report_file=""
@@ -85,7 +87,7 @@ then
     shift
     DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
     DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
-    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxy/testing-base"}
+    DOCKER_IMAGE=${DOCKER_IMAGE:-${DOCKER_DEFAULT_IMAGE}}
     if [ "$1" = "--db" ]; then
        db_type=$2
        shift 2
