@@ -3,8 +3,6 @@
 pwd_dir=$(pwd)
 cd `dirname $0`
 
-./scripts/common_startup.sh
-
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log
 
@@ -288,6 +286,12 @@ do
           watch=1
           shift
           ;;
+      --skip-common-startup)
+          # Don't run ./scripts/common_startup.sh (presumably it has already
+          # been done, or you know what you're doing).
+          skip_common_startup=1
+          shift
+          ;;
       --) 
           shift
           break
@@ -302,6 +306,10 @@ do
           ;;
     esac
 done
+
+if [ -z "$skip_common_startup" ]; then
+    ./scripts/common_startup.sh
+fi
 
 if [ -n "$migrated_test" ] ; then
     [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
