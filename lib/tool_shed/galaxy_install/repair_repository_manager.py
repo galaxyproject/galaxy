@@ -37,7 +37,7 @@ class RepairRepositoryManager():
                                                                      name=name,
                                                                      owner=owner,
                                                                      changeset_revision=changeset_revision )
-                if installed_repository not in installed_repositories:
+                if ( installed_repository ) and ( installed_repository not in installed_repositories ):
                     installed_repositories.append( installed_repository )
                 for rd_val in rd_vals:
                     tool_shed, name, owner, changeset_revision = rd_val[ 0:4 ]
@@ -46,7 +46,7 @@ class RepairRepositoryManager():
                                                                          name=name,
                                                                          owner=owner,
                                                                          changeset_revision=changeset_revision )
-                    if installed_repository not in installed_repositories:
+                    if ( installed_repository ) and ( installed_repository not in installed_repositories ):
                         installed_repositories.append( installed_repository )
         return installed_repositories
 
@@ -75,6 +75,7 @@ class RepairRepositoryManager():
             # Some repositories may have repository dependencies that are required to be installed before
             # the dependent repository, so we'll order the list of tsr_ids to ensure all repositories are
             # repaired in the required order.
+            installed_repositories.append(repository)
             for installed_repository in installed_repositories:
                 tsr_ids.append( self.app.security.encode_id( installed_repository.id ) )
                 repo_info_dict, tool_panel_section_key = self.get_repo_info_dict_for_repair( rdim,

@@ -1326,14 +1326,14 @@ class JobWrapper( object ):
                              tool=self.tool, stdout=job.stdout, stderr=job.stderr )
         job.command_line = self.command_line
 
-        bytes = 0
+        collected_bytes = 0
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             dataset_assoc.dataset.dataset.set_total_size()
-            bytes += dataset_assoc.dataset.dataset.get_total_size()
+            collected_bytes += dataset_assoc.dataset.dataset.get_total_size()
 
         if job.user:
-            job.user.total_disk_usage += bytes
+            job.user.adjust_total_disk_usage(collected_bytes)
 
         # Empirically, we need to update job.user and
         # job.workflow_invocation_step.workflow_invocation in separate

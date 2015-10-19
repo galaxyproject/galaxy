@@ -30,7 +30,7 @@ sh manage_db.sh upgrade
 
 if [ -z "$GALAXY_NO_TESTS" ];
 then
-    sh run_tests.sh --skip-wheels $@
+    sh run_tests.sh --skip-common-startup $@
 else
     GALAXY_CONFIG_MASTER_API_KEY=${GALAXY_CONFIG_MASTER_API_KEY:-"testmasterapikey"}
     GALAXY_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/galaxy.ini.sample}

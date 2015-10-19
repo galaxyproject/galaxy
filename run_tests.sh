@@ -71,6 +71,8 @@ ensure_grunt() {
 }
 
 
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.0'
+
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 xunit_report_file=""
@@ -84,7 +86,7 @@ then
     shift
     DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
     DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
-    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxy/testing-base"}
+    DOCKER_IMAGE=${DOCKER_IMAGE:-${DOCKER_DEFAULT_IMAGE}}
     if [ "$1" = "--db" ]; then
        db_type=$2
        shift 2
@@ -289,8 +291,10 @@ do
           skip_venv='--skip-venv'
           shift
           ;;
-      --skip-wheels)
-          skip_wheels='--skip-wheels'
+      --skip-common-startup)
+          # Don't run ./scripts/common_startup.sh (presumably it has already
+          # been done, or you know what you're doing).
+          skip_common_startup=1
           shift
           ;;
       --) 
@@ -308,7 +312,9 @@ do
     esac
 done
 
-./scripts/common_startup.sh $skip_venv $skip_wheels
+if [ -z "$skip_common_startup" ]; then
+    ./scripts/common_startup.sh $skip_venv
+fi
 
 if [ -z "$skip_venv" -a -d .venv ];
 then

@@ -230,6 +230,17 @@ class MappingTests( unittest.TestCase ):
         # self.assertEquals(len(loaded_dataset_collection.datasets), 2)
         # assert loaded_dataset_collection.collection_type == "pair"
 
+    def test_default_disk_usage( self ):
+        model = self.model
+
+        u = model.User( email="disk_default@test.com", password="password" )
+        self.persist( u )
+        u.adjust_total_disk_usage( 1 )
+        u_id = u.id
+        self.expunge()
+        user_reload = model.session.query( model.User ).get( u_id )
+        assert user_reload.disk_usage == 1
+
     def test_basic( self ):
         model = self.model
 
