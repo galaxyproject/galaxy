@@ -13,6 +13,7 @@ from os.path import dirname, join
 from xml.etree import ElementTree
 
 from galaxy.util import asbool
+from galaxy.util.properties import load_app_properties
 
 
 class ConditionalDependencies( object ):
@@ -25,13 +26,10 @@ class ConditionalDependencies( object ):
         self.get_conditional_requirements()
 
     def parse_configs( self ):
-        self.config = configparser.ConfigParser()
-        if not self.config.read( self.config_file ):
-            raise Exception( "Unable to read Galaxy config from %s" % self.config_file )
-        try:
-            job_conf_xml = self.config.get( "app:main", "job_config_file" )
-        except configparser.NoOptionError:
-            job_conf_xml = join( dirname( self.config_file ), 'job_conf.xml' )
+        self.config = load_app_properties( ini_file=self.config_file )
+        job_conf_xml = self.config.get(
+                "job_config_file",
+                join( dirname( self.config_file ), 'job_conf.xml' ) )
         try:
             for plugin in ElementTree.parse( job_conf_xml ).find( 'plugins' ):
                 self.job_runners.append( plugin.attrib['load'] )
@@ -51,10 +49,10 @@ class ConditionalDependencies( object ):
             return False
 
     def check_psycopg2( self ):
-        return self.config.get( "app:main", "database_connection" ).startswith( "postgres" )
+        return self.config["database_connection"].startswith( "postgres" )
 
     def check_mysql_python( self ):
-        return self.config.get( "app:main", "database_connection" ).startswith( "mysql" )
+        return self.config["database_connection"].startswith( "mysql" )
 
     def check_drmaa( self ):
         return ("galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners or
@@ -64,17 +62,17 @@ class ConditionalDependencies( object ):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
 
     def check_python_openid( self ):
-        return asbool( self.config.get( "app:main", "enable_openid" ) )
+        return asbool( self.config["enable_openid"] )
 
     def check_fluent_logger( self ):
-        return asbool( self.config.get( "app:main", "fluent_log" ) )
+        return asbool( self.config["fluent_log"] )
 
     def check_raven( self ):
-        return asbool( self.config.get( "app:main", "sentry_dsn" ) )
+        return asbool( self.config["sentry_dsn"] )
 
     def check_weberror( self ):
-        return ( asbool( self.config.get( "app:main", "debug" ) ) and
-                 asbool( self.config_get( "app:main", "use_interactive" ) ) )
+        return ( asbool( self.config["debug"] ) and
+                 asbool( self.config["use_interactive"] ) )
 
 
 def optional( config_file ):
