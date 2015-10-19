@@ -148,6 +148,19 @@ special purpose.
    framework and ecosystem. This is useful for encouraging new
    contributors.
 
+-  ``minor`` is a special tag used to generate release notes. It should
+   only be applied to pull requests made by committers that fix
+   functionality modified during the same release cycle. Such fixes are
+   unimportant for release notes. No pull request issued by someone
+   outside the committers group should have this tag applied because
+   these pull requests must be highlighted in the release notes.
+
+* ``major`` is a special tag used to generate release notes. In practice
+   this should be applied to at most a couple dozen pull requests each
+   release and is used to prioritize important items of note for the
+   top of release notes sections.
+
+
 The Roadmap
 ===========
 
