@@ -147,8 +147,8 @@ class RemoteUser( object ):
         else:
             log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
             for k, v in environ.iteritems():
-                log.debug("%s = %s" % (k, v))
-                
+                log.debug("%s = %s" , k, v)
+
             title = "Access to Galaxy is denied"
             message = """
                 Galaxy is configured to authenticate users via an external
