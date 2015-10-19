@@ -1,12 +1,6 @@
 """
 Determine what optional dependencies are needed.
 """
-
-try:
-    import configparser
-except:
-    import ConfigParser as configparser
-
 import pkg_resources
 
 from os.path import dirname, join
@@ -28,8 +22,8 @@ class ConditionalDependencies( object ):
     def parse_configs( self ):
         self.config = load_app_properties( ini_file=self.config_file )
         job_conf_xml = self.config.get(
-                "job_config_file",
-                join( dirname( self.config_file ), 'job_conf.xml' ) )
+            "job_config_file",
+            join( dirname( self.config_file ), 'job_conf.xml' ) )
         try:
             for plugin in ElementTree.parse( job_conf_xml ).find( 'plugins' ):
                 self.job_runners.append( plugin.attrib['load'] )
@@ -37,7 +31,7 @@ class ConditionalDependencies( object ):
             pass
 
     def get_conditional_requirements( self ):
-        crfile = join( dirname( __file__ ), 'conditional_requirements.txt' )
+        crfile = join( dirname( __file__ ), 'conditional-requirements.txt' )
         for req in pkg_resources.parse_requirements( open( crfile ).readlines() ):
             self.conditional_reqs.append( req )
 
