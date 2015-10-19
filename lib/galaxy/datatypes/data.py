@@ -58,7 +58,7 @@ def deprecated_datatype_reference(klass):
         new_location = "%s.%s" % (new_klass.__module__, new_klass.__name__)
         message = "Using deprecated reference to class [%s] " % old_location
         message += "update datatype configuration to reference [%s]" % new_location
-        log.warn(message)
+        print(message)
         old_init(self, *args, **kwargs)
 
     klass.__init__ = new_init
