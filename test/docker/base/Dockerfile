@@ -19,8 +19,14 @@ RUN apt-get update -y && apt-get install -y software-properties-common curl && \
     apt-get update -y && \
     apt-get install -y libpq-dev postgresql postgresql-client postgresql-plpython-9.3 \
             ansible postgresql-server-dev-9.3 wget mysql-server="${MYSQL_MAJOR}"* \
-            slurm-llnl libmunge-dev slurm-drmaa-dev \
-            nodejs && \
+            slurm-llnl libmunge-dev slurm-drmaa-dev ant atop axel bioperl cmake curl \
+            g++ gcc gfortran git-core htop iftop iotop ipython libffi-dev liblapack-dev \
+            libncurses5-dev libopenblas-dev libpam0g-dev libpq-dev libsparsehash-dev make \
+            mercurial nginx-extras nmon patch postgresql postgresql \
+            postgresql-client postgresql-plpython-9.3 python-boto python-dev \
+            python-prettytable python-psycopg2 python-virtualenv python-pip \
+            postgresql-server-dev-9.3 rsync slurm-drmaa-dev supervisor swig sysstat unzip \
+            wget zlib1g-dev nodejs && \
     npm install -g grunt-contrib-qunit grunt grunt-cli casperjs phantomjs && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -28,13 +34,6 @@ RUN mkdir -p /tmp/ansible && \
     mkdir -p /opt/galaxy/db && \
     chown -R postgres:postgres /opt/galaxy/db && \
     sed -Ei 's/^(bind-address|log)/#&/' /etc/mysql/my.cnf
-
-RUN apt-get update -y && apt-get install -y ant atop axel bioperl cmake curl g++ gcc gfortran git-core htop iftop iotop \
-    ipython libffi-dev liblapack-dev libncurses5-dev libopenblas-dev libpam0g-dev libpq-dev \
-    libsparsehash-dev make mercurial nginx-extras nmon openssh-server patch postgresql postgresql \
-    postgresql-client postgresql-plpython-9.3 python-boto python-dev python-prettytable python-psycopg2 \
-    python-virtualenv python-pip postgresql-server-dev-9.3 rsync slurm-drmaa-dev supervisor swig \
-    sysstat unzip vim wget zlib1g-dev
 
 ADD start_mysql.sh /opt/galaxy/start_mysql.sh
 ADD ansible_vars.yml /tmp/ansible/ansible_vars.yml
