@@ -9,3 +9,5 @@ documentation. These resources should be used together.
    :maxdepth: 3
 
    interactive_environments.rst
+
+   useful_scripts.rst

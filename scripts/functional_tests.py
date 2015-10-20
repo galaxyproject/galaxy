@@ -261,6 +261,7 @@ def main():
             galaxy_db_path = os.path.join( tempdir, 'database' )
         # Configure the paths Galaxy needs to  test tools.
         file_path = os.path.join( galaxy_db_path, 'files' )
+        template_cache_path = os.path.join( galaxy_db_path, 'compiled_templates' )
         new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
         job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
         install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
@@ -279,7 +280,7 @@ def main():
                 database_auto_migrate = True
             database_connection = 'sqlite:///%s' % db_path
         kwargs = {}
-        for dir in file_path, new_file_path:
+        for dir in file_path, new_file_path, template_cache_path:
             try:
                 if not os.path.exists( dir ):
                     os.makedirs( dir )
@@ -310,6 +311,7 @@ def main():
                        library_import_dir=library_import_dir,
                        log_destination="stdout",
                        new_file_path=new_file_path,
+                       template_cache_path=template_cache_path,
                        running_functional_tests=True,
                        shed_tool_data_table_config=shed_tool_data_table_config,
                        template_path="templates",

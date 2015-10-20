@@ -4,6 +4,8 @@ Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 
 import socket
 from galaxy.util import safe_str_cmp
+import logging
+log = logging.getLogger(__name__)
 
 errorpage = """
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -163,6 +165,10 @@ class RemoteUser( object ):
             # The API handles its own authentication via keys
             return self.app( environ, start_response )
         else:
+            log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
+            for k, v in environ.iteritems():
+                log.debug("%s = %s" , k, v)
+
             title = "Access to Galaxy is denied"
             message = """
                 Galaxy is configured to authenticate users via an external

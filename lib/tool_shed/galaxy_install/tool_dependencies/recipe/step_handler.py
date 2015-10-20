@@ -47,7 +47,7 @@ class CompressedFile( object ):
     def extract( self, path ):
         '''Determine the path to which the archive should be extracted.'''
         contents = self.getmembers()
-        extraction_path = os.path.join( path )
+        extraction_path = path
         common_prefix = ''
         if len( contents ) == 1:
             # The archive contains a single file, return the extraction path.
@@ -78,8 +78,11 @@ class CompressedFile( object ):
                 external_attributes = self.archive.getinfo( filename ).external_attr
                 # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
                 unix_permissions = external_attributes >> 16
-                if unix_permissions != 0 and os.path.exists( absolute_filepath ):
-                    os.chmod( absolute_filepath, unix_permissions )
+                if unix_permissions != 0:
+                    if os.path.exists( absolute_filepath ):
+                        os.chmod( absolute_filepath, unix_permissions )
+                    else:
+                        log.warn("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
         return os.path.abspath( os.path.join( extraction_path, common_prefix ) )
 
     def getmembers_tar( self ):

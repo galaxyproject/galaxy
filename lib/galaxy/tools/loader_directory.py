@@ -1,5 +1,6 @@
 import glob
 import os
+import re
 from ..tools import loader
 
 import sys
@@ -9,6 +10,7 @@ log = logging.getLogger(__name__)
 
 PATH_DOES_NOT_EXIST_ERROR = "Could not load tools from path [%s] - this path does not exist."
 LOAD_FAILURE_ERROR = "Failed to load tool with path %s."
+TOOL_REGEX = re.compile(r"<tool\s")
 
 
 def load_exception_handler(path, exc_info):
@@ -40,7 +42,7 @@ def __looks_like_a_tool(path):
                 line = f.next()
             except StopIteration:
                 break
-            if "<tool" in line:
+            if TOOL_REGEX.search(line):
                 return True
     return False
 
