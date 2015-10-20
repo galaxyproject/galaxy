@@ -113,7 +113,7 @@ define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
                                 '<div class="panel-header-text"/>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="unified-panel-body"/>' +
+                        '<div class="unified-panel-body" style="overflow: auto;"/>' +
                         '<div class="unified-panel-footer">' +
                             '<div class="panel-collapse ' + id + '"/>' +
                             '<div class="drag"/>' +
