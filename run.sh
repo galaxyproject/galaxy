@@ -69,6 +69,13 @@ fi
 
 python ./scripts/check_python.py || exit 1
 
+if [ ! -z "$GALAXY_RUN_WITH_TEST_TOOLS" ];
+then
+    export GALAXY_CONFIG_OVERRIDE_TOOL_CONFIG_FILE="test/functional/tools/samples_tool_conf.xml"
+    export GALAXY_CONFIG_ENABLE_BETA_WORKFLOW_MODULES="true"
+    export GALAXY_CONFIG_OVERRIDE_ENABLE_BETA_TOOL_FORMATS="true"
+fi
+
 if [ -n "$GALAXY_UNIVERSE_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_UNIVERSE_CONFIG_DIR"
 fi
