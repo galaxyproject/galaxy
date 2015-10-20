@@ -290,7 +290,6 @@ div.unified-panel-body {
     top: @panel_header_height;
     bottom: 0;
     width: 100%;
-    overflow: auto;
     padding: 0px;
 }
 div.unified-panel-body-background {
@@ -299,6 +298,7 @@ div.unified-panel-body-background {
 
 #left > div.unified-panel-body, #right > div.unified-panel-body {
     bottom: @panel_footer_height;
+    overflow: auto;
 }
 
 .panel-header-button {
