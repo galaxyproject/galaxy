@@ -17,6 +17,62 @@ from galaxy.util import nice_size, string_as_bool
 log = logging.getLogger(__name__)
 
 
+class Biom(Text):
+    file_ext = "biom"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name,
+                                         is_multi_byte=is_multi_byte)
+            dataset.blurb = "Biological Observation Matrix"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except:
+            return "BIOM file (%s)" % (nice_size(dataset.get_size()))
+
+
+class Biom1(Biom):
+    edam_format = "format_3464"
+    file_ext = "biom1"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(Biom1, self).set_peek(dataset, is_multi_byte)
+        if not dataset.dataset.purged:
+            dataset.blurb = "Biological Observation Matrix v1"
+
+    def sniff(self, filename):
+        return self._looks_like_biom(filename)
+
+    def _looks_like_biom(self, filepath, check_limit_size=104857600):
+        """
+        @param filepath: [str] The path to the evaluated file.
+        @param check_limit_size: [int] The maximum size of the checked file (in
+                                 bytes).
+        @note: If the size is superior than this number the format cannot be
+               validated.
+        """
+        is_biom = False
+        try:
+            if os.path.getsize(filepath) < check_limit_size:
+                biom = json.load(open(filepath, "r"))
+                is_biom = True
+                biom_expected_fields = ["id", "format", "format_url", "type",
+                                        "generated_by", "date", "rows",
+                                        "columns", "matrix_type",
+                                        "matrix_element_type", "shape", "data"]
+                for expected_field in biom_expected_fields:
+                    if not expected_field in biom:
+                        is_biom = False
+        except:
+                is_biom = False
+        return is_biom
+
+
 class Json( Text ):
     edam_format = "format_3464"
     file_ext = "json"
