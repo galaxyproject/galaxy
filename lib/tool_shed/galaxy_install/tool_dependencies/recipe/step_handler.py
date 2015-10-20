@@ -53,7 +53,7 @@ class CompressedFile( object ):
     def extract( self, path ):
         '''Determine the path to which the archive should be extracted.'''
         contents = self.getmembers()
-        extraction_path = os.path.join( path )
+        extraction_path = path
         common_prefix = ''
         if len( contents ) == 1:
             # The archive contains a single file, return the extraction path.
@@ -84,8 +84,11 @@ class CompressedFile( object ):
                 external_attributes = self.archive.getinfo( filename ).external_attr
                 # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
                 unix_permissions = external_attributes >> 16
-                if unix_permissions != 0 and os.path.exists( absolute_filepath ):
-                    os.chmod( absolute_filepath, unix_permissions )
+                if unix_permissions != 0:
+                    if os.path.exists( absolute_filepath ):
+                        os.chmod( absolute_filepath, unix_permissions )
+                    else:
+                        log.warn("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
         return os.path.abspath( os.path.join( extraction_path, common_prefix ) )
 
     def getmembers_tar( self ):
@@ -1372,7 +1375,7 @@ class SetupREnvironment( Download, RecipeStep ):
                     # Use raw strings so that python won't automatically unescape the quotes before passing the command
                     # to subprocess.Popen.
                     cmd = r'''PATH=$PATH:$R_HOME/bin; export PATH; R_LIBS=$INSTALL_DIR:$R_LIBS; export R_LIBS;
-                        Rscript -e "tryCatch( install.packages(c('%s'),lib='$INSTALL_DIR', repos=NULL, dependencies=FALSE), error = quit(status = 1))"''' % \
+                        Rscript -e "tryCatch( { install.packages(c('%s'), lib = '$INSTALL_DIR', repos = NULL, dependencies = FALSE) }, error = function(e) { print(e); quit(status = 1) }, warning = function(w) { if ( grepl('had non-zero exit status|is not writable|installation of one of more packages failed', as.character(w)) ) { print(w); quit(status = 1) } } )"''' % \
                         ( str( tarball_name ) )
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,

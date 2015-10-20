@@ -61,26 +61,20 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         /** Builds a new model through api call and recreates the entire form
         */
         _buildModel: function(options, hide_message) {
-            // link this
             var self = this;
-
-            // update current version
             this.options.id = options.id;
             this.options.version = options.version;
 
+            // build request url
+            var build_url = '';
+            var build_data = {};
             if ( options.job_id ) {
                 build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
             } else {
-                var build_url = Galaxy.root + 'api/tools/' + options.id + '/build?';
-                if ( options.version ) {
-                    build_url += 'tool_version=' + options.version + '&';
-                }
+                build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
                 if ( Galaxy.params && Galaxy.params.tool_id == options.id ) {
-                    _.each( Galaxy.params, function ( item, key ) {
-                        if ( [ 'tool_version', 'tool_id' ].indexOf( key ) == -1 ) {
-                            build_url += key + '=' + item + '&';
-                        }
-                    } );
+                    build_data = $.extend( {}, Galaxy.params );
+                    options.version && ( build_data[ 'tool_version' ] = options.version );
                 }
             }
 
@@ -91,6 +85,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             Utils.request({
                 type    : 'GET',
                 url     : build_url,
+                data    : build_data,
                 success : function(new_model) {
                     // rebuild form
                     self._buildForm(new_model['tool_model'] || new_model);

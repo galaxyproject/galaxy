@@ -1053,3 +1053,56 @@ class OxliGraphLabels(OxliBinary):
 
 Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
                                         OxliGraphLabels)
+
+
+class SearchGuiArchive ( CompressedArchive ):
+    """Class describing a SearchGUI archive """
+    MetadataElement( name="searchgui_version", default='1.28.0' , param=MetadataParameter, desc="SearchGui Version",
+                     readonly=True, visible=True, no_value=None )
+    MetadataElement( name="searchgui_major_version", default='1' , param=MetadataParameter, desc="SearchGui Major Version",
+                     readonly=True, visible=True, no_value=None )
+    file_ext = "searchgui_archive"
+
+    def set_meta( self, dataset, overwrite=True, **kwd ):
+        super( SearchGuiArchive, self ).set_meta( dataset, overwrite=overwrite, **kwd )
+        try:
+            if dataset and zipfile.is_zipfile( dataset.file_name ):
+                tempzip = zipfile.ZipFile( dataset.file_name )
+                if 'searchgui.properties' in tempzip.namelist():
+                    fh = tempzip.open('searchgui.properties')
+                    for line in fh:
+                        if line.startswith('searchgui.version'):
+                            version = line.split('=')[1].strip()
+                            dataset.metadata.searchgui_version = version
+                            dataset.metadata.searchgui_major_version = version.split('.')[0]
+                    fh.close()
+                tempzip.close()
+        except Exception as e:
+            log.warn( '%s, set_meta Exception: %s', self, e )
+
+    def sniff( self, filename ):
+        try:
+            if filename and zipfile.is_zipfile( filename ):
+                tempzip = zipfile.ZipFile( filename, 'r' )
+                is_searchgui = 'searchgui.properties' in tempzip.namelist()
+                tempzip.close()
+                return is_searchgui
+        except Exception as e:
+            log.warn( '%s, sniff Exception: %s', self, e )
+        return False
+
+    def set_peek( self, dataset, is_multi_byte=False ):
+        if not dataset.dataset.purged:
+            dataset.peek = "SearchGUI Archive, version %s" % ( dataset.metadata.searchgui_version or 'unknown' )
+            dataset.blurb = nice_size( dataset.get_size() )
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek( self, dataset ):
+        try:
+            return dataset.peek
+        except:
+            return "SearchGUI Archive, version %s" % ( dataset.metadata.searchgui_version or 'unknown' )
+
+Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)

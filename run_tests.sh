@@ -3,8 +3,6 @@
 pwd_dir=$(pwd)
 cd `dirname $0`
 
-./scripts/common_startup.sh
-
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log
 
@@ -72,6 +70,8 @@ ensure_grunt() {
 }
 
 
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.0'
+
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 xunit_report_file=""
@@ -85,7 +85,7 @@ then
     shift
     DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
     DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
-    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxy/testing-base"}
+    DOCKER_IMAGE=${DOCKER_IMAGE:-${DOCKER_DEFAULT_IMAGE}}
     if [ "$1" = "--db" ]; then
        db_type=$2
        shift 2
@@ -286,6 +286,12 @@ do
           watch=1
           shift
           ;;
+      --skip-common-startup)
+          # Don't run ./scripts/common_startup.sh (presumably it has already
+          # been done, or you know what you're doing).
+          skip_common_startup=1
+          shift
+          ;;
       --) 
           shift
           break
@@ -300,6 +306,10 @@ do
           ;;
     esac
 done
+
+if [ -z "$skip_common_startup" ]; then
+    ./scripts/common_startup.sh
+fi
 
 if [ -n "$migrated_test" ] ; then
     [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""

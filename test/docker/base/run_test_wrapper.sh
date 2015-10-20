@@ -7,7 +7,7 @@ then
     su -c '/usr/lib/postgresql/9.3/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres
     sleep 3
     GALAXY_TEST_INSTALL_DB_MERGED="true"
-    GALAXY_TEST_DBURI="postgres://root@localhost:5930/galaxy"
+    GALAXY_TEST_DBURI="postgres://root@localhost:5930/galaxy?client_encoding=utf8"
     TOOL_SHED_TEST_DBURI="postgres://root@localhost:5930/toolshed"
 elif [ "$GALAXY_TEST_DATABASE_TYPE" = "mysql" ];
 then
@@ -32,11 +32,16 @@ cd /galaxy
 GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI";
 export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
 
+./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; }
+
+dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt
+[ -f $dev_requirements ] && ./.venv/bin/pip install -r $dev_requirements
+
 sh manage_db.sh upgrade
 
 if [ -z "$GALAXY_NO_TESTS" ];
 then
-    sh run_tests.sh $@
+    sh run_tests.sh --skip-common-startup $@
 else
     GALAXY_CONFIG_MASTER_API_KEY=${GALAXY_CONFIG_MASTER_API_KEY:-"testmasterapikey"}
     GALAXY_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/galaxy.ini.sample}
