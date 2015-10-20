@@ -40,7 +40,7 @@ def __looks_like_a_tool(path):
                 line = f.next()
             except StopIteration:
                 break
-            if "<tool" in line:
+            if "<tool " in line:
                 return True
     return False
 
