@@ -24,7 +24,10 @@ cd /galaxy
 GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI";
 export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
 
-[ ! -d .venv ] && ./scripts/common_startup.sh
+./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; }
+
+dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt
+[ -f $dev_requirements ] && ./.venv/bin/pip install -r $dev_requirements
 
 sh manage_db.sh upgrade
 
