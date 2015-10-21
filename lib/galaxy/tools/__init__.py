@@ -2398,6 +2398,11 @@ class Tool( object, Dictifiable ):
                     return 'true'
                 else:
                     return 'false'
+            elif isinstance(v, UnvalidatedValue):
+                return {
+                    '__class__' : 'UnvalidatedValue',
+                    'value'     : value.value
+                }
             elif isinstance(v, basestring) or isnumber:
                 return v
             elif isinstance(v, dict) and hasattr(v, '__class__'):
