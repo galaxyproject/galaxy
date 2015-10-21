@@ -251,6 +251,16 @@ class YamlInputSource(InputSource):
             sources.append((value, case_page_source))
         return sources
 
+    def parse_static_options(self):
+        static_options = list()
+        input_dict = self.input_dict
+        for index, option in enumerate(input_dict.get("options", {})):
+            value = option.get( "value" )
+            label = option.get( "label", value )
+            selected = option.get( "selected", False )
+            static_options.append( ( label, value, selected ) )
+        return static_options
+
 
 def _ensure_has(dict, defaults):
     for key, value in defaults.iteritems():
