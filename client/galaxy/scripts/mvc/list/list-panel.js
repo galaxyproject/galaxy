@@ -636,8 +636,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         //this.log( 'onSearchClear', this );
         this.searchFor = '';
         this.trigger( 'search:clear', this );
-        this.renderItems();
         this.$( '> .controls .search-query' ).val( '' );
+        this.renderItems();
         return this;
     },
 

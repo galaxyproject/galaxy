@@ -457,7 +457,7 @@ var HistoryPanel = _super.extend(
                 panel.$el.find( inputSelector ).searchInput( 'toggle-loading' );
             })
             .done( function(){
-                panel.searchItems( searchFor );
+                panel.searchItems( panel.searchFor );
             });
     },
 

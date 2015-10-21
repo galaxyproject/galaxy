@@ -39,8 +39,10 @@ define([], function() {
          * @type {string}
          */
         if (search_term == "") return this;
+        var lowercase_term = search_term.toLowerCase();
         return this.filter(function(data) {
-          return data.get("name").indexOf(search_term) !== -1;
+          lowercase_name = data.get("name").toLowerCase();
+          return lowercase_name.indexOf(lowercase_term) !== -1;
         });
       },
 
