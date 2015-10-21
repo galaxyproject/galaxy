@@ -492,7 +492,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 except IndexError:
                     pass
             if self.request.path not in allowed_paths:
-                self.response.send_redirect( url_for( controller='root', action='index' ) )
+                self.response.send_redirect( url_for( controller='user', action='login' ) )
 
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """
