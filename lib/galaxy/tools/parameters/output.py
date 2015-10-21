@@ -303,10 +303,11 @@ class MetadataToolOutputAction( ToolOutputAction ):
 
     def apply_action( self, output_dataset, other_values ):
         value = self.option.get_value( other_values )
-        if isinstance(self.default, basestring) and self.default.find(",") > -1:
-            value = self.default.split(",")
-        else:
-            value = self.default
+        if value is None and self.default is not None:
+            if isinstance(self.default, basestring) and self.default.find(",") > -1:
+                value = self.default.split(",")
+            else:
+                value = self.default
         if value is not None:
             setattr( output_dataset.metadata, self.name, value )
 
