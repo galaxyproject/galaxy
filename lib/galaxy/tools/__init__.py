@@ -2368,6 +2368,9 @@ class Tool( object, Dictifiable ):
 
         # convert value to jsonifiable value
         def jsonify(v):
+            if isinstance(v, UnvalidatedValue):
+                v = v.value
+
             # check if value is numeric
             isnumber = False
             try:
