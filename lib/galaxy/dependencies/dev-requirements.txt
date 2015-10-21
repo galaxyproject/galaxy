@@ -1,4 +1,3 @@
 nose
 NoseHTML
-lxml
-twill
+twill==0.9.1
