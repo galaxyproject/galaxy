@@ -96,7 +96,7 @@ return Backbone.View.extend({
         this.$el.find('.operation-button').each(function() {
             $(this).off();
             $(this).click(function() {
-                self.submit_operation(this, operation.confirm);
+                self.submit_operation(this);
                 return false;
             });
         });
@@ -450,6 +450,12 @@ return Backbone.View.extend({
         var number_of_checked_ids = this.$el.find('input[name="id"]:checked').length;
         if (!number_of_checked_ids > 0) {
             return false;
+        }
+
+        // Check to see if there's grid confirmation text for this operation
+        var operation = _.findWhere(this.grid.attributes.operations, {label: operation_name});
+        if (operation && !confirmation_text){
+            confirmation_text = operation.confirm || '';
         }
         
         // collect ids
