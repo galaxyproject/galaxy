@@ -505,7 +505,7 @@ class DefaultToolAction( object ):
     def set_metadata_defaults( self, output, dataset, tool, on_text, trans, incoming, history, params, job_params ):
         """
         This allows to map names of input files to metadata default values. Example:
-        
+
         <data format="tabular" name="output" label="Tabular output, aggregates data from individual_inputs" >
             <actions>
                 <action name="column_names" type="metadata" default="${','.join([input.name for input in $individual_inputs ])}" />
