@@ -1513,7 +1513,13 @@ class DefaultHistoryPermissions( object ):
         self.role = role
 
 
-class Dataset( object ):
+class StorableObject( object ):
+
+    def __init__( self, id, **kwargs):
+        self.id = id
+
+
+class Dataset( StorableObject ):
     states = Bunch( NEW='new',
                     UPLOAD='upload',
                     QUEUED='queued',
@@ -1550,7 +1556,7 @@ class Dataset( object ):
     engine = None
 
     def __init__( self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None ):
-        self.id = id
+        super(Dataset, self).__init__(id=id)
         self.state = state
         self.deleted = False
         self.purged = False
@@ -3486,7 +3492,7 @@ class WorkflowInvocation( object, Dictifiable ):
     def active( self ):
         """ Indicates the workflow invocation is somehow active - and in
         particular valid actions may be performed on its
-        ``WorkflowInvocationStep``s.
+        WorkflowInvocationSteps.
         """
         states = WorkflowInvocation.states
         return self.state in [ states.NEW, states.READY ]
@@ -3680,9 +3686,10 @@ class WorkflowRequestToInputDatasetCollectionAssociation(object, Dictifiable):
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name' ]
 
 
-class MetadataFile( object ):
+class MetadataFile( StorableObject ):
 
     def __init__( self, dataset=None, name=None ):
+        super(MetadataFile, self).__init__(id=None)
         if isinstance( dataset, HistoryDatasetAssociation ):
             self.history_dataset = dataset
         elif isinstance( dataset, LibraryDatasetDatasetAssociation ):
