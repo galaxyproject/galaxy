@@ -334,7 +334,7 @@ class Bam( Binary ):
         os.unlink( stderr_name )
         # Now use pysam with BAI index to determine additional metadata
         try:
-            bam_file = pysam.AlignmentFile( filename=dataset.file_name, mode='rb' )
+            bam_file = pysam.AlignmentFile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
             dataset.metadata.reference_names = list( bam_file.references )
             dataset.metadata.reference_lengths = list( bam_file.lengths )
             dataset.metadata.bam_header = bam_file.header
@@ -342,7 +342,9 @@ class Bam( Binary ):
             dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
             dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
         except:
-            log.exception( 'Problem setting optional BAM metadata on dataset %s', dataset.id )
+            # Per Dan, don't log here because doing so will cause datasets that
+            # fail metadata to end in the error state
+            pass
 
     def sniff( self, filename ):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
