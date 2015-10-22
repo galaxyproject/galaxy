@@ -98,6 +98,11 @@ fi
 
 
 if [ $FETCH_WHEELS -eq 1 ]; then
+    # Because it's a virtualenv, we assume $PYTHONPATH is unnecessary for
+    # anything in the venv to work correctly, and having it set can cause
+    # problems when there are conflicts with Galaxy's dependencies outside the
+    # venv (e.g. virtualenv-burrito's pip and six)
+    unset PYTHONPATH
     pip install --pre --no-index --find-links https://wheels.galaxyproject.org/simple/pip --upgrade pip
     pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/simple/
     GALAXY_CONDITIONAL_DEPENDENCIES=`PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))"`

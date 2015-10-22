@@ -58,9 +58,14 @@ done
 # should run this instance in.
 if [ -d .venv -a -z "$skip_venv" ];
 then
+    [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
     printf "Activating virtualenv at %s/.venv\n" $(pwd)
     . .venv/bin/activate
 fi
+
+# If you are using --skip-venv we assume you know what you are doing but warn
+# in case you don't.
+[ -n "$PYTHONPATH" ] && echo 'WARNING: $PYTHONPATH is set, this can cause problems importing Galaxy dependencies'
 
 python ./scripts/check_python.py || exit 1
 
