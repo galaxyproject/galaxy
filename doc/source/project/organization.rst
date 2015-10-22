@@ -175,8 +175,23 @@ The Galaxy *committers* group may only commit directly to Galaxy (i.e. outside
 of a pull request and not following the procedures described here) the
 following two categories of patches:
 
+Labeling and Milestones
+-----------------------
+
+Pull request handling, labeling, and milestone usage follows the procedures
+described in ISSUES_.
+
+Issue Reporting
+===============
+
+Issues (bugs, feature requests, etc.) should be reported at ISSUE_REPORT_, and
+handling of issues follows the procedures described in ISSUES_.
+
+
 * Patches for serious security vulnerabilities.
 * Cherry-picking and/or merging of existing approved commits to other branches.
 
 .. _LICENSE: https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt
 .. _CODE_OF_CONDUCT: https://github.com/galaxyproject/galaxy/blob/dev/CODE_OF_CONDUCT.md
+.. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst
+.. _ISSUE_REPORT: https://github.com/galaxyproject/galaxy/issues/
