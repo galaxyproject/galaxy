@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # explicitly attempt to fetch eggs before running
 FETCH_WHEELS=1
@@ -59,6 +60,8 @@ if [ $SET_VENV -eq 1 ]; then
     # If .venv does not exist, attempt to create it.
     if [ ! -d .venv ]
     then
+        # Ensure Python is a supported version before creating .venv
+        python ./scripts/check_python.py || exit 1
         if command -v virtualenv >/dev/null; then
             virtualenv .venv
         else
@@ -95,8 +98,8 @@ fi
 
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    pip install -e git+https://github.com/natefoo/pip@linux-wheels#egg=pip &&
-    pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/simple/ &&
-    GALAXY_CONDITIONAL_DEPENDENCIES=`PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))"` &&
+    pip install --pre --no-index --find-links https://wheels.galaxyproject.org/simple/pip --upgrade pip
+    pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/simple/
+    GALAXY_CONDITIONAL_DEPENDENCIES=`PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))"`
     [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url https://wheels.galaxyproject.org/simple/
 fi
