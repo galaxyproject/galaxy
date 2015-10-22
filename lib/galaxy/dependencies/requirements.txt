@@ -10,7 +10,7 @@ pycrypto==2.6.1
 python_lzo==1.8
 
 # extra functionality from Dannon
-pysam==0.8.3gx1
+pysam==0.8.3+gx1
 
 # pure Python packages
 Paste==1.7.5.1
@@ -61,4 +61,4 @@ ecdsa==0.13
 # newer release.
 #
 # https://bitbucket.org/mchaput/whoosh/pull-requests/50/fix-lru-thread-safety/diff
-Whoosh==2.4.1gx1
+Whoosh==2.4.1+gx1
