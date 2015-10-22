@@ -7,8 +7,6 @@ import operator
 import socket
 from datetime import datetime, timedelta
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, or_, not_
 from sqlalchemy.orm import eagerload_all
 

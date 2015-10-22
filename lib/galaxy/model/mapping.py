@@ -5,8 +5,6 @@ are encapsulated here.
 
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import ( and_, asc, Boolean, Column, DateTime, desc, false, ForeignKey, Integer,
     MetaData, not_, Numeric, select, String, Table, TEXT, true, Unicode, UniqueConstraint )
 from sqlalchemy.ext.associationproxy import association_proxy

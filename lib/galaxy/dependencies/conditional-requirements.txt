@@ -1,0 +1,10 @@
+# These dependencies are only required when certain config options are set
+psycopg2==2.6.1
+WebError==0.11
+python-openid
+MySQL-python
+fluent-logger
+raven
+pbs_python
+drmaa
+# PyRods not in PyPI

@@ -14,12 +14,6 @@ try:
 except ImportError:
     ArgumentParser = None
 
-try:
-    from galaxy import eggs
-    eggs.require("requests")
-    eggs.require("bioblend")
-except ImportError:
-    pass
 import requests
 from bioblend import galaxy
 

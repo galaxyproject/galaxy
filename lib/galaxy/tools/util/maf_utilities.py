@@ -8,8 +8,7 @@ import os
 import string
 import sys
 import tempfile
-import pkg_resources
-pkg_resources.require( "bx-python" )
+
 import bx.align.maf
 import bx.intervals
 import bx.interval_index_file

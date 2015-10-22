@@ -12,13 +12,6 @@ import threading
 import urllib
 from datetime import datetime
 
-from galaxy import eggs
-
-eggs.require( "MarkupSafe" )  # MarkupSafe must load before mako
-eggs.require( "Mako" )
-eggs.require( "Paste" )
-eggs.require( "SQLAlchemy >= 0.4" )
-
 from cgi import FieldStorage
 from xml.etree import ElementTree
 from mako.template import Template

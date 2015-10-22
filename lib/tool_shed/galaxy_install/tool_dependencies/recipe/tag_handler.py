@@ -2,8 +2,6 @@ import logging
 import os
 import tempfile
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_
 
 from galaxy.tools.deps.resolvers import INDETERMINATE_DEPENDENCY

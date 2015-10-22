@@ -20,6 +20,12 @@ fi
 
 ./scripts/common_startup.sh --skip-samples
 
+if [ -d .venv ];
+then
+    printf "Activating virtualenv at %s/.venv\n" $(pwd)
+    . .venv/bin/activate
+fi
+
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     if [ -f reports_wsgi.ini ]; then
         GALAXY_REPORTS_CONFIG=reports_wsgi.ini

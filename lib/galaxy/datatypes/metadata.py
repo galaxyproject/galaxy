@@ -14,8 +14,6 @@ import weakref
 
 from os.path import abspath
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy.orm import object_session
 
 import galaxy.model

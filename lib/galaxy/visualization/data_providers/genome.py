@@ -9,14 +9,12 @@ import random
 import re
 import sys
 
-from galaxy import eggs
-eggs.require('numpy')  # noqa
-eggs.require('bx-python')  # noqa
+import pysam
+
 from bx.interval_index_file import Indexes
 from bx.bbi.bigbed_file import BigBedFile
 from bx.bbi.bigwig_file import BigWigFile
-eggs.require('pysam')  # noqa
-from pysam import csamtools, ctabix
+from pysam import ctabix
 
 from galaxy.datatypes.interval import Bed, Gff, Gtf
 from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFFeature, GFFInterval, GFFReaderWrapper, parse_gff_attributes
@@ -849,11 +847,11 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         """
 
         # Open current BAM file using index.
-        bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb',
-                                     index_filename=self.converted_dataset.file_name )
+        bamfile = pysam.AlignmentFile( filename=self.original_dataset.file_name, mode='rb',
+                                       index_filename=self.converted_dataset.file_name )
 
         # TODO: write headers as well?
-        new_bamfile = csamtools.Samfile( template=bamfile, filename=filename, mode='wb' )
+        new_bamfile = pysam.AlignmentFile( template=bamfile, filename=filename, mode='wb' )
 
         for region in regions:
             # Write data from region.
@@ -881,7 +879,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
 
     def open_data_file( self ):
         # Attempt to open the BAM file with index
-        return csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb',
+        return pysam.AlignmentFile( filename=self.original_dataset.file_name, mode='rb',
                                   index_filename=self.converted_dataset.file_name )
 
     def get_iterator( self, data_file, chrom, start, end, **kwargs ):

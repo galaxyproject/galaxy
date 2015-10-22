@@ -11,15 +11,11 @@ import urllib
 import urllib2
 import zipfile
 
-from galaxy import eggs
-eggs.require('MarkupSafe')
 from markupsafe import escape
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 from sqlalchemy.orm import eagerload_all
 
 from galaxy import util, web
-from galaxy.eggs import require
 from galaxy.security import Action
 from galaxy.tools.actions import upload_common
 from galaxy.util import inflector
@@ -30,7 +26,6 @@ from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, bu
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
-    require( "Whoosh" )
     import whoosh.index
     from whoosh.fields import Schema, STORED, TEXT
     from whoosh.scoring import BM25F

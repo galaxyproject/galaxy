@@ -6,9 +6,6 @@ from a query string and render a webpage based on those data.
 import os
 import copy
 
-import pkg_resources
-pkg_resources.require( 'MarkupSafe' )
-pkg_resources.require( 'Mako' )
 import mako
 
 from galaxy.managers import api_keys

@@ -8,15 +8,6 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )  # remove scripts/ from the path
 sys.path = new_path
 
-from galaxy import eggs
-
-eggs.require( "decorator" )
-eggs.require( "Tempita" )
-eggs.require( "SQLAlchemy" )
-eggs.require( "six" )  # Required by sqlalchemy-migrate
-eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
-eggs.require( "sqlalchemy_migrate" )
-
 from migrate.versioning.shell import main
 
 from galaxy.model.orm.scripts import get_config

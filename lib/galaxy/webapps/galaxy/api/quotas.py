@@ -4,8 +4,6 @@ API operations on Quota objects.
 import logging
 
 from paste.httpexceptions import HTTPBadRequest
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import false, true
 
 from galaxy import web, util

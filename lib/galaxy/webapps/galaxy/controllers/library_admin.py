@@ -1,7 +1,5 @@
 import logging
 
-from galaxy import eggs
-eggs.require('MarkupSafe')
 from markupsafe import escape
 
 import galaxy.model

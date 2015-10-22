@@ -44,6 +44,7 @@ Extra options:
  --debug               On python test error or failure invoke a pdb shell for interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
+ --skip-venv           Do not create .venv (passes this flag to common_startup.sh)
  --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
  --db <type>           For use with --dockerize, run tests using partially migrated 'postgres', 'mysql', 
                        or 'sqlite' databases.
@@ -70,7 +71,7 @@ ensure_grunt() {
 }
 
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.0'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.1'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -286,6 +287,10 @@ do
           watch=1
           shift
           ;;
+      --skip-venv)
+          skip_venv='--skip-venv'
+          shift
+          ;;
       --skip-common-startup)
           # Don't run ./scripts/common_startup.sh (presumably it has already
           # been done, or you know what you're doing).
@@ -308,7 +313,13 @@ do
 done
 
 if [ -z "$skip_common_startup" ]; then
-    ./scripts/common_startup.sh
+    ./scripts/common_startup.sh $skip_venv
+fi
+
+if [ -z "$skip_venv" -a -d .venv ];
+then
+    printf "Activating virtualenv at %s/.venv\n" $(pwd)
+    . .venv/bin/activate
 fi
 
 if [ -n "$migrated_test" ] ; then

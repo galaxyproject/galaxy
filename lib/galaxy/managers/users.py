@@ -2,8 +2,6 @@
 Manager and Serializer for Users.
 """
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy
 
 from galaxy import model

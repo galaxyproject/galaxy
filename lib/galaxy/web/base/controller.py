@@ -5,9 +5,6 @@ import logging
 import operator
 import re
 
-import pkg_resources
-pkg_resources.require("SQLAlchemy >= 0.4")
-
 from sqlalchemy import true
 
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError

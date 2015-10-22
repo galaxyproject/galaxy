@@ -9,9 +9,7 @@ usage: %prog in_file out_file
 """
 import optparse
 
-from galaxy import eggs
-eggs.require( "pysam" )
-import ctabix
+from pysam import ctabix
 
 
 def main():

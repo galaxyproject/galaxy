@@ -7,8 +7,6 @@ from __future__ import division
 
 import optparse
 
-from galaxy import eggs
-eggs.require( "bx-python" )
 from bx.interval_index_file import Indexes
 
 import galaxy_utils.sequence.vcf

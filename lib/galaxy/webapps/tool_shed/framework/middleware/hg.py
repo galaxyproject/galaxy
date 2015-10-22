@@ -15,8 +15,6 @@ from tool_shed.util import hg_util
 from tool_shed.util import commit_util
 import tool_shed.repository_types.util as rt_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 import mercurial.__version__
 
 log = logging.getLogger(__name__)

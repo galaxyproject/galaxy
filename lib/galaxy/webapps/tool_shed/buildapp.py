@@ -9,8 +9,6 @@ from inspect import isclass
 from paste import httpexceptions
 from galaxy.util import asbool
 
-import pkg_resources
-
 import galaxy.webapps.tool_shed.model
 import galaxy.webapps.tool_shed.model.mapping
 import galaxy.web.framework.webapp
@@ -225,7 +223,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        pkg_resources.require( "WebError" )
         from weberror import evalexception
         app = evalexception.EvalException( app, conf,
                                            templating_formatters=build_template_error_formatters() )

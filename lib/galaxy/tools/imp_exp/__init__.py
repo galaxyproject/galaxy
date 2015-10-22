@@ -5,8 +5,6 @@ import os
 import shutil
 import tempfile
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.orm import eagerload, eagerload_all
 
 from galaxy import model

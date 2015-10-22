@@ -3,17 +3,9 @@ import os
 import subprocess
 import sys
 
-from galaxy import eggs
-eggs.require( "decorator" )
-eggs.require( "Tempita" )
-eggs.require( "six" )  # Required by sqlalchemy-migrate
-eggs.require( "sqlparse" )  # Required by sqlalchemy-migrate
-eggs.require( "SQLAlchemy" )
-eggs.require( "sqlalchemy_migrate" )
 from migrate.versioning import repository, schema
 from sqlalchemy import create_engine, MetaData, Table
 
-from galaxy.model.orm import dialect_to_egg
 from galaxy.util.odict import odict
 from tool_shed.util import common_util
 
@@ -27,18 +19,6 @@ migrate_repository = repository.Repository( migrate_repository_directory )
 def verify_tools( app, url, galaxy_config_file, engine_options={} ):
     # Check the value in the migrate_tools.version database table column to verify that the number is in
     # sync with the number of version scripts in ~/lib/galaxy/tools/migrate/versions.
-    dialect = ( url.split( ':', 1 ) )[0]
-    try:
-        egg = dialect_to_egg[ dialect ]
-        try:
-            eggs.require( egg )
-            log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
-            log.warning( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support
-        log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
     # Create engine and metadata
     engine = create_engine( url, **engine_options )
     meta = MetaData( bind=engine )

@@ -8,9 +8,6 @@ import sys
 import tempfile
 import urllib
 
-from galaxy import eggs
-eggs.require( "bx-python" )
-eggs.require( "numpy" )
 import numpy
 from bx.intervals.io import GenomicIntervalReader, ParseError
 

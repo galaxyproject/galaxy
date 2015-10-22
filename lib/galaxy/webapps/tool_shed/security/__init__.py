@@ -1,8 +1,6 @@
 """Tool Shed Security"""
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 
 from galaxy.util import listify

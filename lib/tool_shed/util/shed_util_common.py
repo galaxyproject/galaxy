@@ -7,8 +7,6 @@ import socket
 import string
 from urllib2 import HTTPError
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, or_, true
 
