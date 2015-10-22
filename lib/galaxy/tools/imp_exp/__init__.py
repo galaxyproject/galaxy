@@ -174,7 +174,22 @@ class JobImportHistoryArchiveWrapper( object, UsesAnnotations ):
                         if not file_in_dir( temp_dataset_file_name, os.path.join( archive_dir, "datasets" ) ):
                             raise Exception( "Invalid dataset path: %s" % temp_dataset_file_name )
                         if datasets_usage_counts[ temp_dataset_file_name ] == 1:
-                            shutil.move( temp_dataset_file_name, hda.file_name )
+                            self.app.object_store.update_from_file( hda.dataset, file_name=temp_dataset_file_name, create=True )
+
+                            # Import additional files if present. Histories exported previously might not have this attribute set.
+                            dataset_extra_files_path = dataset_attrs.get( 'extra_files_path', None )
+                            if dataset_extra_files_path:
+                                try:
+                                    file_list = os.listdir( os.path.join( archive_dir, dataset_extra_files_path ) )
+                                except OSError:
+                                    file_list = []
+
+                                if file_list:
+                                    for extra_file in file_list:
+                                        self.app.object_store.update_from_file(
+                                            hda.dataset, extra_dir='dataset_%s_files' % hda.dataset.id,
+                                            alt_name=extra_file, file_name=os.path.join( archive_dir, dataset_extra_files_path, extra_file ),
+                                            create=True )
                         else:
                             datasets_usage_counts[ temp_dataset_file_name ] -= 1
                             shutil.copyfile( temp_dataset_file_name, hda.file_name )
@@ -372,6 +387,7 @@ class JobExportHistoryArchiveWrapper( object, UsesAnnotations ):
                         "uuid": ( lambda uuid: str( uuid ) if uuid else None )( obj.dataset.uuid ),
                         "annotation": to_unicode( getattr( obj, 'annotation', '' ) ),
                         "tags": get_item_tag_dict( obj ),
+                        "extra_files_path": obj.extra_files_path
                     }
                     if not obj.visible and not include_hidden:
                         rval['exported'] = False
