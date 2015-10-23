@@ -194,5 +194,5 @@ handling of issues follows the procedures described in ISSUES_.
 
 .. _LICENSE: https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt
 .. _CODE_OF_CONDUCT: https://github.com/galaxyproject/galaxy/blob/dev/CODE_OF_CONDUCT.md
-.. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst
+.. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
 .. _ISSUE_REPORT: https://github.com/galaxyproject/galaxy/issues/
