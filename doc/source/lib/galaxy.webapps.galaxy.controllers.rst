@@ -41,14 +41,6 @@ galaxy.webapps.galaxy.controllers.biostar module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.controllers.cloudlaunch module
-----------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.cloudlaunch
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.webapps.galaxy.controllers.data_manager module
 -----------------------------------------------------
 
@@ -205,14 +197,6 @@ galaxy.webapps.galaxy.controllers.tool_runner module
 ----------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.controllers.tool_runner
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.webapps.galaxy.controllers.ucsc_proxy module
----------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.ucsc_proxy
     :members:
     :undoc-members:
     :show-inheritance:
