@@ -12,9 +12,9 @@ from galaxy.util.bunch import Bunch
 from galaxy.tools import evaluation
 
 from tools_support import UsesApp
-#from tools_support import MockTool
+# from tools_support import MockTool
 
-#from ..tools_and_jobs_helpers import MockApp
+# from ..tools_and_jobs_helpers import MockApp
 
 TEST_TOOL_ID = "cufftest"
 TEST_VERSION_COMMAND = "bwa --version"
@@ -214,8 +214,8 @@ class MockObjectStore(object):
         return None
 
 
-## Poor man's mocking. Need to get a real mocking library as real Galaxy development
-## dependnecy.
+# Poor man's mocking. Need to get a real mocking library as real Galaxy development
+# dependnecy.
 @contextmanager
 def _mock_tool_evaluator(mock_constructor):
     name = evaluation.ToolEvaluator.__name__

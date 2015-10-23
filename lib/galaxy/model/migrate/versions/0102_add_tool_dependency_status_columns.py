@@ -1,18 +1,16 @@
 """
 Migration script to add status and error_message columns to the tool_dependency table and drop the uninstalled column from the tool_dependency table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Boolean, Column, MetaData, Table, TEXT
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -22,6 +20,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -45,12 +44,14 @@ def upgrade(migrate_engine):
         print "Adding error_message column to the tool_dependency table failed: %s" % str( e )
 
     if migrate_engine.name != 'sqlite':
-        #This breaks in sqlite due to failure to drop check constraint.
+        # This breaks in sqlite due to failure to drop check constraint.
         # TODO move to alembic.
         try:
             ToolDependency_table.c.uninstalled.drop()
         except Exception, e:
             print "Dropping uninstalled column from the tool_dependency table failed: %s" % str( e )
+
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

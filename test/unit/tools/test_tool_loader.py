@@ -95,6 +95,7 @@ def test_loader():
         <macro name="inputs">
             <inputs>
                 <yield />
+                <input name="third_input" />
             </inputs>
         </macro>
         <macro name="second">
@@ -103,7 +104,9 @@ def test_loader():
     </macros>
 </tool>''')
         xml = tool_dir.load()
+        assert xml.find("inputs").findall("input")[0].get("name") == "first_input"
         assert xml.find("inputs").findall("input")[1].get("name") == "second_input"
+        assert xml.find("inputs").findall("input")[2].get("name") == "third_input"
 
     # Test recursive macro applications.
     with TestToolDirectory() as tool_dir:
@@ -121,6 +124,7 @@ def test_loader():
         </macro>
         <macro name="second">
             <expand macro="second_delegate" />
+            <input name="third_input" />
         </macro>
         <macro name="second_delegate">
             <input name="second_input" />
@@ -128,7 +132,28 @@ def test_loader():
     </macros>
 </tool>''')
         xml = tool_dir.load()
+        assert xml.find("inputs").findall("input")[0].get("name") == "first_input"
         assert xml.find("inputs").findall("input")[1].get("name") == "second_input"
+        assert xml.find("inputs").findall("input")[2].get("name") == "third_input"
+
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool id="issue_647">
+    <macros>
+        <macro name="a">
+            <param name="a1" type="text" value="a1" label="a1"/>
+            <yield />
+        </macro>
+    </macros>
+    <inputs>
+        <expand macro="a">
+            <param name="b" type="text" value="b" label="b" />
+        </expand>
+    </inputs>
+</tool>''')
+        xml = tool_dir.load()
+        assert xml.find("inputs").findall("param")[0].get("name") == "a1"
+        assert xml.find("inputs").findall("param")[1].get("name") == "b"
 
     # Test <xml> is shortcut for macro type="xml"
     with TestToolDirectory() as tool_dir:

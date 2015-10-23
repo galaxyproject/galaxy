@@ -9,20 +9,19 @@ history_dataset_association_tag_association table failed:  (OperationalError)
 (1059, "Identifier name 'ix_history_dataset_association_tag_association_history_dataset_association_id'
 is too long)
 """
-
-from sqlalchemy import *
-from migrate import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+
+from migrate import UniqueConstraint
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import TrimmedString
 
-import logging
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
-
 metadata = MetaData()
+
 
 def display_migration_details():
     print ""
@@ -39,32 +38,33 @@ def display_migration_details():
 
 # New tables to support tagging of histories, datasets, and history-dataset associations.
 Tag_table = Table( "tag", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "type", Integer ),
-    Column( "parent_id", Integer, ForeignKey( "tag.id" ) ),
-    Column( "name", TrimmedString(255) ),
-    UniqueConstraint( "name" ) )
+                   Column( "id", Integer, primary_key=True ),
+                   Column( "type", Integer ),
+                   Column( "parent_id", Integer, ForeignKey( "tag.id" ) ),
+                   Column( "name", TrimmedString(255) ),
+                   UniqueConstraint( "name" ) )
 
 HistoryTagAssociation_table = Table( "history_tag_association", metadata,
-    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True),
-    Column( "value", TrimmedString(255), index=True),
-    Column( "user_value", TrimmedString(255), index=True) )
+                                     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+                                     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                     Column( "user_tname", TrimmedString(255), index=True),
+                                     Column( "value", TrimmedString(255), index=True),
+                                     Column( "user_value", TrimmedString(255), index=True) )
 
 DatasetTagAssociation_table = Table( "dataset_tag_association", metadata,
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True),
-    Column( "value", TrimmedString(255), index=True),
-    Column( "user_value", TrimmedString(255), index=True) )
+                                     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
+                                     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                     Column( "user_tname", TrimmedString(255), index=True),
+                                     Column( "value", TrimmedString(255), index=True),
+                                     Column( "user_value", TrimmedString(255), index=True) )
 
 HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_association_tag_association", metadata,
-    Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
-    Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-    Column( "user_tname", TrimmedString(255), index=True),
-    Column( "value", TrimmedString(255), index=True),
-    Column( "user_value", TrimmedString(255), index=True) )
+                                                       Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
+                                                       Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                                       Column( "user_tname", TrimmedString(255), index=True),
+                                                       Column( "value", TrimmedString(255), index=True),
+                                                       Column( "user_value", TrimmedString(255), index=True) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -90,6 +90,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Creating history_dataset_association_tag_association table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

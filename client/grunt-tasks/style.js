@@ -20,7 +20,8 @@ module.exports = function( grunt ){
             'masthead',
             'library',
             'trackster',
-            'circster'
+            'circster',
+            'reports'
         ];
 
 
@@ -31,21 +32,21 @@ module.exports = function( grunt ){
         },
         'history-buttons': {
             src: fmt( '%s/history-buttons/*.png', imagesPath ),
-            destImg: fmt( '%s/sprite-history-buttons.png', styleDistPath ),
+            dest: fmt( '%s/sprite-history-buttons.png', styleDistPath ),
             imgPath: fmt( 'sprite-history-buttons.png' ),
-            destCSS: fmt( '%s/sprite-history-buttons.less', lessPath )
+            destCss: fmt( '%s/sprite-history-buttons.less', lessPath )
         },
         'history-states': {
             src: fmt( '%s/history-states/*.png', imagesPath ),
-            destImg: fmt( '%s/sprite-history-states.png', styleDistPath ),
+            dest: fmt( '%s/sprite-history-states.png', styleDistPath ),
             imgPath: fmt( 'sprite-history-states.png' ),
-            destCSS: fmt( '%s/sprite-history-states.less', lessPath )
+            destCss: fmt( '%s/sprite-history-states.less', lessPath )
         },
         'fugue': {
             src: fmt( '%s/fugue/*.png', imagesPath ),
-            destImg: fmt( '%s/sprite-fugue.png', styleDistPath ),
+            dest: fmt( '%s/sprite-fugue.png', styleDistPath ),
             imgPath: fmt( 'sprite-fugue.png' ),
-            destCSS: fmt( '%s/sprite-fugue.less', lessPath )
+            destCss: fmt( '%s/sprite-fugue.less', lessPath )
         }
     });
 
@@ -53,11 +54,14 @@ module.exports = function( grunt ){
     grunt.config( 'less', {
         options: {
             compress: true,
-            paths: [ styleDistPath ]
+            paths: [ lessPath ],
+            strictImports: true
         },
         dist: {
             files: _.reduce( lessFiles, function( d, s ) {
-                d[ fmt( '%s/%s.css', styleDistPath, s ) ] = [ fmt( '%s/%s.less', lessPath, s ) ]; return d;
+                var output = fmt( '%s/%s.css', styleDistPath, s ),
+                    input = fmt( '%s/%s.less', lessPath, s );
+                d[ output ] = [ input ]; return d;
             }, {} )
         }
     });

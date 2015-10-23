@@ -1,26 +1,24 @@
 """
 Migration script to create "handler" column in job table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
+
+from sqlalchemy import Column, MetaData, Table
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import TrimmedString
 
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 # Column to add.
 handler_col = Column( "handler", TrimmedString(255), index=True )
 
+
 def display_migration_details():
     print ""
     print "This migration script adds a 'handler' column to the Job table."
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -36,6 +34,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Adding column 'handler' to job table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

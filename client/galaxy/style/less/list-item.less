@@ -55,6 +55,8 @@
         color: @btn-default-color;
         cursor: pointer;
         vertical-align: middle;
+        // prevent text highlight when holding shift to select a range
+        .user-select(none);
     }
     .selector:hover {
         color: maroon;

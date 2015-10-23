@@ -10,27 +10,39 @@ class AnnotatableManagerMixin( object ):
     #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
     annotation_assoc = None
 
-    # TODO: most of this seems to be covered by item_attrs.UsesAnnotations
-    # TODO: use these below (serializer/deserializer)
-    def user_annotation( self, item, user ):
-        return item.get_item_annotation_str( self.session(), user, item )
+    def annotation( self, item ):
+        """
+        Return the annotation string made by the `item`'s owner or `None` if there
+        is no annotation.
+        """
+        # NOTE: only works with sharable (.user)
+        return self._user_annotation( item, item.user )
 
-    def owner_annotation( self, item ):
-        return self.user_annotation( item, item.user )
-
-    def delete_annotation( self, item, user ):
-        return item.delete_item_annotation( self.session(), user, item )
-
-    def annotate( self, item, user, annotation ):
+    # TODO: should/do we support multiple, non-owner annotation of items?
+    def annotate( self, item, annotation, user=None, flush=True ):
+        """
+        Create a new annotation on `item` or delete the existing if annotation
+        is `None`.
+        """
+        if not user:
+            return None
         if annotation is None:
-            self.delete_annotation( item, user )
+            self._delete_annotation( item, user, flush=flush )
             return None
 
         annotation_obj = item.add_item_annotation( self.session(), user, item, annotation )
-        return annotation_obj.annotation
+        if flush:
+            self.session().flush()
+        return annotation_obj
 
-    #def by_user( self, user, **kwargs ):
-    #    pass
+    def _user_annotation( self, item, user ):
+        return item.get_item_annotation_str( self.session(), user, item )
+
+    def _delete_annotation( self, item, user, flush=True ):
+        returned = item.delete_item_annotation( self.session(), user, item )
+        if flush:
+            self.session().flush()
+        return returned
 
 
 class AnnotatableSerializerMixin( object ):
@@ -59,7 +71,7 @@ class AnnotatableDeserializerMixin( object ):
         if `val` is None.
         """
         val = self.validate.nullable_basestring( key, val )
-        return self.manager.annotate( item, user, val )
+        return self.manager.annotate( item, val, user=user, flush=False )
 
 
 # TODO: I'm not entirely convinced this (or tags) are a good idea for filters since they involve a/the user

@@ -41,8 +41,8 @@
       <output name="format_source_2_output" ftype="fastqsolexa">
         <assert_contents><has_line line="test" /></assert_contents>
       </output>
-      <!-- input_text == bar => format set to fastsolexa -->
-      <output name="change_format_action" ftype="fastqsolexa">
+      <!-- input_text == foo => format set to fastsolexa -->
+      <output name="change_format_output" ftype="fastqsolexa">
         <assert_contents><has_line line="test" /></assert_contents>
       </output>
     </test>
@@ -54,7 +54,7 @@
         <assert_contents><has_line line="test" /></assert_contents>
       </output>
       <!-- input_text == bar => format set to fastqillumina -->
-      <output name="change_format_action" ftype="fastqillumina">
+      <output name="change_format_output" ftype="fastqillumina">
         <assert_contents><has_line line="test" /></assert_contents>
       </output>
     </test>
@@ -64,7 +64,7 @@
       <param name="input_text" value="not_foo_or_bar" />
       <!-- input_text doesn't match any when, default to explicitly declared
       type. -->
-      <output name="change_format_action" ftype="txt">
+      <output name="change_format_output" ftype="txt">
         <assert_contents><has_line line="test" /></assert_contents>
       </output>
     </test>

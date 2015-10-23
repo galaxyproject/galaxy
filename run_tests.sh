@@ -3,8 +3,6 @@
 pwd_dir=$(pwd)
 cd `dirname $0`
 
-./scripts/common_startup.sh
-
 # A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log
 
@@ -24,7 +22,7 @@ cat <<EOF
 '${0##*/} -unit (test_path)'        for running all unit tests (doctests in lib and tests in test/unit)
 '${0##*/} -qunit'                   for running qunit JavaScript tests
 '${0##*/} -qunit testname'          for running single JavaScript test with given name
-
+'${0##*/} -casperjs (py_test_path)' for running casperjs JavaScript tests using a Python wrapper for consistency. py_test_path in casperjs_runner.py e.g. 'Test_04_HDAs' or 'Test_04_HDAs.test_00_HDA_states'.
 
 Nose tests will allow specific tests to be selected per the documentation at
 https://nose.readthedocs.org/en/latest/usage.html#selecting-tests.  These are
@@ -46,6 +44,7 @@ Extra options:
  --debug               On python test error or failure invoke a pdb shell for interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy functional tests).
  --xunit_report_file   Path of XUnit report to produce (for Python Galaxy functional tests).
+ --skip-venv           Do not create .venv (passes this flag to common_startup.sh)
  --dockerize           Run tests in a pre-configured Docker container (must be first argument if present).
  --db <type>           For use with --dockerize, run tests using partially migrated 'postgres', 'mysql', 
                        or 'sqlite' databases.
@@ -72,6 +71,8 @@ ensure_grunt() {
 }
 
 
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:15.10.1'
+
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 xunit_report_file=""
@@ -83,15 +84,25 @@ driver="python"
 if [ "$1" = "--dockerize" ];
 then
     shift
+    DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
+    DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
+    DOCKER_IMAGE=${DOCKER_IMAGE:-${DOCKER_DEFAULT_IMAGE}}
     if [ "$1" = "--db" ]; then
        db_type=$2
        shift 2
     else
        db_type="sqlite"
     fi
-    DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
-    DOCKER_RUN_EXTRA_ARGS=${DOCKER_ARGS:-""}
-    DOCKER_IMAGE=${DOCKER_IMAGE:-"galaxyprojectdotorg/testing-base"}
+    if [ "$1" = "--external_tmp" ]; then
+       # If /tmp is a tmpfs there may be better performance by reusing
+       # the parent's temp file system. Also, it seems to decrease the
+       # frequency or errors such as the following:
+       # /bin/sh: 1: /tmp/tmpiWU3kJ/tmp_8zLxx/job_working_directory_mwwDmg/000/274/galaxy_274.sh: Text file busy
+       tmp=$(mktemp -d)
+       chmod 1777 $tmp
+       DOCKER_RUN_EXTRA_ARGS="-v ${tmp}:/tmp ${DOCKER_RUN_EXTRA_ARGS}"
+       shift
+    fi
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi
@@ -126,6 +137,7 @@ do
           fi 
           ;;
     -a|-api|--api)
+          with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="./scripts/functional_tests.py"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
@@ -138,7 +150,7 @@ do
           ;;
       -t|-toolshed|--toolshed)
           test_script="./test/tool_shed/functional_tests.py"
-          report_file="./test/tool_shed/run_functional_tests.html"
+          report_file="run_toolshed_tests.html"
           if [ $# -gt 1 ]; then
               toolshed_script=$2
               shift 2
@@ -162,6 +174,7 @@ do
           fi
           ;;
       -f|-framework|--framework)
+          report_file="run_framework_tests.html"
           framework_test=1;
           shift 1
           ;;
@@ -172,8 +185,15 @@ do
       -j|-casperjs|--casperjs)
           # TODO: Support running casper tests against existing
           # Galaxy instances.
+          with_framework_test_tools_arg="-with_framework_test_tools"
+          if [ $# -gt 1 ]; then
+              casperjs_test_name=$2
+              shift 2
+          else
+              shift 1
+          fi
+          report_file="run_casperjs_tests.html"
           casperjs_test=1;
-          shift
           ;;
       -m|-migrated|--migrated)
           migrated_test=1;
@@ -267,6 +287,16 @@ do
           watch=1
           shift
           ;;
+      --skip-venv)
+          skip_venv='--skip-venv'
+          shift
+          ;;
+      --skip-common-startup)
+          # Don't run ./scripts/common_startup.sh (presumably it has already
+          # been done, or you know what you're doing).
+          skip_common_startup=1
+          shift
+          ;;
       --) 
           shift
           break
@@ -281,6 +311,16 @@ do
           ;;
     esac
 done
+
+if [ -z "$skip_common_startup" ]; then
+    ./scripts/common_startup.sh $skip_venv
+fi
+
+if [ -z "$skip_venv" -a -d .venv ];
+then
+    printf "Activating virtualenv at %s/.venv\n" $(pwd)
+    . .venv/bin/activate
+fi
 
 if [ -n "$migrated_test" ] ; then
     [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
@@ -304,7 +344,11 @@ elif [ -n "$casperjs_test" ]; then
     # TODO: Ensure specific versions of casperjs and phantomjs are
     # available. Some option for leveraging npm to automatically
     # install these dependencies would be nice as well.
-    extra_args="test/casperjs/casperjs_runner.py"
+    if [ -n "$casperjs_test_name" ]; then
+        extra_args="test/casperjs/casperjs_runner.py:$casperjs_test_name"
+    else
+        extra_args="test/casperjs/casperjs_runner.py"
+    fi
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id` 
 elif [ -n "$test_id" ]; then

@@ -1,18 +1,16 @@
 """
 Migration script to add the repository_metadata table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import JSONType, TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -24,12 +22,13 @@ log.addHandler( handler )
 metadata = MetaData()
 
 RepositoryMetadata_table = Table( "repository_metadata", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
-    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
-    Column( "metadata", JSONType, nullable=True ) )
+                                  Column( "id", Integer, primary_key=True ),
+                                  Column( "create_time", DateTime, default=now ),
+                                  Column( "update_time", DateTime, default=now, onupdate=now ),
+                                  Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+                                  Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+                                  Column( "metadata", JSONType, nullable=True ) )
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -41,6 +40,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Creating repository_metadata table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

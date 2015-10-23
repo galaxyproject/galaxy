@@ -262,6 +262,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # used for the cache
 #template_cache_path = database/compiled_templates
 
+# Set to false to disable various checks Galaxy will do to ensure it
+# can run job scripts before attempting to execute or submit them.
+#check_job_script_integrity = True
+
 # Citation related caching.  Tool citations information maybe fetched from
 # external sources such as http://dx.doi.org/ by Galaxy - the following
 # parameters can be used to control the caching used to store this information.
@@ -291,44 +295,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Configuration file for the object store
 # If this is set and exists, it overrides any other objectstore settings.
 # object_store_config_file = config/object_store_conf.xml
-
-# Object store backend module (valid options are: disk, s3, swift, irods,
-# distributed, hierarchical)
-#object_store = disk
-
-# *Extremely* old Galaxy instances created datasets at the root of the
-# `file_path` defined above.  If your Galaxy instance has datasets at the root
-# (instead of in directories composed by hashing the dataset id), you should
-# enable this option to allow Galaxy to find them.
-#object_store_check_old_style = False
-
-# Credentials used by certain (s3, swift) object store backends
-#os_access_key = <your cloud object store access key>
-#os_secret_key = <your cloud object store secret key>
-#os_bucket_name = <name of an existing object store bucket or container>
-
-# If using 'swift' object store, you must specify the following connection
-# properties
-#os_host = swift.rc.nectar.org.au
-#os_port = 8888
-#os_is_secure = False
-#os_conn_path = /
-
-# Reduced redundancy can be used only with the 's3' object store
-#os_use_reduced_redundancy = False
-
-# Path to cache directory for object store backends that utilize a cache (s3,
-# swift, irods)
-#object_store_cache_path = database/files/
-
-# Size (in GB) that the cache used by object store should be limited to.
-# If the value is not specified, the cache size will be limited only by the
-# file system size.
-#object_store_cache_size = 100
-
-# Configuration file for the distributed object store, if object_store =
-# distributed.  See the sample at distributed_object_store_conf.xml.sample
-#distributed_object_store_config_file = None
 
 
 # -- Mail and notification
@@ -533,11 +499,6 @@ nglims_config_file = tool-data/nglims.yaml
 #static_style_dir = static/june_2007_style/blue
 #static_robots_txt = static/robots.txt
 
-# Cloud Launch
-
-#enable_cloud_launch = False
-#cloudlaunch_default_ami = ami-a7dbf6ce
-
 # Incremental Display Options
 
 #display_chunk_size = 65536
@@ -617,7 +578,17 @@ nglims_config_file = tool-data/nglims.yaml
 # nodejs to wrap connections in SSL).
 #dynamic_proxy_external_proxy=False
 
+# Additionally, when the dynamic proxy is proxied by an upstream server, you'll
+# want to specify a prefixed URL so both Galaxy and the proxy reside under the
+# same path that your cookies are under. This will result in a url like
+# https://FQDN/galaxy-prefix/gie_proxy for proxying
+#dynamic_proxy_prefix=gie_proxy
+
 # -- Logging and Debugging
+
+# If True, Galaxy will attempt to configure a simple root logger if a
+# "loggers" section does not appear in this configuration file.
+#auto_configure_logging = True
 
 # Verbosity of console log messages.  Acceptable values can be found here:
 # https://docs.python.org/2/library/logging.html#logging-levels
@@ -643,6 +614,12 @@ nglims_config_file = tool-data/nglims.yaml
 # make the Galaxy instance susceptible to XSS attacks initiated by your users.
 #sanitize_all_html = True
 
+# Whitelist sanitization file.
+# Datasets created by tools listed in this file are trusted and will not have
+# their HTML sanitized on display.  This can be manually edited or manipulated
+# through the Admin control panel -- see "Manage Display Whitelist"
+#sanitize_whitelist_file = config/sanitize_whitelist.txt
+
 # By default Galaxy will serve non-HTML tool output that may potentially
 # contain browser executable JavaScript content as plain text.  This will for
 # instance cause SVG datasets to not render properly and so may be disabled
@@ -659,9 +636,8 @@ nglims_config_file = tool-data/nglims.yaml
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
 # also causes the files used by PBS/SGE (submission script, output, and error)
-# to remain on disk after the job is complete.  Debug mode is disabled if
-# commented, but is uncommented by default in the sample config.
-debug = True
+# to remain on disk after the job is complete.
+#debug = False
 
 # Check for WSGI compliance.
 #use_lint = False
@@ -680,6 +656,20 @@ use_interactive = True
 # space rapidly!).  Useful to determine why your processes may be consuming a
 # lot of CPU.
 #use_heartbeat = False
+
+# Log to Sentry
+# Sentry is an open source logging and error aggregation platform.  Setting
+# sentry_dsn will enable the Sentry middleware and errors will be sent to the
+# indicated sentry instance.  This connection string is available in your
+# sentry instance under <project_name> -> Settings -> API Keys.
+#sentry_dsn = None
+
+# Log to statsd
+# Statsd is an external statistics aggregator (https://github.com/etsy/statsd)
+# Enabling the following options will cause galaxy to log request timing and
+# other statistics to the configured statsd instance.
+#statsd_host=
+#statsd_port=8125
 
 # -- Data Libraries
 
@@ -833,9 +823,6 @@ use_interactive = True
 
 # -- Beta features
 
-# Use new tool form
-#toolform_upgrade = True
-
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
 
@@ -946,12 +933,9 @@ use_interactive = True
 #job_config_file = config/job_conf.xml
 
 # In multiprocess configurations, notification between processes about new jobs
-# is done via the database.  In single process configurations, this is done in
-# memory, which is a bit quicker.  Galaxy tries to automatically determine
-# which method it should used based on your handler configuration in the job
-# config file, but you can explicitly override this behavior by setting the
-# following option to True or False.
-#track_jobs_in_database = None
+# must be done via the database.  In single process configurations, this can be
+# done in memory, which is a bit quicker.
+#track_jobs_in_database = True
 
 # This enables splitting of jobs into tasks, if specified by the particular tool
 # config.
@@ -973,9 +957,10 @@ use_interactive = True
 
 # Very large metadata values can cause Galaxy crashes.  This will allow
 # limiting the maximum metadata key size (in bytes used in memory, not the end
-# result database value size) Galaxy will attempt to save with a dataset.  0 to
-# disable this feature.  5000000 seems to be a reasonable size.
-#max_metadata_value_size = 0
+# result database value size) Galaxy will attempt to save with a dataset.  Use
+# 0 to disable this feature.  The default is 5MB, but as low as 1MB seems to be
+# a reasonable size.
+#max_metadata_value_size = 5242880
 
 # If (for example) you run on a cluster and your datasets (by default,
 # database/files/) are mounted read-only, this option will override tool output

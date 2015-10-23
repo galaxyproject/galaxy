@@ -13,19 +13,20 @@ the order should be:
 Usage:
 %python fastqsolexa_to_qual_converter.py <your_fastqsolexa_filename> <output_seq_filename> <output_score_filename>
 """
-import sys, os
-from math import *
+import sys
 
 assert sys.version_info[:2] >= ( 2, 4 )
+
 
 def stop_err( msg ):
     sys.stderr.write( "%s" % msg )
     sys.exit()
 
+
 def __main__():
     infile_name = sys.argv[1]
     outfile_score = open( sys.argv[2], 'w' )
-    datatype = sys.argv[3]
+    # datatype = sys.argv[3]
     qual_title_startswith = ''
     seq_title_startswith = ''
     default_coding_value = 64
@@ -68,12 +69,12 @@ def __main__():
             val = line.split()[0]
 
             try:
-                check = int( val )
+                int( val )
                 fastq_integer = True
             except:
                 fastq_integer = False
 
-            if fastq_integer: # digits
+            if fastq_integer:  # digits
                 qual = line
             else:
                 # ascii
@@ -92,4 +93,5 @@ def __main__():
 
     outfile_score.close()
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()

@@ -149,11 +149,11 @@ class DataManager( object ):
                                                         owner=repository_owner,
                                                         installed_changeset_revision=installed_changeset_revision )
             tool_shed_repository = \
-                suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.data_managers.app,
-                                                                                              tool_shed,
-                                                                                              repository_name,
-                                                                                              repository_owner,
-                                                                                              installed_changeset_revision )
+                suc.get_installed_repository( self.data_managers.app,
+                                              tool_shed=tool_shed,
+                                              name=repository_name,
+                                              owner=repository_owner,
+                                              installed_changeset_revision=installed_changeset_revision )
             if tool_shed_repository is None:
                 log.warning( 'Could not determine tool shed repository from database. This should only ever happen when running tests.' )
                 # we'll set tool_path manually here from shed_conf_file

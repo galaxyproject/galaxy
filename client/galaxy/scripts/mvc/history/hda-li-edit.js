@@ -16,13 +16,30 @@ var HDAListItemEdit = _super.extend(
 
     className   : _super.prototype.className + " history-content",
 
-    // ......................................................................... events
+    /** In this override, only get details if in the ready state, get rerunnable if in other states.
+     *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
+     */
+    _fetchModelDetails : function(){
+        var view = this;
+        if( view.model.inReadyState() && !view.model.hasDetails() ){
+            return view.model.fetch({ silent: true });
+
+        // special case the need for the rerunnable and creating_job attributes
+        // needed for rendering re-run button on queued, running datasets
+        } else if( !view.model.has( 'rerunnable' ) ){
+            return view.model.fetch({ silent: true, data: {
+                // only fetch rerunnable and creating_job to keep overhead down
+                keys: [ 'rerunnable', 'creating_job' ].join(',')
+            }});
+        }
+        return jQuery.when();
+    },
+
     /** event map */
     events : _.extend( _.clone( _super.prototype.events ), {
         'click .unhide-link' : function( ev ){ this.model.unhide(); return false; }
     }),
 
-    // ......................................................................... misc
     /** string rep */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );

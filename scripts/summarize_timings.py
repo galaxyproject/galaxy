@@ -1,25 +1,11 @@
 from __future__ import print_function
 
-import os
-import sys
-
-script_dir = os.path.dirname(__file__)
-galaxy_root = os.path.join(script_dir, os.path.pardir)
-new_path = [ os.path.join( galaxy_root, "lib" ) ]
-new_path.extend( sys.path[1:] )
-sys.path = new_path
-
 try:
     from argparse import ArgumentParser
 except ImportError:
     ArgumentParser = None
 import re
 
-try:
-    from galaxy import eggs
-    eggs.require("numpy")
-except ImportError:
-    pass
 import numpy
 
 

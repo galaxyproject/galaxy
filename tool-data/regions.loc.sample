@@ -8,7 +8,7 @@
 #/depot/data2/galaxy/regions/encode_regions_coords_hg16.bed, then the
 #regions.loc entry would look like this:
 #
-#hg16	encode_hg16		ENCODE Regions	/depot/data2/galaxy/regions/encode_regions_coords_hg16.bed
+#hg16	encode_hg16	ENCODE Regions	/depot/data2/galaxy/regions/encode_regions_coords_hg16.bed
 #
 #and your /depot/data2/galaxy/regions/ directory would 
 #contain all of your regions files (e.g.):

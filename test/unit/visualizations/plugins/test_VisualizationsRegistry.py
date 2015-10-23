@@ -6,7 +6,7 @@ import imp
 import re
 
 test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '..', '..', 'unittest_utils', 'utility.py' ) )
+    os.path.join( os.path.dirname( __file__), os.pardir, os.pardir, 'unittest_utils', 'utility.py' ) )
 import galaxy_mock
 
 from galaxy import model

@@ -1,101 +1,95 @@
 // dependencies
 define([], function() {
 
-// create model
+// model for upload/progress bar button
 var Model = Backbone.Model.extend({
     defaults: {
+        icon        : 'fa-upload',
+        tooltip     : 'Download from URL or upload files from disk',
+        label       : 'Load Data',
         percentage  : 0,
-        icon        : 'fa-circle',
-        label       : '',
         status      : ''
     }
 });
 
-// progress bar button on ui
+// view for upload/progress bar button
 var View = Backbone.View.extend({
     // model
     model : null,
 
     // initialize
-    initialize : function(model) {
+    initialize : function( options ) {
         // link this
         var self = this;
 
         // create model
-        this.model = model;
-
-        // get options
-        this.options = this.model.attributes;
+        var model = options.model;
 
         // create new element
-        this.setElement(this._template(this.options));
+        this.setElement( this._template() );
 
         // add event
-        $(this.el).on('click', this.options.onclick);
+        this.$el.on( 'click', function( e ) { options.onclick( e ); });
 
         // add tooltip
-        if (this.options.tooltip) {
-            $(this.el).tooltip({title: this.options.tooltip, placement: 'bottom'});
-        }
+        this.$el.tooltip( { title: model.get('tooltip'), placement: 'bottom' } );
 
         // events
-        this.model.on('change:percentage', function() {
-            self._percentage(self.model.get('percentage'));
+        model.on( 'change:percentage', function() {
+            self._percentage( model.get( 'percentage' ) );
         });
-        this.model.on('change:status', function() {
-            self._status(self.model.get('status'));
+        model.on( 'change:status', function() {
+            self._status( model.get( 'status' ) );
         });
 
         // unload event
         var self = this;
-        $(window).on('beforeunload', function() {
+        $( window ).on( 'beforeunload', function() {
             var text = "";
-            if (self.options.onunload) {
-                text = self.options.onunload();
+            if ( options.onunload ) {
+                text = options.onunload();
             }
-            if (text != "") {
+            if ( text != "" ) {
                 return text;
             }
         });
     },
 
     // set status
-    _status: function(value) {
-        var $el = this.$el.find('.progress-bar');
+    _status: function( value ) {
+        var $el = this.$el.find( '.progress-bar' );
         $el.removeClass();
-        $el.addClass('progress-bar');
-        $el.addClass('progress-bar-notransition');
-        if (value != '') {
-            $el.addClass('progress-bar-' + value);
+        $el.addClass( 'progress-bar' );
+        $el.addClass( 'progress-bar-notransition' );
+        if ( value != '' ) {
+            $el.addClass( 'progress-bar-' + value );
         }
     },
 
     // set percentage
-    _percentage: function(value) {
-        var $el = this.$el.find('.progress-bar');
-        $el.css({ width : value + '%' });
+    _percentage: function( value ) {
+        var $el = this.$el.find( '.progress-bar' );
+        $el.css( { width : value + '%' } );
     },
 
     // template
-    _template: function(options) {
-        return  '<div style="float: right">' +
-                    '<div class="upload-button">' +
-                        '<div class="progress">' +
-                            '<div class="progress-bar"></div>' +
-                        '</div>' +
-                        '<div id="label" class="label">' +
-                            '<a class="panel-header-button" href="javascript:void(0)">' +
-                                '<span class="fa fa-upload"></span>' +
-                            '</a>' +
-                        '</div>' +
+    _template: function() {
+        return  '<div class="upload-button">' +
+                    '<div class="progress">' +
+                        '<div class="progress-bar"></div>' +
+                    '</div>' +
+                    '<div id="label" class="label">' +
+                        '<a class="panel-header-button" href="javascript:void(0)">' +
+                            '<span class="fa fa-upload"></span>' +
+                        '</a>' +
                     '</div>' +
                 '</div>';
     }
 });
 
 return {
-    Model: Model,
-    View: View
+    Model   : Model,
+    View    : View
 };
 
 });

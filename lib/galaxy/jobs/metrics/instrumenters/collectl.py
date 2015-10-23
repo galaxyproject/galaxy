@@ -14,8 +14,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 DEFAULT_PROCFILT_ON = "username"  # By default, only grab statistics for user
-                                  # processes (as identifiers by username).
-DEFAULT_SUBSYSTEMS = "process"
+DEFAULT_SUBSYSTEMS = "process"  # processes (as identifiers by username).
 DEFAULT_FLUSH_INTERVAL = "0"  # Set to zero to flush every collection.
 
 FORMATTED_RESOURCE_TITLES = {

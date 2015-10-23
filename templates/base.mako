@@ -48,22 +48,29 @@
         "libs/jquery/jquery",
         "libs/jquery/jquery.migrate",
         "libs/jquery/select2",
+        "libs/jquery/jquery.event.hover",
+        "libs/jquery/jquery.form",
+        "libs/jquery/jquery.rating",
+        "libs/jquery.sparklines",
         "libs/bootstrap",
         "libs/underscore",
         "libs/backbone/backbone",
         "libs/handlebars.runtime",
+        "libs/require",
         "galaxy.base",
-        'libs/require'
+        "galaxy.panels",
+        "galaxy.autocom_tagging"
     )}
 
     <script type="text/javascript">
-        ## global configuration object
-        var galaxy_config =
-        {
-            root: '${h.url_for( "/" )}'
-        };
+        ## global galaxy object
+        window.Galaxy = window.Galaxy || {};
 
-        // console protection
+        ## global configuration object
+        window.Galaxy.root = '${h.url_for( "/" )}';
+        window.galaxy_config = { root: window.Galaxy.root };
+
+        ## console protection
         window.console = window.console || {
             log     : function(){},
             debug   : function(){},

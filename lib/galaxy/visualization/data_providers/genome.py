@@ -9,14 +9,12 @@ import random
 import re
 import sys
 
-from galaxy import eggs
-eggs.require('numpy')  # noqa
-eggs.require('bx-python')  # noqa
+import pysam
+
 from bx.interval_index_file import Indexes
 from bx.bbi.bigbed_file import BigBedFile
 from bx.bbi.bigwig_file import BigWigFile
-eggs.require('pysam')  # noqa
-from pysam import csamtools, ctabix
+from pysam import ctabix
 
 from galaxy.datatypes.interval import Bed, Gff, Gtf
 from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFFeature, GFFInterval, GFFReaderWrapper, parse_gff_attributes
@@ -143,11 +141,6 @@ class GenomeDataProvider( BaseDataProvider ):
                                                     dependencies=dependencies,
                                                     error_max_vals=error_max_vals )
 
-        # File/pointer where data is obtained from. It is useful to set this for repeated
-        # queries, such as is necessary for genome-wide data.
-        # TODO: add functions to (a) create data_file and (b) clean up data_file.
-        self.data_file = None
-
     def write_data_to_file( self, regions, filename ):
         """
         Write data in region defined by chrom, start, and end to a file.
@@ -167,7 +160,13 @@ class GenomeDataProvider( BaseDataProvider ):
         """
         raise Exception( "Unimplemented Function" )
 
-    def get_iterator( self, chrom, start, end, **kwargs ):
+    def open_data_file( self ):
+        """
+        Open data file for reading data.
+        """
+        raise Exception( "Unimplemented Function" )
+
+    def get_iterator( self, data_file, chrom, start, end, **kwargs ):
         """
         Returns an iterator that provides data in the region chrom:start-end
         """
@@ -189,8 +188,19 @@ class GenomeDataProvider( BaseDataProvider ):
             dataset_type, data
         """
         start, end = int( low ), int( high )
-        iterator = self.get_iterator( chrom, start, end, **kwargs )
-        return self.process_data( iterator, start_val, max_vals, start=start, end=end, **kwargs )
+        data_file = self.open_data_file()
+        iterator = self.get_iterator( data_file, chrom, start, end, **kwargs )
+        data = self.process_data( iterator, start_val, max_vals, start=start, end=end, **kwargs )
+        try:
+            data_file.close()
+        except AttributeError:
+            # FIXME: some data providers do not have a close function implemented.
+            # Providers without a close function include:
+            #  pysam Tabixfile
+            #  bx IntervalIndex
+            pass
+
+        return data
 
     def get_genome_data( self, chroms_info, **kwargs ):
         """
@@ -252,9 +262,9 @@ class GenomeDataProvider( BaseDataProvider ):
                     attrs = self.col_name_data_attr_mapping[ col_name ]
                 except KeyError:
                     continue
-                filters.append(
-                    { 'name' : attrs[ 'name' ], 'type' : column_types[viz_col_index],
-                    'index' : attrs[ 'index' ] } )
+                filters.append( { 'name': attrs[ 'name' ],
+                                  'type': column_types[viz_col_index],
+                                  'index': attrs[ 'index' ] } )
         return filters
 
     def get_default_max_vals( self ):
@@ -335,39 +345,39 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
 
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
 
-    def get_iterator( self, chrom, start, end, **kwargs ):
+    def open_data_file( self ):
+        return ctabix.Tabixfile(self.dependencies['bgzip'].file_name,
+                                index_filename=self.converted_dataset.file_name)
+
+    def get_iterator( self, data_file, chrom, start, end, **kwargs ):
         start, end = int(start), int(end)
         if end >= (2 << 29):
             end = (2 << 29 - 1)  # Tabix-enforced maximum
 
-        bgzip_fname = self.dependencies['bgzip'].file_name
-
-        if not self.data_file:
-            self.data_file = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
-
         # Get iterator using either naming scheme.
         iterator = iter( [] )
-        if chrom in self.data_file.contigs:
-            iterator = self.data_file.fetch(reference=chrom, start=start, end=end)
+        if chrom in data_file.contigs:
+            iterator = data_file.fetch(reference=chrom, start=start, end=end)
         else:
             # Try alternative naming scheme.
             chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
-            if chrom in self.data_file.contigs:
-                iterator = self.data_file.fetch(reference=chrom, start=start, end=end)
+            if chrom in data_file.contigs:
+                iterator = data_file.fetch(reference=chrom, start=start, end=end)
 
         return iterator
 
     def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
 
+        data_file = self.open_data_file()
         for region in regions:
             # Write data in region.
-            chrom = region.chrom
-            start = region.start
-            end = region.end
-            iterator = self.get_iterator( chrom, start, end )
+            iterator = self.get_iterator( data_file, region.chrom, region.start, region.end )
             for line in iterator:
                 out.write( "%s\n" % line )
+
+        # TODO: once Pysam is updated and Tabixfile has a close() method,
+        # data_file.close()
 
         out.close()
 
@@ -385,7 +395,7 @@ class IntervalDataProvider( GenomeDataProvider ):
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
 
-    def get_iterator( self, chrom, start, end, **kwargs ):
+    def get_iterator( self, data_file, chrom, start, end, **kwargs ):
         raise Exception( "Unimplemented Function" )
 
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
@@ -470,7 +480,7 @@ class BedDataProvider( GenomeDataProvider ):
 
     dataset_type = 'interval_index'
 
-    def get_iterator( self, chrom, start, end, **kwargs ):
+    def get_iterator( self, data_file, chrom, start, end, **kwargs ):
         raise Exception( "Unimplemented Method" )
 
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
@@ -545,9 +555,11 @@ class BedDataProvider( GenomeDataProvider ):
             chrom = region.chrom
             start = region.start
             end = region.end
-            iterator = self.get_iterator( chrom, start, end )
+            data_file = self.open_data_file()
+            iterator = self.get_iterator( data_file, chrom, start, end )
             for line in iterator:
                 out.write( "%s\n" % line )
+            data_file.close()
 
         out.close()
 
@@ -567,14 +579,14 @@ class RawBedDataProvider( BedDataProvider ):
     for large datasets.
     """
 
-    def get_iterator( self, source, chrom=None, start=None, end=None, **kwargs ):
+    def get_iterator( self, data_file, chrom=None, start=None, end=None, **kwargs ):
         # Read first line in order to match chrom naming format.
-        line = source.readline()
+        line = data_file.readline()
         dataset_chrom = line.split()[0]
         if not _chrom_naming_matches( chrom, dataset_chrom ):
             chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
         # Undo read.
-        source.seek( 0 )
+        data_file.seek( 0 )
 
         def line_filter_iter():
             for line in open( self.original_dataset.file_name ):
@@ -741,13 +753,11 @@ class VcfDataProvider( GenomeDataProvider ):
 
     def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
+        data_file = self.open_data_file()
 
         for region in regions:
             # Write data in region.
-            chrom = region.chrom
-            start = region.start
-            end = region.end
-            iterator = self.get_iterator( chrom, start, end )
+            iterator = self.get_iterator( data_file, region.chrom, region.start, region.end )
             for line in iterator:
                 out.write( "%s\n" % line )
         out.close()
@@ -769,12 +779,13 @@ class RawVcfDataProvider( VcfDataProvider ):
     for large datasets.
     """
 
-    def get_iterator( self, chrom, start, end, **kwargs ):
-        source = open( self.original_dataset.file_name )
+    def open_data_file( self ):
+        return open( self.original_dataset.file_name )
 
+    def get_iterator( self, data_file, chrom, start, end, **kwargs ):
         # Skip comments.
         line = None
-        for line in source:
+        for line in data_file:
             if not line.startswith("#"):
                 break
 
@@ -796,13 +807,13 @@ class RawVcfDataProvider( VcfDataProvider ):
             return variant_chrom == chrom and variant_start >= start and variant_start <= end
 
         def line_filter_iter():
-            """ Yields lines in source that are in region chrom:start-end """
+            """ Yields lines in data that are in region chrom:start-end """
             # Yield data line read above.
             if line_in_region( line, chrom, start, end ):
                 yield line
 
             # Search for and yield other data lines.
-            for data_line in source:
+            for data_line in data_file:
                 if line_in_region( data_line, chrom, start, end ):
                     yield data_line
 
@@ -826,7 +837,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         filters = []
         filters.append( { 'name': 'Mapping Quality',
                         'type': 'number',
-                        'index': filter_col }
+                          'index': filter_col }
                         )
         return filters
 
@@ -836,11 +847,11 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         """
 
         # Open current BAM file using index.
-        bamfile = csamtools.Samfile( filename=self.original_dataset.file_name, mode='rb',
-                                     index_filename=self.converted_dataset.file_name )
+        bamfile = pysam.AlignmentFile( filename=self.original_dataset.file_name, mode='rb',
+                                       index_filename=self.converted_dataset.file_name )
 
         # TODO: write headers as well?
-        new_bamfile = csamtools.Samfile( template=bamfile, filename=filename, mode='wb' )
+        new_bamfile = pysam.AlignmentFile( template=bamfile, filename=filename, mode='wb' )
 
         for region in regions:
             # Write data from region.
@@ -866,23 +877,24 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         new_bamfile.close()
         bamfile.close()
 
-    def get_iterator( self, chrom, start, end, **kwargs ):
+    def open_data_file( self ):
+        # Attempt to open the BAM file with index
+        return pysam.AlignmentFile( filename=self.original_dataset.file_name, mode='rb',
+                                  index_filename=self.converted_dataset.file_name )
+
+    def get_iterator( self, data_file, chrom, start, end, **kwargs ):
         """
         Returns an iterator that provides data in the region chrom:start-end
         """
-        start, end = int( start ), int( end )
-        orig_data_filename = self.original_dataset.file_name
-        index_filename = self.converted_dataset.file_name
 
-        # Attempt to open the BAM file with index
-        bamfile = csamtools.Samfile( filename=orig_data_filename, mode='rb', index_filename=index_filename )
+        # Fetch and return data.
         try:
-            data = bamfile.fetch( start=start, end=end, reference=chrom )
+            data = data_file.fetch( start=start, end=end, reference=chrom )
         except ValueError:
             # Try alternative chrom naming.
             chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
             try:
-                data = bamfile.fetch( start=start, end=end, reference=chrom )
+                data = data_file.fetch( start=start, end=end, reference=chrom )
             except ValueError:
                 return None
         return data
@@ -1166,7 +1178,7 @@ class BBIDataProvider( GenomeDataProvider ):
                     # Compute $\mu \pm 2\sigma$ to provide an estimate for upper and lower
                     # bounds that contain ~95% of the data.
                     mean = summary.sum_data[0] / valid_count
-                    var = summary.sum_squares[0] - mean
+                    var = max( summary.sum_squares[0] - mean, 0 )  # Prevent variance underflow.
                     if valid_count > 1:
                         var /= valid_count - 1
                     sd = math.sqrt( var )
@@ -1299,19 +1311,18 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
         source.close()
         out.close()
 
-    def get_iterator( self, chrom, start, end, **kwargs ):
-        """
-        Returns an array with values: (a) source file and (b) an iterator that
-        provides data in the region chrom:start-end
-        """
-        start, end = int(start), int(end)
-        index = Indexes( self.converted_dataset.file_name )
+    def open_data_file( self ):
+        return Indexes( self.converted_dataset.file_name )
 
-        if chrom not in index.indexes:
+    def get_iterator( self, data_file, chrom, start, end, **kwargs ):
+        """
+        Returns an iterator for data in data_file in chrom:start-end
+        """
+        if chrom not in data_file.indexes:
             # Try alternative naming.
             chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
 
-        return index.find(chrom, start, end)
+        return data_file.find(chrom, start, end)
 
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         results = []
@@ -1358,7 +1369,7 @@ class RawGFFDataProvider( GenomeDataProvider ):
 
     dataset_type = 'interval_index'
 
-    def get_iterator( self, chrom, start, end, **kwargs ):
+    def get_iterator( self, data_file, chrom, start, end, **kwargs ):
         """
         Returns an iterator that provides data in the region chrom:start-end as well as
         a file offset.
@@ -1467,7 +1478,7 @@ class ENCODEPeakDataProvider( GenomeDataProvider ):
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
 
-    def get_iterator( self, chrom, start, end, **kwargs ):
+    def get_iterator( self, data_file, chrom, start, end, **kwargs ):
         raise "Unimplemented Method"
 
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
@@ -1558,15 +1569,15 @@ class ENCODEPeakTabixDataProvider( TabixDataProvider, ENCODEPeakDataProvider ):
         filter_col += 1
         filters.append( { 'name': 'pValue',
                         'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c8' } )
+                          'index': filter_col,
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c8' } )
         filter_col += 1
         filters.append( { 'name': 'qValue',
                         'type': 'number',
-                        'index': filter_col,
-                        'tool_id': 'Filter1',
-                        'tool_exp_name': 'c9' } )
+                          'index': filter_col,
+                          'tool_id': 'Filter1',
+                          'tool_exp_name': 'c9' } )
         return filters
 
 #
@@ -1615,7 +1626,7 @@ class ChromatinInteractionsDataProvider( GenomeDataProvider ):
 
 
 class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinInteractionsDataProvider ):
-    def get_iterator( self, chrom, start=0, end=sys.maxint, interchromosomal=False, **kwargs ):
+    def get_iterator( self, data_file, chrom, start=0, end=sys.maxint, interchromosomal=False, **kwargs ):
         """
         """
         # Modify start as needed to get earlier interactions with start region.
@@ -1636,7 +1647,7 @@ class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinIntera
                 # Check for interchromosal interactions.
                 if interchromosomal and c != chrom:
                     yield line
-        return filter( TabixDataProvider.get_iterator( self, chrom, filter_start, end ) )
+        return filter( TabixDataProvider.get_iterator( self, data_file, chrom, filter_start, end ) )
 
 #
 # -- Helper methods. --

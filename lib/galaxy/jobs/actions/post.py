@@ -8,8 +8,6 @@ import logging
 import socket
 from galaxy.util import send_mail
 from galaxy.util.json import dumps
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
 log = logging.getLogger( __name__ )
@@ -176,6 +174,12 @@ class RenameDatasetAction(DefaultJobAction):
                 operations = []
                 if len(tokens) > 1:
                     input_file_var = tokens[0].strip()
+
+                    # Treat . as special symbol (breaks parameter names anyway)
+                    # to allow access to repeat elements, for instance first
+                    # repeat in cat1 would be something like queries_0.input2.
+                    input_file_var = input_file_var.replace(".", "|")
+
                     for i in range(1, len(tokens)):
                         operations.append(tokens[i].strip())
                 replacement = ""
@@ -398,10 +402,22 @@ class DeleteIntermediatesAction(DefaultJobAction):
         # POTENTIAL ISSUES:  When many outputs are being finish()ed
         # concurrently, sometimes non-terminal steps won't be cleaned up
         # because of the lag in job state updates.
+        if not job.workflow_invocation_step:
+            log.debug("This job is not part of a workflow invocation, delete intermediates aborted.")
+            return
         wfi = job.workflow_invocation_step.workflow_invocation
+        if wfi.active:
+            log.debug("Workflow still scheduling so new jobs may appear, skipping deletion of intermediate files.")
+            # Still evaluating workflow so we don't yet have all workflow invocation
+            # steps to start looking at.
+            return
         if wfi.workflow.has_outputs_defined():
             jobs_to_check = [wfistep.job for wfistep in wfi.steps if not wfistep.workflow_step.workflow_outputs]
             for j2c in jobs_to_check:
+                if j2c is None:
+                    # Job not yet created, this will be re-evaluated after subsequent jobs in
+                    # workflow.
+                    return
                 for input_dataset in [x.dataset for x in j2c.input_datasets if x.dataset.creating_job.workflow_invocation_step and x.dataset.creating_job.workflow_invocation_step.workflow_invocation == wfi]:
                     safe_to_delete = True
                     for job_to_check in [d_j.job for d_j in input_dataset.dependent_jobs]:

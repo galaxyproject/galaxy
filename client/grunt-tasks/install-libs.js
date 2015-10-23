@@ -19,11 +19,12 @@ module.exports = function( grunt ){
             'backbone':       [ 'backbone.js', 'backbone/backbone.js' ],
             'requirejs':      [ 'require.js', 'require.js' ],
             'd3':             [ 'd3.js', 'd3.js' ],
+            'bib2json':       [ 'Parser.js', 'bibtex.js' ],
+
+            'farbtastic':     [ 'src/farbtastic.js', 'farbtastic.js' ],
+            'jQTouch':        [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
 
             // these need to be updated and tested
-            //'farbtastic': [ 'src/farbtastic.js', 'farbtastic.js' ],
-            //'jQTouch': [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
-            //'bib2json': [ 'Parser.js', 'bibtex.js' ],
             //'jquery-form': [ 'jquery.form.js', 'jquery/jquery.form.js' ],
             //'jquery-autocomplete': [ 'src/jquery.autocomplete.js', 'jquery/jquery.autocomplete.js' ],
             //'select2': [ 'select2.js', 'jquery/select2.js' ],

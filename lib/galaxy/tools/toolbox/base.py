@@ -1,12 +1,12 @@
+import logging
 import os
 import re
 import string
 import tarfile
 import tempfile
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
+from markupsafe import escape
 
 from galaxy.model.item_attrs import Dictifiable
 
@@ -31,9 +31,7 @@ from .filters import FilterFactory
 from .watcher import get_watcher
 
 from galaxy.web.form_builder import SelectField
-from galaxy.web.framework.helpers import escape
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -739,6 +737,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             # to monitor such a large directory.
             self._tool_watcher.watch_file( config_file, tool.id )
         return tool
+
+    def load_hidden_lib_tool( self, path ):
+        tool_xml = os.path.join( os.getcwd(), "lib", path )
+        return self.load_hidden_tool( tool_xml )
 
     def load_hidden_tool( self, config_file, **kwds ):
         """ Load a hidden tool (in this context meaning one that does not

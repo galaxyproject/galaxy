@@ -32,6 +32,7 @@ except ImportError:
 
 GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
+DEFAULT_GENOMESPACE_TOOLNAME = 'Galaxy'
 
 CHUNK_SIZE = 2**20 #1mb
 
@@ -60,7 +61,7 @@ def chunk_write( source_stream, target_stream, source_method = "read", target_me
         else:
             break
 
-def get_cookie_opener( gs_username, gs_token ):
+def get_cookie_opener( gs_username, gs_token, gs_toolname=None ):
     """ Create a GenomeSpace cookie opener """
     cj = cookielib.CookieJar()
     for cookie_name, cookie_value in [ ( 'gs-token', gs_token ), ( 'gs-username', gs_username ) ]:
@@ -68,6 +69,7 @@ def get_cookie_opener( gs_username, gs_token ):
         cookie = cookielib.Cookie(version=0, name=cookie_name, value=cookie_value, port=None, port_specified=False, domain='', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False )
         cj.set_cookie( cookie )
     cookie_opener = urllib2.build_opener( urllib2.HTTPCookieProcessor( cj ) )
+    cookie_opener.addheaders.append( ( 'gs-toolname', gs_toolname or DEFAULT_GENOMESPACE_TOOLNAME ) )
     return cookie_opener
 
 def get_genomespace_site_urls():
@@ -195,7 +197,7 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
                 else:
                     del GENOMESPACE_DIRECTORIES_BY_USER[ trans.user ]
             if not rval:
-                url_opener = get_cookie_opener( username, token )
+                url_opener = get_cookie_opener( username, token, gs_toolname=os.environ.get( 'GENOMESPACE_TOOLNAME', None ) )
                 genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
                 dm_url = genomespace_site_dict['dmServer']
                 #get export root directory
@@ -212,9 +214,9 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
     return rval
     
 
-def send_file_to_genomespace( genomespace_site, username, token, source_filename, target_directory, target_filename, file_type, content_type, log_filename ):
+def send_file_to_genomespace( genomespace_site, username, token, source_filename, target_directory, target_filename, file_type, content_type, log_filename, gs_toolname ):
     target_filename = target_filename.replace( '/', '-' ) # Slashes no longer allowed in filenames
-    url_opener = get_cookie_opener( username, token )
+    url_opener = get_cookie_opener( username, token, gs_toolname=gs_toolname )
     genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
     dm_url = genomespace_site_dict['dmServer']
     #get default directory
@@ -318,9 +320,10 @@ if __name__ == '__main__':
     parser.add_option( '', '--file_type', dest='file_type', action='store', type="string", default=None, help='file_type' )
     parser.add_option( '-c', '--content_type', dest='content_type', action='store', type="string", default=None, help='content_type' )
     parser.add_option( '-l', '--log', dest='log', action='store', type="string", default=None, help='log' )
+    parser.add_option( '', '--genomespace_toolname', dest='genomespace_toolname', action='store', type="string", default=DEFAULT_GENOMESPACE_TOOLNAME, help='value to use for gs-toolname, used in GenomeSpace internal logging' )
     
     (options, args) = parser.parse_args()
     
-    send_file_to_genomespace( options.genomespace_site, options.username, options.token, options.dataset, map( binascii.unhexlify, options.subdirectory ), binascii.unhexlify( options.filename ), options.file_type, options.content_type, options.log )
+    send_file_to_genomespace( options.genomespace_site, options.username, options.token, options.dataset, map( binascii.unhexlify, options.subdirectory ), binascii.unhexlify( options.filename ), options.file_type, options.content_type, options.log, options.genomespace_toolname )
 
 

@@ -1,22 +1,20 @@
 """
 Add UUID column to dataset table
 """
+import logging
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Column, MetaData, Table
+
 from galaxy.model.custom_types import UUIDType
 
-import logging
 log = logging.getLogger( __name__ )
-
 dataset_uuid_column = Column( "uuid", UUIDType, nullable=True )
 
 
 def display_migration_details():
     print ""
     print "This migration adds uuid column to dataset table"
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -47,5 +45,3 @@ def downgrade(migrate_engine):
         dataset_uuid.drop()
     except Exception, e:
         log.debug( "Dropping 'uuid' column from dataset table failed: %s" % ( str( e ) ) )
-
-

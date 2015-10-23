@@ -61,6 +61,14 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
+    persistence_directory=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_acknowledge=dict(
+        map=specs.to_bool_or_none,
+        default=None
+    ),
     amqp_consumer_timeout=dict(
         map=lambda val: None if val == "None" else float(val),
         default=None,
@@ -145,7 +153,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
     def __init_client_manager( self ):
         client_manager_kwargs = {}
-        for kwd in 'manager', 'cache', 'transport':
+        for kwd in 'manager', 'cache', 'transport', 'persistence_directory':
             client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
         for kwd in self.runner_params.keys():
             if kwd.startswith( 'amqp_' ):
@@ -301,7 +309,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
                 if value is PARAMETER_SPECIFICATION_IGNORED:
                     log.warn( "Pulsar runner in selected configuration ignores parameter %s" % key )
                 continue
-            #if self.runner_params.get( key, None ):
+            # if self.runner_params.get( key, None ):
             #    # Let plugin define defaults for some parameters -
             #    # for instance that way jobs_directory can be
             #    # configured next to AMQP url (where it belongs).
@@ -345,7 +353,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
     def get_client( self, job_destination_params, job_id, env=[] ):
         # Cannot use url_for outside of web thread.
-        #files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
+        # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
 
         encoded_job_id = self.app.security.encode_id(job_id)
         job_key = self.app.security.encode_id( job_id, kind="jobs_files" )
@@ -421,7 +429,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         try:
             os.kill( pid, 0 )
             return True
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 log.debug( "check_pid(): PID %d is dead" % pid )
             else:
@@ -429,7 +437,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             return False
 
     def stop_job( self, job ):
-        #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         client = self.get_client( job.destination_params, job.job_runner_external_id )
         job_ext_output_metadata = job.get_external_output_metadata()
         if not PulsarJobRunner.__remote_metadata( client ) and job_ext_output_metadata:
@@ -444,7 +452,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             for sig in [ 15, 9 ]:
                 try:
                     os.killpg( pid, sig )
-                except OSError, e:
+                except OSError as e:
                     log.warning( "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job.id, errno.errorcode[e.errno], sig, pid, e.strerror ) )
                     return  # give up
                 sleep( 2 )
@@ -611,6 +619,7 @@ class PulsarMQJobRunner( PulsarJobRunner ):
         # This is a message queue driven runner, don't monitor
         # just setup required callback.
         self.client_manager.ensure_has_status_update_callback(self.__async_update)
+        self.client_manager.ensure_has_ack_consumers()
 
     def __async_update( self, full_status ):
         job_id = None

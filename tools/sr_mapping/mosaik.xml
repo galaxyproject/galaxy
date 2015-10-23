@@ -123,4 +123,7 @@
   <help>
 This tool uses Mosaik to align reads to a reference sequence.
   </help>
+  <citations>
+    <citation type="doi">10.1371/journal.pone.0090581</citation>
+  </citations>
 </tool>

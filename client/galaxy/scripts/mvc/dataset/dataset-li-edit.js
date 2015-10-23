@@ -5,8 +5,9 @@ define([
     "mvc/annotations",
     "ui/fa-icon-button",
     "mvc/base-mvc",
+    "mvc/tools/tools-form",
     "utils/localization"
-], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, _l ){
+], function( STATES, DATASET_LI, TAGS, ANNOTATIONS, faIconButton, BASE_MVC, ToolsForm, _l ){
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
 /** @class Editing view for DatasetAssociation.
@@ -157,13 +158,23 @@ var DatasetListItemEdit = _super.extend(
 
     /** Render icon-button to re-run the job that created this dataset. */
     _renderRerunButton : function(){
-        return faIconButton({
-            title       : _l( 'Run this job again' ),
-            href        : this.model.urls.rerun,
-            classes     : 'rerun-btn',
-            target      : this.linkTarget,
-            faIcon      : 'fa-refresh'
-        });
+        var creating_job = this.model.get('creating_job');
+        if (this.model.get('rerunnable')){
+            return faIconButton({
+                title       : _l( 'Run this job again' ),
+                href        : this.model.urls.rerun,
+                classes     : 'rerun-btn',
+                target      : this.linkTarget,
+                faIcon      : 'fa-refresh',
+                onclick     : function(ev) {
+                    ev.preventDefault();
+                    var form = new ToolsForm.View({'job_id' : creating_job});
+                    form.deferred.execute(function(){
+                        Galaxy.app.display(form.$el);
+                    });
+                }
+            });
+        }
     },
 
     /** Render an icon-button or popupmenu of links based on the applicable visualizations */

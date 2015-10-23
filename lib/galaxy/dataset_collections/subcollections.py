@@ -11,7 +11,7 @@ def _split_dataset_collection( dataset_collection, collection_type ):
     this_collection_type = dataset_collection.collection_type
     if not this_collection_type.endswith( collection_type ) or this_collection_type == collection_type:
         raise exceptions.MessageException( "Cannot split collection in desired fashion." )
-        
+
     split_elements = []
     for element in dataset_collection.elements:
         child_collection = element.child_collection

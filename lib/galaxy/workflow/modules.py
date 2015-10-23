@@ -506,7 +506,7 @@ class ToolModule( WorkflowModule ):
         if module.tool is None:
             error_message = "Attempted to create new workflow module for invalid tool_id, no tool with id - %s." % tool_id
             raise Exception( error_message )
-        module.state = module.tool.new_state( trans, all_pages=True )
+        module.state = module.tool.new_state( trans )
         return module
 
     @classmethod
@@ -714,7 +714,7 @@ class ToolModule( WorkflowModule ):
     def get_config_form( self ):
         self.add_dummy_datasets()
         return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self,
-            tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
+                                         tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
 
     def encode_runtime_state( self, trans, state ):
         encoded = state.encode( self.tool, self.trans.app )
@@ -983,26 +983,36 @@ def load_module_sections( trans ):
     """ Get abstract description of the workflow modules this Galaxy instance
     is configured with.
     """
-    inputs_section = {
+    module_sections = {}
+    module_sections['inputs'] = {
         "name": "inputs",
         "title": "Inputs",
         "modules": [
-            {"name": "data_input", "title": "Input Dataset", "description": "Input dataset"},
-            {"name": "data_collection_input", "title": "Input Dataset Collection", "description": "Input dataset collection"},
+            {
+                "name": "data_input",
+                "title": "Input Dataset",
+                "description": "Input dataset"
+            },
+            {
+                "name": "data_collection_input",
+                "title": "Input Dataset Collection",
+                "description": "Input dataset collection"
+            },
         ],
     }
-    module_sections = [
-        inputs_section
-    ]
+
     if trans.app.config.enable_beta_workflow_modules:
-        experimental_modules = {
+        module_sections['experimental'] = {
             "name": "experimental",
             "title": "Experimental",
             "modules": [
-                {"name": "pause", "title": "Pause Workflow for Dataset Review", "description": "Pause for Review"},
+                {
+                    "name": "pause",
+                    "title": "Pause Workflow for Dataset Review",
+                    "description": "Pause for Review"
+                },
             ],
         }
-        module_sections.append(experimental_modules)
 
     return module_sections
 
@@ -1060,7 +1070,7 @@ class WorkflowModuleInjector(object):
         if not module:
             step.module = None
             step.state = None
-            raise MissingToolException()
+            raise MissingToolException(step.tool_id)
 
         # Fix any missing parameters
         step.upgrade_messages = module.check_and_update_state()

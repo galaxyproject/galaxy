@@ -157,7 +157,8 @@ class ToolTestBuilder( object ):
                     for input_name, input_value in case.inputs.items():
                         case_inputs = self.__process_raw_inputs( { input_name: input_value }, raw_inputs, parent_context=cond_context )
                         expanded_inputs.update( case_inputs )
-                    expanded_case_value = self.__split_if_str( case.value )
+                    if not value.type == "text":
+                        expanded_case_value = self.__split_if_str( case.value )
                     if case_value is not None:
                         # A bit tricky here - we are growing inputs with value
                         # that may be implicit (i.e. not defined by user just
@@ -192,7 +193,8 @@ class ToolTestBuilder( object ):
                 raw_input = context.extract_value( raw_inputs )
                 if raw_input:
                     (name, param_value, param_extra) = raw_input
-                    param_value = self.__split_if_str( param_value )
+                    if not value.type == "text":
+                        param_value = self.__split_if_str( param_value )
                     if isinstance( value, galaxy.tools.parameters.basic.DataToolParameter ):
                         if not isinstance(param_value, list):
                             param_value = [ param_value ]

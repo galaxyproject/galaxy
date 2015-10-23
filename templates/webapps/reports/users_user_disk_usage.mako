@@ -9,30 +9,54 @@
 ${get_css()}
 
 <!--users_user_disk_usage.mako-->
-<div class="toolForm">
+<div class="report">
     <h3 align="center">Per-user disk usage</h3>
     <h4 align="center">Listed in descending order by usage size</h4>
-    <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
+    <table class="colored diskUsageForm">
         <tr>
             <td>
-                <form method="post" controller="users" action="user_disk_usage">
+                <form method="post" 
+                      controller="users"
+                      action="user_disk_usage">
                     <p>
-                        Top <input type="textfield" value="${user_cutoff}" size="3" name="user_cutoff"> shown (0 = all).
-                        &nbsp;<button name="action" value="user_cutoff">Go</button>
+                        Top <input type="textfield" 
+                                   value="${user_cutoff}"
+                                   size="3"
+                                   name="user_cutoff">
+                        shown (0 = all).&nbsp;
+                        <button name="action" value="user_cutoff">
+                            Go
+                        </button>
                     </p>
                 </form>
             </td>
         </tr>
     </table>
-    <table align="center" width="70%" class="colored" cellpadding="5" cellspacing="5">
+    <table class="colored diskUsageForm">
         %if users:
             <tr class="header">
-                <td>
-                    ${get_sort_url(sort_id, order, 'email', 'users', 'user_disk_usage', 'Email')}
+                <td class="half_width">
+                    ${
+                        get_sort_url(
+                            sort_id,
+                            order,
+                            'email',
+                            'users',
+                            'user_disk_usage',
+                            'Email')
+                    }
                     <span class='dir_arrow email'>${arrow}</span>
                 </td>
-                <td>
-                    ${get_sort_url(sort_id, order, 'disk_usage', 'users', 'user_disk_usage', 'Disk Usage')}
+                <td class="half_width">
+                    ${
+                        get_sort_url(
+                            sort_id,
+                            order,
+                            'disk_usage',
+                            'users',
+                            'user_disk_usage',
+                            'Disk Usage')
+                    }
                     <span class='dir_arrow disk_usage'>${arrow}</span>
                 </td>
             </tr>

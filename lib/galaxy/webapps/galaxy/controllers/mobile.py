@@ -1,5 +1,5 @@
 from galaxy import web
-from galaxy.web.base.controller import *
+from galaxy.web.base.controller import BaseUIController
 
 
 class Mobile( BaseUIController ):
@@ -61,7 +61,7 @@ class Mobile( BaseUIController ):
         #    username == login
         # )).first()
         # if not user:
-        #     autoreg = galaxy.auth.check_auto_registration(trans, login, password, trans.app.config.auth_config_file)
+        #     autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
         #     if autoreg[0]:
         #         kwd = {}
         #         kwd['email'] = autoreg[1]
@@ -86,7 +86,7 @@ class Mobile( BaseUIController ):
         #     error = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
         # elif user.external:
         #     error = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-        # elif not galaxy.auth.check_password(user, password, trans.app.config.auth_config_file):
+        # elif not trans.app.auth_manager.check_password(user, password):
         #     error = "Invalid password"
         # else:
         #     trans.handle_user_login( user )

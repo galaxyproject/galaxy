@@ -1,18 +1,14 @@
 """
 Add a user_id column to the job table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
+from sqlalchemy.exc import NoSuchTableError
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -22,6 +18,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -67,6 +64,7 @@ def upgrade(migrate_engine):
             print ""
         except Exception, e:
             log.debug( "Updating job.user_id column failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

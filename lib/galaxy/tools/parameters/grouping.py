@@ -392,7 +392,7 @@ class UploadDataset( Group ):
                                 path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )
                                 if not os.path.islink( os.path.join( dirpath, filename ) ):
                                     ftp_data_file = { 'local_filename' : os.path.abspath( os.path.join( user_ftp_dir, path ) ),
-                                          'filename' : os.path.basename( path ) }
+                                                      'filename' : os.path.basename( path ) }
                                     file_bunch = get_data_file_filename( ftp_data_file, override_name=name, override_info=info )
                                     if file_bunch.path:
                                         break
@@ -573,7 +573,8 @@ class Conditional( Group ):
         current_case = rval['__current_case__'] = value['__current_case__']
         rval[ self.test_param.name ] = self.test_param.value_to_basic( value[ self.test_param.name ], app )
         for input in self.cases[current_case].inputs.itervalues():
-            rval[ input.name ] = input.value_to_basic( value[ input.name ], app )
+            if input.name in value:  # parameter might be absent in unverified workflow
+                rval[ input.name ] = input.value_to_basic( value[ input.name ], app )
         return rval
 
     def value_from_basic( self, value, app, ignore_errors=False ):

@@ -40,12 +40,11 @@ class TagAttributeHandler( object ):
                 new_elem[ sub_index ] = new_sub_elem
         return elem_altered, new_elem, message
 
-    def process_actions_tag_set( self, elem, message ):
+    def process_actions_tag_set( self, elem, message, skip_actions_tags=True ):
         # <actions>
         #     <package name="libgtextutils" version="0.6">
         #         <repository name="package_libgtextutils_0_6" owner="test" prior_installation_required="True" />
         #     </package>
-        from tool_shed.util import xml_util
         elem_altered = False
         new_elem = copy.deepcopy( elem )
         for sub_index, sub_elem in enumerate( elem ):
@@ -53,7 +52,8 @@ class TagAttributeHandler( object ):
             error_message = ''
             if sub_elem.tag == 'package':
                 altered, new_sub_elem, error_message = self.process_package_tag_set( elem=sub_elem,
-                                                                                     message=message )
+                                                                                     message=message,
+                                                                                     skip_actions_tags=skip_actions_tags )
             elif sub_elem.tag == 'action':
                 # <action type="set_environment_for_install">
                 #    <repository name="package_readline_6_2" owner="devteam"">
@@ -97,7 +97,8 @@ class TagAttributeHandler( object ):
                         continue
                 altered, new_sub_elem, error_message = \
                     self.process_actions_tag_set( elem=sub_elem,
-                                                  message=message )
+                                                  message=message,
+                                                  skip_actions_tags=skip_actions_tags )
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -107,8 +108,8 @@ class TagAttributeHandler( object ):
                     elem_altered = True
                 new_elem[ sub_index ] = new_sub_elem
         return elem_altered, new_elem, message
-        
-    def process_config( self, root ):
+
+    def process_config( self, root, skip_actions_tags=True ):
         error_message = ''
         new_root = copy.deepcopy( root )
         if root.tag == 'tool_dependency':
@@ -118,7 +119,8 @@ class TagAttributeHandler( object ):
                     # <package name="eigen" version="2.0.17">
                     altered, new_elem, error_message = \
                         self.process_package_tag_set( elem=elem,
-                                                      message=error_message )
+                                                      message=error_message,
+                                                      skip_actions_tags=skip_actions_tags )
                 if altered:
                     if not self.altered:
                         self.altered = True
@@ -127,7 +129,7 @@ class TagAttributeHandler( object ):
             error_message = "Invalid tool_dependencies.xml file."
         return self.altered, new_root, error_message
 
-    def process_install_tag_set( self, elem, message ):
+    def process_install_tag_set( self, elem, message, skip_actions_tags=True ):
         # <install version="1.0">
         elem_altered = False
         new_elem = copy.deepcopy( elem )
@@ -138,11 +140,12 @@ class TagAttributeHandler( object ):
                 altered, new_sub_elem, error_message = \
                     self.process_actions_group_tag_set( elem=sub_elem,
                                                         message=message,
-                                                        skip_actions_tags=True )
+                                                        skip_actions_tags=skip_actions_tags )
             elif sub_elem.tag == 'actions':
                 altered, new_sub_elem, error_message = \
                     self.process_actions_tag_set( elem=sub_elem,
-                                                  message=message )
+                                                  message=message,
+                                                  skip_actions_tags=skip_actions_tags )
             else:
                 package_name = elem.get( 'name', '' )
                 package_version = elem.get( 'version', '' )
@@ -160,7 +163,7 @@ class TagAttributeHandler( object ):
                 new_elem[ sub_index ] = new_sub_elem
         return elem_altered, new_elem, message
 
-    def process_package_tag_set( self, elem, message ):
+    def process_package_tag_set( self, elem, message, skip_actions_tags=True ):
         elem_altered = False
         new_elem = copy.deepcopy( elem )
         for sub_index, sub_elem in enumerate( elem ):
@@ -169,7 +172,8 @@ class TagAttributeHandler( object ):
             if sub_elem.tag == 'install':
                 altered, new_sub_elem, error_message = \
                     self.process_install_tag_set( elem=sub_elem,
-                                                  message=message )
+                                                  message=message,
+                                                  skip_actions_tags=skip_actions_tags )
             elif sub_elem.tag == 'repository':
                 altered, new_sub_elem, error_message = \
                     self.process_repository_tag_set( parent_elem=elem,

@@ -1,6 +1,7 @@
 from baseparser import Base_Parser, PhyloTree, Node
 from xml.etree import ElementTree
 
+
 class Phyloxml_Parser(Base_Parser):
     """Parses a phyloxml file into a json file that will be passed to PhyloViz for display"""
 
@@ -21,7 +22,7 @@ class Phyloxml_Parser(Base_Parser):
 
         xmlTree = ElementTree.parse(phyloXmlFile)
         xmlRoot = xmlTree.getroot()[0]
-        self.nameSpaceIndex = xmlRoot.tag.rfind("}") + 1 # used later by the clean tag method to remove the name space in every element.tag
+        self.nameSpaceIndex = xmlRoot.tag.rfind("}") + 1  # used later by the clean tag method to remove the name space in every element.tag
 
         phyloRoot = None
         for child in xmlRoot:
@@ -34,7 +35,6 @@ class Phyloxml_Parser(Base_Parser):
         self.phyloTree.root = self.parseNode(phyloRoot, 0)
         jsonDict = self.phyloTree.generateJsonableDict()
         return [jsonDict], "Success"
-
 
     def parseNode(self, node, depth):
         """Parses any node within a phyloxml tree and looks out for claude, which signals the creation of
@@ -53,19 +53,18 @@ class Phyloxml_Parser(Base_Parser):
                 break
 
         if hasInnerClade:       # this node is an internal node
-            currentNode = self._makeInternalNode(node, depth= depth)
+            currentNode = self._makeInternalNode(node, depth=depth)
             for child in node:
                 child = self.parseNode(child, depth + 1)
                 if isinstance(child, Node):
                     currentNode.addChildNode(child)
 
         else:                   # this node is a leaf node
-            currentNode = self._makeLeafNode(node, depth=depth+1)
+            currentNode = self._makeLeafNode(node, depth=depth + 1)
 
         return currentNode
 
-
-    def _makeLeafNode(self, leafNode, depth = 0 ):
+    def _makeLeafNode(self, leafNode, depth=0 ):
         """Makes leaf nodes by calling Phylotree methods"""
         node = {}
         for child in leafNode:
@@ -106,7 +105,6 @@ class Phyloxml_Parser(Base_Parser):
 
         return nodeName
 
-
     def _makeInternalNode(self, internalNode, depth=0):
         """ Makes an internal node from an element object that is guranteed to be a parent node.
         Gets the value of interests like events and appends it to a custom node object that will be passed to PhyloTree to make nodes
@@ -124,9 +122,7 @@ class Phyloxml_Parser(Base_Parser):
                     text = child.text
                 node[key] = text
 
-
         return self.phyloTree.makeNode(self._getNodeName(internalNode, depth), **node)
-
 
     def cleanTag(self, tagString):
         return tagString[self.nameSpaceIndex:]

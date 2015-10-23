@@ -1,8 +1,10 @@
+
 define([
     "mvc/history/history-contents",
+    "utils/utils",
     "mvc/base-mvc",
     "utils/localization"
-], function( HISTORY_CONTENTS, BASE_MVC, _l ){
+], function( HISTORY_CONTENTS, UTILS, BASE_MVC, _l ){
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.
@@ -94,6 +96,26 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
     errorHandler : function( model, xhr, options, msg, details ){
         // clear update timeout on model err
         this.clearUpdateTimeout();
+    },
+
+    /** convert size in bytes to a more human readable version */
+    nice_size : function(){
+        return UTILS.bytesToString( this.get( 'size' ), true, 2 );
+    },
+
+    /** override to add nice_size */
+    toJSON : function(){
+        return _.extend( Backbone.Model.prototype.toJSON.call( this ), {
+            nice_size : this.nice_size()
+        });
+    },
+
+    /** override to allow getting nice_size */
+    get : function( key ){
+        if( key === 'nice_size' ){
+            return this.nice_size();
+        }
+        return Backbone.Model.prototype.get.apply( this, arguments );
     },
 
     // ........................................................................ common queries
@@ -222,7 +244,7 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
      *  @fires copied               passed this history and the response JSON from the copy
      *  @returns {xhr}
      */
-    copy : function( current, name ){
+    copy : function( current, name, allDatasets ){
         current = ( current !== undefined )?( current ):( true );
         if( !this.id ){
             throw new Error( 'You must set the history ID before copying it.' );
@@ -235,8 +257,9 @@ var History = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend(
         if( name ){
             postData.name = name;
         }
-
-        //TODO:?? all datasets?
+        if( !allDatasets ){
+            postData.all_datasets = false;
+        }
 
         var history = this,
             copy = jQuery.post( this.urlRoot, postData );
@@ -355,59 +378,264 @@ History.getHistoryData = function getHistoryData( historyId, options ){
 
 
 //==============================================================================
+var ControlledFetchMixin = {
+
+    /** Override to convert certain options keys into API index parameters */
+    fetch : function( options ){
+        options = options || {};
+        options.data = options.data || this._buildFetchData( options );
+        // use repeated params for arrays, e.g. q=1&qv=1&q=2&qv=2
+        options.traditional = true;
+        return Backbone.Collection.prototype.fetch.call( this, options );
+    },
+
+    /** These attribute keys are valid params to fetch/API-index */
+    _fetchOptions : [
+        /** model dependent string to control the order of models returned */
+        'order',
+        /** limit the number of models returned from a fetch */
+        'limit',
+        /** skip this number of models when fetching */
+        'offset',
+        /** what series of attributes to return (model dependent) */
+        'view',
+        /** individual keys to return for the models (see api/histories.index) */
+        'keys'
+    ],
+
+    /** Build the data dictionary to send to fetch's XHR as data */
+    _buildFetchData : function( options ){
+        var data = {},
+            fetchDefaults = this._fetchDefaults();
+        options = _.defaults( options || {}, fetchDefaults );
+        data = _.pick( options, this._fetchOptions );
+
+        var filters = _.has( options, 'filters' )? options.filters : ( fetchDefaults.filters || {} );
+        if( !_.isEmpty( filters ) ){
+            _.extend( data, this._buildFetchFilters( filters ) );
+        }
+        return data;
+    },
+
+    /** Override to have defaults for fetch options and filters */
+    _fetchDefaults : function(){
+        // to be overridden
+        return {};
+    },
+
+    /** Convert dictionary filters to qqv style arrays */
+    _buildFetchFilters : function( filters ){
+        var filterMap = {
+            q  : [],
+            qv : []
+        };
+        _.each( filters, function( v, k ){
+            if( v === true ){ v = 'True'; }
+            if( v === false ){ v = 'False'; }
+            filterMap.q.push( k );
+            filterMap.qv.push( v );
+        });
+        return filterMap;
+    },
+};
+
+//==============================================================================
 /** @class A collection of histories (per user).
  *      (stub) currently unused.
  */
-var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
+var HistoryCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend( ControlledFetchMixin ).extend(
 /** @lends HistoryCollection.prototype */{
     model   : History,
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
-    urlRoot : ( window.galaxy_config? galaxy_config.root : '/' ) + 'api/histories',
-    //url     : function(){ return this.urlRoot; },
+    /** @type {String} the default sortOrders key for sorting */
+    DEFAULT_ORDER : 'update_time',
+
+    /** @type {Object} map of collection sorting orders generally containing a getter to return the attribute
+     *      sorted by and asc T/F if it is an ascending sort.
+     */
+    sortOrders : {
+        'update_time' : {
+            getter : function( h ){ return new Date( h.get( 'update_time' ) ); },
+            asc : false
+        },
+        'update_time-asc' : {
+            getter : function( h ){ return new Date( h.get( 'update_time' ) ); },
+            asc : true
+        },
+        'name' : {
+            getter : function( h ){ return h.get( 'name' ); },
+            asc : true
+        },
+        'name-dsc' : {
+            getter : function( h ){ return h.get( 'name' ); },
+            asc : false
+        },
+        'size' : {
+            getter : function( h ){ return h.get( 'size' ); },
+            asc : false
+        },
+        'size-asc' : {
+            getter : function( h ){ return h.get( 'size' ); },
+            asc : true
+        }
+    },
 
     initialize : function( models, options ){
         options = options || {};
         this.log( 'HistoryCollection.initialize', arguments );
+
+        // instance vars
+        /** @type {boolean} should deleted histories be included */
         this.includeDeleted = options.includeDeleted || false;
+        // set the sort order
+        this.setOrder( options.order || this.DEFAULT_ORDER );
+        /** @type {String} encoded id of the history that's current */
+        this.currentHistoryId = options.currentHistoryId;
+        /** @type {boolean} have all histories been fetched and in the collection? */
+        this.allFetched = options.allFetched || false;
 
-        //this.on( 'all', function(){
+        // this.on( 'all', function(){
         //    console.info( 'event:', arguments );
-        //});
-
+        // });
         this.setUpListeners();
     },
 
-    setUpListeners : function setUpListeners(){
-        var collection = this;
+    urlRoot : ( window.galaxy_config? galaxy_config.root : '/' ) + 'api/histories',
+    url     : function(){ return this.urlRoot; },
 
-        // when a history is deleted, remove it from the collection (if optionally set to do so)
-        this.on( 'change:deleted', function( history ){
-            this.debug( 'change:deleted', collection.includeDeleted, history.get( 'deleted' ) );
-            if( !collection.includeDeleted && history.get( 'deleted' ) ){
-                collection.remove( history );
-            }
-        });
-
-        // listen for a history copy, adding it to the beginning of the collection
-        this.on( 'copied', function( original, newData ){
-            this.unshift( new History( newData, [] ) );
-        });
+    /** returns map of default filters and settings for fetching from the API */
+    _fetchDefaults : function(){
+        // to be overridden
+        var defaults = {
+            order   : this.order,
+            view    : 'detailed'
+        };
+        if( !this.includeDeleted ){
+            defaults.filters = {
+                deleted : false,
+                purged  : false,
+            };
+        }
+        return defaults;
     },
 
+    /** set up reflexive event handlers */
+    setUpListeners : function setUpListeners(){
+        this.on({
+            // when a history is deleted, remove it from the collection (if optionally set to do so)
+            'change:deleted' : function( history ){
+                // TODO: this becomes complicated when more filters are used
+                this.debug( 'change:deleted', this.includeDeleted, history.get( 'deleted' ) );
+                if( !this.includeDeleted && history.get( 'deleted' ) ){
+                    this.remove( history );
+                }
+            },
+            // listen for a history copy, setting it to current
+            'copied' : function( original, newData ){
+                this.setCurrent( new History( newData, [] ) );
+            },
+            // when a history is made current, track the id in the collection
+            'set-as-current' : function( history ){
+                var oldCurrentId = this.currentHistoryId;
+                this.trigger( 'no-longer-current', oldCurrentId );
+                this.currentHistoryId = history.id;
+            }
+        }, this );
+    },
+
+    /** override to allow passing options.order and setting the sort order to one of sortOrders */
+    sort : function( options ){
+        options = options || {};
+        this.setOrder( options.order );
+        return Backbone.Collection.prototype.sort.call( this, options );
+    },
+
+    /** build the comparator used to sort this collection using the sortOrder map and the given order key
+     *  @event 'changed-order' passed the new order and the collection
+     */
+    setOrder : function( order ){
+        var collection = this,
+            sortOrder = this.sortOrders[ order ];
+        if( _.isUndefined( sortOrder ) ){ return; }
+
+        collection.order = order;
+        collection.comparator = function comparator( a, b ){
+            var currentHistoryId = collection.currentHistoryId;
+            // current always first
+            if( a.id === currentHistoryId ){ return -1; }
+            if( b.id === currentHistoryId ){ return 1; }
+            // then compare by an attribute
+            a = sortOrder.getter( a );
+            b = sortOrder.getter( b );
+            return sortOrder.asc?
+                ( ( a === b )?( 0 ):( a > b ?  1 : -1 ) ):
+                ( ( a === b )?( 0 ):( a > b ? -1 :  1 ) );
+        };
+        collection.trigger( 'changed-order', collection.order, collection );
+        return collection;
+    },
+
+    /** override to provide order and offsets based on instance vars, set limit if passed,
+     *  and set allFetched/fire 'all-fetched' when xhr returns
+     */
+    fetch : function( options ){
+        options = options || {};
+        if( this.allFetched ){ return jQuery.when({}); }
+        var collection = this,
+            fetchOptions = _.defaults( options, {
+                remove : false,
+                offset : collection.length >= 1? ( collection.length - 1 ) : 0,
+                order  : collection.order
+            }),
+            limit = options.limit;
+        if( !_.isUndefined( limit ) ){
+            fetchOptions.limit = limit;
+        }
+
+        return ControlledFetchMixin.fetch.call( this, fetchOptions )
+            .done( function _postFetchMore( fetchData ){
+                var numFetched = _.isArray( fetchData )? fetchData.length : 0;
+                // anything less than a full page means we got all there is to get
+                if( !limit || numFetched < limit ){
+                    collection.allFetched = true;
+                    collection.trigger( 'all-fetched', collection );
+                }
+            }
+        );
+    },
+
+    /** create a new history and by default set it to be the current history */
     create : function create( data, hdas, historyOptions, xhrOptions ){
+        //TODO: .create is actually a collection function that's overridden here
         var collection = this,
             xhr = jQuery.getJSON( galaxy_config.root + 'history/create_new_current'  );
         return xhr.done( function( newData ){
-            var history = new History( newData, [], historyOptions || {} );
-            // new histories go in the front
-//TODO:  (implicit ordering by update time...)
-            collection.unshift( history );
-            collection.trigger( 'new-current' );
+            collection.setCurrent( new History( newData, [], historyOptions || {} ) );
         });
-//TODO: move back to using history.save (via Deferred.then w/ set_as_current)
+    },
+
+    /** set the current history to the given history, placing it first in the collection.
+     *  Pass standard bbone options for use in unshift.
+     *  @triggers new-current passed history and this collection
+     */
+    setCurrent : function( history, options ){
+        options = options || {};
+        // new histories go in the front
+        this.unshift( history, options );
+        this.currentHistoryId = history.get( 'id' );
+        if( !options.silent ){
+            this.trigger( 'new-current', history, this );
+        }
+        return this;
+    },
+
+    /** override to reset allFetched flag to false */
+    reset : function( models, options ){
+        this.allFetched = false;
+        return Backbone.Collection.prototype.reset.call( this, models, options );
     },
 
     toString: function toString(){
