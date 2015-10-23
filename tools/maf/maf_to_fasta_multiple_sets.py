@@ -3,14 +3,13 @@
 """
 Read a maf and output a multiple block fasta file.
 """
-#Dan Blankenberg
+# Dan Blankenberg
 import sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
+
 from bx.align import maf
+
 from galaxy.tools.util import maf_utilities
 
-assert sys.version_info[:2] >= ( 2, 4 )
 
 def __main__():
     try:
@@ -33,16 +32,17 @@ def __main__():
         partial = sys.argv[4]
     except Exception, e:
         maf_utilities.tool_fail( "Error determining keep partial value: %s" % e )
-    
+
     if species:
         print "Restricted to species: %s" % ', '.join( species )
     else:
         print "Not restricted to species."
-    
+
     for block_num, block in enumerate( maf_reader ):
         if species:
             block = block.limit_to_species( species )
-            if len( maf_utilities.get_species_in_block( block ) ) < num_species and partial == "partial_disallowed": continue
+            if len( maf_utilities.get_species_in_block( block ) ) < num_species and partial == "partial_disallowed":
+                continue
         spec_counts = {}
         for component in block.components:
             spec, chrom = maf_utilities.src_split( component.src )
@@ -50,9 +50,10 @@ def __main__():
                 spec_counts[ spec ] = 0
             else:
                 spec_counts[ spec ] += 1
-            file_out.write( "%s\n" % maf_utilities.get_fasta_header( component, { 'block_index' : block_num, 'species' : spec, 'sequence_index' : spec_counts[ spec ] }, suffix = "%s_%i_%i" % ( spec, block_num, spec_counts[ spec ] ) ) )
+            file_out.write( "%s\n" % maf_utilities.get_fasta_header( component, { 'block_index': block_num, 'species': spec, 'sequence_index': spec_counts[ spec ] }, suffix="%s_%i_%i" % ( spec, block_num, spec_counts[ spec ] ) ) )
             file_out.write( "%s\n" % component.text )
         file_out.write( "\n" )
     file_out.close()
 
-if __name__ == "__main__": __main__()
+if __name__ == "__main__":
+    __main__()
