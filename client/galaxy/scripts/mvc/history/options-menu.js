@@ -11,7 +11,7 @@ var menu = [
     },
     {
         html    : _l( 'Saved Histories' ),
-        href    : 'history/list'
+        href    : 'history/list',
     },
     {
         html    : _l( 'Histories Shared with Me' ),
@@ -19,7 +19,7 @@ var menu = [
     },
 
     {
-        html    : _l( 'Current History' ),
+        html    : _l( 'History Actions' ),
         header  : true,
         anon    : true
     },
@@ -29,32 +29,69 @@ var menu = [
             if( Galaxy && Galaxy.currHistoryPanel ){
                 Galaxy.currHistoryPanel.createNewHistory();
             }
-        }
+        },
+        icon : 'plus'
     },
     {
         html    : _l( 'Copy History' ),
-        href    : 'history/copy'
-    },
-    {
-        html    : _l( 'Copy Datasets' ),
-        href    : 'dataset/copy_datasets'
+        href    : 'history/copy',
+        // TODO: I really want the clone icon here.
+        // http://fortawesome.github.io/Font-Awesome/icon/clone/
+        // missing??
+        icon    : 'files-o'
     },
     {
         html    : _l( 'Share or Publish' ),
-        href    : 'history/sharing'
+        href    : 'history/sharing',
+        icon    : 'share'
+    },
+    {
+        html    : _l( 'Show Structure' ),
+        href    : 'history/display_structured',
+        anon    : true,
+        icon    : 'binoculars'
+    },
+    {
+        html    : _l( 'Delete' ),
+        confirm : _l( 'Really delete the current history?' ),
+        href    : 'history/delete_current',
+        icon    : 'trash-o'
+    },
+    {
+        html    : _l( 'Delete Permanently' ),
+        confirm : _l( 'Really delete the current history permanently? This cannot be undone.' ),
+        href    : 'history/delete_current?purge=True',
+        purge   : true,
+        anon    : true,
+        icon    : 'trash'
+    },
+
+
+    {
+        html    : _l( 'Dataset Actions' ),
+        header  : true,
+        anon    : true
+    },
+    {
+        html    : _l( 'Copy Datasets' ),
+        href    : 'dataset/copy_datasets',
+        icon    : 'files-o'
     },
     {
         html    : _l( 'Extract Workflow' ),
-        href    : 'workflow/build_from_current_history'
+        href    : 'workflow/build_from_current_history',
+        icon    : 'puzzle-piece'  // or cubes, object-group, binoculars
     },
     {
         html    : _l( 'Dataset Security' ),
-        href    : 'root/history_set_default_permissions'
+        href    : 'root/history_set_default_permissions',
+        icon    : 'cog'
     },
     {
         html    : _l( 'Resume Paused Jobs' ),
         href    : 'history/resume_paused_jobs?current=True',
-        anon    : true
+        anon    : true,
+        icon    : 'play'
     },
     {
         html    : _l( 'Collapse Expanded Datasets' ),
@@ -62,7 +99,8 @@ var menu = [
             if( Galaxy && Galaxy.currHistoryPanel ){
                 Galaxy.currHistoryPanel.collapseAll();
             }
-        }
+        },
+        icon    : 'compress'
     },
     {
         html    : _l( 'Unhide Hidden Datasets' ),
@@ -80,7 +118,8 @@ var menu = [
                         console.error( arguments );
                     });
             }
-        }
+        },
+        icon    : 'eye'
     },
     {
         html    : _l( 'Delete Hidden Datasets' ),
@@ -99,41 +138,33 @@ var menu = [
                         console.error( arguments );
                     });
             }
-        }
+        },
+        icon    : 'trash',
     },
     {
         html    : _l( 'Purge Deleted Datasets' ),
         confirm : _l( 'Really delete all deleted datasets permanently? This cannot be undone.' ),
         href    : 'history/purge_deleted_datasets',
         purge   : true,
-        anon    : true
+        anon    : true,
     },
+
+
     {
-        html    : _l( 'Show Structure' ),
-        href    : 'history/display_structured',
-        anon    : true
+        html    : _l( 'Downloads' ),
+        header  : true
     },
     {
         html    : _l( 'Export Citations' ),
         href    : 'history/citations',
-        anon    : true
+        anon    : true,
+        icon    : 'download'
     },
     {
         html    : _l( 'Export to File' ),
         href    : 'history/export_archive?preview=True',
-        anon    : true
-    },
-    {
-        html    : _l( 'Delete' ),
-        confirm : _l( 'Really delete the current history?' ),
-        href    : 'history/delete_current'
-    },
-    {
-        html    : _l( 'Delete Permanently' ),
-        confirm : _l( 'Really delete the current history permanently? This cannot be undone.' ),
-        href    : 'history/delete_current?purge=True',
-        purge   : true,
-        anon    : true
+        anon    : true,
+        icon    : 'download'
     },
 
     {
@@ -142,7 +173,8 @@ var menu = [
     },
     {
         html    : _l( 'Import from File' ),
-        href    : 'history/import_archive'
+        href    : 'history/import_archive',
+        icon    : 'upload'
     }
 ];
 
@@ -160,6 +192,13 @@ function buildMenu( isAnon, purgeAllowed, urlRoot ){
             menuOption.href = urlRoot + menuOption.href;
             menuOption.target = 'galaxy_main';
         }
+
+        if( menuOption.icon ){
+            menuOption.html = '<span class="fa fa-' + menuOption.icon + '"></span> ' + menuOption.html
+        } else {
+            menuOption.html = '<span class="fa"></span> ' + menuOption.html
+        }
+
         if( menuOption.confirm ){
             menuOption.func = function(){
                 if( confirm( menuOption.confirm ) ){
@@ -177,7 +216,7 @@ var create = function( $button, options ){
         purgeAllowed = options.purgeAllowed || false,
         root = options.root || ( ( Galaxy && Galaxy.options )? Galaxy.options.root: '/' ),
         menu = buildMenu( isAnon, purgeAllowed, root );
-    //console.debug( 'menu:', menu );
+    console.debug( 'menu:', menu );
     return new PopupMenu( $button, menu );
 };
 
