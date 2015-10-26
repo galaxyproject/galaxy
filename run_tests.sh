@@ -313,7 +313,7 @@ do
 done
 
 if [ -z "$skip_common_startup" ]; then
-    ./scripts/common_startup.sh $skip_venv
+    ./scripts/common_startup.sh $skip_venv --dev-wheels || exit 1
 fi
 
 if [ -z "$skip_venv" -a -d .venv ];
