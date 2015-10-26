@@ -4,6 +4,9 @@ from galaxy import eggs
 eggs.require('SQLAlchemy')
 from sqlalchemy import and_
 
+eggs.require( "MarkupSafe" )
+from markupsafe import escape
+
 from galaxy.web.framework.helpers import grids
 from galaxy.web.framework.helpers import time_ago
 from galaxy.webapps.tool_shed import model
@@ -19,13 +22,13 @@ class UserGrid( grids.Grid ):
     class UserLoginColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, user ):
-            return user.email
+            return escape( user.email )
 
     class UserNameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, user ):
             if user.username:
-                return user.username
+                return escape( user.username )
             return 'not set'
 
     class GroupsColumn( grids.GridColumn ):
@@ -135,7 +138,7 @@ class RoleGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, role ):
-            return str( role.name )
+            return escape( str( role.name ) )
 
     class DescriptionColumn( grids.TextColumn ):
 
@@ -387,12 +390,12 @@ class RepositoryMetadataGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            return repository_metadata.repository.name
+            return escape( repository_metadata.repository.name )
 
     class OwnerColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            return repository_metadata.repository.user.username
+            return escape( repository_metadata.repository.user.username )
 
     class RevisionColumn( grids.TextColumn ):
 

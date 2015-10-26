@@ -802,9 +802,9 @@ ListPanel.prototype.templates = (function(){
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',
             '<div class="title">',
-                '<div class="name"><%= view.title %></div>',
+                '<div class="name"><%- view.title %></div>',
             '</div>',
-            '<div class="subtitle"><%= view.subtitle %></div>',
+            '<div class="subtitle"><%- view.subtitle %></div>',
             // buttons, controls go here
             '<div class="actions"></div>',
             // deleted msg, etc.
@@ -943,9 +943,9 @@ ModelListPanel.prototype.templates = (function(){
         '<div class="controls">',
             '<div class="title">',
 //TODO: this is really the only difference - consider factoring titlebar out
-                '<div class="name"><%= model.name %></div>',
+                '<div class="name"><%- model.name %></div>',
             '</div>',
-            '<div class="subtitle"><%= view.subtitle %></div>',
+            '<div class="subtitle"><%- view.subtitle %></div>',
             '<div class="actions"></div>',
             '<div class="messages"></div>',
 

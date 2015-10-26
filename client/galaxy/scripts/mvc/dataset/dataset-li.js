@@ -471,7 +471,7 @@ DatasetListItemView.prototype.templates = (function(){
                 '<span class="display-application-location"><%- app.label %></span> ',
                 '<span class="display-application-links">',
                     '<% _.each( app.links, function( link ){ %>',
-                        '<a target="<%= link.target %>" href="<%= link.href %>">',
+                        '<a target="<%- link.target %>" href="<%- link.href %>">',
                             '<% print( _l( link.text ) ); %>',
                         '</a> ',
                     '<% }); %>',

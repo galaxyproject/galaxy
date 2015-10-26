@@ -629,10 +629,10 @@ HistoryPanel.prototype.templates = (function(){
     var controlsTemplate = BASE_MVC.wrapTemplate([
         '<div class="controls">',
             '<div class="title">',
-                '<div class="name"><%= history.name %></div>',
+                '<div class="name"><%- history.name %></div>',
             '</div>',
             '<div class="subtitle"></div>',
-            '<div class="history-size"><%= history.nice_size %></div>',
+            '<div class="history-size"><%- history.nice_size %></div>',
 
             '<div class="actions"></div>',
 
