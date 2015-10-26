@@ -1,13 +1,14 @@
 #!/bin/bash
 set -e
 
-# explicitly attempt to fetch eggs before running
+DEV_WHEELS=0
 FETCH_WHEELS=1
 SET_VENV=1
 COPY_SAMPLE_FILES=1
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-wheels" ] && FETCH_WHEELS=0
+    [ "$arg" = "--dev-wheels" ] && DEV_WHEELS=1
     [ "$arg" = "--skip-venv" ] && SET_VENV=0
     [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
@@ -97,14 +98,20 @@ if [ -z "$VIRTUAL_ENV" ]; then
 fi
 
 
+: ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
 if [ $FETCH_WHEELS -eq 1 ]; then
     # Because it's a virtualenv, we assume $PYTHONPATH is unnecessary for
     # anything in the venv to work correctly, and having it set can cause
     # problems when there are conflicts with Galaxy's dependencies outside the
     # venv (e.g. virtualenv-burrito's pip and six)
     unset PYTHONPATH
-    pip install --pre --no-index --find-links https://wheels.galaxyproject.org/simple/pip --upgrade pip
-    pip install -r requirements.txt --index-url https://wheels.galaxyproject.org/simple/
+    pip install --pre --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade pip
+    pip install -r requirements.txt --index-url ${GALAXY_WHEELS_INDEX_URL}
     GALAXY_CONDITIONAL_DEPENDENCIES=`PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))"`
-    [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url https://wheels.galaxyproject.org/simple/
+    [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url ${GALAXY_WHEELS_INDEX_URL}
+fi
+
+if [ $FETCH_WHEELS -eq 1 -a $DEV_WHEELS -eq 1 ]; then
+    dev_requirements='./lib/galaxy/dependencies/dev-requirements.txt'
+    [ -f $dev_requirements ] && pip install -r $dev_requirements --index-url ${GALAXY_WHEELS_INDEX_URL}
 fi
