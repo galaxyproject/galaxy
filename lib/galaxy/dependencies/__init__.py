@@ -25,7 +25,7 @@ class ConditionalDependencies( object ):
             "job_config_file",
             join( dirname( self.config_file ), 'job_conf.xml' ) )
         try:
-            for plugin in ElementTree.parse( job_conf_xml ).find( 'plugins' ):
+            for plugin in ElementTree.parse( job_conf_xml ).findall( './plugins/plugin[@load]' ):
                 self.job_runners.append( plugin.attrib['load'] )
         except (OSError, IOError):
             pass
