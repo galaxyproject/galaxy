@@ -45,7 +45,8 @@ module.exports = function( grunt ){
             files: [{
                 expand : true,
                 cwd : paths.srcSymlink,
-                src : '**/*.js',
+                src : [ '**/*.js', '!apps/**/*.js' ],
+                // src : '**/*.js',
                 dest : paths.dist
             }],
         }
