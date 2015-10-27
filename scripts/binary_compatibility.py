@@ -29,7 +29,7 @@ except ImportError:
 import sys
 import json
 
-from pip.pep425tags import get_platform, get_supported
+from pip.pep425tags import get_supported
 from pip.platform import get_specific_platform
 
 
@@ -39,7 +39,10 @@ compatible_platforms = {
 
 
 def install_compat():
-    this_plat = get_specific_platform()[0]
+    spec_plat = get_specific_platform()
+    if spec_plat is None:
+        return None
+    this_plat = spec_plat[0]
     compat_plat = compatible_platforms.get(this_plat, None)
     rval = {}
     if compat_plat:
