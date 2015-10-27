@@ -3,8 +3,6 @@ import os
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, desc, false, null, true
 from sqlalchemy.orm import eagerload
 

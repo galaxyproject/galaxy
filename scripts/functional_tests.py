@@ -16,19 +16,7 @@ sys.path = new_path
 from base.test_logging import logging_config_file
 from base.tool_shed_util import parse_tool_panel_config
 
-from galaxy import eggs
 from galaxy.util.properties import load_app_properties
-
-eggs.require( "nose" )
-eggs.require( "NoseHTML" )
-eggs.require( "NoseTestDiff" )
-eggs.require( "Paste" )
-eggs.require( "PasteDeploy" )
-eggs.require( "Cheetah" )
-
-# this should not be required, but it is under certain conditions, thanks to this bug:
-# http://code.google.com/p/python-nose/issues/detail?id=284
-eggs.require( "pysqlite" )
 
 import logging
 import os.path
@@ -273,6 +261,7 @@ def main():
             galaxy_db_path = os.path.join( tempdir, 'database' )
         # Configure the paths Galaxy needs to  test tools.
         file_path = os.path.join( galaxy_db_path, 'files' )
+        template_cache_path = os.path.join( galaxy_db_path, 'compiled_templates' )
         new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
         job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
         install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
@@ -291,7 +280,7 @@ def main():
                 database_auto_migrate = True
             database_connection = 'sqlite:///%s' % db_path
         kwargs = {}
-        for dir in file_path, new_file_path:
+        for dir in file_path, new_file_path, template_cache_path:
             try:
                 if not os.path.exists( dir ):
                     os.makedirs( dir )
@@ -322,6 +311,7 @@ def main():
                        library_import_dir=library_import_dir,
                        log_destination="stdout",
                        new_file_path=new_file_path,
+                       template_cache_path=template_cache_path,
                        running_functional_tests=True,
                        shed_tool_data_table_config=shed_tool_data_table_config,
                        template_path="templates",

@@ -4,8 +4,6 @@ import logging
 
 from sqlalchemy import and_, desc, false, or_, true
 from paste.httpexceptions import HTTPNotFound, HTTPBadRequest
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
 from galaxy import managers

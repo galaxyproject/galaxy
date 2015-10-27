@@ -3,8 +3,6 @@ API operations on a sample tracking system.
 """
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 
 from galaxy import web

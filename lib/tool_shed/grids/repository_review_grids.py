@@ -1,7 +1,5 @@
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, null, or_, true
 
 from galaxy.web.framework.helpers import grids

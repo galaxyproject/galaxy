@@ -6,8 +6,6 @@ created (or copied) by users over the course of an analysis.
 """
 import operator
 
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import desc, asc
 
 from galaxy import model

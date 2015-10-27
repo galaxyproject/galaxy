@@ -1,7 +1,5 @@
 import logging
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import hg
 from mercurial import ui
 

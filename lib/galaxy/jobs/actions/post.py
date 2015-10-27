@@ -8,8 +8,6 @@ import logging
 import socket
 from galaxy.util import send_mail
 from galaxy.util.json import dumps
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
 log = logging.getLogger( __name__ )

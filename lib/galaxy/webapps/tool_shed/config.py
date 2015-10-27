@@ -7,7 +7,6 @@ import sys
 import logging
 import logging.config
 import ConfigParser
-from galaxy import eggs
 from galaxy.util import string_as_bool, listify
 from galaxy.version import VERSION, VERSION_MAJOR
 
@@ -313,7 +312,6 @@ def configure_logging( config ):
     root.addHandler( handler )
     # If sentry is configured, also log to it
     if config.sentry_dsn:
-        eggs.require( "raven" )
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler( config.sentry_dsn )
         sentry_handler.setLevel( logging.WARN )

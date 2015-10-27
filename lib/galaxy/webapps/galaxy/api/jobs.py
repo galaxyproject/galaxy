@@ -7,8 +7,6 @@ API operations on a jobs.
 import json
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, or_
 from sqlalchemy.orm import aliased
 

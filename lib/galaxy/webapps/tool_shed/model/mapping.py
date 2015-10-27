@@ -4,8 +4,6 @@ are encapsulated here.
 """
 import logging
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import Boolean, Column, DateTime, desc, false, ForeignKey, Integer, MetaData, not_, String, Table, TEXT, true, UniqueConstraint
 from sqlalchemy.orm import backref, mapper, relation
 

@@ -33,15 +33,11 @@ from os.path import relpath
 from hashlib import md5
 from itertools import izip
 
-from galaxy import eggs
-
-eggs.require( 'docutils' )
 import docutils.core
 import docutils.writers.html4css1
 
 from xml.etree import ElementTree, ElementInclude
 
-eggs.require( "wchartype" )
 import wchartype
 
 from .inflection import Inflector, English

@@ -19,8 +19,7 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
         // --- Initialize sample trees
         $("#tree").dynatree({
             title: "${scp_configs['data_location']}",
-            rootVisible: true,
-            minExpandLevel: 0, // 1: root node is not collapsible
+            minExpandLevel: 1, // 1: root node is not collapsible
             persist: false,
             checkbox: true,
             selectMode: 3,

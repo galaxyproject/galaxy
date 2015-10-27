@@ -5,10 +5,7 @@ import string
 import tarfile
 import tempfile
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
 from galaxy.model.item_attrs import Dictifiable

@@ -4,8 +4,6 @@ import logging
 from collections import namedtuple
 from datetime import datetime, date, timedelta
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from sqlalchemy import and_, not_, or_
 

@@ -2,8 +2,6 @@ import calendar
 import logging
 from datetime import date, timedelta
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 import sqlalchemy as sa
 from sqlalchemy import and_
 

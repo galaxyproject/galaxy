@@ -8,22 +8,16 @@ import shutil
 import struct
 import subprocess
 import tempfile
-import warnings
 import zipfile
 
-from galaxy import eggs
-eggs.require( "bx-python" )
+import pysam
+
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
 from galaxy.datatypes import metadata
 from galaxy.util import nice_size, sqlite
 from . import data, dataproviders
-
-with warnings.catch_warnings():
-    warnings.simplefilter( "ignore" )
-    eggs.require( "pysam" )
-    from pysam import csamtools
 
 
 log = logging.getLogger(__name__)
@@ -340,7 +334,7 @@ class Bam( Binary ):
         os.unlink( stderr_name )
         # Now use pysam with BAI index to determine additional metadata
         try:
-            bam_file = csamtools.Samfile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
+            bam_file = pysam.AlignmentFile( filename=dataset.file_name, mode='rb', index_filename=index_file.file_name )
             dataset.metadata.reference_names = list( bam_file.references )
             dataset.metadata.reference_lengths = list( bam_file.lengths )
             dataset.metadata.bam_header = bam_file.header
@@ -348,6 +342,8 @@ class Bam( Binary ):
             dataset.metadata.sort_order = dataset.metadata.bam_header.get( 'HD', {} ).get( 'SO', None )
             dataset.metadata.bam_version = dataset.metadata.bam_header.get( 'HD', {} ).get( 'VN', None )
         except:
+            # Per Dan, don't log here because doing so will cause datasets that
+            # fail metadata to end in the error state
             pass
 
     def sniff( self, filename ):

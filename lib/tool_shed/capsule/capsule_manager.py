@@ -8,8 +8,6 @@ import urllib
 from time import gmtime
 from time import strftime
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util

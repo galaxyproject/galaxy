@@ -5,21 +5,11 @@ information at the bottom of each page.
 
 import threading
 import cgi
+import cProfile
+import pstats
+
 from paste import response
 
-try:
-    # Included in Python 2.5
-    import cProfile
-except:
-    try:
-        # Included in lsprof package for Python 2.4
-        import pkg_resources
-        pkg_resources.require( "lsprof" )
-        import cProfile
-    except:
-        cProfile = None
-
-import pstats
 
 template = """
 <script>

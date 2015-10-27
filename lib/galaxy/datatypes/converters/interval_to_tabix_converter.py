@@ -10,9 +10,7 @@ import optparse
 import os
 import sys
 
-from galaxy import eggs
-eggs.require( "pysam" )
-import ctabix
+from pysam import ctabix
 
 
 def main():

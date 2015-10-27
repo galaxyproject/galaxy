@@ -10,18 +10,11 @@ import string
 import time
 from Cookie import CookieError
 
-from galaxy import eggs
-eggs.require( "Cheetah" )
 from Cheetah.Template import Template
-eggs.require( "Mako" )
 import mako.runtime
 import mako.lookup
-# pytz is used by Babel.
-eggs.require( "pytz" )
-eggs.require( "Babel" )
 from babel.support import Translations
 from babel import Locale
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_, true
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
@@ -492,7 +485,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction,
                 except IndexError:
                     pass
             if self.request.path not in allowed_paths:
-                self.response.send_redirect( url_for( controller='root', action='index' ) )
+                self.response.send_redirect( url_for( controller='user', action='login' ) )
 
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """

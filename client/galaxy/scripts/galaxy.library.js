@@ -134,6 +134,9 @@ var GalaxyLibrary = Backbone.View.extend({
         this.library_router = new LibraryRouter();
 
         this.library_router.on( 'route:libraries', function() {
+            if ( Galaxy.libraries.libraryToolbarView){
+                Galaxy.libraries.libraryToolbarView.$el.unbind('click');
+            }
             Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
             Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView();
         });
@@ -143,7 +146,7 @@ var GalaxyLibrary = Backbone.View.extend({
                 Galaxy.libraries.libraryToolbarView = new mod_librarytoolbar_view.LibraryToolbarView();
                 Galaxy.libraries.libraryListView = new mod_librarylist_view.LibraryListView( { show_page: show_page } );
             } else {
-                Galaxy.libraries.libraryListView.render( { show_page: show_page } )
+                Galaxy.libraries.libraryListView.render( { show_page: show_page } );
             }
         });
 
@@ -160,7 +163,7 @@ var GalaxyLibrary = Backbone.View.extend({
                 Galaxy.libraries.folderToolbarView = new mod_foldertoolbar_view.FolderToolbarView( {id: id} );
                 Galaxy.libraries.folderListView = new mod_folderlist_view.FolderListView( { id: id, show_page: show_page } );
             } else {
-                Galaxy.libraries.folderListView.render( { id: id, show_page: parseInt( show_page ) } )
+                Galaxy.libraries.folderListView.render( { id: id, show_page: parseInt( show_page ) } );
             }
         });
 

@@ -26,9 +26,6 @@ from galaxy.webapps.tool_shed import config
 from galaxy.webapps.tool_shed import model
 from galaxy.tools.loader_directory import load_tool_elements_from_path
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy" )
-eggs.require( "Whoosh" )
 from whoosh.filedb.filestore import FileStorage
 from whoosh.fields import Schema, STORED, TEXT
 

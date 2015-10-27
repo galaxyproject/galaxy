@@ -49,11 +49,8 @@ from time import strftime
 
 from cleanup_datasets import CleanupDatasetsApplication
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 import sqlalchemy as sa
 from sqlalchemy import and_, false
-eggs.require("Mako")
 from mako.template import Template
 
 import galaxy.config
