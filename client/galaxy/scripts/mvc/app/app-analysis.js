@@ -1,6 +1,12 @@
-define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
-        'mvc/history/options-menu', 'mvc/history/history-panel-edit-current', 'mvc/tools/tools-form'],
-    function( Utils, Tools, Upload, Ui, optionsMenu, HistoryPanel, ToolsForm ) {
+define([
+    'utils/utils',
+    'mvc/tools',
+    'mvc/upload/upload-view',
+    'mvc/ui/ui-misc',
+    'mvc/history/options-menu',
+    'mvc/history/history-panel-edit-current',
+    'mvc/tools/tools-form'
+], function( Utils, Tools, Upload, Ui, optionsMenu, HistoryPanel, ToolsForm ) {
 
     /* Builds the center panel */
     var CenterPanel = Backbone.View.extend({

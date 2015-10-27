@@ -1,7 +1,9 @@
 define([
+    'libs/underscore',
+    'libs/backbone/backbone',
     'utils/add-logging',
     'utils/localization'
-], function( addLogging, _l ){
+], function( _, Backbone, addLogging, _l ){
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
  *      Designed to allow switching an objects log output off/on at one central

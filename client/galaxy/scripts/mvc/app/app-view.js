@@ -1,10 +1,19 @@
 /**
     This is the entrance point for the Galaxy UI.
 */
-define(['utils/utils', 'galaxy.masthead', 'galaxy.menu', 'galaxy.frame',
-        'mvc/ui/ui-portlet', 'mvc/ui/ui-misc', 'mvc/ui/ui-modal',
-        'mvc/user/user-quotameter', 'mvc/app/app-analysis'],
-    function( Utils, Masthead, Menu, Frame, Portlet, Ui, Modal, QuotaMeter, Analysis ) {
+define([
+    'utils/utils',
+    'galaxy.masthead',
+    'galaxy.menu',
+    'galaxy.frame',
+    'mvc/ui/ui-portlet',
+    'mvc/ui/ui-misc',
+    'mvc/ui/ui-modal',
+    'mvc/user/user-quotameter',
+    'mvc/app/app-analysis'
+], function( Utils, Masthead, Menu, Frame, Portlet, Ui, Modal, QuotaMeter, Analysis ) {
+    console.debug( 'loading app-view' );
+
     return Backbone.View.extend({
         initialize: function( options ) {
             this.options = Utils.merge( options, {} );

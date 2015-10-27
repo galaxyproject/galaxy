@@ -1,17 +1,11 @@
 
-var GalaxyApp = require( '../galaxy-app-webpack' ).GalaxyApp,
-    HistoryPanelEdit = require( '../mvc/history/history-panel-edit' ).HistoryPanelEdit,
-    History = require( '../mvc/history/history-model' ).History;
-
 var GalaxyMasthead = require( '../galaxy.masthead' ).GalaxyMasthead,
-    GalaxyMenu = require( '../galaxy.menu' ).GalaxyMenu;
+    GalaxyMenu = require( '../galaxy.menu' ).GalaxyMenu,
+    History = require( '../mvc/history/history-model' ).History,
+    HistoryPanelEdit = require( '../mvc/history/history-panel-edit' ).HistoryPanelEdit;
 
 //TODO: this doesn't address multiple apps per page
 window.app = function app( options, bootstrapped ){
-    if( !window.Galaxy ){
-        window.Galaxy = new GalaxyApp( options, bootstrapped );
-    }
-
     if( !( Galaxy.masthead && Galaxy.menu ) ){
         // adapter to galaxy.masthead.mako config
         var mastheadConfig = _.extend( _.clone( Galaxy.config ), {

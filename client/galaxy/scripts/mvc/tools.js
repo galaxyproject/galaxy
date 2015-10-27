@@ -2,8 +2,25 @@
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
 
- define( ["libs/underscore", "viz/trackster/util", "mvc/data", "mvc/tools/tools-form" ],
-         function(_, util, data, ToolsForm) {
+ define([
+    "libs/underscore",
+    "viz/trackster/util",
+    "mvc/data",
+    "mvc/tools/tools-form",
+    "templates/compiled/tool_form",
+    "templates/compiled/tool_link",
+    "templates/compiled/panel_section",
+    "templates/compiled/tool_search",
+], function(_, util, data, ToolsForm, tool_form, tool_link, panel_section, tool_search) {
+console.debug( tool_form, tool_link, panel_section, tool_search );
+
+// TODO: certainly not the way to do this
+var _templates = {
+    tool_form       : tool_form? tool_form.Handlebars.templates.tool_form : Handlebars.templates.tool_form,
+    tool_link       : tool_link? tool_link.Handlebars.templates.tool_link : Handlebars.templates.tool_link,
+    panel_section   : panel_section? panel_section.Handlebars.templates.panel_section : Handlebars.templates.panel_section,
+    tool_search     : tool_search? tool_search.Handlebars.templates.tool_search : Handlebars.templates.tool_search
+};
 
 /**
  * Mixin for tracking model visibility.
@@ -514,7 +531,7 @@ var ToolLinkView = BaseView.extend({
     render: function() {
         // create element
         var $link = $('<div/>');
-        $link.append(Handlebars.templates.tool_link(this.model.toJSON()));
+        $link.append(_templates.tool_link(this.model.toJSON()));
 
         // open upload dialog for upload tool
         if (this.model.id === 'upload1') {
@@ -569,7 +586,7 @@ var ToolSectionView = BaseView.extend({
 
     render: function() {
         // Build using template.
-        this.$el.append( Handlebars.templates.panel_section(this.model.toJSON()) );
+        this.$el.append( _templates.panel_section(this.model.toJSON()) );
 
         // Add tools to section.
         var section_body = this.$el.find(".toolSectionBody");
@@ -625,7 +642,7 @@ var ToolSearchView = Backbone.View.extend({
     },
 
     render: function() {
-        this.$el.append( Handlebars.templates.tool_search(this.model.toJSON()) );
+        this.$el.append( _templates.tool_search(this.model.toJSON()) );
         if (!this.model.is_visible()) {
             this.$el.hide();
         }
@@ -729,7 +746,7 @@ var ToolFormView = Backbone.View.extend({
 
     render: function() {
         this.$el.children().remove();
-        this.$el.append( Handlebars.templates.tool_form(this.model.toJSON()) );
+        this.$el.append( _templates.tool_form(this.model.toJSON()) );
     }
 });
 

@@ -83,13 +83,26 @@
             assert  : function(){}
         };
 
-        ## configure require
+        // configure require
+        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
+        // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
+        define( 'jquery', [], function(){ console.debug( 'defining jQuery' ); return jQuery; })
+        // TODO: use one system
+
+        // shims and paths
         require.config({
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
-                "libs/underscore": { exports: "_" },
-                "libs/backbone/backbone": { exports: "Backbone" }
+                "libs/underscore": {
+                    exports: "_"
+                },
+                "libs/backbone/backbone": {
+                    deps: [ 'jquery', 'libs/underscore' ],
+                    // deps: [ 'libs/underscore' ],
+                    exports: "Backbone"
+                }
             },
+            // cache busting using time server was restarted
             urlArgs: 'v=${app.server_starttime}'
         });
     </script>

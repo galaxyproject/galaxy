@@ -6,7 +6,6 @@ ${h.css("base")}
 <%def name="title()">Galaxy</%def>
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.templates("tool_link", "panel_section", "tool_search")}
 </%def>
 <%
     ## get configuration

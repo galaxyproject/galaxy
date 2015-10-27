@@ -252,20 +252,22 @@ class JSAppLauncher( BaseUIController ):
         self.config_serializer = configuration.ConfigSerializer( app )
         self.admin_config_serializer = configuration.AdminConfigSerializer( app )
 
-    def _js_options( self, trans, **kwargs ):
+    def _get_js_options( self, trans, root=None ):
         """
-        Return a dictionary of options to jsonify and pass to the js app.
+        Return a dictionary of session/site configuration/options to jsonify
+        and pass onto the js app.
 
-        Defaults to `config` and the root url. Pass kwargs to update.
+        Defaults to `config`, `user`, and the root url. Pass kwargs to update further.
         """
-        standard_options = {
-            'config'    : self._bootstrap_config( trans ),
-            'root'      : web.url_for( '/' )
+        root = root or web.url_for( '/' )
+        js_options = {
+            'root'      : root,
+            'user'      : self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans ),
+            'config'    : self._get_site_configuration( trans )
         }
-        standard_options.update( kwargs )
-        return standard_options
+        return js_options
 
-    def _bootstrap_config( self, trans ):
+    def _get_site_configuration( self, trans ):
         """
         Return a dictionary representing Galaxy's current configuration.
         """
@@ -278,42 +280,24 @@ class JSAppLauncher( BaseUIController ):
             log.exception( exc )
             return {}
 
-    def _bootstrap_current_user( self, trans ):
-        """
-        Return a dictionary representing this transaction's current user.
-        """
-        return self.user_serializer.serialize( trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans )
-
-    def _bootstrap_data( self, trans, **additional_data ):
-        """
-        Return a dictionary holding any bootstrapped data the app might need.
-
-        Defaults to `user` and can be updated using `additional_data` kwargs.
-        """
-        standard_bootstrapped = {
-            'user'  : self._bootstrap_current_user( trans )
-        }
-        standard_bootstrapped.update( additional_data )
-        return standard_bootstrapped
-
-    def web_app_template( self, trans, app_name, entry_fn='app', options=None, **additional_bootstrapped ):
+    def template( self, trans, app_name, entry_fn='app', options=None, bootstrapped_data=None ):
         """
         Render and return the single page mako template that starts the app.
 
         `app_name` (string): the first portion of the webpack bundle to as the app.
         `entry_fn` (string): the name of the window-scope function that starts the
             app. Defaults to 'app'.
-        `options` (dict): (optional) update to the options sent to the app.
-        `additional_bootstrapped` (dict): (optional) update containing any more data
+        `bootstrapped_data` (dict): (optional) update containing any more data
             the app may need.
+        `additional_config` (dict): (optional) update to the config/options sent to the app.
         """
-        options = options or {}
-        options = self._js_options( trans, **options )
-        bootstrapped = self._bootstrap_data( trans, **additional_bootstrapped )
-        return trans.fill_template( self.JS_APP_MAKO_FILEPATH,
-                                    js_app_name=app_name,
-                                    js_app_entry_fn=self.DEFAULT_ENTRY_FN,
-                                    options=options, bootstrapped=bootstrapped )
+        return trans.fill_template(
+            self.JS_APP_MAKO_FILEPATH,
+            js_app_name=app_name,
+            js_app_entry_fn=( entry_fn or self.DEFAULT_ENTRY_FN ),
+            options=( options or self._get_js_options( trans ) ),
+            bootstrapped=( bootstrapped_data or {} )
+        )
 
 
 class Datatype( object ):

@@ -1,10 +1,15 @@
 define([
+    'libs/underscore',
+    'libs/backbone/backbone',
     'mvc/user/user-model',
     'utils/metrics-logger',
     'utils/add-logging',
-    'utils/localization',
-    'bootstrapped-data'
-], function( userModel, metricsLogger, addLogging, localize, bootstrapped ){
+    'utils/localization'
+], function( _, Backbone, userModel, metricsLogger, addLogging, localize ){
+    console.debug( 'app-base id', jQuery.id );
+    if( !jQuery.id ){
+        jQuery.id = 'app-base';
+    }
 // ============================================================================
 /** Base galaxy client-side application.
  *      Iniitializes:
@@ -14,30 +19,24 @@ define([
  *              galaxy.ini available from the configuration API)
  *          user        : the current user (as a mvc/user/user-model)
  */
-function GalaxyApp( options ){
+function GalaxyApp( options, bootstrapped ){
+    console.debug( 'GalaxyApp:', options, bootstrapped );
     var self = this;
-    return self._init( options || {} );
+    return self._init( options || {}, bootstrapped || {} );
 }
 
 // add logging shortcuts for this object
 addLogging( GalaxyApp, 'GalaxyApp' );
 
-/** default options */
-GalaxyApp.prototype.defaultOptions = {
-    /** monkey patch attributes from existing window.Galaxy object? */
-    patchExisting   : true,
-    /** root url of this app */
-    // move to self.root?
-    root            : '/'
-};
-
 /** initalize options and sub-components */
-GalaxyApp.prototype._init = function init( options ){
+GalaxyApp.prototype._init = function __init( options, bootstrapped ){
     var self = this;
     _.extend( self, Backbone.Events );
 
     self._processOptions( options );
     self.debug( 'GalaxyApp.options: ', self.options );
+    // special case for root
+    self.root = options.root || '/';
 
     self._patchGalaxy( window.Galaxy );
 
@@ -47,16 +46,25 @@ GalaxyApp.prototype._init = function init( options ){
     self._initLocale();
     self.debug( 'GalaxyApp.localize: ', self.localize );
 
-    self.config = options.config || bootstrapped.config || {};
+    self.config = options.config || {};
     self.debug( 'GalaxyApp.config: ', self.config );
 
-    self._initUser( options.user || bootstrapped.user || {} );
+    self._initUser( options.user || {} );
     self.debug( 'GalaxyApp.user: ', self.user );
 
     self._setUpListeners();
     self.trigger( 'ready', self );
 
     return self;
+};
+
+/** default options */
+GalaxyApp.prototype.defaultOptions = {
+    /** monkey patch attributes from existing window.Galaxy object? */
+    patchExisting   : true,
+    /** root url of this app */
+    // move to self.root?
+    root            : '/'
 };
 
 /** add an option from options if the key matches an option in defaultOptions */
@@ -75,7 +83,7 @@ GalaxyApp.prototype._processOptions = function _processOptions( options ){
 };
 
 /** add an option from options if the key matches an option in defaultOptions */
-GalaxyApp.prototype._patchGalaxy = function _processOptions( patchWith ){
+GalaxyApp.prototype._patchGalaxy = function _patchGalaxy( patchWith ){
     var self = this;
     // in case req or plain script tag order has created a prev. version of the Galaxy obj...
     if( self.options.patchExisting && patchWith ){
@@ -114,6 +122,7 @@ GalaxyApp.prototype._initUser = function _initUser( userJSON ){
     var self = this;
     self.debug( '_initUser:', userJSON );
     self.user = new userModel.User( userJSON );
+
     //TODO: temp - old alias
     self.currUser = self.user;
     return self;
