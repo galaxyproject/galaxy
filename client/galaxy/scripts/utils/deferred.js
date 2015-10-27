@@ -5,18 +5,13 @@ define(['utils/utils'], function(Utils) {
  *  This class provides an alternative way to handle deferred processes. It makes it easy to handle multiple and overlapping sets of deferred processes.
  */
 return Backbone.Model.extend({
-    // callback queue
-    queue: [],
-    
-    // list of currently registered processes
-    process: {},
-    
-    // process counter
-    counter: 0,
-    
     /** Initialize
     */
     initialize: function(){
+        this.queue = [];
+        this.process = {};
+        this.counter = 0;
+        this.queue_id = Utils.uid();
         this.on('refresh', function() {
             if (this.queue.length > 0 && this.ready()) {
                 var callback = this.queue[0];
@@ -37,7 +32,7 @@ return Backbone.Model.extend({
     /** This is called to register a new process
     */
     register: function() {
-        var id = Utils.uid();
+        var id = this.queue_id + ':' + Utils.uid();
         this.process[id] = true;
         this.counter++;
         console.debug('Deferred:register() - Register ' + id);

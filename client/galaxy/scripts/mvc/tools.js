@@ -531,7 +531,7 @@ var ToolLinkView = BaseView.extend({
                 e.preventDefault();
                 var form = new ToolsForm.View( { id : self.model.id, version : self.model.get('version') } );
                 form.deferred.execute(function() {
-                    Galaxy.app.display( form.$el );
+                    Galaxy.app.display( form );
                 });
             });
         }
