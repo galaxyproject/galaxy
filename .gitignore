@@ -107,7 +107,8 @@ tool-data/shared/jars/
 # CSS build artifacts.
 sprite-*.less
 
-# Local node_modules and bower_components directories
+# JS, Local node_modules, and bower_components directories
+static/scripts/bundled
 node_modules
 bower_components
 
