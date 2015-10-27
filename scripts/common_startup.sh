@@ -106,6 +106,8 @@ if [ $FETCH_WHEELS -eq 1 ]; then
     # venv (e.g. virtualenv-burrito's pip and six)
     unset PYTHONPATH
     pip install --pre --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade pip
+    # binary-compatibility.cfg may need to be created (e.g. on CentOS)
+    [ ! -f ${VIRTUAL_ENV}/binary-compatibility.cfg ] && python ./scripts/binary_compatibility.py -o ${VIRTUAL_ENV}/binary-compatibility.cfg
     pip install -r requirements.txt --index-url ${GALAXY_WHEELS_INDEX_URL}
     GALAXY_CONDITIONAL_DEPENDENCIES=`PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))"`
     [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url ${GALAXY_WHEELS_INDEX_URL}

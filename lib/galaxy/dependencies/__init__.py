@@ -62,7 +62,7 @@ class ConditionalDependencies( object ):
         return asbool( self.config["fluent_log"] )
 
     def check_raven( self ):
-        return asbool( self.config["sentry_dsn"] )
+        return self.config.get("sentry_dsn", None) is not None
 
     def check_weberror( self ):
         return ( asbool( self.config["debug"] ) and
