@@ -24,6 +24,15 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             }
         },
 
+        /** Wait for deferred build processes before removal */
+        remove: function() {
+            var self = this;
+            this.$el.hide();
+            this.deferred.execute(function(){
+                Backbone.View.prototype.remove.call(self);
+            });
+        },
+
         /** Build form */
         _buildForm: function(options) {
             // link this
@@ -87,32 +96,17 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 url     : build_url,
                 data    : build_data,
                 success : function(new_model) {
-                    // rebuild form
                     self._buildForm(new_model['tool_model'] || new_model);
-
-                    // show version message
                     !hide_message && self.form.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
                         persistent  : false
                     });
-
-                    // process completed
-                    self.deferred.done(process_id);
-
-                    // log success
                     console.debug('tools-form::initialize() - Initial tool model ready.');
                     console.debug(new_model);
+                    self.deferred.done(process_id);
                 },
                 error   : function(response) {
-                    // process completed
-                    self.deferred.done(process_id);
-
-                    // log error
-                    console.debug('tools-form::initialize() - Initial tool model request failed.');
-                    console.debug(response);
-
-                    // show error
                     var error_message = ( response && response.err_msg ) || 'Uncaught error.';
                     if ( self.$el.is(':empty') ) {
                         self.$el.prepend((new Ui.Message({
@@ -132,6 +126,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                             }
                         });
                     }
+                    console.debug('tools-form::initialize() - Initial tool model request failed.');
+                    console.debug(response);
+                    self.deferred.done(process_id);
                 }
             });
         },

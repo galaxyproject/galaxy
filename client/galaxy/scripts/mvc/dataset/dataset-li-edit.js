@@ -170,7 +170,7 @@ var DatasetListItemEdit = _super.extend(
                     ev.preventDefault();
                     var form = new ToolsForm.View({'job_id' : creating_job});
                     form.deferred.execute(function(){
-                        Galaxy.app.display(form.$el);
+                        Galaxy.app.display(form);
                     });
                 }
             });
