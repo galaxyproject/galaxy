@@ -7,8 +7,6 @@ from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixi
 from galaxy.web.form_builder import build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
 from .requests_common import RequestsGrid, invalid_id_redirect
-from galaxy import eggs
-eggs.require("amqp")
 import amqp
 try:
     import pexpect

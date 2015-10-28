@@ -27,8 +27,6 @@ select * from history where name='Unnamed history'
 import logging
 import re
 
-from galaxy import eggs
-eggs.require("Parsley")
 import parsley
 
 from galaxy.model import (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation,

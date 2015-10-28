@@ -1,10 +1,7 @@
 import logging
 import urllib
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, func, null, true
 from sqlalchemy.orm import eagerload_all
 

@@ -6,8 +6,6 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -41,25 +39,6 @@ def create_database( config_file ):
         exit(1)
 
     '''Initialize the database file.'''
-    dialect_to_egg = {
-        "sqlite" : "pysqlite>=2",
-        "postgres" : "psycopg2",
-        "postgresql" : "psycopg2",
-        "mysql" : "MySQL_python"
-    }
-    dialect = ( database_connection.split( ':', 1 ) )[0]
-    try:
-        egg = dialect_to_egg[ dialect ]
-        try:
-            eggs.require( egg )
-            print( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
-        except:
-            # If the module is in the path elsewhere (i.e. non-egg), it'll still load.
-            print( "%s egg not found, but an attempt will be made to use %s anyway" % ( egg, dialect ) )
-    except KeyError:
-        # Let this go, it could possibly work with db's we don't support.
-        print( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
-
     # Initialize the database connection.
     engine = create_engine( database_connection )
     MetaData( bind=engine )

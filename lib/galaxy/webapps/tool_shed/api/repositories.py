@@ -7,8 +7,6 @@ from cgi import FieldStorage
 from collections import namedtuple
 from time import strftime
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false
 
 from galaxy import util

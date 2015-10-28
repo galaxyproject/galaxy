@@ -6,11 +6,8 @@ from datetime import date
 from time import gmtime
 from time import strftime
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import mdiff
 from mercurial import patch
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, null, true
 
 import tool_shed.grids.repository_grids as repository_grids

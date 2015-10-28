@@ -19,12 +19,6 @@ from tool_shed.util import tool_dependency_util
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 
 # TODO: eliminate the use of fabric here.
-from galaxy import eggs
-
-eggs.require( 'paramiko' )
-eggs.require( 'ssh' )
-eggs.require( 'Fabric' )
-
 from fabric.api import settings
 from fabric.api import lcd
 

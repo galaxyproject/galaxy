@@ -20,8 +20,6 @@ import sys
 # insert *this* galaxy before all others on sys.path
 sys.path.insert( 1, os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) ) )
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.orm import clear_mappers
 
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers

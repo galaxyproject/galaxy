@@ -6,8 +6,6 @@ import os
 import shutil
 import tempfile
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util

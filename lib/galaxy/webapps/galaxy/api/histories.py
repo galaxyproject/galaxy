@@ -4,10 +4,6 @@ API operations on a history.
 .. seealso:: :class:`galaxy.model.History`
 """
 
-import pkg_resources
-pkg_resources.require( "Paste" )
-
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import true, false
 
 from galaxy import exceptions

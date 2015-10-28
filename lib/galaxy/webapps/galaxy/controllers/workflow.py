@@ -8,8 +8,6 @@ import urllib2
 
 from sqlalchemy import and_
 from sqlalchemy.sql import expression
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
 
 from tool_shed.util import common_util

@@ -6,8 +6,6 @@ import tempfile
 from datetime import datetime
 from time import gmtime
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 from mercurial import cmdutil, commands, hg, ui
 from mercurial.changegroup import readexactly
 from mercurial.exchange import readbundle

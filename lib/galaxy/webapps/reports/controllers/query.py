@@ -1,7 +1,5 @@
 """ Mixin to help build advanced queries for reports interface.
 """
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 
 

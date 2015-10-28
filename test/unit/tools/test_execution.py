@@ -9,8 +9,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 import tools_support
 
-from galaxy import eggs
-eggs.require( "Paste" )
 from paste import httpexceptions
 
 BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">

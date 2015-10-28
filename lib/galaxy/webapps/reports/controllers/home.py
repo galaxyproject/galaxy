@@ -2,8 +2,6 @@ from datetime import datetime, timedelta
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model
 import calendar
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
 import sqlalchemy as sa
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 

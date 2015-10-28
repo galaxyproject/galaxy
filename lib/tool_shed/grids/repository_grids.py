@@ -1,9 +1,6 @@
 import logging
 
-from galaxy import eggs
-eggs.require('markupsafe')
 from markupsafe import escape as escape_html
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, or_, true
 
 import tool_shed.grids.util as grids_util

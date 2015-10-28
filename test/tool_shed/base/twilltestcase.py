@@ -8,9 +8,6 @@ import tempfile
 import time
 import urllib
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
-eggs.require( 'twill' )
 import twill.commands as tc
 from mercurial import commands, hg, ui
 from mercurial.util import Abort

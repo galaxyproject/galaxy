@@ -253,8 +253,8 @@
             %endif
         </div><!--end everything-->
         ## Allow other body level elements
+        ## Scripts can be loaded later since they progressively add features to
+        ## the panels, but do not change layout
+        ${self.late_javascripts()}
     </body>
-    ## Scripts can be loaded later since they progressively add features to
-    ## the panels, but do not change layout
-    ${self.late_javascripts()}
 </html>

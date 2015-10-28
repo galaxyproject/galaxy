@@ -4,7 +4,6 @@ galaxyFS_base_dir: /opt/galaxy
 # TODO: use GALAXY_ROOT via cmd line instead
 galaxy_server_dir: "/galaxy"
 galaxy_venv_dir: "{{ galaxyFS_base_dir }}/.venv"
-galxy_egg_cache: "/root/.python-eggs"
 galaxy_repo: https://bitbucket.org/galaxy/galaxy-central
 galaxy_changeset_id: stable
 galaxy_manage_clone: no

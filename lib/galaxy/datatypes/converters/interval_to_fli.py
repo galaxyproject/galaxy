@@ -15,8 +15,6 @@ and symbols are sorted in lexigraphical order.
 '''
 import optparse
 
-from galaxy import eggs
-eggs.require( "bx-python" )
 from bx.tabular.io import Comment
 
 from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFReaderWrapper, read_unordered_gtf

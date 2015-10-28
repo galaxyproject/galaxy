@@ -18,8 +18,6 @@ from itertools import ifilter
 from string import Template
 from uuid import UUID, uuid4
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, func, not_, or_, true, join, select
 from sqlalchemy.orm import joinedload, object_session, aliased
 from sqlalchemy.ext import hybrid

@@ -2,8 +2,6 @@ import csv
 import logging
 import re
 
-from galaxy import eggs
-eggs.require('SQLAlchemy')
 from sqlalchemy import and_, false, func, select
 
 from galaxy import model, util, web

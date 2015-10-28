@@ -11,10 +11,7 @@ import urllib
 
 from datetime import datetime, timedelta
 
-from galaxy import eggs
-eggs.require( "MarkupSafe" )
 from markupsafe import escape
-eggs.require('sqlalchemy')
 from sqlalchemy import and_, or_, true, func
 
 from galaxy import model

@@ -14,12 +14,9 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
 sys.path = new_path
 
-from galaxy import eggs
 
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether search is enabled.
 try:
-    eggs.require( "Whoosh" )
-
     from whoosh.filedb.filestore import FileStorage
     from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT
     from whoosh.index import Index

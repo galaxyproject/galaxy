@@ -9,12 +9,6 @@ import os
 import pwd
 import sys
 
-new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] )  # remove scripts/ from the path
-sys.path = new_path
-
-from galaxy import eggs
-eggs.require("drmaa")
 import drmaa
 
 

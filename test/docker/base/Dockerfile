@@ -33,8 +33,7 @@ ADD start_mysql.sh /opt/galaxy/start_mysql.sh
 ADD ansible_vars.yml /tmp/ansible/ansible_vars.yml
 ADD provision.yml /tmp/ansible/provision.yml
 
-ENV PYTHON_EGG_CACHE=/root/.python-eggs \
-    GALAXY_ROOT=/galaxy
+ENV GALAXY_ROOT=/galaxy
 
 RUN mkdir /etc/galaxy && \
     cd /tmp/ansible && \
