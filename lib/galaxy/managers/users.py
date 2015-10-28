@@ -300,7 +300,7 @@ class CurrentUserSerializer( UserSerializer ):
         # TODO: might be better as sep. Serializer class
         history = trans.history
         if not history:
-            raise exceptions.AuthenticationRequired( 'No history for anonymous user usage stats' )
+            return None
 
         usage = self.app.quota_agent.get_usage( trans, history=trans.history )
         percent = self.app.quota_agent.get_percent( trans=trans, usage=usage )

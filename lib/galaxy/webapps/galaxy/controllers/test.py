@@ -37,7 +37,7 @@ class TestController( controller.JSAppLauncher ):
             'enable_cloud_launch'           : app.config.get_bool( 'enable_cloud_launch', False ),
             'spinner_url'                   : web.url_for( '/static/images/loading_small_white_bg.gif' ),
             'search_url'                    : web.url_for( controller='root', action='tool_search' ),
-            # TODO: next two should be redundant
+            # TODO: next two should be redundant - why can't we build one from the other?
             'toolbox'                       : app.toolbox.to_dict( trans, in_panel=False ),
             'toolbox_in_panel'              : app.toolbox.to_dict( trans ),
             'message_box_visible'           : app.config.message_box_visible,

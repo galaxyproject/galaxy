@@ -7,26 +7,27 @@ import urllib
 
 from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
 
-from galaxy.web.base.controller import BaseUIController
-from galaxy import managers
-
 from galaxy import web
-from galaxy.web import url_for
-from galaxy.model.item_attrs import UsesAnnotations
+from galaxy import util
 from galaxy.util import listify, Params, string_as_bool
+
+from galaxy.web.base import controller
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy import managers
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-class RootController( BaseUIController, UsesAnnotations ):
+# =============================================================================
+class RootController( controller.JSAppLauncher, UsesAnnotations ):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
     def __init__( self, app ):
         super( RootController, self ).__init__( app )
         self.history_manager = managers.histories.HistoryManager( app )
-        self.history_serializer = managers.histories.HistorySerializer( self.app )
+        self.history_serializer = managers.histories.HistorySerializer( app )
 
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -34,22 +35,80 @@ class RootController( BaseUIController, UsesAnnotations ):
         """
         raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
 
+    def _get_extended_config( self, trans ):
+        app = trans.app
+        configured_for_inactivity_warning = app.config.user_activation_on and app.config.inactivity_box_content is not None
+        user_requests = bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) )
+        config = {
+            'active_view'                   : 'analysis',
+            'params'                        : dict( trans.request.params ),
+            'enable_cloud_launch'           : app.config.get_bool( 'enable_cloud_launch', False ),
+            'spinner_url'                   : web.url_for( '/static/images/loading_small_white_bg.gif' ),
+            'search_url'                    : web.url_for( controller='root', action='tool_search' ),
+            # TODO: next two should be redundant - why can't we build one from the other?
+            'toolbox'                       : app.toolbox.to_dict( trans, in_panel=False ),
+            'toolbox_in_panel'              : app.toolbox.to_dict( trans ),
+            'message_box_visible'           : app.config.message_box_visible,
+            'show_inactivity_warning'       : configured_for_inactivity_warning and trans.user and not trans.user.active,
+            # TODO: move to user
+            'user_requests'                 : user_requests
+        }
+
+        # TODO: move to user
+        stored_workflow_menu_entries = config[ 'stored_workflow_menu_entries' ] = []
+        for menu_item in getattr( trans.user, 'stored_workflow_menu_entries', [] ):
+            stored_workflow_menu_entries.append({
+                'encoded_stored_workflow_id' : trans.security.encode_id( menu_item.stored_workflow_id ),
+                'stored_workflow' : {
+                    'name' : util.unicodify( menu_item.stored_workflow.name )
+                }
+            })
+
+        return config
+
     @web.expose
-    def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
-        """
-        Called on the root url to display the main Galaxy page.
-        """
-        if history_id is not None:
-            # Get history or throw exception.
+    def index( self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd ):
+        history = trans.history
+        if history_id:
             unencoded_id = trans.security.decode_id( history_id )
             history = self.history_manager.get_owned( unencoded_id, trans.user )
             trans.set_history( history )
 
-        return trans.fill_template( "root/index.mako",
-                                    tool_id=tool_id,
-                                    workflow_id=workflow_id,
-                                    m_c=m_c, m_a=m_a,
-                                    params=kwd )
+        js_options = self._get_js_options( trans )
+        config = js_options[ 'config' ]
+        config.update( self._get_extended_config( trans ) )
+
+        return self.template( trans, 'analysis', options=js_options )
+
+    # @web.expose
+    # def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
+    #     """
+    #     Called on the root url to display the main Galaxy page.
+    #     """
+    #     if history_id is not None:
+    #         # Get history or throw exception.
+    #         unencoded_id = trans.security.decode_id( history_id )
+    #         history = self.history_manager.get_owned( unencoded_id, trans.user )
+    #         trans.set_history( history )
+
+    #     return trans.fill_template( "root/index.mako",
+    #                                 tool_id=tool_id,
+    #                                 workflow_id=workflow_id,
+    #                                 m_c=m_c, m_a=m_a,
+    #                                 params=kwd )
+
+    # @web.expose
+    # def history( self, trans ):
+    #     history = trans.history
+
+    #     bootstrapped = {}
+    #     if history:
+    #         bootstrapped = {
+    #             'history'   : self.history_serializer.serialize_to_view( history,
+    #                 view='detailed', user=trans.user, trans=trans ),
+    #             'contents'  : self.history_serializer.serialize_contents( history, 'contents', trans=trans )
+    #         }
+    #     return self.template( trans, 'history', bootstrapped_data=bootstrapped )
 
     # ---- Tool related -----------------------------------------------------
 
@@ -240,7 +299,7 @@ class RootController( BaseUIController, UsesAnnotations ):
             dataset.clear_associated_files()
         trans.sa_session.flush()
         trans.log_event( "History id %s cleared" % (str(history.id)) )
-        trans.response.send_redirect( url_for("/index" ) )
+        trans.response.send_redirect( web.url_for("/index" ) )
 
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
@@ -408,7 +467,7 @@ class RootController( BaseUIController, UsesAnnotations ):
     @web.expose
     def welcome( self, trans ):
         welcome_url = trans.app.config.welcome_url
-        return trans.response.send_redirect( url_for( welcome_url  ) )
+        return trans.response.send_redirect( web.url_for( welcome_url  ) )
 
     @web.expose
     def bucket_proxy( self, trans, bucket=None, **kwd):

@@ -19,18 +19,19 @@
         <meta name="viewport" content="maximum-scale=1.0">
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+        ## TODO: use loaders to move everything but the essentials below the fold
         ${ h.css(
             'base',
             'jquery.rating'
             'jquery-ui/smoothness/jquery-ui'
         )}
-
-        <script type="text/javascript" src="/static/scripts/bundled/common.js"></script>
-        <script type="text/javascript" src="/static/scripts/bundled/libs.bundled.js"></script>
         ${ page_setup() }
     </head>
 
     <body>
+        <script type="text/javascript" src="/static/scripts/bundled/common.js"></script>
+        ## TODO: remove when all libs are required directly in modules
+        <script type="text/javascript" src="/static/scripts/bundled/libs.bundled.js"></script>
         <script type="text/javascript" src="/static/scripts/bundled/galaxy.bundled.js"></script>
         <script type="text/javascript">
             window.Galaxy = new GalaxyApp(
@@ -39,10 +40,10 @@
             );
             // TODO: find and replace with Galaxy.root
             window.galaxy_config = { root: Galaxy.options.root };
-
         </script>
         <script type="text/javascript" src="/static/scripts/bundled/${js_app_name}.bundled.js"></script>
         <script type="text/javascript">
+            // TODO: should *inherit* from GalaxyApp - then remove above and galaxy.bundled.js
             ${js_app_entry_fn}(
                 ${ h.dumps( options ) },
                 ${ h.dumps( bootstrapped ) }
