@@ -54,6 +54,8 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             log.info( 'Overriding DRMAA_LIBRARY_PATH due to runner plugin parameter: %s', self.runner_params.drmaa_library_path )
             os.environ['DRMAA_LIBRARY_PATH'] = self.runner_params.drmaa_library_path
 
+        # Import is delayed until runner initialization to allow for the
+        # drmaa_library_path plugin param to override $DRMAA_LIBRARY_PATH
         try:
             drmaa = __import__( "drmaa" )
         except (ImportError, RuntimeError) as exc:
