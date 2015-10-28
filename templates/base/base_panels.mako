@@ -86,7 +86,7 @@
         // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
         // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
-        define( 'jquery', [], function(){ console.debug( 'defining jQuery' ); return jQuery; })
+        define( 'jquery', [], function(){ return jQuery; })
         // TODO: use one system
 
         // shims and paths

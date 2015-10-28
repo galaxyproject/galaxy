@@ -13,10 +13,10 @@
         'left_panel'    : False,
         'right_panel'   : False,
         'message_box'   : False,
-        
+
         ## root
         'root'          : h.url_for("/"),
-        
+
         ## inject app specific configuration
         'app'           : config['app']
     }
@@ -41,7 +41,7 @@
         'galaxy.base',
         'galaxy.panels'
     )}
-    
+
     ## send errors to Sntry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/tracekit", "libs/raven" )}
@@ -52,7 +52,7 @@
             %endif
         </script>
     %endif
-    
+
     ## make sure console exists
     <script type="text/javascript">
         // console protection
@@ -87,10 +87,12 @@
         }
     %endif
     </style>
-    
+
     ## default script wrapper
     <script type="text/javascript">
         ## configure require
+        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
+        define( 'jquery', [], function(){ return jQuery; })
         require.config({
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
@@ -101,7 +103,7 @@
             urlArgs: 'v=${app.server_starttime}'
         });
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
-        
+
     </script>
 </%def>
 
@@ -130,7 +132,7 @@
     ##precondition: module must call jq onready itself
     ##<% app_config = self.galaxy_config[ 'app' ]; print app_config %>
     ##${ galaxy_client.load( app=( app_config[ 'jscript' ] if 'jscript' in app_config else None )) }
-    
+
     ##TODO: at that point, we can think about optimizing the various apps
 </%def>
 
@@ -139,15 +141,15 @@
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
     <script type="text/javascript">
-        
+
         ensure_dd_helper();
-        
+
         ## configure left panel
         %if self.galaxy_config['left_panel']:
             var lp = new Panel( { panel: $("#left"), center: $("#center"), drag: $("#left > .unified-panel-footer > .drag" ), toggle: $("#left > .unified-panel-footer > .panel-collapse" ) } );
             force_left_panel = function( x ) { lp.force_panel( x ) };
         %endif
-        
+
         ## configure right panel
         %if self.galaxy_config['right_panel']:
             var rp = new Panel( { panel: $("#right"), center: $("#center"), drag: $("#right > .unified-panel-footer > .drag" ), toggle: $("#right > .unified-panel-footer > .panel-collapse" ), right: true } );
@@ -166,28 +168,28 @@
             %endif
             </title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        
+
         ## for mobile browsers, don't scale up
         <meta name = "viewport" content = "maximum-scale=1.0">
-        
+
         ## force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
- 
+
         ## load scripts
         ${self.javascripts()}
         ${self.javascript_app()}
     </head>
-    
+
     <body scroll="no" class="full-content">
         <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
             ## background displays first
             <div id="background"></div>
-            
+
             ## master header
             %if self.galaxy_config['master']:
                 ${masthead.load()}
             %endif
-            
+
             ## message box
             %if self.galaxy_config['message_box']:
                 <div id="messagebox" class="panel-message"></div>
@@ -208,7 +210,7 @@
                     </div>
                 </div>
             %endif
-            
+
             ## center panel
             <div id="center">
                 <div class="unified-panel-header" unselectable="on">
@@ -219,7 +221,7 @@
                 </div>
                 <div class="unified-panel-body"></div>
             </div>
-            
+
             ## right panel
             %if self.galaxy_config['right_panel']:
                 <div id="right">
