@@ -99,6 +99,7 @@ class JobHandlerQueue( object ):
         job handler starts.
         In case the activation is enforced it will filter out the jobs of inactive users.
         """
+        log.debug("Checking jobs for startup!")
         jobs_at_startup = []
         if self.track_jobs_in_database:
             in_list = ( model.Job.states.QUEUED,
@@ -175,6 +176,8 @@ class JobHandlerQueue( object ):
                 # to the sleep.
                 if not self.app.job_manager.job_lock:
                     self.__monitor_step()
+                else:
+                    log.debug("Jobs are locked.")
             except:
                 log.exception( "Exception in monitor_step" )
             # Sleep
@@ -268,6 +271,7 @@ class JobHandlerQueue( object ):
         new_waiting_jobs = []
         for job in jobs_to_check:
             try:
+                log.debug("Job to check: %s" % job)
                 # Check the job's dependencies, requeue if they're not done.
                 # Some of these states will only happen when using the in-memory job queue
                 job_state = self.__check_job_state( job )
@@ -566,6 +570,7 @@ class JobHandlerQueue( object ):
         return self.total_job_count_per_destination
 
     def __check_destination_jobs( self, job, job_wrapper ):
+        log.debug("Checking destination jobs")
         if self.app.job_config.limits.destination_total_concurrent_jobs:
             id = job_wrapper.job_destination.id
             count_per_id = self.get_total_job_count_per_destination()
@@ -573,6 +578,7 @@ class JobHandlerQueue( object ):
                 count = count_per_id.get(id, 0)
                 # Check the number of dispatched jobs in the assigned destination id against the limit for that id
                 if count >= self.app.job_config.limits.destination_total_concurrent_jobs[id]:
+                    log.info(" Holding job %s due to limits on destination %s, number %d in line" % (job.id, id, count))
                     return JOB_WAIT
             # If we pass the destination limit (if there is one), also check limits on any tags (if any)
             if job_wrapper.job_destination.tags:
@@ -585,6 +591,7 @@ class JobHandlerQueue( object ):
                             # Add up the aggregate job total for this tag
                             count += count_per_id.get(id, 0)
                         if count >= self.app.job_config.limits.destination_total_concurrent_jobs[tag]:
+                            log.info(" Holding job %s due to limits on destination tag %s, number %d in line" % (job.id, id, count))
                             return JOB_WAIT
         return JOB_READY
 
