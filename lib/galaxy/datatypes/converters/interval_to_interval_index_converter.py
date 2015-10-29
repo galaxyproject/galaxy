@@ -12,9 +12,8 @@ usage: %prog <options> in_file out_file
 from __future__ import division
 
 import optparse
-from galaxy import eggs
-eggs.require( "bx-python" )
 from bx.interval_index_file import Indexes
+
 
 def main():
 
@@ -49,4 +48,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

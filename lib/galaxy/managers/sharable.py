@@ -10,8 +10,8 @@ A sharable Galaxy object:
     can be rated
 """
 
+from sqlalchemy import true
 import re
-
 from galaxy import exceptions
 
 from galaxy.managers import base
@@ -42,30 +42,26 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         self.user_manager = users.UserManager( app )
 
     # .... has a user
-    def by_user( self, trans, user, filters=None, **kwargs ):
+    def by_user( self, user, filters=None, **kwargs ):
         """
         Return list for all items (of model_class type) associated with the given
         `user`.
         """
         user_filter = self.model_class.user_id == user.id
-        filters=self._munge_filters( user_filter, filters )
-        return self.list( trans, filters=filters, **kwargs )
+        filters = self._munge_filters( user_filter, filters )
+        return self.list( filters=filters, **kwargs )
 
-    # .... owned model interface
-    def is_owner( self, trans, item, user ):
+    # .... owned/accessible interfaces
+    def is_owner( self, item, user, **kwargs ):
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
-        if self.user_manager.is_anonymous( user ):
-            # note: this needs to be overridden in the case of anon users and session.current_history
-            return False
         # ... effectively a good fit to have this here, but not semantically
-        if self.user_manager.is_admin( trans, user ):
+        if self.user_manager.is_admin( user ):
             return True
         return item.user == user
 
-    # .... accessible interface
-    def is_accessible( self, trans, item, user ):
+    def is_accessible( self, item, user, **kwargs ):
         """
         If the item is importable, is owned by `user`, or (the valid) `user`
         is in 'users shared with' list for the item: return True.
@@ -73,7 +69,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         if item.importable:
             return True
         # note: owners always have access - checking for accessible implicitly checks for ownership
-        if self.is_owner( trans, item, user ):
+        if self.is_owner( item, user, **kwargs ):
             return True
         if self.user_manager.is_anonymous( user ):
             return False
@@ -82,16 +78,16 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         return False
 
     # .... importable
-    def make_importable( self, trans, item, flush=True ):
+    def make_importable( self, item, flush=True ):
         """
         Makes item accessible--viewable and importable--and sets item's slug.
         Does not flush/commit changes, however. Item must have name, user,
         importable, and slug attributes.
         """
-        self.create_unique_slug( trans, item, flush=False )
+        self.create_unique_slug( item, flush=False )
         return self._session_setattr( item, 'importable', True, flush=flush )
 
-    def make_non_importable( self, trans, item, flush=True ):
+    def make_non_importable( self, item, flush=True ):
         """
         Makes item accessible--viewable and importable--and sets item's slug.
         Does not flush/commit changes, however. Item must have name, user,
@@ -99,110 +95,131 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         """
         # item must be unpublished if non-importable
         if item.published:
-            self.unpublish( trans, item, flush=False )
+            self.unpublish( item, flush=False )
         return self._session_setattr( item, 'importable', False, flush=flush )
 
     # .... published
-    def publish( self, trans, item, flush=True ):
+    def publish( self, item, flush=True ):
         """
         Set both the importable and published flags on `item` to True.
         """
         # item must be importable to be published
         if not item.importable:
-            self.make_importable( trans, item, flush=False )
+            self.make_importable( item, flush=False )
         return self._session_setattr( item, 'published', True, flush=flush )
 
-    def unpublish( self, trans, item, flush=True ):
+    def unpublish( self, item, flush=True ):
         """
         Set the published flag on `item` to False.
         """
         return self._session_setattr( item, 'published', False, flush=flush )
 
-    #def _query_published( self, trans, filters=None, **kwargs ):
-    #    """
-    #    """
-    #    published_filter = self.model_class.published == True
-    #    filters = self._munge_filters( published_filter, filters )
-    #    return self.list( trans, filters=filters, **kwargs )
-    #
-    #def list_published( self, trans, **kwargs ):
-    #    """
-    #    """
-    #    query = self._query_published( trans, user, **kwargs )
-    #    return self.list( trans, query=query, **kwargs )
+    def _query_published( self, filters=None, **kwargs ):
+        """
+        Return a query for all published items.
+        """
+        published_filter = self.model_class.published == true()
+        filters = self._munge_filters( published_filter, filters )
+        return self.query( filters=filters, **kwargs )
+
+    def list_published( self, **kwargs ):
+        """
+        Return a list of all published items.
+        """
+        query = self._query_published( **kwargs )
+        return self.list( query=query, **kwargs )
 
     # .... user sharing
     # sharing is often done via a 3rd table btwn a User and an item -> a <Item>UserShareAssociation
-    def get_share_assocs( self, trans, item, user=None ):
+    def get_share_assocs( self, item, user=None ):
         """
         Get the UserShareAssociations for the `item`.
 
         Optionally send in `user` to test for a single match.
         """
-        query = self.query_associated( trans, self.user_share_model, item )
+        query = self.query_associated( self.user_share_model, item )
         if user is not None:
             query = query.filter_by( user=user )
         return query.all()
 
-    def share_with( self, trans, item, user, flush=True ):
+    def share_with( self, item, user, flush=True ):
         """
         Get or create a share for the given user (or users if `user` is a list).
         """
         # allow user to be a list and call recursivly
         if isinstance( user, list ):
-            return map( lambda user: self.share_with( trans, item, user, flush=False ), user )
+            return map( lambda user: self.share_with( item, user, flush=False ), user )
         # get or create
-        existing = self.get_share_assocs( trans, item, user=user )
+        existing = self.get_share_assocs( item, user=user )
         if existing:
             return existing.pop( 0 )
-        return self._create_user_share_assoc( trans, item, user, flush=flush )
+        return self._create_user_share_assoc( item, user, flush=flush )
 
-    def _create_user_share_assoc( self, trans, item, user, flush=True ):
+    def _create_user_share_assoc( self, item, user, flush=True ):
         """
         Create a share for the given user.
         """
         user_share_assoc = self.user_share_model()
-        self.app.model.context.add( user_share_assoc )
-        self.associate( trans, user_share_assoc, item )
+        self.session().add( user_share_assoc )
+        self.associate( user_share_assoc, item )
         user_share_assoc.user = user
 
         # ensure an item slug so shared users can access
         if not item.slug:
-            self.create_unique_slug( trans, item )
+            self.create_unique_slug( item )
 
         if flush:
-            self.app.model.context.flush()
+            self.session().flush()
         return user_share_assoc
 
-    def unshare_with( self, trans, item, user, flush=True ):
+    def unshare_with( self, item, user, flush=True ):
         """
         Delete a user share (or list of shares) from the database.
         """
         if isinstance( user, list ):
-            return map( lambda user: self.unshare_with( trans, item, user, flush=False ), user )
+            return map( lambda user: self.unshare_with( item, user, flush=False ), user )
         # Look for and delete sharing relation for user.
-        user_share_assoc = self.get_share_assocs( trans, item, user=user )[0]
-        self.app.model.context.delete( user_share_assoc )
+        user_share_assoc = self.get_share_assocs( item, user=user )[0]
+        self.session().delete( user_share_assoc )
         if flush:
-            self.app.model.context.flush()
+            self.session().flush()
         return user_share_assoc
 
-    #def _query_shared_with( self, trans, user, filters=None, **kwargs ):
-    ##TODO:
-    #    """
-    #    """
-    #    pass
+    def _query_shared_with( self, user, eagerloads=True, **kwargs ):
+        """
+        Return a query for this model already filtered to models shared
+        with a particular user.
+        """
+        query = self.session().query( self.model_class ).join( 'users_shared_with' )
+        if eagerloads is False:
+            query = query.enable_eagerloads( False )
+        # TODO: as filter in FilterParser also
+        query = query.filter( self.user_share_model.user == user )
+        return self._filter_and_order_query( query, **kwargs )
 
-    #def list_shared_with( self, trans, user, **kwargs ):
-    #    """
-    #    """
-    #    query = self._query_shared_with( trans, user, **kwargs )
-    #    return self.list( trans, query=query, **kwargs )
+    def list_shared_with( self, user, filters=None, order_by=None, limit=None, offset=None, **kwargs ):
+        """
+        Return a list of those models shared with a particular user.
+        """
+        # TODO: refactor out dupl-code btwn base.list
+        orm_filters, fn_filters = self._split_filters( filters )
+        if not fn_filters:
+            # if no fn_filtering required, we can use the 'all orm' version with limit offset
+            query = self._query_shared_with( user, filters=orm_filters,
+                order_by=order_by, limit=limit, offset=offset, **kwargs )
+            return self._orm_list( query=query, **kwargs )
+
+        # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
+        query = self._query_shared_with( user, filters=orm_filters,
+            order_by=order_by, limit=None, offset=None, **kwargs )
+        # apply limit and offset afterwards
+        items = self._apply_fn_filters_gen( query.all(), fn_filters )
+        return list( self._apply_fn_limit_offset_gen( items, limit, offset ) )
 
     # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
-    #TODO: as validator, deserializer, etc. (maybe another object entirely?)
-    def set_slug( self, trans, item, new_slug, flush=True ):
+    # TODO: as validator, deserializer, etc. (maybe another object entirely?)
+    def set_slug( self, item, new_slug, user, flush=True ):
         """
         Validate and set the new slug for `item`.
         """
@@ -211,12 +228,12 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
             raise exceptions.RequestParameterInvalidException( "Invalid slug", slug=new_slug )
 
         # error if slug is already in use
-        if self._slug_exists( trans, trans.user, new_slug ):
+        if self._slug_exists( user, new_slug ):
             raise exceptions.Conflict( "Slug already exists", slug=new_slug )
 
         item.slug = new_slug
         if flush:
-            self.app.model.context.flush()
+            self.session().flush()
         return item
 
     def is_valid_slug( self, slug ):
@@ -226,14 +243,14 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
         return VALID_SLUG_RE.match( slug )
 
-    def _existing_set_of_slugs( self, trans, user ):
-        query = ( self.app.model.context.query( self.model_class.slug )
-                    .filter_by( user=user ) )
-        return set( query.all() )
+    def _existing_set_of_slugs( self, user ):
+        query = ( self.session().query( self.model_class.slug )
+                  .filter_by( user=user ) )
+        return list( set( query.all() ) )
 
-    def _slug_exists( self, trans, user, slug ):
-        query = ( self.app.model.context.query( self.model_class.slug )
-                    .filter_by( user=user, slug=slug ) )
+    def _slug_exists( self, user, slug ):
+        query = ( self.session().query( self.model_class.slug )
+                  .filter_by( user=user, slug=slug ) )
         return query.count() != 0
 
     def _slugify( self, start_with ):
@@ -246,13 +263,13 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
             slug_base = slug_base[:-1]
         return slug_base
 
-    def _default_slug_base( self, trans, item ):
+    def _default_slug_base( self, item ):
         # override in subclasses
         if hasattr( item, 'title' ):
             return item.title.lower()
         return item.name.lower()
 
-    def get_unique_slug( self, trans, item ):
+    def get_unique_slug( self, item ):
         """
         Returns a slug that is unique among user's importable items
         for item's class.
@@ -261,7 +278,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
         # Setup slug base.
         if cur_slug is None or cur_slug == "":
-            slug_base = self._slugify( self._default_slug_base( trans, item ) )
+            slug_base = self._slugify( self._default_slug_base( item ) )
         else:
             slug_base = cur_slug
 
@@ -269,7 +286,7 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
         # add integer to end.
         new_slug = slug_base
         count = 1
-        while ( self.app.model.context.query( item.__class__ )
+        while ( self.session().query( item.__class__ )
                     .filter_by( user=item.user, slug=new_slug, importable=True )
                     .count() != 0 ):
             # Slug taken; choose a new slug based on count. This approach can
@@ -279,34 +296,34 @@ class SharableModelManager( base.ModelManager, secured.OwnableManagerMixin, secu
 
         return new_slug
 
-    def create_unique_slug( self, trans, item, flush=True ):
+    def create_unique_slug( self, item, flush=True ):
         """
         Set a new, unique slug on the item.
         """
-        item.slug = self.get_unique_slug( trans, item )
-        self.app.model.context.add( item )
+        item.slug = self.get_unique_slug( item )
+        self.session().add( item )
         if flush:
-            self.app.model.context.flush()
+            self.session().flush()
         return item
 
-    #def by_slug( self, trans, user, **kwargs ):
+    # def by_slug( self, user, **kwargs ):
     #    """
     #    """
     #    pass
 
     # .... display
-    #def display_by_username_and_slug( self, trans, username, slug ):
+    # def display_by_username_and_slug( self, username, slug ):
     #    """ Display item by username and slug. """
 
-    #def set_public_username( self, trans, id, username, **kwargs ):
+    # def set_public_username( self, id, username, **kwargs ):
     #    """ Set user's public username and delegate to sharing() """
-    #def sharing( self, trans, id, **kwargs ):
+    # def sharing( self, id, **kwargs ):
     #    """ Handle item sharing. """
 
 
 class SharableModelSerializer( base.ModelSerializer,
-        taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin ):
-#TODO: stub
+       taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin ):
+    # TODO: stub
     SINGLE_CHAR_ABBR = None
 
     def add_serializers( self ):
@@ -319,20 +336,21 @@ class SharableModelSerializer( base.ModelSerializer,
             'user_id'           : self.serialize_id,
             'username_and_slug' : self.serialize_username_and_slug
         })
+        # these use the default serializer but must still be white-listed
         self.serializable_keyset.update([
             'importable', 'published', 'slug'
         ])
 
-    def serialize_username_and_slug( self, trans, item, key ):
+    def serialize_username_and_slug( self, item, key, **context ):
         if not ( item.user and item.slug and self.SINGLE_CHAR_ABBR ):
             return None
-#TODO: self.url_for
         return ( '/' ).join(( 'u', item.user.username, self.SINGLE_CHAR_ABBR, item.slug ) )
 
-    #def published_url( self, trans, item, key ):
+    # def serialize_username_and_slug( self, item, key, **context ):
     #    """
     #    """
-    #    url = url_for(controller='history', action="display_by_username_and_slug",
+    #     #TODO: replace the above with this
+    #    url = self.url_for(controller='history', action="display_by_username_and_slug",
     #        username=item.user.username, slug=item.slug )
     #    return url
 
@@ -356,7 +374,7 @@ class SharableModelDeserializer( base.ModelDeserializer,
             'importable'    : self.deserialize_importable,
         })
 
-    def deserialize_published( self, trans, item, key, val ):
+    def deserialize_published( self, item, key, val, **context ):
         """
         """
         val = self.validate.bool( key, val )
@@ -364,12 +382,12 @@ class SharableModelDeserializer( base.ModelDeserializer,
             return val
 
         if val:
-            self.manager.publish( trans, item, flush=False )
+            self.manager.publish( item, flush=False )
         else:
-            self.manager.unpublish( trans, item, flush=False )
+            self.manager.unpublish( item, flush=False )
         return item.published
 
-    def deserialize_importable( self, trans, item, key, val ):
+    def deserialize_importable( self, item, key, val, **context ):
         """
         """
         val = self.validate.bool( key, val )
@@ -377,28 +395,33 @@ class SharableModelDeserializer( base.ModelDeserializer,
             return val
 
         if val:
-            self.manager.make_importable( trans, item, flush=False )
+            self.manager.make_importable( item, flush=False )
         else:
-            self.manager.make_non_importable( trans, item, flush=False )
+            self.manager.make_non_importable( item, flush=False )
         return item.published
 
-    #def deserialize_slug( self, trans, item, val ):
+    # def deserialize_slug( self, item, val, **context ):
     #    """
     #    """
     #    #TODO: call manager.set_slug
     #    pass
 
-    #def deserialize_user_shares():
+    # def deserialize_user_shares():
 
 
-class SharableModelFilters( base.ModelFilterParser ):
+class SharableModelFilters( base.ModelFilterParser,
+                            taggable.TaggableFilterMixin,
+                            annotatable.AnnotatableFilterMixin ):
 
     def _add_parsers( self ):
         super( SharableModelFilters, self )._add_parsers()
+        taggable.TaggableFilterMixin._add_parsers( self )
+        annotatable.AnnotatableFilterMixin._add_parsers( self )
+
         self.orm_filter_parsers.update({
             'importable'    : { 'op': ( 'eq' ), 'val': self.parse_bool },
             'published'     : { 'op': ( 'eq' ), 'val': self.parse_bool },
             'slug'          : { 'op': ( 'eq', 'contains', 'like' ) },
             # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
-            #'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
+            # 'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
         })

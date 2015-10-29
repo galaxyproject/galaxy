@@ -1,56 +1,79 @@
-# !/usr/bin/env python
-""" Build indeces for searching the TS """
+"""
+Build indexes for searching the TS.
+Run this script from the Tool Shed folder, example:
+
+$ python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.ini
+
+Make sure you adjusted your config to:
+ * turn on searching via toolshed_search_on
+ * specify whoosh_index_dir where the indexes will be placed
+
+Also make sure that GALAXY_EGGS_PATH variable is properly set
+in case you are using non-default location for Galaxy.
+"""
 import sys
 import os
-import csv
-import urllib
-import urllib2
 import ConfigParser
-    
+from optparse import OptionParser
+
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
-new_path.extend( sys.path[1:] ) # remove scripts/ from the path
+new_path.extend( sys.path[1:] )  # remove scripts/ from the path
 sys.path = new_path
 
 from galaxy.util import pretty_print_time_interval
-from galaxy import eggs
-eggs.require( "SQLAlchemy" )
-
 import galaxy.webapps.tool_shed.model.mapping
+from galaxy.webapps.tool_shed import config
+from galaxy.webapps.tool_shed import model
+from galaxy.tools.loader_directory import load_tool_elements_from_path
 
-# Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether search is enabled.
-try:
-    eggs.require( "Whoosh" )
-    import whoosh.index
-    from whoosh.filedb.filestore import FileStorage
-    from whoosh.fields import Schema, STORED, ID, KEYWORD, TEXT, STORED
-    from whoosh.scoring import BM25F
-    from whoosh.qparser import MultifieldParser
-    from whoosh.index import Index
-    from galaxy.webapps.tool_shed import config, model
-    
-    whoosh_ready = True
-    schema = Schema(
-        id = STORED,
-        name = TEXT( field_boost = 1.7, stored = True ),
-        description = TEXT( field_boost = 1.5, stored = True ),
-        long_description = TEXT( stored = True ),
-        homepage_url = TEXT( stored = True ),
-        remote_repository_url = TEXT( stored = True ),
-        repo_owner_username = TEXT( stored = True ),
-        times_downloaded = STORED,
-        approved = STORED,
-        last_updated = STORED,
-        full_last_updated = STORED )
+from whoosh.filedb.filestore import FileStorage
+from whoosh.fields import Schema, STORED, TEXT
 
-except ImportError, e:
-    print 'import error'
-    whoosh_ready = False
-    schema = None
+repo_schema = Schema(
+    id=STORED,
+    name=TEXT( stored=True ),
+    description=TEXT( stored=True ),
+    long_description=TEXT( stored=True ),
+    homepage_url=TEXT( stored=True ),
+    remote_repository_url=TEXT( stored=True ),
+    repo_owner_username=TEXT( stored=True ),
+    times_downloaded=STORED,
+    approved=STORED,
+    last_updated=STORED,
+    full_last_updated=STORED )
 
-def build_index( sa_session, toolshed_whoosh_index_dir ):
-    storage = FileStorage( toolshed_whoosh_index_dir )
-    index = storage.create_index( schema )
-    writer = index.writer()
+tool_schema = Schema(
+    name=TEXT( stored=True ),
+    description=TEXT( stored=True ),
+    owner=TEXT( stored=True ),
+    id=TEXT( stored=True ),
+    help=TEXT( stored=True ),
+    version=TEXT( stored=True),
+    repo_name=TEXT( stored=True ),
+    repo_owner_username=TEXT( stored=True ),
+    repo_id=STORED )
+
+
+def build_index( sa_session, whoosh_index_dir, path_to_repositories ):
+    """
+    Build the search indexes. One for repositories and another for tools within.
+    """
+    #  Rare race condition exists here and below
+    if not os.path.exists( whoosh_index_dir ):
+        os.makedirs( whoosh_index_dir )
+    tool_index_dir = os.path.join( whoosh_index_dir, 'tools' )
+    if not os.path.exists( tool_index_dir ):
+        os.makedirs( tool_index_dir )
+
+    repo_index_storage = FileStorage( whoosh_index_dir )
+    tool_index_storage = FileStorage( tool_index_dir )
+
+    repo_index = repo_index_storage.create_index( repo_schema )
+    tool_index = tool_index_storage.create_index( tool_schema )
+
+    repo_index_writer = repo_index.writer()
+    tool_index_writer = tool_index.writer()
+
     def to_unicode( a_basestr ):
         if type( a_basestr ) is str:
             return unicode( a_basestr, 'utf-8' )
@@ -58,42 +81,59 @@ def build_index( sa_session, toolshed_whoosh_index_dir ):
             return a_basestr
 
     repos_indexed = 0
-    for ( id,
-            name, 
-            description, 
-            long_description,
-            homepage_url,
-            remote_repository_url,
-            repo_owner_username,
-            times_downloaded,
-            approved,
-            last_updated,
-            full_last_updated ) in get_repos( sa_session ):
+    tools_indexed = 0
 
-        writer.add_document( id = id,
-                             name = to_unicode( name ),
-                             description = to_unicode( description ), 
-                             long_description = to_unicode( long_description ), 
-                             homepage_url = to_unicode( homepage_url ), 
-                             remote_repository_url = to_unicode( remote_repository_url ), 
-                             repo_owner_username = to_unicode( repo_owner_username ),
-                             times_downloaded = times_downloaded,
-                             approved = approved,
-                             last_updated = last_updated,
-                             full_last_updated = full_last_updated )
+    for repo in get_repos( sa_session, path_to_repositories ):
+
+        repo_index_writer.add_document( id=repo.get( 'id' ),
+                             name=to_unicode( repo.get( 'name' ) ),
+                             description=to_unicode( repo.get( 'description' ) ),
+                             long_description=to_unicode( repo.get( 'long_description' ) ),
+                             homepage_url=to_unicode( repo.get( 'homepage_url' ) ),
+                             remote_repository_url=to_unicode( repo.get( 'remote_repository_url' ) ),
+                             repo_owner_username=to_unicode( repo.get( 'repo_owner_username' ) ),
+                             times_downloaded=repo.get( 'times_downloaded' ),
+                             approved=repo.get( 'approved' ),
+                             last_updated=repo.get( 'last_updated' ),
+                             full_last_updated=repo.get( 'full_last_updated' ) )
+        #  Tools get their own index
+        for tool in repo.get( 'tools_list' ):
+            # print tool
+            tool_index_writer.add_document( id=to_unicode( tool.get( 'id' ) ),
+                                            name=to_unicode( tool.get( 'name' ) ),
+                                            version=to_unicode( tool.get( 'version' ) ),
+                                            description=to_unicode( tool.get( 'description' ) ),
+                                            help=to_unicode( tool.get( 'help' ) ),
+                                            repo_owner_username=to_unicode( repo.get( 'repo_owner_username' ) ),
+                                            repo_name=to_unicode( repo.get( 'name' ) ),
+                                            repo_id=repo.get( 'id' ) )
+            tools_indexed += 1
+            print tools_indexed, 'tools (', tool.get( 'id' ), ')'
+
         repos_indexed += 1
-    writer.commit()
-    print "Number of repos indexed: ", repos_indexed
+        print repos_indexed, 'repos (', repo.get( 'id' ), ')'
 
-def get_repos( sa_session ):
+    tool_index_writer.commit()
+    repo_index_writer.commit()
+
+    print "TOTAL repos indexed: ", repos_indexed
+    print "TOTAL tools indexed: ", tools_indexed
+
+
+def get_repos( sa_session, path_to_repositories ):
+    """
+    Load repos from DB and included tools from .xml configs.
+    """
+    results = []
     for repo in sa_session.query( model.Repository ).filter_by( deleted=False ).filter_by( deprecated=False ).filter( model.Repository.type != 'tool_dependency_definition' ):
-        id = repo.id
+
+        repo_id = repo.id
         name = repo.name
         description = repo.description
         long_description = repo.long_description
         homepage_url = repo.homepage_url
         remote_repository_url = repo.remote_repository_url
-        
+
         times_downloaded = repo.times_downloaded
         if not isinstance( times_downloaded, ( int, long ) ):
             times_downloaded = 0
@@ -109,25 +149,60 @@ def get_repos( sa_session ):
                 approved = 'yes'
                 break
 
-        # Format the time since last update to be nicely readable.
+        #  Format the time since last update to be nicely readable.
         last_updated = pretty_print_time_interval( repo.update_time )
         full_last_updated = repo.update_time.strftime( "%Y-%m-%d %I:%M %p" )
 
-        yield ( id, 
-                name,
-                description,
-                long_description,
-                homepage_url,
-                remote_repository_url,
-                repo_owner_username,
-                times_downloaded,
-                approved,
-                last_updated,
-                full_last_updated )
+        #  Parse all the tools within repo for separate index.
+        tools_list = []
+        path = os.path.join( path_to_repositories, *model.directory_hash_id( repo.id ))
+        path = os.path.join( path, "repo_%d" % repo.id )
+        if os.path.exists(path):
+            tools_list.extend( load_one_dir( path ) )
+            for root, dirs, files in os.walk( path ):
+                if '.hg' in dirs:
+                    dirs.remove('.hg')
+                for dirname in dirs:
+                    tools_in_dir = load_one_dir( os.path.join( root, dirname ) )
+                    tools_list.extend( tools_in_dir )
 
-def get_sa_session_and_needed_config_settings( ini_file ):
+        results.append(dict( id=repo_id,
+                             name=name,
+                             description=description,
+                             long_description=long_description,
+                             homepage_url=homepage_url,
+                             remote_repository_url=remote_repository_url,
+                             repo_owner_username=repo_owner_username,
+                             times_downloaded=times_downloaded,
+                             approved=approved,
+                             last_updated=last_updated,
+                             full_last_updated=full_last_updated,
+                             tools_list=tools_list ) )
+    return results
+
+
+def load_one_dir( path ):
+    tools_in_dir = []
+    tool_elems = load_tool_elements_from_path( path )
+    if tool_elems:
+        for elem in tool_elems:
+            root = elem[1].getroot()
+            if root.tag == 'tool':
+                tool = {}
+                if root.find( 'help' ) is not None:
+                    tool.update( dict( help=root.find( 'help' ).text ) )
+                if root.find( 'description' ) is not None:
+                    tool.update( dict( description=root.find( 'description' ).text ) )
+                tool.update( dict( id=root.attrib.get( 'id' ),
+                                   name=root.attrib.get( 'name' ),
+                                   version=root.attrib.get( 'version' ) ) )
+                tools_in_dir.append( tool )
+    return tools_in_dir
+
+
+def get_sa_session_and_needed_config_settings( path_to_tool_shed_config ):
     conf_parser = ConfigParser.ConfigParser( { 'here' : os.getcwd() } )
-    conf_parser.read( ini_file )
+    conf_parser.read( path_to_tool_shed_config )
     kwds = dict()
     for key, value in conf_parser.items( "app:main" ):
         kwds[ key ] = value
@@ -139,8 +214,11 @@ def get_sa_session_and_needed_config_settings( ini_file ):
     return model.context.current, config_settings
 
 if __name__ == "__main__":
-    if whoosh_ready:
-        ini_file = sys.argv[ 1 ]
-        sa_session, config_settings = get_sa_session_and_needed_config_settings( ini_file )
-        toolshed_whoosh_index_dir = config_settings.get( 'toolshed_whoosh_index_dir', None )
-        build_index( sa_session, toolshed_whoosh_index_dir )
+    parser = OptionParser()
+    parser.add_option("-c", "--config", dest="path_to_tool_shed_config", default="config/tool_shed.ini", help="specify tool_shed.ini location")
+    (options, args) = parser.parse_args()
+    path_to_tool_shed_config = options.path_to_tool_shed_config
+    sa_session, config_settings = get_sa_session_and_needed_config_settings( path_to_tool_shed_config )
+    whoosh_index_dir = config_settings.get( 'whoosh_index_dir', None )
+    path_to_repositories = config_settings.get( 'file_path', 'database/community_files' )
+    build_index( sa_session, whoosh_index_dir, path_to_repositories )

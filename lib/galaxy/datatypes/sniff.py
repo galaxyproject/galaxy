@@ -19,25 +19,27 @@ from galaxy.datatypes.binary import Binary
 
 log = logging.getLogger(__name__)
 
+
 def get_test_fname(fname):
     """Returns test data filename"""
     path, name = os.path.split(__file__)
     full_path = os.path.join(path, 'test', fname)
     return full_path
 
+
 def stream_to_open_named_file( stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict' ):
     """Writes a stream to the provided file descriptor, returns the file's name and bool( is_multi_byte ). Closes file descriptor"""
-    #signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
+    # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
     data_checked = False
     is_compressed = False
     is_binary = False
     is_multi_byte = False
     if not target_encoding or not encodings_search_function( target_encoding ):
-        target_encoding = util.DEFAULT_ENCODING #utf-8
+        target_encoding = util.DEFAULT_ENCODING  # utf-8
     if not source_encoding:
-        source_encoding = util.DEFAULT_ENCODING #sys.getdefaultencoding() would mimic old behavior (defaults to ascii)
-    while 1:
+        source_encoding = util.DEFAULT_ENCODING  # sys.getdefaultencoding() would mimic old behavior (defaults to ascii)
+    while True:
         chunk = stream.read( CHUNK_SIZE )
         if not chunk:
             break
@@ -69,10 +71,12 @@ def stream_to_open_named_file( stream, fd, filename, source_encoding=None, sourc
     os.close( fd )
     return filename, is_multi_byte
 
+
 def stream_to_file( stream, suffix='', prefix='', dir=None, text=False, **kwd ):
     """Writes a stream to a temporary file, returns the temporary file's name"""
     fd, temp_name = tempfile.mkstemp( suffix=suffix, prefix=prefix, dir=dir, text=text )
     return stream_to_open_named_file( stream, fd, temp_name, **kwd )
+
 
 def check_newlines( fname, bytes_to_read=52428800 ):
     """
@@ -89,6 +93,7 @@ def check_newlines( fname, bytes_to_read=52428800 ):
             return True
     f.close()
     return False
+
 
 def convert_newlines( fname, in_place=True, tmp_dir=None, tmp_prefix=None ):
     """
@@ -119,6 +124,7 @@ def convert_newlines( fname, in_place=True, tmp_dir=None, tmp_prefix=None ):
     else:
         return ( i, temp_name )
 
+
 def sep2tabs( fname, in_place=True, patt="\\s+" ):
     """
     Transforms in place a 'sep' separated file to a tab separated one
@@ -135,7 +141,7 @@ def sep2tabs( fname, in_place=True, patt="\\s+" ):
     fp = os.fdopen( fd, "wt" )
     i = None
     for i, line in enumerate( file( fname ) ):
-        line  = line.rstrip( '\r\n' )
+        line = line.rstrip( '\r\n' )
         elems = regexp.split( line )
         fp.write( "%s\n" % '\t'.join( elems ) )
     fp.close()
@@ -149,6 +155,7 @@ def sep2tabs( fname, in_place=True, patt="\\s+" ):
         return ( i, None )
     else:
         return ( i, temp_name )
+
 
 def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix=None ):
     """
@@ -166,7 +173,7 @@ def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, 
     fd, temp_name = tempfile.mkstemp( prefix=tmp_prefix, dir=tmp_dir )
     fp = os.fdopen( fd, "wt" )
     for i, line in enumerate( file( fname, "U" ) ):
-        line  = line.rstrip( '\r\n' )
+        line = line.rstrip( '\r\n' )
         elems = regexp.split( line )
         fp.write( "%s\n" % '\t'.join( elems ) )
     fp.close()
@@ -176,6 +183,7 @@ def convert_newlines_sep2tabs( fname, in_place=True, patt="\\s+", tmp_dir=None, 
         return ( i + 1, None )
     else:
         return ( i + 1, temp_name )
+
 
 def get_headers( fname, sep, count=60, is_multi_byte=False ):
     """
@@ -196,6 +204,7 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
         if idx == count:
             break
     return headers
+
 
 def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
     """
@@ -241,6 +250,7 @@ def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
             if len(hdr) != count:
                 return False
     return True
+
 
 def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     """
@@ -326,21 +336,22 @@ def guess_ext( fname, sniff_order=None, is_multi_byte=False ):
     else:
         for hdr in headers:
             for char in hdr:
-                #old behavior had 'char' possibly having length > 1,
-                #need to determine when/if this occurs
+                # old behavior had 'char' possibly having length > 1,
+                # need to determine when/if this occurs
                 is_binary = util.is_binary( char )
                 if is_binary:
                     break
             if is_binary:
                 break
     if is_binary:
-        return 'data'        #default binary data type file extension
+        return 'data'  # default binary data type file extension
     if is_column_based( fname, '\t', 1, is_multi_byte=is_multi_byte ):
-        return 'tabular'    #default tabular data type file extension
-    return 'txt'            #default text data type file extension
+        return 'tabular'  # default tabular data type file extension
+    return 'txt'  # default text data type file extension
 
-def handle_compressed_file( filename, datatypes_registry, ext = 'auto' ):
-    CHUNK_SIZE = 2**20 # 1Mb
+
+def handle_compressed_file( filename, datatypes_registry, ext='auto' ):
+    CHUNK_SIZE = 2 ** 20  # 1Mb
     is_compressed = False
     compressed_type = None
     keep_compressed = False
@@ -348,7 +359,7 @@ def handle_compressed_file( filename, datatypes_registry, ext = 'auto' ):
     for compressed_type, check_compressed_function in COMPRESSION_CHECK_FUNCTIONS:
         is_compressed = check_compressed_function( filename )
         if is_compressed:
-            break #found compression type
+            break  # found compression type
     if is_compressed:
         if ext in AUTO_DETECT_EXTENSIONS:
             check_exts = COMPRESSION_DATATYPES[ compressed_type ]
@@ -373,11 +384,11 @@ def handle_compressed_file( filename, datatypes_registry, ext = 'auto' ):
         while True:
             try:
                 chunk = compressed_file.read( CHUNK_SIZE )
-            except IOError, e:
+            except IOError as e:
                 os.close( fd )
                 os.remove( uncompressed )
                 compressed_file.close()
-                raise IOError, 'Problem uncompressing %s data, please try retrieving the data uncompressed: %s' % ( compressed_type, e )
+                raise IOError( 'Problem uncompressing %s data, please try retrieving the data uncompressed: %s' % ( compressed_type, e ))
             if not chunk:
                 break
             os.write( fd, chunk )
@@ -387,28 +398,31 @@ def handle_compressed_file( filename, datatypes_registry, ext = 'auto' ):
         shutil.move( uncompressed, filename )
     return is_valid, ext
 
-def handle_uploaded_dataset_file( filename, datatypes_registry, ext = 'auto', is_multi_byte = False ):
-    is_valid, ext = handle_compressed_file( filename, datatypes_registry, ext = ext )
+
+def handle_uploaded_dataset_file( filename, datatypes_registry, ext='auto', is_multi_byte=False ):
+    is_valid, ext = handle_compressed_file( filename, datatypes_registry, ext=ext )
 
     if not is_valid:
-        raise InappropriateDatasetContentError, 'The compressed uploaded file contains inappropriate content.'
+        raise InappropriateDatasetContentError( 'The compressed uploaded file contains inappropriate content.' )
 
     if ext in AUTO_DETECT_EXTENSIONS:
-        ext = guess_ext( filename, sniff_order = datatypes_registry.sniff_order, is_multi_byte=is_multi_byte )
+        ext = guess_ext( filename, sniff_order=datatypes_registry.sniff_order, is_multi_byte=is_multi_byte )
 
     if check_binary( filename ):
         if not Binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension( ext ).sniff( filename ):
-            raise InappropriateDatasetContentError, 'The binary uploaded file contains inappropriate content.'
+            raise InappropriateDatasetContentError( 'The binary uploaded file contains inappropriate content.' )
     elif check_html( filename ):
-        raise InappropriateDatasetContentError, 'The uploaded file contains inappropriate HTML content.'
+        raise InappropriateDatasetContentError( 'The uploaded file contains inappropriate HTML content.' )
     return ext
 
-AUTO_DETECT_EXTENSIONS = [ 'auto' ] #should 'data' also cause auto detect?
-DECOMPRESSION_FUNCTIONS = dict( gzip = gzip.GzipFile )
+AUTO_DETECT_EXTENSIONS = [ 'auto' ]  # should 'data' also cause auto detect?
+DECOMPRESSION_FUNCTIONS = dict( gzip=gzip.GzipFile )
 COMPRESSION_CHECK_FUNCTIONS = [ ( 'gzip', is_gzip ) ]
-COMPRESSION_DATATYPES = dict( gzip = [ 'bam' ] )
+COMPRESSION_DATATYPES = dict( gzip=[ 'bam' ] )
 COMPRESSED_EXTENSIONS = []
-for exts in COMPRESSION_DATATYPES.itervalues(): COMPRESSED_EXTENSIONS.extend( exts )
+for exts in COMPRESSION_DATATYPES.itervalues():
+    COMPRESSED_EXTENSIONS.extend( exts )
+
 
 class InappropriateDatasetContentError( Exception ):
     pass

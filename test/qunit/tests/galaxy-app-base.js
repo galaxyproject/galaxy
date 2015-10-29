@@ -3,7 +3,7 @@ define( 'bootstrapped-data', function(){
         config  : {
             "allow_user_deletion": false,
             "allow_user_creation": true,
-            "wiki_url": "http://wiki.galaxyproject.org/",
+            "wiki_url": "https://wiki.galaxyproject.org/",
             "ftp_upload_site": null,
             "support_url": "https://wiki.galaxyproject.org/Support",
             "allow_user_dataset_purge": false,
@@ -98,7 +98,7 @@ define([
         ok( app.hasOwnProperty( 'config' ) && typeof app.config === 'object' );
         equal( app.config.allow_user_deletion,  false );
         equal( app.config.allow_user_creation,  true );
-        equal( app.config.wiki_url,             "http://wiki.galaxyproject.org/" );
+        equal( app.config.wiki_url,             "https://wiki.galaxyproject.org/" );
         equal( app.config.ftp_upload_site,      null );
         //...
     });

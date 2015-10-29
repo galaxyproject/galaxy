@@ -2,40 +2,48 @@
 Manager and Serializer for Roles.
 """
 
-import galaxy.web
-from galaxy import exceptions
-from galaxy.model import orm
-from sqlalchemy.orm.exc import MultipleResultsFound
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import exc as sqlalchemy_exceptions
+
+import galaxy.exceptions
+from galaxy import model
+from galaxy.managers import base
 
 import logging
 log = logging.getLogger( __name__ )
 
 
-# =============================================================================
-class RoleManager( object ):
+class RoleManager( base.ModelManager ):
     """
-    Interface/service object for interacting with folders.
+    Business logic for roles.
     """
+    model_class = model.Role
+    foreign_key_name = 'role'
 
-    def get( self, trans, decoded_role_id):
-      """
-      Method loads the role from the DB based on the given role id.
+    user_assoc = model.UserRoleAssociation
+    group_assoc = model.GroupRoleAssociation
 
-      :param  decoded_role_id:      id of the role to load from the DB
-      :type   decoded_role_id:      int
+    def __init__( self, app ):
+        super( RoleManager, self ).__init__( app )
 
-      :returns:   the loaded Role object
-      :rtype:     Role
+    def get( self, trans, decoded_role_id ):
+        """
+        Method loads the role from the DB based on the given role id.
 
-      :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
-      """
-      try:
-          role = trans.sa_session.query( trans.app.model.Role ).filter( trans.model.Role.table.c.id == decoded_role_id ).one()
-      except MultipleResultsFound:
-          raise exceptions.InconsistentDatabase( 'Multiple roles found with the same id.' )
-      except NoResultFound:
-          raise exceptions.RequestParameterInvalidException( 'No role found with the id provided.' )
-      except Exception, e:
-          raise exceptions.InternalServerError( 'Error loading from the database.' + str(e) )
-      return role
+        :param  decoded_role_id:      id of the role to load from the DB
+        :type   decoded_role_id:      int
+
+        :returns:   the loaded Role object
+        :rtype:     Role
+
+        :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
+        """
+        try:
+            role = ( self.session().query( self.model_class )
+                     .filter( self.model_class.id == decoded_role_id ).one() )
+        except sqlalchemy_exceptions.MultipleResultsFound:
+            raise galaxy.exceptions.InconsistentDatabase( 'Multiple roles found with the same id.' )
+        except sqlalchemy_exceptions.NoResultFound:
+            raise galaxy.exceptions.RequestParameterInvalidException( 'No role found with the id provided.' )
+        except Exception, e:
+            raise galaxy.exceptions.InternalServerError( 'Error loading from the database.' + str(e) )
+        return role

@@ -1,5 +1,5 @@
 from galaxy import web
-from galaxy.web.base.controller import *
+from galaxy.web.base.controller import BaseUIController
 
 
 class Mobile( BaseUIController ):
@@ -53,17 +53,40 @@ class Mobile( BaseUIController ):
         # trans.log_event( "User logged out" )
         # trans.handle_user_logout()
 
-    def __login( self, trans, email="", password="" ):
+    def __login(self, trans, login="", password=""):
         return trans.response.send_redirect( web.url_for(controller='root', action='index' ) )
         # error = password_error = None
-        # user = trans.sa_session.query( model.User ).filter_by( email = email ).first()
+        # user = trans.sa_session.query( model.User ).filter(or_(
+        #    email == login,
+        #    username == login
+        # )).first()
         # if not user:
-        #     error = "No such user (please note that login is case sensitive)"
+        #     autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
+        #     if autoreg[0]:
+        #         kwd = {}
+        #         kwd['email'] = autoreg[1]
+        #         kwd['username'] = autoreg[2]
+        #         params = util.Params( kwd )
+        #         message = validate_email( trans, kwd['email'] )
+        #         if not message:
+        #             message, status, user, success = self.__register( trans, 'user', False, **kwd )
+        #             if success:
+        #                 # The handle_user_login() method has a call to the history_set_default_permissions() method
+        #                 # (needed when logging in with a history), user needs to have default permissions set before logging in
+        #                 trans.handle_user_login( user )
+        #                 trans.log_event( "User (auto) created a new account" )
+        #                 trans.log_event( "User logged in" )
+        #             else:
+        #                 message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+        #         else:
+        #             message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+        #     else:
+        #         message = "No such user (please note that login is case sensitive)"
         # elif user.deleted:
         #     error = "This account has been marked deleted, contact your Galaxy administrator to restore the account."
         # elif user.external:
         #     error = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-        # elif not user.check_password( password ):
+        # elif not trans.app.auth_manager.check_password(user, password):
         #     error = "Invalid password"
         # else:
         #     trans.handle_user_login( user )

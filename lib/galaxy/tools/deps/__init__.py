@@ -90,7 +90,10 @@ class DependencyManager( object ):
         return INDETERMINATE_DEPENDENCY
 
     def __build_dependency_resolvers( self, conf_file ):
-        if not conf_file or not os.path.exists( conf_file ):
+        if not conf_file:
+            return self.__default_dependency_resolvers()
+        if not os.path.exists( conf_file ):
+            log.debug( "Unable to find config file '%s'", conf_file)
             return self.__default_dependency_resolvers()
         plugin_source = plugin_config.plugin_source_from_path( conf_file )
         return self.__parse_resolver_conf_xml( plugin_source )

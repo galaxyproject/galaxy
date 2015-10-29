@@ -2,7 +2,7 @@
 API operations allowing clients to determine datatype supported by Galaxy.
 """
 
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy import exceptions
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.util import asbool
@@ -14,7 +14,7 @@ log = logging.getLogger( __name__ )
 
 class DatatypesController( BaseAPIController ):
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def index( self, trans, **kwd ):
         """
         GET /api/datatypes
@@ -38,6 +38,11 @@ class DatatypesController( BaseAPIController ):
                     dictionary = {}
                     for key in keys:
                         dictionary[key] = elem.get(key)
+                    extension = elem.get('extension')
+                    if extension in datatypes_registry.datatypes_by_extension:
+                        composite_files = datatypes_registry.datatypes_by_extension[ extension ].composite_files
+                        if composite_files:
+                            dictionary['composite_files'] = [_.dict() for _ in composite_files.itervalues()]
                     rval.append(dictionary)
                 return rval
         except Exception as exception:
@@ -47,7 +52,7 @@ class DatatypesController( BaseAPIController ):
             else:
                 raise
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def mapping( self, trans, **kwd ):
         '''
         GET /api/datatypes/mapping
@@ -81,7 +86,7 @@ class DatatypesController( BaseAPIController ):
             else:
                 raise
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def sniffers( self, trans, **kwd ):
         '''
         GET /api/datatypes/sniffers
@@ -101,7 +106,7 @@ class DatatypesController( BaseAPIController ):
             else:
                 raise
 
-    @expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def converters( self, trans, **kwd ):
         converters = []
         for (source_type, targets) in self._datatypes_registry.datatype_converters.iteritems():
@@ -113,6 +118,10 @@ class DatatypesController( BaseAPIController ):
                 } )
 
         return converters
+
+    @expose_api_anonymous_and_sessionless
+    def edam_formats( self, trans, **kwds ):
+        return self._datatypes_registry.edam_formats
 
     @property
     def _datatypes_registry( self ):

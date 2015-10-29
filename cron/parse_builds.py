@@ -2,7 +2,7 @@
 
 """
 Connects to the URL specified and outputs builds available at that
-DSN in tabular format.  USCS Test gateway is used as default.
+DSN in tabular format.  UCSC Main gateway is used as default.
 build   description
 """
 
@@ -10,13 +10,12 @@ import sys
 import urllib
 import xml.etree.ElementTree as ElementTree
 
-URL = "http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
 
 def getbuilds(url):
     try:
-        page = urllib.urlopen(URL)
+        page = urllib.urlopen(url)
     except:
-        print "#Unable to open " + URL
+        print "#Unable to open " + url
         print "?\tunspecified (?)"
         sys.exit(1)
 
@@ -24,29 +23,30 @@ def getbuilds(url):
     try:
         tree = ElementTree.fromstring(text)
     except:
-        print "#Invalid xml passed back from " + URL
+        print "#Invalid xml passed back from " + url
         print "?\tunspecified (?)"
         sys.exit(1)
 
-    print "#Harvested from http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
+    print "#Harvested from " + url
     print "?\tunspecified (?)"
     for dsn in tree:
         build = dsn.find("SOURCE").attrib['id']
-        description = dsn.find("DESCRIPTION").text.replace(" - Genome at UCSC","").replace(" Genome at UCSC","")
+        description = dsn.find("DESCRIPTION").text.replace(" - Genome at UCSC", "").replace(" Genome at UCSC", "")
 
         fields = description.split(" ")
         temp = fields[0]
-        for i in range(len(fields)-1):
-            if temp == fields[i+1]:
-                fields.pop(i+1)
+        for i in range(len(fields) - 1):
+            if temp == fields[i + 1]:
+                fields.pop(i + 1)
             else:
-                temp = fields[i+1]
+                temp = fields[i + 1]
         description = " ".join(fields)
-        yield [build,description]
+        yield [build, description]
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         URL = sys.argv[1]
+    else:
+        URL = "http://genome.cse.ucsc.edu/cgi-bin/das/dsn"
     for build in getbuilds(URL):
-        print build[0]+"\t"+build[1]+" ("+build[0]+")"
-
+        print build[0] + "\t" + build[1] + " (" + build[0] + ")"

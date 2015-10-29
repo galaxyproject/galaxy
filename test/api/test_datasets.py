@@ -3,6 +3,7 @@ import textwrap
 from base import api
 from .helpers import TestsDatasets
 
+
 class DatasetsApiTestCase( api.ApiTestCase, TestsDatasets ):
 
     def setUp( self ):
@@ -37,5 +38,5 @@ class DatasetsApiTestCase( api.ApiTestCase, TestsDatasets ):
             'raw' : 'True'
         })
         self._assert_status_code_is( display_response, 200 )
-        #TODO: doesn't work
-        #assert display_response.text == contents
+        # TODO: doesn't work
+        # assert display_response.text == contents

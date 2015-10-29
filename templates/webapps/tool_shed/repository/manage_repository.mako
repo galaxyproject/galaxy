@@ -157,49 +157,32 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
     <p/>
 %endif
 <div class="toolForm">
-    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
+    <div class="toolFormTitle">Repository <b>${repository.name | h}</b></div>
     <div class="toolFormBody">
         <form name="edit_repository" id="edit_repository" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <div class="form-row">
-                <label>${sharable_link_label}</label>
-                ${render_sharable_str( repository, changeset_revision=sharable_link_changeset_revision )}
-            </div>
-            %if can_download or can_push:
-                <div class="form-row">
-                    <label>Clone this repository:</label>
-                    ${render_clone_str( repository )}
-                </div>
-            %endif
-            <div class="form-row">
-                <label>Name:</label>
+                <b>Name:</b>
                 %if repository.times_downloaded > 0:
-                    ${repository.name}
+                    <a title="Browse the contents of this repository" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${repository.name}</a>
+                    <div class="toolParamHelp" style="clear: both;">
+                        Repository names cannot be changed if the repository has been cloned.
+                    </div>
                 %else:
                     <input name="repo_name" type="textfield" value="${repository.name | h}" size="40"/>
                 %endif
-                <div class="toolParamHelp" style="clear: both;">
-                    Repository names cannot be changed if the repository has been cloned.
-                </div>
-                <div style="clear: both"></div>
-            </div>
-            ${render_repository_type_select_field( repository_type_select_field, render_help=True )}
-            <div class="form-row">
-                <label>Remote repository URL:</label>
-                <input name="remote_repository_url" type="textfield" value="${remote_repository_url | h}" size="80"/>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Homepage URL:</label>
-                <input name="homepage_url" type="textfield" value="${homepage_url | h}" size="80"/>
-                <div style="clear: both"></div>
+                <b>Owner:</b>
+                <a title="See all repositories owned by ${ repository.user.username | h }" href="${h.url_for( controller='repository', action='browse_repositories_by_user', user_id=trans.app.security.encode_id( repository.user.id ) )}">${ repository.user.username | h }</a>
             </div>
             <div class="form-row">
-                <label>Synopsis:</label>
+                <b>Synopsis:</b>
                 <input name="description" type="textfield" value="${description | h}" size="80"/>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Detailed description:</label>
+                <b>Detailed description:</b>
                 %if long_description:
                     <pre><textarea name="long_description" rows="3" cols="80">${long_description | h}</textarea></pre>
                 %else:
@@ -208,32 +191,59 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Revision:</label>
+                <b>Content homepage:</b>
+                %if repository.homepage_url:
+                    <input name="homepage_url" type="textfield" value="${homepage_url | h}" size="80"/>
+                %else:
+                    <input name="homepage_url" type="textfield" value="" size="80"/>
+                %endif
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <b>Development repository:</b>
+                %if repository.remote_repository_url:
+                    <input name="remote_repository_url" type="textfield" value="${remote_repository_url | h}" size="80"/>
+                %else:
+                    <input name="remote_repository_url" type="textfield" value="" size="80"/>
+                %endif
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <b>${sharable_link_label}</b>
+                <a href="${ repository.share_url }" target="_blank">${ repository.share_url }</a>
+                <button title="to clipboard" class="btn btn-default btn-xs" id="share_clipboard"><span class="fa fa-clipboard"></span></button>
+            </div>
+            %if can_download or can_push:
+                <div class="form-row">
+                    <b>Clone this repository:</b>
+                    <code>hg clone <a title="Show in mercurial browser" href="${ repository.clone_url }">${ repository.clone_url }</a></code>
+                    <button title="to clipboard" class="btn btn-default btn-xs" id="clone_clipboard"><span class="fa fa-clipboard"></span></button>
+                </div>
+            %endif
+            ${render_repository_type_select_field( repository_type_select_field, render_help=True )}
+            <div class="form-row">
+                <b>Revision:</b>
                 %if can_view_change_log:
-                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
+                    <a title="See the revision history" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
                 %else:
                     ${revision_label}
                 %endif
             </div>
             <div class="form-row">
-                <label>Owner:</label>
-                ${repository.user.username | h}
-            </div>
-            <div class="form-row">
-                <label>This revision can be installed:</label>
+                <b>This revision can be installed:</b>
                 ${revision_installable}
             </div>
             <div class="form-row">
-                <label>Times cloned / installed:</label>
+                <b>Times cloned / installed:</b>
                 ${repository.times_downloaded | h}
             </div>
             %if is_admin:
                 <div class="form-row">
-                    <label>Location:</label>
+                    <b>Location:</b>
                     ${repository.repo_path( trans.app ) | h}
                 </div>
                 <div class="form-row">
-                    <label>Deleted:</label>
+                    <b>Deleted:</b>
                     ${repository.deleted | h}
                 </div>
             %endif

@@ -14,7 +14,7 @@ function clear_main_area(){
 }
 
 function display_spinner(){
-        $('#main').append('<img id="spinner" src="' + galaxy_root + '/static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">');
+        $('#main').append('<img id="spinner" src="' + galaxy_root + 'static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">');
 }
 
 

@@ -5,10 +5,13 @@ collections from matched collections.
 """
 import collections
 import galaxy.tools
+from galaxy.util import ExecutionTimer
 from galaxy.tools.actions import on_text_for_names
 
 import logging
 log = logging.getLogger( __name__ )
+
+EXECUTION_SUCCESS_MESSAGE = "Tool [%s] created job [%s] %s"
 
 
 def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None ):
@@ -18,6 +21,7 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
     """
     execution_tracker = ToolExecutionTracker( tool, param_combinations, collection_info )
     for params in execution_tracker.param_combinations:
+        job_timer = ExecutionTimer()
         if workflow_invocation_uuid:
             params[ '__workflow_invocation_uuid__' ] = workflow_invocation_uuid
         elif '__workflow_invocation_uuid__' in params:
@@ -26,6 +30,8 @@ def execute( trans, tool, param_combinations, history, rerun_remap_job_id=None, 
             del params[ '__workflow_invocation_uuid__' ]
         job, result = tool.handle_single_execution( trans, rerun_remap_job_id, params, history, collection_info )
         if job:
+            message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
+            log.debug(message)
             execution_tracker.record_success( job, result )
         else:
             execution_tracker.record_error( result )
@@ -82,9 +88,7 @@ class ToolExecutionTracker( object ):
         # collection replaced with a specific dataset. Need to replace this
         # with the collection and wrap everything up so can evaluate output
         # label.
-        params.update( self.collection_info.collections )  # Replace datasets
-                                                           # with source collections
-                                                           # for labelling outputs.
+        params.update( self.collection_info.collections )  # Replace datasets with source collections for labelling outputs.
 
         collection_names = map( lambda c: "collection %d" % c.hid, collections )
         on_text = on_text_for_names( collection_names )
@@ -107,12 +111,13 @@ class ToolExecutionTracker( object ):
                 outputs=outputs
             )
             try:
-                output_collection_name = self.tool_action.get_output_name(
+                output_collection_name = self.tool.tool_action.get_output_name(
                     output,
                     dataset=None,
                     tool=self.tool,
                     on_text=on_text,
                     trans=trans,
+                    history=history,
                     params=params,
                     incoming=None,
                     job_params=None,

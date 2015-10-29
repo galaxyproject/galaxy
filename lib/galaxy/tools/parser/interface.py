@@ -82,6 +82,11 @@ class ToolSource(object):
         """
 
     @abstractmethod
+    def parse_environment_variables(self):
+        """ Return environment variable templates to expose.
+        """
+
+    @abstractmethod
     def parse_interpreter(self):
         """ Return string containing the interpreter to prepend to the command
         (for instance this might be 'python' to run a Python wrapper located
@@ -202,7 +207,7 @@ class InputSource(object):
         return self.get("label")
 
     def parse_help(self):
-        return self.get("label")
+        return self.get("help")
 
     def parse_sanitizer_elem(self):
         """ Return an XML description of sanitizers. This is a stop gap
@@ -251,3 +256,70 @@ class InputSource(object):
 
     def parse_when_input_sources(self):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+
+class ToolStdioRegex( object ):
+    """
+    This is a container for the <stdio> element's regex subelement.
+    The regex subelement has a "match" attribute, a "sources"
+    attribute that contains "output" and/or "error", and a "level"
+    attribute that contains "warning" or "fatal".
+    """
+    def __init__( self ):
+        self.match = ""
+        self.stdout_match = False
+        self.stderr_match = False
+        # TODO: Define a common class or constant for error level:
+        self.error_level = "fatal"
+        self.desc = ""
+
+
+class ToolStdioExitCode( object ):
+    """
+    This is a container for the <stdio> element's <exit_code> subelement.
+    The exit_code element has a range of exit codes and the error level.
+    """
+    def __init__( self ):
+        self.range_start = float( "-inf" )
+        self.range_end = float( "inf" )
+        # TODO: Define a common class or constant for error level:
+        self.error_level = "fatal"
+        self.desc = ""
+
+
+class TestCollectionDef( object ):
+    # TODO: do not require XML directly here.
+
+    def __init__( self, elem, parse_param_elem ):
+        self.elements = []
+        attrib = dict( elem.attrib )
+        self.collection_type = attrib[ "type" ]
+        self.name = attrib.get( "name", "Unnamed Collection" )
+        for element in elem.findall( "element" ):
+            element_attrib = dict( element.attrib )
+            element_identifier = element_attrib[ "name" ]
+            nested_collection_elem = element.find( "collection" )
+            if nested_collection_elem is not None:
+                self.elements.append( ( element_identifier, TestCollectionDef( nested_collection_elem, parse_param_elem ) ) )
+            else:
+                self.elements.append( ( element_identifier, parse_param_elem( element ) ) )
+
+    def collect_inputs( self ):
+        inputs = []
+        for element in self.elements:
+            value = element[ 1 ]
+            if isinstance( value, TestCollectionDef ):
+                inputs.extend( value.collect_inputs() )
+            else:
+                inputs.append( value )
+        return inputs
+
+
+class TestCollectionOutputDef( object ):
+    # TODO: do not require XML directly here.
+
+    def __init__( self, name, attrib, element_tests ):
+        self.name = name
+        self.collection_type = attrib.get( "type", None )
+        self.attrib = attrib
+        self.element_tests = element_tests

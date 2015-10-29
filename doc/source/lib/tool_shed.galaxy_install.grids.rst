@@ -1,11 +1,20 @@
-grids Package
-=============
+tool_shed.galaxy_install.grids package
+======================================
 
-:mod:`admin_toolshed_grids` Module
-----------------------------------
+.. automodule:: tool_shed.galaxy_install.grids
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+Submodules
+----------
+
+tool_shed.galaxy_install.grids.admin_toolshed_grids module
+----------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.grids.admin_toolshed_grids
     :members:
     :undoc-members:
     :show-inheritance:
+
 

@@ -72,7 +72,7 @@ class TestCommandFactory(TestCase):
         self.include_metadata = True
         self.include_work_dir_outputs = False
         self.job_wrapper.metadata_line = TEST_METADATA_LINE
-        expected_command = '%s; return_code=$?; cd %s; %s; sh -c "exit $return_code"' % (MOCK_COMMAND_LINE, getcwd(), TEST_METADATA_LINE)
+        expected_command = '%s; return_code=$?; %s; sh -c "exit $return_code"' % (MOCK_COMMAND_LINE, TEST_METADATA_LINE)
         self.__assert_command_is( expected_command )
 
     def test_empty_metadata(self):

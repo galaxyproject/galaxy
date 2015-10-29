@@ -87,6 +87,7 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
         pair_1_object = pair_1_element[ "object" ]
         self._assert_has_keys( pair_1_object, "collection_type", "elements" )
         self.assertEquals( pair_1_object[ "collection_type" ], "paired" )
+        self.assertEquals( pair_1_object[ "populated" ], True )
         pair_elements = pair_1_object[ "elements" ]
         assert len( pair_elements ) == 2
         pair_1_element_1 = pair_elements[ 0 ]
@@ -104,10 +105,10 @@ class DatasetCollectionApiTestCase( api.ApiTestCase ):
                 collection_type="paired",
             )
 
-            create_response = self._post( "dataset_collections", payload )
+            self._post( "dataset_collections", payload )
             # TODO: re-enable once there is a way to restrict access
             # to this dataset via the API.
-            #self._assert_status_code_is( create_response, 403 )
+            # self._assert_status_code_is( create_response, 403 )
 
     def test_enforces_unique_names( self ):
         element_identifiers = self.dataset_collection_populator.list_identifiers( self.history_id )

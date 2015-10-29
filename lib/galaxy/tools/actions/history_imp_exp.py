@@ -1,15 +1,18 @@
-import tempfile, os
-from __init__ import ToolAction
+import os
+import tempfile
+
+from galaxy.tools.actions import ToolAction
+from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper
 from galaxy.util.odict import odict
-from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper, JobExportHistoryArchiveWrapper
 
 import logging
 log = logging.getLogger( __name__ )
 
+
 class ImportHistoryToolAction( ToolAction ):
     """Tool action used for importing a history to an archive. """
 
-    def execute( self, tool, trans, incoming = {}, set_output_hid = False, overwrite = True, history=None, **kwargs ):
+    def execute( self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs ):
         #
         # Create job.
         #
@@ -25,10 +28,10 @@ class ImportHistoryToolAction( ToolAction ):
         job.history_id = history_id
         job.tool_id = tool.id
         job.user_id = trans.user.id
-        start_job_state = job.state #should be job.states.NEW
-        job.state = job.states.WAITING #we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
+        start_job_state = job.state  # should be job.states.NEW
+        job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add( job )
-        trans.sa_session.flush() #ensure job.id are available
+        trans.sa_session.flush()  # ensure job.id are available
 
         #
         # Setup job and job wrapper.
@@ -51,7 +54,7 @@ class ImportHistoryToolAction( ToolAction ):
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
 
-        job.state = start_job_state #job inputs have been configured, restore initial job state
+        job.state = start_job_state  # job inputs have been configured, restore initial job state
         job.set_handler(tool.get_job_handler(None))
         trans.sa_session.flush()
 
@@ -61,10 +64,11 @@ class ImportHistoryToolAction( ToolAction ):
 
         return job, odict()
 
+
 class ExportHistoryToolAction( ToolAction ):
     """Tool action used for exporting a history to an archive. """
 
-    def execute( self, tool, trans, incoming = {}, set_output_hid = False, overwrite = True, history=None, **kwargs ):
+    def execute( self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs ):
         #
         # Get history to export.
         #
@@ -94,30 +98,30 @@ class ExportHistoryToolAction( ToolAction ):
         if trans.user:
             # If this is an actual user, run the job as that individual.  Otherwise we're running as guest.
             job.user_id = trans.user.id
-        start_job_state = job.state #should be job.states.NEW
-        job.state = job.states.WAITING #we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
+        start_job_state = job.state  # should be job.states.NEW
+        job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add( job )
 
         # Create dataset that will serve as archive.
         archive_dataset = trans.app.model.Dataset()
         trans.sa_session.add( archive_dataset )
 
-        trans.sa_session.flush() #ensure job.id and archive_dataset.id are available
-        trans.app.object_store.create( archive_dataset ) # set the object store id, create dataset (if applicable)
+        trans.sa_session.flush()  # ensure job.id and archive_dataset.id are available
+        trans.app.object_store.create( archive_dataset )  # set the object store id, create dataset (if applicable)
 
         #
         # Setup job and job wrapper.
         #
 
         # Add association for keeping track of job, history, archive relationship.
-        jeha = trans.app.model.JobExportHistoryArchive( job=job, history=history, \
-                                                        dataset=archive_dataset, \
+        jeha = trans.app.model.JobExportHistoryArchive( job=job, history=history,
+                                                        dataset=archive_dataset,
                                                         compressed=incoming[ 'compress' ] )
         trans.sa_session.add( jeha )
 
         job_wrapper = JobExportHistoryArchiveWrapper( job )
-        cmd_line = job_wrapper.setup_job( trans, jeha, include_hidden=incoming[ 'include_hidden' ], \
-                                            include_deleted=incoming[ 'include_deleted' ] )
+        cmd_line = job_wrapper.setup_job( trans, jeha, include_hidden=incoming[ 'include_hidden' ],
+                                          include_deleted=incoming[ 'include_deleted' ] )
 
         #
         # Add parameters to job_parameter table.
@@ -129,10 +133,9 @@ class ExportHistoryToolAction( ToolAction ):
         for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
             job.add_parameter( name, value )
 
-        job.state = start_job_state #job inputs have been configured, restore initial job state
+        job.state = start_job_state  # job inputs have been configured, restore initial job state
         job.set_handler(tool.get_job_handler(None))
         trans.sa_session.flush()
-
 
         # Queue the job for execution
         trans.app.job_queue.put( job.id, tool.id )

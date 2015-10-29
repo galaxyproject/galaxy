@@ -1,179 +1,205 @@
 /**
-    This is the main class of the tool form plugin. It is referenced as 'app' in all lower level modules.
+    This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
-define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
-        'mvc/citation/citation-model', 'mvc/citation/citation-view',
-        'mvc/tools', 'mvc/tools/tools-template', 'mvc/tools/tools-content', 'mvc/tools/tools-section', 'mvc/tools/tools-tree'],
-    function(Utils, Deferred, Portlet, Ui, CitationModel, CitationView,
-             Tools, ToolTemplate, ToolContent, ToolSection, ToolTree) {
+define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
+        'mvc/tools/tools-template', 'mvc/citation/citation-model', 'mvc/citation/citation-view'],
+    function(Utils, Deferred, Ui, Form, ToolTemplate, CitationModel, CitationView) {
 
     // create form view
     return Backbone.View.extend({
         // initialize
         initialize: function(options) {
-            // options
-            this.optionsDefault = {
-                // uses dynamic fields instead of text fields
-                is_dynamic      : true,
-                // shows form in narrow view mode
-                narrow          : false,
-                // shows errors on start
-                initial_errors  : false,
-                // portlet style
-                cls_portlet     : 'ui-portlet-limited'
-            };
-
-            // configure options
-            this.options = Utils.merge(options, this.optionsDefault);
-
-            // log options
-            console.debug(this.options);
-
-            // link galaxy modal or create one
-            var galaxy = parent.Galaxy;
-            if (galaxy && galaxy.modal) {
-                this.modal = galaxy.modal;
-            } else {
-                this.modal = new Ui.Modal.View();
-            }
-
-            // check if the user is an admin
-            if (galaxy && galaxy.currUser) {
-                this.is_admin = galaxy.currUser.get('is_admin');
-            } else {
-                this.is_admin = false;
-            }
-
-            // link container
-            this.container = this.options.container || 'body';
+            this.options = Utils.merge(options, {});
+            this.setElement('<div/>');
 
             // create deferred processing queue handler
             // this handler reduces the number of requests to the api by filtering redundant requests
             this.deferred = new Deferred();
 
-            // set element
-            this.setElement('<div/>');
-
-            // add to main element
-            $(this.container).append(this.$el);
-
-            // build this form
-            this.build(this.options);
+            // create form
+            if (options.inputs) {
+                this._buildForm(options);
+            } else {
+                this._buildModel(options, true);
+            }
         },
 
-        /** Main tool form build function. This function is called once a new model is available.
-        */
-        build: function(options) {
-            // link this
+        /** Wait for deferred build processes before removal */
+        remove: function() {
             var self = this;
-
-            // reset events
-            this.off('refresh');
-            this.off('reset');
-
-            // reset field list, which contains the input field elements
-            this.field_list = {};
-
-            // reset sequential input definition list, which contains the input definitions as provided from the api
-            this.input_list = {};
-
-            // reset input element list, which contains the dom elements of each input element (includes also the input field)
-            this.element_list = {};
-
-            // creates a tree/json data structure from the input form
-            this.tree = new ToolTree(this);
-
-            // request history content and build form
-            this.content = new ToolContent(this);
-
-            // update model data
-            self.options.inputs = options && options.inputs;
-
-            // create ui elements
-            this._renderForm(options);
-
-            // rebuild the underlying data structure
-            var current_state = this.tree.finalize();
-
-            // show errors on startup
-            if (options.initial_errors) {
-                this._errors(options);
-            }
-
-            // add refresh listener
-            this.on('refresh', function() {
-                // by using/resetting the deferred ajax queue the number of redundant calls is reduced
-                self.deferred.reset();
-                self.deferred.execute(function(){
-                    var new_state = self.tree.finalize();
-                    if (!_.isEqual(new_state, current_state)) {
-                        current_state = new_state;
-                        self._updateModel($.extend({}, current_state));
-                    }
-                });
-            });
-
-            // add reset listener
-            this.on('reset', function() {
-                for (var i in this.element_list) {
-                    this.element_list[i].reset();
-                }
+            this.$el.hide();
+            this.deferred.execute(function(){
+                Backbone.View.prototype.remove.call(self);
             });
         },
 
-        /** Shows the final message (usually upon successful job submission)
-        */
-        reciept: function($el) {
-            $(this.container).empty();
-            $(this.container).append($el);
-        },
-
-        /** Highlight and scroll to input element (currently only used for error notifications)
-        */
-        highlight: function (input_id, message, silent) {
-            // get input field
-            var input_element = this.element_list[input_id];
-            
-            // check input element
-            if (input_element) {
-                // mark error
-                input_element.error(message || 'Please verify this parameter.');
-            
-                // scroll to first input element
-                if (!silent) {
-                    $('html, body').animate({
-                        scrollTop: input_element.$el.offset().top - 20
-                    }, 500);
-                }
-            }
-        },
-
-        /** Highlights errors
-        */
-        _errors: function(options) {
-            // hide previous error statements
-            this.trigger('reset');
-        
-            // highlight all errors
-            if (options && options.errors) {
-                var error_messages = this.tree.matchResponse(options.errors);
-                for (var input_id in this.element_list) {
-                    var input = this.element_list[input_id];
-                    if (error_messages[input_id]) {
-                        this.highlight(input_id, error_messages[input_id], true);
-                    }
-                }
-            }
-        },
-
-        /** Renders the UI elements required for the form
-        */
-        _renderForm: function(options) {
+        /** Build form */
+        _buildForm: function(options) {
             // link this
             var self = this;
 
-            // create message view
-            this.message = new Ui.Message();
+            // merge form options
+            this.options = Utils.merge(options, this.options);
+            this.options = Utils.merge({
+                icon            : 'fa-wrench',
+                title           : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Tool Version ' + options.version + ')',
+                operations      : this._operations(),
+                onchange        : function(current_state) {
+                    // by resetting the deferred ajax queue the number of redundant calls is reduced
+                    self.deferred.reset();
+                    self.deferred.execute(function(){
+                        self._updateModel();
+                    });
+                }
+            }, this.options);
+
+            // allow option customization
+            this.options.customize && this.options.customize( this.options );
+
+            // create form
+            this.form = new Form(this.options);
+
+            // create footer
+            this._footer();
+
+            // create element
+            this.$el.empty();
+            this.$el.append(this.form.$el);
+        },
+
+        /** Builds a new model through api call and recreates the entire form
+        */
+        _buildModel: function(options, hide_message) {
+            var self = this;
+            this.options.id = options.id;
+            this.options.version = options.version;
+
+            // build request url
+            var build_url = '';
+            var build_data = {};
+            if ( options.job_id ) {
+                build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
+            } else {
+                build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
+                if ( Galaxy.params && Galaxy.params.tool_id == options.id ) {
+                    build_data = $.extend( {}, Galaxy.params );
+                    options.version && ( build_data[ 'tool_version' ] = options.version );
+                }
+            }
+
+            // register process
+            var process_id = this.deferred.register();
+
+            // get initial model
+            Utils.request({
+                type    : 'GET',
+                url     : build_url,
+                data    : build_data,
+                success : function(new_model) {
+                    self._buildForm(new_model['tool_model'] || new_model);
+                    !hide_message && self.form.message.update({
+                        status      : 'success',
+                        message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
+                        persistent  : false
+                    });
+                    console.debug('tools-form::initialize() - Initial tool model ready.');
+                    console.debug(new_model);
+                    self.deferred.done(process_id);
+                },
+                error   : function(response) {
+                    var error_message = ( response && response.err_msg ) || 'Uncaught error.';
+                    if ( self.$el.is(':empty') ) {
+                        self.$el.prepend((new Ui.Message({
+                            message     : error_message,
+                            status      : 'danger',
+                            persistent  : true,
+                            large       : true
+                        })).$el);
+                    } else {
+                        Galaxy.modal.show({
+                            title   : 'Tool request failed',
+                            body    : error_message,
+                            buttons : {
+                                'Close' : function() {
+                                    Galaxy.modal.hide();
+                                }
+                            }
+                        });
+                    }
+                    console.debug('tools-form::initialize() - Initial tool model request failed.');
+                    console.debug(response);
+                    self.deferred.done(process_id);
+                }
+            });
+        },
+
+        /** Request a new model for an already created tool form and updates the form inputs
+        */
+        _updateModel: function() {
+            // model url for request
+            var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';
+
+            // link this
+            var self = this;
+
+            // create the request dictionary
+            var form = this.form;
+
+            // create the request dictionary
+            var current_state = {
+                tool_id         : this.options.id,
+                tool_version    : this.options.version,
+                inputs          : $.extend(true, {}, self.form.data.create())
+            }
+
+            // set wait mode
+            form.wait(true);
+
+            // register process
+            var process_id = this.deferred.register();
+
+            // log tool state
+            console.debug('tools-form-base::_updateModel() - Sending current state (see below).');
+            console.debug(current_state);
+
+            // post job
+            Utils.request({
+                type    : 'POST',
+                url     : model_url,
+                data    : current_state,
+                success : function(new_model) {
+                    // update form with new model
+                    self.form.update(new_model['tool_model'] || new_model);
+
+                    // custom update
+                    self.options.update && self.options.update(new_model);
+
+                    // unset wait mode
+                    form.wait(false);
+
+                    // log success
+                    console.debug('tools-form-base::_updateModel() - Received new model (see below).');
+                    console.debug(new_model);
+
+                    // process completed
+                    self.deferred.done(process_id);
+                },
+                error   : function(response) {
+                    // process completed
+                    self.deferred.done(process_id);
+
+                    // log error
+                    console.debug('tools-form-base::_updateModel() - Refresh request failed.');
+                    console.debug(response);
+                }
+            });
+        },
+
+        // create tool operation menu
+        _operations: function() {
+            // link this
+            var self = this;
+            var options = this.options;
 
             // button for version selection
             var versions_button = new Ui.ButtonMenu({
@@ -181,7 +207,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 title   : (!options.narrow && 'Versions') || null,
                 tooltip : 'Select another tool version'
             });
-            if (options.versions && options.versions.length > 1) {
+            if (!options.is_workflow && options.versions && options.versions.length > 1) {
                 for (var i in options.versions) {
                     var version = options.versions[i];
                     if (version != options.version) {
@@ -191,12 +217,13 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                             icon    : 'fa-cube',
                             onclick : function() {
                                 // here we update the tool version (some tools encode the version also in the id)
-                                self.options.id = self.options.id.replace(self.options.version, this.version);
-                                self.options.version = this.version;
-                                
-                                // rebuild the model and form
+                                var id = options.id.replace(options.version, this.version);
+                                var version = this.version;
+                                // queue model request
                                 self.deferred.reset();
-                                self.deferred.execute(function(){self._buildModel()});
+                                self.deferred.execute(function() {
+                                    self._buildModel({id: id, version: version})
+                                });
                             }
                         });
                     }
@@ -223,14 +250,14 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                         window.open(options.biostar_url + '/p/new/post/');
                     }
                 });
-                
+
                 // create search button
                 menu_button.addMenu({
                     icon    : 'fa-search',
                     title   : 'Search',
                     tooltip : 'Search help for this tool (Biostar)',
                     onclick : function() {
-                        window.open(options.biostar_url + '/t/' + options.id + '/');
+                        window.open(options.biostar_url + '/local/search/page/?q=' + options.name);
                     }
                 });
             };
@@ -241,19 +268,19 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 title   : 'Share',
                 tooltip : 'Share this tool',
                 onclick : function() {
-                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + galaxy_config.root + 'root?tool_id=' + options.id);
+                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + Galaxy.root + 'root?tool_id=' + options.id);
                 }
             });
 
             // add admin operations
-            if (this.is_admin) {
+            if (Galaxy.user && Galaxy.user.get('is_admin')) {
                 // create download button
                 menu_button.addMenu({
                     icon    : 'fa-download',
                     title   : 'Download',
                     tooltip : 'Download this tool',
                     onclick : function() {
-                        window.location.href = galaxy_config.root + 'api/tools/' + options.id + '/download';
+                        window.location.href = Galaxy.root + 'api/tools/' + options.id + '/download';
                     }
                 });
             }
@@ -267,14 +294,14 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                     onclick : function() {
                         if (!this.visible) {
                             this.visible = true;
-                            self.message.update({
+                            self.form.message.update({
                                 persistent  : true,
                                 message     : ToolTemplate.requirements(options),
                                 status      : 'info'
                             });
                         } else {
                             this.visible = false;
-                            self.message.update({
+                            self.form.message.update({
                                 message     : ''
                             });
                         }
@@ -282,59 +309,36 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 });
             }
 
-
             // add toolshed url
-            if (this.options.sharable_url) {
+            if (options.sharable_url) {
                 menu_button.addMenu({
                     icon    : 'fa-external-link',
                     title   : 'See in Tool Shed',
                     tooltip : 'Access the repository',
                     onclick : function() {
-                        window.open(self.options.sharable_url);
+                        window.open(options.sharable_url);
                     }
                 });
             }
 
-            // create tool form section
-            this.section = new ToolSection.View(self, {
-                inputs : options.inputs
-            });
-
-            // switch to classic tool form mako if the form definition is incompatible
-            if (this.incompatible) {
-                this.$el.hide();
-                $('#tool-form-classic').show();
-                return;
+            // return operations
+            return {
+                menu        : menu_button,
+                versions    : versions_button
             }
+        },
 
-            // create portlet
-            this.portlet = new Portlet.View({
-                icon    : 'fa-wrench',
-                title   : '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Tool Version ' + options.version + ')',
-                cls     : this.options.cls_portlet,
-                operations: {
-                    menu        : menu_button,
-                    versions    : versions_button
-                },
-                buttons : this.buttons
-            });
-
-            // append message
-            this.portlet.append(this.message.$el.addClass('ui-margin-top'));
-
-            // append tool section
-            this.portlet.append(this.section.$el);
-
-            // start form
-            this.$el.empty();
-            this.$el.append(this.portlet.$el);
+        // create footer
+        _footer: function() {
+            // link options
+            var options = this.options;
 
             // append help
             if (options.help != '') {
-                this.$el.append(ToolTemplate.help(options.help));
+                this.form.$el.append(ToolTemplate.help(options));
             }
 
-            // append citations
+            // create and append tool citations
             if (options.citations) {
                 var $citations = $('<div/>');
                 var citations = new CitationModel.ToolCitationCollection();
@@ -342,20 +346,8 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 var citation_list_view = new CitationView.CitationListView({ el: $citations, collection: citations } );
                 citation_list_view.render();
                 citations.fetch();
-                this.$el.append($citations);
+                this.form.$el.append($citations);
             }
-
-            // show message if available in model
-            if (options.message) {
-                this.message.update({
-                    persistent  : true,
-                    status      : 'warning',
-                    message     : options.message
-                });
-            }
-
-            // log
-            console.debug('tools-form-base::initialize() - Completed.');
         }
     });
 });

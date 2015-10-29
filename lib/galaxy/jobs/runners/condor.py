@@ -10,6 +10,7 @@ from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.jobs.runners.util.condor import submission_params, build_submit_description
 from galaxy.jobs.runners.util.condor import condor_submit, condor_stop
 from galaxy.jobs.runners.util.condor import summarize_condor_log
+from galaxy.util import asbool
 
 log = logging.getLogger( __name__ )
 
@@ -44,11 +45,9 @@ class CondorJobRunner( AsynchronousJobRunner ):
         """Create job script and submit it to the DRM"""
 
         # prepare the job
-        if not self.prepare_job( job_wrapper, include_metadata=True ):
+        include_metadata = asbool( job_wrapper.job_destination.params.get( "embed_metadata_in_job", True ) )
+        if not self.prepare_job( job_wrapper, include_metadata=include_metadata):
             return
-
-        # command line has been added to the wrapper by prepare_job()
-        command_line = job_wrapper.runner_command_line
 
         # get configured job destination
         job_destination = job_wrapper.job_destination
@@ -91,10 +90,7 @@ class CondorJobRunner( AsynchronousJobRunner ):
             slots_statement=galaxy_slots_statement,
         )
         try:
-            fh = file( executable, "w" )
-            fh.write( script )
-            fh.close()
-            os.chmod( executable, 0750 )
+            self.write_executable_script( executable, script )
         except:
             job_wrapper.fail( "failure preparing job script", exception=True )
             log.exception( "(%s) failure preparing job script" % galaxy_id_tag )
@@ -175,9 +171,12 @@ class CondorJobRunner( AsynchronousJobRunner ):
             if not job_running and cjs.running:
                 log.debug( "(%s/%s) job has stopped running" % ( galaxy_id_tag, job_id ) )
                 # Will switching from RUNNING to QUEUED confuse Galaxy?
-                #cjs.job_wrapper.change_state( model.Job.states.QUEUED )
+                # cjs.job_wrapper.change_state( model.Job.states.QUEUED )
             if job_complete:
                 if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
+                    external_metadata = not asbool( cjs.job_wrapper.job_destination.params.get( "embed_metadata_in_job", True) )
+                    if external_metadata:
+                        self._handle_metadata_externally( cjs.job_wrapper, resolve_requirements=True )
                     log.debug( "(%s/%s) job has completed" % ( galaxy_id_tag, job_id ) )
                     self.work_queue.put( ( self.finish_job, cjs ) )
                 continue

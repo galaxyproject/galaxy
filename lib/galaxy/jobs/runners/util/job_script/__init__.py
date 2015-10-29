@@ -15,6 +15,7 @@ GALAXY_SLOTS="1"
 REQUIRED_TEMPLATE_PARAMS = ['working_directory', 'command', 'exit_code_path']
 OPTIONAL_TEMPLATE_PARAMS = {
     'galaxy_lib': None,
+    'galaxy_virtual_env': None,
     'headers': '',
     'env_setup_commands': [],
     'slots_statement': SLOTS_STATEMENT_CLUSTER_DEFAULT,

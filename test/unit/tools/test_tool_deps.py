@@ -33,17 +33,17 @@ def test_tool_dependencies():
         assert dependency.path == os.path.join( base_path, 'dep1', '1.0' )
         assert dependency.version == "1.0"
         dependency = dm.find_dep( "dep1", "2.0" )
-        assert dependency.script == None
+        assert dependency.script is None
         assert dependency.path == os.path.join( base_path, 'dep1', '2.0' )
         assert dependency.version == "2.0"
 
-        ## Test default versions
+        # Test default versions
         symlink( os.path.join( base_path, 'dep1', '2.0'), os.path.join( base_path, 'dep1', 'default' ) )
         dependency = dm.find_dep( "dep1", None )
         assert dependency.version == "2.0"
 
-        ## Test default resolve will be fall back on default package dependency
-        ## when using the default resolver.
+        # Test default resolve will be fall back on default package dependency
+        # when using the default resolver.
         dependency = dm.find_dep( "dep1", "2.1" )
         assert dependency.version == "2.0"  # 2.0 is defined as default_version
 
@@ -61,7 +61,7 @@ def test_toolshed_set_enviornment_requiremetns():
         env_settings_dir = os.path.join(base_path, "environment_settings", TEST_REPO_NAME, TEST_REPO_USER, TEST_REPO_NAME, TEST_REPO_CHANGESET)
         os.makedirs(env_settings_dir)
         dependency = dm.find_dep( TEST_REPO_NAME, version=None, type='set_environment', installed_tool_dependencies=[test_repo] )
-        assert dependency.version == None
+        assert dependency.version is None
         assert dependency.script == os.path.join(env_settings_dir, "env.sh")
 
 
@@ -134,7 +134,7 @@ advisor/2013/update3    intel/12.0              mkl/10.2.7.041
         resolver = ModuleDependencyResolver(None, modulecmd=module_script)
         module = resolver.resolve( name="R", version=None, type="package" )
         assert module.module_name == "R"
-        assert module.module_version == None
+        assert module.module_version is None
 
         module = resolver.resolve( name="R", version="3.0.1", type="package" )
         assert module.module_name == "R"
@@ -146,9 +146,9 @@ advisor/2013/update3    intel/12.0              mkl/10.2.7.041
 
 def test_module_dependency():
     with __test_base_path() as temp_directory:
-        ## Create mock modulecmd script that just exports a variable
-        ## the way modulecmd sh load would, but also validate correct
-        ## module name and version are coming through.
+        # Create mock modulecmd script that just exports a variable
+        # the way modulecmd sh load would, but also validate correct
+        # module name and version are coming through.
         mock_modulecmd = os.path.join(temp_directory, 'modulecmd')
         __write_script(mock_modulecmd, '''#!/bin/sh
 if [ $3 != "foomodule/1.0" ];
@@ -171,16 +171,16 @@ def __write_script(path, contents):
 
 def test_galaxy_dependency_object_script():
     with __test_base_path() as base_path:
-        ## Create env.sh file that just exports variable FOO and verify it
-        ## shell_commands export it correctly.
+        # Create env.sh file that just exports variable FOO and verify it
+        # shell_commands export it correctly.
         env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION, "export FOO=\"bar\"")
         dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_VERSION)
         __assert_foo_exported( dependency.shell_commands( Bunch( type="package" ) ) )
 
 
 def test_shell_commands_built():
-    ## Test that dependency manager builds valid shell commands for a list of
-    ## requirements.
+    # Test that dependency manager builds valid shell commands for a list of
+    # requirements.
     with __test_base_path() as base_path:
         dm = DependencyManager( default_base_path=base_path )
         __setup_galaxy_package_dep( base_path, TEST_REPO_NAME, TEST_VERSION, contents="export FOO=\"bar\"" )

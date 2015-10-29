@@ -4,15 +4,15 @@ API operations on remote files.
 import os
 import time
 import hashlib
-from galaxy import web
 from galaxy import exceptions
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.util import jstree
-from galaxy.web.base.controller import BaseAPIController, url_for
+from galaxy.web.base.controller import BaseAPIController
 from operator import itemgetter
 
 import logging
 log = logging.getLogger( __name__ )
+
 
 class RemoteFilesAPIController( BaseAPIController ):
 
@@ -109,9 +109,9 @@ class RemoteFilesAPIController( BaseAPIController ):
                 for filename in filenames:
                     path = os.path.relpath( os.path.join( dirpath, filename ), directory )
                     statinfo = os.lstat( os.path.join( dirpath, filename ) )
-                    response.append( dict(  path    = path,
-                                            size    = statinfo.st_size,
-                                            ctime   = time.strftime( "%m/%d/%Y %I:%M:%S %p", time.localtime( statinfo.st_ctime ) ) ) )
+                    response.append( dict( path=path,
+                                           size=statinfo.st_size,
+                                           ctime=time.strftime( "%m/%d/%Y %I:%M:%S %p", time.localtime( statinfo.st_ctime ) ) ) )
         else:
             raise exceptions.ConfigDoesNotAllowException( 'The given directory does not exist.' )
         # sort by path

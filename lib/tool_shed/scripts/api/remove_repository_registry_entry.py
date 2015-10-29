@@ -6,12 +6,10 @@ Here is a working example of how to use this script.
 python ./remove_repository_registry_entry.py -a <api key> -u <tool shed url> -n <repository name> -o <repository owner>
 """
 
-import os
-import sys
 import argparse
-import urllib2
-sys.path.insert( 0, os.path.dirname( __file__ ) )
+
 from common import submit
+
 
 def main( options ):
     api_key = options.api_key
@@ -26,7 +24,7 @@ def main( options ):
             response_dict = submit( url, data, api_key=api_key, return_formatted=False )
             print response_dict
         else:
-            print "Invalid tool_shed: ", base_tool_shed_url, " name: ", name, " or owner: ", owner, "."
+            print "Invalid tool_shed: ", base_tool_shed_url, " name: ", options.name, " or owner: ", options.owner, "."
     else:
         print "An API key for an admin user in the Tool Shed is required to remove entries from the Tool Shed's repository registry."
 

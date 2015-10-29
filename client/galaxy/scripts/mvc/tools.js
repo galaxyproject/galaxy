@@ -2,8 +2,8 @@
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
 
- define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/lunr" ],
-         function(_, util, data, lunr) {
+ define( ["libs/underscore", "viz/trackster/util", "mvc/data", "mvc/tools/tools-form" ],
+         function(_, util, data, ToolsForm) {
 
 /**
  * Mixin for tracking model visibility.
@@ -262,7 +262,7 @@ var Tool = Backbone.Model.extend({
 
         // Run job and resolve run_deferred to tool outputs.
         $.when(ss_deferred.go()).then(function(result) {
-            run_deferred.resolve(new data.DatasetCollection().reset(result));
+            run_deferred.resolve(new data.DatasetCollection(result));
         });
         return run_deferred;
     }
@@ -340,11 +340,6 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * indicates that query was not run; if not null, results are from search using
  * query.
  */
-
-/**
- * TODO: Integrate lunr search here with tools from API instead of making
- * repeated requests.
- */
 var ToolSearch = Backbone.Model.extend({
     defaults: {
         search_hint_string: "search tools",
@@ -358,6 +353,8 @@ var ToolSearch = Backbone.Model.extend({
         // ESC (27) will clear the input field and tool search filters
         clear_key: 27
     },
+
+    urlRoot: galaxy_config.root + 'api/tools',
 
     initialize: function() {
         this.on("change:query", this.do_search);
@@ -376,7 +373,7 @@ var ToolSearch = Backbone.Model.extend({
         }
 
         // Do search via AJAX.
-        var q = query + '*';
+        var q = query;
         // Stop previous ajax-request
         if (this.timer) {
             clearTimeout(this.timer);
@@ -386,12 +383,16 @@ var ToolSearch = Backbone.Model.extend({
         $("#search-spinner").show();
         var self = this;
         this.timer = setTimeout(function () {
-            $.get(self.attributes.search_url, { query: q }, function (data) {
+            // log the search to analytics if present
+            if ( typeof ga !== 'undefined' ) {
+                ga( 'send', 'pageview', galaxy_config.root + '?q=' + q );
+            }
+            $.get( self.urlRoot, { q: q }, function (data) {
                 self.set("results", data);
                 $("#search-spinner").hide();
                 $("#search-clear-btn").show();
             }, "json" );
-        }, 200 );
+        }, 400 );
     },
 
     clear_search: function() {
@@ -523,6 +524,18 @@ var ToolLinkView = BaseView.extend({
             });
         }
 
+        // regular tools
+        if ( this.model.id !== 'upload1' && this.model.get( 'model_class' ) === 'Tool' ) {
+            var self = this;
+            $link.find('a').on('click', function(e) {
+                e.preventDefault();
+                var form = new ToolsForm.View( { id : self.model.id, version : self.model.get('version') } );
+                form.deferred.execute(function() {
+                    Galaxy.app.display( form );
+                });
+            });
+        }
+
         // add element
         this.$el.append($link);
         return this;
@@ -626,7 +639,7 @@ var ToolSearchView = Backbone.View.extend({
 
     clear: function() {
         this.model.clear_search();
-        this.$el.find(":input").val(this.model.attributes.search_hint_string);
+        this.$el.find(":input").val('');
         this.focus_and_select();
         return false;
     },

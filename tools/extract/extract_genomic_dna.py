@@ -4,7 +4,7 @@ usage: %prog $input $out_file1
     -1, --cols=N,N,N,N,N: Columns for start, end, strand in input file
     -d, --dbkey=N: Genome build of input file
     -o, --output_format=N: the data type of the output file
-    -g, --GALAXY_DATA_INDEX_DIR=N: the directory containing alignseq.loc
+    -g, --GALAXY_DATA_INDEX_DIR=N: the directory containing alignseq.loc or twobit.loc
     -I, --interpret_features: if true, complete features are interpreted when input is GFF 
     -F, --fasta=<genomic_sequences>: genomic sequences to use for extraction
     -G, --gff: input and output file, when it is interval, coordinates are treated as GFF format (1-based, half-open) rather than 'traditional' 0-based, closed format.
@@ -35,18 +35,27 @@ def reverse_complement( s ):
     return "".join( reversed_s )
 
 def check_seq_file( dbkey, GALAXY_DATA_INDEX_DIR ):
+    # Checks for the presence of *.nib files matching the dbkey within alignseq.loc
     seq_file = "%s/alignseq.loc" % GALAXY_DATA_INDEX_DIR
-    seq_path = ''
-    for line in open( seq_file ):
+    for line in open(seq_file):
         line = line.rstrip( '\r\n' )
         if line and not line.startswith( "#" ) and line.startswith( 'seq' ):
             fields = line.split( '\t' )
-            if len( fields ) < 3:
-                continue
-            if fields[1] == dbkey:
-                seq_path = fields[2].strip()
-                break
-    return seq_path
+            if len( fields) >= 3 and fields[1] == dbkey:
+                print "Using *.nib genomic reference files"
+                return fields[2].strip()
+    
+    # If no entry in aligseq.loc was found, check for the presence of a *.2bit file in twobit.loc
+    seq_file = "%s/twobit.loc" % GALAXY_DATA_INDEX_DIR
+    for line in open( seq_file ):
+        line = line.rstrip( '\r\n' )
+        if line and not line.startswith( "#" ) and line.endswith( '.2bit' ):
+            fields = line.split( '\t' )
+            if len(fields) >= 2 and fields[0] == dbkey:
+                print "Using a *.2bit genomic reference file"
+                return fields[1].strip()
+    
+    return ''
         
 def __main__():
     #

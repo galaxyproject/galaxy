@@ -1,4 +1,4 @@
-<tool id="cshl_fastq_statistics" name="FASTQ Statistics">
+<tool id="cshl_fastq_statistics" name="FASTQ Statistics" version="1.0.0">
   <description>for Solexa file</description>
   <command>cat $input | solexa_quality_statistics -o $output</command>
   <inputs>
@@ -86,4 +86,9 @@ Creates quality statistics report for the given Solexa/FASTQ library.
     
 
 </help>
+
+  <citations>
+    <citation type="doi">10.1093/bioinformatics/btq281</citation>
+  </citations>
+
 </tool>

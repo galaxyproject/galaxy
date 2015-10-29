@@ -106,6 +106,7 @@ class MockJobWrapper( object ):
         self.tool = tool
         self.state = model.Job.states.QUEUED
         self.command_line = "echo HelloWorld"
+        self.environment_variables = []
         self.commands_in_new_shell = False
         self.prepare_called = False
         self.write_version_cmd = None
@@ -119,6 +120,7 @@ class MockJobWrapper( object ):
         self.output_paths = [ '/tmp/output1.dat' ]
         self.mock_metadata_path = os.path.abspath( os.path.join( test_directory, "METADATA_SET" ) )
         self.metadata_command = "touch %s" % self.mock_metadata_path
+        self.galaxy_virtual_env = None
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(

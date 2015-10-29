@@ -136,128 +136,6 @@
     %endif
 
     </script>
-    ## Handle AJAX (actually hidden iframe) upload tool
-    <script type="text/javascript">
-        var upload_form_error = function( msg ) {
-            var $galaxy_mainBody = $("iframe#galaxy_main").contents().find("body"),
-                $errMsg = $galaxy_mainBody.find( 'div.errormessage' );
-            if ( !$errMsg.size() ){
-                $errMsg = $( '<div/>' ).addClass( 'errormessage' ).prependTo( $galaxy_mainBody );
-            }
-            $errMsg.text( msg );
-        }
-
-        var uploads_in_progress = 0;
-        function decrementUploadsInProgress(){
-            uploads_in_progress -= 1;
-            if( uploads_in_progress === 0 ){
-                window.onbeforeunload = null;
-            }
-        }
-        jQuery( function() {
-            $("iframe#galaxy_main").load( function() {
-                $(this).contents().find("form").each( function() {
-                    if ( $(this).find("input[galaxy-ajax-upload]").length > 0 ){
-                        var $form = $( this );
-
-                        $(this).submit( function( event ) {
-                            // Only bother using a hidden iframe if there's a file (e.g. big data) upload
-                            var file_upload = false;
-                            $(this).find("input[galaxy-ajax-upload]").each( function() {
-                                if ( $(this).val() != '' ) {
-                                    file_upload = true;
-                                }
-                            });
-                            if ( ! file_upload ) {
-                                return true;
-                            }
-                            // Make a synchronous request to create the datasets first
-                            var async_datasets;
-                            var upload_error = false;
-
-                            //NOTE: in order for upload.py to match the datasets created below, we'll move the js File
-                            //  object's name into the file_data field (not in the form only for what we send to
-                            //  upload_async_create)
-                            var formData = $( this ).serializeArray();
-                            var name = function(){
-                                var $fileInput = $form.find( 'input[name="files_0|file_data"]' );
-                                if( /msie/.test( navigator.userAgent.toLowerCase() ) ){
-                                    return $fileInput.val().replace( 'C:\\fakepath\\', '' );
-                                } else {
-                                    return $fileInput.get( 0 ).files[0].name;
-                                }
-                            }
-                            formData.push({ name: "files_0|file_data", value: name });
-
-                            $.ajax( {
-                                async:      false,
-                                type:       "POST",
-                                url:        "${h.url_for(controller='/tool_runner', action='upload_async_create')}",
-                                data:       formData,
-                                dataType:   "json",
-                                success:    function(array_obj, status) {
-                                                if (array_obj.length > 0) {
-                                                    if (array_obj[0] == 'error') {
-                                                        upload_error = true;
-                                                        upload_form_error(array_obj[1]);
-                                                    } else {
-                                                        async_datasets = array_obj.join();
-                                                    }
-                                                } else {
-                                                    // ( gvk 1/22/10 ) FIXME: this block is never entered, so there may be a bug somewhere
-                                                    // I've done some debugging like checking to see if array_obj is undefined, but have not
-                                                    // tracked down the behavior that will result in this block being entered.  I believe the
-                                                    // intent was to have this block entered if the upload button is clicked on the upload
-                                                    // form but no file was selected.
-                                                    upload_error = true;
-                                                    upload_form_error( 'No data was entered in the upload form.  You may choose to upload a file, paste some data directly in the data box, or enter URL(s) to fetch data.' );
-                                                }
-                                            }
-                            } );
-
-                            // show the dataset we created above in the history panel
-                            Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
-
-                            if (upload_error == true) {
-                                return false;
-                            } else {
-                                $(this).find("input[name=async_datasets]").val( async_datasets );
-                                $(this).append("<input type='hidden' name='ajax_upload' value='true'>");
-                            }
-                            // iframe submit is required for nginx (otherwise the encoding is wrong)
-                            $(this).ajaxSubmit({
-                                //iframe: true,
-                                error: function( xhr, msg, status ){
-                                    decrementUploadsInProgress();
-                                },
-                                success: function ( response, x, y, z ) {
-                                    decrementUploadsInProgress();
-                                }
-                            });
-                            uploads_in_progress++;
-                            window.onbeforeunload = function() {
-                                return "Navigating away from the Galaxy analysis interface will interrupt the "
-                                        + "file upload(s) currently in progress.  Do you really want to do this?";
-                            }
-                            if ( $(this).find("input[name='folder_id']").val() != undefined ) {
-                                var library_id = $(this).find("input[name='library_id']").val();
-                                var show_deleted = $(this).find("input[name='show_deleted']").val();
-                                if ( location.pathname.indexOf( 'admin' ) != -1 ) {
-                                    $("iframe#galaxy_main").attr("src","${h.url_for( controller='library_common', action='browse_library' )}?cntrller=library_admin&id=" + library_id + "&created_ldda_ids=" + async_datasets + "&show_deleted=" + show_deleted);
-                                } else {
-                                    $("iframe#galaxy_main").attr("src","${h.url_for( controller='library_common', action='browse_library' )}?cntrller=library&id=" + library_id + "&created_ldda_ids=" + async_datasets + "&show_deleted=" + show_deleted);
-                                }
-                            } else {
-                                $("iframe#galaxy_main").attr("src","${h.url_for(controller='tool_runner', action='upload_async_message')}");
-                            }
-                            event.preventDefault();
-                            return false;
-                        });
-                    }
-                });
-            });
-        });
-    </script>
 </%def>
 
 ## Masthead
@@ -375,8 +253,8 @@
             %endif
         </div><!--end everything-->
         ## Allow other body level elements
+        ## Scripts can be loaded later since they progressively add features to
+        ## the panels, but do not change layout
+        ${self.late_javascripts()}
     </body>
-    ## Scripts can be loaded later since they progressively add features to
-    ## the panels, but do not change layout
-    ${self.late_javascripts()}
 </html>

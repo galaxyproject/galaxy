@@ -1,4 +1,4 @@
-<tool id="solid2fastq" name="Convert">
+<tool id="solid2fastq" name="Convert" version="1.0.0">
   <description>SOLiD output to fastq</description>
   <command interpreter="python">
     #if   $is_run.paired == "no"    #solid2fastq.py --fr=$input1 --fq=$input2 --fout=$out_file1 -q $qual $trim_name $trim_first_base $double_encode

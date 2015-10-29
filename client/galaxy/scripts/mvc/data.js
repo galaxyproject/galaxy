@@ -316,7 +316,7 @@ var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
         this.scroll_elt = this.$el.css({
             position: 'relative',
             overflow: 'scroll',
-            height: this.options.height || '500px'
+            height: options.height || '500px'
         });
     },
 

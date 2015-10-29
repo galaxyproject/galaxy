@@ -222,6 +222,7 @@ class AdminController( BaseUIController, Admin ):
     @web.expose
     @web.require_admin
     def edit_category( self, trans, **kwd ):
+        '''Handle requests to edit TS category name or description'''
         message = escape( kwd.get( 'message', '' ) )
         status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
@@ -248,22 +249,22 @@ class AdminController( BaseUIController, Admin ):
                 else:
                     category.name = new_name
                     flush_needed = True
-                if original_category_description != new_description:
-                    category.description = new_description
-                    if not flush_needed:
-                        flush_needed = True
-                if flush_needed:
-                    trans.sa_session.add( category )
-                    trans.sa_session.flush()
-                    if original_category_name != new_name:
-                        # Update the Tool Shed's repository registry.
-                        trans.app.repository_registry.edit_category_entry( original_category_name, new_name )
-                    message = "The information has been saved for category '%s'" % escape( category.name )
-                    status = 'done'
-                    return trans.response.send_redirect( web.url_for( controller='admin',
-                                                                      action='manage_categories',
-                                                                      message=message,
-                                                                      status=status ) )
+            if original_category_description != new_description:
+                category.description = new_description
+                if not flush_needed:
+                    flush_needed = True
+            if flush_needed:
+                trans.sa_session.add( category )
+                trans.sa_session.flush()
+                if original_category_name != new_name:
+                    # Update the Tool Shed's repository registry.
+                    trans.app.repository_registry.edit_category_entry( original_category_name, new_name )
+                message = "The information has been saved for category '%s'" % escape( category.name )
+                status = 'done'
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='manage_categories',
+                                                                  message=message,
+                                                                  status=status ) )
         return trans.fill_template( '/webapps/tool_shed/category/edit_category.mako',
                                     category=category,
                                     message=message,
@@ -368,7 +369,6 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def undelete_repository( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             # Undeleting multiple items is currently not allowed (allow_multiple=False), so there will only be 1 id.
@@ -406,7 +406,6 @@ class AdminController( BaseUIController, Admin ):
                 message = "No selected repositories were marked deleted, so they could not be undeleted."
         else:
             message = "No repository ids received for undeleting."
-            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='browse_repositories',
                                                    message=util.sanitize_text( message ),
@@ -419,7 +418,6 @@ class AdminController( BaseUIController, Admin ):
         # sense to mark a category as deleted (category names and descriptions can be changed instead).
         # If we do this, and the following 2 methods can be eliminated.
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )
@@ -434,7 +432,6 @@ class AdminController( BaseUIController, Admin ):
                 message += " %s " % escape( category.name )
         else:
             message = "No category ids received for deleting."
-            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
@@ -447,7 +444,6 @@ class AdminController( BaseUIController, Admin ):
         # Purging a deleted Category deletes all of the following from the database:
         # - RepoitoryCategoryAssociations where category_id == Category.id
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )
@@ -465,7 +461,6 @@ class AdminController( BaseUIController, Admin ):
             message = "Purged %d categories: %s" % ( count, escape( purged_categories ) )
         else:
             message = "No category ids received for purging."
-            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
@@ -475,7 +470,6 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def undelete_category( self, trans, **kwd ):
         message = escape( kwd.get( 'message', '' ) )
-        status = kwd.get( 'status', 'done' )
         id = kwd.get( 'id', None )
         if id:
             ids = util.listify( id )
@@ -494,7 +488,6 @@ class AdminController( BaseUIController, Admin ):
             message = "Undeleted %d categories: %s" % ( count, escape( undeleted_categories ) )
         else:
             message = "No category ids received for undeleting."
-            status = 'error'
         trans.response.send_redirect( web.url_for( controller='admin',
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),

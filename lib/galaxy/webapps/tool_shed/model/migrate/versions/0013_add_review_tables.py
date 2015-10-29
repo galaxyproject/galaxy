@@ -1,13 +1,14 @@
 """
 Migration script to add the repository_review, component_review and component tables and the Repository Reviewer group and role.
 """
-import datetime, logging, sys
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+import datetime
+import logging
+import sys
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import TrimmedString
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -24,6 +25,7 @@ NOW = datetime.datetime.utcnow
 REVIEWER = 'Repository Reviewer'
 ROLE_TYPE = 'system'
 
+
 def nextval(migrate_engine, table, col='id' ):
     if migrate_engine.name in ['postgresql', 'postgres']:
         return "nextval('%s_%s_seq')" % ( table, col )
@@ -32,49 +34,52 @@ def nextval(migrate_engine, table, col='id' ):
     else:
         raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
+
 def localtimestamp(migrate_engine):
-   if migrate_engine.name in ['postgresql', 'postgres'] or migrate_engine.name == 'mysql':
-       return "LOCALTIMESTAMP"
-   elif migrate_engine.name == 'sqlite':
-       return "current_date || ' ' || current_time"
-   else:
-       raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+    if migrate_engine.name in ['postgresql', 'postgres'] or migrate_engine.name == 'mysql':
+        return "LOCALTIMESTAMP"
+    elif migrate_engine.name == 'sqlite':
+        return "current_date || ' ' || current_time"
+    else:
+        raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
+
 
 def boolean_false(migrate_engine):
-   if migrate_engine.name in ['postgresql', 'postgres'] or migrate_engine.name == 'mysql':
-       return False
-   elif migrate_engine.name == 'sqlite':
-       return 0
-   else:
-       raise Exception( 'Unable to convert data for unknown database type: %s' % db )
+    if migrate_engine.name in ['postgresql', 'postgres'] or migrate_engine.name == 'mysql':
+        return False
+    elif migrate_engine.name == 'sqlite':
+        return 0
+    else:
+        raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
 RepositoryReview_table = Table( "repository_review", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=NOW ),
-    Column( "update_time", DateTime, default=NOW, onupdate=NOW ),
-    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
-    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
-    Column( "approved", TrimmedString( 255 ) ),
-    Column( "rating", Integer, index=True ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+                                Column( "id", Integer, primary_key=True ),
+                                Column( "create_time", DateTime, default=NOW ),
+                                Column( "update_time", DateTime, default=NOW, onupdate=NOW ),
+                                Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+                                Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+                                Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+                                Column( "approved", TrimmedString( 255 ) ),
+                                Column( "rating", Integer, index=True ),
+                                Column( "deleted", Boolean, index=True, default=False ) )
 
 ComponentReview_table = Table( "component_review", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=NOW ),
-    Column( "update_time", DateTime, default=NOW, onupdate=NOW ),
-    Column( "repository_review_id", Integer, ForeignKey( "repository_review.id" ), index=True ),
-    Column( "component_id", Integer, ForeignKey( "component.id" ), index=True ),
-    Column( "comment", TEXT ),
-    Column( "private", Boolean, default=False ),
-    Column( "approved", TrimmedString( 255 ) ),
-    Column( "rating", Integer ),
-    Column( "deleted", Boolean, index=True, default=False ) )
+                               Column( "id", Integer, primary_key=True ),
+                               Column( "create_time", DateTime, default=NOW ),
+                               Column( "update_time", DateTime, default=NOW, onupdate=NOW ),
+                               Column( "repository_review_id", Integer, ForeignKey( "repository_review.id" ), index=True ),
+                               Column( "component_id", Integer, ForeignKey( "component.id" ), index=True ),
+                               Column( "comment", TEXT ),
+                               Column( "private", Boolean, default=False ),
+                               Column( "approved", TrimmedString( 255 ) ),
+                               Column( "rating", Integer ),
+                               Column( "deleted", Boolean, index=True, default=False ) )
 
 Component_table = Table( "component", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "name", TrimmedString( 255 ) ),
-    Column( "description", TEXT ) )
+                         Column( "id", Integer, primary_key=True ),
+                         Column( "name", TrimmedString( 255 ) ),
+                         Column( "description", TEXT ) )
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -156,6 +161,7 @@ def upgrade(migrate_engine):
         cmd += "%s " % localtimestamp(migrate_engine)
         cmd += ");"
         migrate_engine.execute( cmd )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

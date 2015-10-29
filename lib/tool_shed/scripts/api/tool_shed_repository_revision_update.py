@@ -6,15 +6,9 @@ usage: tool_shed_repository_revision_update.py key url key1=value1 key2=value2 .
 """
 
 import json
-import os
 import sys
 
-sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import update
-
-
-dumps = json.dumps
-loads = json.loads
 
 data = {}
 for key, value in [ kwarg.split( '=', 1 ) for kwarg in sys.argv[ 3: ] ]:
@@ -28,7 +22,7 @@ for key, value in [ kwarg.split( '=', 1 ) for kwarg in sys.argv[ 3: ] ]:
         else:
             new_value = False
     elif key in [ 'tool_test_results' ]:
-        new_value = loads( value )
+        new_value = json.loads( value )
     else:
         new_value = str( value )
     data[ key ] = new_value

@@ -1,4 +1,4 @@
-<tool id="Remove beginning1" name="Remove beginning">
+<tool id="Remove beginning1" name="Remove beginning" version="1.0.0">
   <description>of a file</description>
   <command interpreter="perl">remove_beginning.pl $input $num_lines $out_file1</command>
   <inputs>

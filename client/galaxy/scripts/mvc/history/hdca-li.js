@@ -18,6 +18,16 @@ var HDCAListItemView = _super.extend(
 
     className   : _super.prototype.className + " history-content",
 
+    /** event listeners */
+    _setUpListeners : function(){
+        _super.prototype._setUpListeners.call( this );
+
+        this.model.on({
+            'change:populated change:visible' : function( model, options ){ this.render(); },
+        }, this );
+    },
+
+    /** Override to provide the proper collections panels as the foldout */
     _getFoldoutPanelClass : function(){
         switch( this.model.get( 'collection_type' ) ){
             case 'list':
@@ -34,7 +44,7 @@ var HDCAListItemView = _super.extend(
     _swapNewRender : function( $newRender ){
         _super.prototype._swapNewRender.call( this, $newRender );
 //TODO: model currently has no state
-        var state = this.model.get( 'state' ) || STATES.OK;
+        var state = !this.model.get( 'populated' ) ? STATES.RUNNING : STATES.OK;
         //if( this.model.has( 'state' ) ){
         this.$el.addClass( 'state-' + state );
         //}
@@ -52,6 +62,17 @@ var HDCAListItemView = _super.extend(
 /** underscore templates */
 HDCAListItemView.prototype.templates = (function(){
 
+    var warnings = _.extend( {}, _super.prototype.templates.warnings, {
+        hidden : BASE_MVC.wrapTemplate([
+            // add a warning when hidden
+            '<% if( !collection.visible ){ %>',
+                '<div class="hidden-msg warningmessagesmall">',
+                    _l( 'This collection has been hidden' ),
+                '</div>',
+            '<% } %>'
+        ], 'collection' )
+    });
+
 // could steal this from hda-base (or use mixed content)
     var titleBarTemplate = BASE_MVC.wrapTemplate([
         // adding the hid display to the title
@@ -67,6 +88,7 @@ HDCAListItemView.prototype.templates = (function(){
     ], 'collection' );
 
     return _.extend( {}, _super.prototype.templates, {
+        warnings : warnings,
         titleBar : titleBarTemplate
     });
 }());

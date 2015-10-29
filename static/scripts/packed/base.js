@@ -1,1 +1,0 @@
-define(["libs/backbone/backbone"],function(b){var a=function(){if(this.initialize){this.initialize.apply(this,arguments)}};a.extend=b.Model.extend;return{Base:a,Backbone:b}});

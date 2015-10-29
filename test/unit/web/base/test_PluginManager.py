@@ -5,26 +5,28 @@ import os
 import imp
 import unittest
 
-utility = imp.load_source( 'utility', os.path.join( os.path.dirname( __file__ ), '../../util/utility.py' ) )
-log = utility.set_up_filelogger( __name__ + '.log' )
-utility.add_galaxy_lib_to_path( 'test/unit/web/base' )
+import logging
+log = logging.getLogger( __name__ )
+
+test_utils = imp.load_source( 'test_utils',
+    os.path.join( os.path.dirname( __file__), '../../unittest_utils/utility.py' ) )
+import galaxy_mock
 
 from galaxy.web.base.pluginframework import PluginManager
 
-import mock
 
-class PluginManager_TestCase( unittest.TestCase ):
+class PluginManager_TestCase( test_utils.unittest.TestCase ):
 
     def test_rel_path_search( self ):
         """should be able to search given rel. path"""
-        mock_app_dir = mock.MockDir({
+        mock_app_dir = galaxy_mock.MockDir({
             'plugins'   : {
                 'plugin1'   : {},
                 'plugin2'   : {},
                 'file1'     : 'blerbler'
             }
         })
-        mock_app = mock.MockApp( mock_app_dir.root_path )
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = PluginManager( mock_app, directories_setting='plugins' )
 
         app_path = mock_app_dir.root_path
@@ -41,16 +43,14 @@ class PluginManager_TestCase( unittest.TestCase ):
 
     def test_abs_path_search( self ):
         """should be able to search given abs. path"""
-        mock_app_dir = mock.MockDir({})
-        mock_plugin_dir = mock.MockDir({
+        mock_app_dir = galaxy_mock.MockDir({})
+        mock_plugin_dir = galaxy_mock.MockDir({
             'plugin1'   : {},
             'plugin2'   : {},
             'file1'     : 'blerbler'
         })
-        mock_app = mock.MockApp( mock_app_dir.root_path )
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
         plugin_mgr = PluginManager( mock_app, directories_setting=mock_plugin_dir.root_path )
-
-        app_path = mock_app_dir.root_path
         expected_plugins_path = mock_plugin_dir.root_path
 
         self.assertItemsEqual( plugin_mgr.directories, [ expected_plugins_path ] )
@@ -62,20 +62,20 @@ class PluginManager_TestCase( unittest.TestCase ):
 
     def test_multiple_dirs( self ):
         """should search in multiple directories"""
-        mock_app_dir = mock.MockDir({
+        mock_app_dir = galaxy_mock.MockDir({
             'plugins'   : {
                 'plugin1'   : {},
                 'plugin2'   : {},
                 'file1'     : 'blerbler'
             }
         })
-        mock_abs_plugin_dir = mock.MockDir({
+        mock_abs_plugin_dir = galaxy_mock.MockDir({
             'plugin3'   : {},
             'plugin4'   : {},
             'file2'     : 'blerbler'
         })
-        mock_app = mock.MockApp( mock_app_dir.root_path )
-        directories_setting=','.join([ 'plugins', mock_abs_plugin_dir.root_path ])
+        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
+        directories_setting = ','.join([ 'plugins', mock_abs_plugin_dir.root_path ])
         plugin_mgr = PluginManager( mock_app, directories_setting=directories_setting )
 
         app_path = mock_app_dir.root_path
@@ -96,4 +96,3 @@ class PluginManager_TestCase( unittest.TestCase ):
 
 if __name__ == '__main__':
     unittest.main()
-

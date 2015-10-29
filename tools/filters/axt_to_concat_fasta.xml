@@ -1,4 +1,4 @@
-<tool id="axt_to_concat_fasta" name="AXT to concatenated FASTA">
+<tool id="axt_to_concat_fasta" name="AXT to concatenated FASTA" version="1.0.0">
   <description>Converts an AXT formatted file to a concatenated FASTA alignment</description>
   <command interpreter="python">axt_to_concat_fasta.py $dbkey_1 $dbkey_2 &lt; $axt_input &gt; $out_file1</command>
   <inputs>

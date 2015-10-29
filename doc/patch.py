@@ -118,7 +118,7 @@ def fromfile(filename):
   fp = open(filename, "rb")
   res = patchset.parse(fp)
   fp.close()
-  if res == True:
+  if res is True:
     return patchset
   return False
 

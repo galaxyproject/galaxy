@@ -3,7 +3,7 @@
 def lint_output(tool_xml, lint_ctx):
     outputs = tool_xml.findall("./outputs/data")
     if not outputs:
-        lint_ctx.warn("Tool contains no outputs, most tools should produce outputs..")
+        lint_ctx.warn("Tool contains no outputs, most tools should produce outputs.")
         return
 
     num_outputs = 0
@@ -15,7 +15,7 @@ def lint_output(tool_xml, lint_ctx):
             format_set = True
             format = output_attrib["format"]
             if format == "input":
-                lint_ctx.warn("Using format='input' on output data, format_source attribute is less ambigious and should be used instead.")
+                lint_ctx.warn("Using format='input' on output data, format_source attribute is less ambiguous and should be used instead.")
         elif "format_source" in output_attrib:
             format_set = True
 

@@ -80,8 +80,8 @@ def inherit(context):
         <div class="toolFormTitle">Login</div>
         <form name="login" id="login" action="${form_action}" method="post" >
             <div class="form-row">
-                <label>Email address:</label>
-                <input type="text" name="email" value="${email | h}" size="40"/>
+                <label>Username / Email Address:</label>
+                <input type="text" name="login" value="${login or ''| h}" size="40"/>
                 <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
             </div>
             <div class="form-row">

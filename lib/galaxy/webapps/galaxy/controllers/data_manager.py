@@ -1,17 +1,15 @@
+from markupsafe import escape
+import paste.httpexceptions
+
 import galaxy.queue_worker
 from galaxy import web
 from galaxy.util.json import loads
 from galaxy.web.base.controller import BaseUIController
 
-import pkg_resources;
-pkg_resources.require( "Paste" )
-import paste.httpexceptions
-
-from galaxy.web.framework.helpers import escape
-
-#set up logger
+# set up logger
 import logging
 log = logging.getLogger( __name__ )
+
 
 class DataManager( BaseUIController ):
 
@@ -53,7 +51,7 @@ class DataManager( BaseUIController ):
             job = None
             log.error( "Bad job id (%s) passed to view_job: %s" % ( job_id, e ) )
         if not job:
-            return trans.response.send_redirect( web.url_for( controller="data_manager", action="index",message="Invalid job (%s) was requested" % job_id, status="error" ) )
+            return trans.response.send_redirect( web.url_for( controller="data_manager", action="index", message="Invalid job (%s) was requested" % job_id, status="error" ) )
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = trans.app.data_managers.get_manager( data_manager_id )
         hdas = [ assoc.dataset for assoc in job.get_output_datasets() ]
@@ -93,7 +91,7 @@ class DataManager( BaseUIController ):
             table_name = table_name.split( "," )
         # Reload the tool data tables
         table_names = self.app.tool_data_tables.reload_tables( table_names=table_name )
-        galaxy.queue_worker.send_control_task(trans, 'reload_tool_data_tables',
+        galaxy.queue_worker.send_control_task(trans.app, 'reload_tool_data_tables',
                                               noop_self=True,
                                               kwargs={'table_name': table_name} )
         redirect_url = None
@@ -107,7 +105,7 @@ class DataManager( BaseUIController ):
                                             message=message,
                                             status=status )
             else:
-                 message = "The data tables '%s' have been reloaded." % ', '.join( table_names )
+                message = "The data tables '%s' have been reloaded." % ', '.join( table_names )
         else:
             message = "No data tables have been reloaded."
             status = 'error'
@@ -117,4 +115,3 @@ class DataManager( BaseUIController ):
                                         message=message,
                                         status=status )
         return trans.response.send_redirect( redirect_url )
-

@@ -213,6 +213,12 @@ Any data in tab delimited format (tabular)
 
 -----
 
+**Table (delimiter-separated)**
+
+Any delimiter-separated tabular data (CSV or TSV).
+
+-----
+
 **Wig**
 
 The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track.

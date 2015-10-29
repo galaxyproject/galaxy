@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 import os
-import sys
-import shutil
-import tempfile
 import re
+import shutil
+import sys
+import tempfile
 from ConfigParser import SafeConfigParser
 
 # Assume we are run from the galaxy root directory, add lib to the python path
@@ -13,42 +13,23 @@ new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
+from base.test_logging import logging_config_file
 from base.tool_shed_util import parse_tool_panel_config
 
-from galaxy import eggs
 from galaxy.util.properties import load_app_properties
 
-eggs.require( "nose" )
-eggs.require( "NoseHTML" )
-eggs.require( "NoseTestDiff" )
-eggs.require( "twill==0.9" )
-eggs.require( "Paste" )
-eggs.require( "PasteDeploy" )
-eggs.require( "Cheetah" )
-
-# this should not be required, but it is under certain conditions, thanks to this bug:
-# http://code.google.com/p/python-nose/issues/detail?id=284
-eggs.require( "pysqlite" )
-
-import atexit
 import logging
 import os.path
-import twill
-import unittest
 import time
-import subprocess
 import threading
 import random
 import httplib
 import socket
 import urllib
 from paste import httpserver
-import galaxy.app
 from galaxy.app import UniverseApplication
 from galaxy.web import buildapp
 from galaxy import tools
-from galaxy.util import bunch
-from galaxy import util
 from galaxy.util.json import dumps
 
 from functional import database_contexts
@@ -70,7 +51,10 @@ default_galaxy_test_port_max = 9999
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
 migrated_tool_panel_config = 'config/migrated_tools_conf.xml'
-installed_tool_panel_configs = [ 'config/shed_tool_conf.xml' ]
+installed_tool_panel_configs = [
+    os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
+]
+
 
 # should this serve static resources (scripts, images, styles, etc.)
 STATIC_ENABLED = True
@@ -94,6 +78,7 @@ job_conf_xml = '''<?xml version="1.0"?>
 </job_conf>
 '''
 
+
 def get_static_settings():
     """Returns dictionary of the settings necessary for a galaxy App
     to be wrapped in the static middleware.
@@ -103,9 +88,9 @@ def get_static_settings():
     """
     cwd = os.getcwd()
     static_dir = os.path.join( cwd, 'static' )
-    #TODO: these should be copied from config/galaxy.ini
+    # TODO: these should be copied from config/galaxy.ini
     return dict(
-        #TODO: static_enabled needed here?
+        # TODO: static_enabled needed here?
         static_enabled=True,
         static_cache_time=360,
         static_dir=static_dir,
@@ -222,10 +207,11 @@ def main():
         test_dir = default_galaxy_test_file_dir
         tool_config_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', tool_conf )
         galaxy_test_file_dir = os.environ.get( 'GALAXY_TEST_FILE_DIR', test_dir )
-        if not os.path.isabs( galaxy_test_file_dir ):
-            galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
-        library_import_dir = galaxy_test_file_dir
-        import_dir = os.path.join( galaxy_test_file_dir, 'users' )
+        first_test_file_dir = galaxy_test_file_dir.split(",")[0]
+        if not os.path.isabs( first_test_file_dir ):
+            first_test_file_dir = os.path.join( os.getcwd(), first_test_file_dir )
+        library_import_dir = first_test_file_dir
+        import_dir = os.path.join( first_test_file_dir, 'users' )
         if os.path.exists(import_dir):
             user_library_import_dir = import_dir
         else:
@@ -275,6 +261,7 @@ def main():
             galaxy_db_path = os.path.join( tempdir, 'database' )
         # Configure the paths Galaxy needs to  test tools.
         file_path = os.path.join( galaxy_db_path, 'files' )
+        template_cache_path = os.path.join( galaxy_db_path, 'compiled_templates' )
         new_file_path = tempfile.mkdtemp( prefix='new_files_path_', dir=tempdir )
         job_working_directory = tempfile.mkdtemp( prefix='job_working_directory_', dir=tempdir )
         install_database_connection = os.environ.get( 'GALAXY_TEST_INSTALL_DBURI', None )
@@ -293,18 +280,18 @@ def main():
                 database_auto_migrate = True
             database_connection = 'sqlite:///%s' % db_path
         kwargs = {}
-        for dir in file_path, new_file_path:
+        for dir in file_path, new_file_path, template_cache_path:
             try:
                 if not os.path.exists( dir ):
                     os.makedirs( dir )
             except OSError:
                 pass
 
-    #Data Manager testing temp path
-    #For storing Data Manager outputs and .loc files so that real ones don't get clobbered
+    # Data Manager testing temp path
+    # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
     data_manager_test_tmp_path = tempfile.mkdtemp( prefix='data_manager_test_tmp', dir=galaxy_test_tmp_dir )
     galaxy_data_manager_data_path = tempfile.mkdtemp( prefix='data_manager_tool-data', dir=data_manager_test_tmp_path )
-    
+
     # ---- Build Application --------------------------------------------------
     master_api_key = get_master_api_key()
     app = None
@@ -324,6 +311,7 @@ def main():
                        library_import_dir=library_import_dir,
                        log_destination="stdout",
                        new_file_path=new_file_path,
+                       template_cache_path=template_cache_path,
                        running_functional_tests=True,
                        shed_tool_data_table_config=shed_tool_data_table_config,
                        template_path="templates",
@@ -338,9 +326,10 @@ def main():
                        user_library_import_dir=user_library_import_dir,
                        master_api_key=master_api_key,
                        use_tasked_jobs=True,
+                       cleanup_job='onsuccess',
                        enable_beta_tool_formats=True,
-                       data_manager_config_file=data_manager_config_file,
-        )
+                       auto_configure_logging=logging_config_file is None,
+                       data_manager_config_file=data_manager_config_file )
         if install_database_connection is not None:
             kwargs[ 'install_database_connection' ] = install_database_connection
         if not database_connection.startswith( 'sqlite://' ):
@@ -439,7 +428,7 @@ def main():
             data_manager_test = __check_arg( '-data_managers', param=False )
             if data_manager_test:
                 import functional.test_data_managers
-                functional.test_data_managers.data_managers = app.data_managers #seems like a hack...
+                functional.test_data_managers.data_managers = app.data_managers  # seems like a hack...
                 functional.test_data_managers.build_tests(
                     tmp_dir=data_manager_test_tmp_path,
                     testing_shed_tools=testing_shed_tools,

@@ -295,8 +295,8 @@ class TestLibraryFeatures( TwillTestCase ):
                            library_id=self.security.encode_id( library2.id ) )
         # Check the CheckboxField to make sure the template contents are inherited
         self.library_info( 'library_admin',
-                            self.security.encode_id( library2.id ),
-                            template_fields=[ ( checkbox_field_name, '1' ) ] )
+                           self.security.encode_id( library2.id ),
+                           template_fields=[ ( checkbox_field_name, '1' ) ] )
 
     def test_055_add_folder2_to_library2( self ):
         """Testing adding a folder to library2"""
@@ -372,8 +372,8 @@ class TestLibraryFeatures( TwillTestCase ):
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         # SelectField option names are zero-based
         self.library_info( 'library_admin',
-                            self.security.encode_id( library3.id ),
-                            template_fields=[ ( select_field_name, 'Option1' ) ] )
+                           self.security.encode_id( library3.id ),
+                           template_fields=[ ( select_field_name, 'Option1' ) ] )
 
     def test_085_add_folder3_to_library3( self ):
         """Testing adding a folder to library3"""
@@ -472,8 +472,8 @@ class TestLibraryFeatures( TwillTestCase ):
                            library_id=self.security.encode_id( library4.id ) )
         # Select the 2nd option in the SelectField to make sure the template contents are inherited
         self.library_info( 'library_admin',
-                            self.security.encode_id( library4.id ),
-                            template_fields=[ ( textarea_name, 'This text should be inherited' ) ] )
+                           self.security.encode_id( library4.id ),
+                           template_fields=[ ( textarea_name, 'This text should be inherited' ) ] )
 
     def test_110_add_folder4_to_library4( self ):
         """Testing adding a folder to library4"""

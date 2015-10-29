@@ -1,4 +1,4 @@
-<tool name="EuPathDB" id="eupathdb" tool_type="data_source" url_method="post">
+<tool name="EuPathDB" id="eupathdb" tool_type="data_source" url_method="post" version="1.0.0">
     <description>server</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
     <inputs action="http://eupathdb.org/eupathdb/queries_tools.jsp" check_values="false" method="get"> 

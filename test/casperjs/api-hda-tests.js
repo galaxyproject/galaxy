@@ -124,7 +124,7 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         //this.test.comment( 'update should sanitize any new name' );
 
         this.test.comment( 'update should allow unicode in names' );
-        var unicodeName = 'Ржевский сапоги';
+        var unicodeName = 'ржевский сапоги';
         returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
             name : unicodeName
         });
@@ -223,6 +223,15 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         this.test.assert( hdaShow.misc_info === unicodeInfo,
             "Update accepted unicode misc_info: " + hdaShow.misc_info );
 
+        this.test.comment( 'update should set misc_info to the empty string if sent null/None' );
+        returned = this.api.hdas.update( lastHistory.id, firstHda.id, {
+            misc_info : null
+        });
+        //this.debug( 'returned:\n' + this.jsonStr( returned ) );
+        hdaShow = this.api.hdas.show( lastHistory.id, firstHda.id );
+        this.test.assert( hdaShow.misc_info === '',
+            "Update used null as the empty string: " + hdaShow.misc_info );
+
         // ........................................................................................... annotation
         // currently fails because no annotation is returned in details
         this.test.comment( 'update should allow changing the annotation' );
@@ -297,7 +306,7 @@ spaceghost.test.begin( 'Test the HDA API', 0, function suite( test ){
         }, 400, "must be a type: (<type 'basestring'>, <type 'NoneType'>)", 'type validation error' );
         spaceghost.api.assertRaises( function(){
             returned = spaceghost.api.hdas.update( hdaShow.history_id, hdaShow.id, { genome_build: false } );
-        }, 400, "invalid reference", 'type validation error' );
+        }, 400, "must be a type: <type 'basestring'>", 'type validation error (genome_build must be string)' );
         [ 'deleted', 'visible' ].forEach( function( key ){
             var updatedAttrs = {};
             updatedAttrs[ key ] = 'straaang';

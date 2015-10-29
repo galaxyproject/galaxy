@@ -1,4 +1,4 @@
-<tool id="BED File Converter1" name="BED File Converter">
+<tool id="BED File Converter1" name="BED File Converter" version="1.0.0">
   <description>creates a bed or xbed file containing from text query</description>
   <command>noop</command>
   <inputs>

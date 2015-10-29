@@ -4,7 +4,7 @@ define([], function() {
 // LIBRARY RELATED MODELS
 
     var Library = Backbone.Model.extend({
-      urlRoot: '/api/libraries/',
+      urlRoot: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/',
 
       /** based on show_deleted would this lib show in the list of lib's?
        *  @param {Boolean} show_deleted are we including deleted libraries?
@@ -19,7 +19,7 @@ define([], function() {
     });
 
     var Libraries = Backbone.Collection.extend({
-      url: '/api/libraries',
+      url: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries',
 
       model: Library,
 
@@ -29,6 +29,21 @@ define([], function() {
 
       initialize : function(options){
           options = options || {};
+      },
+
+      search : function(search_term){
+        /**
+         * Search the collection and return only the models that have
+         * the search term in their names.
+         * [the term to search]
+         * @type {string}
+         */
+        if (search_term == "") return this;
+        var lowercase_term = search_term.toLowerCase();
+        return this.filter(function(data) {
+          lowercase_name = data.get("name").toLowerCase();
+          return lowercase_name.indexOf(lowercase_term) !== -1;
+        });
       },
 
       /** Get every 'shown' library in this collection based on deleted filter
@@ -83,20 +98,19 @@ define([], function() {
 // ============================================================================
 // FOLDER RELATED MODELS
 
-    var Item = Backbone.Model.extend({
-      urlRoot : '/api/libraries/datasets/'
+    var LibraryItem = Backbone.Model.extend({
     });
 
-    var Ldda = Backbone.Model.extend({
-      urlRoot : '/api/libraries/datasets/'
+    var Ldda = LibraryItem.extend({
+      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/libraries/datasets/'
     });
 
-    var FolderAsModel = Backbone.Model.extend({
-      urlRoot: '/api/folders'
+    var FolderAsModel = LibraryItem.extend({
+      urlRoot: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/folders/'
     });
 
     var Folder = Backbone.Collection.extend({
-      model: Item,
+      model: LibraryItem,
 
       /** Sort collection by item name (ascending) and return the sorted
        *  collection. Folders go before datasets. 
@@ -150,16 +164,28 @@ define([], function() {
     });
 
     var FolderContainer = Backbone.Model.extend({
-        defaults : {
-            folder : new Folder(),
-            urlRoot : "/api/folders/",
-            id : "unknown"
-        },
-    parse : function(obj) {
-      // response is not a simple array, it contains metadata
-      // this will update the inner collection
-      this.get("folder").reset(obj.folder_contents);
-      return obj;
+      defaults : {
+          folder : new Folder(),
+          urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/folders/',
+          id : "unknown"
+      },
+      parse : function(obj) {
+        // empty the collection
+        this.get("folder").reset();
+        // response is not a simple array, it contains metadata
+        // this will update the inner collection
+          for (var i = 0; i < obj.folder_contents.length; i++) {
+            if (obj.folder_contents[i].type === 'folder'){
+              var folder_item = new FolderAsModel(obj.folder_contents[i])
+              this.get("folder").add(folder_item);
+            } else if(obj.folder_contents[i].type === 'file'){
+              var file_item = new Ldda(obj.folder_contents[i])
+              this.get("folder").add(file_item);
+            } else{
+              console.error('Unknown folder item type encountered while parsing response.');
+            }
+          };
+        return obj;
       }
     });
 
@@ -169,11 +195,11 @@ define([], function() {
 // TODO UNITE
 
     var HistoryItem = Backbone.Model.extend({
-      urlRoot : '/api/histories/'
+      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories/'
     });
 
     var HistoryContents = Backbone.Collection.extend({
-      urlRoot : '/api/histories/',
+      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories/',
       initialize: function(options){
         this.id = options.id;
       },
@@ -184,11 +210,11 @@ define([], function() {
     });
 
     var GalaxyHistory = Backbone.Model.extend({
-      urlRoot : '/api/histories/'
+      urlRoot : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories/'
     });
 
     var GalaxyHistories = Backbone.Collection.extend({
-      url : '/api/histories',
+      url : ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/histories',
       model : GalaxyHistory
     });
 
@@ -199,15 +225,15 @@ define([], function() {
      */
     
     var Jstree = Backbone.Model.extend({
-      urlRoot: '/api/remote_files'
+      urlRoot: ( window.galaxy_config ? galaxy_config.root : '/' ) + 'api/remote_files'
     });
 
 return {
     Library: Library,
-    FolderAsModel : FolderAsModel,
     Libraries : Libraries,
-    Item : Item,
+    Item : Ldda,
     Ldda : Ldda,
+    FolderAsModel : FolderAsModel,
     Folder : Folder,
     FolderContainer : FolderContainer,
     HistoryItem : HistoryItem,

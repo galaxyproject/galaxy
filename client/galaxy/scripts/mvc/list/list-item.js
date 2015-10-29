@@ -380,7 +380,7 @@ ListItemView.prototype.templates = (function(){
  *  _renderDetails does the work of creating this.details: a sub-view that shows the nested list
  */
 var FoldoutListItemView = ListItemView.extend({
-    
+
     /** If 'foldout': show the sub-panel inside the expanded item
      *  If 'drilldown': only fire events and handle by pub-sub
      *      (allow the panel containing this item to attach it, hide itself, etc.)

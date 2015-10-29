@@ -17,7 +17,7 @@
         <filter type="data_meta" ref="input1" key="dbkey" column="2" multiple="True" separator=","/>
         <validator type="no_options" message="No alignments are available for the build associated with the selected interval file"/>
       </options>
-    </param> 
+    </param>
    </inputs>
   <outputs>
     <data format="maf" name="out_file1" />
@@ -32,11 +32,11 @@
   <help>
 **What it does**
 
-This tool takes genomic coordinates, superimposes them on pairwise alignments (in MAF format) stored on the Galaxy site, and excises alignment blocks corresponding to each set of coordinates. Alignment blocks that extend past START and/or END positions of an interval are trimmed. Note that a single genomic interval may correspond to two or more alignment blocks. 
+This tool takes genomic coordinates, superimposes them on pairwise alignments (in MAF format) stored on the Galaxy site, and excises alignment blocks corresponding to each set of coordinates. Alignment blocks that extend past START and/or END positions of an interval are trimmed. Note that a single genomic interval may correspond to two or more alignment blocks.
 
 -----
 
-**Example** 
+**Example**
 
 Here a single interval is superimposed on three MAF blocks. Blocks 1 and 3 are trimmed because they extend beyond boundaries of the interval:
 

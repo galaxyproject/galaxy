@@ -1,12 +1,14 @@
 import base64
 import httplib
 import json
+import logging
 import os
 import sgmllib
 import urllib2
 
 from sqlalchemy import and_
 from sqlalchemy.sql import expression
+from markupsafe import escape
 
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
@@ -21,7 +23,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
 from galaxy.web.framework.formbuilder import form
-from galaxy.web.framework.helpers import escape, grids, time_ago, to_unicode
+from galaxy.web.framework.helpers import grids, time_ago, to_unicode
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.extract import summarize
 from galaxy.workflow.modules import MissingToolException
@@ -30,6 +32,8 @@ from galaxy.workflow.modules import WorkflowModuleInjector
 from galaxy.workflow.render import WorkflowCanvas
 from galaxy.workflow.run import invoke
 from galaxy.workflow.run import WorkflowRunConfig
+
+log = logging.getLogger( __name__ )
 
 
 class StoredWorkflowListGrid( grids.Grid ):
@@ -861,9 +865,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
-            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&open_for_url=true' % \
-                ( tool_shed_url, repository_metadata_id, encoding_util.tool_shed_encode( workflow_name ) )
-            workflow_text = common_util.tool_shed_get( trans.app, tool_shed_url, workflow_url )
+            params = dict( repository_metadata_id=repository_metadata_id,
+                           workflow_name=encoding_util.tool_shed_encode( workflow_name ),
+                           open_for_url=True )
+            pathspec = [ 'workflow', 'import_workflow' ]
+            workflow_text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
             import_button = True
         if import_button:
             workflow_data = None
@@ -873,7 +879,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 try:
                     workflow_data = urllib2.urlopen( url ).read()
                 except Exception, e:
-                    message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( url, str( e ) )
+                    message = "Failed to open URL: <b>%s</b><br>Exception: %s" % ( escape( url ), escape( str( e ) ) )
                     status = 'error'
             elif workflow_text:
                 # This case occurs when the workflow_text was sent via http from the tool shed.
@@ -901,8 +907,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     data = json.loads( workflow_data )
                 except Exception, e:
                     data = None
-                    message = "The data content does not appear to be a Galaxy workflow.<br/>Exception: %s" % str( e )
+                    message = "The data content does not appear to be a Galaxy workflow."
                     status = 'error'
+                    log.exception("Error importing workflow.")
                 if data:
                     # Create workflow if possible.  If a required tool is not available in the local
                     # Galaxy instance, the tool information will be available in the step_dict.

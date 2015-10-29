@@ -3,12 +3,8 @@ import os
 import tempfile
 
 from galaxy.util import asbool
-
-from tool_shed.util import basic_util
-from tool_shed.util import hg_util
-from tool_shed.util import tool_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import xml_util
+from tool_shed.util import basic_util, hg_util, shed_util_common as suc
+from tool_shed.util import tool_util, xml_util
 
 log = logging.getLogger( __name__ )
 
@@ -41,7 +37,7 @@ class CustomDatatypeLoader( object ):
         converter_path, display_path = self.get_converter_and_display_paths( registration,
                                                                              relative_install_dir )
         if converter_path:
-             # Path to datatype converters
+            # Path to datatype converters
             registration.attrib[ 'proprietary_converter_path' ] = converter_path
         if display_path:
             # Path to datatype display applications
@@ -214,5 +210,5 @@ class CustomDatatypeLoader( object ):
 
     def load_installed_display_applications( self, installed_repository_dict, deactivate=False ):
         """Load or deactivate custom datatype display applications."""
-        self.app.datatypes_registry.load_display_applications( installed_repository_dict=installed_repository_dict,
+        self.app.datatypes_registry.load_display_applications( self.app, installed_repository_dict=installed_repository_dict,
                                                                deactivate=deactivate )

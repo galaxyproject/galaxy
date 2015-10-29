@@ -1,6 +1,3 @@
-from galaxy import eggs
-
-eggs.require( "SVGFig" )
 import svgfig
 
 MARGIN = 5
@@ -14,44 +11,37 @@ class WorkflowCanvas( object ):
         self.text = svgfig.SVG( "g" )
         self.connectors = svgfig.SVG( "g" )
         self.boxes = svgfig.SVG( "g" )
-
         svgfig.Text.defaults[ "font-size" ] = "10px"
-
         self.in_pos = {}
         self.out_pos = {}
         self.widths = {}
         self.max_x = 0
         self.max_y = 0
         self.max_width = 0
-
         self.data = []
 
     def finish( self ):
         max_x, max_y, max_width = self.max_x, self.max_y, self.max_width
-
         canvas = self.canvas
         canvas.append( self.connectors )
         canvas.append( self.boxes )
         canvas.append( self.text )
         width, height = ( max_x + max_width + 50 ), max_y + 300
-        canvas[ 'width' ] = "%s px" % width
-        canvas[ 'height' ] = "%s px" % height
+        canvas[ 'width' ] = "%spx" % width
+        canvas[ 'height' ] = "%spx" % height
         canvas[ 'viewBox' ] = "0 0 %s %s" % ( width, height )
 
     def add_boxes( self, step_dict, width, name_fill ):
-        margin = MARGIN
-        line_px = LINE_SPACING
-
         x, y = step_dict[ 'position' ][ 'left' ], step_dict[ 'position' ][ 'top' ]
-        self.boxes.append( svgfig.Rect( x - margin, y, x + width - margin, y + 30, fill=name_fill ).SVG() )
-        box_height = ( len( step_dict[ 'data_inputs' ] ) + len( step_dict[ 'data_outputs' ] ) ) * line_px + margin
+        self.boxes.append( svgfig.Rect( x - MARGIN, y, x + width - MARGIN, y + 30, fill=name_fill ).SVG() )
+        box_height = ( len( step_dict[ 'data_inputs' ] ) + len( step_dict[ 'data_outputs' ] ) ) * LINE_SPACING + MARGIN
         # Draw separator line.
         if len( step_dict[ 'data_inputs' ] ) > 0:
             box_height += 15
-            sep_y = y + len( step_dict[ 'data_inputs' ] ) * line_px + 40
-            self.text.append( svgfig.Line( x - margin, sep_y, x + width - margin, sep_y ).SVG() )
+            sep_y = y + len( step_dict[ 'data_inputs' ] ) * LINE_SPACING + 40
+            self.text.append( svgfig.Line( x - MARGIN, sep_y, x + width - MARGIN, sep_y ).SVG() )
         # Define an input/output box.
-        self.boxes.append( svgfig.Rect( x - margin, y + 30, x + width - margin, y + 30 + box_height, fill="#ffffff" ).SVG() )
+        self.boxes.append( svgfig.Rect( x - MARGIN, y + 30, x + width - MARGIN, y + 30 + box_height, fill="#ffffff" ).SVG() )
 
     def add_text( self, module_data_inputs, module_data_outputs, step, module_name ):
         left, top = step.position[ 'left' ], step.position[ 'top' ]
@@ -59,16 +49,12 @@ class WorkflowCanvas( object ):
         order_index = step.order_index
         max_len = len( module_name ) * 1.5
         self.text.append( svgfig.Text( x, y + 20, module_name, **{ "font-size": "14px" } ).SVG() )
-
         y += 45
-
         count = 0
-        line_px = LINE_SPACING
         in_pos = self.in_pos
         out_pos = self.out_pos
-
         for di in module_data_inputs:
-            cur_y = y + count * line_px
+            cur_y = y + count * LINE_SPACING
             if order_index not in in_pos:
                 in_pos[ order_index ] = {}
             in_pos[ order_index ][ di[ 'name' ] ] = ( x, cur_y )
@@ -78,7 +64,7 @@ class WorkflowCanvas( object ):
         if len( module_data_inputs ) > 0:
             y += 15
         for do in module_data_outputs:
-            cur_y = y + count * line_px
+            cur_y = y + count * LINE_SPACING
             if order_index not in out_pos:
                 out_pos[ order_index ] = {}
             out_pos[ order_index ][ do[ 'name' ] ] = ( x, cur_y )
@@ -91,8 +77,6 @@ class WorkflowCanvas( object ):
         self.max_width = max( self.max_width, self.widths[ order_index ] )
 
     def add_connection( self, step_dict, conn, output_dict):
-        margin = MARGIN
-
         in_coords = self.in_pos[ step_dict[ 'id' ] ][ conn ]
         # out_pos_index will be a step number like 1, 2, 3...
         out_pos_index = output_dict[ 'id' ]
@@ -112,15 +96,15 @@ class WorkflowCanvas( object ):
                     out_conn_pos = self.out_pos[ out_pos_index ][ key ]
         adjusted = ( out_conn_pos[ 0 ] + self.widths[ output_dict[ 'id' ] ], out_conn_pos[ 1 ] )
         self.text.append( svgfig.SVG( "circle",
-                                      cx=out_conn_pos[ 0 ] + self.widths[ output_dict[ 'id' ] ] - margin,
-                                      cy=out_conn_pos[ 1 ] - margin,
+                                      cx=out_conn_pos[ 0 ] + self.widths[ output_dict[ 'id' ] ] - MARGIN,
+                                      cy=out_conn_pos[ 1 ] - MARGIN,
                                       r=5,
                                       fill="#ffffff" ) )
         self.connectors.append( svgfig.Line( adjusted[ 0 ],
-                                             adjusted[ 1 ] - margin,
+                                             adjusted[ 1 ] - MARGIN,
                                              in_coords[ 0 ] - 10,
                                              in_coords[ 1 ],
-                                             arrow_end="true" ).SVG() )
+                                             arrow_end="conn_%s" % (len(self.connectors.keys()) + 1) ).SVG() )
 
     def add_steps( self, highlight_errors=False ):
         # Only highlight missing tools if displaying in the tool shed.

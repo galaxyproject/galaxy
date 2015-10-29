@@ -1,16 +1,103 @@
+from __future__ import print_function
 import calendar
+import logging
+from collections import namedtuple
 from datetime import datetime, date, timedelta
-from galaxy.web.base.controller import BaseUIController, web
-from galaxy import model, util
-from galaxy.web.framework.helpers import grids
-from galaxy.model.orm import and_, not_, or_
-import pkg_resources
-pkg_resources.require( "SQLAlchemy >= 0.4" )
+
 import sqlalchemy as sa
+from sqlalchemy import and_, not_, or_
+
+from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, web
+from galaxy.web.framework.helpers import grids
+import re
+from math import ceil, floor
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
-import logging
 log = logging.getLogger( __name__ )
+
+
+class Timer(object):
+    def __init__(self):
+        self.start()
+        self.stop()
+        self.ERROR = self.time_elapsed()
+
+    def start(self):
+        self.start_time = datetime.now()
+
+    def stop(self):
+        try:
+            self.stop_time = datetime.now()
+            self.time_delta = self.stop_time - self.start_time
+            del(self.stop_time)
+            del(self.start_time)
+        except NameError:
+            print("You need to start before you can stop!")
+
+    def time_elapsed(self):
+        try:
+            return_time = self.time_delta - self.ERROR
+        except NameError:
+            print("You need to start and stop before there's an elapsed time!")
+        except AttributeError:
+            return_time = self.time_delta
+
+        return return_time
+
+
+def sorter(default_sort_id, kwd):
+    """
+    Initialize sorting variables
+    """
+    SortSpec = namedtuple('SortSpec', ['sort_id', 'order', 'arrow', 'exc_order'])
+
+    sort_id = kwd.get('sort_id')
+    order = kwd.get('order')
+
+    # Parse the default value
+    if sort_id == "default":
+        sort_id = default_sort_id
+
+    # Create the sort
+    if order == "asc":
+        _order = sa.asc( sort_id )
+    elif order == "desc":
+        _order = sa.desc( sort_id )
+    else:
+        # In case of default
+        order = "desc"
+        _order = sa.desc( sort_id )
+
+    # Create an arrow icon to put beside the ordered column
+    up_arrow = "&#x2191;"
+    down_arrow = "&#x2193;"
+    arrow = " "
+
+    if order == "asc":
+        arrow += down_arrow
+    else:
+        arrow += up_arrow
+
+    return SortSpec(sort_id, order, arrow, _order)
+
+
+def get_spark_time( time_period ):
+    _time_period = 0
+
+    if time_period == "days":
+        _time_period = 1.0
+    elif time_period == "weeks":
+        _time_period = 7.0
+    elif time_period == "months":
+        _time_period = 30.0
+    elif time_period == "years":
+        _time_period = 365.0
+    else:
+        time_period = "days"
+        _time_period = 1.0
+
+    return time_period, _time_period
 
 
 class SpecifiedDateListGrid( grids.Grid ):
@@ -36,6 +123,12 @@ class SpecifiedDateListGrid( grids.Grid ):
 
         def get_value( self, trans, grid, job ):
             return job.tool_id
+
+        def filter( self, trans, user, query, column_filter ):
+            if column_filter is not None:
+                query = query.filter( model.Job.table.c.tool_id == column_filter )
+
+            return query
 
     class CreateTimeColumn( grids.DateTimeColumn ):
 
@@ -151,6 +244,9 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         # We add params to the keyword dict in this method in order to rename the param
         # with an "f-" prefix, simulating filtering by clicking a search link.  We have
         # to take this approach because the "-" character is illegal in HTTP requests.
+        kwd[ 'sort_id' ] = 'default'
+        kwd[ 'order' ] = 'default'
+
         if 'f-specified_date' in kwd and 'specified_date' not in kwd:
             # The user clicked a State link in the Advanced Search box, so 'specified_date'
             # will have been eliminated.
@@ -193,7 +289,42 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                 kwd[ 'f-state' ] = 'error'
             elif operation == "unfinished":
                 kwd[ 'f-state' ] = 'Unfinished'
+            elif operation == "specified_tool_in_error":
+                kwd[ 'f-state' ] = 'error'
+                kwd[ 'f-tool_id' ] = kwd[ 'tool_id' ]
         return self.specified_date_list_grid( trans, **kwd )
+
+    def _calculate_trends_for_jobs( self, jobs_query ):
+        trends = dict()
+        for job in jobs_query.execute():
+            job_day = int(job.date.strftime("%-d")) - 1
+            job_month = int(job.date.strftime("%-m"))
+            job_month_name = job.date.strftime("%B")
+            job_year = job.date.strftime("%Y")
+            key = str( job_month_name + job_year)
+
+            try:
+                trends[key][job_day] += 1
+            except KeyError:
+                job_year = int(job_year)
+                wday, day_range = calendar.monthrange(job_year, job_month)
+                trends[key] = [0] * day_range
+                trends[key][job_day] += 1
+        return trends
+
+    def _calculate_job_table( self, jobs_query ):
+        jobs = []
+        for row in jobs_query.execute():
+            month_name = row.date.strftime("%B")
+            year = int(row.date.strftime("%Y"))
+
+            jobs.append( (
+                row.date.strftime( "%Y-%m" ),
+                row.total_jobs,
+                month_name,
+                year
+            ) )
+        return jobs
 
     @web.expose
     def specified_month_all( self, trans, **kwd ):
@@ -201,9 +332,33 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         Queries the DB for all jobs in given month, defaults to current month.
         """
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'date', kwd )
+        offset = 0
+        limit = 10
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -211,12 +366,14 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         # If specified_date is not received, we'll default to the current month
         specified_date = kwd.get( 'specified_date', datetime.utcnow().strftime( "%Y-%m-%d" ) )
         specified_month = specified_date[ :7 ]
+
         year, month = map( int, specified_month.split( "-" ) )
         start_date = date( year, month, 1 )
         end_date = start_date + timedelta( days=calendar.monthrange( year, month )[1] )
         month_label = start_date.strftime( "%B" )
         year_label = start_date.strftime( "%Y" )
 
+        # Use to make the page table
         month_jobs = sa.select( ( sa.func.date( model.Job.table.c.create_time ).label( 'date' ),
                                   sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                                 whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
@@ -224,20 +381,51 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                      model.Job.table.c.create_time < end_date ),
                                 from_obj=[ model.Job.table ],
                                 group_by=[ 'date' ],
-                                order_by=[ sa.desc( 'date' ) ] )
+                                order_by=[ _order ],
+                                offset=offset,
+                                limit=limit)
+
+        # Use to make trendline
+        all_jobs = sa.select( ( model.Job.table.c.create_time.label('date'), model.Job.table.c.id.label('id') ),
+                             whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
+                                                  model.Job.table.c.create_time >= start_date,
+                                                  model.Job.table.c.create_time < end_date ) )
+
+        trends = dict()
+        for job in all_jobs.execute():
+            job_hour = int(job.date.strftime("%-H"))
+            job_day = job.date.strftime("%d")
+
+            try:
+                trends[job_day][job_hour] += 1
+            except KeyError:
+                trends[job_day] = [0] * 24
+                trends[job_day][job_hour] += 1
 
         jobs = []
         for row in month_jobs.execute():
-            jobs.append( ( row.date.strftime( "%A" ),
-                           row.date.strftime( "%d" ),
+            row_dayname = row.date.strftime("%A")
+            row_day = row.date.strftime("%d")
+
+            jobs.append( ( row_dayname,
+                           row_day,
                            row.total_jobs,
                            row.date
                            ) )
+
+        pages_found = ceil(len(jobs) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
+
         return trans.fill_template( '/webapps/reports/jobs_specified_month_all.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     month_label=month_label,
                                     year_label=year_label,
                                     month=month,
+                                    page_specs=page_specs,
                                     jobs=jobs,
+                                    trends=trends,
                                     is_user_jobs_only=monitor_user_id,
                                     message=message )
 
@@ -247,8 +435,33 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         Queries the DB for the user jobs in error.
         """
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'date', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+        offset = 0
+        limit = 10
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         # In case we don't know which is the monitor user we will query for all jobs instead
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -270,21 +483,54 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                                               model.Job.table.c.create_time < end_date ),
                                          from_obj=[ model.Job.table ],
                                          group_by=[ 'date' ],
-                                         order_by=[ sa.desc( 'date' ) ] )
+                                         order_by=[ _order ],
+                                         offset=offset,
+                                         limit=limit )
+
+        # Use to make trendline
+        all_jobs_in_error = sa.select( ( model.Job.table.c.create_time.label('date'), model.Job.table.c.id.label('id') ),
+                                      whereclause=sa.and_( model.Job.table.c.user_id != monitor_user_id,
+                                                           model.Job.table.c.state == 'error',
+                                                           model.Job.table.c.create_time >= start_date,
+                                                           model.Job.table.c.create_time < end_date ) )
+
+        trends = dict()
+        for job in all_jobs_in_error.execute():
+            job_hour = int(job.date.strftime("%-H"))
+            job_day = job.date.strftime("%d")
+
+            try:
+                trends[job_day][job_hour] += 1
+            except KeyError:
+                trends[job_day] = [0] * 24
+                trends[job_day][job_hour] += 1
 
         jobs = []
         for row in month_jobs_in_error.execute():
-            jobs.append( ( row.date.strftime( "%A" ),
-                           row.date,
+            row_dayname = row.date.strftime("%A")
+            row_day = row.date.strftime("%d")
+
+            jobs.append( ( row_dayname,
+                           row_day,
                            row.total_jobs,
-                           row.date.strftime( "%d" ) ) )
+                           row.date
+                           ) )
+
+        pages_found = ceil(len(jobs) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
+
         return trans.fill_template( '/webapps/reports/jobs_specified_month_in_error.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     month_label=month_label,
                                     year_label=year_label,
                                     month=month,
                                     jobs=jobs,
+                                    trends=trends,
                                     message=message,
-                                    is_user_jobs_only=monitor_user_id )
+                                    is_user_jobs_only=monitor_user_id,
+                                    page_specs=page_specs )
 
     @web.expose
     def per_month_all( self, trans, **kwd ):
@@ -293,32 +539,66 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         """
 
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'date', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+        offset = 0
+        limit = 10
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
+        # Use to make the page table
         jobs_by_month = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
-                                     sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                                   sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                                    whereclause=model.Job.table.c.user_id != monitor_user_id,
                                    from_obj=[ model.Job.table ],
                                    group_by=self.group_by_month( model.Job.table.c.create_time ),
-                                   order_by=[ sa.desc( 'date' ) ] )
+                                   order_by=[ _order ],
+                                   offset=offset,
+                                   limit=limit )
 
-        jobs = []
-        for row in jobs_by_month.execute():
-            jobs.append( (
-                row.date.strftime( "%Y-%m" ),
-                row.total_jobs,
-                row.date.strftime( "%B" ),
-                row.date.strftime( "%y" )
-            ) )
+        # Use to make sparkline
+        all_jobs = sa.select( ( self.select_day(model.Job.table.c.create_time).label('date'),
+                               model.Job.table.c.id.label('id') ) )
+
+        trends = self._calculate_trends_for_jobs( all_jobs )
+        jobs = self._calculate_job_table( jobs_by_month )
+
+        pages_found = ceil(len(jobs) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
 
         return trans.fill_template( '/webapps/reports/jobs_per_month_all.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    trends=trends,
                                     jobs=jobs,
                                     is_user_jobs_only=monitor_user_id,
-                                    message=message )
+                                    message=message,
+                                    page_specs=page_specs )
 
     @web.expose
     def per_month_in_error( self, trans, **kwd ):
@@ -327,43 +607,120 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
         """
 
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'date', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+        offset = 0
+        limit = 10
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
+        # Use to make the page table
         jobs_in_error_by_month = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                                               sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                                             whereclause=sa.and_( model.Job.table.c.state == 'error',
                                                                  model.Job.table.c.user_id != monitor_user_id ),
                                             from_obj=[ model.Job.table ],
                                             group_by=self.group_by_month( model.Job.table.c.create_time ),
-                                            order_by=[ sa.desc( 'date' ) ] )
+                                            order_by=[ _order ],
+                                            offset=offset,
+                                            limit=limit )
 
-        jobs = []
-        for row in jobs_in_error_by_month.execute():
-            jobs.append( ( row.date.strftime( "%Y-%m" ),
-                           row.total_jobs,
-                           row.date.strftime( "%B" ),
-                           row.date.strftime( "%y" ) ) )
+        # Use to make trendline
+        all_jobs = sa.select( ( self.select_day(model.Job.table.c.create_time).label('date'),
+                               model.Job.table.c.id.label('id') ),
+                             whereclause=sa.and_( model.Job.table.c.state == 'error',
+                                                 model.Job.table.c.user_id != monitor_user_id ) )
+
+        trends = self._calculate_trends_for_jobs( all_jobs )
+        jobs = self._calculate_job_table( jobs_in_error_by_month  )
+
+        pages_found = ceil(len(jobs) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
+
         return trans.fill_template( '/webapps/reports/jobs_per_month_in_error.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    trends=trends,
                                     jobs=jobs,
                                     message=message,
-                                    is_user_jobs_only=monitor_user_id )
+                                    is_user_jobs_only=monitor_user_id,
+                                    page_specs=page_specs,
+                                    offset=offset,
+                                    limit=limit )
 
     @web.expose
     def per_user( self, trans, **kwd ):
+        total_time = Timer()
+        q_time = Timer()
+
+        total_time.start()
         params = util.Params( kwd )
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'user_email', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+        time_period = kwd.get('spark_time')
+        time_period, _time_period = get_spark_time( time_period )
+        spark_limit = 30
+        offset = 0
+        limit = 10
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         jobs = []
         jobs_per_user = sa.select( ( model.User.table.c.email.label( 'user_email' ),
                                      sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
                                    from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ],
                                    group_by=[ 'user_email' ],
-                                   order_by=[ sa.desc( 'total_jobs' ), 'user_email' ] )
+                                   order_by=[ _order ],
+                                   offset=offset,
+                                   limit=limit )
+
+        q_time.start()
         for row in jobs_per_user.execute():
             if ( row.user_email is None ):
                 jobs.append( ( 'Anonymous',
@@ -373,24 +730,104 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
             else:
                 jobs.append( ( row.user_email,
                                row.total_jobs ) )
+        q_time.stop()
+        query1time = q_time.time_elapsed()
+
+        users = sa.select( [model.User.table.c.email],
+                           from_obj=[ model.User.table ] )
+
+        all_jobs_per_user = sa.select( ( model.Job.table.c.id.label( 'id' ),
+                                        model.Job.table.c.create_time.label( 'date' ),
+                                        model.User.table.c.email.label( 'user_email' ) ),
+                                      from_obj=[ sa.outerjoin( model.Job.table, model.User.table ) ],
+                                      whereclause=model.User.table.c.email.in_( users ) )
+
+        currday = datetime.today()
+        trends = dict()
+        q_time.start()
+        for job in all_jobs_per_user.execute():
+            if job.user_email is None:
+                curr_user = 'Anonymous'
+            else:
+                curr_user = re.sub(r'\W+', '', job.user_email)
+
+            try:
+                day = currday - job.date
+            except TypeError:
+                day = currday - datetime.date(job.date)
+
+            day = day.days
+            container = floor(day / _time_period)
+            container = int(container)
+            try:
+                if container < spark_limit:
+                    trends[curr_user][container] += 1
+            except KeyError:
+                trends[curr_user] = [0] * spark_limit
+                if container < spark_limit:
+                    trends[curr_user][container] += 1
+        q_time.stop()
+        query2time = q_time.time_elapsed()
+
+        pages_found = ceil(len(jobs) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
+
+        total_time.stop()
+        ttime = total_time.time_elapsed()
         return trans.fill_template( '/webapps/reports/jobs_per_user.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    spark_limit=spark_limit,
+                                    time_period=time_period,
+                                    q1time=query1time,
+                                    q2time=query2time,
+                                    ttime=ttime,
+                                    trends=trends,
                                     jobs=jobs,
-                                    message=message )
+                                    message=message,
+                                    page_specs=page_specs )
 
     @web.expose
     def user_per_month( self, trans, **kwd ):
         params = util.Params( kwd )
         message = ''
+
         email = util.restore_text( params.get( 'email', '' ) )
+        specs = sorter( 'date', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+
         q = sa.select( ( self.select_month( model.Job.table.c.create_time ).label( 'date' ),
                          sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
-                       whereclause=sa.and_( model.Job.table.c.session_id == model.GalaxySession.table.c.id,
-                                            model.GalaxySession.table.c.user_id == model.User.table.c.id,
-                                            model.User.table.c.email == email
-                                            ),
+                       whereclause=model.User.table.c.email == email,
                        from_obj=[ sa.join( model.Job.table, model.User.table ) ],
                        group_by=self.group_by_month( model.Job.table.c.create_time ),
-                       order_by=[ sa.desc( 'date' ) ] )
+                       order_by=[ _order ] )
+
+        all_jobs_per_user = sa.select( ( model.Job.table.c.create_time.label( 'date' ),
+                                       model.Job.table.c.id.label( 'job_id' ) ),
+                                       whereclause=sa.and_( model.User.table.c.email == email ),
+                                       from_obj=[ sa.join( model.Job.table, model.User.table ) ] )
+
+        trends = dict()
+        for job in all_jobs_per_user.execute():
+            job_day = int(job.date.strftime("%-d")) - 1
+            job_month = int(job.date.strftime("%-m"))
+            job_month_name = job.date.strftime("%B")
+            job_year = job.date.strftime("%Y")
+            key = str( job_month_name + job_year)
+
+            try:
+                trends[key][job_day] += 1
+            except KeyError:
+                job_year = int(job_year)
+                wday, day_range = calendar.monthrange(job_year, job_month)
+                trends[key] = [0] * day_range
+                trends[key][job_day] += 1
+
         jobs = []
         for row in q.execute():
             jobs.append( ( row.date.strftime( "%Y-%m" ),
@@ -398,15 +835,47 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_user_per_month.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    id=kwd.get('id'),
+                                    trends=trends,
                                     email=util.sanitize_text( email ),
                                     jobs=jobs, message=message )
 
     @web.expose
     def per_tool( self, trans, **kwd ):
         message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'tool_id', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+        time_period = kwd.get('spark_time')
+        time_period, _time_period = get_spark_time( time_period )
+        spark_limit = 30
+        offset = 0
+        limit = 10
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
 
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
@@ -417,14 +886,152 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                        whereclause=model.Job.table.c.user_id != monitor_user_id,
                        from_obj=[ model.Job.table ],
                        group_by=[ 'tool_id' ],
-                       order_by=[ 'tool_id' ] )
+                       order_by=[ _order ],
+                       offset=offset,
+                       limit=limit )
+
+        all_jobs_per_tool = sa.select( ( model.Job.table.c.tool_id.label( 'tool_id' ),
+                                        model.Job.table.c.id.label( 'id' ),
+                                        self.select_day( model.Job.table.c.create_time ).label( 'date' ) ),
+                                      whereclause=model.Job.table.c.user_id != monitor_user_id,
+                                      from_obj=[ model.Job.table ] )
+
+        currday = date.today()
+        trends = dict()
+        for job in all_jobs_per_tool.execute():
+            curr_tool = re.sub(r'\W+', '', str(job.tool_id))
+            try:
+                day = currday - job.date
+            except TypeError:
+                day = currday - datetime.date(job.date)
+
+            day = day.days
+            container = floor(day / _time_period)
+            container = int(container)
+            try:
+                if container < spark_limit:
+                    trends[curr_tool][container] += 1
+            except KeyError:
+                trends[curr_tool] = [0] * spark_limit
+                if container < spark_limit:
+                    trends[curr_tool][container] += 1
+
         for row in q.execute():
             jobs.append( ( row.tool_id,
                            row.total_jobs ) )
+
+        pages_found = ceil(len(jobs) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
+
         return trans.fill_template( '/webapps/reports/jobs_per_tool.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    spark_limit=spark_limit,
+                                    time_period=time_period,
+                                    trends=trends,
                                     jobs=jobs,
                                     message=message,
-                                    is_user_jobs_only=monitor_user_id )
+                                    is_user_jobs_only=monitor_user_id,
+                                    page_specs=page_specs )
+
+    @web.expose
+    def errors_per_tool( self, trans, **kwd ):
+        """
+        Queries the DB for user jobs in error. Filters out monitor jobs.
+        """
+
+        message = ''
+        PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
+
+        params = util.Params( kwd )
+        monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
+        specs = sorter( 'tool_id', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
+        time_period = kwd.get('spark_time')
+        time_period, _time_period = get_spark_time( time_period )
+        spark_limit = 30
+        offset = 0
+        limit = 10
+
+        if "entries" in kwd:
+            entries = int(kwd.get( 'entries' ))
+        else:
+            entries = 10
+        limit = entries * 4
+
+        if "offset" in kwd:
+            offset = int(kwd.get( 'offset' ))
+        else:
+            offset = 0
+
+        if "page" in kwd:
+            page = int(kwd.get( 'page' ))
+        else:
+            page = 1
+
+        # In case we don't know which is the monitor user we will query for all jobs
+        monitor_user_id = get_monitor_id( trans, monitor_email )
+
+        jobs_in_error_per_tool = sa.select( ( model.Job.table.c.tool_id.label( 'tool_id' ),
+                                              sa.func.count( model.Job.table.c.id ).label( 'total_jobs' ) ),
+                                            whereclause=sa.and_( model.Job.table.c.state == 'error',
+                                                                 model.Job.table.c.user_id != monitor_user_id ),
+                                            from_obj=[ model.Job.table ],
+                                            group_by=[ 'tool_id' ],
+                                            order_by=[ _order ],
+                                            offset=offset,
+                                            limit=limit )
+
+        all_jobs_per_tool_errors = sa.select( ( self.select_day( model.Job.table.c.create_time ).label( 'date' ),
+                                              model.Job.table.c.id.label( 'id' ),
+                                              model.Job.table.c.tool_id.label( 'tool_id' ) ),
+                                              whereclause=sa.and_( model.Job.table.c.state == 'error',
+                                                                   model.Job.table.c.user_id != monitor_user_id ),
+                                              from_obj=[ model.Job.table ]
+                                              )
+
+        currday = date.today()
+        trends = dict()
+        for job in all_jobs_per_tool_errors.execute():
+            curr_tool = re.sub(r'\W+', '', str(job.tool_id))
+            try:
+                day = currday - job.date
+            except TypeError:
+                day = currday - datetime.date(job.date)
+
+            # convert day into days/weeks/months/years
+            day = day.days
+            container = floor(day / _time_period)
+            container = int(container)
+            try:
+                if container < spark_limit:
+                    trends[curr_tool][container] += 1
+            except KeyError:
+                trends[curr_tool] = [0] * spark_limit
+                if day < spark_limit:
+                    trends[curr_tool][container] += 1
+        jobs = []
+        for row in jobs_in_error_per_tool.execute():
+            jobs.append( ( row.total_jobs, row.tool_id ) )
+
+        pages_found = ceil(len(jobs) / float(entries))
+        page_specs = PageSpec(entries, offset, page, pages_found)
+
+        return trans.fill_template( '/webapps/reports/jobs_errors_per_tool.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
+                                    spark_limit=spark_limit,
+                                    time_period=time_period,
+                                    trends=trends,
+                                    jobs=jobs,
+                                    message=message,
+                                    is_user_jobs_only=monitor_user_id,
+                                    page_specs=page_specs )
 
     @web.expose
     def tool_per_month( self, trans, **kwd ):
@@ -432,7 +1039,11 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
 
         params = util.Params( kwd )
         monitor_email = params.get( 'monitor_email', 'monitor@bx.psu.edu' )
-
+        specs = sorter( 'date', kwd )
+        sort_id = specs.sort_id
+        order = specs.order
+        arrow = specs.arrow
+        _order = specs.exc_order
         # In case we don't know which is the monitor user we will query for all jobs
         monitor_user_id = get_monitor_id( trans, monitor_email )
 
@@ -444,7 +1055,31 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                                             model.Job.table.c.user_id != monitor_user_id ),
                        from_obj=[ model.Job.table ],
                        group_by=self.group_by_month( model.Job.table.c.create_time ),
-                       order_by=[ sa.desc( 'date' ) ] )
+                       order_by=[ _order ] )
+
+        # Use to make sparkline
+        all_jobs_for_tool = sa.select( ( self.select_month(model.Job.table.c.create_time).label('month'),
+                                        self.select_day(model.Job.table.c.create_time).label('day'),
+                                        model.Job.table.c.id.label('id') ),
+                                      whereclause=sa.and_( model.Job.table.c.tool_id == tool_id,
+                                                          model.Job.table.c.user_id != monitor_user_id ),
+                             from_obj=[ model.Job.table ] )
+        trends = dict()
+        for job in all_jobs_for_tool.execute():
+            job_day = int(job.day.strftime("%-d")) - 1
+            job_month = int(job.month.strftime("%-m"))
+            job_month_name = job.month.strftime("%B")
+            job_year = job.month.strftime("%Y")
+            key = str( job_month_name + job_year)
+
+            try:
+                trends[key][job_day] += 1
+            except KeyError:
+                job_year = int(job_year)
+                wday, day_range = calendar.monthrange(job_year, job_month)
+                trends[key] = [0] * day_range
+                trends[key][job_day] += 1
+
         jobs = []
         for row in q.execute():
             jobs.append( ( row.date.strftime( "%Y-%m" ),
@@ -452,8 +1087,12 @@ class Jobs( BaseUIController, ReportQueryBuilder ):
                            row.date.strftime( "%B" ),
                            row.date.strftime( "%Y" ) ) )
         return trans.fill_template( '/webapps/reports/jobs_tool_per_month.mako',
+                                    order=order,
+                                    arrow=arrow,
+                                    sort_id=sort_id,
                                     specified_date=specified_date,
                                     tool_id=tool_id,
+                                    trends=trends,
                                     jobs=jobs,
                                     message=message,
                                     is_user_jobs_only=monitor_user_id )

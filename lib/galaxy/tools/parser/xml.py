@@ -10,6 +10,14 @@ from .interface import (
     PagesSource,
     PageSource,
     InputSource,
+    ToolStdioExitCode,
+    ToolStdioRegex,
+    TestCollectionDef,
+    TestCollectionOutputDef,
+)
+from .util import (
+    error_on_exit_code,
+    aggressive_error_checks,
 )
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
@@ -17,6 +25,7 @@ from galaxy.tools.deps import requirements
 import galaxy.tools
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters import dynamic_options
+from galaxy.tools.parameters.output import ToolOutputActionGroup
 
 log = logging.getLogger( __name__ )
 
@@ -80,6 +89,22 @@ class XmlToolSource(ToolSource):
     def parse_command(self):
         command_el = self._command_el
         return ( ( command_el is not None ) and command_el.text ) or None
+
+    def parse_environment_variables(self):
+        environment_variables_el = self.root.find("environment_variables")
+        if environment_variables_el is None:
+            return []
+
+        environment_variables = []
+        for environment_variable_el in environment_variables_el.findall("environment_variable"):
+            definition = {
+                "name": environment_variable_el.get("name"),
+                "template": environment_variable_el.text,
+            }
+            environment_variables.append(
+                definition
+            )
+        return environment_variables
 
     def parse_interpreter(self):
         command_el = self._command_el
@@ -150,6 +175,7 @@ class XmlToolSource(ToolSource):
 
         for collection_elem in out_elem.findall("collection"):
             name = collection_elem.get( "name" )
+            label = xml_text( collection_elem, "label" )
             default_format = collection_elem.get( "format", "data" )
             collection_type = collection_elem.get( "type", None )
             structured_like = collection_elem.get( "structured_like", None )
@@ -160,6 +186,7 @@ class XmlToolSource(ToolSource):
                 inherit_metadata = string_as_bool( collection_elem.get( "inherit_metadata", None ) )
             default_format_source = collection_elem.get( "format_source", None )
             default_metadata_source = collection_elem.get( "metadata_source", "" )
+            filters = collection_elem.findall( 'filter' )
 
             dataset_collectors = None
             if collection_elem.find( "discover_datasets" ) is not None:
@@ -172,6 +199,8 @@ class XmlToolSource(ToolSource):
             output_collection = galaxy.tools.ToolOutputCollection(
                 name,
                 structure,
+                label=label,
+                filters=filters,
                 default_format=default_format,
                 inherit_format=inherit_format,
                 inherit_metadata=inherit_metadata,
@@ -209,7 +238,13 @@ class XmlToolSource(ToolSource):
         default_metadata_source="",
     ):
         output = galaxy.tools.ToolOutput( data_elem.get("name") )
-        output.format = data_elem.get("format", default_format)
+        output_format = data_elem.get("format", default_format)
+        auto_format = string_as_bool( data_elem.get( "auto_format", "false" ) )
+        if auto_format and output_format != "data":
+            raise ValueError("Setting format and auto_format is not supported at this time.")
+        elif auto_format:
+            output_format = "_sniff_"
+        output.format = output_format
         output.change_format = data_elem.findall("change_format")
         output.format_source = data_elem.get("format_source", default_format_source)
         output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
@@ -220,13 +255,25 @@ class XmlToolSource(ToolSource):
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
         output.hidden = string_as_bool( data_elem.get("hidden", "") )
-        output.actions = galaxy.tools.ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
+        output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
         output.dataset_collectors = output_collect.dataset_collectors_from_elem( data_elem )
         return output
 
     def parse_stdio(self):
-        parser = StdioParser(self.root)
-        return parser.stdio_exit_codes, parser.stdio_regexes
+        command_el = self._command_el
+        detect_errors = None
+        if command_el is not None:
+            detect_errors = command_el.get("detect_errors")
+        if detect_errors and detect_errors != "default":
+            if detect_errors == "exit_code":
+                return error_on_exit_code()
+            elif detect_errors == "aggressive":
+                return aggressive_error_checks()
+            else:
+                raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
+        else:
+            parser = StdioParser(self.root)
+            return parser.stdio_exit_codes, parser.stdio_regexes
 
     def parse_help(self):
         help_elem = self.root.find( 'help' )
@@ -253,6 +300,7 @@ def _test_elem_to_dict(test_elem, i):
         outputs=__parse_output_elems(test_elem),
         output_collections=__parse_output_collection_elems(test_elem),
         inputs=__parse_input_elems(test_elem, i),
+        expect_num_outputs=test_elem.get("expect_num_outputs"),
         command=__parse_assert_list_from_elem( test_elem.find("assert_command") ),
         stdout=__parse_assert_list_from_elem( test_elem.find("assert_stdout") ),
         stderr=__parse_assert_list_from_elem( test_elem.find("assert_stderr") ),
@@ -312,17 +360,22 @@ def __parse_output_collection_elem( output_collection_elem ):
     name = attrib.pop( 'name', None )
     if name is None:
         raise Exception( "Test output collection does not have a 'name'" )
+    element_tests = __parse_element_tests( output_collection_elem )
+    return TestCollectionOutputDef( name, attrib, element_tests )
+
+
+def __parse_element_tests( parent_element ):
     element_tests = {}
-    for element in output_collection_elem.findall("element"):
+    for element in parent_element.findall("element"):
         element_attrib = dict( element.attrib )
         identifier = element_attrib.pop( 'name', None )
         if identifier is None:
             raise Exception( "Test primary dataset does not have a 'identifier'" )
-        element_tests[ identifier ] = __parse_test_attributes( element, element_attrib )
-    return galaxy.tools.TestCollectionOutputDef( name, attrib, element_tests )
+        element_tests[ identifier ] = __parse_test_attributes( element, element_attrib, parse_elements=True )
+    return element_tests
 
 
-def __parse_test_attributes( output_elem, attrib ):
+def __parse_test_attributes( output_elem, attrib, parse_elements=False ):
     assert_list = __parse_assert_list( output_elem )
     file = attrib.pop( 'file', None )
     # File no longer required if an list of assertions was present.
@@ -342,11 +395,18 @@ def __parse_test_attributes( output_elem, attrib ):
     metadata = {}
     for metadata_elem in output_elem.findall( 'metadata' ):
         metadata[ metadata_elem.get('name') ] = metadata_elem.get( 'value' )
-    if not (assert_list or file or extra_files or metadata):
-        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, etc...)")
+    md5sum = attrib.get("md5", None)
+    element_tests = {}
+    if parse_elements:
+        element_tests = __parse_element_tests( output_elem )
+
+    if not (assert_list or file or extra_files or metadata or md5sum or element_tests):
+        raise Exception( "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or md5 tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
+    attributes['md5'] = md5sum
+    attributes['elements'] = element_tests
     return file, attributes
 
 
@@ -418,6 +478,13 @@ def __expand_input_elems( root_elem, prefix="" ):
         __pull_up_params( root_elem, cond_elem )
         root_elem.remove( cond_elem )
 
+    section_elems = root_elem.findall( 'section' )
+    for section_elem in section_elems:
+        new_prefix = __prefix_join( prefix, section_elem.get( "name" ) )
+        __expand_input_elems( section_elem, new_prefix )
+        __pull_up_params( root_elem, section_elem )
+        root_elem.remove( section_elem )
+
 
 def __append_prefix_to_params( elem, prefix ):
     for param_elem in elem.findall( 'param' ):
@@ -484,7 +551,7 @@ def __parse_param_elem( param_elem, i=0 ):
             elif child.tag == 'edit_attributes':
                 attrib['edit_attributes'].append( child )
             elif child.tag == 'collection':
-                attrib[ 'collection' ] = galaxy.tools.TestCollectionDef( child, __parse_param_elem )
+                attrib[ 'collection' ] = TestCollectionDef( child, __parse_param_elem )
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
@@ -524,21 +591,21 @@ class StdioParser(object):
             # attribute. If there is neither a range nor a value, then print
             # a warning and skip to the next.
             for exit_code_elem in ( stdio_elem.findall( "exit_code" ) ):
-                exit_code = galaxy.tools.ToolStdioExitCode()
+                exit_code = ToolStdioExitCode()
                 # Each exit code has an optional description that can be
                 # part of the "desc" or "description" attributes:
                 exit_code.desc = exit_code_elem.get( "desc" )
-                if None == exit_code.desc:
+                if exit_code.desc is None:
                     exit_code.desc = exit_code_elem.get( "description" )
                 # Parse the error level:
                 exit_code.error_level = (
                     self.parse_error_level( exit_code_elem.get( "level" )))
                 code_range = exit_code_elem.get( "range", "" )
-                if None == code_range:
+                if code_range is None:
                     code_range = exit_code_elem.get( "value", "" )
-                if None == code_range:
-                    log.warning( "Tool stdio exit codes must have "
-                                 + "a range or value" )
+                if code_range is None:
+                    log.warning( "Tool stdio exit codes must have " +
+                                 "a range or value" )
                     continue
                 # Parse the range. We look for:
                 #   :Y
@@ -551,11 +618,11 @@ class StdioParser(object):
                 code_range = re.sub( "\s", "", code_range )
                 code_ranges = re.split( ":", code_range )
                 if ( len( code_ranges ) == 2 ):
-                    if ( None == code_ranges[0] or '' == code_ranges[0] ):
+                    if ( code_ranges[0] is None or '' == code_ranges[0] ):
                         exit_code.range_start = float( "-inf" )
                     else:
                         exit_code.range_start = int( code_ranges[0] )
-                    if ( None == code_ranges[1] or '' == code_ranges[1] ):
+                    if ( code_ranges[1] is None or '' == code_ranges[1] ):
                         exit_code.range_end = float( "inf" )
                     else:
                         exit_code.range_end = int( code_ranges[1] )
@@ -581,14 +648,14 @@ class StdioParser(object):
                 # So at least warn about this situation:
                 if ( isinf( exit_code.range_start ) and
                      isinf( exit_code.range_end ) ):
-                    log.warning( "Tool exit_code range %s will match on "
-                                 + "all exit codes" % code_range )
+                    log.warning( "Tool exit_code range %s will match on " +
+                                 "all exit codes" % code_range )
                 self.stdio_exit_codes.append( exit_code )
         except Exception:
-            log.error( "Exception in parse_stdio_exit_codes! "
-                       + str(sys.exc_info()) )
+            log.error( "Exception in parse_stdio_exit_codes! " +
+                       str(sys.exc_info()) )
             trace = sys.exc_info()[2]
-            if ( None != trace ):
+            if trace is not None:
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
 
@@ -604,17 +671,17 @@ class StdioParser(object):
             # will have "match" and "source" (or "src") attributes.
             for regex_elem in ( stdio_elem.findall( "regex" ) ):
                 # TODO: Fill in ToolStdioRegex
-                regex = galaxy.tools.ToolStdioRegex()
+                regex = ToolStdioRegex()
                 # Each regex has an optional description that can be
                 # part of the "desc" or "description" attributes:
                 regex.desc = regex_elem.get( "desc" )
-                if None == regex.desc:
+                if regex.desc is None:
                     regex.desc = regex_elem.get( "description" )
                 # Parse the error level
                 regex.error_level = (
                     self.parse_error_level( regex_elem.get( "level" ) ) )
                 regex.match = regex_elem.get( "match", "" )
-                if None == regex.match:
+                if regex.match is None:
                     # TODO: Convert the offending XML element to a string
                     log.warning( "Ignoring tool's stdio regex element %s - "
                                  "the 'match' attribute must exist" )
@@ -625,11 +692,11 @@ class StdioParser(object):
                 # Look for a comma and then look for "err", "error", "out",
                 # and "output":
                 output_srcs = regex_elem.get( "src" )
-                if None == output_srcs:
+                if output_srcs is None:
                     output_srcs = regex_elem.get( "source" )
-                if None == output_srcs:
+                if output_srcs is None:
                     output_srcs = regex_elem.get( "sources" )
-                if None == output_srcs:
+                if output_srcs is None:
                     output_srcs = "output,error"
                 output_srcs = re.sub( "\s", "", output_srcs )
                 src_list = re.split( ",", output_srcs )
@@ -653,10 +720,10 @@ class StdioParser(object):
                         regex.stderr_match = True
                 self.stdio_regexes.append( regex )
         except Exception:
-            log.error( "Exception in parse_stdio_exit_codes! "
-                       + str(sys.exc_info()) )
+            log.error( "Exception in parse_stdio_exit_codes! " +
+                       str(sys.exc_info()) )
             trace = sys.exc_info()[2]
-            if ( None != trace ):
+            if trace is not None:
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
 
@@ -680,10 +747,10 @@ class StdioParser(object):
                     log.debug( "Tool %s: error level %s did not match log/warning/fatal" %
                                ( self.id, err_level ) )
         except Exception:
-            log.error( "Exception in parse_error_level "
-                       + str(sys.exc_info() ) )
+            log.error( "Exception in parse_error_level " +
+                       str(sys.exc_info() ) )
             trace = sys.exc_info()[2]
-            if ( None != trace ):
+            if trace is not None:
                 trace_msg = repr( traceback.format_tb( trace ) )
                 log.error( "Traceback: %s" % trace_msg )
         return return_level

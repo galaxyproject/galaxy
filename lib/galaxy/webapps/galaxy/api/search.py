@@ -9,6 +9,7 @@ from galaxy.exceptions import ItemAccessibilityException
 
 log = logging.getLogger( __name__ )
 
+
 class SearchController( BaseAPIController, SharableItemSecurityMixin ):
 
     @web.expose_api
@@ -24,14 +25,14 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
             try:
                 query = se.query(query_txt)
             except Exception, e:
-                return {'error' : str(e)}
+                return {'error': str(e)}
             if query is not None:
                 query.decode_query_ids(trans)
                 current_user_roles = trans.get_current_user_roles()
                 try:
                     results = query.process(trans)
                 except Exception, e:
-                    return {'error' : str(e)}
+                    return {'error': str(e)}
                 for item in results:
                     append = False
                     if trans.user_is_admin():
@@ -49,7 +50,7 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                                     append = True
                             except ItemAccessibilityException:
                                 append = False
-                        elif type ( item ) in [ trans.app.model.PageRevision ]:
+                        elif type( item ) in [ trans.app.model.PageRevision ]:
                             try:
                                 if self.security_check( trans, item.page, False, True):
                                     append = True
@@ -62,4 +63,4 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                     if append:
                         row = query.item_to_api_value(item)
                         out.append( self.encode_all_ids( trans, row, True) )
-        return { 'results' : out }
+        return { 'results': out }

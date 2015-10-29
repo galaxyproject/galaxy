@@ -1,4 +1,4 @@
-<tool id="Paste1" name="Paste">
+<tool id="Paste1" name="Paste" version="1.0.0">
   <description>two files side by side</description>
   <command interpreter="perl">pasteWrapper.pl $input1 $input2 $delimiter $out_file1</command>
   <inputs>
@@ -47,7 +47,7 @@ This tool merges two datasets side by side. If the first (left) dataset contains
 **Example**
 
 First dataset::
-  
+
     a 1
     a 2
     a 3

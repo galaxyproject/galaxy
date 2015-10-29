@@ -1,7 +1,5 @@
-// dependencies
+/** This renders the content of the settings popup, allowing users to specify flags i.e. for space-to-tab conversion **/
 define(['utils/utils'], function(Utils) {
-
-// item view
 return Backbone.View.extend({
     // options
     options: {
@@ -9,7 +7,7 @@ return Backbone.View.extend({
         class_uncheck   : 'upload-icon-button fa fa-square-o'
     },
 
-    // render
+    // initialize
     initialize: function(app) {
         // link app
         this.app = app;
@@ -23,13 +21,13 @@ return Backbone.View.extend({
         // link model
         this.model = this.app.model;
 
-        // ui event: space to tabs
-        this.$el.find('#upload-space-to-tabs').on('click', function() {
-            self._switchState('#upload-space-to-tabs', 'space_to_tabs');
+        // ui event: space-to-tab
+        this.$('#upload-space-to-tab').on('click', function() {
+            self._switchState('#upload-space-to-tab', 'space_to_tab');
         });
 
-        // ui event: to posix
-        this.$el.find('#upload-to-posix-lines').on('click', function() {
+        // ui event: to-posix-lines
+        this.$('#upload-to-posix-lines').on('click', function() {
             self._switchState('#upload-to-posix-lines', 'to_posix_lines');
         });
 
@@ -45,12 +43,12 @@ return Backbone.View.extend({
     // render
     render: function() {
         // render states
-        this._renderState('#upload-space-to-tabs', this.model.get('space_to_tabs'));
+        this._renderState('#upload-space-to-tab', this.model.get('space_to_tab'));
         this._renderState('#upload-to-posix-lines', this.model.get('to_posix_lines'));
 
         // disable options
-        var $cover = this.$el.find('#upload-settings-cover');
-        if (this.model.get('status') != 'init') {
+        var $cover = this.$('#upload-settings-cover');
+        if (!this.model.get('enabled')) {
             $cover.show();
         } else {
             $cover.hide();
@@ -59,7 +57,7 @@ return Backbone.View.extend({
 
     // switch state
     _switchState: function (element_id, parameter_id) {
-        if (this.model.get('status') == 'init') {
+        if (this.model.get('enabled')) {
             var checked = !this.model.get(parameter_id);
             this.model.set(parameter_id, checked);
             this._renderState(element_id, checked);
@@ -68,8 +66,7 @@ return Backbone.View.extend({
 
     // render state
     _renderState: function (element_id, checked) {
-        // swith icon class
-        var $it = this.$el.find(element_id);
+        var $it = this.$(element_id);
         $it.removeClass();
         if (checked) {
             $it.addClass(this.options.class_check);
@@ -82,10 +79,10 @@ return Backbone.View.extend({
     _template: function() {
         return  '<div class="upload-settings" style="position: relative;">' +
                     '<div id="upload-settings-cover" class="upload-settings-cover"/>' +
-                    '<table class="table table-striped">' +
+                    '<table class="ui-table-striped">' +
                         '<tbody>' +
                             '<tr>' +
-                                '<td><div id="upload-space-to-tabs"/></td>' +
+                                '<td><div id="upload-space-to-tab"/></td>' +
                                 '<td>Convert spaces to tabs</td>' +
                             '</tr>' +
                             '<tr>' +

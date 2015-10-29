@@ -150,7 +150,7 @@ class DataToolParameterTestCase( BaseParameterTestCase ):
         self.app.model.context.flush()
         self.trans = bunch.Bunch(
             app=self.app,
-            get_history=lambda: self.test_history,
+            get_history=lambda **k: self.test_history,
             get_current_user_roles=lambda: [],
             workflow_building_mode=False,
             webapp=bunch.Bunch( name="galaxy" ),

@@ -87,14 +87,6 @@ var CurrentHistoryPanel = _super.extend(
         _super.prototype._setUpListeners.call( this );
 
         var panel = this;
-        // cache the scroll position (only if visible)
-        this.$scrollContainer().on( 'scroll', function( ev ){
-            if( panel.$el.is( ':visible' ) ){
-                panel.preferences.set( 'scrollPosition', $( this ).scrollTop() );
-            }
-        });
-
-        //TODO: doesn't work
         // reset scroll position when there's a new history
         this.on( 'new-model', function(){
             panel.preferences.set( 'scrollPosition', 0 );
@@ -124,7 +116,7 @@ var CurrentHistoryPanel = _super.extend(
                 //});
             };
         return this.loadHistoryWithDetails( historyId, attributes, historyFn )
-            .then(function( historyData, contentsData ){
+            .then( function( historyData, contentsData ){
                 panel.trigger( 'switched-history', panel );
             });
     },
@@ -191,6 +183,30 @@ var CurrentHistoryPanel = _super.extend(
     },
 
     // ------------------------------------------------------------------------ panel rendering
+    /** override to add a handler to capture the scroll position when the parent scrolls */
+    _setUpBehaviors : function( $where ){
+        $where = $where || this.$el;
+        // we need to call this in _setUpBehaviors which is called after render since the $el
+        // may not be attached to $el.parent and $scrollContainer() may not work
+        var panel = this;
+        _super.prototype._setUpBehaviors.call( panel, $where );
+
+        // cache the handler to remove and re-add so we don't pile up the handlers
+        if( !this._debouncedScrollCaptureHandler ){
+            this._debouncedScrollCaptureHandler = _.debounce( function scrollCapture(){
+                // cache the scroll position (only if visible)
+                if( panel.$el.is( ':visible' ) ){
+                    panel.preferences.set( 'scrollPosition', $( this ).scrollTop() );
+                }
+            }, 40 );
+        }
+
+        panel.$scrollContainer()
+            .off( 'scroll', this._debouncedScrollCaptureHandler )
+            .on( 'scroll', this._debouncedScrollCaptureHandler );
+        return panel;
+    },
+
     /** In this override, handle null models and move the search input to the top */
     _buildNewRender : function(){
         if( !this.model ){ return $(); }
@@ -270,7 +286,8 @@ var CurrentHistoryPanel = _super.extend(
         this.annotationEditor.on( 'hiddenUntilActivated:shown hiddenUntilActivated:hidden',
             function( annotationEditor ){
                 panel.preferences.set( 'annotationEditorShown', annotationEditor.hidden );
-            });
+            }
+        );
     },
 
     /** Override to scroll to cached position (in prefs) after swapping */
@@ -280,7 +297,7 @@ var CurrentHistoryPanel = _super.extend(
         _.delay( function(){
             var pos = panel.preferences.get( 'scrollPosition' );
             if( pos ){
-                panel.scrollTo( pos );
+                panel.scrollTo( pos, 0 );
             }
         }, 10 );
         //TODO: is this enough of a delay on larger histories?
@@ -292,11 +309,9 @@ var CurrentHistoryPanel = _super.extend(
     /** Override to add the current-content highlight class to currentContentId's view */
     _attachItems : function( $whereTo ){
         _super.prototype._attachItems.call( this, $whereTo );
-        var panel = this,
-            currentContentView;
-        if( panel.currentContentId
-        && ( currentContentView = panel.viewFromModelId( panel.currentContentId ) ) ){
-            panel.setCurrentContent( currentContentView );
+        var panel = this;
+        if( panel.currentContentId ){
+            panel._setCurrentContentById( panel.currentContentId );
         }
         return this;
     },
@@ -324,9 +339,9 @@ var CurrentHistoryPanel = _super.extend(
         }, this );
 
         // when content is manipulated, make it the current-content
-        view.on( 'display edit params rerun report-err visualize', function( v, ev ){
-            this.setCurrentContent( v );
-        }, this );
+        // view.on( 'visualize', function( v, ev ){
+        //     this.setCurrentContent( v );
+        // }, this );
 
         return this;
     },
@@ -340,6 +355,12 @@ var CurrentHistoryPanel = _super.extend(
         } else {
             this.currentContentId = null;
         }
+    },
+
+    /** find the view with the id and then call setCurrentContent on it */
+    _setCurrentContentById : function( id ){
+        var view = this.viewFromModelId( id ) || null;
+        this.setCurrentContent( view );
     },
 
     /** Handle drill down by hiding this panels list and controls and showing the sub-panel */
@@ -359,6 +380,36 @@ var CurrentHistoryPanel = _super.extend(
     },
 
     // ........................................................................ external objects/MVC
+    listenToGalaxy : function( galaxy ){
+        // TODO: MEM: questionable reference island / closure practice
+        galaxy.on( 'galaxy_main:load', function( data ){
+            var pathToMatch = data.fullpath,
+                useToURLRegexMap = {
+                    'display'       : /datasets\/([a-f0-9]+)\/display/,
+                    'edit'          : /datasets\/([a-f0-9]+)\/edit/,
+                    'report_error'  : /dataset\/errors\?id=([a-f0-9]+)/,
+                    'rerun'         : /tool_runner\/rerun\?id=([a-f0-9]+)/,
+                    'show_params'   : /datasets\/([a-f0-9]+)\/show_params/,
+                    // no great way to do this here? (leave it in the dataset event handlers above?)
+                    // 'visualization' : 'visualization',
+                },
+                hdaId = null,
+                hdaUse = null;
+            _.find( useToURLRegexMap, function( regex, use ){
+                var match = pathToMatch.match( regex );
+                if( match && match.length == 2 ){
+                    hdaId = match[1];
+                    hdaUse = use;
+                    return true;
+                }
+                return false;
+            });
+            // need to type mangle to go from web route to history contents
+            hdaId = 'dataset-' + hdaId;
+            this._setCurrentContentById( hdaId );
+        }, this );
+    },
+
 //TODO: remove quota meter from panel and remove this
     /** add listeners to an external quota meter (mvc/user/user-quotameter.js) */
     connectToQuotaMeter : function( quotaMeter ){

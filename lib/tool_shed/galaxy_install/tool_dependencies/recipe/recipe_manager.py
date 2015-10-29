@@ -1,5 +1,4 @@
 import logging
-import os
 
 from tool_shed.galaxy_install.tool_dependencies.recipe import step_handler
 from tool_shed.galaxy_install.tool_dependencies.recipe import tag_handler
@@ -49,6 +48,7 @@ class StepManager( object ):
                                       make_install=step_handler.MakeInstall( self.app ),
                                       move_directory_files=step_handler.MoveDirectoryFiles( self.app ),
                                       move_file=step_handler.MoveFile( self.app ),
+                                      regex_replace=step_handler.RegexReplace( self.app ),
                                       set_environment=step_handler.SetEnvironment( self.app ),
                                       set_environment_for_install=step_handler.SetEnvironmentForInstall( self.app ),
                                       setup_perl_environment=step_handler.SetupPerlEnvironment( self.app ),
@@ -73,6 +73,7 @@ class StepManager( object ):
                                                      install_environment=install_environment,
                                                      is_binary_download=is_binary_download )
         return action_dict
+
 
 class TagManager( object ):
 

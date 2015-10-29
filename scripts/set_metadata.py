@@ -26,15 +26,17 @@ new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[ 1: ] )  # remove scripts/ from the path
 sys.path = new_path
 
-from galaxy import eggs
-import pkg_resources
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
-galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
+
+# This looks REAL stupid, but it is REQUIRED in order for SA to insert
+# parameters into the classes defined by the mappers --> it appears that
+# instantiating ANY mapper'ed class would suffice here
+galaxy.model.Job()
+
 from galaxy.util import stringify_dictionary_keys
 from sqlalchemy.orm import clear_mappers
 from galaxy.objectstore import build_object_store_from_config
 from galaxy import config
-import ConfigParser
 from galaxy.util.properties import load_app_properties
 
 
@@ -43,16 +45,17 @@ def set_meta_with_tool_provided( dataset_instance, file_dict, set_meta_kwds ):
     # then call set_meta, then set metadata attributes from tool again.
     # This is intentional due to interplay of overwrite kwd, the fact that some metadata
     # parameters may rely on the values of others, and that we are accepting the
-    # values provided by the tool as Truth. 
+    # values provided by the tool as Truth.
     for metadata_name, metadata_value in file_dict.get( 'metadata', {} ).iteritems():
         setattr( dataset_instance.metadata, metadata_name, metadata_value )
     dataset_instance.datatype.set_meta( dataset_instance, **set_meta_kwds )
     for metadata_name, metadata_value in file_dict.get( 'metadata', {} ).iteritems():
         setattr( dataset_instance.metadata, metadata_name, metadata_value )
 
+
 def __main__():
     file_path = sys.argv.pop( 1 )
-    tool_job_working_directory = tmp_dir = sys.argv.pop( 1 ) #this is also the job_working_directory now
+    tool_job_working_directory = tmp_dir = sys.argv.pop( 1 )  # this is also the job_working_directory now
     galaxy.model.Dataset.file_path = file_path
     galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tmp_dir
 
@@ -100,7 +103,7 @@ def __main__():
         dataset_filename_override = fields.pop( 0 )
         # Need to be careful with the way that these parameters are populated from the filename splitting,
         # because if a job is running when the server is updated, any existing external metadata command-lines
-        #will not have info about the newly added override_metadata file
+        # will not have info about the newly added override_metadata file
         if fields:
             override_metadata = fields.pop( 0 )
         else:
@@ -136,7 +139,8 @@ def __main__():
         new_dataset.state = new_dataset.states.OK
         new_dataset_instance = galaxy.model.HistoryDatasetAssociation( id=-i, dataset=new_dataset, extension=file_dict.get( 'ext', 'data' ) )
         set_meta_with_tool_provided( new_dataset_instance, file_dict, set_meta_kwds )
-        file_dict[ 'metadata' ] = json.loads( new_dataset_instance.metadata.to_JSON_dict() ) #storing metadata in external form, need to turn back into dict, then later jsonify
+        # storing metadata in external form, need to turn back into dict, then later jsonify
+        file_dict[ 'metadata' ] = json.loads( new_dataset_instance.metadata.to_JSON_dict() )
     if existing_job_metadata_dict or new_job_metadata_dict:
         with open( job_metadata, 'wb' ) as job_metadata_fh:
             for value in existing_job_metadata_dict.values() + new_job_metadata_dict.values():

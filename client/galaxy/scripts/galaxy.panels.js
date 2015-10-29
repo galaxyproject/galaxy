@@ -10,7 +10,6 @@ var ensure_dd_helper = function () {
 }
 
 // Panels
-
 var MIN_PANEL_WIDTH = 160,
     MAX_PANEL_WIDTH = 800;
 
@@ -118,9 +117,11 @@ $.extend( Panel.prototype, {
                     $( this ).hide().off( 'mousemove', move );
                 });
         });
+        window.force_left_panel = function( x ) { self.force_panel( x ) };
+        window.handle_minwidth_hint = function( x ) { self.handle_minwidth_hint( x ) };
     }
 });
-  
+
 // Modal dialog boxes
 var Modal = function( options ) {
     this.$overlay = options.overlay;

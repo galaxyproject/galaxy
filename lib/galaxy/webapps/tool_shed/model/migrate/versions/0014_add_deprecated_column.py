@@ -1,16 +1,11 @@
 """
 Migration script to add the deprecated column to the repository table.
 """
+import logging
+import sys
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
+from sqlalchemy import Boolean, Column, MetaData, Table
 
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
-import sys, logging
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -20,6 +15,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -41,6 +37,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print "Adding deprecated column to the repository table failed: %s" % str( e )
         log.debug( "Adding deprecated column to the repository table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

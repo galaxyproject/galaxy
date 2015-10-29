@@ -66,15 +66,40 @@ var menu = [
     },
     {
         html    : _l( 'Unhide Hidden Datasets' ),
-        confirm : _l( 'Really unhide all hidden datasets?' ),
-        href    : 'history/unhide_datasets?current=True',
-        anon    : true
+        anon    : true,
+        func    : function() {
+            if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really unhide all hidden datasets?' ) ) ){
+                var filtered = Galaxy.currHistoryPanel.model.contents.hidden();
+                //TODO: batch
+                filtered.ajaxQueue( Backbone.Model.prototype.save, { visible : true })
+                    .done( function(){
+                        Galaxy.currHistoryPanel.renderItems();
+                    })
+                    .fail( function(){
+                        alert( 'There was an error unhiding the datasets' );
+                        console.error( arguments );
+                    });
+            }
+        }
     },
     {
         html    : _l( 'Delete Hidden Datasets' ),
-        confirm : _l( 'Really delete all hidden datasets?' ),
-        href    : 'history/delete_hidden_datasets',
-        anon    : true
+        anon    : true,
+        func    : function() {
+            if( Galaxy && Galaxy.currHistoryPanel && confirm( _l( 'Really delete all hidden datasets?' ) ) ){
+                var filtered = Galaxy.currHistoryPanel.model.contents.hidden();
+                //TODO: batch
+                // both delete *and* unhide them
+                filtered.ajaxQueue( Backbone.Model.prototype.save, { deleted : true, visible: true })
+                    .done( function(){
+                        Galaxy.currHistoryPanel.renderItems();
+                    })
+                    .fail( function(){
+                        alert( 'There was an error deleting the datasets' );
+                        console.error( arguments );
+                    });
+            }
+        }
     },
     {
         html    : _l( 'Purge Deleted Datasets' ),

@@ -1,9 +1,11 @@
 # override tempfile methods for debugging
 
-import tempfile, traceback
+import tempfile
+import traceback
 
 import logging
 log = logging.getLogger( __name__ )
+
 
 class TempFile( object ):
     def __init__( self ):
@@ -11,6 +13,7 @@ class TempFile( object ):
         tempfile._mkstemp = tempfile.mkstemp
         tempfile.NamedTemporaryFile = self.NamedTemporaryFile
         tempfile.mkstemp = self.mkstemp
+
     def NamedTemporaryFile( self, *args, **kwargs ):
         f = tempfile._NamedTemporaryFile( *args, **kwargs )
         try:
@@ -18,6 +21,7 @@ class TempFile( object ):
         except AttributeError:
             pass
         return f
+
     def mkstemp( self, *args, **kwargs ):
         f = tempfile._mkstemp( *args, **kwargs )
         try:

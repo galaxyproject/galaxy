@@ -3,22 +3,17 @@ import urllib
 from galaxy import exceptions
 from galaxy import web, util
 from galaxy import managers
-from galaxy.web import _future_expose_api_anonymous
-from galaxy.web import _future_expose_api
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import dumps
-from galaxy.visualization.data_providers.genome import *
-from galaxy.tools.parameters import check_param
-from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
-from galaxy.model import HistoryDatasetAssociation
-from galaxy.util.expressions import ExpressionContext
-from collections import Iterable
 
 import galaxy.queue_worker
+
 
 import logging
 log = logging.getLogger( __name__ )
@@ -34,7 +29,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         self.history_manager = managers.histories.HistoryManager( app )
         self.hda_manager = managers.hdas.HDAManager( app )
 
-    @web.expose_api
+    @expose_api_anonymous_and_sessionless
     def index( self, trans, **kwds ):
         """
         GET /api/tools: returns a list of tools defined by parameters::
@@ -45,21 +40,40 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                             including sections and labels
                 trackster - if true, only tools that are compatible with
                             Trackster are returned
+                q         - if present search on the given query will be performed
+                tool_id   - if present the given tool_id will be searched for
+                            all installed versions
         """
 
         # Read params.
         in_panel = util.string_as_bool( kwds.get( 'in_panel', 'True' ) )
         trackster = util.string_as_bool( kwds.get( 'trackster', 'False' ) )
+        q = kwds.get( 'q', '' )
+        tool_id = kwds.get( 'tool_id', '' )
 
-        # Create return value.
+        # Find whether to search.
+        if q:
+            hits = self._search( q )
+            results = []
+            if hits:
+                for hit in hits:
+                    tool = self._get_tool( hit )
+                    if tool:
+                        results.append( tool.id )
+            return results
+
+        # Find whether to detect.
+        if tool_id:
+            detected_versions = self._detect( trans, tool_id )
+            return detected_versions
+
+        # Return everything.
         try:
             return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster)
-        except Exception, exc:
-            log.error( 'could not convert toolbox to dictionary: %s', str( exc ), exc_info=True )
-            trans.response.status = 500
-            return { 'error': str( exc ) }
+        except Exception:
+            raise exceptions.InternalServerError( "Error: Could not convert toolbox to dictionary" )
 
-    @_future_expose_api_anonymous
+    @expose_api_anonymous_and_sessionless
     def show( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}
@@ -70,7 +84,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool = self._get_tool( id, user=trans.user )
         return tool.to_dict( trans, io_details=io_details, link_details=link_details )
 
-    @_future_expose_api_anonymous
+    @expose_api_anonymous
     def build( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}/build
@@ -82,19 +96,18 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool = self._get_tool( id, tool_version=tool_version, user=trans.user )
         return tool.to_json(trans, kwd.get('inputs', kwd))
 
-    @_future_expose_api
+    @expose_api
     @web.require_admin
-    def reload( self, trans, tool_id, **kwd ):
+    def reload( self, trans, id, **kwd ):
         """
         GET /api/tools/{tool_id}/reload
         Reload specified tool.
         """
-        toolbox = trans.app.toolbox
-        galaxy.queue_worker.send_control_task( trans, 'reload_tool', noop_self=True, kwargs={ 'tool_id': tool_id } )
-        message, status = trans.app.toolbox.reload_tool_by_id( tool_id )
+        galaxy.queue_worker.send_control_task( trans.app, 'reload_tool', noop_self=True, kwargs={ 'tool_id': id } )
+        message, status = trans.app.toolbox.reload_tool_by_id( id )
         return { status: message }
 
-    @_future_expose_api
+    @expose_api
     @web.require_admin
     def diagnostics( self, trans, id, **kwd ):
         """
@@ -103,7 +116,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         and dependency related problems.
         """
         # TODO: Move this into tool.
-        to_dict = lambda x: x.to_dict()
+        def to_dict(x):
+            return x.to_dict()
+
         tool = self._get_tool( id, user=trans.user )
         if hasattr( tool, 'lineage' ):
             lineage_dict = tool.lineage.to_dict()
@@ -129,7 +144,50 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             "guid": tool.guid,
         }
 
-    @_future_expose_api_anonymous
+    def _detect( self, trans, tool_id ):
+        """
+        Detect whether the tool with the given id is installed.
+
+        :param tool_id: exact id of the tool
+        :type tool_id:  str
+
+        :return:      list with available versions
+        "return type: list
+        """
+        tools = self.app.toolbox.get_tool( tool_id, get_all_versions=True )
+        detected_versions = []
+        if tools:
+            for tool in tools:
+                if tool and tool.allow_user_access( trans.user ):
+                    detected_versions.append( tool.version )
+        return detected_versions
+
+    def _search( self, q ):
+        """
+        Perform the search on the given query.
+        Boosts and numer of results are configurable in galaxy.ini file.
+
+        :param q: the query to search with
+        :type  q: str
+
+        :return:      Dictionary containing the tools' ids of the best hits.
+        :return type: dict
+        """
+        tool_name_boost = self.app.config.get( 'tool_name_boost', 9 )
+        tool_section_boost = self.app.config.get( 'tool_section_boost', 3 )
+        tool_description_boost = self.app.config.get( 'tool_description_boost', 2 )
+        tool_help_boost = self.app.config.get( 'tool_help_boost', 0.5 )
+        tool_search_limit = self.app.config.get( 'tool_search_limit', 20 )
+
+        results = self.app.toolbox_search.search( q=q,
+                                                  tool_name_boost=tool_name_boost,
+                                                  tool_section_boost=tool_section_boost,
+                                                  tool_description_boost=tool_description_boost,
+                                                  tool_help_boost=tool_help_boost,
+                                                  tool_search_limit=tool_search_limit )
+        return results
+
+    @expose_api_anonymous_and_sessionless
     def citations( self, trans, id, **kwds ):
         tool = self._get_tool( id, user=trans.user )
         rval = []
@@ -144,12 +202,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         if success:
             trans.response.set_content_type( 'application/x-gzip' )
             download_file = open( tool_tarball )
-            os.unlink( tool_tarball )
-            tarball_path, filename = os.path.split( tool_tarball )
             trans.response.headers[ "Content-Disposition" ] = 'attachment; filename="%s.tgz"' % ( id )
             return download_file
 
-    @web.expose_api_anonymous
+    @expose_api_anonymous
     def create( self, trans, payload, **kwd ):
         """
         POST /api/tools
@@ -166,16 +222,15 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool_version = payload.get( 'tool_version', None )
         tool = trans.app.toolbox.get_tool( payload[ 'tool_id' ] , tool_version ) if 'tool_id' in payload else None
         if not tool or not tool.allow_user_access( trans.user ):
-            trans.response.status = 404
-            return { "message": { "type": "error", "text" : trans.app.model.Dataset.conversion_messages.NO_TOOL } }
+            raise exceptions.MessageException( 'Tool not found or not accessible.' )
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
         # dataset upload.
-        history_id = payload.get("history_id", None)
+        history_id = payload.get('history_id', None)
         if history_id:
             decoded_id = self.decode_id( history_id )
-            target_history = self.history_manager.get_owned( trans, decoded_id, trans.user )
+            target_history = self.history_manager.get_owned( decoded_id, trans.user, current_history=trans.history )
         else:
             target_history = None
 
@@ -183,13 +238,13 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         inputs = payload.get( 'inputs', {} )
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.iteritems():
-            if k.startswith("files_") or k.startswith("__files_"):
+            if k.startswith('files_') or k.startswith('__files_'):
                 inputs[k] = v
 
-        #for inputs that are coming from the Library, copy them into the history
+        # for inputs that are coming from the Library, copy them into the history
         input_patch = {}
         for k, v in inputs.iteritems():
-            if  isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
+            if isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
                 ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( self.decode_id(v['id']) )
                 if trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), ldda.dataset ):
                     input_patch[k] = ldda.to_history_dataset_association(target_history, add_to_history=True)
@@ -197,49 +252,28 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         for k, v in input_patch.iteritems():
             inputs[k] = v
 
-        # HACK: add run button so that tool.handle_input will run tool.
-        inputs['runtool_btn'] = 'Execute'
         # TODO: encode data ids and decode ids.
         # TODO: handle dbkeys
         params = util.Params( inputs, sanitize=False )
-        # process_state will be 'populate' or 'update'. When no tool
-        # state is specified in input - it will be 'populate', and
-        # tool will fully expand repeat and conditionals when building
-        # up state. If tool state is found in input
-        # parameters,process_state will be 'update' and complex
-        # submissions (with repeats and conditionals) must be built up
-        # over several iterative calls to the API - mimicing behavior
-        # of web controller (though frankly API never returns
-        # tool_state so this "legacy" behavior is probably impossible
-        # through API currently).
         incoming = params.__dict__
-        process_state = "update" if "tool_state" in incoming else "populate"
-        template, vars = tool.handle_input( trans, incoming, history=target_history, process_state=process_state, source="json" )
-        if 'errors' in vars:
-            trans.response.status = 400
-            return { "message": { "type": "error", "data" : vars[ 'errors' ] } }
+        vars = tool.handle_input( trans, incoming, history=target_history, source='json' )
 
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get( 'out_data', [] )
-        rval = {
-            "outputs": [],
-            "output_collections": [],
-            "jobs": [],
-            "implicit_collections": [],
-        }
+        rval = { 'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': [] }
 
         job_errors = vars.get( 'job_errors', [] )
         if job_errors:
             # If we are here - some jobs were successfully executed but some failed.
-            rval[ "errors" ] = job_errors
+            rval[ 'errors' ] = job_errors
 
-        outputs = rval[ "outputs" ]
-        #TODO:?? poss. only return ids?
+        outputs = rval[ 'outputs' ]
+        # TODO:?? poss. only return ids?
         for output_name, output in output_datasets:
             output_dict = output.to_dict()
-            #add the output name back into the output data structure
-            #so it's possible to figure out which newly created elements
-            #correspond with which tool file outputs
+            # add the output name back into the output data structure
+            # so it's possible to figure out which newly created elements
+            # correspond with which tool file outputs
             output_dict[ 'output_name' ] = output_name
             outputs.append( trans.security.encode_dict_ids( output_dict ) )
 
@@ -321,9 +355,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Dataset check.
         decoded_dataset_id = self.decode_id( payload.get( 'target_dataset_id' ) )
-        original_dataset = self.hda_manager.get_accessible( trans, decoded_dataset_id, user=trans.user )
-        original_dataset = self.hda_manager.error_if_uploading( trans, original_dataset )
-        msg = self.hda_manager.data_conversion_status( trans, original_dataset )
+        original_dataset = self.hda_manager.get_accessible( decoded_dataset_id, user=trans.user )
+        original_dataset = self.hda_manager.error_if_uploading( original_dataset )
+        msg = self.hda_manager.data_conversion_status( original_dataset )
         if msg:
             return msg
 
@@ -354,8 +388,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
                 data_provider = data_provider_registry.get_data_provider( trans, original_dataset=input_dataset, source='data' )
-                if data_provider and ( not data_provider.converted_dataset
-                                       or data_provider.converted_dataset.state != trans.app.model.Dataset.states.OK ):
+                if data_provider and ( not data_provider.converted_dataset or
+                                       data_provider.converted_dataset.state != trans.app.model.Dataset.states.OK ):
                     # Can convert but no converted dataset yet, so return message about why.
                     data_sources = input_dataset.datatype.data_sources
                     msg = input_dataset.convert_dataset( trans, data_sources[ 'data' ] )
@@ -457,16 +491,16 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                 else:
                     # Need to create subset.
                     data_source = input_dataset.datatype.data_sources[ 'data' ]
-                    converted_dataset = input_dataset.get_converted_dataset( trans, data_source )
-                    deps = input_dataset.get_converted_dataset_deps( trans, data_source )
+                    input_dataset.get_converted_dataset( trans, data_source )
+                    input_dataset.get_converted_dataset_deps( trans, data_source )
 
                     # Create new HDA for input dataset's subset.
-                    new_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext, \
-                                                                             dbkey=input_dataset.dbkey, \
-                                                                             create_dataset=True, \
+                    new_dataset = trans.app.model.HistoryDatasetAssociation( extension=input_dataset.ext,
+                                                                             dbkey=input_dataset.dbkey,
+                                                                             create_dataset=True,
                                                                              sa_session=trans.sa_session,
-                                                                             name="Subset [%s] of data %i" % \
-                                                                                 ( regions_str, input_dataset.hid ),
+                                                                             name="Subset [%s] of data %i" %
+                                                                                  ( regions_str, input_dataset.hid ),
                                                                              visible=False )
                     target_history.add_dataset( new_dataset )
                     trans.sa_session.add( new_dataset )

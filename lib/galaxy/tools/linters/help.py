@@ -1,3 +1,4 @@
+from galaxy.util import rst_to_html
 
 
 def lint_help(tool_xml, lint_ctx):
@@ -11,5 +12,22 @@ def lint_help(tool_xml, lint_ctx):
         lint_ctx.warn("No help section found, consider adding a help section to your tool.")
         return
 
-    # TODO: validate help section RST.
+    help = helps[0].text
+    if not help.strip():
+        lint_ctx.warn("Help section appears to be empty.")
+        return
+
     lint_ctx.valid("Tool contains help section.")
+    invalid_rst = False
+    try:
+        rst_to_html(help)
+    except Exception as e:
+        invalid_rst = str(e)
+
+    if "TODO" in help:
+        lint_ctx.warn("Help contains TODO text.")
+
+    if invalid_rst:
+        lint_ctx.warn("Invalid reStructuredText found in help - [%s]." % invalid_rst)
+    else:
+        lint_ctx.valid("Help contains valid reStructuredText.")

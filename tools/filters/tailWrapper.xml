@@ -1,4 +1,4 @@
-<tool id="Show tail1" name="Select last">
+<tool id="Show tail1" name="Select last" version="1.0.0">
   <description>lines from a dataset</description>
   <command interpreter="perl">tailWrapper.pl $input $lineNum $out_file1</command>
   <inputs>

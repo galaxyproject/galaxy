@@ -32,6 +32,8 @@ __all__ = [ 'PulsarLegacyJobRunner', 'PulsarRESTJobRunner', 'PulsarMQJobRunner' 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
 NO_REMOTE_DATATYPES_CONFIG = "Pulsar client is configured to use remote datatypes configuration when setting metadata externally, but Pulsar is not configured with this information. Defaulting to datatypes_conf.xml."
 GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
+FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring this job."
+LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
 
 # Is there a good way to infer some default for this? Can only use
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
@@ -58,6 +60,14 @@ PULSAR_PARAM_SPECS = dict(
     manager=dict(
         map=specs.to_str_or_none,
         default=None,
+    ),
+    persistence_directory=dict(
+        map=specs.to_str_or_none,
+        default=None,
+    ),
+    amqp_acknowledge=dict(
+        map=specs.to_bool_or_none,
+        default=None
     ),
     amqp_consumer_timeout=dict(
         map=lambda val: None if val == "None" else float(val),
@@ -143,7 +153,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
     def __init_client_manager( self ):
         client_manager_kwargs = {}
-        for kwd in 'manager', 'cache', 'transport':
+        for kwd in 'manager', 'cache', 'transport', 'persistence_directory':
             client_manager_kwargs[ kwd ] = self.runner_params[ kwd ]
         for kwd in self.runner_params.keys():
             if kwd.startswith( 'amqp_' ):
@@ -170,8 +180,13 @@ class PulsarJobRunner( AsynchronousJobRunner ):
         if pulsar_status == "complete":
             self.mark_as_finished(job_state)
             return None
-        if pulsar_status == "failed":
-            self.fail_job(job_state)
+        if pulsar_status in ["failed", "lost"]:
+            if pulsar_status == "failed":
+                message = FAILED_REMOTE_ERROR
+            else:
+                message = LOST_REMOTE_ERROR
+            if not job_state.job_wrapper.get_job().finished:
+                self.fail_job(job_state, message)
             return None
         if pulsar_status == "running" and not job_state.running:
             job_state.running = True
@@ -294,7 +309,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
                 if value is PARAMETER_SPECIFICATION_IGNORED:
                     log.warn( "Pulsar runner in selected configuration ignores parameter %s" % key )
                 continue
-            #if self.runner_params.get( key, None ):
+            # if self.runner_params.get( key, None ):
             #    # Let plugin define defaults for some parameters -
             #    # for instance that way jobs_directory can be
             #    # configured next to AMQP url (where it belongs).
@@ -338,11 +353,16 @@ class PulsarJobRunner( AsynchronousJobRunner ):
 
     def get_client( self, job_destination_params, job_id, env=[] ):
         # Cannot use url_for outside of web thread.
-        #files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
+        # files_endpoint = url_for( controller="job_files", job_id=encoded_job_id )
 
         encoded_job_id = self.app.security.encode_id(job_id)
         job_key = self.app.security.encode_id( job_id, kind="jobs_files" )
-        files_endpoint = "%s/api/jobs/%s/files?job_key=%s" % (
+        endpoint_base = "%s/api/jobs/%s/files?job_key=%s"
+        if self.app.config.nginx_upload_job_files_path:
+            endpoint_base = "%s" + \
+                            self.app.config.nginx_upload_job_files_path + \
+                            "?job_id=%s&job_key=%s"
+        files_endpoint = endpoint_base % (
             self.galaxy_url,
             encoded_job_id,
             job_key
@@ -398,18 +418,18 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
-    def fail_job( self, job_state ):
+    def fail_job( self, job_state, message=GENERIC_REMOTE_ERROR ):
         """
         Seperated out so we can use the worker threads for it.
         """
         self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
-        job_state.job_wrapper.fail( getattr( job_state, "fail_message", GENERIC_REMOTE_ERROR ) )
+        job_state.job_wrapper.fail( getattr( job_state, "fail_message", message ) )
 
     def check_pid( self, pid ):
         try:
             os.kill( pid, 0 )
             return True
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ESRCH:
                 log.debug( "check_pid(): PID %d is dead" % pid )
             else:
@@ -417,7 +437,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             return False
 
     def stop_job( self, job ):
-        #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         client = self.get_client( job.destination_params, job.job_runner_external_id )
         job_ext_output_metadata = job.get_external_output_metadata()
         if not PulsarJobRunner.__remote_metadata( client ) and job_ext_output_metadata:
@@ -432,7 +452,7 @@ class PulsarJobRunner( AsynchronousJobRunner ):
             for sig in [ 15, 9 ]:
                 try:
                     os.killpg( pid, sig )
-                except OSError, e:
+                except OSError as e:
                     log.warning( "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % ( job.id, errno.errorcode[e.errno], sig, pid, e.strerror ) )
                     return  # give up
                 sleep( 2 )
@@ -599,6 +619,7 @@ class PulsarMQJobRunner( PulsarJobRunner ):
         # This is a message queue driven runner, don't monitor
         # just setup required callback.
         self.client_manager.ensure_has_status_update_callback(self.__async_update)
+        self.client_manager.ensure_has_ack_consumers()
 
     def __async_update( self, full_status ):
         job_id = None

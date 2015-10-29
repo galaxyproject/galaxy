@@ -1,4 +1,4 @@
-define( ["libs/backbone/backbone"], function( Backbone ) {
+define( [], function() {
 
 	var Base = function() {
 		if( this.initialize ) {

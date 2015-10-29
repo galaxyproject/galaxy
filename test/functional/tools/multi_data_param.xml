@@ -1,10 +1,12 @@
 <tool id="multi_data_param" name="multi_data_param" version="0.1.0">
+  <!-- Demonstrate looping and using functional-style access to multi-data
+       parameters. -->
   <command>
     cat #for $f in $f1# ${f} #end for# >> $out1;
-    cat #for $f in $f2# ${f} #end for# >> $out2
+    cat ${" ".join(map(str, $f2))} >> $out2
   </command>
   <inputs>
-    <param name="f1" type="data" format="txt" multiple="true" label="Data 1" />
+    <param name="f1" type="data" format="txt" multiple="true" label="Data 1" min="1" max="1235" />
     <param name="f2" type="data" format="txt" multiple="true" label="Data 2" />
     <conditional name="advanced">
       <param name="full" type="select" label="Parameter Settings">
@@ -39,8 +41,7 @@
         </assert_contents>
       </output>
     </test>
-    <!-- Twill interactor cannot do these latter two, but not even 
-         UI widget can do this next one. -->
+    <!-- UI widget can do this next one, but API can. -->
     <test>
       <param name="f1" value="simple_line.txt,simple_line.txt" />
       <param name="f2" value="simple_line_alternative.txt" />

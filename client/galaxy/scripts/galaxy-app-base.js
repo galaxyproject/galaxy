@@ -143,7 +143,7 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners(){
         };
         //TODO:?? we might somehow manage to *retry* ajax using either this hook or Backbone.sync
     });
-
+    return self;
 };
 
 /** string rep */

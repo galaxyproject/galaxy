@@ -1,12 +1,14 @@
-from galaxy import web, util
+from galaxy import web
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.framework.helpers import is_true
+
 
 def get_id( base, format ):
     if format:
         return "%s.%s" % ( base, format )
     else:
         return base
+
 
 class GenomesController( BaseAPIController ):
     """

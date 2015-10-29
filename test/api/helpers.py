@@ -13,7 +13,7 @@ workflow_str = resource_string( __name__, "test_workflow_1.ga" )
 workflow_random_x2_str = resource_string( __name__, "test_workflow_2.ga" )
 
 
-DEFAULT_HISTORY_TIMEOUT = 10  # Secs to wait on history to turn ok
+DEFAULT_TIMEOUT = 15  # Secs to wait for state to turn ok
 
 
 def skip_without_tool( tool_id ):
@@ -65,29 +65,32 @@ class TestsDatasets:
         return DatasetPopulator( self.galaxy_interactor ).run_tool_payload( tool_id, inputs, history_id, **kwds )
 
 
-class DatasetPopulator( object ):
-
-    def __init__( self, galaxy_interactor ):
-        self.galaxy_interactor = galaxy_interactor
+class BaseDatasetPopulator( object ):
+    """ Abstract description of API operations optimized for testing
+    Galaxy - implementations must implement _get and _post.
+    """
 
     def new_dataset( self, history_id, content='TestData123', **kwds ):
         payload = self.upload_payload( history_id, content, **kwds )
-        run_response = self.galaxy_interactor.post( "tools", data=payload )
+        run_response = self._post( "tools", data=payload )
         return run_response.json()["outputs"][0]
 
-    def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_HISTORY_TIMEOUT ):
+    def wait_for_history( self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
         try:
-            return wait_on_state( lambda: self.galaxy_interactor.get( "histories/%s" % history_id ), assert_ok=assert_ok, timeout=timeout )
+            return wait_on_state( lambda: self._get( "histories/%s" % history_id ), assert_ok=assert_ok, timeout=timeout )
         except AssertionError:
-            self.galaxy_interactor._summarize_history_errors( history_id )
+            self._summarize_history_errors( history_id )
             raise
 
-    def wait_for_job( self, job_id, assert_ok=False, timeout=DEFAULT_HISTORY_TIMEOUT ):
-        return wait_on_state( lambda: self.galaxy_interactor.get( "jobs/%s" % job_id ), assert_ok=assert_ok, timeout=timeout )
+    def wait_for_job( self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
+        return wait_on_state( lambda: self._get( "jobs/%s" % job_id ), assert_ok=assert_ok, timeout=timeout )
+
+    def _summarize_history_errors( self, history_id ):
+        pass
 
     def new_history( self, **kwds ):
         name = kwds.get( "name", "API Test History" )
-        create_history_response = self.galaxy_interactor.post( "histories", data=dict( name=name ) )
+        create_history_response = self._post( "histories", data=dict( name=name ) )
         history_id = create_history_response.json()[ "id" ]
         return history_id
 
@@ -97,10 +100,14 @@ class DatasetPopulator( object ):
         file_type = kwds.get( "file_type", 'txt' )
         upload_params = {
             'files_0|NAME': name,
-            'files_0|url_paste': content,
             'dbkey': dbkey,
             'file_type': file_type,
         }
+        if isinstance( content, file ):
+            upload_params[ "files_0|file_data"] = content
+        else:
+            upload_params[ 'files_0|url_paste' ] = content
+
         if "to_posix_lines" in kwds:
             upload_params[ "files_0|to_posix_lines"] = kwds[ "to_posix_lines" ]
         if "space_to_tab" in kwds:
@@ -113,6 +120,10 @@ class DatasetPopulator( object ):
         )
 
     def run_tool_payload( self, tool_id, inputs, history_id, **kwds ):
+        if "files_0|file_data" in inputs:
+            kwds[ "__files" ] = { "files_0|file_data": inputs[ "files_0|file_data" ] }
+            del inputs[ "files_0|file_data" ]
+
         return dict(
             tool_id=tool_id,
             inputs=json.dumps(inputs),
@@ -122,7 +133,7 @@ class DatasetPopulator( object ):
 
     def run_tool( self, tool_id, inputs, history_id, **kwds ):
         payload = self.run_tool_payload( tool_id, inputs, history_id, **kwds )
-        tool_response = self.galaxy_interactor.post( "tools", data=payload )
+        tool_response = self._post( "tools", data=payload )
         api_asserts.assert_status_code_is( tool_response, 200 )
         return tool_response.json()
 
@@ -163,14 +174,29 @@ class DatasetPopulator( object ):
         url = "histories/%s/contents" % history_id
         if suffix:
             url = "%s%s" % ( url, suffix )
-        return self.galaxy_interactor.get( url )
+        return self._get( url )
 
 
-class WorkflowPopulator( object ):
-    # Impulse is to make this a Mixin, but probably better as an object.
+class DatasetPopulator( BaseDatasetPopulator ):
 
     def __init__( self, galaxy_interactor ):
         self.galaxy_interactor = galaxy_interactor
+
+    def _post( self, route, data={}, files=None ):
+        files = data.get( "__files", None )
+        if files is not None:
+            del data[ "__files" ]
+
+        return self.galaxy_interactor.post( route, data, files=files )
+
+    def _get( self, route ):
+        return self.galaxy_interactor.get( route )
+
+    def _summarize_history_errors( self, history_id ):
+        self.galaxy_interactor._summarize_history_errors( history_id )
+
+
+class BaseWorkflowPopulator( object ):
 
     def load_workflow( self, name, content=workflow_str, add_pja=False ):
         workflow = json.loads( content )
@@ -207,8 +233,31 @@ class WorkflowPopulator( object ):
             workflow=json.dumps( workflow ),
             **create_kwds
         )
-        upload_response = self.galaxy_interactor.post( "workflows/upload", data=data )
+        upload_response = self._post( "workflows/upload", data=data )
         return upload_response
+
+    def wait_for_invocation( self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT ):
+        url = "workflows/%s/usage/%s" % ( workflow_id, invocation_id )
+        return wait_on_state( lambda: self._get( url ), timeout=timeout  )
+
+    def wait_for_workflow( self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT ):
+        """ Wait for a workflow invocation to completely schedule and then history
+        to be complete. """
+        self.wait_for_invocation( workflow_id, invocation_id, timeout=timeout )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=assert_ok, timeout=timeout )
+
+
+class WorkflowPopulator( BaseWorkflowPopulator ):
+
+    def __init__( self, galaxy_interactor ):
+        self.galaxy_interactor = galaxy_interactor
+        self.dataset_populator = DatasetPopulator( galaxy_interactor )
+
+    def _post( self, route, data={} ):
+        return self.galaxy_interactor.post( route, data )
+
+    def _get( self, route ):
+        return self.galaxy_interactor.get( route )
 
 
 class LibraryPopulator( object ):
@@ -280,15 +329,11 @@ class LibraryPopulator( object ):
         def show():
             return self.api_test_case.galaxy_interactor.get( "libraries/%s/contents/%s" % ( library[ "id" ], dataset[ "id" ] ) )
 
-        wait_on_state(show)
+        wait_on_state(show, timeout=DEFAULT_TIMEOUT)
         return show().json()
 
 
-class DatasetCollectionPopulator( object ):
-
-    def __init__( self, galaxy_interactor ):
-        self.galaxy_interactor = galaxy_interactor
-        self.dataset_populator = DatasetPopulator( galaxy_interactor )
+class BaseDatasetCollectionPopulator( object ):
 
     def create_list_from_pairs( self, history_id, pairs ):
         element_identifiers = []
@@ -309,8 +354,6 @@ class DatasetCollectionPopulator( object ):
 
     def create_list_of_pairs_in_history( self, history_id, **kwds ):
         pair1 = self.create_pair_in_history( history_id, **kwds ).json()["id"]
-        #pair2 = self.create_pair_in_history( history_id, **kwds ).json()["id"]
-        #pair3 = self.create_pair_in_history( history_id, **kwds ).json()["id"]
         return self.create_list_from_pairs( history_id, [ pair1 ] )
 
     def create_pair_in_history( self, history_id, **kwds ):
@@ -374,8 +417,7 @@ class DatasetCollectionPopulator( object ):
         return element_identifiers
 
     def __create( self, payload ):
-        create_response = self.galaxy_interactor.post( "dataset_collections", data=payload )
-        return create_response
+        return self._create_collection( payload )
 
     def __datasets( self, history_id, count, contents=None ):
         datasets = []
@@ -387,7 +429,18 @@ class DatasetCollectionPopulator( object ):
         return datasets
 
 
-def wait_on_state( state_func, assert_ok=False, timeout=5 ):
+class DatasetCollectionPopulator( BaseDatasetCollectionPopulator ):
+
+    def __init__( self, galaxy_interactor ):
+        self.galaxy_interactor = galaxy_interactor
+        self.dataset_populator = DatasetPopulator( galaxy_interactor )
+
+    def _create_collection( self, payload ):
+        create_response = self.galaxy_interactor.post( "dataset_collections", data=payload )
+        return create_response
+
+
+def wait_on_state( state_func, assert_ok=False, timeout=DEFAULT_TIMEOUT ):
     def get_state( ):
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."

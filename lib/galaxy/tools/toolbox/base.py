@@ -1,13 +1,12 @@
+import logging
 import os
 import re
-import shutil
 import string
 import tarfile
 import tempfile
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
+from markupsafe import escape
 
 from galaxy.model.item_attrs import Dictifiable
 
@@ -23,6 +22,7 @@ from .panel import ToolPanelElements
 from .panel import ToolSectionLabel
 from .panel import ToolSection
 from .panel import panel_item_types
+from .integrated_panel import ManagesIntegratedToolPanelMixin
 
 from .lineages import LineageMap
 from .tags import tool_tag_manager
@@ -31,28 +31,11 @@ from .filters import FilterFactory
 from .watcher import get_watcher
 
 from galaxy.web.form_builder import SelectField
-from galaxy.web.framework.helpers import escape
 
-import logging
 log = logging.getLogger( __name__ )
 
 
-INTEGRATED_TOOL_PANEL_DESCRIPTION = """
-This is Galaxy's integrated tool panel and should be modified directly only for
-reordering tools inside a section. Each time Galaxy starts up, this file is
-synchronized with the various tool config files: tools, sections and labels
-added to one of these files, will be added also here in the appropriate place,
-while elements removed from the tool config files will be correspondingly
-deleted from this file.
-To modify locally managed tools (e.g. from tool_conf.xml) modify that file
-directly and restart Galaxy. Whenever possible Tool Shed managed tools (e.g.
-from shed_tool_conf.xml) should be managed from within the Galaxy interface or
-via its API - but if changes are necessary (such as to hide a tool or re-assign
-its section) modify that file and restart Galaxy.
-"""
-
-
-class AbstractToolBox( object, Dictifiable ):
+class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
     """
     Abstract container for managing a ToolPanel - containing tools and
     workflows optionally in labelled sections.
@@ -68,6 +51,7 @@ class AbstractToolBox( object, Dictifiable ):
         # shed_tool_conf.xml file.
         self._dynamic_tool_confs = []
         self._tools_by_id = {}
+        self._integrated_section_by_tool = {}
         # Tool lineages can contain chains of related tools with different ids
         # so each will be present once in the above dictionary. The following
         # dictionary can instead hold multiple tools with different versions.
@@ -78,15 +62,8 @@ class AbstractToolBox( object, Dictifiable ):
         self._index = 0
         self.data_manager_tools = odict()
         self._lineage_map = LineageMap( app )
-        # File that contains the XML section and tool tags from all tool panel config files integrated into a
-        # single file that defines the tool panel layout.  This file can be changed by the Galaxy administrator
-        # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
-        self._integrated_tool_panel_config = app.config.integrated_tool_panel_config
-        # In-memory dictionary that defines the layout of the tool_panel.xml file on disk.
-        self._integrated_tool_panel = ToolPanelElements()
-        self._integrated_tool_panel_config_has_contents = os.path.exists( self._integrated_tool_panel_config ) and os.stat( self._integrated_tool_panel_config ).st_size > 0
-        if self._integrated_tool_panel_config_has_contents:
-            self._load_integrated_tool_panel_keys()
+        # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents
+        self._init_integrated_tool_panel( app.config )
         # The following refers to the tool_path config setting for backward compatibility.  The shed-related
         # (e.g., shed_tool_conf.xml) files include the tool_path attribute within the <toolbox> tag.
         self._tool_root_dir = tool_root_dir
@@ -98,12 +75,7 @@ class AbstractToolBox( object, Dictifiable ):
         if self.app.name == 'galaxy' and self._integrated_tool_panel_config_has_contents:
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
             self._load_tool_panel()
-        if app.config.update_integrated_tool_panel:
-            # Write the current in-memory integrated_tool_panel to the integrated_tool_panel.xml file.
-            # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
-            # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
-            # will be False when things like functional tests are the caller.
-            self._write_integrated_tool_panel_config_file()
+        self._save_integrated_tool_panel()
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
         raise NotImplementedError()
@@ -215,9 +187,8 @@ class AbstractToolBox( object, Dictifiable ):
         for index, my_shed_tool_conf in enumerate( self._dynamic_tool_confs ):
             if shed_conf['config_filename'] == my_shed_tool_conf['config_filename']:
                 self._dynamic_tool_confs[ index ] = shed_conf
-        if integrated_panel_changes and app.config.update_integrated_tool_panel:
-            # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
-            self._write_integrated_tool_panel_config_file()
+        if integrated_panel_changes:
+            self._save_integrated_tool_panel()
         app.reindex_tool_search()
 
     def get_section( self, section_id, new_label=None, create_if_needed=False ):
@@ -237,7 +208,7 @@ class AbstractToolBox( object, Dictifiable ):
                 'version': '',
             }
             tool_section = ToolSection( section_dict )
-            self._tool_panel[ tool_panel_section_key ] = tool_section
+            self._tool_panel.append_section( tool_panel_section_key, tool_section )
             log.debug( "Loading new tool panel section: %s" % str( tool_section.name ) )
         else:
             tool_section = None
@@ -245,19 +216,10 @@ class AbstractToolBox( object, Dictifiable ):
 
     def get_integrated_section_for_tool( self, tool ):
         tool_id = tool.id
-        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
-            if item:
-                if item_type == panel_item_types.TOOL:
-                    if item.id == tool_id:
-                        return '', ''
-                if item_type == panel_item_types.SECTION:
-                    section_id = item.id or ''
-                    section_name = item.name or ''
-                    for section_key, section_item_type, section_item in item.panel_items_iter():
-                        if section_item_type == panel_item_types.TOOL:
-                            if section_item:
-                                if section_item.id == tool_id:
-                                    return section_id, section_name
+
+        if tool_id in self._integrated_section_by_tool:
+            return self._integrated_section_by_tool[tool_id]
+
         return None, None
 
     def __resolve_tool_path(self, tool_path, config_filename):
@@ -338,6 +300,7 @@ class AbstractToolBox( object, Dictifiable ):
                 tool_id = key.replace( 'tool_', '', 1 )
                 if tool_id in self._tools_by_id:
                     self.__add_tool_to_tool_panel( val, self._tool_panel, section=False )
+                    self._integrated_section_by_tool[tool_id] = '', ''
             elif item_type == panel_item_types.WORKFLOW:
                 workflow_id = key.replace( 'workflow_', '', 1 )
                 if workflow_id in self._workflows_by_id:
@@ -359,6 +322,7 @@ class AbstractToolBox( object, Dictifiable ):
                         tool_id = section_key.replace( 'tool_', '', 1 )
                         if tool_id in self._tools_by_id:
                             self.__add_tool_to_tool_panel( section_val, section, section=True )
+                            self._integrated_section_by_tool[tool_id] = key, val.name
                     elif section_item_type == panel_item_types.WORKFLOW:
                         workflow_id = section_key.replace( 'workflow_', '', 1 )
                         if workflow_id in self._workflows_by_id:
@@ -400,52 +364,6 @@ class AbstractToolBox( object, Dictifiable ):
             elif elem.tag == 'label':
                 self._integrated_tool_panel.stub_label( key )
 
-    def _write_integrated_tool_panel_config_file( self ):
-        """
-        Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators
-        use this file to manage the tool panel, we'll not use xml_to_string() since it doesn't write XML quite right.
-        """
-        fd, filename = tempfile.mkstemp()
-        os.write( fd, '<?xml version="1.0"?>\n' )
-        os.write( fd, '<toolbox>\n' )
-        os.write( fd, '    <!--\n    ')
-        os.write( fd, '\n    '.join( [ l for l in INTEGRATED_TOOL_PANEL_DESCRIPTION.split("\n") if l ] ) )
-        os.write( fd, '\n    -->\n')
-        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
-            if item:
-                if item_type == panel_item_types.TOOL:
-                    os.write( fd, '    <tool id="%s" />\n' % item.id )
-                elif item_type == panel_item_types.WORKFLOW:
-                    os.write( fd, '    <workflow id="%s" />\n' % item.id )
-                elif item_type == panel_item_types.LABEL:
-                    label_id = item.id or ''
-                    label_text = item.text or ''
-                    label_version = item.version or ''
-                    os.write( fd, '    <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-                elif item_type == panel_item_types.SECTION:
-                    section_id = item.id or ''
-                    section_name = item.name or ''
-                    section_version = item.version or ''
-                    os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( section_id, section_name, section_version ) )
-                    for section_key, section_item_type, section_item in item.panel_items_iter():
-                        if section_item_type == panel_item_types.TOOL:
-                            if section_item:
-                                os.write( fd, '        <tool id="%s" />\n' % section_item.id )
-                        elif section_item_type == panel_item_types.WORKFLOW:
-                            if section_item:
-                                os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
-                        elif section_item_type == panel_item_types.LABEL:
-                            if section_item:
-                                label_id = section_item.id or ''
-                                label_text = section_item.text or ''
-                                label_version = section_item.version or ''
-                                os.write( fd, '        <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-                    os.write( fd, '    </section>\n' )
-        os.write( fd, '</toolbox>\n' )
-        os.close( fd )
-        shutil.move( filename, os.path.abspath( self._integrated_tool_panel_config ) )
-        os.chmod( self._integrated_tool_panel_config, 0644 )
-
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False, exact=False ):
         """Attempt to locate a tool in the tool box."""
         if tool_version:
@@ -457,9 +375,9 @@ class AbstractToolBox( object, Dictifiable ):
         if tool_id in self._tools_by_id and not get_all_versions:
             if tool_version and tool_version in self._tool_versions_by_id[ tool_id ]:
                 return self._tool_versions_by_id[ tool_id ][ tool_version ]
-            #tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
+            # tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
             return self._tools_by_id[ tool_id ]
-        #exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
+        # exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
         rval = []
         tool_lineage = self._lineage_map.get( tool_id )
         if tool_lineage:
@@ -469,7 +387,7 @@ class AbstractToolBox( object, Dictifiable ):
                 if lineage_tool:
                     rval.append( lineage_tool )
         if not rval:
-            #still no tool, do a deeper search and try to match by old ids
+            # still no tool, do a deeper search and try to match by old ids
             for tool in self._tools_by_id.itervalues():
                 if tool.old_id == tool_id:
                     rval.append( tool )
@@ -478,14 +396,14 @@ class AbstractToolBox( object, Dictifiable ):
                 return rval
             else:
                 if tool_version:
-                    #return first tool with matching version
+                    # return first tool with matching version
                     for tool in rval:
                         if tool.version == tool_version:
                             return tool
-                #No tool matches by version, simply return the first available tool found
+                # No tool matches by version, simply return the first available tool found
                 return rval[0]
-        #We now likely have a Toolshed guid passed in, but no supporting database entries
-        #If the tool exists by exact id and is loaded then provide exact match within a list
+        # We now likely have a Toolshed guid passed in, but no supporting database entries
+        # If the tool exists by exact id and is loaded then provide exact match within a list
         if tool_id in self._tools_by_id:
             return[ self._tools_by_id[ tool_id ] ]
         return None
@@ -626,10 +544,17 @@ class AbstractToolBox( object, Dictifiable ):
                         has_elems.insert( tool_panel_index,
                                           replacement_tool_key,
                                           replacement_tool_version )
+                        self._integrated_section_by_tool[ tool_id ] = available_tool_section_id, available_tool_section_name
                     else:
                         del has_elems[ tool_key ]
+
+                        if tool_id in self._integrated_section_by_tool:
+                            del self._integrated_section_by_tool[ tool_id ]
                 else:
                     del has_elems[ tool_key ]
+
+                    if tool_id in self._integrated_section_by_tool:
+                        del self._integrated_section_by_tool[ tool_id ]
             if remove_from_config:
                 itegrated_items = integrated_has_elems.panel_items()
                 if tool_key in itegrated_items:
@@ -755,6 +680,14 @@ class AbstractToolBox( object, Dictifiable ):
                 index=sub_index,
                 internal=True,
             )
+
+        # Ensure each tool's section is stored
+        for section_key, section_item_type, section_item in integrated_elems.panel_items_iter():
+            if section_item_type == panel_item_types.TOOL:
+                if section_item:
+                    tool_id = section_key.replace( 'tool_', '', 1 )
+                    self._integrated_section_by_tool[tool_id] = integrated_section.id, integrated_section.name
+
         if load_panel_dict:
             self._tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
@@ -777,13 +710,7 @@ class AbstractToolBox( object, Dictifiable ):
 
                 if async:
                     self._load_tool_panel()
-
-                    if self.app.config.update_integrated_tool_panel:
-                        # Write the current in-memory integrated_tool_panel to the integrated_tool_panel.xml file.
-                        # This will cover cases where the Galaxy administrator manually edited one or more of the tool panel
-                        # config files, adding or removing locally developed tools or workflows.  The value of integrated_tool_panel
-                        # will be False when things like functional tests are the caller.
-                        self._write_integrated_tool_panel_config_file()
+                    self._save_integrated_tool_panel()
                 return tool.id
             except Exception:
                 log.exception("Failed to load potential tool %s." % tool_file)
@@ -810,6 +737,10 @@ class AbstractToolBox( object, Dictifiable ):
             # to monitor such a large directory.
             self._tool_watcher.watch_file( config_file, tool.id )
         return tool
+
+    def load_hidden_lib_tool( self, path ):
+        tool_xml = os.path.join( os.getcwd(), "lib", path )
+        return self.load_hidden_tool( tool_xml )
 
     def load_hidden_tool( self, config_file, **kwds ):
         """ Load a hidden tool (in this context meaning one that does not
@@ -978,7 +909,9 @@ class AbstractToolBox( object, Dictifiable ):
                     if tool_key in val.elems:
                         self._tool_panel[ key ].elems[ tool_key ] = new_tool
                         break
-            self._tools_by_id[ tool_id ] = new_tool
+            # (Re-)Register the reloaded tool, this will handle
+            #  _tools_by_id and _tool_versions_by_id
+            self.register_tool( new_tool )
             message = "Reloaded the tool:<br/>"
             message += "<b>name:</b> %s<br/>" % old_tool.name
             message += "<b>id:</b> %s<br/>" % old_tool.id
@@ -1012,7 +945,7 @@ class AbstractToolBox( object, Dictifiable ):
                             break
                 if tool_id in self.data_manager_tools:
                     del self.data_manager_tools[ tool_id ]
-            #TODO: do we need to manually remove from the integrated panel here?
+            # TODO: do we need to manually remove from the integrated panel here?
             message = "Removed the tool:<br/>"
             message += "<b>name:</b> %s<br/>" % tool.name
             message += "<b>id:</b> %s<br/>" % tool.id
@@ -1062,10 +995,9 @@ class AbstractToolBox( object, Dictifiable ):
     def tool_panel_contents( self, trans, **kwds ):
         """ Filter tool_panel contents for displaying for user.
         """
-        context = Bunch( toolbox=self, trans=trans )
-        filters = self._filter_factory.build_filters( trans )
+        filter_method = self._build_filter_method( trans )
         for _, item_type, elt in self._tool_panel.panel_items_iter():
-            elt = _filter_for_panel( elt, item_type, filters, context )
+            elt = filter_method( elt, item_type )
             if elt:
                 yield elt
 
@@ -1084,8 +1016,12 @@ class AbstractToolBox( object, Dictifiable ):
             for elt in panel_elts:
                 rval.append( elt.to_dict( **kwargs ) )
         else:
+            filter_method = self._build_filter_method( trans )
             tools = []
             for id, tool in self._tools_by_id.items():
+                tool = filter_method( tool, panel_item_types.TOOL )
+                if not tool:
+                    continue
                 tools.append( tool.to_dict( trans, link_details=True ) )
             rval = tools
 
@@ -1129,6 +1065,11 @@ class AbstractToolBox( object, Dictifiable ):
             return self._tools_by_id.get( lineage_tool_version.id, None )
         else:
             return self._tool_versions_by_id.get( lineage_tool_version.id, {} ).get( lineage_tool_version.version, None )
+
+    def _build_filter_method( self, trans ):
+        context = Bunch( toolbox=self, trans=trans )
+        filters = self._filter_factory.build_filters( trans )
+        return lambda element, item_type: _filter_for_panel(element, item_type, filters, context)
 
 
 def _filter_for_panel( item, item_type, filters, context ):

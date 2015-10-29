@@ -1,4 +1,9 @@
-import os, gzip, re, gzip, zipfile, binascii, bz2, imghdr
+import re
+import bz2
+import gzip
+import zipfile
+import binascii
+import imghdr
 from galaxy import util
 from StringIO import StringIO
 
@@ -12,8 +17,9 @@ except ImportError:
     except:
         PIL = None
 
+
 def check_image( file_path ):
-    if PIL != None:
+    if PIL is not None:
         try:
             im = PIL.open( file_path )
         except:
@@ -22,9 +28,10 @@ def check_image( file_path ):
             return im
         return False
     else:
-        if imghdr.what( file_path ) != None:
+        if imghdr.what( file_path ) is not None:
             return True
         return False
+
 
 def check_html( file_path, chunk=None ):
     if chunk is None:
@@ -52,6 +59,7 @@ def check_html( file_path, chunk=None ):
         temp.close()
     return False
 
+
 def check_binary( name, file_path=True ):
     # Handles files if file_path is True or text if file_path is False
     is_binary = False
@@ -59,7 +67,6 @@ def check_binary( name, file_path=True ):
         temp = open( name, "U" )
     else:
         temp = StringIO( name )
-    chars_read = 0
     try:
         for char in temp.read( 100 ):
             if util.is_binary( char ):
@@ -68,6 +75,7 @@ def check_binary( name, file_path=True ):
     finally:
         temp.close( )
     return is_binary
+
 
 def check_gzip( file_path ):
     # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
@@ -89,7 +97,7 @@ def check_gzip( file_path ):
             return ( True, True )
     except:
         return( False, False )
-    CHUNK_SIZE = 2**15 # 32Kb
+    CHUNK_SIZE = 2 ** 15  # 32Kb
     gzipped_file = gzip.GzipFile( file_path, mode='rb' )
     chunk = gzipped_file.read( CHUNK_SIZE )
     gzipped_file.close()
@@ -97,6 +105,7 @@ def check_gzip( file_path ):
     if check_html( file_path, chunk=chunk ):
         return ( True, False )
     return ( True, True )
+
 
 def check_bz2( file_path ):
     try:
@@ -107,7 +116,7 @@ def check_bz2( file_path ):
             return ( False, False )
     except:
         return( False, False )
-    CHUNK_SIZE = 2**15 # reKb
+    CHUNK_SIZE = 2 ** 15  # reKb
     bzipped_file = bz2.BZ2File( file_path, mode='rb' )
     chunk = bzipped_file.read( CHUNK_SIZE )
     bzipped_file.close()
@@ -116,14 +125,17 @@ def check_bz2( file_path ):
         return ( True, False )
     return ( True, True )
 
+
 def check_zip( file_path ):
     if zipfile.is_zipfile( file_path ):
         return True
     return False
 
+
 def is_bz2( file_path ):
     is_bz2, is_valid = check_bz2( file_path )
     return is_bz2
+
 
 def is_gzip( file_path ):
     is_gzipped, is_valid = check_gzip( file_path )

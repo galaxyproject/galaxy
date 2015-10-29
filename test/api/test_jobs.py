@@ -29,14 +29,23 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
     def test_index_state_filter( self ):
         # Initial number of ok jobs
         original_count = len( self.__uploads_with_state( "ok" ) )
-
         # Run through dataset upload to ensure num uplaods at least greater
         # by 1.
         self.__history_with_ok_dataset()
 
         # Verify number of ok jobs is actually greater.
-        new_count = len( self.__uploads_with_state( "ok" ) )
-        assert original_count < new_count
+        count_increased = False
+        for i in range(10):
+            new_count = len( self.__uploads_with_state( "ok" ) )
+            if original_count < new_count:
+                count_increased = True
+                break
+            time.sleep(.1)
+
+        if not count_increased:
+            template = "Jobs in ok state did not increase (was %d, now %d)"
+            message = template % (original_count, new_count)
+            raise AssertionError(message)
 
     def test_index_date_filter( self ):
         self.__history_with_new_dataset()
@@ -127,17 +136,27 @@ class JobsApiTestCase( api.ApiTestCase, TestsDatasets ):
 
         empty_search_response = self._post( "jobs/search", data=search_payload )
         self._assert_status_code_is( empty_search_response, 200 )
-        assert len( empty_search_response.json() ) == 0
+        self.assertEquals( len( empty_search_response.json() ), 0 )
 
         self.__run_cat_tool( history_id, dataset_id )
         self._wait_for_history( history_id, assert_ok=True )
 
-        self.__assert_one_search_result( search_payload )
+        search_count = -1
+        # in case job and history aren't updated at exactly the same
+        # time give time to wait
+        for i in range(5):
+            search_count = self._search_count(search_payload)
+            if search_count == 1:
+                break
+            time.sleep(.1)
 
-    def __assert_one_search_result( self, search_payload ):
+        self.assertEquals( search_count, 1 )
+
+    def _search_count( self, search_payload ):
         search_response = self._post( "jobs/search", data=search_payload )
         self._assert_status_code_is( search_response, 200 )
-        assert len( search_response.json() ) == 1, search_response.json()
+        search_json = search_response.json()
+        return len(search_json)
 
     def __run_cat_tool( self, history_id, dataset_id ):
         # Code duplication with test_jobs.py, eliminate

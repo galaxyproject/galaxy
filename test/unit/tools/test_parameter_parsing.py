@@ -204,7 +204,7 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         assert param.multiple is False
         assert param.options is None
         assert param.dynamic_options == "cow"
-        ## This should be None or something - not undefined.
+        # This should be None or something - not undefined.
         # assert not param.static_options
         assert param.is_dynamic
 

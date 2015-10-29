@@ -1,4 +1,4 @@
-<tool id="Convert characters1" name="Convert">
+<tool id="Convert characters1" name="Convert" version="1.0.0">
   <description>delimiters to TAB</description>
   <command interpreter="python">
 convert_characters.py

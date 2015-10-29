@@ -171,26 +171,6 @@ var JobCollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
     },
 
     // ........................................................................ misc
-    /** override to get a correct/smarter merge when incoming data is partial */
-    set : function( models, options ){
-        // arrrrrrrrrrrrrrrrrg...
-        //  (e.g. stupid backbone)
-        //  w/o this partial models from the server will fill in missing data with model defaults
-        //  and overwrite existing data on the client
-        // see Backbone.Collection.set and _prepareModel
-        var collection = this;
-        models = _.map( models, function( model ){
-            if( !collection.get( model.id ) ){ return model; }
-
-            // merge the models _BEFORE_ calling the superclass version
-            var merged = existing.toJSON();
-            _.extend( merged, model );
-            return merged;
-        });
-        // now call superclass when the data is filled
-        Backbone.Collection.prototype.set.call( this, models, options );
-    },
-
     /** String representation. */
     toString : function(){
          return ([ 'JobCollection(', this.length, ')' ].join( '' ));

@@ -35,8 +35,8 @@ var View = Options.BaseIcons.extend({
     /** Expand/collapse a sub group
     */
     _setState: function (header_id, is_expanded) {
-        var $button = this.$('#button-' + header_id);
-        var $subgroup = this.$('#subgroup-' + header_id);
+        var $button = this.$('.button-' + header_id);
+        var $subgroup = this.$('.subgroup-' + header_id);
         $button.data('is_expanded', is_expanded);
         if (is_expanded) {
             $subgroup.fadeIn('fast')
@@ -60,7 +60,7 @@ var View = Options.BaseIcons.extend({
         
         // attach event handler
         function attach($el, header_id) {
-            var $button = $el.find('#button-' + header_id);
+            var $button = $el.find('.button-' + header_id);
             $button.on('click', function() {
                 self._setState(header_id, !$button.data('is_expanded'));
             });
@@ -86,9 +86,9 @@ var View = Options.BaseIcons.extend({
                 var $group = $('<div/>');
                 if (has_options) {
                     // create button and subgroup
-                    var header_id = Utils.uuid();
-                    var $button = $('<span id="button-' + header_id + '" class="ui-drilldown-button form-toggle icon-button toggle-expand"/>');
-                    var $subgroup = $('<div id="subgroup-' + header_id + '" style="display: none; margin-left: 25px;"/>');
+                    var header_id = Utils.uid();
+                    var $button = $('<span class="button-' + header_id + ' ui-drilldown-button form-toggle icon-button toggle-expand"/>');
+                    var $subgroup = $('<div class="subgroup-' + header_id + '" style="display: none; margin-left: 25px;"/>');
 
                     // keep track of button and subgroup
                     new_header.push(header_id);

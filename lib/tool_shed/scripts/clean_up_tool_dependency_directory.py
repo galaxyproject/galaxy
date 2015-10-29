@@ -1,7 +1,8 @@
 import argparse
 import os
-import sys
 import shutil
+import sys
+
 
 def main( args ):
     if not os.path.exists( args.tool_dependency_dir ):

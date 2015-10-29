@@ -1,4 +1,4 @@
-<tool id="min_repeat" name="min_repeat">
+<tool id="min_repeat" name="min_repeat" version="0.1.0">
     <command>
         cat #for $q in $queries# ${q.input} #end for# > $out_file1 ;
         cat #for $q in $queries2# ${q.input2} #end for# > $out_file2
@@ -12,8 +12,8 @@
         </repeat>
     </inputs>
     <outputs>
-        <data name="out_file1" format="txt" />
-        <data name="out_file2" format="txt" />
+        <data name="out_file1" format="txt" label="Repeat 1 Datasets on ${on_string}" />
+        <data name="out_file2" format="txt" label="Repeat 2 Datasets on ${on_string}" />
     </outputs>
     <tests>
         <test>

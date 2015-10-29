@@ -16,16 +16,13 @@ from galaxy.exceptions import ObjectNotFound
 from ..objectstore import DiskObjectStore, ObjectStore, local_extra_dirs
 
 try:
-    import galaxy.eggs
-    galaxy.eggs.require( 'PyRods' )
-except Exception:
-    pass
-try:
     import irods
 except ImportError:
     irods = None
 
-NO_PYRODS_ERROR_MESSAGE = "IRODS object store configured, but no PyRods dependency available. Please install and properly configure PyRods or modify object store configuration."
+
+IRODS_IMPORT_MESSAGE = ('The Python irods package is required to use this '
+                        'feature, please install it')
 
 log = logging.getLogger( __name__ )
 
@@ -35,9 +32,8 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
     Galaxy object store based on iRODS
     """
     def __init__( self, config, file_path=None, extra_dirs=None ):
-        if irods is None:
-            raise Exception(NO_PYRODS_ERROR_MESSAGE)
         super( IRODSObjectStore, self ).__init__( config, file_path=file_path, extra_dirs=extra_dirs )
+        assert irods is not None, IRODS_IMPORT_MESSAGE
         self.cache_path = config.object_store_cache_path
         self.default_resource = config.irods_default_resource or None
 
@@ -89,9 +85,6 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
             path = path_join( path, alt_name if alt_name else default_name )
 
         path = path_join( self.root_collection_path, path )
-
-        #log.debug( 'iRODS path for %s %s is %s', obj.__class__.__name__, obj.id, path )
-
         return path
 
     def __get_cache_path( self, obj, **kwargs ):
@@ -225,10 +218,6 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
     @local_extra_dirs
     def get_filename( self, obj, **kwargs ):
         log.debug( "get_filename(): called on %s %s. For better performance, avoid this method and use get_data() instead.", obj.__class__.__name__, obj.id )
-
-        # For finding all places where get_filename is called...
-        #log.debug( ''.join( traceback.format_stack() ) )
-
         cached_path = self.__get_cache_path( obj, **kwargs )
 
         if not self.exists( obj, **kwargs ):
@@ -270,7 +259,7 @@ class IRODSObjectStore( DiskObjectStore, ObjectStore ):
             # otherwise deal with this potential deadlock and interrupted
             # transfers
             time.sleep( 5 )
-            log.debug( "get_filename(): waiting on incoming '%s' for %s %s",  incoming_path, obj.__class__.__name__, obj.id )
+            log.debug( "get_filename(): waiting on incoming '%s' for %s %s", incoming_path, obj.__class__.__name__, obj.id )
 
         return os.path.abspath( cached_path )
 

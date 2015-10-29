@@ -48,11 +48,11 @@ class ToolTestBuilder( object ):
         self.name = name
         self.maxseconds = maxseconds
         self.required_files = []
-        self.inputs = []
+        self.inputs = {}
         self.outputs = []
-        self.num_outputs = None  # By default do not making assertions on
-                                 # number of outputs - but to test filtering
-                                 # allow explicitly state number of outputs.
+        # By default do not making assertions on number of outputs - but to
+        # test filtering allow explicitly state number of outputs.
+        self.num_outputs = None
         self.error = False
         self.exception = None
 
@@ -71,9 +71,8 @@ class ToolTestBuilder( object ):
                 # No explicit value for param in test case, determine from default
                 query_value = test_param.checked
             else:
-                # Test case supplied value, check cases against this.
-                query_value = string_as_bool( declared_value )
-            matches_declared_value = lambda case_value: string_as_bool(case_value) == query_value
+                query_value = _process_bool_param_value( test_param, declared_value )
+            matches_declared_value = lambda case_value: _process_bool_param_value( test_param, case_value ) == query_value
         elif isinstance(test_param, galaxy.tools.parameters.basic.SelectToolParameter):
             if declared_value is not None:
                 # Test case supplied explicit value to check against.
@@ -133,7 +132,9 @@ class ToolTestBuilder( object ):
             self.stderr = test_dict.get("stderr", None)
             self.expect_exit_code = test_dict.get("expect_exit_code", None)
             self.expect_failure = test_dict.get("expect_failure", False)
+            self.md5 = test_dict.get("md5", None)
         except Exception, e:
+            self.inputs = {}
             self.error = True
             self.exception = e
 
@@ -156,7 +157,8 @@ class ToolTestBuilder( object ):
                     for input_name, input_value in case.inputs.items():
                         case_inputs = self.__process_raw_inputs( { input_name: input_value }, raw_inputs, parent_context=cond_context )
                         expanded_inputs.update( case_inputs )
-                    expanded_case_value = self.__split_if_str( case.value )
+                    if not value.type == "text":
+                        expanded_case_value = self.__split_if_str( case.value )
                     if case_value is not None:
                         # A bit tricky here - we are growing inputs with value
                         # that may be implicit (i.e. not defined by user just
@@ -165,8 +167,14 @@ class ToolTestBuilder( object ):
                         # as a new instance with value defined and hence enter
                         # an infinite loop - hence the "case_value is not None"
                         # check.
-                        expanded_inputs[ case_context.for_state() ] = expanded_case_value
-
+                        processed_value = _process_simple_value( value.test_param, expanded_case_value )
+                        expanded_inputs[ case_context.for_state() ] = processed_value
+            elif isinstance( value, galaxy.tools.parameters.grouping.Section ):
+                context = ParamContext( name=value.name, parent_context=parent_context )
+                for r_name, r_value in value.inputs.iteritems():
+                    expanded_input = self.__process_raw_inputs( { context.for_state(): r_value }, raw_inputs, parent_context=context )
+                    if expanded_input:
+                        expanded_inputs.update( expanded_input )
             elif isinstance( value, galaxy.tools.parameters.grouping.Repeat ):
                 repeat_index = 0
                 while True:
@@ -185,7 +193,8 @@ class ToolTestBuilder( object ):
                 raw_input = context.extract_value( raw_inputs )
                 if raw_input:
                     (name, param_value, param_extra) = raw_input
-                    param_value = self.__split_if_str( param_value )
+                    if not value.type == "text":
+                        param_value = self.__split_if_str( param_value )
                     if isinstance( value, galaxy.tools.parameters.basic.DataToolParameter ):
                         if not isinstance(param_value, list):
                             param_value = [ param_value ]
@@ -197,33 +206,8 @@ class ToolTestBuilder( object ):
                         for ( name, value, extra ) in collection_def.collect_inputs():
                             require_file( name, value, extra, self.required_files )
                         processed_value = collection_def
-                    elif isinstance( value, galaxy.tools.parameters.basic.SelectToolParameter ) and hasattr( value, 'static_options' ):
-                        # Tests may specify values as either raw value or the value
-                        # as they appear in the list - the API doesn't and shouldn't
-                        # accept the text value - so we need to convert the text
-                        # into the form value.
-                        def process_param_value( param_value ):
-                            found_value = False
-                            value_for_text = None
-                            if value.static_options:
-                                for (text, opt_value, selected) in value.static_options:
-                                    if param_value == opt_value:
-                                        found_value = True
-                                    if value_for_text is None and param_value == text:
-                                        value_for_text = opt_value
-                            if not found_value and value_for_text is not None:
-                                processed_value = value_for_text
-                            else:
-                                processed_value = param_value
-                            return processed_value
-                        # Do replacement described above for lists or singleton
-                        # values.
-                        if isinstance( param_value, list ):
-                            processed_value = map( process_param_value, param_value )
-                        else:
-                            processed_value = process_param_value( param_value )
                     else:
-                        processed_value = param_value
+                        processed_value = _process_simple_value( value, param_value )
                     expanded_inputs[ context.for_state() ] = processed_value
         return expanded_inputs
 
@@ -232,6 +216,56 @@ class ToolTestBuilder( object ):
             assert input_parameter.optional, '%s is not optional. You must provide a valid filename.' % name
             return value
         return require_file( name, value, extra, self.required_files )
+
+
+def _process_simple_value( param, param_value ):
+    if isinstance( param, galaxy.tools.parameters.basic.SelectToolParameter ) and hasattr( param, 'static_options' ):
+        # Tests may specify values as either raw value or the value
+        # as they appear in the list - the API doesn't and shouldn't
+        # accept the text value - so we need to convert the text
+        # into the form value.
+        def process_param_value( param_value ):
+            found_value = False
+            value_for_text = None
+            if param.static_options:
+                for (text, opt_value, selected) in param.static_options:
+                    if param_value == opt_value:
+                        found_value = True
+                    if value_for_text is None and param_value == text:
+                        value_for_text = opt_value
+            if not found_value and value_for_text is not None:
+                processed_value = value_for_text
+            else:
+                processed_value = param_value
+            return processed_value
+        # Do replacement described above for lists or singleton
+        # values.
+        if isinstance( param_value, list ):
+            processed_value = map( process_param_value, param_value )
+        else:
+            processed_value = process_param_value( param_value )
+    elif isinstance( param, galaxy.tools.parameters.basic.BooleanToolParameter ):
+        # Like above, tests may use the tool define values of simply
+        # true/false.
+        processed_value = _process_bool_param_value( param, param_value )
+    else:
+        processed_value = param_value
+    return processed_value
+
+
+def _process_bool_param_value( param, param_value ):
+    assert isinstance( param, galaxy.tools.parameters.basic.BooleanToolParameter )
+    was_list = False
+    if isinstance( param_value, list ):
+        was_list = True
+        param_value = param_value[0]
+    if param.truevalue == param_value:
+        processed_value = True
+    elif param.falsevalue == param_value:
+        processed_value = False
+    else:
+        processed_value = string_as_bool( param_value )
+    return [ processed_value ] if was_list else processed_value
 
 
 @nottest
@@ -246,7 +280,7 @@ def test_data_iter( required_files ):
         )
         edit_attributes = extra.get( 'edit_attributes', [] )
 
-        #currently only renaming is supported
+        # currently only renaming is supported
         for edit_att in edit_attributes:
             if edit_att.get( 'type', None ) == 'name':
                 new_name = edit_att.get( 'value', None )
@@ -336,46 +370,3 @@ class RootParamContext(object):
 
     def get_index( self ):
         return 0
-
-
-def expand_input_elems( root_elem, prefix="" ):
-    __append_prefix_to_params( root_elem, prefix )
-
-    repeat_elems = root_elem.findall( 'repeat' )
-    indices = {}
-    for repeat_elem in repeat_elems:
-        name = repeat_elem.get( "name" )
-        if name not in indices:
-            indices[ name ] = 0
-            index = 0
-        else:
-            index = indices[ name ] + 1
-            indices[ name ] = index
-
-        new_prefix = __prefix_join( prefix, name, index=index )
-        expand_input_elems( repeat_elem, new_prefix )
-        __pull_up_params( root_elem, repeat_elem )
-        root_elem.remove( repeat_elem )
-
-    cond_elems = root_elem.findall( 'conditional' )
-    for cond_elem in cond_elems:
-        new_prefix = __prefix_join( prefix, cond_elem.get( "name" ) )
-        expand_input_elems( cond_elem, new_prefix )
-        __pull_up_params( root_elem, cond_elem )
-        root_elem.remove( cond_elem )
-
-
-def __append_prefix_to_params( elem, prefix ):
-    for param_elem in elem.findall( 'param' ):
-        param_elem.set( "name", __prefix_join( prefix, param_elem.get( "name" ) ) )
-
-
-def __pull_up_params( parent_elem, child_elem ):
-    for param_elem in child_elem.findall( 'param' ):
-        parent_elem.append( param_elem )
-        child_elem.remove( param_elem )
-
-
-def __prefix_join( prefix, name, index=None ):
-    name = name if index is None else "%s_%d" % ( name, index )
-    return name if not prefix else "%s|%s" % ( prefix, name )

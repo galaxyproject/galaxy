@@ -56,6 +56,13 @@ var HistoryContentMixin = {
         this.set( 'type_id', this._typeIdStr() );
     },
 
+    /** override because backbone tests boolean( idAttribute ), but it's not an empty string even for new models
+     *  due to our use of type_id.
+     */
+    isNew : function(){
+        return !this.get( 'id' );
+    },
+
     // ........................................................................ common queries
     /** the more common alias of visible */
     hidden : function(){
@@ -85,7 +92,7 @@ var HistoryContentMixin = {
 //TODO: global
 //TODO: these are probably better done on the leaf classes
     /** history content goes through the 'api/histories' API */
-    urlRoot: galaxy_config.root + 'api/histories/',
+    urlRoot: ( window.Galaxy? Galaxy.options.root : '/' ) + 'api/histories/',
 
     /** full url spec. for this content */
     url : function(){

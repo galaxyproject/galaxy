@@ -128,13 +128,15 @@
 ## ----------------------------------------------------------------------------
 <%def name="javascripts()">
 <%
+    from galaxy.managers import hdas
+    hda_serializer = hdas.HDASerializer( trans.app )
     self.js_app = 'display-structured'
 
     controller = trans.webapp.controllers[ 'history' ]
     hda_dicts = []
     id_hda_dict_map = {}
     for hda in history.active_datasets:
-        hda_dict = controller.get_hda_dict( trans, hda )
+        hda_dict = hda_serializer.serialize_to_view( hda, user=trans.user, trans=trans, view='detailed' )
         id_hda_dict_map[ hda_dict[ 'id' ] ] = hda_dict
         hda_dicts.append( hda_dict )
 %>
@@ -153,7 +155,7 @@
                         linkTarget      : '_self',
                         purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                         logger          : Galaxy.logger
-                    }).render( false );
+                    }).render( 0 );
                 });
             });
         });

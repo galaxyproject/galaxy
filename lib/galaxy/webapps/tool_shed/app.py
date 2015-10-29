@@ -53,6 +53,8 @@ class UniverseApplication( object ):
         # because the Tool Shed should always have an empty dictionary!
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_path )
         self.genome_builds = GenomeBuilds( self )
+        from galaxy import auth
+        self.auth_manager = auth.AuthManager( self )
         # Citation manager needed to load tools.
         from galaxy.managers.citations import CitationsManager
         self.citations_manager = CitationsManager( self )

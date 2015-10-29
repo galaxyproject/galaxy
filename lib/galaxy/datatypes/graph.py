@@ -44,9 +44,9 @@ class Xgmml( xml.GenericXml ):
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
         if len( split_files ) > 1:
-            raise NotImplementedError( "Merging multiple XML files is non-trivial "
-                                     + "and must be implemented for each XML type" )
-        #For one file only, use base class method (move/copy)
+            raise NotImplementedError( "Merging multiple XML files is non-trivial " +
+                                       "and must be implemented for each XML type" )
+        # For one file only, use base class method (move/copy)
         data.Text.merge( split_files, output_file )
 
     @dataproviders.decorators.dataprovider_factory( 'node-edge', dataproviders.hierarchy.XMLDataProvider.settings )
@@ -94,11 +94,12 @@ class Sif( tabular.Tabular ):
         return SIFGraphDataProvider( dataset_source, **settings )
 
 
-#TODO: we might want to look at rdflib or a similar, larger lib/egg
+# TODO: we might want to look at rdflib or a similar, larger lib/egg
 class Rdf( xml.GenericXml ):
     """
     Resource Description Framework format (http://www.w3.org/RDF/).
     """
+    edam_format = "format_2376"
     file_ext = "rdf"
 
     def sniff( self, filename ):
@@ -116,9 +117,9 @@ class Rdf( xml.GenericXml ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    #TODO: won't be as simple
-    #@dataproviders.decorators.dataprovider_factory( 'node-edge', dataproviders.column.ColumnarDataProvider.settings )
-    #def node_edge_dataprovider( self, dataset, **settings ):
+    # TODO: won't be as simple
+    # @dataproviders.decorators.dataprovider_factory( 'node-edge', dataproviders.column.ColumnarDataProvider.settings )
+    # def node_edge_dataprovider( self, dataset, **settings ):
     #    dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
     #    return None
 

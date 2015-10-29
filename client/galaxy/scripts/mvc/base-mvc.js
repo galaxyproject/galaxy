@@ -2,7 +2,6 @@ define([
     'utils/add-logging',
     'utils/localization'
 ], function( addLogging, _l ){
-//ASSUMES: backbone
 //==============================================================================
 /** @class Mixin to add logging capabilities to an object.
  *      Designed to allow switching an objects log output off/on at one central
@@ -33,7 +32,7 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
     // replace null with console (if available) to see all logs
     logger       : null,
     _logNamespace : '?',
-    
+
     /** Output log messages/arguments to logger.
      *  @param {Arguments} ... (this function is variadic)
      *  @returns undefined if not this.logger
@@ -94,7 +93,7 @@ var SessionStorageModel = Backbone.Model.extend({
         if( !options.silent ){
             model.trigger( 'request', model, {}, options );
         }
-        var returned;
+        var returned = {};
         switch( method ){
             case 'create'   : returned = this._create( model ); break;
             case 'read'     : returned = this._read( model );   break;
@@ -111,9 +110,19 @@ var SessionStorageModel = Backbone.Model.extend({
 
     /** set storage to the stringified item */
     _create : function( model ){
-        var json = model.toJSON(),
-            set = sessionStorage.setItem( model.id, JSON.stringify( json ) );
-        return ( set === null )?( set ):( json );
+        try {
+            var json = model.toJSON(),
+                set = sessionStorage.setItem( model.id, JSON.stringify( json ) );
+            return ( set === null )?( set ):( json );
+        // DOMException is thrown in Safari if in private browsing mode and sessionStorage is attempted:
+        // http://stackoverflow.com/questions/14555347
+        // TODO: this could probably use a more general soln - like detecting priv. mode + safari => non-ajaxing Model
+        } catch( err ){
+            if( !( ( err instanceof DOMException ) && ( navigator.userAgent.indexOf("Safari") > -1 ) ) ){
+                throw err;
+            }
+        }
+        return null;
     },
 
     /** read and parse json from storage */
@@ -436,7 +445,7 @@ var SelectableViewMixin = {
         /** is the view currently selected? */
         this.selected   = attributes.selected || false;
     },
-    
+
     /** $el sub-element where the selector is rendered and what can be clicked to select. */
     $selector : function(){
         return this.$( '.selector' );

@@ -8,6 +8,7 @@ var View = Backbone.View.extend({
     
     // defaults options
     optionsDefault: {
+        id              : Utils.uid(),
         title           : '',
         icon            : '',
         buttons         : null,
@@ -87,7 +88,12 @@ var View = Backbone.View.extend({
     append: function($el) {
         this.$content.append($el);
     },
-        
+
+    // remove all content
+    empty: function() {
+        this.$content.empty();
+    },
+
     // content
     content: function() {
         return this.$content;
@@ -146,7 +152,17 @@ var View = Backbone.View.extend({
         }
         return $el.html();
     },
-    
+
+    // disable content access
+    disable: function() {
+        this.$('.portlet-backdrop').show();
+    },
+
+    // enable content access
+    enable: function() {
+        this.$('.portlet-backdrop').hide();
+    },
+
     // fill regular modal template
     _template: function(options) {
         var tmpl =  '<div id="' + options.id + '" class="' + options.cls + '">';
@@ -176,6 +192,7 @@ var View = Backbone.View.extend({
         }
         
         tmpl +=         '</div>' +
+                        '<div class="portlet-backdrop"/>' +
                     '</div>';
         return tmpl;
     }

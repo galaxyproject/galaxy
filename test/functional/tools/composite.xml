@@ -1,4 +1,4 @@
-<tool id="composite" version="1.0.0">
+<tool id="composite" name="composite" version="1.0.0">
   <command>cat '$input.extra_files_path/Sequences' > $output</command>
   <inputs>
     <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>

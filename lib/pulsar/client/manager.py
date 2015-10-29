@@ -1,4 +1,5 @@
 import threading
+import functools
 try:
     from Queue import Queue
 except ImportError:
@@ -68,7 +69,7 @@ class ClientManager(object):
         job_manager_interface = job_manager_interface_class(**job_manager_interface_args)
         return self.client_class(destination_params, job_id, job_manager_interface, **self.extra_client_kwds)
 
-    def shutdown(self):
+    def shutdown(self, ensure_cleanup=False):
         pass
 
 
@@ -87,31 +88,54 @@ class MessageQueueClientManager(object):
         self.status_cache = {}
         self.callback_lock = threading.Lock()
         self.callback_thread = None
+        self.ack_consumer_threads = {}
         self.active = True
+
+    def callback_wrapper(self, callback, body, message):
+        if message.acknowledged:
+            log.info("Message is already acknowledged (by an upstream "
+                     "callback?), Pulsar client will not handle this message")
+            return
+        if not self.active:
+            log.debug("Obtained update message for inactive client manager, attempting requeue.")
+            try:
+                message.requeue()
+                log.debug("Requeue succeeded, will likely be handled next time consumer is enabled.")
+            except Exception:
+                log.debug("Requeue failed, message may be lost?")
+            return
+
+        try:
+            if "job_id" in body:
+                job_id = body["job_id"]
+                self.status_cache[job_id] = body
+            log.debug("Handling asynchronous status update from remote Pulsar.")
+            callback(body)
+        except Exception:
+            log.exception("Failure processing job status update message.")
+        except BaseException as e:
+            log.exception("Failure processing job status update message - BaseException type %s" % type(e))
+        finally:
+            message.ack()
+
+    def callback_consumer(self, callback_wrapper):
+        try:
+            self.exchange.consume("status_update", callback_wrapper, check=self)
+        except Exception:
+            log.exception("Exception while handling status update messages, "
+                          "this shouldn't really happen. Handler should be "
+                          "restarted.")
+        finally:
+            log.debug("Leaving Pulsar client status update thread, no "
+                      "additional Pulsar updates will be processed.")
 
     def ensure_has_status_update_callback(self, callback):
         with self.callback_lock:
             if self.callback_thread is not None:
                 return
 
-            def callback_wrapper(body, message):
-                try:
-                    if "job_id" in body:
-                        job_id = body["job_id"]
-                        self.status_cache[job_id] = body
-                    log.debug("Handling asynchronous status update from remote Pulsar.")
-                    callback(body)
-                except Exception:
-                    log.exception("Failure processing job status update message.")
-                except BaseException as e:
-                    log.exception("Failure processing job status update message - BaseException type %s" % type(e))
-                finally:
-                    message.ack()
-
-            def run():
-                self.exchange.consume("status_update", callback_wrapper, check=self)
-                log.debug("Leaving Pulsar client status update thread, no additional Pulsar updates will be processed.")
-
+            callback_wrapper = functools.partial(self.callback_wrapper, callback)
+            run = functools.partial(self.callback_consumer, callback_wrapper)
             thread = threading.Thread(
                 name="pulsar_client_%s_status_update_callback" % self.manager_name,
                 target=run
@@ -120,11 +144,44 @@ class MessageQueueClientManager(object):
             thread.start()
             self.callback_thread = thread
 
-    def shutdown(self):
+    def ack_consumer(self, queue_name):
+        try:
+            self.exchange.consume(queue_name + '_ack', None, check=self)
+        except Exception:
+            log.exception("Exception while handling %s acknowledgement "
+                          "messages, this shouldn't really happen. Handler "
+                          "should be restarted.", queue_name)
+        finally:
+            log.debug("Leaving Pulsar client %s acknowledgement thread, no "
+                      "additional acknowledgements will be processed.",
+                      queue_name)
+
+    def ensure_has_ack_consumers(self):
+        with self.callback_lock:
+            for name in ('setup', 'kill'):
+                if name in self.ack_consumer_threads:
+                    return
+
+                run = functools.partial(self.ack_consumer, name)
+                thread = threading.Thread(
+                    name="pulsar_client_%s_%s_ack" % (self.manager_name, name),
+                    target=run
+                )
+                thread.daemon = False  # Lets not interrupt processing of this.
+                thread.start()
+                self.ack_consumer_threads[name] = thread
+
+    def shutdown(self, ensure_cleanup=False):
         self.active = False
+        if ensure_cleanup:
+            self.callback_thread.join()
+            for v in self.ack_consumer_threads.values():
+                v.join()
 
     def __nonzero__(self):
         return self.active
+
+    __bool__ = __nonzero__  # Both needed Py2 v 3
 
     def get_client(self, destination_params, job_id, **kwargs):
         if job_id is None:

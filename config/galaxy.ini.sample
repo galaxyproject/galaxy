@@ -1,5 +1,5 @@
 #
-# Galaxy is configured by default to be useable in a single-user development
+# Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
 #
@@ -118,9 +118,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #database_query_profiling_proxy = False
 
 # By default, Galaxy will use the same database to track user data and
-# tool shed install data.  There are many situtations in which it is
-# valuable to seperate these - for instance bootstrapping fresh Galaxy
-# instances with pretested installs.  The following optin can be used to
+# tool shed install data.  There are many situations in which it is
+# valuable to separate these - for instance bootstrapping fresh Galaxy
+# instances with pretested installs.  The following option can be used to
 # separate the tool shed install database (all other options listed above
 # but prefixed with install_ are also available).
 #install_database_connection = sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
@@ -218,7 +218,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #tool_data_path = tool-data
 
 # Directory where Tool Data Table related files will be placed
-# when installed from a ToolShed. Defaults to tool_data_path
+# when installed from a ToolShed. Defaults to tool_data_path.
 #shed_tool_data_path = tool-data
 
 # File containing old-style genome builds
@@ -262,6 +262,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # used for the cache
 #template_cache_path = database/compiled_templates
 
+# Set to false to disable various checks Galaxy will do to ensure it
+# can run job scripts before attempting to execute or submit them.
+#check_job_script_integrity = True
+
 # Citation related caching.  Tool citations information maybe fetched from
 # external sources such as http://dx.doi.org/ by Galaxy - the following
 # parameters can be used to control the caching used to store this information.
@@ -292,44 +296,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # If this is set and exists, it overrides any other objectstore settings.
 # object_store_config_file = config/object_store_conf.xml
 
-# Object store backend module (valid options are: disk, s3, swift, irods,
-# distributed, hierarchical)
-#object_store = disk
-
-# *Extremely* old Galaxy instances created datasets at the root of the
-# `file_path` defined above.  If your Galaxy instance has datasets at the root
-# (instead of in directories composed by hashing the dataset id), you should
-# enable this option to allow Galaxy to find them.
-#object_store_check_old_style = False
-
-# Credentials used by certain (s3, swift) object store backends
-#os_access_key = <your cloud object store access key>
-#os_secret_key = <your cloud object store secret key>
-#os_bucket_name = <name of an existing object store bucket or container>
-
-# If using 'swift' object store, you must specify the following connection
-# properties
-#os_host = swift.rc.nectar.org.au
-#os_port = 8888
-#os_is_secure = False
-#os_conn_path = /
-
-# Reduced redundancy can be used only with the 's3' object store
-#os_use_reduced_redundancy = False
-
-# Path to cache directory for object store backends that utilize a cache (s3,
-# swift, irods)
-#object_store_cache_path = database/files/
-
-# Size (in GB) that the cache used by object store should be limited to.
-# If the value is not specified, the cache size will be limited only by the
-# file system size.
-#object_store_cache_size = 100
-
-# Configuration file for the distributed object store, if object_store =
-# distributed.  See the sample at distributed_object_store_conf.xml.sample
-#distributed_object_store_config_file = None
-
 
 # -- Mail and notification
 
@@ -350,8 +316,9 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # If your SMTP server requires SSL from the beginning of the connection
 # smtp_ssl = False
 
-# On the user registration form, users may choose to join the mailing list.
-# This is the address of the list they'll be subscribed to.
+# On the user registration form, users may choose to join a mailing list. This
+# is the address used to subscribe to the list. Uncomment and leave empty if you
+# want to remove this option from the user registration form.
 #mailing_join_addr = galaxy-announce-join@bx.psu.edu
 
 # Datasets in an error state include a link to report the error.  Those reports
@@ -360,14 +327,16 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # misconfiguration and other events user may encounter.
 #error_email_to = None
 
-# Activation email is used as a sender ('from' field) for the account
-# activation mail.  We recommend using string in the following format:
+# Email address to use in the 'From' field when sending emails for
+# account activations, workflow step notifications and password resets.
+# We recommend using string in the following format:
 # Galaxy Project <galaxy-no-reply@example.com>
-#activation_email = None
+# If not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
+#email_from = None
 
 # URL of the support resource for the galaxy instance.  Used in activation
 # emails.
-#instance_resource_url = http://wiki.galaxyproject.org/
+#instance_resource_url = https://wiki.galaxyproject.org/
 
 # E-mail domains blacklist is used for filtering out users that are using
 # disposable email address during the registration.  If their address domain
@@ -463,7 +432,7 @@ nglims_config_file = tool-data/nglims.yaml
 # Format string used when showing date and time information.
 # The string may contain:
 # - the directives used by Python time.strftime() function (see
-#   http://docs.python.org/2/library/time.html#time.strftime ),
+#   https://docs.python.org/2/library/time.html#time.strftime ),
 # - $locale (complete format string for the server locale),
 # - $iso8601 (complete format string as specified by ISO 8601 international
 #   standard).
@@ -474,6 +443,15 @@ nglims_config_file = tool-data/nglims.yaml
 # IPython Docker container for communicating back with Galaxy via the API.
 #galaxy_infrastructure_url = http://localhost:8080
 
+# If the above URL cannot be determined ahead of time in dynamic environments
+# but the port which should be used to access Galaxy can be - this should be
+# set to prevent Galaxy from having to guess.  For example if Galaxy is sitting
+# behind a proxy with REMOTE_USER enabled - infrastructure shouldn't talk to
+# Python processes directly and this should be set to 80 or 443, etc... If
+# unset this file will be read for a server block defining a port corresponding
+# to the webapp.
+#galaxy_infrastructure_web_port = 8080
+
 # The URL of the page to display in Galaxy's middle pane when loaded.  This can
 # be an absolute or relative URL.
 #welcome_url = /static/welcome.html
@@ -482,22 +460,22 @@ nglims_config_file = tool-data/nglims.yaml
 #logo_url = /
 
 # The URL linked by the "Wiki" link in the "Help" menu.
-#wiki_url = http://wiki.galaxyproject.org/
+#wiki_url = https://wiki.galaxyproject.org/
 
 # The URL linked by the "Support" link in the "Help" menu.
-#support_url = http://wiki.galaxyproject.org/Support
+#support_url = https://wiki.galaxyproject.org/Support
 
 # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
-#citation_url = http://wiki.galaxyproject.org/CitingGalaxy
+#citation_url = https://wiki.galaxyproject.org/CitingGalaxy
 
 #The URL linked by the "Search" link in the "Help" menu.
 #search_url = http://galaxyproject.org/search/usegalaxy/
 
 #The URL linked by the "Mailing Lists" link in the "Help" menu.
-#mailing_lists_url = http://wiki.galaxyproject.org/MailingLists
+#mailing_lists_url = https://wiki.galaxyproject.org/MailingLists
 
 #The URL linked by the "Videos" link in the "Help" menu.
-#videos_url = http://vimeo.com/galaxyproject
+#screencasts_url = https://vimeo.com/galaxyproject
 
 # The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
 # as on the user registration and login forms and in the activation emails.
@@ -520,17 +498,6 @@ nglims_config_file = tool-data/nglims.yaml
 #static_scripts_dir = static/scripts/
 #static_style_dir = static/june_2007_style/blue
 #static_robots_txt = static/robots.txt
-
-# Pack javascript at launch (/static/scripts/*.js)
-# This only happens if the modified timestamp of the source .js is newer
-# than the version (if it exists) in /static/scripts/packed/
-# Note that this requires java > 1.4 for executing yuicompressor.jar
-#pack_scripts = False
-
-# Cloud Launch
-
-#enable_cloud_launch = False
-#cloudlaunch_default_ami = ami-a7dbf6ce
 
 # Incremental Display Options
 
@@ -580,6 +547,13 @@ nglims_config_file = tool-data/nglims.yaml
 # requests.
 #nginx_upload_path = False
 
+# Galaxy can also use nginx_upload_module to receive files staged out upon job
+# completion by remote job runners (i.e. Pulsar) that initiate staging
+# operations on the remote end.  See the Galaxy nginx documentation for the
+# corresponding nginx configuration.
+#nginx_upload_job_files_store = False
+#nginx_upload_job_files_path = False
+
 # Have Galaxy manage dynamic proxy component for routing requests to other
 # services based on Galaxy's session cookie.  It will attempt to do this by
 # default though you do need to install node+npm and do an npm install from
@@ -604,10 +578,20 @@ nglims_config_file = tool-data/nglims.yaml
 # nodejs to wrap connections in SSL).
 #dynamic_proxy_external_proxy=False
 
+# Additionally, when the dynamic proxy is proxied by an upstream server, you'll
+# want to specify a prefixed URL so both Galaxy and the proxy reside under the
+# same path that your cookies are under. This will result in a url like
+# https://FQDN/galaxy-prefix/gie_proxy for proxying
+#dynamic_proxy_prefix=gie_proxy
+
 # -- Logging and Debugging
 
+# If True, Galaxy will attempt to configure a simple root logger if a
+# "loggers" section does not appear in this configuration file.
+#auto_configure_logging = True
+
 # Verbosity of console log messages.  Acceptable values can be found here:
-# http://docs.python.org/library/logging.html#logging-levels
+# https://docs.python.org/2/library/logging.html#logging-levels
 #log_level = DEBUG
 
 # Print database operations to the server log (warning, quite verbose!).
@@ -630,6 +614,12 @@ nglims_config_file = tool-data/nglims.yaml
 # make the Galaxy instance susceptible to XSS attacks initiated by your users.
 #sanitize_all_html = True
 
+# Whitelist sanitization file.
+# Datasets created by tools listed in this file are trusted and will not have
+# their HTML sanitized on display.  This can be manually edited or manipulated
+# through the Admin control panel -- see "Manage Display Whitelist"
+#sanitize_whitelist_file = config/sanitize_whitelist.txt
+
 # By default Galaxy will serve non-HTML tool output that may potentially
 # contain browser executable JavaScript content as plain text.  This will for
 # instance cause SVG datasets to not render properly and so may be disabled
@@ -646,9 +636,8 @@ nglims_config_file = tool-data/nglims.yaml
 # Debug enables access to various config options useful for development and
 # debugging: use_lint, use_profile, use_printdebug and use_interactive.  It
 # also causes the files used by PBS/SGE (submission script, output, and error)
-# to remain on disk after the job is complete.  Debug mode is disabled if
-# commented, but is uncommented by default in the sample config.
-debug = True
+# to remain on disk after the job is complete.
+#debug = False
 
 # Check for WSGI compliance.
 #use_lint = False
@@ -667,6 +656,20 @@ use_interactive = True
 # space rapidly!).  Useful to determine why your processes may be consuming a
 # lot of CPU.
 #use_heartbeat = False
+
+# Log to Sentry
+# Sentry is an open source logging and error aggregation platform.  Setting
+# sentry_dsn will enable the Sentry middleware and errors will be sent to the
+# indicated sentry instance.  This connection string is available in your
+# sentry instance under <project_name> -> Settings -> API Keys.
+#sentry_dsn = None
+
+# Log to statsd
+# Statsd is an external statistics aggregator (https://github.com/etsy/statsd)
+# Enabling the following options will cause galaxy to log request timing and
+# other statistics to the configured statsd instance.
+#statsd_host=
+#statsd_port=8125
 
 # -- Data Libraries
 
@@ -716,6 +719,21 @@ use_interactive = True
 #fulltext_noindex_filetypes = bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
 # base URL of server providing search functionality using lucene
 #fulltext_url = http://localhost:8081
+
+# -- Toolbox Search
+
+# The following boosts are used to customize this instance's toolbox search.
+# The higher the boost, the more importance the scoring algorithm gives to the
+# given field.  Section refers to the tool group in the tool panel.  Rest of
+# the fields are tool's attributes.
+# tool_name_boost = 9
+# tool_section_boost = 3
+# tool_description_boost = 2
+# tool_help_boost = 0.5
+
+# Limits the number of results in toolbox search.  Can be used to tweak how many
+# results will appear.
+# tool_search_limit = 20
 
 # -- Users and Security
 
@@ -794,21 +812,16 @@ use_interactive = True
 # public.
 #new_user_dataset_access_role_default_private = False
 
-# Expose user list. Setting this to true will expose the user list to authenticated users. This
-# makes sharing datasets in smaller galaxy instances much easier as they can type a name/email and
-# have the correct user show up. This makes less sense on large public galaxy instances where 
-# that data shouldn't be exposed. For semi-public galaxies, it may make sense to expose just the
-# username and not email, or vice versa.
+# Expose user list.  Setting this to True will expose the user list to
+# authenticated users.  This makes sharing datasets in smaller galaxy instances
+# much easier as they can type a name/email and have the correct user show up.
+# This makes less sense on large public Galaxy instances where that data
+# shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
+# just the username and not email, or vice versa.
 #expose_user_name = False
 #expose_user_email = False
 
 # -- Beta features
-
-# Use new tool form
-#toolform_upgrade = True
-
-# Use new tool form in workflow editor
-#workflow_toolform_upgrade = False
 
 # Enable Galaxy to communicate directly with a sequencer
 #enable_sequencer_communication = False
@@ -844,8 +857,13 @@ use_interactive = True
 #openid_config_file = config/openid_conf.xml
 #openid_consumer_cache_path = database/openid_consumer_cache
 
+# XML config file that allows the use of different authentication providers
+# (e.g. LDAP) instead or in addition to local authentication (.sample is used
+# if default does not exist).
+#auth_config_file = config/auth_conf.xml
+
 # Optional list of email addresses of API users who can make calls on behalf of
-# other users
+# other users.
 #api_allow_run_as = None
 
 # Master key that allows many API admin actions to be used without actually
@@ -890,14 +908,14 @@ use_interactive = True
 #expose_dataset_path = False
 
 # Data manager configuration options
-# Allow non-admin users to view available Data Manager options
+# Allow non-admin users to view available Data Manager options.
 #enable_data_manager_user_view = False
 # File where Data Managers are configured (.sample used if default does not
-# exist)
+# exist).
 #data_manager_config_file = config/data_manager_conf.xml
-# File where Tool Shed based Data Managers are configured
+# File where Tool Shed based Data Managers are configured.
 #shed_data_manager_config_file = config/shed_data_manager_conf.xml
-# Directory to store Data Manager based tool-data; defaults to tool_data_path
+# Directory to store Data Manager based tool-data; defaults to tool_data_path.
 #galaxy_data_manager_data_path = tool-data
 
 # -- Job Execution
@@ -915,12 +933,9 @@ use_interactive = True
 #job_config_file = config/job_conf.xml
 
 # In multiprocess configurations, notification between processes about new jobs
-# is done via the database.  In single process configurations, this is done in
-# memory, which is a bit quicker.  Galaxy tries to automatically determine
-# which method it should used based on your handler configuration in the job
-# config file, but you can explicitly override this behavior by setting the
-# following option to True or False.
-#track_jobs_in_database = None
+# must be done via the database.  In single process configurations, this can be
+# done in memory, which is a bit quicker.
+#track_jobs_in_database = True
 
 # This enables splitting of jobs into tasks, if specified by the particular tool
 # config.
@@ -939,6 +954,13 @@ use_interactive = True
 # unresponsive).  If this option is set to False, the user will be given the
 # option to retry externally, or set metadata manually (when possible).
 #retry_metadata_internally = True
+
+# Very large metadata values can cause Galaxy crashes.  This will allow
+# limiting the maximum metadata key size (in bytes used in memory, not the end
+# result database value size) Galaxy will attempt to save with a dataset.  Use
+# 0 to disable this feature.  The default is 5MB, but as low as 1MB seems to be
+# a reasonable size.
+#max_metadata_value_size = 5242880
 
 # If (for example) you run on a cluster and your datasets (by default,
 # database/files/) are mounted read-only, this option will override tool output
@@ -960,6 +982,17 @@ use_interactive = True
 # always, onsuccess, never
 #cleanup_job = always
 
+# For sites where all users in Galaxy match users on the system on which Galaxy
+# runs, the DRMAA job runner can be configured to submit jobs to the DRM as the
+# actual user instead of as the user running the Galaxy server process.  For
+# details on these options, see the documentation at:
+#
+# https://wiki.galaxyproject.org/Admin/Config/Performance/Cluster
+#
+#drmaa_external_runjob_script = scripts/drmaa_external_runner.py
+#drmaa_external_killjob_script = scripts/drmaa_external_killer.py
+#external_chown_script = scripts/external_chown_script.py
+
 # File to source to set up the environment when running jobs.  By default, the
 # environment in which the Galaxy server starts is used when running jobs
 # locally, and the environment set up per the DRM's submission method and
@@ -970,7 +1003,6 @@ use_interactive = True
 # the actual user, to remove the need to configure each user's environment
 # individually.
 #environment_setup_file = None
-
 
 # Optional file containing job resource data entry fields definition.
 # These fields will be presented to users in the tool forms and allow them to

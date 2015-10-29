@@ -8,8 +8,10 @@ import uuid
 
 log = logging.getLogger( __name__ )
 
+
 class RuntimeException( Exception ):
     pass
+
 
 class UsesItemRatings:
     """
@@ -92,6 +94,7 @@ class UsesItemRatings:
         # TODO: can we provide a better filter than a raw string?
         return "%s=%i" % ( item_fk.parent.name, item.id )
 
+
 class UsesAnnotations:
     """ Mixin for getting and setting item annotations. """
     def get_item_annotation_str( self, db_session, user, item ):
@@ -160,6 +163,7 @@ class UsesAnnotations:
         """ Returns an item's item-annotation association class. """
         class_name = '%sAnnotationAssociation' % item.__class__.__name__
         return getattr( galaxy.model, class_name, None )
+
 
 class Dictifiable:
     """ Mixin that enables objects to be converted to dictionaries. This is useful

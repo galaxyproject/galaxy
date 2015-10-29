@@ -2,30 +2,27 @@
 Provides factory methods to assemble the Galaxy web application
 """
 import atexit
-import config
 import logging
 import os
-import sys
 
 from inspect import isclass
-
-from paste.request import parse_formvars
-from paste.util import import_string
 from paste import httpexceptions
 from galaxy.util import asbool
-
-import pkg_resources
 
 import galaxy.webapps.tool_shed.model
 import galaxy.webapps.tool_shed.model.mapping
 import galaxy.web.framework.webapp
+from galaxy.webapps.util import build_template_error_formatters
 from galaxy.webapps.tool_shed.framework.middleware import hg
 from galaxy import util
+from galaxy.config import process_is_uwsgi
 
 log = logging.getLogger( __name__ )
 
+
 class CommunityWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
+
 
 def add_ui_controllers( webapp, app ):
     """
@@ -33,7 +30,6 @@ def add_ui_controllers( webapp, app ):
     them to the webapp.
     """
     from galaxy.web.base.controller import BaseUIController
-    from galaxy.web.base.controller import ControllerUnavailable
     import galaxy.webapps.tool_shed.controllers
     controller_dir = galaxy.webapps.tool_shed.controllers.__path__[0]
     for fname in os.listdir( controller_dir ):
@@ -49,6 +45,7 @@ def add_ui_controllers( webapp, app ):
                 if isclass( T ) and T is not BaseUIController and issubclass( T, BaseUIController ):
                     webapp.add_ui_controller( name, T( app ) )
 
+
 def app_factory( global_conf, **kwargs ):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy tool shed application unless passed in
@@ -59,7 +56,8 @@ def app_factory( global_conf, **kwargs ):
             from galaxy.webapps.tool_shed.app import UniverseApplication
             app = UniverseApplication( global_conf=global_conf, **kwargs )
         except:
-            import traceback, sys
+            import traceback
+            import sys
             traceback.print_exc()
             sys.exit( 1 )
     atexit.register( app.shutdown )
@@ -70,13 +68,13 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
     webapp.add_route( '/view/{owner}/{name}/{changeset_revision}', controller='repository', action='sharable_repository_revision' )
     # Handle displaying tool help images and README file images for tools contained in repositories.
-    webapp.add_route( '/repository/static/images/:repository_id/:image_file',
+    webapp.add_route( '/repository/static/images/{repository_id}/{image_file:.+?}',
                       controller='repository',
                       action='display_image_in_repository',
                       repository_id=None,
                       image_file=None )
-    webapp.add_route( '/:controller/:action', action='index' )
-    webapp.add_route( '/:action', controller='repository', action='index' )
+    webapp.add_route( '/{controller}/{action}', action='index' )
+    webapp.add_route( '/{action}', controller='repository', action='index' )
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
     # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
     webapp.add_api_controllers( 'galaxy.webapps.tool_shed.api', app )
@@ -85,10 +83,20 @@ def app_factory( global_conf, **kwargs ):
                            controller='authenticate',
                            action='get_tool_shed_api_key',
                            conditions=dict( method=[ "GET" ] ) )
-    webapp.mapper.connect( 'repo_search',
-                           '/api/search/',
-                           controller='search',
-                           action='search',
+    webapp.mapper.connect( 'group',
+                           '/api/groups/',
+                           controller='groups',
+                           action='index',
+                           conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( 'group',
+                           '/api/groups/',
+                           controller='groups',
+                           action='create',
+                           conditions=dict( method=[ "POST" ] ) )
+    webapp.mapper.connect( 'group',
+                           '/api/groups/{encoded_id}',
+                           controller='groups',
+                           action='show',
                            conditions=dict( method=[ "GET" ] ) )
     webapp.mapper.resource( 'category',
                             'categories',
@@ -124,8 +132,13 @@ def app_factory( global_conf, **kwargs ):
                             name_prefix='user_',
                             path_prefix='/api',
                             parent_resources=dict( member_name='user', collection_name='users' ) )
+    webapp.mapper.connect( 'update_repository',
+                           '/api/repositories/{id}',
+                           controller='repositories',
+                           action='update',
+                           conditions=dict( method=[ "PATCH", "PUT" ] ) )
     webapp.mapper.connect( 'repository_create_changeset_revision',
-                           '/api/repositories/:id/changeset_revision',
+                           '/api/repositories/{id}/changeset_revision',
                            controller='repositories',
                            action='create_changeset_revision',
                            conditions=dict( method=[ "POST" ] ) )
@@ -134,20 +147,30 @@ def app_factory( global_conf, **kwargs ):
                            controller='repositories',
                            action='create',
                            conditions=dict( method=[ "POST" ] ) )
+    webapp.mapper.connect( 'tools',
+                           '/api/tools',
+                           controller='tools',
+                           action='index',
+                           conditions=dict( method=[ "GET" ] ) )
+    webapp.mapper.connect( "version", "/api/version", controller="configuration", action="version", conditions=dict( method=[ "GET" ] ) )
 
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
-    if asbool( kwargs.get( 'static_enabled', True ) ):
-        webapp = wrap_in_static( webapp, global_conf, **kwargs )
+    if asbool( kwargs.get( 'static_enabled', True) ):
+        if process_is_uwsgi:
+            log.error("Static middleware is enabled in your configuration but this is a uwsgi process.  Refusing to wrap in static middleware.")
+        else:
+            webapp = wrap_in_static( webapp, global_conf, **kwargs )
     # Close any pooled database connections before forking
     try:
-        galaxy.webapps.tool_shed.model.mapping.metadata.engine.connection_provider._pool.dispose()
+        galaxy.webapps.tool_shed.model.mapping.metadata.bind.dispose()
     except:
-        pass
+        log.exception("Unable to dispose of pooled tool_shed model database connections.")
     # Return
     return webapp
+
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """Based on the configuration wrap `app` in a set of common and useful middleware."""
@@ -165,10 +188,10 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # upstream server
     if asbool(conf.get( 'use_remote_user', False )):
         from galaxy.webapps.tool_shed.framework.middleware.remoteuser import RemoteUser
-        app = RemoteUser( app, maildomain = conf.get( 'remote_user_maildomain', None ),
-                               display_servers = util.listify( conf.get( 'display_servers', '' ) ),
-                               admin_users = conf.get( 'admin_users', '' ).split( ',' ),
-                               remote_user_secret_header = conf.get('remote_user_secret', None) )
+        app = RemoteUser( app, maildomain=conf.get( 'remote_user_maildomain', None ),
+                          display_servers=util.listify( conf.get( 'display_servers', '' ) ),
+                          admin_users=conf.get( 'admin_users', '' ).split( ',' ),
+                          remote_user_secret_header=conf.get('remote_user_secret', None) )
         log.debug( "Enabling 'remote user' middleware" )
     # The recursive middleware allows for including requests in other
     # requests or forwarding of requests, all on the server side.
@@ -176,14 +199,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste import recursive
         app = recursive.RecursiveMiddleware( app, conf )
         log.debug( "Enabling 'recursive' middleware" )
-    # If sentry logging is enabled, log here before propogating up to
-    # the error middleware
-    # TODO sentry config is duplicated between tool_shed/galaxy, refactor this.
-    sentry_dsn = conf.get( 'sentry_dsn', None )
-    if sentry_dsn:
-        from galaxy.web.framework.middleware.sentry import Sentry
-        log.debug( "Enabling 'sentry' middleware" )
-        app = Sentry( app, sentry_dsn )
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
@@ -204,16 +219,18 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             from paste.debug import prints
             app = prints.PrintDebugMiddleware( app, conf )
             log.debug( "Enabling 'print debug' middleware" )
-    if debug and asbool( conf.get( 'use_interactive', False ) ):
+    if debug and asbool( conf.get( 'use_interactive', False ) ) and not process_is_uwsgi:
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        pkg_resources.require( "WebError" )
         from weberror import evalexception
         app = evalexception.EvalException( app, conf,
                                            templating_formatters=build_template_error_formatters() )
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
+        if debug and asbool( conf.get( 'use_interactive', False ) ) and process_is_uwsgi:
+            log.error("Interactive debugging middleware is enabled in your configuration "
+                      "but this is a uwsgi process.  Refusing to wrap in interactive error middleware.")
         # Not in interactive debug mode, just use the regular error middleware
         import galaxy.web.framework.middleware.error
         app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )
@@ -223,6 +240,14 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
+    # If sentry logging is enabled, log here before propogating up to
+    # the error middleware
+    # TODO sentry config is duplicated between tool_shed/galaxy, refactor this.
+    sentry_dsn = conf.get( 'sentry_dsn', None )
+    if sentry_dsn:
+        from galaxy.web.framework.middleware.sentry import Sentry
+        log.debug( "Enabling 'sentry' middleware" )
+        app = Sentry( app, sentry_dsn )
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
@@ -231,23 +256,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     log.debug( "Enabling hg middleware" )
     return app
 
+
 def wrap_in_static( app, global_conf, **local_conf ):
     urlmap, _ = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     return urlmap
-
-def build_template_error_formatters():
-    """
-    Build a list of template error formatters for WebError. When an error
-    occurs, WebError pass the exception to each function in this list until
-    one returns a value, which will be displayed on the error page.
-    """
-    formatters = []
-    # Formatter for mako
-    import mako.exceptions
-    def mako_html_data( exc_value ):
-        if isinstance( exc_value, ( mako.exceptions.CompileException, mako.exceptions.SyntaxException ) ):
-            return mako.exceptions.html_error_template().render( full=False, css=False )
-        if isinstance( exc_value, AttributeError ) and exc_value.args[0].startswith( "'Undefined' object has no attribute" ):
-            return mako.exceptions.html_error_template().render( full=False, css=False )
-    formatters.append( mako_html_data )
-    return formatters

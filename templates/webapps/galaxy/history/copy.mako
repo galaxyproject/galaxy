@@ -14,7 +14,7 @@
                 (not deleted) datasets.
             </div>
             <div class="form-row">
-                <input type="radio" name="copy_choice" value="activatable"> Copy all datasets, including deleted ones
+                <input type="radio" name="copy_choice" value="activatable" checked="checked"> Copy all datasets, including deleted ones
             </div>
             <div class="form-row">
                 <input type="radio" name="copy_choice" value="active"> Copy only active (not deleted) datasets

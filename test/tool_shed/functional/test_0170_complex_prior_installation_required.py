@@ -1,4 +1,7 @@
-from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
+import os
+
+from tool_shed.base.twilltestcase import common, ShedTwillTestCase
+
 matplotlib_repository_name = 'package_matplotlib_1_2_0170'
 matplotlib_repository_description = "Contains a tool dependency definition that downloads and compiles version 1.2.x of the the python matplotlib package."
 matplotlib_repository_long_description = "This repository is intended to be defined as a complex repository dependency within a separate repository."
@@ -16,22 +19,23 @@ category_description = 'Test 0170 Prior Installation Complex Dependencies'
 3. Verify that package_matplotlib_1_2_0170 now depends on package_numpy_1_7_0170, and that the inherited tool dependency displays correctly.
 '''
 
+
 class TestComplexPriorInstallation( ShedTwillTestCase ):
     '''Test features related to datatype converters.'''
-    
+
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = self.test_db_util.get_user( common.test_user_1_email )
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = self.test_db_util.get_private_role( test_user_1 )
+        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        self.test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = self.test_db_util.get_user( common.admin_email )
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = self.test_db_util.get_private_role( admin_user )
-        
+        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        self.test_db_util.get_private_role( admin_user )
+
     def test_0005_create_matplotlib_repository( self ):
         '''Create and populate the package_matplotlib_1_2_0170 repository.'''
         '''
@@ -40,22 +44,22 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
         category = self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = self.get_or_create_repository( name=matplotlib_repository_name, 
-                                                    description=matplotlib_repository_description, 
-                                                    long_description=matplotlib_repository_long_description, 
+        repository = self.get_or_create_repository( name=matplotlib_repository_name,
+                                                    description=matplotlib_repository_description,
+                                                    long_description=matplotlib_repository_long_description,
                                                     owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id( category.id ), 
+                                                    category_id=self.security.encode_id( category.id ),
                                                     strings_displayed=[] )
-        self.upload_file( repository, 
-                          filename='package_matplotlib/package_matplotlib_1_2.tar', 
+        self.upload_file( repository,
+                          filename='package_matplotlib/package_matplotlib_1_2.tar',
                           filepath=None,
                           valid_tools_only=False,
                           uncompress_file=True,
-                          remove_repo_files_not_in_tar=False, 
+                          remove_repo_files_not_in_tar=False,
                           commit_message='Uploaded matplotlib tool dependency tarball.',
-                          strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ], 
+                          strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ],
                           strings_not_displayed=[] )
-    
+
     def test_0010_create_numpy_repository( self ):
         '''Create and populate the package_numpy_1_7_0170 repository.'''
         '''
@@ -64,22 +68,22 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
         category = self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        repository = self.get_or_create_repository( name=numpy_repository_name, 
-                                                    description=numpy_repository_description, 
-                                                    long_description=numpy_repository_long_description, 
+        repository = self.get_or_create_repository( name=numpy_repository_name,
+                                                    description=numpy_repository_description,
+                                                    long_description=numpy_repository_long_description,
                                                     owner=common.test_user_1_name,
-                                                    category_id=self.security.encode_id( category.id ), 
+                                                    category_id=self.security.encode_id( category.id ),
                                                     strings_displayed=[] )
-        self.upload_file( repository, 
-                          filename='package_numpy/package_numpy_1_7.tar', 
+        self.upload_file( repository,
+                          filename='package_numpy/package_numpy_1_7.tar',
                           filepath=None,
                           valid_tools_only=False,
                           uncompress_file=True,
-                          remove_repo_files_not_in_tar=False, 
+                          remove_repo_files_not_in_tar=False,
                           commit_message='Uploaded numpy tool dependency tarball.',
-                          strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ], 
+                          strings_displayed=[ 'This repository currently contains a single file named <b>tool_dependencies.xml</b>' ],
                           strings_not_displayed=[] )
-        
+
     def test_0015_create_complex_repository_dependency( self ):
         '''Create a dependency on package_numpy_1_7_0170.'''
         '''
@@ -107,16 +111,16 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
         new_xml_file = os.path.join( dependency_xml_path, 'tool_dependencies.xml' )
         file( new_xml_file, 'w' ).write( original_xml.replace( '<!--NUMPY-->', processed_xml ) )
         # Upload the generated complex repository dependency XML to the matplotlib repository.
-        self.upload_file( matplotlib_repository, 
-                          filename='tool_dependencies.xml', 
+        self.upload_file( matplotlib_repository,
+                          filename='tool_dependencies.xml',
                           filepath=dependency_xml_path,
                           valid_tools_only=True,
                           uncompress_file=True,
-                          remove_repo_files_not_in_tar=False, 
+                          remove_repo_files_not_in_tar=False,
                           commit_message='Uploaded complex repository dependency on numpy 1.7.',
-                          strings_displayed=[], 
+                          strings_displayed=[],
                           strings_not_displayed=[] )
-        
+
     def test_0020_verify_generated_dependency( self ):
         '''Verify that matplotlib now has a package tool dependency and a complex repository dependency.'''
         '''
@@ -130,5 +134,3 @@ class TestComplexPriorInstallation( ShedTwillTestCase ):
         changeset_revision = self.get_repository_tip( numpy_repository )
         self.check_repository_dependency( matplotlib_repository, depends_on_repository=numpy_repository )
         self.display_manage_repository_page( matplotlib_repository, strings_displayed=[ 'numpy', '1.7', 'package', changeset_revision ] )
-
-        

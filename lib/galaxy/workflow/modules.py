@@ -5,8 +5,6 @@ Modules used in building workflows
 import logging
 import re
 
-from galaxy import eggs
-
 from xml.etree.ElementTree import Element
 
 import galaxy.tools
@@ -17,8 +15,8 @@ from galaxy.dataset_collections import matching
 from galaxy.web.framework import formbuilder
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
-from galaxy.tools.parameters import params_to_incoming, check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
-from galaxy.tools.parameters import DataCollectionToolParameter
+from galaxy.tools.parameters import check_param, visit_input_values
+from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, DummyDataset, RuntimeValue
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.tools.execute import execute
 from galaxy.util.bunch import Bunch
@@ -41,7 +39,7 @@ class WorkflowModule( object ):
     def __init__( self, trans ):
         self.trans = trans
 
-    ## ---- Creating modules from various representations ---------------------
+    # ---- Creating modules from various representations ---------------------
 
     @classmethod
     def new( Class, trans, tool_id=None ):
@@ -62,12 +60,12 @@ class WorkflowModule( object ):
     def from_workflow_step( Class, trans, step ):
         return Class( trans )
 
-    ## ---- Saving in various forms ------------------------------------------
+    # ---- Saving in various forms ------------------------------------------
 
     def save_to_step( self, step ):
         step.type = self.type
 
-    ## ---- General attributes -----------------------------------------------
+    # ---- General attributes -----------------------------------------------
 
     def get_type( self ):
         return self.type
@@ -81,7 +79,7 @@ class WorkflowModule( object ):
     def get_tooltip( self, static_path='' ):
         return None
 
-    ## ---- Configuration time -----------------------------------------------
+    # ---- Configuration time -----------------------------------------------
 
     def get_state( self ):
         """ Return a serializable representation of the persistable state of
@@ -132,7 +130,7 @@ class WorkflowModule( object ):
         # Replaced connected inputs with DummyDataset values.
         pass
 
-    ## ---- Run time ---------------------------------------------------------
+    # ---- Run time ---------------------------------------------------------
 
     def get_runtime_inputs( self ):
         """ Used internally by modules and when displaying inputs in workflow
@@ -403,7 +401,14 @@ class InputDataCollectionModule( InputModule ):
         return form
 
     def get_data_outputs( self ):
-        return [ dict( name='output', extensions=['input_collection'], collection_type=self.state[ 'collection_type' ] ) ]
+        return [
+            dict(
+                name='output',
+                extensions=['input_collection'],
+                collection=True,
+                collection_type=self.state[ 'collection_type' ]
+            )
+        ]
 
 
 class PauseModule( SimpleWorkflowModule ):
@@ -501,7 +506,7 @@ class ToolModule( WorkflowModule ):
         if module.tool is None:
             error_message = "Attempted to create new workflow module for invalid tool_id, no tool with id - %s." % tool_id
             raise Exception( error_message )
-        module.state = module.tool.new_state( trans, all_pages=True )
+        module.state = module.tool.new_state( trans )
         return module
 
     @classmethod
@@ -646,7 +651,7 @@ class ToolModule( WorkflowModule ):
                     input_type="dataset_collection",
                     collection_type=input.collection_type,
                     extensions=input.extensions,
-                    ) )
+                ) )
 
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs
@@ -655,17 +660,20 @@ class ToolModule( WorkflowModule ):
         data_outputs = []
         data_inputs = None
         for name, tool_output in self.tool.outputs.iteritems():
+            extra_kwds = {}
             if tool_output.collection:
-                formats = [ 'input' ]
-            elif tool_output.format_source != None:
+                extra_kwds["collection"] = True
+                extra_kwds["collection_type"] = tool_output.structure.collection_type
+                formats = [ 'input' ]  # TODO: fix
+            elif tool_output.format_source is not None:
                 formats = [ 'input' ]  # default to special name "input" which remove restrictions on connections
-                if data_inputs == None:
+                if data_inputs is None:
                     data_inputs = self.get_data_inputs()
                 # find the input parameter referenced by format_source
                 for di in data_inputs:
                     # input names come prefixed with conditional and repeat names separated by '|'
                     # remove prefixes when comparing with format_source
-                    if di['name'] != None and di['name'].split('|')[-1] == tool_output.format_source:
+                    if di['name'] is not None and di['name'].split('|')[-1] == tool_output.format_source:
                         formats = di['extensions']
             else:
                 formats = [ tool_output.format ]
@@ -674,7 +682,13 @@ class ToolModule( WorkflowModule ):
                     format = when_elem.get( 'format', None )
                     if format and format not in formats:
                         formats.append( format )
-            data_outputs.append( dict( name=name, extensions=formats ) )
+            data_outputs.append(
+                dict(
+                    name=name,
+                    extensions=formats,
+                    **extra_kwds
+                )
+            )
         return data_outputs
 
     def get_runtime_input_dicts( self, step_annotation ):
@@ -700,7 +714,7 @@ class ToolModule( WorkflowModule ):
     def get_config_form( self ):
         self.add_dummy_datasets()
         return self.trans.fill_template( "workflow/editor_tool_form.mako", module=self,
-            tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
+                                         tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
 
     def encode_runtime_state( self, trans, state ):
         encoded = state.encode( self.tool, self.trans.app )
@@ -863,10 +877,13 @@ class ToolModule( WorkflowModule ):
         # Create new PJA associations with the created job, to be run on completion.
         # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
         # Pass along replacement dict with the execution of the PJA so we don't have to modify the object.
-        post_job_actions = step.post_job_actions
+
+        # Combine workflow and runtime post job actions into the effective post
+        # job actions for this execution.
+        effective_post_job_actions = step.post_job_actions[:]
         for key, value in self.runtime_post_job_actions.iteritems():
-            post_job_actions.append( self.__to_pja( key, value, step ) )
-        for pja in post_job_actions:
+            effective_post_job_actions.append( self.__to_pja( key, value, None ) )
+        for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.immediate_actions:
                 ActionBox.execute( self.trans.app, self.trans.sa_session, pja, job, replacement_dict )
             else:
@@ -966,26 +983,36 @@ def load_module_sections( trans ):
     """ Get abstract description of the workflow modules this Galaxy instance
     is configured with.
     """
-    inputs_section = {
+    module_sections = {}
+    module_sections['inputs'] = {
         "name": "inputs",
         "title": "Inputs",
         "modules": [
-            {"name": "data_input", "title": "Input Dataset", "description": "Input dataset"},
-            {"name": "data_collection_input", "title": "Input Dataset Collection", "description": "Input dataset collection"},
+            {
+                "name": "data_input",
+                "title": "Input Dataset",
+                "description": "Input dataset"
+            },
+            {
+                "name": "data_collection_input",
+                "title": "Input Dataset Collection",
+                "description": "Input dataset collection"
+            },
         ],
     }
-    module_sections = [
-        inputs_section
-    ]
+
     if trans.app.config.enable_beta_workflow_modules:
-        experimental_modules = {
+        module_sections['experimental'] = {
             "name": "experimental",
             "title": "Experimental",
             "modules": [
-                {"name": "pause", "title": "Pause Workflow for Dataset Review", "description": "Pause for Review"},
+                {
+                    "name": "pause",
+                    "title": "Pause Workflow for Dataset Review",
+                    "description": "Pause for Review"
+                },
             ],
         }
-        module_sections.append(experimental_modules)
 
     return module_sections
 
@@ -1032,7 +1059,7 @@ class WorkflowModuleInjector(object):
         input_connections_by_name = {}
         for conn in step.input_connections:
             input_name = conn.input_name
-            if not input_name in input_connections_by_name:
+            if input_name not in input_connections_by_name:
                 input_connections_by_name[input_name] = []
             input_connections_by_name[input_name].append(conn)
         step.input_connections_by_name = input_connections_by_name
@@ -1043,7 +1070,7 @@ class WorkflowModuleInjector(object):
         if not module:
             step.module = None
             step.state = None
-            raise MissingToolException()
+            raise MissingToolException(step.tool_id)
 
         # Fix any missing parameters
         step.upgrade_messages = module.check_and_update_state()
@@ -1058,7 +1085,7 @@ class WorkflowModuleInjector(object):
         return step_errors
 
 
-def populate_module_and_state( trans, workflow, param_map ):
+def populate_module_and_state( trans, workflow, param_map, allow_tool_state_corrections=False ):
     """ Used by API but not web controller, walks through a workflow's steps
     and populates transient module and state attributes on each.
     """
@@ -1071,5 +1098,8 @@ def populate_module_and_state( trans, workflow, param_map ):
                 message = "Workflow cannot be run because of validation errors in some steps: %s" % step_errors
                 raise exceptions.MessageException( message )
             if step.upgrade_messages:
-                message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
-                raise exceptions.MessageException( message )
+                if allow_tool_state_corrections:
+                    log.debug( 'Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages )
+                else:
+                    message = "Workflow cannot be run because of step upgrade messages: %s" % step.upgrade_messages
+                    raise exceptions.MessageException( message )

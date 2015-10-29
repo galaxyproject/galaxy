@@ -1,4 +1,4 @@
-<tool id="Comm1" name="Find Similarities and Differences">
+<tool id="Comm1" name="Find Similarities and Differences" version="1.0.0">
   <description>between two datasets</description>
   <command interpreter="perl">commWrapper.pl $input1 $input2 $mode $out_file1</command>
   <inputs>

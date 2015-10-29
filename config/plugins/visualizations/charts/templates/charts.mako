@@ -14,10 +14,10 @@
         ${h.js( 'libs/jquery/jquery',
                 'libs/jquery/select2',
                 'libs/bootstrap',
-                'libs/require',
                 'libs/underscore',
                 'libs/backbone/backbone',
-                'libs/d3')}
+                'libs/d3',
+                'libs/require')}
 
         ## shared css
         ${h.css( 'base' )}

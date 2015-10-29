@@ -24,6 +24,16 @@
     </help>
     <citations>
       <citation type="doi">10.1101/gr.4086505</citation>
+      <citation type="bibtex">
+@misc{Garrison2015,
+  author = {Garrison, Erik},
+  year = {2015},
+  title = {vcflib},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  url = {https://github.com/ekg/vcflib},
+}
+      </citation>
       <!-- BibTeX examples taken from:
       http://www2.galcit.caltech.edu/~jeshep/GraphicsBib/NatBib/node3.html
       -->

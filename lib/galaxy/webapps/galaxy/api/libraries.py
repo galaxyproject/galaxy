@@ -18,7 +18,7 @@ class LibrariesController( BaseAPIController ):
         super( LibrariesController, self ).__init__( app )
         self.folder_manager = folders.FolderManager()
         self.library_manager = libraries.LibraryManager()
-        self.role_manager = roles.RoleManager()
+        self.role_manager = roles.RoleManager( app )
 
     @expose_api_anonymous
     def index( self, trans, **kwd ):
@@ -232,7 +232,7 @@ class LibrariesController( BaseAPIController ):
 
             return_roles = []
             for role in roles:
-                role_id = trans.security.encode_id ( role.id )
+                role_id = trans.security.encode_id( role.id )
                 return_roles.append( dict( id=role_id, name=role.name, type=role.type ) )
             return dict( roles=return_roles, page=page, page_limit=page_limit, total=total_roles )
         else:
@@ -344,10 +344,10 @@ class LibrariesController( BaseAPIController ):
             if len( invalid_modify_roles_names ) > 0:
                 log.warning( "The following roles could not be added to the modify library permission: " + str( invalid_modify_roles_names ) )
 
-            permissions = { trans.app.security_agent.permitted_actions.LIBRARY_ACCESS : valid_access_roles }
-            permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_ADD : valid_add_roles } )
-            permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_MANAGE : valid_manage_roles } )
-            permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY : valid_modify_roles } )
+            permissions = { trans.app.security_agent.permitted_actions.LIBRARY_ACCESS: valid_access_roles }
+            permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_ADD: valid_add_roles } )
+            permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_MANAGE: valid_manage_roles } )
+            permissions.update( { trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles } )
 
             trans.app.security_agent.set_all_library_permissions( trans, library, permissions )
             trans.sa_session.refresh( library )
@@ -355,7 +355,7 @@ class LibrariesController( BaseAPIController ):
             trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
         else:
             raise exceptions.RequestParameterInvalidException( 'The mandatory parameter "action" has an invalid value.'
-                                'Allowed values are: "remove_restrictions", set_permissions"' )
+                                                               'Allowed values are: "remove_restrictions", set_permissions"' )
         roles = self.library_manager.get_current_roles( trans, library )
         return roles
 
@@ -376,6 +376,5 @@ class LibrariesController( BaseAPIController ):
         trans.sa_session.refresh( library )
         # Copy the permissions to the root folder
         trans.app.security_agent.copy_library_permissions( trans, library, library.root_folder )
-        item = library.to_dict( view='element', value_mapper={ 'id' : trans.security.encode_id , 'root_folder_id' : trans.security.encode_id } )
+        item = library.to_dict( view='element', value_mapper={ 'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id } )
         return item
-

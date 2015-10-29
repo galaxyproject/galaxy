@@ -2,9 +2,11 @@ from .interface import ToolSource
 from .interface import PagesSource
 from .interface import PageSource
 from .interface import InputSource
+from .util import error_on_exit_code
 
 from galaxy.tools.deps import requirements
 from galaxy.tools.parameters import output_collect
+from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.util.odict import odict
 import galaxy.tools
 
@@ -38,6 +40,9 @@ class YamlToolSource(ToolSource):
     def parse_command(self):
         return self.root_dict.get("command")
 
+    def parse_environment_variables(self):
+        return []
+
     def parse_interpreter(self):
         return self.root_dict.get("interpreter")
 
@@ -56,18 +61,7 @@ class YamlToolSource(ToolSource):
         return PagesSource([page_source])
 
     def parse_stdio(self):
-        from galaxy.jobs.error_level import StdioErrorLevel
-
-        # New format - starting out just using exit code.
-        exit_code_lower = galaxy.tools.ToolStdioExitCode()
-        exit_code_lower.range_start = float("-inf")
-        exit_code_lower.range_end = -1
-        exit_code_lower.error_level = StdioErrorLevel.FATAL
-        exit_code_high = galaxy.tools.ToolStdioExitCode()
-        exit_code_high.range_start = 1
-        exit_code_high.range_end = float("inf")
-        exit_code_lower.error_level = StdioErrorLevel.FATAL
-        return [exit_code_lower, exit_code_high], []
+        return error_on_exit_code()
 
     def parse_help(self):
         return self.root_dict.get("help", None)
@@ -81,7 +75,7 @@ class YamlToolSource(ToolSource):
         for output in output_defs:
             outputs[output.name] = output
         # TODO: parse outputs collections
-        return output_defs, odict()
+        return outputs, odict()
 
     def _parse_output(self, tool, name, output_dict):
         # TODO: handle filters, actions, change_format
@@ -97,7 +91,7 @@ class YamlToolSource(ToolSource):
         output.tool = tool
         output.from_work_dir = output_dict.get("from_work_dir", None)
         output.hidden = output_dict.get("hidden", "")
-        output.actions = galaxy.tools.ToolOutputActionGroup( output, None )
+        output.actions = ToolOutputActionGroup( output, None )
         discover_datasets_dicts = output_dict.get( "discover_datasets", [] )
         if isinstance( discover_datasets_dicts, dict ):
             discover_datasets_dicts = [ discover_datasets_dicts ]
@@ -162,6 +156,8 @@ def _parse_test(i, test_dict):
         _ensure_has(attributes, defaults)
 
     test_dict["outputs"] = new_outputs
+    # TODO: implement output collections for YAML tools.
+    test_dict["output_collections"] = []
     test_dict["command"] = __to_test_assert_list( test_dict.get( "command", [] ) )
     test_dict["stdout"] = __to_test_assert_list( test_dict.get( "stdout", [] ) )
     test_dict["stderr"] = __to_test_assert_list( test_dict.get( "stderr", [] ) )
@@ -254,6 +250,16 @@ class YamlInputSource(InputSource):
             case_page_source = YamlPageSource(block)
             sources.append((value, case_page_source))
         return sources
+
+    def parse_static_options(self):
+        static_options = list()
+        input_dict = self.input_dict
+        for index, option in enumerate(input_dict.get("options", {})):
+            value = option.get( "value" )
+            label = option.get( "label", value )
+            selected = option.get( "selected", False )
+            static_options.append( ( label, value, selected ) )
+        return static_options
 
 
 def _ensure_has(dict, defaults):

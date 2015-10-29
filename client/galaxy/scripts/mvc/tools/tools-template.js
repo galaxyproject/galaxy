@@ -3,12 +3,11 @@ define([], function() {
 
 // tool form templates
 return {
-    help: function(content) {
-        return  '<div class="toolHelp" style="overflow: auto;">' +
-                    '<div class="toolHelpBody">' +
-                        content +
-                    '</div>' +
-                '</div>';
+    help: function(options) {
+        var $tmpl = $('<div class="toolHelp" style="overflow: auto;"/>')
+                        .append( $('<div class="toolHelpBody"/>').append(options.help) );
+        $tmpl.find('a').attr('target', '_blank');
+        return $tmpl;
     },
 
     success: function(response) {
@@ -49,13 +48,6 @@ return {
                     '<textarea class="ui-textarea" disabled style="color: black; height: 300px !important;">' +
                         JSON.stringify(response, undefined, 4) +
                     '</textarea>' +
-                '</div>';
-    },
-
-    batchMode: function() {
-        return  '<div class="ui-table-form-info">' +
-                    '<i class="fa fa-sitemap" style="font-size: 1.2em; padding: 2px 5px;"/>' +
-                    'This is a batch mode input field. A separate job will be triggered for each dataset.' +
                 '</div>';
     },
 

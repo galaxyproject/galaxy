@@ -5,6 +5,7 @@ define(['utils/utils'], function(Utils) {
 var View = Backbone.View.extend({
     // options
     optionsDefault: {
+        id      : Utils.uid(),
         min     : null,
         max     : null,
         step    : null,
@@ -62,13 +63,14 @@ var View = Backbone.View.extend({
         var pressed = [];
         this.$text.on('keyup', function(e) {
             pressed[e.which] = false;
+            self.options.onchange && self.options.onchange($(this).val());
         });
         this.$text.on('keydown', function (e) {
             var v = e.which;
             pressed[v] = true;
-            if (!(v == 8 || v == 9 || v == 13 || v == 37 || v == 39 || (v >= 48 && v <= 57)
-                || (v == 190 && $(this).val().indexOf('.') == -1 && self.options.precise)
-                || (v == 189 && $(this).val().indexOf('-') == -1)
+            if (!(v == 8 || v == 9 || v == 13 || v == 37 || v == 39 || (v >= 48 && v <= 57) || (v >= 96 && v <= 105)
+                || ((v == 190 || v == 110) && $(this).val().indexOf('.') == -1 && self.options.precise)
+                || ((v == 189 || v == 109) && $(this).val().indexOf('-') == -1)
                 || pressed[91] || pressed[17])) {
                 event.preventDefault();
             }
@@ -78,17 +80,19 @@ var View = Backbone.View.extend({
     // value
     value : function (new_val) {
         if (new_val !== undefined) {
-            // check if its a number
-            if (isNaN(new_val)) {
-                new_val = 0;
-            }
+            if (new_val !== null && new_val !== '') {
+                // check if its a number
+                if (isNaN(new_val)) {
+                    new_val = 0;
+                }
 
-            // apply limit
-            if (this.options.max !== null) {
-                new_val = Math.min(new_val, this.options.max);
-            }
-            if (this.options.min !== null) {
-                new_val = Math.max(new_val, this.options.min);
+                // apply limit
+                if (this.options.max !== null) {
+                    new_val = Math.min(new_val, this.options.max);
+                }
+                if (this.options.min !== null) {
+                    new_val = Math.max(new_val, this.options.min);
+                }
             }
 
             // set values
@@ -96,9 +100,7 @@ var View = Backbone.View.extend({
             this.$text.val(new_val);
 
             // trigger on change event
-            if (this.options.onchange) {
-                this.options.onchange(new_val);
-            }
+            this.options.onchange && this.options.onchange(new_val);
         }
 
         // return current value

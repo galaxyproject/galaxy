@@ -1,4 +1,4 @@
-<tool id="master2gd_snp" name="MasterVar to gd_snp" hidden="false">
+<tool id="master2gd_snp" name="MasterVar to gd_snp" hidden="false" version="1.0.0">
   <description>Convert from MasterVar to gd_snp table</description>
   <command interpreter="perl">
     #if $snptab.tab2 == "yes" 

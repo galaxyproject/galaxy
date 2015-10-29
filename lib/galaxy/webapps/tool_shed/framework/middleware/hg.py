@@ -12,10 +12,9 @@ from paste.httpheaders import REMOTE_USER
 from galaxy.util import asbool
 from galaxy.util.hash_util import new_secure_hash
 from tool_shed.util import hg_util
+from tool_shed.util import commit_util
 import tool_shed.repository_types.util as rt_util
 
-from galaxy import eggs
-eggs.require( 'mercurial' )
 import mercurial.__version__
 
 log = logging.getLogger(__name__)
@@ -204,7 +203,6 @@ class Hg( object ):
         result_set = connection.execute( "select email, password from galaxy_user where username = '%s'" % username.lower() )
         for row in result_set:
             # Should only be 1 row...
-            db_email = row[ 'email' ]
             db_password = row[ 'password' ]
         connection.close()
         if db_password:
@@ -220,14 +218,12 @@ class Hg( object ):
         """
         db_username = None
         ru_email = environ[ 'HTTP_REMOTE_USER' ].lower()
-        ## Instantiate a database connection...
+        # Instantiate a database connection...
         engine = sqlalchemy.create_engine( self.db_url )
         connection = engine.connect()
         result_set = connection.execute( "select email, username, password from galaxy_user where email = '%s'" % ru_email )
         for row in result_set:
             # Should only be 1 row...
-            db_email = row[ 'email' ]
-            db_password = row[ 'password' ]
             db_username = row[ 'username' ]
         connection.close()
         if db_username:
@@ -291,7 +287,7 @@ class Hg( object ):
                 error_msg += 'the Tool Shed upload utility.  '
                 return False, error_msg
         return True, ''
-    
+
     def repository_tags_are_valid( self, filename, change_list ):
         """
         Make sure the any complex repository dependency definitions contain valid <repository> tags when pushing
@@ -299,9 +295,9 @@ class Hg( object ):
         """
         tag = '<repository'
         for change_dict in change_list:
-            lines = get_change_lines_in_file_for_tag( tag, change_dict )
+            lines = commit_util.get_change_lines_in_file_for_tag( tag, change_dict )
             for line in lines:
-                is_valid, error_msg = repository_tag_is_valid( filename, line )
+                is_valid, error_msg = self.repository_tag_is_valid( filename, line )
                 if not is_valid:
                     return False, error_msg
         return True, ''

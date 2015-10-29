@@ -19,7 +19,7 @@ class FilterFactory( object ):
         # Prepopulate dict containing filters that are always checked,
         # other filters that get checked depending on context (e.g. coming from
         # trackster or no user found are added in build filters).
-        self.default_filters = dict( tool=[ _not_hidden, _handle_requires_login ], section=[], label=[] )
+        self.default_filters = dict( tool=[ _not_hidden, _handle_authorization ], section=[], label=[] )
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
         self.__base_modules = listify( getattr( config, "toolbox_filter_base_modules", "galaxy.tools.filters" ) )
@@ -90,13 +90,18 @@ class FilterFactory( object ):
         raise Exception("Failed to find filter %s.%s" % (module_name, function_name))
 
 
-## Stock Filter Functions
+# Stock Filter Functions
 def _not_hidden( context, tool ):
     return not tool.hidden
 
 
-def _handle_requires_login( context, tool ):
-    return not tool.require_login or context.trans.user
+def _handle_authorization( context, tool ):
+    user = context.trans.user
+    if tool.require_login and not user:
+        return False
+    if not tool.allow_user_access( user, attempting_access=False ):
+        return False
+    return True
 
 
 def _has_trackster_conf( context, tool ):

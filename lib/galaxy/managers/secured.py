@@ -5,7 +5,6 @@ Owned models can be modified and deleted.
 """
 
 from galaxy import exceptions
-from galaxy.managers import base
 
 
 class AccessibleManagerMixin( object ):
@@ -16,35 +15,35 @@ class AccessibleManagerMixin( object ):
     """
 
     # don't want to override by_id since consumers will also want to fetch w/o any security checks
-    def is_accessible( self, trans, item, user ):
+    def is_accessible( self, item, user, **kwargs ):
         """
         Return True if the item accessible to user.
         """
         # override in subclasses
         raise exceptions.NotImplemented( "Abstract interface Method" )
 
-    def get_accessible( self, trans, id, user, **kwargs ):
+    def get_accessible( self, id, user, **kwargs ):
         """
         Return the item with the given id if it's accessible to user,
         otherwise raise an error.
 
         :raises exceptions.ItemAccessibilityException:
         """
-        item = self.by_id( trans, id )
-        return self.error_unless_accessible( trans, item, user )
+        item = self.by_id( id )
+        return self.error_unless_accessible( item, user, **kwargs )
 
-    def error_unless_accessible( self, trans, item, user ):
+    def error_unless_accessible( self, item, user, **kwargs ):
         """
         Raise an error if the item is NOT accessible to user, otherwise return the item.
 
         :raises exceptions.ItemAccessibilityException:
         """
-        if self.is_accessible( trans, item, user ):
+        if self.is_accessible( item, user, **kwargs ):
             return item
         raise exceptions.ItemAccessibilityException( "%s is not accessible by user" % ( self.model_class.__name__ ) )
 
     # TODO:?? are these even useful?
-    def list_accessible( self, trans, user, **kwargs ):
+    def list_accessible( self, user, **kwargs ):
         """
         Return a list of items accessible to the user, raising an error if ANY
         are inaccessible.
@@ -56,7 +55,7 @@ class AccessibleManagerMixin( object ):
         # items = ModelManager.list( self, trans, **kwargs )
         # return [ self.error_unless_accessible( trans, item, user ) for item in items ]
 
-    def filter_accessible( self, trans, user, **kwargs ):
+    def filter_accessible( self, user, **kwargs ):
         """
         Return a list of items accessible to the user.
         """
@@ -76,34 +75,34 @@ class OwnableManagerMixin( object ):
     This can also be thought of as write/edit privileges.
     """
 
-    def is_owner( self, trans, item, user ):
+    def is_owner( self, item, user, **kwargs ):
         """
         Return True if user owns the item.
         """
         # override in subclasses
         raise exceptions.NotImplemented( "Abstract interface Method" )
 
-    def get_owned( self, trans, id, user, **kwargs ):
+    def get_owned( self, id, user, **kwargs ):
         """
         Return the item with the given id if owned by the user,
         otherwise raise an error.
 
         :raises exceptions.ItemOwnershipException:
         """
-        item = self.by_id( trans, id )
-        return self.error_unless_owner( trans, item, user )
+        item = self.by_id( id )
+        return self.error_unless_owner( item, user, **kwargs )
 
-    def error_unless_owner( self, trans, item, user ):
+    def error_unless_owner( self, item, user, **kwargs ):
         """
         Raise an error if the item is NOT owned by user, otherwise return the item.
 
         :raises exceptions.ItemAccessibilityException:
         """
-        if self.is_owner( trans, item, user ):
+        if self.is_owner( item, user, **kwargs ):
             return item
         raise exceptions.ItemOwnershipException( "%s is not owned by user" % ( self.model_class.__name__ ) )
 
-    def list_owned( self, trans, user, **kwargs ):
+    def list_owned( self, user, **kwargs ):
         """
         Return a list of items owned by the user, raising an error if ANY
         are not.
@@ -112,11 +111,11 @@ class OwnableManagerMixin( object ):
         """
         raise exceptions.NotImplemented( "Abstract interface Method" )
         # just alias to by_user (easier/same thing)
-        #return self.by_user( trans, user, **kwargs )
+        # return self.by_user( trans, user, **kwargs )
 
-    def filter_owned( self, trans, user, **kwargs ):
+    def filter_owned( self, user, **kwargs ):
         """
         Return a list of items owned by the user.
         """
         # just alias to list_owned
-        return self.list_owned( trans, user, **kwargs )
+        return self.list_owned( user, **kwargs )

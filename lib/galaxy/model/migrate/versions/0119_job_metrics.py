@@ -1,18 +1,13 @@
 """
 Migration script for job metric plugins.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Numeric, Table, Unicode
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 TEXT_METRIC_MAX_LENGTH = 1023

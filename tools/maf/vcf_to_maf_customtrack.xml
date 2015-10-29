@@ -1,4 +1,4 @@
-<tool id="vcf_to_maf_customtrack1" name="VCF to MAF Custom Track">
+<tool id="vcf_to_maf_customtrack1" name="VCF to MAF Custom Track" version="1.0.0">
   <description>for display at UCSC</description>
   <macros>
       <import>macros.xml</import>

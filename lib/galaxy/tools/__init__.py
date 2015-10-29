@@ -8,18 +8,9 @@ import json
 import logging
 import os
 import re
-import shutil
 import threading
-import types
 import urllib
-import copy
-
-from galaxy import eggs, util
-
-eggs.require( "MarkupSafe" )  # MarkupSafe must load before mako
-eggs.require( "Mako" )
-eggs.require( "Paste" )
-eggs.require( "SQLAlchemy >= 0.4" )
+from datetime import datetime
 
 from cgi import FieldStorage
 from xml.etree import ElementTree
@@ -27,6 +18,7 @@ from mako.template import Template
 from paste import httpexceptions
 
 from galaxy import model
+from galaxy.managers import histories
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy import exceptions
 from galaxy.tools.actions import DefaultToolAction
@@ -34,21 +26,19 @@ from galaxy.tools.actions.upload import UploadToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import build_dependency_manager
-from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings
+from galaxy.tools.parameters import params_to_incoming, check_param, params_from_strings, params_to_strings, visit_input_values
 from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (BaseURLToolParameter,
-                                           DataToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
-                                           SelectToolParameter, ToolParameter, UnvalidatedValue,
-                                           IntegerToolParameter, FloatToolParameter)
-from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, UploadDataset
+                                           DataToolParameter, DataCollectionToolParameter, HiddenToolParameter,
+                                           SelectToolParameter, ToolParameter, UnvalidatedValue)
+from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
-from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
 from galaxy.tools.test import parse_tests
 from galaxy.tools.parser import get_tool_source
 from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.toolbox import AbstractToolBox
-from galaxy.util import rst_to_html, string_as_bool, string_to_object
+from galaxy.util import rst_to_html, string_as_bool
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -60,18 +50,7 @@ from galaxy.model.item_attrs import Dictifiable
 from tool_shed.util import shed_util_common as suc
 from .loader import template_macro_params, raw_tool_xml_tree, imported_macro_paths
 from .execute import execute as execute_job
-from .wrappers import (
-    ToolParameterValueWrapper,
-    RawObjectWrapper,
-    LibraryDatasetValueWrapper,
-    InputValueWrapper,
-    SelectToolParameterWrapper,
-    DatasetFilenameWrapper,
-    DatasetListWrapper,
-    DatasetCollectionWrapper,
-)
 import galaxy.jobs
-
 
 log = logging.getLogger( __name__ )
 
@@ -88,6 +67,25 @@ JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
 </conditional>"""
 
 HELP_UNINITIALIZED = threading.Lock()
+
+
+class ToolErrorLog:
+    def __init__(self):
+        self.error_stack = []
+        self.max_errors = 100
+
+    def add_error(self, file, phase, exception):
+        self.error_stack.insert(0, {
+            "file": file,
+            "time": str(datetime.now()),
+            "phase": phase,
+            "error": str(exception)
+        } )
+        if len(self.error_stack) > self.max_errors:
+            self.error_stack.pop()
+
+
+global_tool_errors = ToolErrorLog()
 
 
 class ToolNotFoundException( Exception ):
@@ -113,7 +111,12 @@ class ToolBox( AbstractToolBox ):
         return self._tools_by_id
 
     def create_tool( self, config_file, repository_id=None, guid=None, **kwds ):
-        tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
+        try:
+            tool_source = get_tool_source( config_file, getattr( self.app.config, "enable_beta_tool_formats", False ) )
+        except Exception, e:
+            # capture and log parsing errors
+            global_tool_errors.add_error(config_file, "Tool XML parsing", e)
+            raise e
         # Allow specifying a different tool subclass to instantiate
         tool_module = tool_source.parse_tool_module()
         if tool_module is not None:
@@ -274,18 +277,28 @@ class ToolOutput( ToolOutputBase ):
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
 
+    def to_dict( self, view='collection', value_mapper=None, app=None ):
+        as_dict = super( ToolOutput, self ).to_dict( view=view, value_mapper=value_mapper )
+        format = self.format
+        if format and format != "input" and app:
+            edam_format = app.datatypes_registry.edam_formats.get(self.format)
+            as_dict["edam_format"] = edam_format
+        return as_dict
+
 
 class ToolOutputCollection( ToolOutputBase ):
     """
-    Represents a HistoryDatasetCollectionAssociation of  output datasets produced by a tool.
+    Represents a HistoryDatasetCollectionAssociation of output datasets produced
+    by a tool.
+
     <outputs>
-      <dataset_collection type="list" label="${tool.name} on ${on_string} fasta">
+      <collection type="list" label="${tool.name} on ${on_string} fasta">
         <discover_datasets pattern="__name__" ext="fasta" visible="True" directory="outputFiles" />
-      </dataset_collection>
-      <dataset_collection type="paired" label="${tool.name} on ${on_string} paired reads">
+      </collection>
+      <collection type="paired" label="${tool.name} on ${on_string} paired reads">
         <data name="forward" format="fastqsanger" />
         <data name="reverse" format="fastqsanger"/>
-      </dataset_collection>
+      </collection>
     <outputs>
     """
 
@@ -319,22 +332,18 @@ class ToolOutputCollection( ToolOutputBase ):
         if self.dynamic_structure:
             return []
 
-        def to_part( ( element_identifier, output ) ):
-            return ToolOutputCollectionPart( self, element_identifier, output )
-
         # This line is probably not right - should verify structured_like
         # or have outputs and all outputs have name.
         if len( self.outputs ) > 1:
-            outputs = self.outputs
+            output_parts = [ToolOutputCollectionPart(self, k, v) for k, v in self.outputs.iteritems()]
         else:
             # either must have specified structured_like or something worse
             if self.structure.structured_like:
                 collection_prototype = inputs[ self.structure.structured_like ].collection
             else:
                 collection_prototype = type_registry.prototype( self.structure.collection_type )
-            # TODO: Handle nested structures.
-            outputs = odict()
-            for element in collection_prototype.elements:
+
+            def prototype_dataset_element_to_output( element, parent_ids=[] ):
                 name = element.element_identifier
                 format = self.default_format
                 if self.inherit_format:
@@ -348,10 +357,29 @@ class ToolOutputCollection( ToolOutputBase ):
                 )
                 if self.inherit_metadata:
                     output.metadata_source = element.dataset_instance
+                return ToolOutputCollectionPart(
+                    self,
+                    element.element_identifier,
+                    output,
+                    parent_ids=parent_ids,
+                )
 
-                outputs[ element.element_identifier ] = output
+            def prototype_collection_to_output( collection_prototype, parent_ids=[] ):
+                output_parts = []
+                for element in collection_prototype.elements:
+                    element_parts = []
+                    if not element.is_collection:
+                        element_parts.append(prototype_dataset_element_to_output( element, parent_ids ))
+                    else:
+                        new_parent_ids = parent_ids[:] + [element.element_identifier]
+                        element_parts.extend(prototype_collection_to_output(element.element_object, new_parent_ids))
+                    output_parts.extend(element_parts)
 
-        return map( to_part, outputs.items() )
+                return output_parts
+
+            output_parts = prototype_collection_to_output( collection_prototype )
+
+        return output_parts
 
     @property
     def dynamic_structure(self):
@@ -384,10 +412,11 @@ class ToolOutputCollectionStructure( object ):
 
 class ToolOutputCollectionPart( object ):
 
-    def __init__( self, output_collection_def, element_identifier, output_def ):
+    def __init__( self, output_collection_def, element_identifier, output_def, parent_ids=[] ):
         self.output_collection_def = output_collection_def
         self.element_identifier = element_identifier
         self.output_def = output_def
+        self.parent_ids = parent_ids
 
     @property
     def effective_output_name( self ):
@@ -415,16 +444,16 @@ class Tool( object, Dictifiable ):
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
-    default_template = 'tool_form.mako'
 
-    def __init__( self, config_file, tool_source, app, guid=None, repository_id=None ):
+    def __init__( self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True ):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
         self.repository_id = repository_id
-        #setup initial attribute values
+        self._allow_code_files = allow_code_files
+        # setup initial attribute values
         self.inputs = odict()
         self.stdio_exit_codes = list()
         self.stdio_regexes = list()
@@ -458,11 +487,16 @@ class Tool( object, Dictifiable ):
         self.version = None
         # Enable easy access to this tool's version lineage.
         self.lineage_ids = []
-        #populate toolshed repository info, if available
+        # populate toolshed repository info, if available
         self.populate_tool_shed_info()
         # Parse XML element containing configuration
-        self.parse( tool_source, guid=guid )
+        try:
+            self.parse( tool_source, guid=guid )
+        except Exception, e:
+            global_tool_errors.add_error(config_file, "Tool Loading", e)
+            raise e
         self.external_runJob_script = app.config.drmaa_external_runjob_script
+        self.history_manager = histories.HistoryManager( app )
 
     @property
     def sa_session( self ):
@@ -488,16 +522,34 @@ class Tool( object, Dictifiable ):
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
-                                                                                                 self.tool_shed,
-                                                                                                 self.repository_name,
-                                                                                                 self.repository_owner,
-                                                                                                 self.installed_changeset_revision )
+            return suc.get_installed_repository( self.app,
+                                                 tool_shed=self.tool_shed,
+                                                 name=self.repository_name,
+                                                 owner=self.repository_owner,
+                                                 installed_changeset_revision=self.installed_changeset_revision )
         return None
 
     @property
-    def produces_collections( self ):
-        return any( o.collection for o in self.outputs.values() )
+    def produces_collections_of_unknown_type( self ):
+
+        def output_is_dynamic_collection(output):
+            if not output.collection:
+                return False
+            if output.structure.collection_type:
+                return False
+            return True
+
+        return any( map( output_is_dynamic_collection, self.outputs.values() ) )
+
+    @property
+    def produces_collections_with_unknown_structure( self ):
+
+        def output_is_dynamic(output):
+            if not output.collection:
+                return False
+            return output.dynamic_structure
+
+        return any( map( output_is_dynamic, self.outputs.values() ) )
 
     def __get_job_tool_configuration(self, job_params=None):
         """Generalized method for getting this tool's job configuration.
@@ -550,7 +602,7 @@ class Tool( object, Dictifiable ):
     def get_panel_section( self ):
         return self.app.toolbox.get_integrated_section_for_tool( self )
 
-    def allow_user_access( self, user ):
+    def allow_user_access( self, user, attempting_access=True ):
         """
         :returns: bool -- Whether the user is allowed to access the tool.
         """
@@ -602,6 +654,7 @@ class Tool( object, Dictifiable ):
         else:
             self.command = ''
             self.interpreter = None
+        self.environment_variables = tool_source.parse_environment_variables()
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -704,14 +757,15 @@ class Tool( object, Dictifiable ):
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
-        for code_elem in root.findall("code"):
-            for hook_elem in code_elem.findall("hook"):
-                for key, value in hook_elem.items():
-                    # map hook to function
-                    self.hook_map[key] = value
-            file_name = code_elem.get("file")
-            code_path = os.path.join( self.tool_dir, file_name )
-            execfile( code_path, self.code_namespace )
+        if self._allow_code_files:
+            for code_elem in root.findall("code"):
+                for hook_elem in code_elem.findall("hook"):
+                    for key, value in hook_elem.items():
+                        # map hook to function
+                        self.hook_map[key] = value
+                file_name = code_elem.get("file")
+                code_path = os.path.join( self.tool_dir, file_name )
+                execfile( code_path, self.code_namespace )
 
         # User interface hints
         uihints_elem = root.find( "uihints" )
@@ -972,6 +1026,15 @@ class Tool( object, Dictifiable ):
                         case.inputs = odict()
                         group.cases.append( case )
                 rval[group.name] = group
+            elif input_type == "section":
+                group = Section()
+                group.name = input_source.get( "name" )
+                group.title = input_source.get( "title" )
+                group.help = input_source.get( "help", None )
+                group.expanded = input_source.get_bool( "expanded", False )
+                page_source = input_source.parse_nested_inputs_source()
+                group.inputs = self.parse_input_elem( page_source, enctypes, context )
+                rval[group.name] = group
             elif input_type == "upload_dataset":
                 elem = input_source.elem()
                 group = UploadDataset()
@@ -1007,6 +1070,9 @@ class Tool( object, Dictifiable ):
         # If parameter depends on any other paramters, we must refresh the
         # form when it changes
         for name in param.get_dependencies():
+            # Let it throw exception, but give some hint what the problem might be
+            if name not in context:
+                log.error("Could not find dependency '%s' of parameter '%s' in tool %s" % (name, param.name, self.name) )
             context[ name ].refresh_on_change = True
         return param
 
@@ -1071,9 +1137,9 @@ class Tool( object, Dictifiable ):
                 # Each page has to rendered all-together because of backreferences allowed by rst
                 try:
                     self.__help_by_page = [ Template( rst_to_html( help_header + x + help_footer ),
-                                                    input_encoding='utf-8', output_encoding='utf-8',
-                                                    default_filters=[ 'decode.utf8' ],
-                                                    encoding_errors='replace' )
+                                                      input_encoding='utf-8', output_encoding='utf-8',
+                                                      default_filters=[ 'decode.utf8' ],
+                                                      encoding_errors='replace' )
                                             for x in self.__help_by_page ]
                 except:
                     log.exception( "error in multi-page help for tool %s" % self.name )
@@ -1108,8 +1174,8 @@ class Tool( object, Dictifiable ):
         if self.tool_type.startswith( 'data_source' ):
             return False
 
-        if self.produces_collections:
-            # Someday we will get there!
+        if self.produces_collections_of_unknown_type:
+            # Getting there...
             return False
 
         if hasattr( tool_source, "root"):
@@ -1120,22 +1186,17 @@ class Tool( object, Dictifiable ):
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
         return True
-    def new_state( self, trans, all_pages=False, history=None ):
+
+    def new_state( self, trans, history=None ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
         with default values for inputs.
-
-        Only inputs on the first page will be initialized unless `all_pages` is
-        True, in which case all inputs regardless of page are initialized.
         """
         state = DefaultToolState()
         state.inputs = {}
-        if all_pages:
-            inputs = self.inputs
-        else:
-            inputs = self.inputs_by_page[ 0 ]
-        self.fill_in_new_state( trans, inputs, state.inputs, history=history )
+        self.fill_in_new_state( trans, self.inputs, state.inputs, history=history )
         return state
+
     def fill_in_new_state( self, trans, inputs, state, context=None, history=None ):
         """
         Fill in a tool state dictionary with default values for all parameters
@@ -1144,6 +1205,7 @@ class Tool( object, Dictifiable ):
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
             state[ input.name ] = input.get_initial_value( trans, context, history=history )
+
     def get_param_html_map( self, trans, page=0, other_values={} ):
         """
         Return a dictionary containing the HTML representation of each
@@ -1197,100 +1259,70 @@ class Tool( object, Dictifiable ):
             else:
                 input.visit_inputs( "", value[input.name], callback )
 
-    def handle_input( self, trans, incoming, history=None, old_errors=None, process_state='update', source='html' ):
+    def handle_input( self, trans, incoming, history=None, source='html' ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
-
-        process_state can be either 'update' (to incrementally build up the state
-        over several calls - one repeat per handle for instance) or 'populate'
-        force a complete build of the state and submission all at once (like
-        from API). May want an incremental version of the API also at some point,
-        that is why this is not just called for_api.
         """
-        all_pages = ( process_state == "populate" )  # If process_state = update, handle all pages at once.
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
                 rerun_remap_job_id = trans.app.security.decode_id( incoming[ 'rerun_remap_job_id' ] )
-            except Exception:
-                message = 'Failure executing tool (attempting to rerun invalid job).'
-                return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
+            except Exception, exception:
+                log.error( str( exception ) )
+                raise exceptions.MessageException( 'Failure executing tool (attempting to rerun invalid job).' )
 
         # Fixed set of input parameters may correspond to any number of jobs.
-        # Expand these out to individual parameters for given jobs (tool
-        # executions).
+        # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings, collection_info = expand_meta_parameters( trans, self, incoming )
-
         if not expanded_incomings:
-            raise exceptions.MessageException( "Tool execution failed, trying to run a tool over an empty collection." )
+            raise exceptions.MessageException( 'Tool execution failed, trying to run a tool over an empty collection.' )
 
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
         if rerun_remap_job_id and len( expanded_incomings ) > 1:
-            message = 'Failure executing tool (cannot create multiple jobs when remapping existing job).'
-            return 'message.mako', dict( status='error', message=message, refresh_frames=[] )
-
-        all_states = []
-        for expanded_incoming in expanded_incomings:
-            state, state_new = self.__fetch_state( trans, expanded_incoming, history, all_pages=all_pages )
-            all_states.append( state )
-        if state_new:
-            # This feels a bit like a hack. It allows forcing full processing
-            # of inputs even when there is no state in the incoming dictionary
-            # by providing either 'runtool_btn' (the name of the submit button
-            # on the standard run form) or "URL" (a parameter provided by
-            # external data source tools).
-            if "runtool_btn" not in incoming and "URL" not in incoming:
-                if not self.display_interface:
-                    return self.__no_display_interface_response()
-                if len(incoming):
-                    self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {}, source=source )
-                return self.default_template, dict( errors={}, tool_state=state, param_values={}, incoming={} )
+            raise exceptions.MessageException( 'Failure executing tool (cannot create multiple jobs when remapping existing job).' )
 
         all_errors = []
         all_params = []
-        for expanded_incoming, expanded_state in zip(expanded_incomings, all_states):
-            errors, params = self.__check_param_values( trans, expanded_incoming, expanded_state, old_errors, process_state, history=history, source=source )
+        for expanded_incoming in expanded_incomings:
+            expanded_state = self.new_state( trans, history=history )
+            # Process incoming data
+            if not self.check_values:
+                # If `self.check_values` is false we don't do any checking or
+                # processing on input  This is used to pass raw values
+                # through to/from external sites.
+                errors = {}
+                params = expanded_incoming
+            else:
+                # Update state for all inputs on the current page taking new
+                # values from `incoming`.
+                errors = self.populate_state( trans, self.inputs, expanded_state.inputs, expanded_incoming, history, source=source )
+                # If the tool provides a `validate_input` hook, call it.
+                validate_input = self.get_hook( 'validate_input' )
+                if validate_input:
+                    validate_input( trans, errors, expanded_state.inputs, self.inputs )
+                params = expanded_state.inputs
             all_errors.append( errors )
             all_params.append( params )
 
-        if self.__should_refresh_state( incoming ):
-            template, template_vars = self.__handle_state_refresh( trans, state, errors )
+        # If there were errors, we stay on the same page and display
+        # error messages
+        if any( all_errors ):
+            raise exceptions.MessageException( err_data=all_errors[ 0 ] )
         else:
-            # User actually clicked next or execute.
-
-            # If there were errors, we stay on the same page and display
-            # error messages
-            if any( all_errors ):
-                error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
-                template = self.default_template
-                template_vars = dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
-            # If we've completed the last page we can execute the tool
-            elif all_pages or state.page == self.last_page:
-                execution_tracker = execute_job( trans, self, all_params, history=history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
-                if execution_tracker.successful_jobs:
-                    template = 'tool_executed.mako'
-                    template_vars = dict(
-                        out_data=execution_tracker.output_datasets,
-                        num_jobs=len( execution_tracker.successful_jobs ),
-                        job_errors=execution_tracker.execution_errors,
-                        jobs=execution_tracker.successful_jobs,
-                        output_collections=execution_tracker.output_collections,
-                        implicit_collections=execution_tracker.implicit_collections,
-                    )
-                else:
-                    template = 'message.mako'
-                    template_vars = dict( status='error', message=execution_tracker.execution_errors[0], refresh_frames=[] )
-            # Otherwise move on to the next page
+            execution_tracker = execute_job( trans, self, all_params, history=history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info )
+            if execution_tracker.successful_jobs:
+                return dict( out_data=execution_tracker.output_datasets,
+                             num_jobs=len( execution_tracker.successful_jobs ),
+                             job_errors=execution_tracker.execution_errors,
+                             jobs=execution_tracker.successful_jobs,
+                             output_collections=execution_tracker.output_collections,
+                             implicit_collections=execution_tracker.implicit_collections )
             else:
-                template, template_vars = self.__handle_page_advance( trans, state, errors )
-        return template, template_vars
-
-    def __should_refresh_state( self, incoming ):
-        return not( 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming )
+                raise exceptions.MessageException( execution_tracker.execution_errors[ 0 ] )
 
     def handle_single_execution( self, trans, rerun_remap_job_id, params, history, mapping_over_collection ):
         """
@@ -1301,7 +1333,7 @@ class Tool( object, Dictifiable ):
             params = self.__remove_meta_properties( params )
             job, out_data = self.execute( trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection )
         except httpexceptions.HTTPFound, e:
-            #if it's a paste redirect exception, pass it up the stack
+            # if it's a paste redirect exception, pass it up the stack
             raise e
         except Exception, e:
             log.exception('Exception caught while attempting tool execution:')
@@ -1316,110 +1348,13 @@ class Tool( object, Dictifiable ):
                 message = 'Failure executing tool (invalid data returned from tool execution)'
             return False, message
 
-    def __handle_state_refresh( self, trans, state, errors ):
-            try:
-                self.find_fieldstorage( state.inputs )
-            except InterruptedUpload:
-                # If inputs contain a file it won't persist.  Most likely this
-                # is an interrupted upload.  We should probably find a more
-                # standard method of determining an incomplete POST.
-                return self.handle_interrupted( trans, state.inputs )
-            except:
-                pass
-            # Just a refresh, render the form with updated state and errors.
-            if not self.display_interface:
-                return self.__no_display_interface_response()
-            return self.default_template, dict( errors=errors, tool_state=state )
-
-    def __handle_page_advance( self, trans, state, errors ):
-        state.page += 1
-        # Fill in the default values for the next page
-        self.fill_in_new_state( trans, self.inputs_by_page[ state.page ], state.inputs )
-        if not self.display_interface:
-            return self.__no_display_interface_response()
-        return self.default_template, dict( errors=errors, tool_state=state )
-
-    def __no_display_interface_response( self ):
-        return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
-
-    def __fetch_state( self, trans, incoming, history, all_pages ):
-        # Get the state or create if not found
-        if "tool_state" in incoming:
-            encoded_state = string_to_object( incoming["tool_state"] )
-            state = DefaultToolState()
-            state.decode( encoded_state, self, trans.app )
-            new = False
-        else:
-            state = self.new_state( trans, history=history, all_pages=all_pages )
-            new = True
-        return state, new
-
-    def __check_param_values( self, trans, incoming, state, old_errors, process_state, history, source ):
-        # Process incoming data
-        if not( self.check_values ):
-            # If `self.check_values` is false we don't do any checking or
-            # processing on input  This is used to pass raw values
-            # through to/from external sites. FIXME: This should be handled
-            # more cleanly, there is no reason why external sites need to
-            # post back to the same URL that the tool interface uses.
-            errors = {}
-            params = incoming
-        else:
-            # Update state for all inputs on the current page taking new
-            # values from `incoming`.
-            if process_state == "update":
-                inputs = self.inputs_by_page[state.page]
-                errors = self.update_state( trans, inputs, state.inputs, incoming, old_errors=old_errors or {}, source=source )
-            elif process_state == "populate":
-                inputs = self.inputs
-                errors = self.populate_state( trans, inputs, state.inputs, incoming, history, source=source )
-            else:
-                raise Exception("Unknown process_state type %s" % process_state)
-            # If the tool provides a `validate_input` hook, call it.
-            validate_input = self.get_hook( 'validate_input' )
-            if validate_input:
-                validate_input( trans, errors, state.inputs, inputs )
-            params = state.inputs
-        return errors, params
-
     def find_fieldstorage( self, x ):
         if isinstance( x, FieldStorage ):
             raise InterruptedUpload( None )
-        elif type( x ) is types.DictType:
+        elif isinstance(x, dict):
             [ self.find_fieldstorage( y ) for y in x.values() ]
-        elif type( x ) is types.ListType:
+        elif isinstance(x, list):
             [ self.find_fieldstorage( y ) for y in x ]
-
-    def handle_interrupted( self, trans, inputs ):
-        """
-        Upon handling inputs, if it appears that we have received an incomplete
-        form, do some cleanup or anything else deemed necessary.  Currently
-        this is only likely during file uploads, but this method could be
-        generalized and a method standardized for handling other tools.
-        """
-        # If the async upload tool has uploading datasets, we need to error them.
-        if 'async_datasets' in inputs and inputs['async_datasets'] not in [ 'None', '', None ]:
-            for id in inputs['async_datasets'].split(','):
-                try:
-                    data = self.sa_session.query( trans.model.HistoryDatasetAssociation ).get( int( id ) )
-                except:
-                    log.exception( 'Unable to load precreated dataset (%s) sent in upload form' % id )
-                    continue
-                if trans.user is None and trans.galaxy_session.current_history != data.history:
-                    log.error( 'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)'
-                        % ( data.id, trans.galaxy_session.id ) )
-                elif data.history.user != trans.user:
-                    log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)'
-                        % ( data.id, trans.user.id ) )
-                else:
-                    data.state = data.states.ERROR
-                    data.info = 'Upload of this dataset was interrupted.  Please try uploading again or'
-                    self.sa_session.add( data )
-                    self.sa_session.flush()
-        # It's unlikely the user will ever see this.
-        return 'message.mako', dict( status='error',
-            message='Your upload was interrupted. If this was uninentional, please retry it.',
-            refresh_frames=[], cont=None )
 
     def populate_state( self, trans, inputs, state, incoming, history=None, source="html", prefix="", context=None ):
         errors = dict()
@@ -1445,13 +1380,13 @@ class Tool( object, Dictifiable ):
                         group_state.append( new_state )
                         group_errors.append( {} )
                         rep_errors = self.populate_state( trans,
-                                                    input.inputs,
-                                                    new_state,
-                                                    incoming,
-                                                    history,
-                                                    source,
-                                                    prefix=rep_name + "|",
-                                                    context=context )
+                                                          input.inputs,
+                                                          new_state,
+                                                          incoming,
+                                                          history,
+                                                          source,
+                                                          prefix=rep_name + "|",
+                                                          context=context )
                         if rep_errors:
                             any_group_errors = True
                             group_errors[rep_index].update( rep_errors )
@@ -1460,6 +1395,8 @@ class Tool( object, Dictifiable ):
                         group_errors[-1] = { '__index__': 'Cannot add repeat (max size=%i).' % input.max }
                         any_group_errors = True
                     rep_index += 1
+                if any_group_errors:
+                    errors[ input.name ] = group_errors
             elif isinstance( input, Conditional ):
                 group_state = state[input.name]
                 group_prefix = "%s|" % ( key )
@@ -1496,21 +1433,34 @@ class Tool( object, Dictifiable ):
                                                         history,
                                                         source,
                                                         prefix=group_prefix,
-                                                        context=context,
-                    )
+                                                        context=context)
                     if group_errors:
                         errors[ input.name ] = group_errors
                     # Store the current case in a special value
                     group_state['__current_case__'] = current_case
                     # Store the value of the test element
                     group_state[ input.test_param.name ] = value
+            elif isinstance( input, Section ):
+                group_state = state[input.name]
+                group_prefix = "%s|" % ( key )
+                self.fill_in_new_state( trans, input.inputs, group_state, context, history=history )
+                group_errors = self.populate_state( trans,
+                                                    input.inputs,
+                                                    group_state,
+                                                    incoming,
+                                                    history,
+                                                    source,
+                                                    prefix=group_prefix,
+                                                    context=context )
+                if group_errors:
+                    errors[ input.name ] = group_errors
             elif isinstance( input, UploadDataset ):
                 group_state = state[input.name]
                 group_errors = []
                 any_group_errors = False
                 d_type = input.get_datatype( trans, context )
                 writable_files = d_type.writable_files
-                #remove extra files
+                # remove extra files
                 while len( group_state ) > len( writable_files ):
                     del group_state[-1]
 
@@ -1528,13 +1478,13 @@ class Tool( object, Dictifiable ):
                     rep_index = rep_state['__index__']
                     rep_prefix = "%s_%d|" % ( key, rep_index )
                     rep_errors = self.populate_state( trans,
-                                                    input.inputs,
-                                                    rep_state,
-                                                    incoming,
-                                                    history,
-                                                    source,
-                                                    prefix=rep_prefix,
-                                                    context=context)
+                                                      input.inputs,
+                                                      rep_state,
+                                                      incoming,
+                                                      history,
+                                                      source,
+                                                      prefix=rep_prefix,
+                                                      context=context)
                     if rep_errors:
                         any_group_errors = True
                         group_errors.append( rep_errors )
@@ -1669,7 +1619,7 @@ class Tool( object, Dictifiable ):
                             # are meant to be much more transient than the rest
                             # of tool state.
                             continue
-                        #load default initial value
+                        # load default initial value
                         if not test_param_error:
                             test_param_error = str( e )
                         if trans is not None:
@@ -1713,56 +1663,22 @@ class Tool( object, Dictifiable ):
                 group_state['__current_case__'] = current_case
                 # Store the value of the test element
                 group_state[ input.test_param.name ] = value
-            elif isinstance( input, UploadDataset ):
+            elif isinstance( input, Section ):
                 group_state = state[input.name]
-                group_errors = []
-                group_old_errors = old_errors.get( input.name, None )
-                any_group_errors = False
-                d_type = input.get_datatype( trans, context )
-                writable_files = d_type.writable_files
-                #remove extra files
-                while len( group_state ) > len( writable_files ):
-                    del group_state[-1]
-                    if group_old_errors:
-                        del group_old_errors[-1]
-                # Update state
-                max_index = -1
-                for i, rep_state in enumerate( group_state ):
-                    rep_index = rep_state['__index__']
-                    max_index = max( max_index, rep_index )
-                    rep_prefix = "%s_%d|" % ( key, rep_index )
-                    if group_old_errors:
-                        rep_old_errors = group_old_errors[i]
-                    else:
-                        rep_old_errors = {}
-                    rep_errors = self.update_state( trans,
-                                                    input.inputs,
-                                                    rep_state,
-                                                    incoming,
-                                                    prefix=rep_prefix,
-                                                    context=context,
-                                                    source=source,
-                                                    update_only=update_only,
-                                                    old_errors=rep_old_errors,
-                                                    item_callback=item_callback )
-                    if rep_errors:
-                        any_group_errors = True
-                        group_errors.append( rep_errors )
-                    else:
-                        group_errors.append( {} )
-                # Add new fileupload as needed
-                offset = 1
-                while len( writable_files ) > len( group_state ):
-                    new_state = {}
-                    new_state['__index__'] = max_index + offset
-                    offset += 1
-                    self.fill_in_new_state( trans, input.inputs, new_state, context )
-                    group_state.append( new_state )
-                    if any_group_errors:
-                        group_errors.append( {} )
-                # Were there *any* errors for any repetition?
-                if any_group_errors:
-                    errors[input.name] = group_errors
+                group_old_errors = old_errors.get( input.name, {} )
+                group_prefix = "%s|" % ( key )
+                group_errors = self.update_state( trans,
+                                                  input.inputs,
+                                                  group_state,
+                                                  incoming,
+                                                  prefix=group_prefix,
+                                                  context=context,
+                                                  source=source,
+                                                  update_only=update_only,
+                                                  old_errors=group_old_errors,
+                                                  item_callback=item_callback )
+                if group_errors:
+                    errors[ input.name ] = group_errors
             else:
                 if key not in incoming \
                    and "__force_update__" + key not in incoming \
@@ -1848,10 +1764,12 @@ class Tool( object, Dictifiable ):
         """
         args = dict()
         for key, param in self.inputs.iteritems():
-            if isinstance( param, HiddenToolParameter ):
+            # BaseURLToolParameter is now a subclass of HiddenToolParameter, so
+            # we must check if param is a BaseURLToolParameter first
+            if isinstance( param, BaseURLToolParameter ):
+                args[key] = param.get_initial_value( trans, None )
+            elif isinstance( param, HiddenToolParameter ):
                 args[key] = model.User.expand_user_properties( trans.user, param.value )
-            elif isinstance( param, BaseURLToolParameter ):
-                args[key] = param.get_value( trans )
             else:
                 raise Exception( "Unexpected parameter type" )
         return args
@@ -1939,7 +1857,7 @@ class Tool( object, Dictifiable ):
                         if allow_workflow_parameters and isinstance( values[ input.name ], basestring ):
                             if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
                                 ck_param = False
-                        #this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
+                        # this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
                         if ck_param:
                             input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
                     except:
@@ -2108,39 +2026,6 @@ class Tool( object, Dictifiable ):
         """
         pass
 
-    def collect_associated_files( self, output, job_working_directory ):
-        """
-        Find extra files in the job working directory and move them into
-        the appropriate dataset's files directory
-        """
-        for name, hda in output.items():
-            temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
-            extra_dir = None
-            try:
-                # This skips creation of directories - object store
-                # automatically creates them.  However, empty directories will
-                # not be created in the object store at all, which might be a
-                # problem.
-                for root, dirs, files in os.walk( temp_file_path ):
-                    extra_dir = root.replace(job_working_directory, '', 1).lstrip(os.path.sep)
-                    for f in files:
-                        self.app.object_store.update_from_file(hda.dataset,
-                            extra_dir=extra_dir,
-                            alt_name=f,
-                            file_name=os.path.join(root, f),
-                            create=True,
-                            preserve_symlinks=True
-                        )
-                # Clean up after being handled by object store.
-                # FIXME: If the object (e.g., S3) becomes async, this will
-                # cause issues so add it to the object store functionality?
-                if extra_dir is not None:
-                    # there was an extra_files_path dir, attempt to remove it
-                    shutil.rmtree(temp_file_path)
-            except Exception, e:
-                log.debug( "Error in collect_associated_files: %s" % ( e ) )
-                continue
-
     def collect_child_datasets( self, output, job_working_directory ):
         """
         Look for child dataset files, create HDA and attach to parent.
@@ -2155,18 +2040,16 @@ class Tool( object, Dictifiable ):
             if 'job_working_directory' in self.app.config.collect_outputs_from:
                 filenames.extend( glob.glob(os.path.join(job_working_directory, "child_%i_*" % outdata.id) ) )
             for filename in filenames:
-                if not name in children:
+                if name not in children:
                     children[name] = {}
                 fields = os.path.basename(filename).split("_")
-                fields.pop(0)
-                parent_id = int(fields.pop(0))
-                designation = fields.pop(0)
-                visible = fields.pop(0).lower()
+                designation = fields[2]
+                visible = fields[3].lower()
                 if visible == "visible":
                     visible = True
                 else:
                     visible = False
-                ext = fields.pop(0).lower()
+                ext = fields[4].lower()
                 child_dataset = self.app.model.HistoryDatasetAssociation( extension=ext,
                                                                           parent_id=outdata.id,
                                                                           designation=designation,
@@ -2228,6 +2111,10 @@ class Tool( object, Dictifiable ):
         # Basic information
         tool_dict = super( Tool, self ).to_dict()
 
+        # If an admin user, expose the path to the actual tool config XML file.
+        if trans.user_is_admin():
+            tool_dict['config_file'] = os.path.abspath(self.config_file)
+
         # Add link details.
         if link_details:
             # Add details for creating a hyperlink to the tool.
@@ -2244,64 +2131,48 @@ class Tool( object, Dictifiable ):
         # Add input and output details.
         if io_details:
             tool_dict[ 'inputs' ] = [ input.to_dict( trans ) for input in self.inputs.values() ]
-            tool_dict[ 'outputs' ] = [ output.to_dict() for output in self.outputs.values() ]
+            tool_dict[ 'outputs' ] = [ output.to_dict( app=trans.app ) for output in self.outputs.values() ]
 
         tool_dict[ 'panel_section_id' ], tool_dict[ 'panel_section_name' ] = self.get_panel_section()
 
         return tool_dict
 
-    def to_json (self, trans, kwd={}, is_dynamic=True):
+    def to_json(self, trans, kwd={}, job=None, is_workflow=False):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
-        job_id = kwd.get('__job_id__', None)
-        dataset_id = kwd.get('__dataset_id__', None)
-
-        # load job details if provided
-        job = None
-        if job_id:
-            try:
-                job_id = trans.security.decode_id( job_id )
-                job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
-            except Exception, exception:
-                trans.response.status = 500
-                log.error('Failed to retrieve job.')
-                return { 'error': 'Failed to retrieve job.' }
-        elif dataset_id:
-            try:
-                dataset_id = trans.security.decode_id( dataset_id )
-                data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
-                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ) ):
-                    trans.response.status = 500
-                    log.error('User has no access to dataset.')
-                    return { 'error': 'User has no access to dataset.' }
-                job = data.creating_job
-                if not job:
-                    trans.response.status = 500
-                    log.error('Creating job not found.')
-                    return { 'error': 'Creating job not found.' }
-            except Exception, exception:
-                trans.response.status = 500
-                log.error('Failed to get job information.')
-                return { 'error': 'Failed to get job information.' }
+        history_id = kwd.get('history_id', None)
+        history = None
+        try:
+            if history_id is not None:
+                history = self.history_manager.get_owned( trans.security.decode_id( history_id ), trans.user, current_history=trans.history )
+            else:
+                history = trans.get_history()
+            if history is None:
+                raise exceptions.MessageException( 'History unavailable. Please specify a valid history id' )
+        except Exception, e:
+            raise exceptions.MessageException( '[history_id=%s] Failed to retrieve history. %s.' % ( history_id, str( e ) ) )
 
         # load job parameters into incoming
         tool_message = ''
         if job:
             try:
-                job_params = job.get_param_values( trans.app, ignore_errors = True )
-                job_messages = self.check_and_update_param_values( job_params, trans, update_values=False )
+                job_params = job.get_param_values( trans.app, ignore_errors=True )
+                self.check_and_update_param_values( job_params, trans, update_values=False )
+                self._map_source_to_history( trans, self.inputs, job_params, history )
                 tool_message = self._compare_tool_version(trans, job)
                 params_to_incoming( kwd, self.inputs, job_params, trans.app, to_html=False )
-            except Exception, exception:
-                trans.response.status = 500
-                return { 'error': str( exception ) }
+            except Exception, e:
+                raise exceptions.MessageException( str( e ) )
 
         # create parameter object
-        params = galaxy.util.Params( kwd, sanitize = False )
+        params = galaxy.util.Params( kwd, sanitize=False )
 
         # convert value to jsonifiable value
         def jsonify(v):
+            if isinstance(v, UnvalidatedValue):
+                v = v.value
+
             # check if value is numeric
             isnumber = False
             try:
@@ -2316,12 +2187,25 @@ class Tool( object, Dictifiable ):
                     'id'  : trans.security.encode_id(v.id),
                     'src' : 'hda'
                 }
+            elif isinstance(v, trans.app.model.HistoryDatasetCollectionAssociation):
+                return {
+                    'id'  : trans.security.encode_id(v.id),
+                    'src' : 'hdca'
+                }
+            elif isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
+                return {
+                    'id'  : trans.security.encode_id(v.id),
+                    'name': v.name,
+                    'src' : 'ldda'
+                }
             elif isinstance(v, bool):
                 if v is True:
                     return 'true'
                 else:
                     return 'false'
             elif isinstance(v, basestring) or isnumber:
+                return v
+            elif isinstance(v, dict) and hasattr(v, '__class__'):
                 return v
             else:
                 return None
@@ -2350,23 +2234,29 @@ class Tool( object, Dictifiable ):
             dict[key] = value
 
         # check the current state of a value and update it if necessary
-        def check_state(trans, input, default_value, context):
-            value = default_value
+        def check_state(trans, input, value, context):
             error = 'State validation failed.'
 
+            # do not check unvalidated values
+            if isinstance(value, galaxy.tools.parameters.basic.RuntimeValue):
+                return [ { '__class__' : 'RuntimeValue' }, None ]
+            elif isinstance( value, dict ):
+                if value.get('__class__') == 'RuntimeValue':
+                    return [ value, None ]
+
             # skip dynamic fields if deactivated
-            if not is_dynamic and input.is_dynamic:
+            if is_workflow and input.is_dynamic:
                 return [value, None]
 
             # validate value content
             try:
                 # resolves the inconsistent definition of boolean parameters (see base.py) without modifying shared code
-                if input.type == 'boolean' and isinstance(default_value, basestring):
-                    value, error = [string_as_bool(default_value), None]
+                if input.type == 'boolean' and isinstance(value, basestring):
+                    value, error = [string_as_bool(value), None]
                 else:
-                    value, error = check_param(trans, input, default_value, context)
+                    value, error = check_param(trans, input, value, context, history=history)
             except Exception, err:
-                log.error('Checking parameter failed. %s', str(err))
+                log.error('Checking parameter %s failed. %s', input.name, str(err))
                 pass
             return [value, error]
 
@@ -2374,7 +2264,7 @@ class Tool( object, Dictifiable ):
         def populate_state(trans, inputs, state, errors, incoming, prefix="", context=None ):
             context = ExpressionContext(state, context)
             for input in inputs.itervalues():
-                state[input.name] = input.get_initial_value(trans, context)
+                state[input.name] = input.get_initial_value(trans, context, history=history)
                 key = prefix + input.name
                 if input.type == 'repeat':
                     group_state = state[input.name]
@@ -2404,10 +2294,14 @@ class Tool( object, Dictifiable ):
                             group_state = state[input.name] = {}
                             populate_state( trans, input.cases[current_case].inputs, group_state, errors, incoming, prefix=group_prefix, context=context)
                             group_state['__current_case__'] = current_case
-                        except Exception, e:
+                        except Exception:
                             errors[test_param_key] = 'The selected case is unavailable/invalid.'
                             pass
                     group_state[input.test_param.name] = value
+                elif input.type == 'section':
+                    group_state = state[input.name]
+                    group_prefix = "%s|" % ( key )
+                    populate_state(trans, input.inputs, group_state, errors, incoming, prefix=group_prefix, context=context)
                 else:
                     default_value = incoming.get(key, state.get(input.name, None))
                     value, error = check_state(trans, input, default_value, context)
@@ -2419,51 +2313,51 @@ class Tool( object, Dictifiable ):
         def iterate(group_inputs, inputs, state_inputs, other_values=None):
             other_values = ExpressionContext( state_inputs, other_values )
             for input_index, input in enumerate( inputs.itervalues() ):
-                # create model dictionary
-                tool_dict = input.to_dict(trans)
-                if tool_dict is None:
-                    continue
-
-                # state for subsection/group
-                group_state = state_inputs[input.name]
-
-                # iterate and update values
+                tool_dict = None
+                group_state = state_inputs.get(input.name, {})
                 if input.type == 'repeat':
+                    tool_dict = input.to_dict(trans)
                     group_cache = tool_dict['cache'] = {}
                     for i in range( len( group_state ) ):
                         group_cache[i] = {}
                         iterate( group_cache[i], input.inputs, group_state[i], other_values )
                 elif input.type == 'conditional':
+                    tool_dict = input.to_dict(trans)
                     if 'test_param' in tool_dict:
                         test_param = tool_dict['test_param']
-                        test_param['value'] = jsonify(group_state[test_param['name']])
-                        if '__current_case__' in group_state:
-                            i = group_state['__current_case__']
-                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, group_state, other_values)
+                        test_param['default_value'] = jsonify(input.test_param.get_initial_value(trans, other_values, history=history))
+                        test_param['value'] = jsonify(group_state.get(test_param['name'], test_param['default_value']))
+                        for i in range(len( tool_dict['cases'] ) ):
+                            current_state = {}
+                            if i == group_state.get('__current_case__', None):
+                                current_state = group_state
+                            iterate(tool_dict['cases'][i]['inputs'], input.cases[i].inputs, current_state, other_values)
+                elif input.type == 'section':
+                    tool_dict = input.to_dict(trans)
+                    iterate( tool_dict['inputs'], input.inputs, group_state, other_values )
                 else:
-                    # create input dictionary, try to pass other_values if to_dict function supports it e.g. dynamic options
+                    # expand input dictionary, resolve dynamic parameters
                     try:
                         tool_dict = input.to_dict(trans, other_values=other_values)
                     except Exception:
+                        tool_dict = input.to_dict(trans)
+                        log.exception('tools::to_json() - Skipping parameter expansion for %s.' % input.name)
                         pass
 
-                    # identify name
-                    input_name = tool_dict.get('name')
-                    if input_name:
-                        # backup default value
-                        tool_dict['default_value'] = input.get_initial_value(trans, other_values)
+                    # backup default value
+                    try:
+                        tool_dict['default_value'] = input.get_initial_value(trans, other_values, history=history)
+                    except Exception:
+                        tool_dict['default_value'] = None
+                        log.exception('tools::to_json() - Getting initial value failed %s.' % input.name)
+                        pass
 
-                        # update input value from tool state
-                        if input_name in state_inputs:
-                            tool_dict['value'] = state_inputs[input_name]
+                    # update input value from tool state
+                    tool_dict['value'] = state_inputs.get(input.name, tool_dict['default_value'])
 
-                        # sanitize values
-                        sanitize(tool_dict, 'value')
-                        sanitize(tool_dict, 'default_value')
-
-                        # use default value
-                        if tool_dict['value'] is None:
-                            tool_dict['value'] = tool_dict['default_value']
+                    # sanitize values
+                    sanitize(tool_dict, 'value')
+                    sanitize(tool_dict, 'default_value')
 
                 # backup final input dictionary
                 group_inputs[input_index] = tool_dict
@@ -2481,6 +2375,11 @@ class Tool( object, Dictifiable ):
                         sanitize_state(state[k])
                     else:
                         state[k] = jsonify(state[k])
+
+        # expand incoming parameters (parameters might trigger multiple tool executions,
+        # here we select the first execution only in order to resolve dynamic parameters)
+        expanded_incomings, _ = expand_meta_parameters( trans, self, params.__dict__ )
+        params.__dict__ = expanded_incomings[ 0 ]
 
         # do param translation here, used by datasource tools
         if self.input_translator:
@@ -2518,7 +2417,8 @@ class Tool( object, Dictifiable ):
         tool_versions = []
         tools = self.app.toolbox.get_loaded_tools_by_lineage(self.id)
         for t in tools:
-            tool_versions.append(t.version)
+            if t.version not in tool_versions:
+                tool_versions.append(t.version)
 
         # add information with underlying requirements and their versions
         tool_requirements = []
@@ -2536,6 +2436,7 @@ class Tool( object, Dictifiable ):
 
         # add additional properties
         tool_model.update({
+            'id'            : self.id,
             'help'          : tool_help,
             'citations'     : tool_citations,
             'biostar_url'   : trans.app.config.biostar_url,
@@ -2544,15 +2445,90 @@ class Tool( object, Dictifiable ):
             'versions'      : tool_versions,
             'requirements'  : tool_requirements,
             'errors'        : state_errors,
-            'state_inputs'  : state_inputs
+            'state_inputs'  : state_inputs,
+            'job_id'        : trans.security.encode_id( job.id ) if job else None,
+            'job_remap'     : self._get_job_remap( job ),
+            'history_id'    : trans.security.encode_id( history.id )
         })
-
-        # check for errors
-        if 'error' in tool_message:
-            return tool_message
 
         # return enriched tool model
         return tool_model
+
+    def _get_job_remap( self, job):
+        if job:
+            if job.state == job.states.ERROR:
+                try:
+                    if [ hda.dependent_jobs for hda in [ jtod.dataset for jtod in job.output_datasets ] if hda.dependent_jobs ]:
+                        return True
+                except Exception, exception:
+                    log.error( str( exception ) )
+                    pass
+        return False
+
+    def _map_source_to_history(self, trans, tool_inputs, params, history):
+        # Need to remap dataset parameters. Job parameters point to original
+        # dataset used; parameter should be the analygous dataset in the
+        # current history.
+
+        # Create index for hdas.
+        hda_source_dict = {}
+        for hda in history.datasets:
+            key = '%s_%s' % (hda.hid, hda.dataset.id)
+            hda_source_dict[ hda.dataset.id ] = hda_source_dict[ key ] = hda
+
+        # Ditto for dataset collections.
+        hdca_source_dict = {}
+        for hdca in history.dataset_collections:
+            key = '%s_%s' % (hdca.hid, hdca.collection.id)
+            hdca_source_dict[ hdca.collection.id ] = hdca_source_dict[ key ] = hdca
+
+        # Map dataset or collection to current history
+        def map_to_history(value):
+            id = None
+            source = None
+            if isinstance(value, trans.app.model.HistoryDatasetAssociation):
+                id = value.dataset.id
+                source = hda_source_dict
+            elif isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation):
+                id = value.collection.id
+                source = hdca_source_dict
+            else:
+                return None
+            key = '%s_%s' % (value.hid, id)
+            if key in source:
+                return source[ key ]
+            elif id in source:
+                return source[ id ]
+            else:
+                return None
+
+        # Unpack unvalidated values to strings, they'll be validated when the
+        # form is submitted (this happens when re-running a job that was
+        # initially run by a workflow)
+        # This needs to be done recursively through grouping parameters
+        def mapping_callback( input, value, prefixed_name, prefixed_label ):
+            if isinstance( value, UnvalidatedValue ):
+                try:
+                    return input.to_html_value( value.value, trans.app )
+                except Exception, e:
+                    # Need to determine when (if ever) the to_html_value call could fail.
+                    log.debug( "Failed to use input.to_html_value to determine value of unvalidated parameter, defaulting to string: %s" % ( e ) )
+                    return str( value )
+            if isinstance( input, DataToolParameter ):
+                if isinstance(value, list):
+                    values = []
+                    for val in value:
+                        new_val = map_to_history( val )
+                        if new_val:
+                            values.append( new_val )
+                        else:
+                            values.append( val )
+                    return values
+                else:
+                    return map_to_history( value )
+            elif isinstance( input, DataCollectionToolParameter ):
+                return map_to_history( value )
+        visit_input_values( tool_inputs, params, mapping_callback )
 
     def _compare_tool_version( self, trans, job ):
         """
@@ -2564,11 +2540,10 @@ class Tool( object, Dictifiable ):
         try:
             select_field, tools, tool = self.app.toolbox.get_tool_components( tool_id, tool_version=tool_version, get_loaded_tools_by_lineage=False, set_selected=True )
             if tool is None:
-                trans.response.status = 500
-                return { 'error': 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id }
+                raise exceptions.MessageException( 'This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id )
             if ( self.id != tool_id and self.old_id != tool_id ) or self.version != tool_version:
                 if self.id == tool_id:
-                    if tool_version == None:
+                    if tool_version is None:
                         # for some reason jobs don't always keep track of the tool version.
                         message = ''
                     else:
@@ -2584,14 +2559,8 @@ class Tool( object, Dictifiable ):
                     else:
                         message = 'This job was initially run with tool id "%s", version "%s", which is ' % ( tool_id, tool_version )
                         message += 'currently not available.  You can re-run the job with this tool, which is a derivation of the original tool.'
-        except Exception, error:
-            trans.response.status = 500
-            return { 'error': str (error) }
-
-        # can't rerun upload, external data sources, et cetera. workflow compatible will proxy this for now
-        #if not self.is_workflow_compatible:
-        #    trans.response.status = 500
-        #    return { 'error': 'The \'%s\' tool does currently not support re-running.' % self.name }
+        except Exception, e:
+            raise exceptions.MessageException( str( e ) )
         return message
 
     def get_default_history_by_trans( self, trans, create=False ):
@@ -2653,9 +2622,9 @@ class OutputParameterJSONTool( Tool ):
         json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
         for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
-            #use wrapped dataset to access certain values
+            # use wrapped dataset to access certain values
             wrapped_data = param_dict.get( out_name )
-            #allow multiple files to be created
+            # allow multiple files to be created
             file_name = str( wrapped_data )
             extra_files_path = str( wrapped_data.files_path )
             data_dict = dict( out_data_name=out_name,
@@ -2685,6 +2654,8 @@ class DataSourceTool( OutputParameterJSONTool ):
 
     def parse_inputs( self, tool_source ):
         super( DataSourceTool, self ).parse_inputs( tool_source )
+        # Open all data_source tools in _top.
+        self.target = '_top'
         if 'GALAXY_URL' not in self.inputs:
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
             self.inputs_by_page[0][ 'GALAXY_URL' ] = self.inputs[ 'GALAXY_URL' ]
@@ -2703,9 +2674,9 @@ class DataSourceTool( OutputParameterJSONTool ):
         json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
         for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
-            #use wrapped dataset to access certain values
+            # use wrapped dataset to access certain values
             wrapped_data = param_dict.get( out_name )
-            #allow multiple files to be created
+            # allow multiple files to be created
             cur_base_param_name = 'GALAXY|%s|' % out_name
             cur_name = param_dict.get( cur_base_param_name + 'name', name )
             cur_dbkey = param_dict.get( cur_base_param_name + 'dkey', dbkey )
@@ -2795,10 +2766,6 @@ class ImportHistoryTool( Tool ):
     tool_type = 'import_history'
 
 
-class GenomeIndexTool( Tool ):
-    tool_type = 'index_genome'
-
-
 class DataManagerTool( OutputParameterJSONTool ):
     tool_type = 'manage_data'
     default_tool_action = DataManagerToolAction
@@ -2811,12 +2778,12 @@ class DataManagerTool( OutputParameterJSONTool ):
 
     def exec_after_process( self, app, inp_data, out_data, param_dict, job=None, **kwds ):
         assert self.allow_user_access( job.user ), "You must be an admin to access this tool."
-        #run original exec_after_process
+        # run original exec_after_process
         super( DataManagerTool, self ).exec_after_process( app, inp_data, out_data, param_dict, job=job, **kwds )
-        #process results of tool
+        # process results of tool
         if job and job.state == job.states.ERROR:
             return
-        #Job state may now be 'running' instead of previous 'error', but datasets are still set to e.g. error
+        # Job state may now be 'running' instead of previous 'error', but datasets are still set to e.g. error
         for dataset in out_data.itervalues():
             if dataset.state != dataset.states.OK:
                 return
@@ -2837,7 +2804,7 @@ class DataManagerTool( OutputParameterJSONTool ):
         assert self.allow_user_access( user ), "You must be an admin to access this tool."
         history = user.data_manager_histories
         if not history:
-            #create
+            # create
             if create:
                 history = _create_data_manager_history( user )
             else:
@@ -2854,16 +2821,26 @@ class DataManagerTool( OutputParameterJSONTool ):
                     history = None
         return history
 
-    def allow_user_access( self, user ):
+    def allow_user_access( self, user, attempting_access=True ):
         """
+        :param user: model object representing user.
+        :type user: galaxy.model.User
+        :param attempting_access: is the user attempting to do something with the
+                               the tool (set false for incidental checks like toolbox
+                               listing)
+        :type attempting_access:  bool
+
         :returns: bool -- Whether the user is allowed to access the tool.
         Data Manager tools are only accessible to admins.
         """
         if super( DataManagerTool, self ).allow_user_access( user ) and self.app.config.is_admin_user( user ):
             return True
-        if user:
-            user = user.id
-        log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id ) 
+        # If this is just an incidental check - do not log the scary message
+        # about users attempting to do something problematic.
+        if attempting_access:
+            if user:
+                user = user.id
+            log.debug( "User (%s) attempted to access a data manager tool (%s), but is not an admin.", user, self.id )
         return False
 
 # Populate tool_type to ToolClass mappings
@@ -2905,71 +2882,6 @@ class SetParamAction:
 class BadValue( object ):
     def __init__( self, value ):
         self.value = value
-
-
-class ToolStdioRegex( object ):
-    """
-    This is a container for the <stdio> element's regex subelement.
-    The regex subelement has a "match" attribute, a "sources"
-    attribute that contains "output" and/or "error", and a "level"
-    attribute that contains "warning" or "fatal".
-    """
-    def __init__( self ):
-        self.match = ""
-        self.stdout_match = False
-        self.stderr_match = False
-        # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
-        self.desc = ""
-
-
-class ToolStdioExitCode( object ):
-    """
-    This is a container for the <stdio> element's <exit_code> subelement.
-    The exit_code element has a range of exit codes and the error level.
-    """
-    def __init__( self ):
-        self.range_start = float( "-inf" )
-        self.range_end = float( "inf" )
-        # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
-        self.desc = ""
-
-
-class TestCollectionDef( object ):
-
-    def __init__( self, elem, parse_param_elem ):
-        self.elements = []
-        attrib = dict( elem.attrib )
-        self.collection_type = attrib[ "type" ]
-        self.name = attrib.get( "name", "Unnamed Collection" )
-        for element in elem.findall( "element" ):
-            element_attrib = dict( element.attrib )
-            element_identifier = element_attrib[ "name" ]
-            nested_collection_elem = element.find( "collection" )
-            if nested_collection_elem is not None:
-                self.elements.append( ( element_identifier, TestCollectionDef( nested_collection_elem, parse_param_elem ) ) )
-            else:
-                self.elements.append( ( element_identifier, parse_param_elem( element ) ) )
-
-    def collect_inputs( self ):
-        inputs = []
-        for element in self.elements:
-            value = element[ 1 ]
-            if isinstance( value, TestCollectionDef ):
-                inputs.extend( value.collect_inputs() )
-            else:
-                inputs.append( value )
-        return inputs
-
-
-class TestCollectionOutputDef( object ):
-
-    def __init__( self, name, attrib, element_tests ):
-        self.name = name
-        self.collection_type = attrib.get( "type", None )
-        self.attrib = attrib
-        self.element_tests = element_tests
 
 
 def json_fix( val ):

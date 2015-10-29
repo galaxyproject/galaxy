@@ -6,30 +6,25 @@ The 'sequencer_type_id' column is renamed to 'external_service_type_id' in the r
 table 'external_service'. Finally, adds a foreign key to the external_service table in the
 sample_dataset table and populates it.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from sqlalchemy.exc import *
-
-from galaxy.model.custom_types import *
-
-from galaxy.util.json import loads, dumps
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
+
+from migrate import ForeignKeyConstraint
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy.exc import NoSuchTableError
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
-
 metadata = MetaData()
-#migrate_engine = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
-def nextval( table, col='id' ):
-    if migrate_engine.name == 'postgres':
+
+def nextval( migrate_engine, table, col='id' ):
+    if migrate_engine.name in ['postgres', 'postgresql']:
         return "nextval('%s_%s_seq')" % ( table, col )
-    elif migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+    elif migrate_engine.name in ['mysql', 'sqlite']:
         return "null"
     else:
         raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
@@ -150,7 +145,7 @@ def upgrade(migrate_engine):
             if not sequencer_id:
                 sequencer_id = 'null'
             cmd = "INSERT INTO request_type_external_service_association VALUES ( %s, %s, %s )"
-            cmd = cmd % ( nextval( 'request_type_external_service_association' ),
+            cmd = cmd % ( nextval( migrate_engine, 'request_type_external_service_association' ),
                           request_type_id,
                           sequencer_id )
             migrate_engine.execute( cmd )
@@ -160,30 +155,22 @@ def upgrade(migrate_engine):
         # In sqlite, create a temp table without the column that needs to be removed.
         # then copy all the rows from the original table and finally rename the temp table
         RequestTypeTemp_table = Table( 'request_type_temp', metadata,
-                                        Column( "id", Integer, primary_key=True),
-                                        Column( "create_time", DateTime, default=now ),
-                                        Column( "update_time", DateTime, default=now, onupdate=now ),
-                                        Column( "name", TrimmedString( 255 ), nullable=False ),
-                                        Column( "desc", TEXT ),
-                                        Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-                                        Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
-                                        Column( "deleted", Boolean, index=True, default=False ) )
+                                       Column( "id", Integer, primary_key=True),
+                                       Column( "create_time", DateTime, default=now ),
+                                       Column( "update_time", DateTime, default=now, onupdate=now ),
+                                       Column( "name", TrimmedString( 255 ), nullable=False ),
+                                       Column( "desc", TEXT ),
+                                       Column( "request_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+                                       Column( "sample_form_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
+                                       Column( "deleted", Boolean, index=True, default=False ) )
         try:
             RequestTypeTemp_table.create()
         except Exception, e:
             log.debug( "Creating request_type_temp table failed: %s" % str( e ) )
         # insert all the rows from the request table to the request_temp table
-        cmd = \
-            "INSERT INTO request_type_temp " + \
-            "SELECT id," + \
-                "create_time," + \
-                "update_time," + \
-                "name," + \
-                "desc," + \
-                "request_form_id," + \
-                "sample_form_id," + \
-                "deleted " + \
-            "FROM request_type;"
+        cmd = "INSERT INTO request_type_temp SELECT id, create_time," + \
+            "update_time, name, desc, request_form_id, sample_form_id," + \
+            "deleted FROM request_type;"
         migrate_engine.execute( cmd )
         # delete the 'request_type' table
         try:
@@ -269,7 +256,7 @@ def downgrade(migrate_engine):
     cmd = "ALTER TABLE external_service RENAME TO sequencer"
     migrate_engine.execute( cmd )
     # if running postgres then rename the primary key sequence too
-    if migrate_engine.name == 'postgres':
+    if migrate_engine.name in ['postgres', 'postgresql']:
         cmd = "ALTER SEQUENCE external_service_id_seq RENAME TO sequencer_id_seq"
         migrate_engine.execute( cmd )
     # drop the 'external_service_id' column in the 'sample_dataset' table
@@ -284,6 +271,3 @@ def downgrade(migrate_engine):
         SampleDataset_table.c.external_service_id.drop()
     except Exception, e:
         log.debug( "Deleting column 'external_service_id' from the 'sample_dataset' table failed: %s" % ( str( e ) ) )
-
-
-
