@@ -1,5 +1,6 @@
 from ..lint_util import is_datasource
 
+
 # Misspelled so as not be picked up by nosetests.
 def lint_tsts(tool_xml, lint_ctx):
     tests = tool_xml.findall("./tests/test")
