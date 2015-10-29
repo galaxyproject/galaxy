@@ -30,7 +30,7 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
      *      messages. Null will supress all logging. Commonly set to console.
      */
     // replace null with console (if available) to see all logs
-    logger       : null,
+    logger        : null,
     _logNamespace : '.',
 
     /** Output log messages/arguments to logger.
@@ -50,7 +50,10 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
     }
 };
 addLogging( LoggableMixin );
-
+LoggableMixin.namespaced = function _LoggableMixinNamespaced( namespace ){
+    return _.extend( {}, LoggableMixin, { _logNamespace : namespace });
+};
+window.LoggableMixin = LoggableMixin;
 
 //==============================================================================
 /** Backbone model that syncs to the browser's sessionStorage API.

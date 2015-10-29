@@ -65,6 +65,10 @@ MetricsLogger.defaultOptions = {
     consoleLevel        : MetricsLogger.NONE,
     /** the default 'namespace' or label associated with an incoming message (if none is passed) */
     defaultNamespace    : 'Galaxy',
+    /** the namespaces output to the console (all namespaces will be output if this is falsy)
+     *  note: applies only to the console (not the event/metrics log/cache)
+     */
+    consoleNamespaceWhitelist : null,
     /** the prefix attached to client-side logs to distinguish them in the metrics db */
     clientPrefix        : 'client.',
 
@@ -269,8 +273,13 @@ MetricsLogger.prototype._delayPost = function _delayPost(){
 /** output message to console based on level and consoleLogger type */
 MetricsLogger.prototype._emitToConsole = function _emitToConsole( level, namespace, logArguments ){
     //console.debug( '_emitToConsole:', level, namespace, logArguments );
-    var self = this;
+    var self = this,
+        whitelist = self.options.consoleNamespaceWhitelist;
     if( !self.consoleLogger ){ return self; }
+    // if a whitelist for namespaces is set, bail if this namespace is not in the list
+    if( whitelist && whitelist.indexOf( namespace ) === -1 ){
+        return self;
+    }
 
     var args = Array.prototype.slice.call( logArguments, 0 );
     args.unshift( namespace );

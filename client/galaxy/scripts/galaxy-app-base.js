@@ -126,6 +126,9 @@ GalaxyApp.prototype._initLogger = function _initLogger( loggerOptions ){
     var self = this;
     // default to console logging at the debug level if the debug flag is set
     if( self.config.debug ){
+        try {
+            loggerOptions.consoleNamespaceWhitelist = localStorage.getItem( 'galaxy:debug:namespaces' ).split( ',' );
+        } catch( storageErr ){}
         loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;
         loggerOptions.consoleLevel = loggerOptions.consoleLevel || metricsLogger.MetricsLogger.DEBUG;
     }
