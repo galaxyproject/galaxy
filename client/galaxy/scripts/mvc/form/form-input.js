@@ -10,8 +10,8 @@ define([], function() {
             // set text labels and icons for optional button
             this.text_enable    = app.options.text_enable || 'Enable';
             this.text_disable   = app.options.text_disable || 'Disable';
-            this.cls_enable     = app.options.cls_enable || 'fa fa-plus-square';
-            this.cls_disable    = app.options.cls_disable || 'fa fa-minus-square';
+            this.cls_enable     = app.options.cls_enable || 'fa fa-caret-square-o-down';
+            this.cls_disable    = app.options.cls_disable || 'fa fa-caret-square-o-up';
 
             // link field
             this.field = options.field;
@@ -31,13 +31,8 @@ define([], function() {
             this.$field.prepend(this.field.$el);
 
             // decide wether to expand or collapse optional fields
-            this.field.skip = false;
-            var v = this.field.value && this.field.value();
-            this.field.skip = Boolean(options.collapsible &&
-                                        (v === this.default_value ||
-                                         String(v) === String(this.default_value) ||
-                                         Number(v) === Number(this.default_value) ||
-                                         JSON.stringify(v) === JSON.stringify(this.default_value)));
+            this.field.collapsed =  options.collapsible && options.value &&
+                                    JSON.stringify(options.value) == JSON.stringify(options.collapsible_value);
 
             // refresh view
             this._refresh();
@@ -46,7 +41,7 @@ define([], function() {
             var self = this;
             this.$optional.on('click', function() {
                 // flip flag
-                self.field.skip = !self.field.skip;
+                self.field.collapsed = !self.field.collapsed;
 
                 // refresh view
                 self._refresh();
@@ -78,16 +73,15 @@ define([], function() {
             this.$optional_icon.removeClass().addClass('icon');
 
             // identify state
-            if (!this.field.skip) {
+            if (!this.field.collapsed) {
                 // enable input field
                 this.$field.fadeIn('fast');
                 this._tooltip(this.text_disable, this.cls_disable);
-            
+                this.app.trigger('change');
             } else {
                 // disable input field
                 this.$field.hide();
                 this._tooltip(this.text_enable, this.cls_enable);
-                // reset field value
                 this.field.value && this.field.value(this.default_value);
             }
         },
@@ -106,14 +100,11 @@ define([], function() {
         /** Main Template
         */
         _template: function(options) {
-            // create table element
-            var tmp =   '<div class="ui-table-form-element">' +
+            var tmp =   '<div class="ui-table-form-element input-name-' + options.name + '">' +
                             '<div class="ui-table-form-error ui-error">' +
                                 '<span class="fa fa-arrow-down"/><span class="ui-table-form-error-text"/>' +
                             '</div>' +
                             '<div class="ui-table-form-title">';
-
-            // is optional
             if (options.collapsible) {
                 tmp +=          '<div class="ui-table-form-optional">' +
                                     '<i class="icon"/>' + options.label +
@@ -121,23 +112,18 @@ define([], function() {
             } else {
                 tmp += options.label;
             }
-
-            // finalize title
             tmp +=          '</div>' +
                             '<div class="ui-table-form-field">';
-
-            // add help
             tmp +=              '<div class="ui-table-form-info">';
             if (options.help) {
                 tmp +=              options.help;
+                if (options.argument && options.help.indexOf('(' + options.argument + ')') == -1) {
+                    tmp += ' (' + options.argument + ')';
+                }
             }
             tmp +=              '</div>';
-            
-            // finalize
             tmp +=          '</div>' +
                         '</div>';
-
-            // return input element
             return tmp;
         }
     });

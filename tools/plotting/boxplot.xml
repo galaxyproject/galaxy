@@ -2,7 +2,7 @@
   <description>of quality statistics</description>
   <command>gnuplot &lt; '$gnuplot_commands' 2&gt;&amp;1 || echo "Error running gnuplot." >&amp;2</command>
   <requirements>
-    <requirement type="binary" version="gnuplot 4.2 patchlevel 2">gnuplot</requirement>
+    <requirement type="package" version="4.6">gnuplot</requirement>
   </requirements>
   <inputs>
     <param name="input_file" type="data" format="tabular" label="Quality Statistics File"/>

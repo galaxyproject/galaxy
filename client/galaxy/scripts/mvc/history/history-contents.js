@@ -25,7 +25,6 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
 
     /** since history content is a mix, override model fn into a factory, creating based on history_content_type */
     model : function( attrs, options ) {
-
 //TODO: can we move the type_id stuff here?
         //attrs.type_id = typeIdStr( attrs );
 
@@ -134,11 +133,23 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
             return item.isVisible( show_deleted, show_hidden );
         }));
 
-        _.each( filters, function( filter_fn ){
-            if( !_.isFunction( filter_fn ) ){ return; }
-            filteredHdas = new HistoryContents( filteredHdas.filter( filter_fn ) );
+        _.each( filters, function( filterFn ){
+            if( !_.isFunction( filterFn ) ){ return; }
+            filteredHdas = new HistoryContents( filteredHdas.filter( filterFn ) );
         });
         return filteredHdas;
+    },
+
+    /** return a new contents collection of only hidden items */
+    hidden : function(){
+        function filterFn( c ){ return c.hidden(); }
+        return new HistoryContents( this.filter( filterFn ) );
+    },
+
+    /** return a new contents collection of only hidden items */
+    deleted : function(){
+        function filterFn( c ){ return c.get( 'deleted' ); }
+        return new HistoryContents( this.filter( filterFn ) );
     },
 
     /** return true if any contents don't have details */
@@ -244,6 +255,7 @@ var HistoryContents = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).exten
     // ........................................................................ misc
     /** override to ensure type id is set */
     set : function( models, options ){
+        models = _.isArray( models )? models : [ models ];
         _.each( models, function( model ){
             if( !model.type_id || !model.get || !model.get( 'type_id' ) ){
                 model.type_id = HISTORY_CONTENT.typeIdStr( model.history_content_type, model.id );

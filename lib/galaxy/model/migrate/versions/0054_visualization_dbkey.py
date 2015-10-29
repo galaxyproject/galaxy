@@ -1,17 +1,14 @@
 """
 Migration script to add dbkey column for visualization.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.util.json import loads
-
 import logging
-log = logging.getLogger( __name__ )
+from json import loads
 
+from sqlalchemy import Column, Index, MetaData, Table, TEXT
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -28,9 +25,9 @@ def upgrade(migrate_engine):
     x.create( Visualization_table )
     y.create( Visualization_revision_table )
     # Manually create indexes for compatability w/ mysql_length.
-    xi = Index( "ix_visualization_dbkey", Visualization_table.c.dbkey, mysql_length = 200)
+    xi = Index( "ix_visualization_dbkey", Visualization_table.c.dbkey, mysql_length=200)
     xi.create()
-    yi = Index( "ix_visualization_revision_dbkey", Visualization_revision_table.c.dbkey, mysql_length = 200)
+    yi = Index( "ix_visualization_revision_dbkey", Visualization_revision_table.c.dbkey, mysql_length=200)
     yi.create()
     assert x is Visualization_table.c.dbkey
     assert y is Visualization_revision_table.c.dbkey
@@ -44,6 +41,7 @@ def upgrade(migrate_engine):
             dbkey = loads(viz[Visualization_revision_table.c.config]).get('dbkey', "").replace("'", "\\'")
             migrate_engine.execute("UPDATE visualization_revision SET dbkey='%s' WHERE id=%s" % (dbkey, viz_rev_id))
             migrate_engine.execute("UPDATE visualization SET dbkey='%s' WHERE id=%s" % (dbkey, viz_id))
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

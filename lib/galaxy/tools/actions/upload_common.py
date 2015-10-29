@@ -1,14 +1,15 @@
-import os
-import tempfile
-import StringIO
 import pwd
+import os
+import StringIO
 import subprocess
+import tempfile
 from cgi import FieldStorage
+
+from sqlalchemy.orm import eagerload_all
+
 from galaxy import datatypes, util
 from galaxy.util.odict import odict
-from galaxy.datatypes import sniff
 from galaxy.util.json import dumps
-from galaxy.model.orm import eagerload_all
 from galaxy.exceptions import ObjectInvalid
 
 import logging

@@ -33,20 +33,19 @@ ADD start_mysql.sh /opt/galaxy/start_mysql.sh
 ADD ansible_vars.yml /tmp/ansible/ansible_vars.yml
 ADD provision.yml /tmp/ansible/provision.yml
 
-ENV PYTHON_EGG_CACHE=/root/.python-eggs \
-    GALAXY_ROOT=/galaxy
+ENV GALAXY_ROOT=/galaxy
 
 RUN mkdir /etc/galaxy && \
     cd /tmp/ansible && \
     mkdir roles && \
     mkdir roles/galaxyprojectdotorg.galaxy-os && \
-    wget -qO- https://github.com/galaxyproject/ansible-galaxy-os/archive/master.tar.gz | tar -xzvf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy-os && \
+    wget -qO- https://github.com/galaxyproject/ansible-galaxy-os/archive/master.tar.gz | tar -xzf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy-os && \
     mkdir roles/galaxyprojectdotorg.cloudman-database && \
-    wget -qO- https://github.com/galaxyproject/ansible-cloudman-database/archive/master.tar.gz | tar -xzvf- --strip-components=1 -C roles/galaxyprojectdotorg.cloudman-database && \
+    wget -qO- https://github.com/galaxyproject/ansible-cloudman-database/archive/master.tar.gz | tar -xzf- --strip-components=1 -C roles/galaxyprojectdotorg.cloudman-database && \
     mkdir roles/galaxyprojectdotorg.galaxy && \
-    wget -qO- https://github.com/galaxyproject/ansible-galaxy/archive/master.tar.gz | tar -xzvf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy && \
+    wget -qO- https://github.com/galaxyproject/ansible-galaxy/archive/master.tar.gz | tar -xzf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy && \
     mkdir roles/galaxyprojectdotorg.galaxy-extras && \
-    wget -qO- https://github.com/galaxyproject/ansible-galaxy-extras/archive/dynamic_uwsgi_config.tar.gz | tar -xzvf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy-extras && \
+    wget -qO- https://github.com/galaxyproject/ansible-galaxy-extras/archive/dynamic_uwsgi_config.tar.gz | tar -xzf- --strip-components=1 -C roles/galaxyprojectdotorg.galaxy-extras && \
     ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 ansible-playbook /tmp/ansible/provision.yml --tags=image -c local -e "@ansible_vars.yml" && \
     ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 ansible-playbook /tmp/ansible/provision.yml --tags=database -c local -e "@ansible_vars.yml" && \
     ANSIBLE_FORCE_COLOR=1 PYTHONUNBUFFERED=1 ansible-playbook /tmp/ansible/provision.yml --tags=galaxy -c local -e "@ansible_vars.yml" && \
@@ -62,6 +61,16 @@ RUN cd $GALAXY_ROOT && \
     sh /opt/galaxy/start_mysql.sh && \
     GALAXY_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/galaxy?unix_socket=/var/run/mysqld/mysqld.sock" sh create_db.sh
 
+# bcftools for Galaxy.
+RUN mkdir -p /tmp/install && \
+    cd /tmp/install && \
+    wget https://github.com/samtools/bcftools/releases/download/1.2/bcftools-1.2.tar.bz2 && \
+    tar xvjf bcftools-1.2.tar.bz2 && \
+    cd bcftools-1.2 && \
+    make && \
+    make install && \
+    cd && rm -rf /tmp/install
+    
 ADD run_test_wrapper.sh /usr/local/bin/run_test_wrapper.sh
 EXPOSE :8080
 EXPOSE :80

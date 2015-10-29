@@ -1,9 +1,14 @@
-import galaxy.tools
-
 from galaxy.tools.parameters.basic import (
     DataToolParameter,
     DataCollectionToolParameter,
-    SelectToolParameter,
+    SelectToolParameter
+)
+from galaxy.tools.wrappers import (
+    InputValueWrapper,
+    SelectToolParameterWrapper,
+    DatasetFilenameWrapper,
+    DatasetListWrapper,
+    DatasetCollectionWrapper
 )
 from galaxy.tools.parameters.grouping import (
     Repeat,
@@ -38,6 +43,7 @@ class WrappedParameters( object ):
         for input in inputs.itervalues():
             if input.name not in input_values and skip_missing_values:
                 continue
+            value = input_values[ input.name ]
             if isinstance( input, Repeat ):
                 for d in input_values[ input.name ]:
                     self.wrap_values( input.inputs, d, skip_missing_values=skip_missing_values )
@@ -50,27 +56,27 @@ class WrappedParameters( object ):
                 self.wrap_values( input.inputs, values, skip_missing_values=skip_missing_values )
             elif isinstance( input, DataToolParameter ) and input.multiple:
                 input_values[ input.name ] = \
-                    galaxy.tools.DatasetListWrapper( input_values[ input.name ],
-                                                     datatypes_registry=trans.app.datatypes_registry,
-                                                     tool=tool,
-                                                     name=input.name )
+                    DatasetListWrapper( input_values[ input.name ],
+                                        datatypes_registry=trans.app.datatypes_registry,
+                                        tool=tool,
+                                        name=input.name )
             elif isinstance( input, DataToolParameter ):
                 input_values[ input.name ] = \
-                    galaxy.tools.DatasetFilenameWrapper( input_values[ input.name ],
-                                                         datatypes_registry=trans.app.datatypes_registry,
-                                                         tool=tool,
-                                                         name=input.name )
+                    DatasetFilenameWrapper( input_values[ input.name ],
+                                            datatypes_registry=trans.app.datatypes_registry,
+                                            tool=tool,
+                                            name=input.name )
             elif isinstance( input, SelectToolParameter ):
-                input_values[ input.name ] = galaxy.tools.SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
+                input_values[ input.name ] = SelectToolParameterWrapper( input, input_values[ input.name ], tool.app, other_values=incoming )
             elif isinstance( input, DataCollectionToolParameter ):
-                input_values[ input.name ] = galaxy.tools.DatasetCollectionWrapper(
+                input_values[ input.name ] = DatasetCollectionWrapper(
                     input_values[ input.name ],
                     datatypes_registry=trans.app.datatypes_registry,
                     tool=tool,
                     name=input.name,
                 )
             else:
-                input_values[ input.name ] = galaxy.tools.InputValueWrapper( input, input_values[ input.name ], incoming )
+                input_values[ input.name ] = InputValueWrapper( input, value, incoming )
 
 
 def make_dict_copy( from_dict ):
@@ -103,4 +109,4 @@ def make_list_copy( from_list ):
     return new_list
 
 
-__all__ = [ WrappedParameters, make_dict_copy ]
+__all__ = [ 'WrappedParameters', 'make_dict_copy' ]

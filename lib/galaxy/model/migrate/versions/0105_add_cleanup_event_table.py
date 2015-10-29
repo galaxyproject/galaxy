@@ -1,16 +1,15 @@
 """
 Migration script to add the cleanup_event* tables.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-import sys, logging
-from galaxy.model.custom_types import *
-from sqlalchemy.exc import *
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
 handler = logging.StreamHandler( sys.stdout )
@@ -23,63 +22,64 @@ metadata = MetaData()
 
 # New table to log cleanup events
 CleanupEvent_table = Table( "cleanup_event", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "message", TrimmedString( 1024 ) ) )
+                            Column( "id", Integer, primary_key=True ),
+                            Column( "create_time", DateTime, default=now ),
+                            Column( "message", TrimmedString( 1024 ) ) )
 
 CleanupEventDatasetAssociation_table = Table( "cleanup_event_dataset_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
-    Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ) )
+                                              Column( "id", Integer, primary_key=True ),
+                                              Column( "create_time", DateTime, default=now ),
+                                              Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+                                              Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ) )
 
 CleanupEventMetadataFileAssociation_table = Table( "cleanup_event_metadata_file_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
-    Column( "metadata_file_id", Integer, ForeignKey( "metadata_file.id" ), index=True ) )
+                                                   Column( "id", Integer, primary_key=True ),
+                                                   Column( "create_time", DateTime, default=now ),
+                                                   Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+                                                   Column( "metadata_file_id", Integer, ForeignKey( "metadata_file.id" ), index=True ) )
 
 CleanupEventHistoryAssociation_table = Table( "cleanup_event_history_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
-    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ) )
+                                              Column( "id", Integer, primary_key=True ),
+                                              Column( "create_time", DateTime, default=now ),
+                                              Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+                                              Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ) )
 
 CleanupEventHistoryDatasetAssociationAssociation_table = Table( "cleanup_event_hda_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
-    Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ) )
+                                                                Column( "id", Integer, primary_key=True ),
+                                                                Column( "create_time", DateTime, default=now ),
+                                                                Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+                                                                Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ) )
 
 CleanupEventLibraryAssociation_table = Table( "cleanup_event_library_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
-    Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ) )
+                                              Column( "id", Integer, primary_key=True ),
+                                              Column( "create_time", DateTime, default=now ),
+                                              Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+                                              Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ) )
 
 CleanupEventLibraryFolderAssociation_table = Table( "cleanup_event_library_folder_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
-    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ) )
+                                                    Column( "id", Integer, primary_key=True ),
+                                                    Column( "create_time", DateTime, default=now ),
+                                                    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+                                                    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ) )
 
 CleanupEventLibraryDatasetAssociation_table = Table( "cleanup_event_library_dataset_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
-    Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ) )
+                                                     Column( "id", Integer, primary_key=True ),
+                                                     Column( "create_time", DateTime, default=now ),
+                                                     Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+                                                     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ) )
 
 CleanupEventLibraryDatasetDatasetAssociationAssociation_table = Table( "cleanup_event_ldda_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
-    Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ) )
+                                                                       Column( "id", Integer, primary_key=True ),
+                                                                       Column( "create_time", DateTime, default=now ),
+                                                                       Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+                                                                       Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ) )
 
 CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table( "cleanup_event_icda_association", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
-    Column( "icda_id", Integer, ForeignKey( "implicitly_converted_dataset_association.id" ), index=True ) )
+                                                                            Column( "id", Integer, primary_key=True ),
+                                                                            Column( "create_time", DateTime, default=now ),
+                                                                            Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+                                                                            Column( "icda_id", Integer, ForeignKey( "implicitly_converted_dataset_association.id" ), index=True ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -98,6 +98,7 @@ def upgrade(migrate_engine):
         CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table.create()
     except Exception, e:
         log.debug( "Creating table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

@@ -11,14 +11,14 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os, datetime
+import datetime
+import os
+import sys
 
 
 ####### REQUIRED GALAXY INCLUDES
 
-sys.path.append(os.path.join(os.getcwd(), '../../lib'))
-import galaxy
-from galaxy import eggs
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 #######
 
@@ -103,7 +103,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -274,6 +274,6 @@ class Mock(object):
             return Mock()
 
 # adding pbs_python, DRMAA_python, markupsafe, and drmaa here had no effect.
-MOCK_MODULES = ['tables', 'decorator', 'numpy']
+MOCK_MODULES = ['tables', 'decorator']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()

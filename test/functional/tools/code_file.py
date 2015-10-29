@@ -1,9 +1,3 @@
-
-
-from galaxy.tools.parameters import DataToolParameter
-
-
-
 def validate_input( trans, error_map, param_values, page_param_map ):
     """
         Validates the user input, before execution.

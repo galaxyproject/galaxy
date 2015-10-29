@@ -15,23 +15,34 @@ class Leaf( object ):
     def is_leaf( self ):
         return True
 
+    def clone( self ):
+        return self
+
+    def multiply( self, other_structure ):
+        return other_structure.clone()
+
+
 leaf = Leaf()
 
 
 class Tree( object ):
 
-    def __init__( self, dataset_collection, collection_type_description ):
+    def __init__( self, children, collection_type_description ):
+        self.children = children
         self.collection_type_description = collection_type_description
+
+    @staticmethod
+    def for_dataset_collection( dataset_collection, collection_type_description ):
         children = []
         for element in dataset_collection.elements:
             if collection_type_description.has_subcollections():
                 child_collection = element.child_collection
                 subcollection_type_description = collection_type_description.subcollection_type_description()  # Type description of children
-                children.append( ( element.element_identifier, Tree( child_collection, collection_type_description=subcollection_type_description )  ) )
+                tree = Tree.for_dataset_collection( child_collection, collection_type_description=subcollection_type_description )
+                children.append( ( element.element_identifier, tree ) )
             else:
                 children.append( ( element.element_identifier, leaf ) )
-
-        self.children = children
+        return Tree( children, collection_type_description )
 
     def walk_collections( self, hdca_dict ):
         return self._walk_collections( dict_map( lambda hdca: hdca.collection, hdca_dict ) )
@@ -96,6 +107,21 @@ class Tree( object ):
             element_identifiers=element_identifiers,
         )
 
+    def multiply( self, other_structure ):
+        if other_structure.is_leaf:
+            return self.clone()
+
+        new_collection_type = self.collection_type_description.multiply( other_structure.collection_type_description )
+        new_children = []
+        for (identifier, structure) in self.children:
+            new_children.append( (identifier, structure.multiply( other_structure ) ) )
+
+        return Tree( new_children, new_collection_type )
+
+    def clone( self ):
+        cloned_children = map( lambda (identifier, element): (identifier, element.clone()), self.children )
+        return Tree( cloned_children, self.collection_type_description )
+
 
 def dict_map( func, input_dict ):
     return dict( [ ( k, func(v) ) for k, v in input_dict.iteritems() ] )
@@ -105,4 +131,4 @@ def get_structure( dataset_collection_instance, collection_type_description, lea
     if leaf_subcollection_type:
         collection_type_description = collection_type_description.effective_collection_type_description( leaf_subcollection_type )
 
-    return Tree( dataset_collection_instance.collection, collection_type_description )
+    return Tree.for_dataset_collection( dataset_collection_instance.collection, collection_type_description )

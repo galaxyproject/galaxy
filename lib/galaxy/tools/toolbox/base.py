@@ -1,12 +1,12 @@
+import logging
 import os
 import re
 import string
 import tarfile
 import tempfile
 
-from galaxy import eggs
-eggs.require( "SQLAlchemy >= 0.4" )
 from sqlalchemy import and_
+from markupsafe import escape
 
 from galaxy.model.item_attrs import Dictifiable
 
@@ -31,9 +31,7 @@ from .filters import FilterFactory
 from .watcher import get_watcher
 
 from galaxy.web.form_builder import SelectField
-from galaxy.web.framework.helpers import escape
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -53,6 +51,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
         # shed_tool_conf.xml file.
         self._dynamic_tool_confs = []
         self._tools_by_id = {}
+        self._integrated_section_by_tool = {}
         # Tool lineages can contain chains of related tools with different ids
         # so each will be present once in the above dictionary. The following
         # dictionary can instead hold multiple tools with different versions.
@@ -217,19 +216,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
 
     def get_integrated_section_for_tool( self, tool ):
         tool_id = tool.id
-        for key, item_type, item in self._integrated_tool_panel.panel_items_iter():
-            if item:
-                if item_type == panel_item_types.TOOL:
-                    if item.id == tool_id:
-                        return '', ''
-                if item_type == panel_item_types.SECTION:
-                    section_id = item.id or ''
-                    section_name = item.name or ''
-                    for section_key, section_item_type, section_item in item.panel_items_iter():
-                        if section_item_type == panel_item_types.TOOL:
-                            if section_item:
-                                if section_item.id == tool_id:
-                                    return section_id, section_name
+
+        if tool_id in self._integrated_section_by_tool:
+            return self._integrated_section_by_tool[tool_id]
+
         return None, None
 
     def __resolve_tool_path(self, tool_path, config_filename):
@@ -310,6 +300,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                 tool_id = key.replace( 'tool_', '', 1 )
                 if tool_id in self._tools_by_id:
                     self.__add_tool_to_tool_panel( val, self._tool_panel, section=False )
+                    self._integrated_section_by_tool[tool_id] = '', ''
             elif item_type == panel_item_types.WORKFLOW:
                 workflow_id = key.replace( 'workflow_', '', 1 )
                 if workflow_id in self._workflows_by_id:
@@ -331,6 +322,7 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                         tool_id = section_key.replace( 'tool_', '', 1 )
                         if tool_id in self._tools_by_id:
                             self.__add_tool_to_tool_panel( section_val, section, section=True )
+                            self._integrated_section_by_tool[tool_id] = key, val.name
                     elif section_item_type == panel_item_types.WORKFLOW:
                         workflow_id = section_key.replace( 'workflow_', '', 1 )
                         if workflow_id in self._workflows_by_id:
@@ -552,10 +544,17 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                         has_elems.insert( tool_panel_index,
                                           replacement_tool_key,
                                           replacement_tool_version )
+                        self._integrated_section_by_tool[ tool_id ] = available_tool_section_id, available_tool_section_name
                     else:
                         del has_elems[ tool_key ]
+
+                        if tool_id in self._integrated_section_by_tool:
+                            del self._integrated_section_by_tool[ tool_id ]
                 else:
                     del has_elems[ tool_key ]
+
+                    if tool_id in self._integrated_section_by_tool:
+                        del self._integrated_section_by_tool[ tool_id ]
             if remove_from_config:
                 itegrated_items = integrated_has_elems.panel_items()
                 if tool_key in itegrated_items:
@@ -681,6 +680,14 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                 index=sub_index,
                 internal=True,
             )
+
+        # Ensure each tool's section is stored
+        for section_key, section_item_type, section_item in integrated_elems.panel_items_iter():
+            if section_item_type == panel_item_types.TOOL:
+                if section_item:
+                    tool_id = section_key.replace( 'tool_', '', 1 )
+                    self._integrated_section_by_tool[tool_id] = integrated_section.id, integrated_section.name
+
         if load_panel_dict:
             self._tool_panel[ key ] = section
         # Always load sections into the integrated_tool_panel.
@@ -730,6 +737,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
             # to monitor such a large directory.
             self._tool_watcher.watch_file( config_file, tool.id )
         return tool
+
+    def load_hidden_lib_tool( self, path ):
+        tool_xml = os.path.join( os.getcwd(), "lib", path )
+        return self.load_hidden_tool( tool_xml )
 
     def load_hidden_tool( self, config_file, **kwds ):
         """ Load a hidden tool (in this context meaning one that does not

@@ -19,6 +19,47 @@ def _get_subs(d, k, params):
     return str(d[k]).format(**params)
 
 
+def _parse_ldap_options(ldap, options_unparsed):
+    # Tag is defined in the XML but is empty
+    if not options_unparsed:
+        return []
+
+    if "=" not in options_unparsed:
+        log.error("LDAP authenticate: Invalid syntax in <ldap-options>. Syntax should be option1=value1,option2=value2")
+        return []
+
+    ldap_options = []
+
+    # Valid options must start with this prefix. See help(ldap)
+    prefix = "OPT_"
+
+    for opt in options_unparsed.split(","):
+        key, value = opt.split("=")
+
+        try:
+            pair = []
+            for n in (key, value):
+                if not n.startswith(prefix):
+                    raise ValueError
+
+                name = getattr(ldap, n)
+                pair.append(name)
+
+        except ValueError:
+            log.warning("LDAP authenticate: Invalid parameter pair %s=%s. '%s' doesn't start with prefix %s", key, value, n, prefix)
+            continue
+
+        except AttributeError:
+            log.warning("LDAP authenticate: Invalid parameter pair %s=%s. '%s' is not available in module ldap", key, value, n)
+            continue
+
+        else:
+            log.debug("LDAP authenticate: Valid LDAP option pair %s=%s -> %s=%s", key, value, *pair)
+            ldap_options.append(pair)
+
+    return ldap_options
+
+
 class LDAP(AuthProvider):
 
     """
@@ -59,10 +100,22 @@ class LDAP(AuthProvider):
 
         # do LDAP search (if required)
         params = {'email': email, 'username': username, 'password': password}
+
+        try:
+            ldap_options_raw = _get_subs(options, 'ldap-options', params)
+        except ConfigurationError:
+            ldap_options = ()
+        else:
+            ldap_options = _parse_ldap_options(ldap, ldap_options_raw)
+
         if 'search-fields' in options:
             try:
                 # setup connection
                 ldap.set_option(ldap.OPT_REFERRALS, 0)
+
+                for opt in ldap_options:
+                    ldap.set_option(*opt)
+
                 l = ldap.initialize(_get_subs(options, 'server', params))
                 l.protocol_version = 3
 
@@ -72,16 +125,18 @@ class LDAP(AuthProvider):
                 else:
                     l.simple_bind_s()
 
-                scope = ldap.SCOPE_SUBTREE
-
                 # setup search
                 attributes = [_.strip().format(**params)
                               for _ in options['search-fields'].split(',')]
-                result = l.search(_get_subs(options, 'search-base', params), scope,
-                                  _get_subs(options, 'search-filter', params), attributes)
+                suser = l.search_ext_s(_get_subs(options, 'search-base', params),
+                    ldap.SCOPE_SUBTREE,
+                    _get_subs(options, 'search-filter', params), attributes,
+                    timeout=60, sizelimit=1)
 
                 # parse results
-                _, suser = l.result(result, 60)
+                if suser is None or len(suser) == 0:
+                    log.warn('LDAP authenticate: search returned no results')
+                    return (failure_mode, '', '')
                 dn, attrs = suser[0]
                 log.debug(("LDAP authenticate: dn is %s" % dn))
                 log.debug(("LDAP authenticate: search attributes are %s" % attrs))
@@ -101,12 +156,20 @@ class LDAP(AuthProvider):
         try:
             # setup connection
             ldap.set_option(ldap.OPT_REFERRALS, 0)
+
+            for opt in ldap_options:
+                ldap.set_option(*opt)
+
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
             l.simple_bind_s(_get_subs(
                 options, 'bind-user', params), _get_subs(options, 'bind-password', params))
+            whoami = l.whoami_s()
+            log.debug("LDAP authenticate: whoami is %s", whoami)
+            if whoami is None:
+                raise RuntimeError('LDAP authenticate: anonymous bind')
         except Exception:
-            log.exception('LDAP authenticate: bind exception')
+            log.warn('LDAP authenticate: bind exception', exc_info=True)
             return (failure_mode, '', '')
 
         log.debug('LDAP authentication successful')

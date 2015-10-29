@@ -1,35 +1,41 @@
 """
 Module for managing data transfer jobs.
 """
-import logging, urllib2, re, shutil
+import logging
+import re
+import shutil
 
-from galaxy import eggs
 from sqlalchemy import and_
 
-from galaxy.util.odict import odict
-from galaxy.workflow.modules import module_factory
+from galaxy.datatypes import sniff
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.deferred import FakeTrans
-
 from galaxy.tools.parameters import visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter
-from galaxy.datatypes import sniff
+from galaxy.util.odict import odict
+from galaxy.workflow.modules import module_factory
+
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'DataTransfer' ]
 
+
 class DataTransfer( object ):
     check_interval = 15
     dataset_name_re = re.compile( '(dataset\d+)_(name)' )
     dataset_datatype_re = re.compile( '(dataset\d+)_(datatype)' )
+
     def __init__( self, app ):
         self.app = app
         self.sa_session = app.model.context.current
+
     def create_job( self, trans, **kwd ):
         raise Exception( "Unimplemented Method" )
+
     def check_job( self, job ):
         raise Exception( "Unimplemented Method" )
+
     def run_job( self, job ):
         if job.params[ 'type' ] == 'init_transfer':
             # TODO: don't create new downloads on restart.
@@ -115,16 +121,16 @@ class DataTransfer( object ):
             self.sa_session.add( ld )
             self.sa_session.flush()
             self.app.security_agent.copy_library_permissions( FakeTrans( self.app ), sample.folder, ld )
-            ldda = self.app.model.LibraryDatasetDatasetAssociation( name = library_dataset_name,
-                                                                    extension = extension,
-                                                                    dbkey = '?',
-                                                                    library_dataset = ld,
-                                                                    create_dataset = True,
-                                                                    sa_session = self.sa_session )
+            ldda = self.app.model.LibraryDatasetDatasetAssociation( name=library_dataset_name,
+                                                                    extension=extension,
+                                                                    dbkey='?',
+                                                                    library_dataset=ld,
+                                                                    create_dataset=True,
+                                                                    sa_session=self.sa_session )
             ldda.message = 'Transferred by the Data Transfer Plugin'
             self.sa_session.add( ldda )
             self.sa_session.flush()
-            ldda.state = ldda.states.QUEUED # flushed in the set property
+            ldda.state = ldda.states.QUEUED  # flushed in the set property
             ld.library_dataset_dataset_association_id = ldda.id
             self.sa_session.add( ld )
             self.sa_session.flush()
@@ -140,13 +146,13 @@ class DataTransfer( object ):
                                                                                             FakeTrans( self.app,
                                                                                                        history=sample.history,
                                                                                                        user=sample.request.user ),
-                                                                                            incoming = { 'input1':ldda } )
+                                                                                            incoming={ 'input1': ldda } )
                 ldda.state = ldda.states.OK
                 # TODO: not sure if this flush is necessary
                 self.sa_session.add( ldda )
                 self.sa_session.flush()
             except Exception, e:
-                log.exception( 'Failure preparing library dataset for finished transfer job (id: %s) via deferred job (id: %s):' % \
+                log.exception( 'Failure preparing library dataset for finished transfer job (id: %s) via deferred job (id: %s):' %
                                ( str( job.transfer_job.id ), str( job.id ) ) )
                 ldda.state = ldda.states.ERROR
             if sample.workflow:
@@ -157,7 +163,7 @@ class DataTransfer( object ):
                 sub_done = True
                 rep_done = False
                 for k, v in sample.workflow[ 'mappings' ].iteritems():
-                    if not 'hda' in v and v[ 'ds_tag' ].startswith( 'hi|' ):
+                    if 'hda' not in v and v[ 'ds_tag' ].startswith( 'hi|' ):
                         sample.workflow[ 'mappings' ][ k ][ 'hda' ] = self.app.security.decode_id( v[ 'ds_tag' ][3:] )
                 for key, value in sample.workflow[ 'mappings' ].iteritems():
                     if 'url' in value and value[ 'url' ] == job.params[ 'result' ][ 'url' ]:
@@ -166,7 +172,7 @@ class DataTransfer( object ):
                         sample.workflow[ 'mappings' ][ key ][ 'ldda' ] = ldda.id
                         rep_done = True
                     # DBTODO replace the hi| mappings with the hda here.  Just rip off the first three chars.
-                    elif not 'ldda' in value and not 'hda' in value:
+                    elif 'ldda' not in value and 'hda' not in value:
                         # We're not done if some mappings still don't have ldda or hda mappings.
                         sub_done = False
                 if sub_done and rep_done:
@@ -203,17 +209,18 @@ class DataTransfer( object ):
                 self._update_sample_state( sample.id, new_state )
                 # Update the state of the request, if possible
                 self._update_request_state( sample.request.id )
+
     def _missing_params( self, params, required_params ):
         missing_params = filter( lambda x: x not in params, required_params )
         if missing_params:
             log.error( 'Job parameters missing required keys: %s' % ', '.join( missing_params ) )
             return True
         return False
+
     def _update_sample_dataset_status( self, protocol, sample_id, result_dict, new_status, error_msg=None ):
         # result_dict looks something like:
         # {'url': '127.0.0.1/data/filtered_subreads.fa', 'name': 'Filtered reads'}
-        # Check if the new status is a valid transfer status
-        valid_statuses = [ v[1] for v in self.app.model.SampleDataset.transfer_status.items() ]
+
         # TODO: error checking on valid new_status value
         if protocol in [ 'http', 'https' ]:
             sample_dataset = self.sa_session.query( self.app.model.SampleDataset ) \
@@ -227,6 +234,7 @@ class DataTransfer( object ):
         sample_dataset.error_msg = error_msg
         self.sa_session.add( sample_dataset )
         self.sa_session.flush()
+
     def _update_sample_state( self, sample_id, new_state, comment=None ):
         sample = self.sa_session.query( self.app.model.Sample ).get( sample_id )
         if comment is None:
@@ -234,6 +242,7 @@ class DataTransfer( object ):
         event = self.app.model.SampleEvent( sample, new_state, comment )
         self.sa_session.add( event )
         self.sa_session.flush()
+
     def _update_request_state( self, request_id ):
         request = self.sa_session.query( self.app.model.Request ).get( request_id )
         # Make sure all the samples of the current request have the same state
@@ -247,13 +256,11 @@ class DataTransfer( object ):
                 self.sa_session.add( event )
                 self.sa_session.flush()
         else:
-            final_state = False
             request_type_state = request.type.final_sample_state
             if common_state.id == request_type_state.id:
                 # Since all the samples are in the final state, change the request state to 'Complete'
                 comment = "All samples of this sequencing request are in the final sample state (%s). " % request_type_state.name
                 state = request.states.COMPLETE
-                final_state = True
             else:
                 comment = "All samples of this sequencing request are in the (%s) sample state. " % common_state.name
                 state = request.states.SUBMITTED
@@ -261,6 +268,7 @@ class DataTransfer( object ):
             self.sa_session.add( event )
             self.sa_session.flush()
             # TODO: handle email notification if it is configured to be sent when the samples are in this state.
+
     def _execute_workflow( self, sample):
         for key, value in sample.workflow['mappings'].iteritems():
             if 'hda' not in value and 'ldda' in value:
@@ -280,7 +288,7 @@ class DataTransfer( object ):
             if not isinstance(key, int):
                 new_wf_dict['mappings'][int(key)] = workflow_dict['mappings'][key]
         workflow_dict = new_wf_dict
-        fk_trans = FakeTrans(self.app, history = sample.history, user=sample.request.user)
+        fk_trans = FakeTrans(self.app, history=sample.history, user=sample.request.user)
         workflow = self.sa_session.query(self.app.model.Workflow).get(workflow_dict['id'])
         if not workflow:
             log.error("Workflow mapping failure.")
@@ -296,8 +304,6 @@ class DataTransfer( object ):
             return
         # Build the state for each step
         errors = {}
-        has_upgrade_messages = False
-        has_errors = False
         # Build a fake dictionary prior to execution.
         # Prepare each step
         for step in workflow.steps:
@@ -308,8 +314,6 @@ class DataTransfer( object ):
                 step.module = module_factory.from_workflow_step( fk_trans, step )
                 # Fix any missing parameters
                 step.upgrade_messages = step.module.check_and_update_state()
-                if step.upgrade_messages:
-                    has_upgrade_messages = True
                 # Any connected input needs to have value DummyDataset (these
                 # are not persisted so we need to do it every time)
                 step.module.add_dummy_datasets( connections=step.input_connections )
@@ -317,10 +321,9 @@ class DataTransfer( object ):
                 step.state = step.module.state
                 # Error dict
                 if step.tool_errors:
-                    has_errors = True
                     errors[step.id] = step.tool_errors
             else:
-                ## Non-tool specific stuff?
+                # Non-tool specific stuff?
                 step.module = module_factory.from_workflow_step( fk_trans, step )
                 step.state = step.module.get_runtime_state()
             # Connections by input name
@@ -336,8 +339,6 @@ class DataTransfer( object ):
                 module = module_factory.from_workflow_step( fk_trans, step )
                 # Fix any missing parameters
                 step.upgrade_messages = module.check_and_update_state()
-                if step.upgrade_messages:
-                    has_upgrade_messages = True
                 # Any connected input needs to have value DummyDataset (these
                 # are not persisted so we need to do it every time)
                 module.add_dummy_datasets( connections=step.input_connections )
@@ -345,8 +346,6 @@ class DataTransfer( object ):
                 tool = module.tool
                 # Get the state
                 step.state = state = module.state
-                # Get old errors
-                old_errors = state.inputs.pop( "__errors__", {} )
             if step_errors:
                 errors[step.id] = state.inputs["__errors__"] = step_errors
         # Run each step, connecting outputs to inputs
@@ -357,6 +356,7 @@ class DataTransfer( object ):
             job = None
             if step.type == 'tool' or step.type is None:
                 tool = self.app.toolbox.get_tool( step.tool_id )
+
                 def callback( input, value, prefixed_name, prefixed_label ):
                     if isinstance( input, DataToolParameter ):
                         if prefixed_name in step.input_connections_by_name:

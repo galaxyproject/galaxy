@@ -29,7 +29,7 @@ define(['utils/utils',
 
             // create table
             this.table = new Table.View(options);
-            
+
             // create parameter handler
             this.parameters = new Parameters(app, options);
 
@@ -179,7 +179,7 @@ define(['utils/utils',
                 onnew           : function() {
                     // create
                     create(input_def.inputs);
-                            
+
                     // trigger refresh
                     self.app.trigger('change');
                 }
@@ -202,7 +202,7 @@ define(['utils/utils',
                     ondel   : function() {
                         // delete repeat block
                         repeat.del(sub_section_id);
-                        
+
                         // trigger refresh
                         self.app.trigger('change');
                     }
@@ -245,7 +245,7 @@ define(['utils/utils',
         _addSection: function(input_def) {
             // link this
             var self = this;
-            
+
             // create sub section
             var sub_section = new View(self.app, {
                 inputs  : input_def.inputs
@@ -285,6 +285,11 @@ define(['utils/utils',
                 }
             });
 
+            // add expansion event handler
+            this.app.on('expand', function(input_id) {
+                (portlet.$el.find('#' + input_id).length > 0) && !visible && portlet.$header.trigger('click');
+            });
+
             // show sub section if requested
             if (input_def.expanded) {
                 portlet.$header.trigger('click');
@@ -311,11 +316,15 @@ define(['utils/utils',
 
             // create input field wrapper
             var input_element = new InputElement(this.app, {
-                label           : input_def.label || input_def.name,
-                default_value   : input_def.default_value,
-                collapsible     : input_def.collapsible,
-                help            : input_def.help,
-                field           : field
+                name                : input_def.name,
+                label               : input_def.label || input_def.name,
+                value               : input_def.value,
+                default_value       : input_def.default_value,
+                collapsible         : input_def.collapsible,
+                collapsible_value   : input_def.collapsible_value,
+                help                : input_def.help,
+                argument            : input_def.argument,
+                field               : field
             });
 
             // add to element list

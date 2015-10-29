@@ -1,15 +1,10 @@
 """
 Migration script to add a 'tool_version' column to the hda/ldda tables.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
-from galaxy.model.custom_types import *
+from sqlalchemy import Column, MetaData, Table, TEXT
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -28,6 +23,7 @@ def upgrade(migrate_engine):
 
     except Exception, e:
         print "Adding the tool_version column to the hda/ldda tables failed: ", str( e )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

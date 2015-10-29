@@ -8,7 +8,7 @@ import uuid
 import logging
 import copy
 import urllib
-from sqlalchemy import desc, or_, and_
+from sqlalchemy import and_, desc, false, or_, true
 from galaxy import exceptions, util
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.managers import histories
@@ -46,9 +46,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         rval = []
         filter1 = ( trans.app.model.StoredWorkflow.user == trans.user )
         if show_published:
-            filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == True ) ) #noqa -- sqlalchemy comparison
+            filter1 = or_( filter1, ( trans.app.model.StoredWorkflow.published == true() ) )
         for wf in trans.sa_session.query( trans.app.model.StoredWorkflow ).filter(
-                filter1, trans.app.model.StoredWorkflow.table.c.deleted == False ).order_by( #noqa -- sqlalchemy comparison
+                filter1, trans.app.model.StoredWorkflow.table.c.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.table.c.update_time ) ).all():
             item = wf.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf.id)
@@ -57,7 +57,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             rval.append(item)
         for wf_sa in trans.sa_session.query( trans.app.model.StoredWorkflowUserShareAssociation ).filter_by(
                 user=trans.user ).join( 'stored_workflow' ).filter(
-                trans.app.model.StoredWorkflow.deleted == False ).order_by( #noqa -- sqlalchemy comparison
+                trans.app.model.StoredWorkflow.deleted == false() ).order_by(
                 desc( trans.app.model.StoredWorkflow.update_time ) ).all():
             item = wf_sa.stored_workflow.to_dict( value_mapper={ 'id': trans.security.encode_id } )
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
@@ -126,6 +126,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :param  workflow_name:               If from_history_id is set - name of the workflow to create when extracting a workflow from history
         :type   workflow_name:               str
+
+        :param  allow_tool_state_corrections:  If set to True, any Tool parameter changes will not prevent running workflow, defaults to False
+        :type   allow_tool_state_corrections:  bool
         """
         ways_to_create = set( [
             'workflow_id',
@@ -213,7 +216,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Newer version of this API just returns the invocation as a dict, to
         # facilitate migration - produce the newer style response and blend in
         # the older information.
-        invocation_response = self.__encode_invocation( trans, invocation )
+        invocation_response = self.__encode_invocation( trans, invocation, step_details=kwd.get('step_details', False) )
         invocation_response.update( rval )
         return invocation_response
 
@@ -314,10 +317,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         POST /api/workflows/build_module
         Builds module details including a tool model for the workflow editor.
         """
-        tool_id         = payload.get( 'tool_id', None )
-        tool_version    = payload.get( 'tool_version', None )
-        tool_inputs     = payload.get( 'inputs', None )
-        annotation      = payload.get( 'annotation', '' )
+        tool_id = payload.get( 'tool_id', None )
+        tool_version = payload.get( 'tool_version', None )
+        tool_inputs = payload.get( 'inputs', {} )
+        annotation = payload.get( 'annotation', tool_inputs.get('annotation', '') )
 
         # load tool
         tool = self._get_tool( tool_id, tool_version=tool_version, user=trans.user )
@@ -463,13 +466,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         results = self.workflow_manager.build_invocations_query( trans, stored_workflow.id )
         out = []
         for r in results:
-            out.append( self.__encode_invocation( trans, r ) )
+            out.append( self.__encode_invocation( trans, r, view="collection" ) )
         return out
 
     @expose_api
     def show_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/invocation/{invocation_id}
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}
         Get detailed description of workflow invocation
 
         :param  workflow_id:        the workflow id (required)
@@ -483,13 +486,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         decoded_workflow_invocation_id = self.decode_id( invocation_id )
         workflow_invocation = self.workflow_manager.get_invocation( trans, decoded_workflow_invocation_id )
         if workflow_invocation:
-            return self.__encode_invocation( trans, workflow_invocation )
+            return self.__encode_invocation( trans, workflow_invocation, step_details=kwd.get('step_details', False) )
         return None
 
     @expose_api
     def cancel_invocation(self, trans, workflow_id, invocation_id, **kwd):
         """
-        DELETE /api/workflows/{workflow_id}/invocation/{invocation_id}
+        DELETE /api/workflows/{workflow_id}/invocations/{invocation_id}
         Cancel the specified workflow invocation.
 
         :param  workflow_id:      the workflow id (required)
@@ -507,7 +510,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
         """
-        GET /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
 
         :param  workflow_id:        the workflow id (required)
         :type   workflow_id:        str
@@ -533,7 +536,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     @expose_api
     def update_invocation_step(self, trans, workflow_id, invocation_id, step_id, payload, **kwd):
         """
-        PUT /api/workflows/{workflow_id}/invocation/{invocation_id}/steps/{step_id}
+        PUT /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
         Update state of running workflow step invocation - still very nebulous
         but this would be for stuff like confirming paused steps can proceed
         etc....
@@ -596,9 +599,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.ObjectNotFound( "No such workflow found." )
         return stored_workflow
 
-    def __encode_invocation( self, trans, invocation, view="element" ):
+    def __encode_invocation( self, trans, invocation, view="element", step_details=False ):
         return self.encode_all_ids(
             trans,
-            invocation.to_dict( view ),
+            invocation.to_dict( view, step_details=step_details ),
             True
         )

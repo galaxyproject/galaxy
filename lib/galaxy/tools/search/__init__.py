@@ -2,10 +2,8 @@
 Module for building and searching the index of tools
 installed within this Galaxy.
 """
-from galaxy import eggs
 from galaxy.web.framework.helpers import to_unicode
 
-eggs.require( "Whoosh" )
 from whoosh.filedb.filestore import RamStorage
 from whoosh.fields import Schema, STORED, TEXT
 from whoosh.scoring import BM25F
@@ -17,6 +15,7 @@ schema = Schema( id=STORED,
                  help=TEXT )
 import logging
 log = logging.getLogger( __name__ )
+
 
 class ToolBoxSearch( object ):
     """
@@ -37,6 +36,9 @@ class ToolBoxSearch( object ):
         self.index = self.storage.create_index( schema )
         writer = self.index.writer()
         for id, tool in self.toolbox.tools():
+            #  Do not add data managers to the public index
+            if tool.tool_type == 'manage_data':
+                continue
             add_doc_kwds = {
                 "id": id,
                 "name": to_unicode( tool.name ),

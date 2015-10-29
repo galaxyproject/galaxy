@@ -61,15 +61,18 @@ var DatasetCollectionElementMixin = {
 
     /** merge the attributes of the sub-object 'object' into this model */
     _mergeObject : function( attributes ){
-        _.extend( attributes, attributes.object );
+        // if we don't preserve and correct ids here, the element id becomes the object id
+        // and collision in backbone's _byId will occur and only
+        _.extend( attributes, attributes.object, { element_id: attributes.id });
         delete attributes.object;
         return attributes;
     },
 
     /** override to merge this.object into this */
     constructor : function( attributes, options ){
-        this.debug( '\t DatasetCollectionElement.constructor:', attributes, options );
+        // console.debug( '\t DatasetCollectionElement.constructor:', attributes, options );
         attributes = this._mergeObject( attributes );
+        this.idAttribute = 'element_id';
         Backbone.Model.apply( this, arguments );
     },
 
@@ -123,6 +126,18 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,
 
+    /** url fn */
+    url : function(){
+        var galaxyRoot = (( window.galaxy_config && galaxy_config.root )?( galaxy_config.root ):( '/' ));
+        // won't always be an hda
+        if( !this.has( 'history_id' ) ){
+            console.warn( 'no endpoint for non-hdas within a collection yet' );
+            // (a little silly since this api endpoint *also* points at hdas)
+            return galaxyRoot + 'api/datasets';
+        }
+        return galaxyRoot + 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
+    },
+
     defaults : _.extend( {},
         DATASET_MODEL.DatasetAssociation.prototype.defaults,
         DatasetCollectionElementMixin.defaults
@@ -130,7 +145,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
 
     // because all objects have constructors (as this hashmap would even if this next line wasn't present)
     //  the constructor in hcontentMixin won't be attached by BASE_MVC.mixin to this model
-    //  - re-apply manually it now
+    //  - re-apply manually for now
     /** call the mixin constructor */
     constructor : function( attributes, options ){
         this.debug( '\t DatasetDCE.constructor:', attributes, options );
@@ -143,6 +158,12 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend( BASE_MVC.mixin( Datase
     initialize : function( attributes, options ){
         this.debug( this + '(DatasetDCE).initialize:', attributes, options );
         DATASET_MODEL.DatasetAssociation.prototype.initialize.call( this, attributes, options );
+    },
+
+    /** Does this model already contain detailed data (as opposed to just summary level data)? */
+    hasDetails : function(){
+        // dataset collection api does return genome_build but doesn't return annotation
+        return _.has( this.attributes, 'annotation' );
     },
 
     /** String representation. */
@@ -238,10 +259,12 @@ var DatasetCollection = Backbone.Model
         return json;
     },
 
-    /** is the collection done with updates and ready to be used? (finished running, etc.) */
+    /** Is this collection in a 'ready' state no processing (for the collection) is left
+     *  to do on the server.
+     */
     inReadyState : function(){
-//TODO: state currenly unimplemented for collections
-        return true;
+        var populated = this.get( 'populated' );
+        return ( this.isDeletedOrPurged() || populated );
     },
 
     //TODO:?? the following are the same interface as DatasetAssociation - can we combine?

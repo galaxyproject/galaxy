@@ -13,8 +13,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             this.optionsDefault = {
                 // uses workflow editor mode i.e. text instead of select fields
                 is_workflow     : false,
-                // shows form in narrow view mode
-                narrow          : false,
                 // shows errors on start
                 initial_errors  : false,
                 // portlet style
@@ -93,13 +91,6 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
             }
         },
 
-        /** Shows the final message (usually upon successful job submission)
-        */
-        reciept: function($el) {
-            this.$el.empty();
-            this.$el.append($el);
-        },
-
         /** Highlight and scroll to input element (currently only used for error notifications)
         */
         highlight: function (input_id, message, silent) {
@@ -111,11 +102,19 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 // mark error
                 input_element.error(message || 'Please verify this parameter.');
 
+                // trigger expand event for parent containers
+                this.trigger('expand', input_id);
+
                 // scroll to first input element
                 if (!silent) {
-                    $('html, body').animate({
-                        scrollTop: input_element.$el.offset().top - 20
-                    }, 500);
+                    if (self==top) {
+                        var $panel = this.$el.parents().filter(function() {
+                            return $(this).css('overflow') == 'auto';
+                        }).first();
+                        $panel.animate({ scrollTop : $panel.scrollTop() + input_element.$el.offset().top - 50 }, 500);
+                    } else {
+                        $('html, body').animate({ scrollTop : input_element.$el.offset().top - 20 }, 500);
+                    }
                 }
             }
         },
@@ -200,12 +199,8 @@ define(['utils/utils', 'mvc/ui/ui-portlet', 'mvc/ui/ui-misc',
                 inputs : this.options.inputs
             });
 
-            // switch to classic tool form mako if the form definition is incompatible
-            if (this.incompatible) {
-                this.$el.hide();
-                $('#tool-form-classic').show();
-                return;
-            }
+            // remove tooltips
+            $( '.tooltip' ).remove();
 
             // create portlet
             this.portlet = new Portlet.View({

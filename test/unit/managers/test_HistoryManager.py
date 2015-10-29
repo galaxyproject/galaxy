@@ -4,35 +4,33 @@
 import os
 import imp
 import unittest
+import random
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 import galaxy_mock
 
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
 import sqlalchemy
+from sqlalchemy import true
 
 from galaxy import model
 from galaxy import exceptions
 
 from base import BaseTestCase
+from base import CreatesCollectionsMixin
 
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.histories import HistorySerializer
-from galaxy.managers.histories import HistoryDeserializer
 from galaxy.managers.histories import HistoryFilters
 from galaxy.managers import hdas
+from galaxy.managers import collections
 
-
-# =============================================================================
 default_password = '123456'
 user2_data = dict( email='user2@user2.user2', username='user2', password=default_password )
 user3_data = dict( email='user3@user3.user3', username='user3', password=default_password )
 user4_data = dict( email='user4@user4.user4', username='user4', password=default_password )
 
 
-# =============================================================================
 class HistoryManagerTestCase( BaseTestCase ):
 
     def set_up_managers( self ):
@@ -89,7 +87,7 @@ class HistoryManagerTestCase( BaseTestCase ):
 
         item1 = self.history_manager.create( user=owner )
         item2 = self.history_manager.create( user=owner )
-        item3 = self.history_manager.create( user=non_owner )
+        self.history_manager.create( user=non_owner )
 
         self.log( "should be able to list items by user" )
         user_histories = self.history_manager.by_user( owner )
@@ -312,7 +310,9 @@ class HistoryManagerTestCase( BaseTestCase ):
 
 # =============================================================================
 # web.url_for doesn't work well in the framework
-testable_url_for = lambda *a, **k: '(fake url): %s, %s' % ( a, k )
+def testable_url_for(*a, **k):
+    return '(fake url): %s, %s' % ( a, k )
+
 HistorySerializer.url_for = staticmethod( testable_url_for )
 hdas.HDASerializer.url_for = staticmethod( testable_url_for )
 
@@ -344,8 +344,8 @@ class HistorySerializerTestCase( BaseTestCase ):
         self.log( 'should have a serializer for all serializable keys' )
         for key in self.history_serializer.serializable_keyset:
             instantiated_attribute = getattr( history1, key, None )
-            if not ( ( key in self.history_serializer.serializers )
-                  or ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
+            if not ( ( key in self.history_serializer.serializers ) or
+                    ( isinstance( instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS ) ) ):
                 self.fail( 'no serializer for: %s (%s)' % ( key, instantiated_attribute ) )
         else:
             self.assertTrue( True, 'all serializable keys have a serializer' )
@@ -407,6 +407,45 @@ class HistorySerializerTestCase( BaseTestCase ):
 
         self.log( 'serialized should jsonify well' )
         self.assertIsJsonifyable( serialized )
+
+    def _history_state_from_states_and_deleted( self, user, hda_state_and_deleted_tuples ):
+        history = self.history_manager.create( name='name', user=user )
+        for state, deleted in hda_state_and_deleted_tuples:
+            hda = self.hda_manager.create( history=history )
+            hda = self.hda_manager.update( hda, dict( state=state, deleted=deleted ) )
+        history_state = self.history_serializer.serialize( history, [ 'state' ] )[ 'state' ]
+        return history_state
+
+    def test_state( self ):
+        dataset_states = model.Dataset.states
+        user2 = self.user_manager.create( **user2_data )
+
+        ready_states = [ ( state, False ) for state in [ dataset_states.OK, dataset_states.OK ] ]
+
+        self.log( 'a history\'s serialized state should be running if any of its datasets are running' )
+        self.assertEqual( 'running', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.RUNNING, False )] ))
+        self.assertEqual( 'running', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.SETTING_METADATA, False )] ))
+        self.assertEqual( 'running', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.UPLOAD, False )] ))
+
+        self.log( 'a history\'s serialized state should be queued if any of its datasets are queued' )
+        self.assertEqual( 'queued', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.QUEUED, False )] ))
+
+        self.log( 'a history\'s serialized state should be error if any of its datasets are errored' )
+        self.assertEqual( 'error', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.ERROR, False )] ))
+        self.assertEqual( 'error', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.FAILED_METADATA, False )] ))
+
+        self.log( 'a history\'s serialized state should be ok if *all* of its datasets are ok' )
+        self.assertEqual( 'ok', self._history_state_from_states_and_deleted( user2, ready_states ))
+
+        self.log( 'a history\'s serialized state should be not be affected by deleted datasets' )
+        self.assertEqual( 'ok', self._history_state_from_states_and_deleted( user2,
+            ready_states + [( dataset_states.RUNNING, True )] ))
 
     def test_contents( self ):
         user2 = self.user_manager.create( **user2_data )
@@ -628,7 +667,7 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.log( "negative offset should return full list" )
         self.assertEqual( self.history_manager.list( offset=-1 ), all_histories )
 
-        filters = [ model.History.deleted == True ]
+        filters = [ model.History.deleted == true() ]
         self.log( "orm filtered, no offset, no limit should work" )
         found = self.history_manager.list( filters=filters )
         self.assertEqual( found, [ history1, history2, history3 ] )
@@ -685,6 +724,69 @@ class HistoryFiltersTestCase( BaseTestCase ):
         self.log( "orm and fn filtered, negative offset should return full list" )
         found = self.history_manager.list( filters=filters, offset=-1 )
         self.assertEqual( found, deleted_and_annotated )
+
+
+# =============================================================================
+class HistoryAsContainerTestCase( BaseTestCase, CreatesCollectionsMixin ):
+
+    def set_up_managers( self ):
+        super( HistoryAsContainerTestCase, self ).set_up_managers()
+        self.history_manager = HistoryManager( self.app )
+        self.hda_manager = hdas.HDAManager( self.app )
+        self.collection_manager = collections.DatasetCollectionManager( self.app )
+
+    def add_hda_to_history( self, history, **kwargs ):
+        dataset = self.hda_manager.dataset_manager.create()
+        hda = self.hda_manager.create( history=history, dataset=dataset, **kwargs )
+        return hda
+
+    def add_list_collection_to_history( self, history, hdas, name='test collection', **kwargs ):
+        hdca = self.collection_manager.create( self.trans, history, name, 'list',
+            element_identifiers=self.build_element_identifiers( hdas ) )
+        return hdca
+
+    def test_contents( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+
+        self.log( "calling contents on an empty history should return an empty list" )
+        self.assertEqual( [], list( self.history_manager.contents( history ) ) )
+
+        self.log( "calling contents on an history with hdas should return those in order of their hids" )
+        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
+        random.shuffle( hdas )
+        ordered_hda_contents = list( self.history_manager.contents( history ) )
+        self.assertEqual( map( lambda hda: hda.hid, ordered_hda_contents ), [ 1, 2, 3 ] )
+
+        self.log( "calling contents on an history with both hdas and collections should return both" )
+        hdca = self.add_list_collection_to_history( history, hdas )
+        all_contents = list( self.history_manager.contents( history ) )
+        self.assertEqual( all_contents, list( ordered_hda_contents ) + [ hdca ] )
+
+    def test_contained( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+
+        self.log( "calling contained on an empty history should return an empty list" )
+        self.assertEqual( [], list( self.history_manager.contained( history ) ) )
+
+        self.log( "calling contained on an history with both hdas and collections should return only hdas" )
+        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
+        self.add_list_collection_to_history( history, hdas )
+        self.assertEqual( list( self.history_manager.contained( history ) ), hdas )
+
+    def test_subcontainers( self ):
+        user2 = self.user_manager.create( **user2_data )
+        history = self.history_manager.create( name='history', user=user2 )
+
+        self.log( "calling subcontainers on an empty history should return an empty list" )
+        self.assertEqual( [], list( self.history_manager.subcontainers( history ) ) )
+
+        self.log( "calling subcontainers on an history with both hdas and collections should return only collections" )
+        hdas = [ self.add_hda_to_history( history, name=( 'hda-' + str( x ) ) ) for x in xrange( 3 ) ]
+        hdca = self.add_list_collection_to_history( history, hdas )
+        subcontainers = list( self.history_manager.subcontainers( history ) )
+        self.assertEqual( subcontainers, [ hdca ] )
 
 
 # =============================================================================

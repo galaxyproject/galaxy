@@ -18,7 +18,7 @@ wormbase_ws225	WormBase WS225	http://ws225.wormbase.org/db/gb2/gbrowse/	caeAng1,
 tair	tair	http://arabidopsis.org/cgi-bin/gbrowse/	arabidopsis_tair8,arabidopsis,Arabidopsis_thaliana_TAIR10	arabidopsis_tair8,arabidopsis_tair9,arabidopsis
 
 #modENCODE
-modencode	modENCODE	http://modencode.oicr.on.ca/fgb2/gbrowse/	ce6,dm2	worm,fly
+modencode	modENCODE	http://gbrowse.modencode.org/fgb2/gbrowse/	ce10,dm3	worm,fly
 
 #Saccharomyces Genome Database (SGD)
 sgd_yeast	Saccharomyces Genome Database	http://browse.yeastgenome.org/fgb2/gbrowse/	Saccharomyces_cerevisiae_S288C_SGD2010	scgenome

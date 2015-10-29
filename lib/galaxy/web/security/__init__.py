@@ -3,9 +3,6 @@ import os
 import os.path
 import logging
 
-import pkg_resources
-pkg_resources.require( "pycrypto" )
-
 import galaxy.exceptions
 
 from Crypto.Cipher import Blowfish

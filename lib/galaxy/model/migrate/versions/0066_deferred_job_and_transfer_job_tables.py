@@ -2,39 +2,35 @@
 Migration script to create table for storing deferred job and managed transfer
 information.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
-from galaxy.model.custom_types import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table
+
+from galaxy.model.custom_types import JSONType
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 # Table to add
 
 DeferredJob_table = Table( "deferred_job", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "state", String( 64 ), index=True ),
-    Column( "plugin", String( 128 ), index=True ),
-    Column( "params", JSONType ) )
+                           Column( "id", Integer, primary_key=True ),
+                           Column( "create_time", DateTime, default=now ),
+                           Column( "update_time", DateTime, default=now, onupdate=now ),
+                           Column( "state", String( 64 ), index=True ),
+                           Column( "plugin", String( 128 ), index=True ),
+                           Column( "params", JSONType ) )
 
 TransferJob_table = Table( "transfer_job", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "state", String( 64 ), index=True ),
-    Column( "path", String( 1024 ) ),
-    Column( "params", JSONType ) )
+                           Column( "id", Integer, primary_key=True ),
+                           Column( "create_time", DateTime, default=now ),
+                           Column( "update_time", DateTime, default=now, onupdate=now ),
+                           Column( "state", String( 64 ), index=True ),
+                           Column( "path", String( 1024 ) ),
+                           Column( "params", JSONType ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -52,6 +48,7 @@ def upgrade(migrate_engine):
         TransferJob_table.create()
     except Exception, e:
         log.error( "Creating transfer_job table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

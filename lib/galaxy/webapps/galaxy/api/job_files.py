@@ -99,7 +99,12 @@ class JobFilesAPIController( BaseAPIController ):
         try:
             shutil.move( input_file.name, path )
         finally:
-            input_file.close()
+            try:
+                input_file.close()
+            except OSError:
+                # Fails to close file if not using nginx upload because the
+                # tempfile has moved and Python wants to delete it.
+                pass
         return {"message": "ok"}
 
     def __authorize_job_access(self, trans, encoded_job_id, **kwargs):

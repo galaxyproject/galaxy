@@ -5,8 +5,9 @@ define(['utils/utils',
         'mvc/ui/ui-misc',
         'mvc/form/form-select-content',
         'mvc/ui/ui-select-library',
+        'mvc/ui/ui-select-ftp',
         'mvc/ui/ui-color-picker'],
-    function(Utils, Ui, SelectContent, SelectLibrary, ColorPicker) {
+    function(Utils, Ui, SelectContent, SelectLibrary, SelectFtp, ColorPicker) {
 
     // create form view
     return Backbone.Model.extend({
@@ -26,9 +27,10 @@ define(['utils/utils',
             'hidden'            : '_fieldHidden',
             'hidden_data'       : '_fieldHidden',
             'baseurl'           : '_fieldHidden',
-            'library_data'      : '_fieldLibrary'
+            'library_data'      : '_fieldLibrary',
+            'ftpfile'           : '_fieldFtp'
         },
-        
+
         // initialize
         initialize: function(app, options) {
             this.app = app;
@@ -53,7 +55,7 @@ define(['utils/utils',
             if (fieldClass && typeof(this[fieldClass]) === 'function') {
                 field = this[fieldClass].call(this, input_def);
             }
-            
+
             // identify field type
             if (!field) {
                 // flag
@@ -172,7 +174,7 @@ define(['utils/utils',
                 }
             });
         },
-        
+
         /** Text input field
         */
         _fieldText: function(input_def) {
@@ -265,6 +267,20 @@ define(['utils/utils',
         _fieldLibrary: function(input_def) {
             var self = this;
             return new SelectLibrary.View({
+                id          : 'field-' + input_def.id,
+                optional    : input_def.optional,
+                multiple    : input_def.multiple,
+                onchange    : function() {
+                    self.app.trigger('change');
+                }
+            });
+        },
+
+        /** FTP file field
+        */
+        _fieldFtp: function(input_def) {
+            var self = this;
+            return new SelectFtp.View({
                 id          : 'field-' + input_def.id,
                 optional    : input_def.optional,
                 multiple    : input_def.multiple,

@@ -4,15 +4,13 @@ from __future__ import print_function
 
 import os
 import imp
-import unittest
+
 import json
 
 test_utils = imp.load_source( 'test_utils',
     os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
 import galaxy_mock
 
-from galaxy import eggs
-eggs.require( 'SQLAlchemy >= 0.4' )
 import sqlalchemy
 
 from galaxy.managers.users import UserManager
@@ -24,7 +22,7 @@ default_password = '123456'
 
 
 # =============================================================================
-class BaseTestCase( unittest.TestCase ):
+class BaseTestCase( test_utils.unittest.TestCase ):
 
     @classmethod
     def setUpClass( cls ):
@@ -35,7 +33,7 @@ class BaseTestCase( unittest.TestCase ):
         print( '\n', '-' * 20, 'end class', cls )
 
     def __init__( self, *args ):
-        unittest.TestCase.__init__( self, *args )
+        test_utils.unittest.TestCase.__init__( self, *args )
 
     def setUp( self ):
         self.log( '.' * 20, 'begin test', self )
@@ -120,7 +118,22 @@ class BaseTestCase( unittest.TestCase ):
         self.assertIsInstance( json.dumps( item ), basestring )
 
 
+class CreatesCollectionsMixin( object ):
+
+    def build_element_identifiers( self, elements ):
+        identifier_list = []
+        for element in elements:
+            src = 'hda'
+            # if isinstance( element, model.DatasetCollection ):
+            #    src = 'collection'#?
+            # elif isinstance( element, model.LibraryDatasetDatasetAssociation ):
+            #    src = 'ldda'#?
+            encoded_id = self.trans.security.encode_id( element.id )
+            identifier_list.append( dict( src=src, name=element.name, id=encoded_id ) )
+        return identifier_list
+
+
 # =============================================================================
 if __name__ == '__main__':
     # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()
+    test_utils.unittest.main()

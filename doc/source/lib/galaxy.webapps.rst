@@ -1,8 +1,5 @@
-webapps Package
-===============
-
-:mod:`webapps` Package
-----------------------
+galaxy.webapps package
+======================
 
 .. automodule:: galaxy.webapps
     :members:
@@ -14,7 +11,7 @@ Subpackages
 
 .. toctree::
 
-    galaxy.webapps.community
     galaxy.webapps.galaxy
     galaxy.webapps.reports
+    galaxy.webapps.tool_shed
 

@@ -9,27 +9,28 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
     return Backbone.View.extend({
         // initialize
         initialize: function(options) {
-            // check if the user is an admin
-            var galaxy = parent.Galaxy;
-            if (galaxy && galaxy.currUser) {
-                this.is_admin = galaxy.currUser.get('is_admin');
-            } else {
-                this.is_admin = false;
-            }
+            this.options = Utils.merge(options, {});
+            this.setElement('<div/>');
 
             // create deferred processing queue handler
             // this handler reduces the number of requests to the api by filtering redundant requests
             this.deferred = new Deferred();
 
-            // set element
-            this.setElement('<div/>');
-
-            // append to body
-            this.container = options.container || 'body';
-            $(this.container).append(this.$el);
-
             // create form
-            this._buildForm(options);
+            if (options.inputs) {
+                this._buildForm(options);
+            } else {
+                this._buildModel(options, true);
+            }
+        },
+
+        /** Wait for deferred build processes before removal */
+        remove: function() {
+            var self = this;
+            this.$el.hide();
+            this.deferred.execute(function(){
+                Backbone.View.prototype.remove.call(self);
+            });
         },
 
         /** Build form */
@@ -52,6 +53,9 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 }
             }, this.options);
 
+            // allow option customization
+            this.options.customize && this.options.customize( this.options );
+
             // create form
             this.form = new Form(this.options);
 
@@ -65,28 +69,21 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
 
         /** Builds a new model through api call and recreates the entire form
         */
-        _buildModel: function(options) {
-            // link this
+        _buildModel: function(options, hide_message) {
             var self = this;
-
-            // update current version
             this.options.id = options.id;
             this.options.version = options.version;
 
-            // construct url
-            var build_url = galaxy_config.root + 'api/tools/' + options.id + '/build?';
-            if (options.job_id) {
-                build_url += 'job_id=' + options.job_id;
+            // build request url
+            var build_url = '';
+            var build_data = {};
+            if ( options.job_id ) {
+                build_url = Galaxy.root + 'api/jobs/' + options.job_id + '/build_for_rerun';
             } else {
-                if (options.dataset_id) {
-                    build_url += 'dataset_id=' + options.dataset_id;
-                } else {
-                    build_url += 'tool_version=' + options.version + '&';
-                    var loc = top.location.href;
-                    var pos = loc.indexOf('?');
-                    if (loc.indexOf('tool_id=') != -1 && pos !== -1) {
-                        build_url += loc.slice(pos + 1);
-                    }
+                build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
+                if ( Galaxy.params && Galaxy.params.tool_id == options.id ) {
+                    build_data = $.extend( {}, Galaxy.params );
+                    options.version && ( build_data[ 'tool_version' ] = options.version );
                 }
             }
 
@@ -97,43 +94,41 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             Utils.request({
                 type    : 'GET',
                 url     : build_url,
+                data    : build_data,
                 success : function(new_model) {
-                    // rebuild form
                     self._buildForm(new_model['tool_model'] || new_model);
-
-                    // show version message
-                    self.form.message.update({
+                    !hide_message && self.form.message.update({
                         status      : 'success',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
                         persistent  : false
                     });
-
-                    // process completed
-                    self.deferred.done(process_id);
-
-                    // log success
                     console.debug('tools-form::initialize() - Initial tool model ready.');
                     console.debug(new_model);
+                    self.deferred.done(process_id);
                 },
                 error   : function(response) {
-                    // process completed
-                    self.deferred.done(process_id);
-
-                    // log error
+                    var error_message = ( response && response.err_msg ) || 'Uncaught error.';
+                    if ( self.$el.is(':empty') ) {
+                        self.$el.prepend((new Ui.Message({
+                            message     : error_message,
+                            status      : 'danger',
+                            persistent  : true,
+                            large       : true
+                        })).$el);
+                    } else {
+                        Galaxy.modal.show({
+                            title   : 'Tool request failed',
+                            body    : error_message,
+                            buttons : {
+                                'Close' : function() {
+                                    Galaxy.modal.hide();
+                                }
+                            }
+                        });
+                    }
                     console.debug('tools-form::initialize() - Initial tool model request failed.');
                     console.debug(response);
-
-                    // show error
-                    var error_message = response.error || 'Uncaught error.';
-                    self.form.modal.show({
-                        title   : 'Tool cannot be executed',
-                        body    : error_message,
-                        buttons : {
-                            'Close' : function() {
-                                self.form.modal.hide();
-                            }
-                        }
-                    });
+                    self.deferred.done(process_id);
                 }
             });
         },
@@ -142,7 +137,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
         */
         _updateModel: function() {
             // model url for request
-            var model_url = this.options.update_url || galaxy_config.root + 'api/tools/' + this.options.id + '/build';
+            var model_url = this.options.update_url || Galaxy.root + 'api/tools/' + this.options.id + '/build';
 
             // link this
             var self = this;
@@ -212,7 +207,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 title   : (!options.narrow && 'Versions') || null,
                 tooltip : 'Select another tool version'
             });
-            if (options.versions && options.versions.length > 1) {
+            if (!options.is_workflow && options.versions && options.versions.length > 1) {
                 for (var i in options.versions) {
                     var version = options.versions[i];
                     if (version != options.version) {
@@ -273,19 +268,19 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                 title   : 'Share',
                 tooltip : 'Share this tool',
                 onclick : function() {
-                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + galaxy_config.root + 'root?tool_id=' + options.id);
+                    prompt('Copy to clipboard: Ctrl+C, Enter', window.location.origin + Galaxy.root + 'root?tool_id=' + options.id);
                 }
             });
 
             // add admin operations
-            if (this.is_admin) {
+            if (Galaxy.user && Galaxy.user.get('is_admin')) {
                 // create download button
                 menu_button.addMenu({
                     icon    : 'fa-download',
                     title   : 'Download',
                     tooltip : 'Download this tool',
                     onclick : function() {
-                        window.location.href = galaxy_config.root + 'api/tools/' + options.id + '/download';
+                        window.location.href = Galaxy.root + 'api/tools/' + options.id + '/download';
                     }
                 });
             }

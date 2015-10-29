@@ -4,13 +4,12 @@ define([], function() {
 // tool form templates
 return {
     help: function(options) {
-        return  '<div class="toolHelp" style="overflow: auto;">' +
-                    '<div class="toolHelpBody">' +
-                        options.help +
-                    '</div>' +
-                '</div>';
+        var $tmpl = $('<div class="toolHelp" style="overflow: auto;"/>')
+                        .append( $('<div class="toolHelpBody"/>').append(options.help) );
+        $tmpl.find('a').attr('target', '_blank');
+        return $tmpl;
     },
-    
+
     success: function(response) {
         // check
         if (!response.jobs || !response.jobs.length) {

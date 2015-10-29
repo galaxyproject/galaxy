@@ -6,26 +6,24 @@ hand.
 """
 import os, sys, optparse, ConfigParser, socket, SocketServer, threading, logging, random, urllib2, tempfile, time
 
-galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), '..' ) )
+galaxy_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
 sys.path.insert( 0, os.path.abspath( os.path.join( galaxy_root, 'lib' ) ) )
 
-from galaxy import eggs
-
-import pkg_resources
-pkg_resources.require( "pexpect" )
-import pexpect
-
-eggs.require( "SQLAlchemy >= 0.4" )
+try:
+    import pexpect
+except ImportError:
+    pexpect = None
 
 from sqlalchemy import *
 from sqlalchemy.orm import *
-from galaxy.model.mapping import load_egg_for_url
+from daemon import DaemonContext
 
 import galaxy.model
 from galaxy.util import json, bunch
 
-eggs.require( 'python_daemon' )
-from daemon import DaemonContext
+
+PEXPECT_IMPORT_MESSAGE = ('The Python pexpect package is required to use this '
+                          'feature, please install it')
 
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
@@ -84,7 +82,6 @@ class GalaxyApp( object ):
             dburl = self.config.get( 'app:main', 'database_connection' )
         except ConfigParser.NoOptionError:
             dburl = default_dburl
-        load_egg_for_url( dburl )
         engine = create_engine( dburl )
         metadata = MetaData( engine )
         self.sa_session = scoped_session( sessionmaker( bind=engine, autoflush=False, autocommit=True ) )
@@ -247,6 +244,8 @@ def scp_transfer( transfer_job ):
     user_name = transfer_job.params[ 'user_name' ]
     password = transfer_job.params[ 'password' ]
     file_path = transfer_job.params[ 'file_path' ]
+    if pexpect is None:
+        return dict( state = transfer_job.states.ERROR, info = PEXPECT_IMPORT_MESSAGE )
     try:
         fh, fn = tempfile.mkstemp()
     except Exception, e:

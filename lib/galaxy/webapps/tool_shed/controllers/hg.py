@@ -1,4 +1,4 @@
-import os, logging
+import logging
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 
@@ -7,8 +7,6 @@ from tool_shed.util.shed_util_common import get_repository_by_name_and_owner
 from tool_shed.util.hg_util import update_repository
 from tool_shed.metadata import repository_metadata_manager
 
-from galaxy import eggs
-eggs.require('mercurial')
 import mercurial.__version__
 from mercurial.hgweb.hgwebdir_mod import hgwebdir
 from mercurial.hgweb.request import wsgiapplication
@@ -16,6 +14,7 @@ from mercurial import hg
 from mercurial import ui
 
 log = logging.getLogger(__name__)
+
 
 class HgController( BaseUIController ):
     @web.expose
@@ -25,6 +24,7 @@ class HgController( BaseUIController ):
         hg_version = mercurial.__version__.version
         cmd = kwd.get( 'cmd', None )
         hgweb_config = trans.app.hgweb_config_manager.hgweb_config
+
         def make_web_app():
             hgwebapp = hgwebdir( hgweb_config )
             return hgwebapp
@@ -63,9 +63,9 @@ class HgController( BaseUIController ):
                                                                                      persist=False )
                         error_message, status = rmm.set_repository_metadata( trans.request.host )
                         if status == 'ok' and error_message:
-                            log.debug( "Successfully reset metadata on repository %s owned by %s, but encountered problem: %s" % \
+                            log.debug( "Successfully reset metadata on repository %s owned by %s, but encountered problem: %s" %
                                        ( str( repository.name ), str( repository.user.username ), error_message ) )
                         elif status != 'ok' and error_message:
-                            log.debug( "Error resetting metadata on repository %s owned by %s: %s" % \
+                            log.debug( "Error resetting metadata on repository %s owned by %s: %s" %
                                        ( str( repository.name ), str( repository.user.username ), error_message ) )
         return wsgi_app

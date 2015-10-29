@@ -7,6 +7,7 @@ import os
 from galaxy.util.json import dumps
 from galaxy.util import bunch
 
+
 class ProvidesAppContext( object ):
     """ For transaction-like objects to provide Galaxy convience layer for
     database and event handling.
@@ -139,12 +140,13 @@ class ProvidesUserContext( object ):
     @property
     def user_ftp_dir( self ):
         identifier = self.app.config.ftp_upload_dir_identifier
-        if self.app.config.ftp_upload_subdir is None:
-            return os.path.join( self.app.config.ftp_upload_dir, getattr(self.user, identifier) )
+        base_dir = self.app.config.ftp_upload_dir
+        if base_dir is None:
+            return None
+        elif self.app.config.ftp_upload_subdir is None:
+            return os.path.join( base_dir, getattr(self.user, identifier) )
         else:
-            return os.path.join( self.app.config.ftp_upload_dir, getattr(self.user, identifier), self.app.config.ftp_upload_subdir)
-#        return os.path.join( self.app.config.ftp_upload_dir, getattr( self.user, identifier ) )
-
+            return os.path.join( base_dir, getattr(self.user, identifier), self.app.config.ftp_upload_subdir)
 
 class ProvidesHistoryContext( object ):
     """ For transaction-like objects to provide Galaxy convience layer for
@@ -161,7 +163,7 @@ class ProvidesHistoryContext( object ):
         # If no history, return None.
         if self.history is None:
             return None
-#TODO: when does this happen? is it Bunch or util.bunch.Bunch?
+        # TODO: when does this happen? is it Bunch or util.bunch.Bunch?
         if isinstance( self.history, bunch.Bunch ):
             # The API presents a Bunch for a history.  Until the API is
             # more fully featured for handling this, also return None.

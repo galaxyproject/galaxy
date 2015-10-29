@@ -1,15 +1,13 @@
-from sqlalchemy import *
-from migrate import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Numeric, String, Table, TEXT
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString
 
-import logging
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
-
 metadata = MetaData()
 
 # Tables as of changeset 1464:c7acaa1bb88f
@@ -138,8 +136,7 @@ GalaxySession_table = Table( "galaxy_session", metadata,
     Column( "current_history_id", Integer, ForeignKey( "history.id" ), nullable=True ),
     Column( "session_key", TrimmedString( 255 ), index=True, unique=True ),
     Column( "is_valid", Boolean, default=False ),
-    Column( "prev_session_id", Integer )
-    )
+    Column( "prev_session_id", Integer ) )
 
 GalaxySessionToHistoryAssociation_table = Table( "galaxy_session_to_history", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -155,8 +152,7 @@ StoredWorkflow_table = Table( "stored_workflow", metadata,
     Column( "latest_workflow_id", Integer,
             ForeignKey( "workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk' ), index=True ),
     Column( "name", TEXT ),
-    Column( "deleted", Boolean, default=False ),
-    )
+    Column( "deleted", Boolean, default=False ) )
 
 Workflow_table = Table( "workflow", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -165,8 +161,7 @@ Workflow_table = Table( "workflow", metadata,
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True, nullable=False ),
     Column( "name", TEXT ),
     Column( "has_cycles", Boolean ),
-    Column( "has_errors", Boolean )
-    )
+    Column( "has_errors", Boolean ) )
 
 WorkflowStep_table = Table( "workflow_step", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -180,22 +175,19 @@ WorkflowStep_table = Table( "workflow_step", metadata,
     Column( "tool_errors", JSONType ),
     Column( "position", JSONType ),
     Column( "config", JSONType ),
-    Column( "order_index", Integer )
-    )
+    Column( "order_index", Integer ) )
 
 WorkflowStepConnection_table = Table( "workflow_step_connection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "output_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
     Column( "input_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
     Column( "output_name", TEXT ),
-    Column( "input_name", TEXT)
-    )
+    Column( "input_name", TEXT) )
 
 StoredWorkflowUserShareAssociation_table = Table( "stored_workflow_user_share_connection", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
-    )
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
 
 StoredWorkflowMenuEntry_table = Table( "stored_workflow_menu_entry", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -203,11 +195,7 @@ StoredWorkflowMenuEntry_table = Table( "stored_workflow_menu_entry", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "order_index", Integer ) )
 
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.create_all()
-
-## def downgrade(migrate_engine):
-##    metadata.bind = migrate_engine
-##     # Operations to reverse the above upgrade go here.
-##     pass

@@ -82,6 +82,11 @@ class ToolSource(object):
         """
 
     @abstractmethod
+    def parse_environment_variables(self):
+        """ Return environment variable templates to expose.
+        """
+
+    @abstractmethod
     def parse_interpreter(self):
         """ Return string containing the interpreter to prepend to the command
         (for instance this might be 'python' to run a Python wrapper located
@@ -202,7 +207,7 @@ class InputSource(object):
         return self.get("label")
 
     def parse_help(self):
-        return self.get("label")
+        return self.get("help")
 
     def parse_sanitizer_elem(self):
         """ Return an XML description of sanitizers. This is a stop gap

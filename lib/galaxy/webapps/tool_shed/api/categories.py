@@ -1,12 +1,10 @@
 import logging
-import os
 
 from galaxy import util
 from galaxy import web
 from galaxy import exceptions
 from galaxy.web import require_admin as require_admin
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 import tool_shed.util.shed_util_common as suc
@@ -36,7 +34,7 @@ class CategoriesController( BaseAPIController ):
         Content-Disposition: form-data; name="name" Category_Name
         Content-Disposition: form-data; name="description" Category_Description
         """
-        category_dict = dict( message = '', status = 'ok' )
+        category_dict = dict( message='', status='ok' )
         name = payload.get( 'name', '' )
         if name:
             description = payload.get( 'description', '' )
@@ -65,7 +63,7 @@ class CategoriesController( BaseAPIController ):
         """
         GET /api/categories
         Return a list of dictionaries that contain information about each Category.
-        
+
         :param deleted: flag used to include deleted categories
 
         Example: GET localhost:9009/api/categories
@@ -92,13 +90,13 @@ class CategoriesController( BaseAPIController ):
         Return a dictionary of information about a category.
 
         :param id: the encoded id of the Category object
-        
+
         Example: GET localhost:9009/api/categories/f9cad7b01a472135
         """
         category = suc.get_category( trans.app, id )
         if category is None:
-            category_dict = dict( message = 'Unable to locate category record for id %s.' % ( str( id ) ),
-                                  status = 'error' )
+            category_dict = dict( message='Unable to locate category record for id %s.' % ( str( id ) ),
+                                  status='error' )
             return category_dict
         category_dict = category.to_dict( view='element',
                                           value_mapper=self.__get_value_mapper( trans ) )

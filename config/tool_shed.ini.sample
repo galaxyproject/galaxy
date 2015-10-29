@@ -5,17 +5,19 @@
 use = egg:Paste#http
 port = 9009
 
-# The address on which to listen.  By default, only listen to localhost (the tool shed will not
-# be accessible over the network).  Use '0.0.0.0' to listen on all available network interfaces.
+# The address on which to listen. By default, only listen to localhost
+# (the Tool Shed will not be accessible over the network).
+# Use '0.0.0.0' to listen on all available network interfaces.
 #host = 0.0.0.0
 host = 127.0.0.1
 
 use_threadpool = true
 threadpool_workers = 10
-# Set the number of seconds a thread can work before you should kill it (assuming it will never finish) to 3 hours.
+# Set the number of seconds a thread can work before you should kill it
+# (assuming it will never finish) to 3 hours.
 threadpool_kill_thread_limit = 10800
 
-# ---- Galaxy Webapps Community Interface -------------------------------------------------
+# ---- Galaxy Tool Shed -----------------------------------------------------
 
 [app:main]
 
@@ -25,15 +27,18 @@ log_level = DEBUG
 
 # Database connection
 database_file = database/community.sqlite
-# You may use a SQLAlchemy connection string to specify an external database instead
+# You may use a SQLAlchemy connection string to specify
+# an external database instead
 #database_connection = postgres:///community_test?host=/var/run/postgresql
 
-# Where the hgweb.config file is stored.  The default is the Galaxy installation directory.
+# Where the hgweb.config file is stored.
+# The default is the Galaxy installation directory.
 #hgweb_config_dir = None
 
 # Where tool shed repositories are stored.
 file_path = database/community_files
-# Temporary storage for additional datasets, this should be shared through the cluster
+# Temporary storage for additional datasets,
+# this should be shared through the cluster
 new_file_path = database/tmp
 
 # File containing old-style genome builds
@@ -53,6 +58,24 @@ session_secret = changethisinproduction
 # the following two config options.
 #toolshed_search_on = True
 #whoosh_index_dir = database/toolshed_whoosh_indexes
+
+# The following boosts are used to customize this instance's TS search.
+# The higher the boost, the more importance the scoring algorithm gives to the
+# given field.
+
+# For searching repositories at /api/repositories:
+#repo_name_boost = 0.9
+#repo_description_boost = 0.6
+#repo_long_description_boost = 0.5
+#repo_homepage_url_boost = 0.3
+#repo_remote_repository_url_boost = 0.2
+#repo_owner_username_boost = 0.3
+
+# For searching tools at /api/tools
+#tool_name_boost = 1.2
+#tool_description_boost = 0.6
+#tool_help_boost = 0.4
+#tool_repo_owner_username = 0.3
 
 # -- Analytics
 
@@ -78,8 +101,8 @@ id_secret = changethisinproductiontoo
 # If use_remote_user is enabled, anyone who can log in to the Galaxy host may
 # impersonate any other user by simply sending the appropriate header. Thus a
 # secret shared between the upstream proxy server, and Galaxy is required.
-# If anyone other than the Galaxy user is using the server, then apache/nginx should
-# pass a value in the header 'GX_SECRET' that is identical the one below
+# If anyone other than the Galaxy user is using the server, then apache/nginx
+# should pass a value in the header 'GX_SECRET' that is identical the one below
 #remote_user_secret = changethisinproductiontoo
 
 # Configuration for debugging middleware
@@ -98,7 +121,11 @@ require_login = False
 # path to sendmail
 sendmail_path = /usr/sbin/sendmail
 
-# Number of saved tool test results produced by the install and test framework for each repository.
+# Enables displaying of test run results on repo pages.
+#display_legacy_test_results = True
+
+# Number of saved tool test results produced by the install and test
+# framework for each repository.
 #num_tool_test_results_saved = 5
 
 # For use by email messages sent from the tool shed
@@ -108,11 +135,12 @@ sendmail_path = /usr/sbin/sendmail
 # The URL linked by the "Support" link in the "Help" menu.
 #support_url = https://wiki.galaxyproject.org/Support
 
-# Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
-## use_heartbeat = True
+# Write thread status periodically to 'heartbeat.log' (careful, uses disk
+#  space rapidly!)
+#use_heartbeat = True
 
 # Profiling middleware (cProfile based)
-## use_profile = True
+#use_profile = True
 
 # Enable creation of Galaxy flavor Docker Image
 #enable_galaxy_flavor_docker_image = False

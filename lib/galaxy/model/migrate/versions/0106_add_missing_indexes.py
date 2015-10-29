@@ -1,23 +1,13 @@
 """
 Migration script to create missing indexes.  Adding new columns to existing tables via SQLAlchemy does not create the index, even if the column definition includes index=True.
 """
+import logging
 
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy import Index, MetaData, Table
 from sqlalchemy.engine import reflection
-from migrate import *
-from migrate.changeset import *
 
-import sys, logging
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler( sys.stdout )
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter( format )
-handler.setFormatter( formatter )
-log.addHandler( handler )
-
 metadata = MetaData()
 
 indexes = (
@@ -42,7 +32,7 @@ indexes = (
     ( "ix_job_imported", 'job', 'imported' ),                                                   # 0051
     ( "ix_request_notification", 'request', 'notification' ),                                   # 0057
     ( "ix_sd_external_service_id", 'sample_dataset', 'external_service_id' ),                   # 0068
-    ( "ix_icda_ldda_parent_id", 'implicitly_converted_dataset_association', 'ldda_parent_id' ), # 0073
+    ( "ix_icda_ldda_parent_id", 'implicitly_converted_dataset_association', 'ldda_parent_id' ),  # 0073
     ( "ix_library_dataset_purged", 'library_dataset', 'purged' ),                               # 0074
     ( "ix_run_subindex", 'run', 'subindex' ),                                                   # 0075
     ( "ix_history_dataset_association_purged", 'history_dataset_association', 'purged' ),       # 0078
@@ -57,6 +47,7 @@ indexes = (
     ( "ix_galaxy_user_email", 'galaxy_user', 'email' )                                          # 0106
 )
 
+
 def upgrade(migrate_engine):
     print __doc__
     metadata.bind = migrate_engine
@@ -70,9 +61,10 @@ def upgrade(migrate_engine):
             if ix not in [ins_ix.get('name', None) for ins_ix in insp.get_indexes(table)]:
                 Index( ix, t.c[col] ).create()
             else:
-                pass #Index already exists, don't recreate.
+                pass  # Index already exists, don't recreate.
         except Exception, e:
             log.error("Unable to create index '%s': %s" % (ix, str(e)))
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

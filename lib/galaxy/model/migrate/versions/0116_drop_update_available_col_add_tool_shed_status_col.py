@@ -1,17 +1,16 @@
 """
 Migration script to drop the update_available Boolean column and replace it with the tool_shed_status JSONType column in the tool_shed_repository table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-import sys, logging
-from galaxy.model.custom_types import *
-from sqlalchemy.exc import *
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
+from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy.exc import NoSuchTableError
+
+from galaxy.model.custom_types import JSONType
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
 handler = logging.StreamHandler( sys.stdout )
@@ -22,11 +21,13 @@ log.addHandler( handler )
 
 metadata = MetaData()
 
+
 def default_false( migrate_engine ):
-    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+    if migrate_engine.name in ['mysql', 'sqlite']:
         return "0"
-    elif migrate_engine.name in [ 'postgresql', 'postgres' ]:
+    elif migrate_engine.name in [ 'postgres', 'postgresql' ]:
         return "false"
+
 
 def upgrade( migrate_engine ):
     metadata.bind = migrate_engine
@@ -51,6 +52,7 @@ def upgrade( migrate_engine ):
             assert c is ToolShedRepository_table.c.tool_shed_status
         except Exception, e:
             print "Adding tool_shed_status column to the tool_shed_repository table failed: %s" % str( e )
+
 
 def downgrade( migrate_engine ):
     metadata.bind = migrate_engine

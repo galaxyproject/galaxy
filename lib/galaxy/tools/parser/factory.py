@@ -1,11 +1,5 @@
 from __future__ import absolute_import
 
-try:
-    from galaxy import eggs
-    eggs.require("PyYAML")
-except ImportError:
-    pass
-
 import yaml
 
 from .yaml import YamlToolSource

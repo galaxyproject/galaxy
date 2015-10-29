@@ -1,27 +1,28 @@
-imp_exp Package
-===============
-
-:mod:`imp_exp` Package
-----------------------
+galaxy.tools.imp_exp package
+============================
 
 .. automodule:: galaxy.tools.imp_exp
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`export_history` Module
-----------------------------
+Submodules
+----------
+
+galaxy.tools.imp_exp.export_history module
+------------------------------------------
 
 .. automodule:: galaxy.tools.imp_exp.export_history
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`unpack_tar_gz_archive` Module
------------------------------------
+galaxy.tools.imp_exp.unpack_tar_gz_archive module
+-------------------------------------------------
 
 .. automodule:: galaxy.tools.imp_exp.unpack_tar_gz_archive
     :members:
     :undoc-members:
     :show-inheritance:
+
 

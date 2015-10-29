@@ -21,7 +21,7 @@
             <ul>
             %for data_manager_id, data_manager in sorted( data_managers.data_managers.iteritems(), key=lambda x:x[1].name ):
                 <li>
-                    <a href="${ h.url_for( controller='tool_runner', action='index', tool_id=data_manager.tool.id ) }"><strong>${ data_manager.name | h }</strong></a> - ${ data_manager.description | h }
+                    <a href="${ h.url_for( controller='root', tool_id=data_manager.tool.id ) }" target="_blank"><strong>${ data_manager.name | h }</strong></a> - ${ data_manager.description | h }
                 </li>
                 <p/>
             %endfor

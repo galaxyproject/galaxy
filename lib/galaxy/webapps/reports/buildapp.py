@@ -2,16 +2,17 @@
 Provides factory methods to assemble the Galaxy web application
 """
 
-import logging, atexit
-import os, os.path
+import logging
+import atexit
+import os
 
 from inspect import isclass
 
 from paste import httpexceptions
 
-import pkg_resources
-
+from galaxy.config import process_is_uwsgi
 from galaxy.util import asbool
+from galaxy.webapps.util import build_template_error_formatters
 
 import galaxy.model
 import galaxy.model.mapping
@@ -20,8 +21,10 @@ from galaxy.util.properties import load_app_properties
 
 log = logging.getLogger( __name__ )
 
+
 class ReportsWebApplication( galaxy.web.framework.webapp.WebApplication ):
     pass
+
 
 def add_ui_controllers( webapp, app ):
     """
@@ -44,6 +47,7 @@ def add_ui_controllers( webapp, app ):
                 if isclass( T ) and T is not BaseUIController and issubclass( T, BaseUIController ):
                     webapp.add_ui_controller( name, T( app ) )
 
+
 def app_factory( global_conf, **kwargs ):
     """Return a wsgi application serving the root object"""
     # Create the Galaxy application unless passed in
@@ -54,14 +58,14 @@ def app_factory( global_conf, **kwargs ):
         app = kwargs.pop( 'app' )
     else:
         from galaxy.webapps.reports.app import UniverseApplication
-        app = UniverseApplication( global_conf = global_conf, **kwargs )
+        app = UniverseApplication( global_conf=global_conf, **kwargs )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = ReportsWebApplication( app, session_cookie='galaxyreportssession', name="reports" )
     add_ui_controllers( webapp, app )
     # These two routes handle our simple needs at the moment
-    webapp.add_route( '/:controller/:action', controller="root", action='index' )
-    webapp.add_route( '/:action', controller='root', action='index' )
+    webapp.add_route( '/{controller}/{action}', controller="root", action='index' )
+    webapp.add_route( '/{action}', controller='root', action='index' )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
@@ -114,16 +118,18 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             from paste.debug import prints
             app = prints.PrintDebugMiddleware( app, conf )
             log.debug( "Enabling 'print debug' middleware" )
-    if debug and asbool( conf.get( 'use_interactive', False ) ):
+    if debug and asbool( conf.get( 'use_interactive', False ) ) and not process_is_uwsgi:
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
         # middleware.
-        pkg_resources.require( "WebError" )
         from weberror import evalexception
         app = evalexception.EvalException( app, conf,
                                            templating_formatters=build_template_error_formatters() )
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
+        if debug and asbool( conf.get( 'use_interactive', False ) ) and process_is_uwsgi:
+            log.error("Interactive debugging middleware is enabled in your configuration "
+                      "but this is a uwsgi process.  Refusing to wrap in interactive error middleware.")
         # Not in interactive debug mode, just use the regular error middleware
         from paste.exceptions import errormiddleware
         app = errormiddleware.ErrorMiddleware( app, conf )
@@ -139,23 +145,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     log.debug( "Enabling 'x-forwarded-host' middleware" )
     return app
 
+
 def wrap_in_static( app, global_conf, **local_conf ):
     urlmap, _ = galaxy.web.framework.webapp.build_url_map( app, global_conf, local_conf )
     return urlmap
-
-def build_template_error_formatters():
-    """
-    Build a list of template error formatters for WebError. When an error
-    occurs, WebError pass the exception to each function in this list until
-    one returns a value, which will be displayed on the error page.
-    """
-    formatters = []
-    # Formatter for mako
-    import mako.exceptions
-    def mako_html_data( exc_value ):
-        if isinstance( exc_value, ( mako.exceptions.CompileException, mako.exceptions.SyntaxException ) ):
-            return mako.exceptions.html_error_template().render( full=False, css=False )
-        if isinstance( exc_value, AttributeError ) and exc_value.args[0].startswith( "'Undefined' object has no attribute" ):
-            return mako.exceptions.html_error_template().render( full=False, css=False )
-    formatters.append( mako_html_data )
-    return formatters

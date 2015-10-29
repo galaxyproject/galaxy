@@ -4,16 +4,8 @@ All message queues used by Galaxy
 
 """
 
-import sys
+from galaxy.config import process_is_uwsgi
 
-from galaxy import eggs
-
-eggs.require('anyjson')
-if sys.version_info < (2, 7, 0):
-    # Kombu requires importlib and ordereddict to function in Python 2.6.
-    eggs.require('importlib')
-    eggs.require('ordereddict')
-eggs.require('kombu')
 from kombu import Exchange, Queue, Connection
 
 ALL_CONTROL = "control.*"
@@ -28,7 +20,7 @@ def all_control_queues_for_declare(config):
     Refactor later to actually persist this somewhere instead of building it repeatedly.
     """
     possible_uwsgi_queues = []
-    if config.is_uwsgi:
+    if process_is_uwsgi:
         import uwsgi
         possible_uwsgi_queues = [Queue("control.%s.%s" % (config.server_name.split('.')[0], wkr['id']), galaxy_exchange, routing_key='control') for wkr in uwsgi.workers()]
     return possible_uwsgi_queues + [Queue('control.%s' % q, galaxy_exchange, routing_key='control') for q in config.server_names]

@@ -4,16 +4,16 @@ adds the same to the 'sample' table. This also adds a 'datatx' column to request
 to store the sequencer login information. Finally, this adds a 'dataset_files' column to
 the sample table.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-import sys, logging
-from galaxy.model.custom_types import *
-from sqlalchemy.exc import *
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy.exc import NoSuchTableError
+
+from galaxy.model.custom_types import JSONType, TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -23,6 +23,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -56,32 +57,23 @@ def upgrade(migrate_engine):
         if migrate_engine.name == 'sqlite':
             # create a temporary table
             RequestTemp_table = Table( 'request_temp', metadata,
-                                        Column( "id", Integer, primary_key=True),
-                                        Column( "create_time", DateTime, default=now ),
-                                        Column( "update_time", DateTime, default=now, onupdate=now ),
-                                        Column( "name", TrimmedString( 255 ), nullable=False ),
-                                        Column( "desc", TEXT ),
-                                        Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
-                                        Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
-                                        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-                                        Column( "deleted", Boolean, index=True, default=False ) )
+                                       Column( "id", Integer, primary_key=True),
+                                       Column( "create_time", DateTime, default=now ),
+                                       Column( "update_time", DateTime, default=now, onupdate=now ),
+                                       Column( "name", TrimmedString( 255 ), nullable=False ),
+                                       Column( "desc", TEXT ),
+                                       Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
+                                       Column( "request_type_id", Integer, ForeignKey( "request_type.id" ), index=True ),
+                                       Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                       Column( "deleted", Boolean, index=True, default=False ) )
             try:
                 RequestTemp_table.create()
             except Exception, e:
                 log.debug( "Creating request_temp table failed: %s" % str( e ) )
             # insert all the rows from the request table to the request_temp table
-            cmd = \
-                "INSERT INTO request_temp " + \
-                "SELECT id," + \
-                    "create_time," + \
-                    "update_time," + \
-                    "name," + \
-                    "desc," + \
-                    "form_values_id," + \
-                    "request_type_id," + \
-                    "user_id," + \
-                    "deleted " + \
-                "FROM request;"
+            cmd = "INSERT INTO request_temp SELECT id, create_time, " + \
+                "update_time, name, desc, form_values_id, request_type_id, " + \
+                "user_id, deleted FROM request;"
             migrate_engine.execute( cmd )
             # delete the 'request' table
             try:
@@ -150,6 +142,7 @@ def upgrade(migrate_engine):
                 assert col is Sample_table.c.folder_id
             except Exception, e:
                 log.debug( "Adding column 'folder_id' to sample table failed: %s" % ( str( e ) ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

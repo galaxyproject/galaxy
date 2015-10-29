@@ -18,6 +18,7 @@ from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
+from galaxy.tools import global_tool_errors
 from tool_shed.util import common_util
 from tool_shed.util import encoding_util
 from tool_shed.util.web_util import escape
@@ -778,9 +779,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     tool_dependencies_dict = {}
                     repository_name = elem.get( 'name' )
                     changeset_revision = elem.get( 'changeset_revision' )
-                    url = '%s/repository/get_tool_dependencies?name=%s&owner=devteam&changeset_revision=%s' % \
-                        ( tool_shed_url, repository_name, changeset_revision )
-                    text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+                    params = dict( name=repository_name, owner='devteam', changeset_revision=changeset_revision )
+                    pathspec = [ 'repository', 'get_tool_dependencies' ]
+                    text = common_util.tool_shed_get( trans.app, tool_shed_url, pathspec=pathspec, params=params )
                     if text:
                         tool_dependencies_dict = encoding_util.tool_shed_decode( text )
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():
@@ -826,6 +827,11 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
+    def tool_errors( self, trans, **kwd ):
+        return trans.fill_template('admin/tool_errors.mako', tool_errors=global_tool_errors.error_stack)
+
+    @web.expose
+    @web.require_admin
     def view_datatypes_registry( self, trans, **kwd ):
         message = escape( galaxy.util.restore_text( kwd.get( 'message', '' ) ) )
         status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
@@ -846,7 +852,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def reload_display_application( self, trans, **kwd ):
-        galaxy.queue_worker.send_control_task(trans,
+        galaxy.queue_worker.send_control_task(trans.app,
                                               'reload_display_application',
                                               noop_self=True,
                                               kwargs={'display_application_ids': kwd.get( 'id' )} )

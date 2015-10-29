@@ -3,16 +3,17 @@ Drops the tool, tool_category_association, event, tool_event_association, tool_r
 tool_tag_association and tool_annotation_association tables since they are no longer used in the
 next-gen tool shed.
 """
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from sqlalchemy.exc import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy.exc import NoSuchTableError
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel( logging.DEBUG )
 handler = logging.StreamHandler( sys.stdout )
@@ -21,10 +22,8 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
-
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -94,6 +93,8 @@ def upgrade(migrate_engine):
         Tool_table.drop()
     except Exception, e:
         log.debug( "Dropping tool table failed: %s" % str( e ) )
+
+
 def downgrade(migrate_engine):
     # Load existing tables
     metadata.bind = migrate_engine
@@ -101,61 +102,61 @@ def downgrade(migrate_engine):
     # We've lost all of our data, so downgrading is useless. However, we'll
     # at least re-create the dropped tables.
     Event_table = Table( 'event', metadata,
-        Column( "id", Integer, primary_key=True ),
-        Column( "create_time", DateTime, default=now ),
-        Column( "update_time", DateTime, default=now, onupdate=now ),
-        Column( "state", TrimmedString( 255 ), index=True ),
-        Column( "comment", TEXT ) )
+                         Column( "id", Integer, primary_key=True ),
+                         Column( "create_time", DateTime, default=now ),
+                         Column( "update_time", DateTime, default=now, onupdate=now ),
+                         Column( "state", TrimmedString( 255 ), index=True ),
+                         Column( "comment", TEXT ) )
 
     Tool_table = Table( "tool", metadata,
-        Column( "id", Integer, primary_key=True ),
-        Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
-        Column( "tool_id", TrimmedString( 255 ), index=True ),
-        Column( "create_time", DateTime, default=now ),
-        Column( "update_time", DateTime, default=now, onupdate=now ),
-        Column( "newer_version_id", Integer, ForeignKey( "tool.id" ), nullable=True ),
-        Column( "name", TrimmedString( 255 ), index=True ),
-        Column( "description" , TEXT ),
-        Column( "user_description" , TEXT ),
-        Column( "version", TrimmedString( 255 ) ),
-        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-        Column( "external_filename" , TEXT ),
-        Column( "deleted", Boolean, index=True, default=False ),
-        Column( "suite", Boolean, default=False, index=True ) )
+                        Column( "id", Integer, primary_key=True ),
+                        Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
+                        Column( "tool_id", TrimmedString( 255 ), index=True ),
+                        Column( "create_time", DateTime, default=now ),
+                        Column( "update_time", DateTime, default=now, onupdate=now ),
+                        Column( "newer_version_id", Integer, ForeignKey( "tool.id" ), nullable=True ),
+                        Column( "name", TrimmedString( 255 ), index=True ),
+                        Column( "description" , TEXT ),
+                        Column( "user_description" , TEXT ),
+                        Column( "version", TrimmedString( 255 ) ),
+                        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                        Column( "external_filename" , TEXT ),
+                        Column( "deleted", Boolean, index=True, default=False ),
+                        Column( "suite", Boolean, default=False, index=True ) )
 
     ToolCategoryAssociation_table = Table( "tool_category_association", metadata,
-        Column( "id", Integer, primary_key=True ),
-        Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-        Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
+                                           Column( "id", Integer, primary_key=True ),
+                                           Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
+                                           Column( "category_id", Integer, ForeignKey( "category.id" ), index=True ) )
 
     ToolEventAssociation_table = Table( "tool_event_association", metadata,
-        Column( "id", Integer, primary_key=True ),
-        Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-        Column( "event_id", Integer, ForeignKey( "event.id" ), index=True ) )
+                                        Column( "id", Integer, primary_key=True ),
+                                        Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
+                                        Column( "event_id", Integer, ForeignKey( "event.id" ), index=True ) )
 
     ToolRatingAssociation_table = Table( "tool_rating_association", metadata,
-        Column( "id", Integer, primary_key=True ),
-        Column( "create_time", DateTime, default=now ),
-        Column( "update_time", DateTime, default=now, onupdate=now ),
-        Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-        Column( "rating", Integer, index=True ),
-        Column( "comment", TEXT ) )
+                                         Column( "id", Integer, primary_key=True ),
+                                         Column( "create_time", DateTime, default=now ),
+                                         Column( "update_time", DateTime, default=now, onupdate=now ),
+                                         Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
+                                         Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                         Column( "rating", Integer, index=True ),
+                                         Column( "comment", TEXT ) )
 
     ToolTagAssociation_table = Table( "tool_tag_association", metadata,
-        Column( "id", Integer, primary_key=True ),
-        Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-        Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
-        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-        Column( "user_tname", TrimmedString(255), index=True),
-        Column( "value", TrimmedString(255), index=True),
-        Column( "user_value", TrimmedString(255), index=True) )
+                                      Column( "id", Integer, primary_key=True ),
+                                      Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
+                                      Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
+                                      Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                      Column( "user_tname", TrimmedString(255), index=True),
+                                      Column( "value", TrimmedString(255), index=True),
+                                      Column( "user_value", TrimmedString(255), index=True) )
 
     ToolAnnotationAssociation_table = Table( "tool_annotation_association", metadata,
-        Column( "id", Integer, primary_key=True ),
-        Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
-        Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-        Column( "annotation", TEXT, index=True) )
+                                             Column( "id", Integer, primary_key=True ),
+                                             Column( "tool_id", Integer, ForeignKey( "tool.id" ), index=True ),
+                                             Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                                             Column( "annotation", TEXT, index=True) )
 
     # Create the event table
     try:

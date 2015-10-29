@@ -1,24 +1,19 @@
-from .helpers import wait_on_state
-
-from base import api
+import time
+import yaml
 from json import dumps
 from collections import namedtuple
 from uuid import uuid4
 
-import time
-
-import yaml
+from base import api
+from galaxy.exceptions import error_codes
 from .helpers import WorkflowPopulator
 from .helpers import DatasetPopulator
 from .helpers import DatasetCollectionPopulator
 from .helpers import skip_without_tool
-
 from .yaml_to_workflow import yaml_to_workflow
 
 from requests import delete
 from requests import put
-
-from galaxy.exceptions import error_codes
 
 
 class BaseWorkflowsApiTestCase( api.ApiTestCase ):
@@ -486,6 +481,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         self._assert_status_code_is( run_workflow_response, 200 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
 
+    @skip_without_tool( "collection_creates_pair" )
     def test_workflow_run_output_collections(self):
         workflow_id = self._upload_yaml_workflow("""
 - label: text_input
@@ -510,6 +506,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         self.assertEquals("a\nc\nb\nd\n", self.dataset_populator.get_history_dataset_content( history_id, hid=0 ) )
 
+    @skip_without_tool( "collection_creates_pair" )
     def test_workflow_run_output_collection_mapping(self):
         workflow_id = self._upload_yaml_workflow("""
 - type: input_collection
@@ -537,6 +534,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
         self.assertEquals("a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content( history_id, hid=0 ) )
 
+    @skip_without_tool( "collection_split_on_column" )
     def test_workflow_run_dynamic_output_collections(self):
         history_id = self.dataset_populator.new_history()
         workflow_id = self._upload_yaml_workflow("""
@@ -577,6 +575,48 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         content = self.dataset_populator.get_history_dataset_content( history_id, hid=0 )
         self.assertEquals("10.0\n30.0\n20.0\n40.0\n", content )
 
+    @skip_without_tool( "collection_split_on_column" )
+    @skip_without_tool( "min_repeat" )
+    def test_workflow_run_dynamic_output_collections_2( self ):
+        # A more advanced output collection workflow, testing regression of
+        # https://github.com/galaxyproject/galaxy/issues/776
+        history_id = self.dataset_populator.new_history()
+        workflow_id = self._upload_yaml_workflow("""
+- label: test_input_1
+  type: input
+- label: test_input_2
+  type: input
+- label: test_input_3
+  type: input
+- label: split_up
+  tool_id: collection_split_on_column
+  state:
+    input1:
+      $link: test_input_2
+- label: min_repeat
+  tool_id: min_repeat
+  state:
+    queries:
+      - input:
+          $link: test_input_1
+    queries2:
+      - input2:
+          $link: split_up#split_output
+""")
+        hda1 = self.dataset_populator.new_dataset( history_id, content="samp1\t10.0\nsamp2\t20.0\n" )
+        hda2 = self.dataset_populator.new_dataset( history_id, content="samp1\t20.0\nsamp2\t40.0\n" )
+        hda3 = self.dataset_populator.new_dataset( history_id, content="samp1\t30.0\nsamp2\t60.0\n" )
+        self.dataset_populator.wait_for_history( history_id, assert_ok=True )
+        inputs = {
+            '0': self._ds_entry(hda1),
+            '1': self._ds_entry(hda2),
+            '2': self._ds_entry(hda3),
+        }
+        invocation_id = self.__invoke_workflow( history_id, workflow_id, inputs )
+        self.wait_for_invocation_and_jobs( history_id, workflow_id, invocation_id )
+        content = self.dataset_populator.get_history_dataset_content( history_id, hid=7 )
+        self.assertEquals(content.strip(), "samp1\t10.0\nsamp2\t20.0")
+
     def test_workflow_request( self ):
         workflow = self.workflow_populator.load_workflow( name="test_for_queue" )
         workflow_request, history_id = self._setup_workflow_run( workflow )
@@ -589,6 +629,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         time.sleep( 5 )
         self.dataset_populator.wait_for_history( history_id, assert_ok=True )
 
+    @skip_without_tool( "cat" )
     def test_workflow_pause( self ):
         workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_pause" )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
@@ -614,6 +655,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
         assert invocation[ 'state' ] == 'scheduled', invocation
 
+    @skip_without_tool( "cat" )
     def test_workflow_pause_cancel( self ):
         workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_pause" )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
@@ -638,6 +680,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         invocation = self._invocation_details( uploaded_workflow_id, invocation_id )
         assert invocation[ 'state' ] == 'cancelled', invocation
 
+    @skip_without_tool( "head" )
     def test_workflow_map_reduce_pause( self ):
         workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_map_reduce_pause" )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
@@ -666,6 +709,7 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
         assert invocation[ 'state' ] == 'scheduled'
         self.assertEquals("reviewed\n1\nreviewed\n4\n", self.dataset_populator.get_history_dataset_content( history_id ) )
 
+    @skip_without_tool( "cat" )
     def test_cancel_workflow_invocation( self ):
         workflow = self.workflow_populator.load_workflow_from_resource( "test_workflow_pause" )
         uploaded_workflow_id = self.workflow_populator.create_workflow( workflow )
@@ -866,6 +910,13 @@ test_data:
         self._assert_status_code_is( run_workflow_response, 200 )
         content = self.dataset_populator.get_history_dataset_details( history_id, wait=True, assert_ok=True )
         assert content[ "name" ] == "foo was replaced", content[ "name" ]
+
+        # Test for regression of previous behavior where runtime post job actions
+        # would be added to the original workflow post job actions.
+        workflow_id = workflow_request["workflow_id"]
+        downloaded_workflow = self._download_workflow( workflow_id )
+        pjas = downloaded_workflow[ "steps" ][ "2" ][ "post_job_actions" ].values()
+        assert len( pjas ) == 0, len( pjas )
 
     @skip_without_tool( "cat1" )
     def test_run_with_delayed_runtime_pja( self ):

@@ -3,12 +3,12 @@ from os import chmod
 from os.path import join
 from os.path import abspath
 
+from logging import getLogger
+log = getLogger( __name__ )
+
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 DEFAULT_SHELL = "/bin/sh"
-
-from logging import getLogger
-log = getLogger( __name__ )
 
 
 def build_command(
@@ -73,9 +73,9 @@ def build_command(
 
 def __externalize_commands(job_wrapper, commands_builder, remote_command_params, script_name="tool_script.sh"):
     local_container_script = join( job_wrapper.working_directory, script_name )
-    fh = file( local_container_script, "w" )
-    fh.write( "#!%s\n%s" % (DEFAULT_SHELL, commands_builder.build()))
-    fh.close()
+    with open( local_container_script, "w" ) as f:
+        script_contents = "#!%s\n%s" % (DEFAULT_SHELL, commands_builder.build())
+        f.write( script_contents )
     chmod( local_container_script, 0755 )
 
     commands = local_container_script
@@ -189,4 +189,4 @@ class CommandsBuilder(object):
             self.append_command(YIELD_CAPTURED_CODE)
         return self.commands
 
-__all__ = [build_command]
+__all__ = [ "build_command" ]

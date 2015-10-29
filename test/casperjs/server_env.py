@@ -3,9 +3,12 @@ Classes to handle fetching the proper environment and urls for the selenium
 tests to run against.
 """
 
-import os
 import logging
+import os
+from json import loads
+
 log = logging.getLogger( __name__ )
+
 
 class TestEnvironment( object ):
     """Provides basic information on the server being tested.
@@ -15,18 +18,18 @@ class TestEnvironment( object ):
     """
     _instance = None
 
-    ENV_PROTOCOL    = None
-    ENV_HOST        = 'GALAXY_TEST_HOST'
-    ENV_PORT        = 'GALAXY_TEST_PORT'
-    ENV_HISTORY_ID  = 'GALAXY_TEST_HISTORY_ID'
-    ENV_FILE_DIR    = 'GALAXY_TEST_FILE_DIR'
+    ENV_PROTOCOL = None
+    ENV_HOST = 'GALAXY_TEST_HOST'
+    ENV_PORT = 'GALAXY_TEST_PORT'
+    ENV_HISTORY_ID = 'GALAXY_TEST_HISTORY_ID'
+    ENV_FILE_DIR = 'GALAXY_TEST_FILE_DIR'
     ENV_TOOL_SHED_TEST_FILE = 'GALAXY_TOOL_SHED_TEST_FILE'
-    ENV_SAVED_FILES_DIR = 'GALAXY_TEST_SAVE' # AKA: twilltestcase.keepOutdir
+    ENV_SAVED_FILES_DIR = 'GALAXY_TEST_SAVE'  # AKA: twilltestcase.keepOutdir
     ENV_DEBUG_THESE_TESTS = 'GALAXY_DEBUG_THESE_TESTS'
 
     DEFAULT_PROTOCOL = 'http'
-    DEFAULT_HOST    = 'localhost'
-    DEFAULT_PORT    = '8080'
+    DEFAULT_HOST = 'localhost'
+    DEFAULT_PORT = '8080'
 
     @classmethod
     def instance( cls, config=None ):
@@ -43,13 +46,13 @@ class TestEnvironment( object ):
         self.config = env_config_dict or {}
 
         self.protocol = self._get_setting_from_config_or_env(
-            'protocol', self.ENV_PROTOCOL, self.DEFAULT_PROTOCOL ) #TODO: required=True )
+            'protocol', self.ENV_PROTOCOL, self.DEFAULT_PROTOCOL )  # TODO: required=True )
         self.host = self._get_setting_from_config_or_env(
-            'host', self.ENV_HOST, self.DEFAULT_HOST ) #TODO: required=True )
+            'host', self.ENV_HOST, self.DEFAULT_HOST )  # TODO: required=True )
         self.port = self._get_setting_from_config_or_env(
-            'port', self.ENV_PORT, self.DEFAULT_PORT ) #TODO: required=True )
+            'port', self.ENV_PORT, self.DEFAULT_PORT )  # TODO: required=True )
 
-        #TODO: move these setters/init'rs into a parser dict
+        # TODO: move these setters/init'rs into a parser dict
         self.history_id = self._get_setting_from_config_or_env(
             'history_id', self.ENV_HISTORY_ID )
         self.file_dir = self._get_setting_from_config_or_env(
@@ -73,7 +76,7 @@ class TestEnvironment( object ):
 
     def as_dict( self, attributes=None ):
         if not attributes:
-            #TODO:?? raise to class scope?
+            # TODO:?? raise to class scope?
             attributes = [ 'protocol', 'host', 'port', 'history_id', 'file_dir',
                            'tool_shed_test_file', 'shed_tools_dict', 'saved_output_dir', 'debug_these_tests' ]
         this_dict = {}
@@ -134,7 +137,7 @@ class TestEnvironment( object ):
     def url( self ):
         """Builds and returns the url of the test server.
         """
-        url = '%s://%s' %( self.protocol, self.host )
+        url = '%s://%s' % ( self.protocol, self.host )
         if self.port and self.port != 80:
-            url += ':%s' %( str( self.port ) )
+            url += ':%s' % ( str( self.port ) )
         return url

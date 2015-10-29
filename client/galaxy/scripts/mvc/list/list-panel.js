@@ -371,6 +371,7 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         } else {
             panel._renderEmptyMessage( $whereTo ).show();
         }
+        panel.trigger( 'views:ready', panel.views );
 
         return panel.views;
     },
@@ -635,8 +636,8 @@ var ListPanel = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend(
         //this.log( 'onSearchClear', this );
         this.searchFor = '';
         this.trigger( 'search:clear', this );
-        this.renderItems();
         this.$( '> .controls .search-query' ).val( '' );
+        this.renderItems();
         return this;
     },
 

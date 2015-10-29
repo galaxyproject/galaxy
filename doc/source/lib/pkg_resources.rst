@@ -1,4 +1,4 @@
-pkg_resources Module
+pkg_resources module
 ====================
 
 .. automodule:: pkg_resources

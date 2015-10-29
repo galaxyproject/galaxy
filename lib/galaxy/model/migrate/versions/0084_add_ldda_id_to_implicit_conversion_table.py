@@ -1,16 +1,13 @@
 """
 Migration script to add 'ldda_id' column to the implicitly_converted_dataset_association table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
+
+log = logging.getLogger( __name__ )
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -27,6 +24,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print "Adding ldda_id column to implicitly_converted_dataset_association table failed: %s" % str( e )
         log.debug( "Adding ldda_id column to implicitly_converted_dataset_association table failed: %s" % str( e ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

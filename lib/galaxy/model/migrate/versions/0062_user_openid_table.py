@@ -2,30 +2,25 @@
 Migration script to create table for associating sessions and users with
 OpenIDs.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, MetaData, Table, TEXT
+
+now = datetime.datetime.utcnow
+log = logging.getLogger( __name__ )
 metadata = MetaData()
 
 # Table to add
 
 UserOpenID_table = Table( "galaxy_user_openid", metadata,
-    Column( "id", Integer, primary_key=True ),
-    Column( "create_time", DateTime, default=now ),
-    Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
-    Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "openid", TEXT ),
-    )
+                          Column( "id", Integer, primary_key=True ),
+                          Column( "create_time", DateTime, default=now ),
+                          Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+                          Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True ),
+                          Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+                          Column( "openid", TEXT ) )
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -48,6 +43,7 @@ def upgrade(migrate_engine):
             i.create()
         except Exception, e:
             log.debug( "Adding index '%s' failed: %s" % ( ix_name, str( e ) ) )
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

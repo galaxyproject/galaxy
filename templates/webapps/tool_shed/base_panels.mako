@@ -80,6 +80,9 @@
                 ## Repositories tab.
                 ${tab( "repositories", "Repositories", h.url_for( controller='/repository', action='index' ) )}
                 
+                ## Groups tab.
+                ${tab( "groups", "Groups", h.url_for( controller='/groups', action='index' ) )}
+
                 ## Admin tab.
                 ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
 
@@ -140,7 +143,7 @@
     ## Logo, layered over tabs to be clickable
     <div class="navbar-brand">
         <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
-        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
+        <img style="margin-left: 0.35em;" border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
         Galaxy Tool Shed
         %if app.config.brand:
             <span>/ ${app.config.brand}</span>

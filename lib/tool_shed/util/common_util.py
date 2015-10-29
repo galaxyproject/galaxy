@@ -1,16 +1,18 @@
 import json
 import logging
 import os
+import urllib
 import urllib2
+
 from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.web import url_for
-from tool_shed.util import encoding_util
-from tool_shed.util import xml_util
+from tool_shed.util import encoding_util, xml_util
 
 log = logging.getLogger( __name__ )
 
 REPOSITORY_OWNER = 'devteam'
+
 
 def accumulate_tool_dependencies( tool_shed_accessible, tool_dependencies, all_tool_dependencies ):
     if tool_shed_accessible:
@@ -19,6 +21,7 @@ def accumulate_tool_dependencies( tool_shed_accessible, tool_dependencies, all_t
                 if tool_dependency not in all_tool_dependencies:
                     all_tool_dependencies.append( tool_dependency )
     return all_tool_dependencies
+
 
 def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_script_number ):
     # Get the 000x_tools.xml file associated with the current migrate_tools version number.
@@ -96,6 +99,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
         raise Exception( exception_msg )
     return tool_shed_accessible, missing_tool_configs_dict
 
+
 def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict ):
     file_path = elem.get( 'file', None )
     if file_path:
@@ -105,10 +109,12 @@ def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_d
                 missing_tool_configs_dict[ name ] = migrated_tool_configs_dict[ migrated_tool_config ]
     return missing_tool_configs_dict
 
+
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
     tool_shed_url = get_tool_shed_url_from_tool_shed_registry( app, str( repository.tool_shed ) )
-    return url_join( tool_shed_url, 'repos', str( repository.owner ), str( repository.name ) )
+    return url_join( tool_shed_url, pathspec=[ 'repos', str( repository.owner ), str( repository.name ) ] )
+
 
 def generate_clone_url_for_repository_in_tool_shed( user, repository ):
     """Generate the URL for cloning a repository that is in the tool shed."""
@@ -120,6 +126,7 @@ def generate_clone_url_for_repository_in_tool_shed( user, repository ):
     else:
         return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
 
+
 def generate_clone_url_from_repo_info_tup( app, repo_info_tup ):
     """Generate the URL for cloning a repository given a tuple of toolshed, name, owner, changeset_revision."""
     # Example tuple: ['http://localhost:9009', 'blast_datatypes', 'test', '461a4216e8ab', False]
@@ -127,7 +134,8 @@ def generate_clone_url_from_repo_info_tup( app, repo_info_tup ):
         parse_repository_dependency_tuple( repo_info_tup )
     tool_shed_url = get_tool_shed_url_from_tool_shed_registry( app, toolshed )
     # Don't include the changeset_revision in clone urls.
-    return url_join( tool_shed_url, 'repos', owner, name )
+    return url_join( tool_shed_url, pathspec=[ 'repos', owner, name ] )
+
 
 def get_non_shed_tool_panel_configs( app ):
     """Get the non-shed related tool panel configs - there can be more than one, and the default is tool_conf.xml."""
@@ -144,22 +152,24 @@ def get_non_shed_tool_panel_configs( app ):
             config_filenames.append( config_filename )
     return config_filenames
 
+
 def get_repository_dependencies( app, tool_shed_url, repository_name, repository_owner, changeset_revision ):
     repository_dependencies_dict = {}
     tool_shed_accessible = True
-    url = '%s/repository/get_repository_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
-    ( tool_shed_url, repository_name, repository_owner, changeset_revision )
+    params = dict( name=repository_name, owner=repository_owner, changeset_revision=changeset_revision )
+    pathspec = [ 'repository', 'get_repository_dependencies' ]
     try:
-        raw_text = tool_shed_get( app, tool_shed_url, url )
+        raw_text = tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
         tool_shed_accessible = True
     except Exception, e:
         tool_shed_accessible = False
-        print "The URL\n%s\nraised the exception:\n%s\n" % ( url, str( e ) )
+        print "The URL\n%s\nraised the exception:\n%s\n" % ( url_join( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
     if tool_shed_accessible:
         if len( raw_text ) > 2:
             encoded_text = json.loads( raw_text )
             repository_dependencies_dict = encoding_util.tool_shed_decode( encoded_text )
     return tool_shed_accessible, repository_dependencies_dict
+
 
 def get_protocol_from_tool_shed_url( tool_shed_url ):
     """Return the protocol from the received tool_shed_url if it exists."""
@@ -174,17 +184,18 @@ def get_protocol_from_tool_shed_url( tool_shed_url ):
         # Default to HTTP protocol.
         return 'http'
 
+
 def get_tool_dependencies( app, tool_shed_url, repository_name, repository_owner, changeset_revision ):
     tool_dependencies = []
     tool_shed_accessible = True
-    url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
-    ( tool_shed_url, repository_name, repository_owner, changeset_revision )
+    params = dict( name=repository_name, owner=repository_owner, changeset_revision=changeset_revision )
+    pathspec = [ 'repository', 'get_tool_dependencies' ]
     try:
-        text = tool_shed_get( app, tool_shed_url, url )
+        text = tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
         tool_shed_accessible = True
     except Exception, e:
         tool_shed_accessible = False
-        print "The URL\n%s\nraised the exception:\n%s\n" % ( url, str( e ) )
+        print "The URL\n%s\nraised the exception:\n%s\n" % ( url_join( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
     if tool_shed_accessible:
         if text:
             tool_dependencies_dict = encoding_util.tool_shed_decode( text )
@@ -194,6 +205,7 @@ def get_tool_dependencies( app, tool_shed_url, repository_name, repository_owner
                 tool_dependency_type = requirements_dict[ 'type' ]
                 tool_dependencies.append( ( tool_dependency_name, tool_dependency_version, tool_dependency_type ) )
     return tool_shed_accessible, tool_dependencies
+
 
 def get_tool_shed_repository_ids( as_string=False, **kwd ):
     tsrid = kwd.get( 'tool_shed_repository_id', None )
@@ -216,6 +228,7 @@ def get_tool_shed_repository_ids( as_string=False, **kwd ):
         ''
     return []
 
+
 def get_tool_shed_url_from_tool_shed_registry( app, tool_shed ):
     """
     The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
@@ -230,6 +243,7 @@ def get_tool_shed_url_from_tool_shed_registry( app, tool_shed ):
     # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
     return None
 
+
 def handle_galaxy_url( trans, **kwd ):
     galaxy_url = kwd.get( 'galaxy_url', None )
     if galaxy_url:
@@ -237,6 +251,7 @@ def handle_galaxy_url( trans, **kwd ):
     else:
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
     return galaxy_url
+
 
 def handle_tool_shed_url_protocol( app, shed_url ):
     """Handle secure and insecure HTTP protocol since they may change over time."""
@@ -253,6 +268,7 @@ def handle_tool_shed_url_protocol( app, shed_url ):
         if shed_url is not None:
             log.exception( "Handled exception removing protocol from URL %s:\n%s" % ( str( shed_url ), str( e ) ) )
         return shed_url
+
 
 def parse_repository_dependency_tuple( repository_dependency_tuple, contains_error=False ):
     # Default both prior_installation_required and only_if_compiling_contained_td to False in cases where metadata should be reset on the
@@ -277,6 +293,7 @@ def parse_repository_dependency_tuple( repository_dependency_tuple, contains_err
             tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td = repository_dependency_tuple
         return tool_shed, name, owner, changeset_revision, prior_installation_required, only_if_compiling_contained_td
 
+
 def remove_port_from_tool_shed_url( tool_shed_url ):
     """Return a partial Tool Shed URL, eliminating the port if it exists."""
     try:
@@ -293,11 +310,13 @@ def remove_port_from_tool_shed_url( tool_shed_url ):
             log.exception( "Handled exception removing the port from Tool Shed URL %s:\n%s" % ( str( tool_shed_url ), str( e ) ) )
         return tool_shed_url
 
+
 def remove_protocol_and_port_from_tool_shed_url( tool_shed_url ):
     """Return a partial Tool Shed URL, eliminating the protocol and/or port if either exists."""
     tool_shed = remove_protocol_from_tool_shed_url( tool_shed_url )
     tool_shed = remove_port_from_tool_shed_url( tool_shed )
     return tool_shed
+
 
 def remove_protocol_and_user_from_clone_url( repository_clone_url ):
     """Return a URL that can be used to clone a repository, eliminating the protocol and user if either exists."""
@@ -315,6 +334,7 @@ def remove_protocol_and_user_from_clone_url( repository_clone_url ):
         tmp_url = repository_clone_url
     return tmp_url.rstrip( '/' )
 
+
 def remove_protocol_from_tool_shed_url( tool_shed_url ):
     """Return a partial Tool Shed URL, eliminating the protocol if it exists."""
     try:
@@ -330,7 +350,8 @@ def remove_protocol_from_tool_shed_url( tool_shed_url ):
             log.exception( "Handled exception removing the protocol from Tool Shed URL %s:\n%s" % ( str( tool_shed_url ), str( e ) ) )
         return tool_shed_url
 
-def tool_shed_get( app, tool_shed_url, uri ):
+
+def tool_shed_get( app, base_url, pathspec=[], params={} ):
     """Make contact with the tool shed via the uri provided."""
     registry = app.tool_shed_registry
     # urllib2 auto-detects system proxies, when passed a Proxyhandler.
@@ -338,19 +359,24 @@ def tool_shed_get( app, tool_shed_url, uri ):
     proxy = urllib2.ProxyHandler()
     urlopener = urllib2.build_opener( proxy )
     urllib2.install_opener( urlopener )
-    password_mgr = registry.password_manager_for_url( tool_shed_url )
+    password_mgr = registry.password_manager_for_url( base_url )
     if password_mgr is not None:
         auth_handler = urllib2.HTTPBasicAuthHandler( password_mgr )
         urlopener.add_handler( auth_handler )
-    response = urlopener.open( uri )
+    full_url = url_join( base_url, pathspec=pathspec, params=params )
+    response = urlopener.open( full_url )
     content = response.read()
     response.close()
     return content
 
-def url_join( *args ):
+
+def url_join( base_url, pathspec=None, params=None ):
     """Return a valid URL produced by appending a base URL and a set of request parameters."""
-    parts = []
-    for arg in args:
-        if arg is not None:
-            parts.append( arg.strip( '/' ) )
-    return '/'.join( parts )
+    url = base_url.rstrip( '/' )
+    if pathspec is not None:
+        if not isinstance( pathspec, basestring ):
+            pathspec = '/'.join( pathspec )
+        url = '%s/%s' % ( url, pathspec )
+    if params is not None:
+        url = '%s?%s' % ( url, urllib.urlencode( params ) )
+    return url

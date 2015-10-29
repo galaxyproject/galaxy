@@ -4,18 +4,21 @@ API operations on a jobs.
 .. seealso:: :class:`galaxy.model.Jobs`
 """
 
-from sqlalchemy import or_, and_
-from sqlalchemy.orm import aliased
 import json
+import logging
+
+from sqlalchemy import and_, false, or_
+from sqlalchemy.orm import aliased
+
+from galaxy import exceptions
+from galaxy import managers
+from galaxy import model
+from galaxy import util
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixinItems
-from galaxy import exceptions
-from galaxy import util
-from galaxy import model
-from galaxy import managers
 
-import logging
 log = logging.getLogger( __name__ )
 
 
@@ -112,7 +115,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def show( self, trans, id, **kwd ):
         """
         show( trans, id )
-        * GET /api/jobs/{job_id}:
+        * GET /api/jobs/{id}:
             return jobs for current user
 
         :type   id: string
@@ -153,7 +156,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def inputs( self, trans, id, **kwd ):
         """
         show( trans, id )
-        * GET /api/jobs/{job_id}/inputs
+        * GET /api/jobs/{id}/inputs
             returns input datasets created by job
 
         :type   id: string
@@ -169,7 +172,7 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
     def outputs( self, trans, id, **kwd ):
         """
         show( trans, id )
-        * GET /api/jobs/{job_id}/outputs
+        * GET /api/jobs/{id}/outputs
             returns output datasets created by job
 
         :type   id: string
@@ -180,6 +183,29 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
         """
         job = self.__get_job( trans, id )
         return self.__dictify_associations( trans, job.output_datasets, job.output_library_datasets )
+
+    @expose_api_anonymous
+    def build_for_rerun( self, trans, id, **kwd ):
+        """
+        * GET /api/jobs/{id}/build_for_rerun
+            returns a tool input/param template prepopulated with this job's
+            information, suitable for rerunning or rendering parameters of the
+            job.
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing output dataset associations
+        """
+
+        job = self.__get_job(trans, id)
+        if not job:
+            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+        tool = self.app.toolbox.get_tool( job.tool_id, job.tool_version )
+        if not tool.is_workflow_compatible:
+            raise exceptions.ConfigDoesNotAllowException( "Tool '%s' cannot be rerun." % ( job.tool_id ) )
+        return tool.to_json(trans, {}, job=job)
 
     def __dictify_associations( self, trans, *association_lists ):
         rval = []
@@ -316,13 +342,13 @@ class JobController( BaseAPIController, UsesLibraryMixinItems ):
             query = query.filter( and_(
                 trans.app.model.Job.id == a.job_id,
                 a.dataset_id == b.id,
-                b.deleted == False,
+                b.deleted == false(),
                 b.dataset_id == v
             ) )
 
         out = []
         for job in query.all():
             # check to make sure none of the output files have been deleted
-            if all( list( a.dataset.deleted == False for a in job.output_datasets ) ):
+            if all( list( a.dataset.deleted is False for a in job.output_datasets ) ):
                 out.append( self.encode_all_ids( trans, job.to_dict( 'element' ), True ) )
         return out

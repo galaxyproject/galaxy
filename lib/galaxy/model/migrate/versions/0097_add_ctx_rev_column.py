@@ -1,18 +1,16 @@
 """
 Migration script to add the ctx_rev column to the tool_shed_repository table.
 """
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-
 import datetime
-now = datetime.datetime.utcnow
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
+import logging
+import sys
 
-import sys, logging
+from sqlalchemy import Column, MetaData, Table
+
+# Need our custom types, but don't import anything else from model
+from galaxy.model.custom_types import TrimmedString
+
+now = datetime.datetime.utcnow
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -22,6 +20,7 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
+
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -34,6 +33,8 @@ def upgrade(migrate_engine):
         assert col is ToolShedRepository_table.c.ctx_rev
     except Exception, e:
         print "Adding ctx_rev column to the tool_shed_repository table failed: %s" % str( e )
+
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

@@ -5,16 +5,13 @@ Created on Sep 10, 2013
 
 Adds 'active' and 'activation_token' columns to the galaxy_user table.
 '''
-
-from sqlalchemy import *
-from sqlalchemy.orm import *
-from migrate import *
-from migrate.changeset import *
-from galaxy.model.custom_types import TrimmedString 
-
 import logging
-log = logging.getLogger( __name__ )
 
+from sqlalchemy import Boolean, Column, MetaData, Table
+
+from galaxy.model.custom_types import TrimmedString
+
+log = logging.getLogger( __name__ )
 user_active_column = Column( "active", Boolean, default=True, nullable=True )
 user_activation_token_column = Column( "activation_token", TrimmedString( 64 ), nullable=True )
 
@@ -22,6 +19,7 @@ user_activation_token_column = Column( "activation_token", TrimmedString( 64 ), 
 def display_migration_details():
     print ""
     print "This migration script adds active and activation_token columns to the user table"
+
 
 def upgrade(migrate_engine):
     print __doc__
@@ -32,14 +30,15 @@ def upgrade(migrate_engine):
     # Add the active and activation_token columns to the user table in one try because the depend on each other.
     try:
         user_table = Table( "galaxy_user", metadata, autoload=True )
-        user_active_column.create( table = user_table , populate_default = True)
-        user_activation_token_column.create( table = user_table )
+        user_active_column.create( table=user_table , populate_default=True)
+        user_activation_token_column.create( table=user_table )
         assert user_active_column is user_table.c.active
         assert user_activation_token_column is user_table.c.activation_token
     except Exception, e:
         print str(e)
         log.error( "Adding columns 'active' and 'activation_token' to galaxy_user table failed: %s" % str( e ) )
         return
+
 
 def downgrade(migrate_engine):
     metadata = MetaData()

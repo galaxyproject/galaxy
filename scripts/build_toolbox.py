@@ -1,12 +1,13 @@
 import os
-import sys
 from xml.etree import ElementTree as ET
+
 
 def prettify(elem):
     from xml.dom import minidom
     rough_string = ET.tostring(elem, 'utf-8')
     repaired = minidom.parseString(rough_string)
     return repaired.toprettyxml(indent='  ')
+
 
 # Build a list of all toolconf xml files in the tools directory
 def getfilenamelist(startdir):
@@ -32,6 +33,7 @@ def getfilenamelist(startdir):
                         print "DBG> tool config does not have a <section>:", fullfn
     return filenamelist
 
+
 class ToolBox(object):
     def __init__(self):
         from collections import defaultdict
@@ -39,21 +41,21 @@ class ToolBox(object):
         self.sectionorders = {}
 
     def add(self, toolelement, toolboxpositionelement):
-        section = toolboxpositionelement.attrib.get('section','')
-        label = toolboxpositionelement.attrib.get('label','')
+        section = toolboxpositionelement.attrib.get('section', '')
+        label = toolboxpositionelement.attrib.get('label', '')
         order = int(toolboxpositionelement.attrib.get('order', '0'))
         sectionorder = int(toolboxpositionelement.attrib.get('sectionorder', '0'))
 
         # If this is the first time we encounter the section, store its order
         # number. If we have seen it before, ignore the given order and use
         # the stored one instead
-        if not self.sectionorders.has_key(section):
+        if section not in self.sectionorders:
             self.sectionorders[section] = sectionorder
         else:
             sectionorder = self.sectionorders[section]
 
         # Sortorder: add intelligent mix to the front
-        self.tools[("%05d-%s"%(sectionorder,section), label, order, section)].append(toolelement)
+        self.tools[("%05d-%s" % (sectionorder, section), label, order, section)].append(toolelement)
 
     def addElementsTo(self, rootelement):
         toolkeys = self.tools.keys()
@@ -76,7 +78,7 @@ class ToolBox(object):
                 if section:
                     sectionnumber += 1
                     attrib = {'name': section,
-                              'id': "section%d"% sectionnumber}
+                              'id': "section%d" % sectionnumber}
                     sectionelement = ET.Element('section', attrib)
                     rootelement.append(sectionelement)
                     currentelement = sectionelement
@@ -90,33 +92,34 @@ class ToolBox(object):
                 if label:
                     labelnumber += 1
                     attrib = {'text': label,
-                              'id': "label%d"% labelnumber}
+                              'id': "label%d" % labelnumber}
                     labelelement = ET.Element('label', attrib)
                     currentelement.append(labelelement)
 
             # Add the tools that are in this place
             for toolelement in self.tools[toolkey]:
                 currentelement.append(toolelement)
-        
-# Analyze all the toolconf xml files given in the filenamelist 
+
+
+# Analyze all the toolconf xml files given in the filenamelist
 # Build a list of all sections
 def scanfiles(filenamelist):
     # Build an empty tool box
     toolbox = ToolBox()
 
     # Read each of the files in the list
-    for fn in filenamelist: 
+    for fn in filenamelist:
         doc = ET.parse(fn)
         root = doc.getroot()
-        
+
         if root.tag == 'tool':
             toolelements = [root]
         else:
             toolelements = doc.findall('tool')
-            
+
         for toolelement in toolelements:
             # Figure out where the tool XML file is, absolute path.
-            if toolelement.attrib.has_key('file'):
+            if 'file' in toolelement.attrib:
                 # It is mentioned, we need to make it absolute
                 fileattrib = os.path.join(os.getcwd(),
                                           os.path.dirname(fn),
@@ -136,7 +139,7 @@ def scanfiles(filenamelist):
                     tagarray.append(tag.text)
                 attrib['tags'] = ",".join(tagarray)
             else:
-                print "DBG> No tags in",fn
+                print "DBG> No tags in", fn
 
             # Build the tool element
             newtoolelement = ET.Element('tool', attrib)
@@ -147,6 +150,7 @@ def scanfiles(filenamelist):
                 for toolboxpositionelement in toolboxpositionelements:
                     toolbox.add(newtoolelement, toolboxpositionelement)
     return toolbox
+
 
 def assemble():
     filenamelist = []
@@ -159,8 +163,8 @@ def assemble():
     toolboxelement = ET.Element('toolbox')
 
     toolbox.addElementsTo(toolboxelement)
-    
+
     print prettify(toolboxelement)
-    
+
 if __name__ == "__main__":
     assemble()

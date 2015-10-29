@@ -34,23 +34,23 @@ return {
             data    : job_def,
             success : function(response) {
                 callback && callback();
-                form.reciept(ToolTemplate.success(response));
+                form.$el.replaceWith( ToolTemplate.success( response ) );
+                // begin checking the history for updates
                 self._refreshHdas();
             },
-            error   : function(response, response_full) {
+            error   : function(response) {
                 callback && callback();
-                if (response && response.message && response.message.data) {
-                    var error_messages = form.data.matchResponse(response.message.data);
+                console.debug(response);
+                if (response && response.err_data) {
+                    var error_messages = form.data.matchResponse(response.err_data);
                     for (var input_id in error_messages) {
                         form.highlight(input_id, error_messages[input_id]);
                         break;
                     }
                 } else {
-                    // show error message with details
-                    console.debug(response);
-                    response && form.modal.show({
+                    form.modal.show({
                         title   : 'Job submission failed',
-                        body    : ToolTemplate.error(job_def),
+                        body    : ( response && response.err_msg ) || ToolTemplate.error( job_def ),
                         buttons : {
                             'Close' : function() {
                                 form.modal.hide();
@@ -135,9 +135,9 @@ return {
 
     /** Refreshes the history panel
     */
-    _refreshHdas: function() {
+    _refreshHdas: function(detailIds, options) {
         if (parent.Galaxy && parent.Galaxy.currHistoryPanel) {
-            parent.Galaxy.currHistoryPanel.refreshContents();
+            parent.Galaxy.currHistoryPanel.refreshContents(detailIds, options);
         }
     }
 };

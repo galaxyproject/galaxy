@@ -3,42 +3,40 @@ import logging
 import os
 import tarfile
 import StringIO
-import tempfile
+from cgi import FieldStorage
+from collections import namedtuple
 from time import strftime
 
-from cgi import FieldStorage
+from sqlalchemy import and_, false
 
 from galaxy import util
 from galaxy import web
-from galaxy.exceptions import RequestParameterMissingException
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.exceptions import InsufficientPermissionsException
-from galaxy.exceptions import ActionInputError
-from galaxy.exceptions import ObjectNotFound
-from galaxy.exceptions import MalformedId
 from galaxy.datatypes import checkers
-from galaxy.model.orm import and_
+from galaxy.exceptions import ActionInputError
+from galaxy.exceptions import ConfigDoesNotAllowException
+from galaxy.exceptions import InsufficientPermissionsException
+from galaxy.exceptions import MalformedId
+from galaxy.exceptions import ObjectNotFound
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import RequestParameterMissingException
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import HTTPBadRequest
-from galaxy.web.framework.helpers import time_ago
-
+from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
 from tool_shed.capsule import capsule_manager
+from tool_shed.dependencies import attribute_handlers
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
-
-from tool_shed.dependencies import attribute_handlers
-
 from tool_shed.util import basic_util
 from tool_shed.util import commit_util
 from tool_shed.util import encoding_util
 from tool_shed.util import hg_util
-from tool_shed.util import repository_util
 from tool_shed.util import repository_content_util
+from tool_shed.util import repository_util
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util import tool_util
-
 
 log = logging.getLogger( __name__ )
 
@@ -155,7 +153,21 @@ class RepositoriesController( BaseAPIController ):
             "includes_workflows": false,
             "malicious": false,
             "repository_id": "f9cad7b01a472135",
-            "url": "/api/repository_revisions/f9cad7b01a472135"
+            "url": "/api/repository_revisions/f9cad7b01a472135",
+            "valid_tools": [{u'add_to_tool_panel': True,
+                u'description': u'data on any column using simple expressions',
+                u'guid': u'localhost:9009/repos/enis/sample_repo_1/Filter1/2.2.0',
+                u'id': u'Filter1',
+                u'name': u'Filter',
+                u'requirements': [],
+                u'tests': [{u'inputs': [[u'input', u'1.bed'], [u'cond', u"c1=='chr22'"]],
+                  u'name': u'Test-1',
+                  u'outputs': [[u'out_file1', u'filter1_test1.bed']],
+                  u'required_files': [u'1.bed', u'filter1_test1.bed']}],
+                u'tool_config': u'database/community_files/000/repo_1/filtering.xml',
+                u'tool_type': u'default',
+                u'version': u'2.2.0',
+                u'version_string_cmd': None}]
         }
         - a dictionary including the additional information required to install the repository.  For example:
         {
@@ -204,21 +216,22 @@ class RepositoriesController( BaseAPIController ):
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
+                repository_metadata_dict[ 'valid_tools' ] = repository_metadata.metadata[ 'tools' ]
                 # Get the repo_info_dict for installing the repository.
                 repo_info_dict, \
-                includes_tools, \
-                includes_tool_dependencies, \
-                includes_tools_for_display_in_tool_panel, \
-                has_repository_dependencies, \
-                has_repository_dependencies_only_if_compiling_contained_td = \
+                    includes_tools, \
+                    includes_tool_dependencies, \
+                    includes_tools_for_display_in_tool_panel, \
+                    has_repository_dependencies, \
+                    has_repository_dependencies_only_if_compiling_contained_td = \
                     repository_util.get_repo_info_dict( trans.app,
                                                         trans.user,
                                                         encoded_repository_id,
                                                         changeset_revision )
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
-                log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" % \
-                    ( str( repository.id ), str( changeset_revision ) ) )
+                log.debug( "Unable to locate repository_metadata record for repository id %s and changeset_revision %s" %
+                           ( str( repository.id ), str( changeset_revision ) ) )
                 return repository_dict, {}, {}
         else:
             debug_msg = "Error in the Tool Shed repositories API in get_repository_revision_install_info: "
@@ -278,16 +291,14 @@ class RepositoriesController( BaseAPIController ):
         capsule_dict = irm.validate_capsule( **capsule_dict )
         status = capsule_dict.get( 'status', 'error' )
         if status == 'error':
-            log.debug( 'The capsule contents are invalid and cannot be imported:<br/>%s' % \
-                str( capsule_dict.get( 'error_message', '' ) ) )
+            log.debug( 'The capsule contents are invalid and cannot be imported:<br/>%s' %
+                       str( capsule_dict.get( 'error_message', '' ) ) )
             return {}
         encoded_file_path = capsule_dict.get( 'encoded_file_path', None )
         if encoded_file_path is None:
             log.debug( 'The capsule_dict %s is missing the required encoded_file_path entry.' % str( capsule_dict ) )
             return {}
         file_path = encoding_util.tool_shed_decode( encoded_file_path )
-        export_info_file_path = os.path.join( file_path, 'export_info.xml' )
-        export_info_dict = irm.get_export_info_dict( export_info_file_path )
         manifest_file_path = os.path.join( file_path, 'manifest.xml' )
         # The manifest.xml file has already been validated, so no error_message should be returned here.
         repository_info_dicts, error_message = irm.get_repository_info_from_manifest( manifest_file_path )
@@ -316,21 +327,64 @@ class RepositoriesController( BaseAPIController ):
             return_dict[ key ] = val
         return return_dict
 
-    @web.expose_api_anonymous
+    @expose_api_raw_anonymous_and_sessionless
     def index( self, trans, deleted=False, owner=None, name=None, **kwd ):
         """
         GET /api/repositories
+        Displays a collection of repositories with optional criteria.
 
-        :param deleted: True/False, displays repositories that are or are not set to deleted.
-        :param owner: the owner's public username.
-        :param name: the repository name.
+        :param q:        (optional)if present search on the given query will be performed
+        :type  q:        str
 
-        Displays a collection (list) of repositories.
+        :param page:     (optional)requested page of the search
+        :type  page:     int
+
+        :param page_size:     (optional)requested page_size of the search
+        :type  page_size:     int
+
+        :param jsonp:    (optional)flag whether to use jsonp format response, defaults to False
+        :type  jsonp:    bool
+
+        :param callback: (optional)name of the function to wrap callback in
+                         used only when jsonp is true, defaults to 'callback'
+        :type  callback: str
+
+        :param deleted:  (optional)displays repositories that are or are not set to deleted.
+        :type  deleted:  bool
+
+        :param owner:    (optional)the owner's public username.
+        :type  owner:    str
+
+        :param name:     (optional)the repository name.
+        :type  name:     str
+
+        :returns dict:   object containing list of results
+
+        Examples:
+            GET http://localhost:9009/api/repositories
+            GET http://localhost:9009/api/repositories?q=fastq
         """
-        # Example URL: http://localhost:9009/api/repositories
         repository_dicts = []
         deleted = util.asbool( deleted )
-        clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == False,
+        q = kwd.get( 'q', '' )
+        if q:
+            page = kwd.get( 'page', 1 )
+            page_size = kwd.get( 'page_size', 10 )
+            try:
+                page = int( page )
+                page_size = int( page_size )
+            except ValueError:
+                raise RequestParameterInvalidException( 'The "page" and "page_size" parameters have to be integers.' )
+            return_jsonp = util.asbool( kwd.get( 'jsonp', False ) )
+            callback = kwd.get( 'callback', 'callback' )
+            search_results = self._search( trans, q, page, page_size )
+            if return_jsonp:
+                response = str( '%s(%s);' % ( callback, json.dumps( search_results ) ) )
+            else:
+                response = json.dumps( search_results )
+            return response
+
+        clause_list = [ and_( trans.app.model.Repository.table.c.deprecated == false(),
                               trans.app.model.Repository.table.c.deleted == deleted ) ]
         if owner is not None:
             clause_list.append( and_( trans.app.model.User.table.c.username == owner,
@@ -343,9 +397,49 @@ class RepositoriesController( BaseAPIController ):
             repository_dict = repository.to_dict( view='collection',
                                                   value_mapper=self.__get_value_mapper( trans ) )
             repository_dict[ 'category_ids' ] = \
-                    [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
+                [ trans.security.encode_id( x.category.id ) for x in repository.categories ]
             repository_dicts.append( repository_dict )
-        return repository_dicts
+        return json.dumps( repository_dicts )
+
+    def _search( self, trans, q, page=1, page_size=10 ):
+        """
+        Perform the search over TS repositories.
+        Note that search works over the Whoosh index which you have
+        to pre-create with scripts/tool_shed/build_ts_whoosh_index.sh manually.
+        Also TS config option toolshed_search_on has to be True and
+        whoosh_index_dir has to be specified.
+        """
+        conf = self.app.config
+        if not conf.toolshed_search_on:
+            raise ConfigDoesNotAllowException( 'Searching the TS through the API is turned off for this instance.' )
+        if not conf.whoosh_index_dir:
+            raise ConfigDoesNotAllowException( 'There is no directory for the search index specified. Please contact the administrator.' )
+        search_term = q.strip()
+        if len( search_term ) < 3:
+            raise RequestParameterInvalidException( 'The search term has to be at least 3 characters long.' )
+
+        repo_search = RepoSearch()
+
+        Boosts = namedtuple( 'Boosts', [ 'repo_name_boost',
+                                         'repo_description_boost',
+                                         'repo_long_description_boost',
+                                         'repo_homepage_url_boost',
+                                         'repo_remote_repository_url_boost',
+                                         'repo_owner_username_boost' ] )
+        boosts = Boosts( float( conf.get( 'repo_name_boost', 0.9 ) ),
+                         float( conf.get( 'repo_description_boost', 0.6 ) ),
+                         float( conf.get( 'repo_long_description_boost', 0.5 ) ),
+                         float( conf.get( 'repo_homepage_url_boost', 0.3 ) ),
+                         float( conf.get( 'repo_remote_repository_url_boost', 0.2 ) ),
+                         float( conf.get( 'repo_owner_username_boost', 0.3 ) ) )
+
+        results = repo_search.search( trans,
+                                      search_term,
+                                      page,
+                                      page_size,
+                                      boosts )
+        results[ 'hostname' ] = web.url_for( '/', qualified=True )
+        return results
 
     @web.expose_api
     def remove_repository_registry_entry( self, trans, payload, **kwd ):
@@ -498,7 +592,7 @@ class RepositoriesController( BaseAPIController ):
         for repository in query:
             encoded_id = trans.security.encode_id( repository.id )
             if encoded_id in encoded_ids_to_skip:
-                log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
+                log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" %
                            ( str( repository.id ), str( encoded_ids_to_skip ) ) )
             elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                 results = handle_repository( trans, rmm, repository, results )
@@ -506,7 +600,7 @@ class RepositoriesController( BaseAPIController ):
         for repository in query:
             encoded_id = trans.security.encode_id( repository.id )
             if encoded_id in encoded_ids_to_skip:
-                log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" % \
+                log.debug( "Skipping repository with id %s because it is in encoded_ids_to_skip %s" %
                            ( str( repository.id ), str( encoded_ids_to_skip ) ) )
             elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                 results = handle_repository( trans, rmm, repository, results )
@@ -572,7 +666,7 @@ class RepositoriesController( BaseAPIController ):
         Returns information about a repository in the Tool Shed.
 
         Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
-        
+
         :param id: the encoded id of the Repository object
         :type  id: encoded str
 
@@ -693,7 +787,6 @@ class RepositoriesController( BaseAPIController ):
         remote_repository_url = payload.get( 'remote_repository_url', '' )
         homepage_url = payload.get( 'homepage_url', '' )
         category_ids = util.listify( payload.get( 'category_ids[]', '' ) )
-        selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
 
         repo_type = payload.get( 'type', rt_util.UNRESTRICTED )
         if repo_type not in rt_util.types:
@@ -704,14 +797,14 @@ class RepositoriesController( BaseAPIController ):
             raise RequestParameterInvalidException( invalid_message )
 
         repo, message = repository_util.create_repository( app=trans.app,
-                                                  name=name,
-                                                  type=repo_type,
-                                                  description=synopsis,
-                                                  long_description=description,
-                                                  user_id = trans.user.id,
-                                                  category_ids=category_ids,
-                                                  remote_repository_url=remote_repository_url,
-                                                  homepage_url=homepage_url )
+                                                           name=name,
+                                                           type=repo_type,
+                                                           description=synopsis,
+                                                           long_description=description,
+                                                           user_id=trans.user.id,
+                                                           category_ids=category_ids,
+                                                           remote_repository_url=remote_repository_url,
+                                                           homepage_url=homepage_url )
 
         repository_dict = repo.to_dict( view='element', value_mapper=self.__get_value_mapper( trans ) )
         repository_dict[ 'category_ids' ] = \
@@ -739,6 +832,15 @@ class RepositoriesController( BaseAPIController ):
         tdah = attribute_handlers.ToolDependencyAttributeHandler( trans.app, unpopulate=False )
 
         repository = suc.get_repository_in_tool_shed( trans.app, id )
+
+        if not ( trans.user_is_admin() or
+                 trans.app.security_agent.user_can_administer_repository( trans.user, repository ) or
+                 trans.app.security_agent.can_push( trans.app, trans.user, repository ) ):
+            trans.response.status = 400
+            return {
+                "err_msg": "You do not have permission to update this repository.",
+            }
+
         repo_dir = repository.repo_path( trans.app )
         repo = hg_util.get_repo_for_repository( trans.app, repository=None, repo_path=repo_dir, create=False )
 
@@ -811,7 +913,8 @@ class RepositoriesController( BaseAPIController ):
                     message = error_message
         else:
             trans.response.status = 500
-
+        if os.path.exists( uploaded_file_name ):
+            os.remove( uploaded_file_name )
         if not ok:
             return {
                 "err_msg": message,
