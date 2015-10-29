@@ -7,6 +7,8 @@ define([
     "ui/mode-button",
     "ui/search-input"
 ], function( HISTORY_MODEL, HPANEL_EDIT, historyCopyDialog, baseMVC, ajaxQueue ){
+
+var logNamespace = 'history';
 /* ==============================================================================
 TODO:
     rendering/delayed rendering is a mess
@@ -39,7 +41,7 @@ TODO:
 ============================================================================== */
 /** @class A container for a history panel that renders controls for that history (delete, copy, etc.)
  */
-var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin.namespaced( logNamespace ) ).extend({
 //TODO: extend from panel? (instead of aggregating)
 
     //logger : console,
@@ -307,8 +309,8 @@ var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 /** @class A view of a HistoryCollection and displays histories similarly to the current history panel.
  */
 var MultiPanelColumns = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
 
-    //logger : console,
     className : 'multi-panel-history',
 
     // ------------------------------------------------------------------------ set up
