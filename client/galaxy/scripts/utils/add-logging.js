@@ -9,7 +9,13 @@ function addLogging( obj, namespace ){
 
     [ 'debug', 'info', 'warn', 'error', 'metric' ].forEach( function( logFn ){
         addTo[ logFn ] = function(){
-            if( !this.logger ){ return undefined; }
+            if( !this.logger ){
+                if( ( Galaxy.config || {} ).debug ){
+                    this.logger = Galaxy.logger || console;
+                } else {
+                    return undefined;
+                }
+            }
             if( this.logger.emit ){
                 return this.logger.emit( logFn, this._logNamespace, arguments );
             }

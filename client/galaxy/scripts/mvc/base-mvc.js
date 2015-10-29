@@ -31,7 +31,7 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
      */
     // replace null with console (if available) to see all logs
     logger       : null,
-    _logNamespace : '?',
+    _logNamespace : '.',
 
     /** Output log messages/arguments to logger.
      *  @param {Arguments} ... (this function is variadic)
