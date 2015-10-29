@@ -199,13 +199,13 @@ class S3ObjectStore(ObjectStore):
     def _fix_permissions(self, rel_path):
         """ Set permissions on rel_path"""
         for basedir, _, files in os.walk(rel_path):
-            umask_fix_perms(basedir, self.config.umask, 0777, self.config.gid)
+            umask_fix_perms(basedir, self.config.umask, 0o777, self.config.gid)
             for filename in files:
                 path = os.path.join(basedir, filename)
                 # Ignore symlinks
                 if os.path.islink(path):
                     continue
-                umask_fix_perms( path, self.config.umask, 0666, self.config.gid )
+                umask_fix_perms( path, self.config.umask, 0o666, self.config.gid )
 
     def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
         rel_path = os.path.join(*directory_hash_id(obj.id))
@@ -467,7 +467,7 @@ class S3ObjectStore(ObjectStore):
         if self._in_cache(rel_path):
             try:
                 return os.path.getsize(self._get_cache_path(rel_path))
-            except OSError, ex:
+            except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
         elif self.exists(obj, **kwargs):
             return self._get_size_in_s3(rel_path)
