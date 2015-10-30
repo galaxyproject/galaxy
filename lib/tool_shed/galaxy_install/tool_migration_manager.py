@@ -403,7 +403,7 @@ class ToolMigrationManager( object ):
                             if tool_config not in tool_configs_to_filter:
                                 tool_configs_to_filter.append( tool_config )
                 else:
-                    log.error( 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
+                    log.error( 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).'
                         % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) ) )
             if tool_configs_to_filter:
                 lock = threading.Lock()
