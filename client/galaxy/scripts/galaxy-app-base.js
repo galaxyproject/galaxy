@@ -23,9 +23,11 @@ function GalaxyApp( options ){
 addLogging( GalaxyApp, 'GalaxyApp' );
 
 // a debug flag can be set via local storage and made available during script/page loading
-var localDebugging = false;
+var DEBUGGING_KEY = 'galaxy:debug',
+    NAMESPACE_KEY = DEBUGGING_KEY + ':namespaces',
+    localDebugging = false;
 try {
-    localDebugging = localStorage.getItem( 'galaxy:debug' ) == 'true';
+    localDebugging = localStorage.getItem( DEBUGGING_KEY ) == 'true';
 } catch( storageErr ){
     console.log( _l( 'localStorage not available for debug flag retrieval' ) );
 }
@@ -127,10 +129,10 @@ GalaxyApp.prototype._initLogger = function _initLogger( loggerOptions ){
     // default to console logging at the debug level if the debug flag is set
     if( self.config.debug ){
         try {
-            loggerOptions.consoleNamespaceWhitelist = localStorage.getItem( 'galaxy:debug:namespaces' ).split( ',' );
+            loggerOptions.consoleNamespaceWhitelist = localStorage.getItem( NAMESPACE_KEY ).split( ',' );
         } catch( storageErr ){}
         loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;
-        loggerOptions.consoleLevel = loggerOptions.consoleLevel || metricsLogger.MetricsLogger.DEBUG;
+        loggerOptions.consoleLevel = loggerOptions.consoleLevel || metricsLogger.MetricsLogger.ALL;
     }
     self.debug( '_initLogger:', loggerOptions );
     self.logger = new metricsLogger.MetricsLogger( loggerOptions );
@@ -177,6 +179,51 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners(){
         //TODO:?? we might somehow manage to *retry* ajax using either this hook or Backbone.sync
     });
     return self;
+};
+
+/** Turn debugging/console-output on/off */
+GalaxyApp.prototype.debugging = function _debugging( setting ){
+    var self = this;
+    try {
+        localDebugging = setting;
+        if( setting ){
+            localStorage.setItem( DEBUGGING_KEY, true );
+        } else {
+            localStorage.removeItem( DEBUGGING_KEY );
+            // also remove all namespaces
+            self.debuggingNamespaces( null );
+        }
+    } catch( storageErr ){
+        console.log( _l( 'localStorage not available for debug flag retrieval' ) );
+    }
+    return self;
+};
+
+/** Add, remove, or clear namespaces from the debugging filters
+ *  Pass no arguments to retrieve the existing namespaces as an array.
+ *  Pass in null to clear all namespaces (all logging messages will show now).
+ *  Pass in an array of strings or single string of the namespaces to filter to.
+ *  Returns the new/current namespaces as an array;
+ */
+GalaxyApp.prototype.debuggingNamespaces = function _debuggingNamespaces( namespaces ){
+    var self = this;
+    try {
+        if( namespaces === undefined ){
+            var csv = localStorage.getItem( NAMESPACE_KEY );
+            return typeof( csv ) === 'string'? csv.split( ',' ) : [];
+        } else if( namespaces === null ) {
+            localStorage.removeItem( NAMESPACE_KEY );
+        } else {
+            localStorage.setItem( NAMESPACE_KEY, namespaces );
+        }
+        var newSettings = self.debuggingNamespaces();
+        if( self.logger ){
+            self.logger.options.consoleNamespaceWhitelist = newSettings;
+        }
+        return newSettings;
+    } catch( storageErr ){
+        console.log( _l( 'localStorage not available for debug namespace retrieval' ) );
+    }
 };
 
 /** string rep */

@@ -46,7 +46,8 @@ function MetricsLogger( options ){
 
 //----------------------------------------------------------------------------- defaults and constants
 // see: python std lib, logging
-MetricsLogger.ALL  =  0;
+MetricsLogger.ALL   =  0;
+MetricsLogger.LOG   =  0;
 MetricsLogger.DEBUG = 10;
 MetricsLogger.INFO  = 20;
 MetricsLogger.WARN  = 30;

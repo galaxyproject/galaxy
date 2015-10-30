@@ -482,9 +482,8 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
 /**
  *
  */
-var HistoryStructureView = Backbone.View.extend( BASE_MVC.LoggableMixin.namespaced( logNamespace ) ).extend({
-
-    //logger : console,
+var HistoryStructureView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
 
     className : 'history-structure',
 

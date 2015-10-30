@@ -8,12 +8,9 @@ var logNamespace = 'user';
 /** @class Model for a Galaxy user (including anonymous users).
  *  @name User
  */
-var User = Backbone.Model.extend( baseMVC.LoggableMixin.namespaced( logNamespace ) ).extend(
+var User = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
 /** @lends User.prototype */{
-
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
-    //logger              : console,
+    _logNamespace : logNamespace,
 
     /** API location for this resource */
     urlRoot : galaxy_config.root + 'api/users',
@@ -114,7 +111,7 @@ User.getCurrentUserFromApi = function( options ){
 };
 
 // (stub) collection for users (shouldn't be common unless admin UI)
-var UserCollection = Backbone.Collection.extend( baseMVC.LoggableMixin.namespaced( logNamespace ) ).extend({
+var UserCollection = Backbone.Collection.extend( baseMVC.LoggableMixin ).extend({
     model   : User,
     urlRoot : galaxy_config.root + 'api/users'
     //logger  : console,

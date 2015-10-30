@@ -441,7 +441,7 @@ var ControlledFetchMixin = {
  *      (stub) currently unused.
  */
 var HistoryCollection = Backbone.Collection
-        .extend( BASE_MVC.LoggableMixin.namespaced( logNamespace ) )
+        .extend( BASE_MVC.LoggableMixin )
         .extend( ControlledFetchMixin )
         .extend(/** @lends HistoryCollection.prototype */{
     _logNamespace : logNamespace,

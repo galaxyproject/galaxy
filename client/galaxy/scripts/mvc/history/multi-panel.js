@@ -41,10 +41,9 @@ TODO:
 ============================================================================== */
 /** @class A container for a history panel that renders controls for that history (delete, copy, etc.)
  */
-var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin.namespaced( logNamespace ) ).extend({
+var HistoryPanelColumn = Backbone.View.extend( baseMVC.LoggableMixin ).extend({
 //TODO: extend from panel? (instead of aggregating)
-
-    //logger : console,
+    _logNamespace : logNamespace,
 
     tagName     : 'div',
     className   : 'history-column flex-column flex-row-container',

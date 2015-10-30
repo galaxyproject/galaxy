@@ -11,12 +11,9 @@ var logNamespace = 'user';
  *  @name UserQuotaMeter
  *  @augments Backbone.View
  */
-var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin.namespaced( logNamespace ) ).extend(
+var UserQuotaMeter = Backbone.View.extend( baseMVC.LoggableMixin ).extend(
 /** @lends UserQuotaMeter.prototype */{
-
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
-    //logger              : console,
+    _logNamespace : logNamespace,
 
     /** Defaults for optional settings passed to initialize */
     options : {
