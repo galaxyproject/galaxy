@@ -149,7 +149,7 @@ class InstallEnvironment( object ):
         threads to execute a command while capturing and displaying the output.
         """
         # We define a "local logger" here such that we can give it a slightly
-        # different name. We use the package namea s part of the logger to
+        # different name. We use the package name as part of the logger to
         # allow admins to easily distinguish between which package is currently
         # being installed.
         llog_name = __name__

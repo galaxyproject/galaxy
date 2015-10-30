@@ -1591,7 +1591,7 @@ class SetupPythonEnvironment( Download, RecipeStep ):
         #       </repository>
         #       <!-- allow downloading and installing a Python package from https://pypi.python.org/ -->
         #       <package>pysam.tar.gz</package>
-       #       <package sha256sum="some_hash">http://url-to-some-python-package.de/pysam.tar.gz</package>
+        #       <package sha256sum="some_hash">http://url-to-some-python-package.de/pysam.tar.gz</package>
         # </action>
         dir = None
         if initial_download:
