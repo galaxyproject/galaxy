@@ -950,7 +950,7 @@ def read_dbnames(filename):
         man_builds = [(build, name) for name, build in man_builds]
         db_names = DBNames( db_names + man_builds )
     except Exception, e:
-        print "ERROR: Unable to read builds file:", e
+        log.error( "ERROR: Unable to read builds file: %s", str( e ) )
     if len(db_names) < 1:
         db_names = DBNames( [( db_names.default_value, db_names.default_name )] )
     return db_names
@@ -976,7 +976,7 @@ def read_build_sites( filename, check_builds=True ):
             except:
                 continue
     except:
-        print "ERROR: Unable to read builds for site file %s" % filename
+        log.error( "ERROR: Unable to read builds for site file %s", filename )
     return build_sites
 
 

@@ -293,7 +293,7 @@ class RepositoryDependencyInstallManager( object ):
         try:
             raw_text = common_util.tool_shed_get( app, tool_shed_url, pathspec=pathspec, params=params )
         except Exception, e:
-            print "The URL\n%s\nraised the exception:\n%s\n" % ( common_util.url_join( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
+            log.error("The URL\n%s\nraised the exception:\n%s\n", common_util.url_join( tool_shed_url, pathspec=pathspec, params=params ), str( e ) )
             return ''
         if len( raw_text ) > 2:
             encoded_text = json.loads( raw_text )

@@ -1212,8 +1212,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
             redirect_action = 'edit_samples'
         # Check for duplicate sample names within the request
         self.__validate_sample_names( trans, cntrller, request, sample_widgets, **kwd )
-        print "SAVING SAMPLES!"
-        print "saving_new_samples is %s" % saving_new_samples
+        log.debug( "SAVING SAMPLES!" )
+        log.debug( "saving_new_samples is %s" % saving_new_samples )
         if not saving_new_samples:
             library = None
             folder = None
@@ -1874,8 +1874,8 @@ class RequestsCommon( BaseUIController, UsesFormDefinitionsMixin ):
         empty_sample_fields = []
         for s in request.samples:
             for field in request.type.sample_form.fields:
-                print "field:", field
-                print "svc:", s.values.content
+                log.debug("field: %s", field)
+                log.debug("svc: %s", s.values.content)
                 if field['required'] == 'required' and s.values.content[field['name']] in ['', None]:
                     empty_sample_fields.append((s.name, field['label']))
         if empty_fields or empty_sample_fields:
