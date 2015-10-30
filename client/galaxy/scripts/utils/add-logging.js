@@ -11,17 +11,16 @@ function addLogging( obj, namespace ){
     if( namespace !== undefined ){
         addTo._logNamespace = namespace;
     }
+    //yagni?: without this, may not capture Galaxy.config.debug and add Galaxy.logger properly
+    // if( window.Galaxy && window.Galaxy.config && window.Galaxy.config.debug ){
+    //     addTo.logger = window.Galaxy.logger;
+    // }
 
     // give the object each
     LOGGING_FNS.forEach( function( logFn ){
         addTo[ logFn ] = function(){
             if( !this.logger ){
-                // if Galaxy is set for debugging, set it on the first time it's noticed as missing
-                if( ( Galaxy.config || {} ).debug ){
-                    this.logger = Galaxy.logger || console;
-                } else {
-                    return undefined;
-                }
+                return undefined;
             }
             if( this.logger.emit ){
                 return this.logger.emit( logFn, this._logNamespace, arguments );

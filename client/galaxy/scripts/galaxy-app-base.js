@@ -3,8 +3,11 @@ define([
     'utils/metrics-logger',
     'utils/add-logging',
     'utils/localization',
+    'mvc/base-mvc',
     'bootstrapped-data'
-], function( userModel, metricsLogger, addLogging, localize, bootstrapped ){
+], function( userModel, metricsLogger, addLogging, localize, BASE_MVC, bootstrapped ){
+
+// TODO: move into a singleton pattern and have dependents import Galaxy
 // ============================================================================
 /** Base galaxy client-side application.
  *      Iniitializes:
@@ -29,7 +32,7 @@ var DEBUGGING_KEY = 'galaxy:debug',
 try {
     localDebugging = localStorage.getItem( DEBUGGING_KEY ) == 'true';
 } catch( storageErr ){
-    console.log( _l( 'localStorage not available for debug flag retrieval' ) );
+    console.log( localize( 'localStorage not available for debug flag retrieval' ) );
 }
 
 /** initalize options and sub-components */
@@ -128,14 +131,20 @@ GalaxyApp.prototype._initLogger = function _initLogger( loggerOptions ){
     var self = this;
     // default to console logging at the debug level if the debug flag is set
     if( self.config.debug ){
+        loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;
+        loggerOptions.consoleLevel = loggerOptions.consoleLevel || metricsLogger.MetricsLogger.ALL;
+        // load any logging namespaces from localStorage if we can
         try {
             loggerOptions.consoleNamespaceWhitelist = localStorage.getItem( NAMESPACE_KEY ).split( ',' );
         } catch( storageErr ){}
-        loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;
-        loggerOptions.consoleLevel = loggerOptions.consoleLevel || metricsLogger.MetricsLogger.ALL;
     }
     self.debug( '_initLogger:', loggerOptions );
     self.logger = new metricsLogger.MetricsLogger( loggerOptions );
+
+    if( self.config.debug ){
+        // add this logger to mvc's loggable mixin so that all models can use the logger
+        BASE_MVC.LoggableMixin.logger = self.logger;
+    }
     return self;
 };
 
@@ -154,6 +163,7 @@ GalaxyApp.prototype._initUser = function _initUser( userJSON ){
     var self = this;
     self.debug( '_initUser:', userJSON );
     self.user = new userModel.User( userJSON );
+    self.user.logger = self.logger;
     //TODO: temp - old alias
     self.currUser = self.user;
     return self;
@@ -181,22 +191,26 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners(){
     return self;
 };
 
-/** Turn debugging/console-output on/off */
+/** Turn debugging/console-output on/off by passing boolean. Pass nothing to get current setting. */
 GalaxyApp.prototype.debugging = function _debugging( setting ){
     var self = this;
     try {
-        localDebugging = setting;
+        if( setting === undefined ){
+            return localStorage.getItem( DEBUGGING_KEY ) === 'true';
+        }
         if( setting ){
             localStorage.setItem( DEBUGGING_KEY, true );
-        } else {
-            localStorage.removeItem( DEBUGGING_KEY );
-            // also remove all namespaces
-            self.debuggingNamespaces( null );
+            return true;
         }
+
+        localStorage.removeItem( DEBUGGING_KEY );
+        // also remove all namespaces
+        self.debuggingNamespaces( null );
+
     } catch( storageErr ){
-        console.log( _l( 'localStorage not available for debug flag retrieval' ) );
+        console.log( localize( 'localStorage not available for debug flag retrieval' ) );
     }
-    return self;
+    return false;
 };
 
 /** Add, remove, or clear namespaces from the debugging filters
@@ -222,7 +236,7 @@ GalaxyApp.prototype.debuggingNamespaces = function _debuggingNamespaces( namespa
         }
         return newSettings;
     } catch( storageErr ){
-        console.log( _l( 'localStorage not available for debug namespace retrieval' ) );
+        console.log( localize( 'localStorage not available for debug namespace retrieval' ) );
     }
 };
 

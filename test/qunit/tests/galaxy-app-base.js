@@ -62,7 +62,7 @@ define([
         equal( app.options.root,            '/' );
         equal( app.options.patchExisting,   true );
     });
-    
+
     test( "App base extends from Backbone.Events", function() {
         var app = new appBase.GalaxyApp({});
         [ 'on', 'off', 'trigger', 'listenTo', 'stopListening' ].forEach( function( fn ){
