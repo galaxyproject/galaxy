@@ -105,13 +105,14 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
         .. raw:: xml
 
             <toolbox>
-                <tool file="data_source/upload.xml"/>            # tools outside sections
-                <label text="Basic Tools" id="basic_tools" />    # labels outside sections
-                <workflow id="529fd61ab1c6cc36" />               # workflows outside sections
-                <section name="Get Data" id="getext">            # sections
-                    <tool file="data_source/biomart.xml" />      # tools inside sections
-                    <label text="In Section" id="in_section" />  # labels inside sections
-                    <workflow id="adb5f5c93f827949" />           # workflows inside sections
+                <tool file="data_source/upload.xml"/>                 # tools outside sections
+                <label text="Basic Tools" id="basic_tools" />         # labels outside sections
+                <workflow id="529fd61ab1c6cc36" />                    # workflows outside sections
+                <section name="Get Data" id="getext">                 # sections
+                    <tool file="data_source/biomart.xml" />           # tools inside sections
+                    <label text="In Section" id="in_section" />       # labels inside sections
+                    <workflow id="adb5f5c93f827949" />                # workflows inside sections
+                    <tool file="data_source/foo.xml" labels="beta" /> # label for a single tool
                 </section>
             </toolbox>
 
@@ -616,6 +617,10 @@ class AbstractToolBox( object, Dictifiable, ManagesIntegratedToolPanelMixin ):
                 self.__add_tool( tool, load_panel_dict, panel_dict )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
             integrated_panel_dict.update_or_append( index, key, tool )
+            # If labels were specified in the toolbox config, attach them to
+            # the tool.
+            if "labels" in elem.attrib:
+                tool.labels = [ label.strip() for label in elem.attrib["labels"].split( "," ) ]
         except IOError:
             log.error( "Error reading tool configuration file from path: %s." % path )
         except Exception:

@@ -1065,6 +1065,15 @@ div.odd_row {
 
 // Tool panel stuff
 
+// Extra label colors
+.label-beta {
+  .label-warning();
+}
+
+.label-new {
+  .label-info();
+}
+
 span.toolParameterExpandableCollapsable {
     font-weight: bold;
     cursor: pointer;
@@ -1511,6 +1520,10 @@ div.toolTitle
   margin-right: 10px;
   display: list-item;
   list-style: square outside;
+  .labels {
+    float: right;
+    margin-left: 2px;
+  }
 }
 
 div.toolSectionBody div.toolPanelLabel

@@ -443,7 +443,7 @@ class Tool( object, Dictifiable ):
     tool_type = 'default'
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
-    dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
+    dict_collection_visible_keys = ( 'id', 'name', 'version', 'description', 'labels' )
 
     def __init__( self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True ):
         """Load a tool from the config named by `config_file`"""
