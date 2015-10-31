@@ -462,6 +462,7 @@ class Tool( object, Dictifiable ):
         self.action = '/tool_runner/index'
         self.target = 'galaxy_main'
         self.method = 'post'
+        self.labels = []
         self.check_values = True
         self.nginx_upload = False
         self.input_required = False
