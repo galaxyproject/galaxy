@@ -1,0 +1,1 @@
+{"version":3,"file":"app-login.js","sources":["../../../src/mvc/app/app-login.js"],"names":["define","center","Backbone","View","extend","initialize","this","setElement","Galaxy","root"],"mappings":"AAAAA,UAAW,WACP,OACIC,OAAQC,SAASC,KAAKC,QAClBC,WAAY,WACRC,KAAKC,WAAY,gBAAkBC,OAAOC,KAAO"}
