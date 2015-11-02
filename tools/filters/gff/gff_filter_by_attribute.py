@@ -3,24 +3,15 @@
 # The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
 # TODO: much of this code is copied from the Filter1 tool (filtering.py in tools/stats/). The commonalities should be
 # abstracted and leveraged in each filtering tool.
-
 from __future__ import division
+
 import sys
-from galaxy import eggs
-from galaxy.util.json import dumps, loads
+from json import loads
 
-# Older py compatibility
-try:
-    set()
-except:
-    from sets import Set as set
-
-assert sys.version_info[:2] >= ( 2, 4 )
 
 #
 # Helper functions.
 #
-
 def get_operands( filter_condition ):
     # Note that the order of all_operators is important
     items_to_strip = ['+', '-', '**', '*', '//', '/', '%', '<<', '>>', '&', '|', '^', '~', '<=', '<', '>=', '>', '==', '!=', '<>', ' and ', ' or ', ' not ', ' is ', ' is not ', ' in ', ' not in ']
@@ -30,9 +21,11 @@ def get_operands( filter_condition ):
     operands = set( filter_condition.split( ' ' ) )
     return operands
 
+
 def stop_err( msg ):
     sys.stderr.write( msg )
     sys.exit()
+
 
 def check_for_executable( text, description='' ):
     # Attempt to determine if the condition includes executable stuff and, if so, exit.
@@ -40,7 +33,7 @@ def check_for_executable( text, description='' ):
     operands = get_operands( text )
     for operand in operands:
         try:
-            check = int( operand )
+            int( operand )
         except:
             if operand in secured:
                 stop_err( "Illegal value '%s' in %s '%s'" % ( operand, description, text ) )
@@ -95,6 +88,7 @@ invalid_line = None
 lines_kept = 0
 total_lines = 0
 out = open( out_fname, 'wt' )
+
 
 # Helper function to safely get and type cast a value in a dict.
 def get_value(name, a_type, values_dict):
@@ -156,7 +150,7 @@ if valid_filter:
     valid_lines = total_lines - skipped_lines
     print 'Filtering with %s, ' % ( cond_text )
     if valid_lines > 0:
-        print 'kept %4.2f%% of %d lines.' % ( 100.0*lines_kept/valid_lines, total_lines )
+        print 'kept %4.2f%% of %d lines.' % ( 100.0 * lines_kept / valid_lines, total_lines )
     else:
         print 'Possible invalid filter condition "%s" or non-existent column referenced. See tool tips, syntax and examples.' % cond_text
     if skipped_lines > 0:

@@ -49,7 +49,6 @@ galaxy.jobs.runners.local module
     :undoc-members:
     :show-inheritance:
 
-
 galaxy.jobs.runners.pbs module
 ------------------------------
 
