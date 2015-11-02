@@ -3,15 +3,21 @@ import subprocess
 
 
 def shell(cmds, env=None):
+    p = shell_process(cmds, env)
+    return p.wait()
+
+
+def shell_process(cmds, env=None, **kwds):
     popen_kwds = dict(
         shell=True,
     )
+    popen_kwds.update(**kwds)
     if env:
         new_env = os.environ.copy()
         new_env.update(env)
         popen_kwds["env"] = new_env
     p = subprocess.Popen(cmds, **popen_kwds)
-    return p.wait()
+    return p
 
 
 def execute(cmds):
