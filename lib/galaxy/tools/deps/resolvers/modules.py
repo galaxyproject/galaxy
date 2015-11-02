@@ -8,7 +8,7 @@ community contribution and maintenance however.
 """
 from os import environ, pathsep
 from os.path import exists, isdir, join
-from StringIO import StringIO
+from six import StringIO
 from subprocess import Popen, PIPE
 
 from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
@@ -112,7 +112,7 @@ class AvailModuleChecker(object):
         return False
 
     def __modules(self):
-        raw_output = self.__module_avail_output()
+        raw_output = self.__module_avail_output().decode("utf-8")
         for line in StringIO(raw_output):
             line = line and line.strip()
             if not line or line.startswith("-"):

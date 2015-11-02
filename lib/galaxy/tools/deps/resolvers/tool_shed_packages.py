@@ -24,7 +24,9 @@ class ToolShedPackageDependencyResolver(GalaxyPackageDependencyResolver, UsesIns
             installed_tool_dependency = self._get_installed_dependency( name, type, version=None, **kwds )
             if installed_tool_dependency:
                 dependency = self._get_set_environment_installed_dependency_script_path( installed_tool_dependency, name )
-                if dependency.script and dependency.path:
+                is_galaxy_dep = isinstance(dependency, GalaxyPackageDependency)
+                has_script_dep = is_galaxy_dep and dependency.script and dependency.path
+                if has_script_dep:
                     # Environment settings do not use versions.
                     return GalaxyPackageDependency(dependency.script, dependency.path, None)
         return INDETERMINATE_DEPENDENCY

@@ -29,7 +29,6 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                 this.$( '#galaxy_main' ).prop( 'src', Galaxy.root + (
                     ( params.workflow_id && ( 'workflow/run?id=' + params.workflow_id ) ) ||
                     ( params.m_c && ( params.m_c + '/' + params.m_a ) ) ||
-                    ( Galaxy.config.require_login && !Galaxy.user.id && 'user/login') ||
                     'root/welcome'
                 ));
             }

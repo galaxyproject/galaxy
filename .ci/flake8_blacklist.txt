@@ -4,7 +4,6 @@ database/
 doc/patch.py
 doc/source/conf.py
 lib/galaxy/util/jstree.py
-lib/pkg_resources.py
 scripts/api/
 scripts/data_libraries/
 scripts/loc_files/
@@ -14,4 +13,15 @@ scripts/scramble/
 scripts/tool_shed/
 scripts/tools/
 scripts/transfer.py
-tools/
+tools/data_source/
+tools/filters/
+tools/genomespace/
+tools/meme/
+tools/metag_tools/
+tools/phenotype_association/
+tools/plotting/
+tools/solid_tools/
+tools/sr_assembly/
+tools/sr_mapping/
+tools/validation/
+tools/visualization/
