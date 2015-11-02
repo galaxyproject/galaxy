@@ -32,7 +32,7 @@ boto==2.38.0
 requests==2.8.1
 
 # WebError and dependences
-WebError==0.11
+WebError==0.10.3
 Pygments==2.0.2
 
 # kombu and dependencies
