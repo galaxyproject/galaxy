@@ -3,6 +3,7 @@ Determine what optional dependencies are needed.
 """
 import pkg_resources
 
+from sys import version_info
 from os.path import dirname, join
 from xml.etree import ElementTree
 
@@ -67,6 +68,12 @@ class ConditionalDependencies( object ):
     def check_weberror( self ):
         return ( asbool( self.config["debug"] ) and
                  asbool( self.config["use_interactive"] ) )
+
+    def check_importlib( self ):
+        return version_info < (2, 7)
+
+    def check_ordereddict( self ):
+        return version_info < (2, 7)
 
 
 def optional( config_file ):
