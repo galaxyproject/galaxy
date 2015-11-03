@@ -10,8 +10,9 @@ define([
     'mvc/ui/ui-misc',
     'mvc/ui/ui-modal',
     'mvc/user/user-quotameter',
+    'mvc/app/app-login',
     'mvc/app/app-analysis'
-], function( Utils, Masthead, Menu, Frame, Portlet, Ui, Modal, QuotaMeter, Analysis ) {
+], function( Utils, Masthead, Menu, Frame, Portlet, Ui, Modal, QuotaMeter, Login, Analysis ) {
     console.debug( 'loading app-view' );
 
     return Backbone.View.extend({
@@ -45,14 +46,14 @@ define([
 
             // load global galaxy objects
             if ( !Galaxy.masthead ) {
-                Galaxy.masthead = new Masthead.GalaxyMasthead( options );
+                Galaxy.masthead = new Masthead.GalaxyMasthead( this.options );
                 Galaxy.modal = new Modal.View();
                 Galaxy.frame = new Frame.GalaxyFrame();
 
                 // construct default menu options
                 Galaxy.menu = new Menu.GalaxyMenu({
                     masthead    : Galaxy.masthead,
-                    config      : options
+                    config      : this.options
                 });
 
                 // set up the quota meter (And fetch the current user data from trans)
@@ -64,25 +65,35 @@ define([
             }
 
             // build page
-            this._buildPanels( Analysis, options );
+            if ( Galaxy.config.require_login && !Galaxy.user.id ) {
+                this.build( Login );
+            } else {
+                this.build( Analysis );
+            }
         },
 
         /** Display content */
-        display: function ( $el, target ) {
+        display: function ( view, target ) {
             // TODO: Remove this line after select2 update
             $( '.select2-hidden-accessible' ).remove();
-            this.panels && this.panels[ target || 'center' ].display( $el );
+            this.panels && this.panels[ target || 'center' ].display( view );
         },
 
         /** Build all panels **/
-        _buildPanels: function( Views, options ) {
+        build: function( Views ) {
             this.panels = [];
-            var panel_ids = [ 'left', 'center', 'right' ];
+            var options = $.extend( true, {}, this.options );
+            var panel_ids = [ 'center', 'left', 'right' ];
             for ( var i in panel_ids ) {
                 var id = panel_ids[ i ];
+                this.$( '#' + id ).remove();
+                if ( !Views[ id ] ) {
+                    this.$( '#center' ).css( id, '0' );
+                    continue;
+                }
                 var view = this.panels[ id ] = new Views[ id ]( options );
                 if ( id == 'center' ) {
-                    this.$('#center').append( view.$el );
+                    this.$el.append( $( '<div id="' + id + '"/>' ).addClass( 'inbound' ).append( view.$el ) );
                 } else {
                     var components = Utils.merge( view.components, {
                         header  : {
@@ -141,7 +152,6 @@ define([
                             Galaxy.config.inactivity_box_content +
                                 ' <a href="' + Galaxy.root + 'user/resend_verification">Resend verification.</a>' +
                         '</div>' +
-                        '<div id="center" class="inbound"/>' +
                     '</div>';
         }
     });

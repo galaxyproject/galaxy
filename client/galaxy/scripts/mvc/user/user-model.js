@@ -4,21 +4,15 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( _, Backbone, baseMVC, _l ){
+
+var logNamespace = 'user';
 //==============================================================================
 /** @class Model for a Galaxy user (including anonymous users).
  *  @name User
- *
- *  @augments Backbone.Model
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
- *  @constructs
  */
 var User = Backbone.Model.extend( baseMVC.LoggableMixin ).extend(
 /** @lends User.prototype */{
-
-    ///** logger used to record this.log messages, commonly set to console */
-    //// comment this out to suppress log output
-    //logger              : console,
+    _logNamespace : logNamespace,
 
     /** API location for this resource */
     urlRoot : function(){ return Galaxy.options.root + 'api/users'; },

@@ -10,21 +10,13 @@ import string
 import subprocess
 import time
 
-try:
-    import drmaa
-    DRMAA_IMPORT_MESSAGE = None
-except (ImportError, RuntimeError) as exc:
-    drmaa = None
-    DRMAA_IMPORT_MESSAGE = ('The Python drmaa package is required to use this '
-                            'feature, please install it or correct the '
-                            'following error:\n%s: %s' %
-                            (exc.__class__.__name__, str(exc)))
-
 from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 from galaxy.util import asbool
+
+drmaa = None
 
 log = logging.getLogger( __name__ )
 
@@ -42,7 +34,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
 
     def __init__( self, app, nworkers, **kwargs ):
         """Start the job runner"""
-        assert drmaa is not None, DRMAA_IMPORT_MESSAGE
+        global drmaa
 
         runner_param_specs = dict(
             drmaa_library_path=dict( map=str, default=os.environ.get( 'DRMAA_LIBRARY_PATH', None ) ),
@@ -61,6 +53,16 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
         if 'drmaa_library_path' in kwargs:
             log.info( 'Overriding DRMAA_LIBRARY_PATH due to runner plugin parameter: %s', self.runner_params.drmaa_library_path )
             os.environ['DRMAA_LIBRARY_PATH'] = self.runner_params.drmaa_library_path
+
+        # Import is delayed until runner initialization to allow for the
+        # drmaa_library_path plugin param to override $DRMAA_LIBRARY_PATH
+        try:
+            drmaa = __import__( "drmaa" )
+        except (ImportError, RuntimeError) as exc:
+            raise exc.__class__('The Python drmaa package is required to use this '
+                                'feature, please install it or correct the '
+                                'following error:\n%s: %s' %
+                                (exc.__class__.__name__, str(exc)))
 
         # Subclasses may need access to state constants
         self.drmaa_job_states = drmaa.JobState

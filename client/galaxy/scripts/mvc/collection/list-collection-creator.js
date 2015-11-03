@@ -8,6 +8,8 @@ define([
     "utils/localization",
     "ui/hoverhighlight"
 ], function( HDCA, STATES, BASE_MVC, UI_MODAL, naturalSort, _l ){
+
+var logNamespace = 'collections';
 /*==============================================================================
 TODO:
     use proper Element model and not just json
@@ -20,6 +22,8 @@ TODO:
  *  (things that implement collection-model:DatasetCollectionElementMixin)
  */
 var DatasetCollectionElementView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
+
 //TODO: use proper class (DatasetDCE or NestedDCDCE (or the union of both))
     tagName     : 'li',
     className   : 'collection-element',
@@ -146,6 +150,7 @@ var DatasetCollectionElementView = Backbone.View.extend( BASE_MVC.LoggableMixin 
 /** An interface for building collections.
  */
 var ListCollectionCreator = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
 
     /** the class used to display individual elements */
     elementViewClass : DatasetCollectionElementView,

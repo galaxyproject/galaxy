@@ -86,6 +86,7 @@ tool-data/*.sample
 
 # Test output
 test-data-cache
+run_framework_tests.html
 run_functional_tests.html
 run_api_tests.html
 test/tool_shed/tmp/*

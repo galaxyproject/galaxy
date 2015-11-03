@@ -18,7 +18,8 @@ define([
                 var location = this.contentWindow && this.contentWindow.location;
                 if ( location && location.host ) {
                     $( this ).show();
-                    self.$( '#center-panel' ).empty().hide();
+                    self.prev && self.prev.remove();
+                    self.$( '#center-panel' ).hide();
                     Galaxy.trigger( 'galaxy_main:load', {
                         fullpath: location.pathname + location.search + location.hash,
                         pathname: location.pathname,
@@ -30,19 +31,20 @@ define([
             var params = $.extend( {}, Galaxy.params );
             if ( params.tool_id !== 'upload1' && ( params.tool_id || params.job_id ) ) {
                 params.tool_id && ( params.id = params.tool_id );
-                this.display( ( new ToolsForm.View( params ) ).$el );
+                this.display( new ToolsForm.View( params ) );
             } else {
                 this.$( '#galaxy_main' ).prop( 'src', Galaxy.root + (
                     ( params.workflow_id && ( 'workflow/run?id=' + params.workflow_id ) ) ||
                     ( params.m_c && ( params.m_c + '/' + params.m_a ) ) ||
-                    ( Galaxy.config.require_login && !Galaxy.user.id && 'user/login') ||
                     'root/welcome'
                 ));
             }
         },
-        display: function( $el ) {
+        display: function( view ) {
+            this.prev && this.prev.remove();
+            this.prev = view;
             this.$( '#galaxy_main' ).hide();
-            this.$( '#center-panel' ).empty().scrollTop( 0 ).append( $el ).show();
+            this.$( '#center-panel' ).scrollTop( 0 ).append( view.$el ).show();
         },
         _template: function() {
             return  '<div style="position: absolute; width: 100%; height: 100%">' +

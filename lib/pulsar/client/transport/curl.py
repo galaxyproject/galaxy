@@ -1,11 +1,5 @@
 import logging
 
-try:
-    from galaxy import eggs
-    eggs.require("six")
-except ImportError:
-    pass
-
 from six import string_types
 from six import BytesIO
 

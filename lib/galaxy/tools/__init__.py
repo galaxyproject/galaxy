@@ -443,7 +443,7 @@ class Tool( object, Dictifiable ):
     tool_type = 'default'
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
-    dict_collection_visible_keys = ( 'id', 'name', 'version', 'description' )
+    dict_collection_visible_keys = ( 'id', 'name', 'version', 'description', 'labels' )
 
     def __init__( self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True ):
         """Load a tool from the config named by `config_file`"""
@@ -462,6 +462,7 @@ class Tool( object, Dictifiable ):
         self.action = '/tool_runner/index'
         self.target = 'galaxy_main'
         self.method = 'post'
+        self.labels = []
         self.check_values = True
         self.nginx_upload = False
         self.input_required = False
@@ -2170,6 +2171,9 @@ class Tool( object, Dictifiable ):
 
         # convert value to jsonifiable value
         def jsonify(v):
+            if isinstance(v, UnvalidatedValue):
+                v = v.value
+
             # check if value is numeric
             isnumber = False
             try:

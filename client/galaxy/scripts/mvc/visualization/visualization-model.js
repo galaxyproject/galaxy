@@ -78,8 +78,6 @@ var Visualization = Backbone.Model.extend(
 //==============================================================================
 /** @class Backbone collection of visualization models
  *
- *  @borrows LoggableMixin#logger as #logger
- *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
 var VisualizationCollection = Backbone.Collection.extend(

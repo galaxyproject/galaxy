@@ -436,7 +436,7 @@ def unpack_patches( hg_unbundle10_obj, remaining ):
                 'blocklen': blocklen,
                 'block': block.encode( 'string_escape' ) }
     if remaining > 0:
-        print remaining
+        log.error("Unexpected end of patch stream, %s remaining", remaining)
         raise Exception( "unexpected end of patch stream" )
 
 
