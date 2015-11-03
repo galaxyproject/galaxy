@@ -29,17 +29,12 @@
 
     ## load jscript libraries
     ${h.js(
-        'libs/jquery/jquery',
         'libs/jquery/jquery-ui',
-        "libs/jquery/select2",
-        'libs/bootstrap',
-        'libs/underscore',
-        'libs/backbone/backbone',
-        'libs/handlebars.runtime',
         'libs/d3',
         'libs/require',
-        'galaxy.base',
-        'galaxy.panels'
+        'bundled/common',
+        ## TODO: remove when all libs are required directly in modules
+        'bundled/libs.bundled'
     )}
 
     ## send errors to Sntry server if configured

@@ -51,15 +51,10 @@
     %endif
 
     ${h.js(
-        'libs/jquery/jquery',
-        'libs/jquery/jquery.migrate',
-        'libs/jquery/select2',
-        'libs/bootstrap',
-        'libs/underscore',
-        'libs/backbone/backbone',
-        'libs/handlebars.runtime',
-        'galaxy.base',
-        'libs/require'
+        'libs/require',
+        'bundled/common',
+        ## TODO: remove when all libs are required directly in modules
+        'bundled/libs.bundled'
     )}
 
     <script type="text/javascript">
@@ -118,12 +113,6 @@
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
     ## the panels, but do not change layout
-    ${h.js(
-        'libs/jquery/jquery.event.hover',
-        'libs/jquery/jquery.form',
-        'libs/jquery/jquery.rating',
-        'galaxy.panels'
-    )}
     <script type="text/javascript">
 
     ensure_dd_helper();

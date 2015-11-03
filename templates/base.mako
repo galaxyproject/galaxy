@@ -45,21 +45,10 @@
     %endif
 
     ${h.js(
-        "libs/jquery/jquery",
-        "libs/jquery/jquery.migrate",
-        "libs/jquery/select2",
-        "libs/jquery/jquery.event.hover",
-        "libs/jquery/jquery.form",
-        "libs/jquery/jquery.rating",
-        "libs/jquery.sparklines",
-        "libs/bootstrap",
-        "libs/underscore",
-        "libs/backbone/backbone",
-        "libs/handlebars.runtime",
-        "libs/require",
-        "galaxy.base",
-        "galaxy.panels",
-        "galaxy.autocom_tagging"
+        'libs/require',
+        'bundled/common',
+        ## TODO: remove when all libs are required directly in modules
+        'bundled/libs.bundled'
     )}
 
     <script type="text/javascript">
