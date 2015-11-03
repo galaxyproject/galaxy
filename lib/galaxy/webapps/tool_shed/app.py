@@ -13,13 +13,15 @@ from galaxy.web import security
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+import logging
+log = logging.getLogger( __name__ )
 
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
 
     def __init__( self, **kwd ):
-        print >> sys.stderr, "python path is: " + ", ".join( sys.path )
+        log.debug( "python path is: %s", ", ".join( sys.path ) )
         self.name = "tool_shed"
         # Read the tool_shed.ini configuration file and check for errors.
         self.config = config.Configuration( **kwd )
@@ -75,7 +77,7 @@ class UniverseApplication( object ):
         self.repository_registry = tool_shed.repository_registry.Registry( self )
         #  used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.
         self.server_starttime = int(time.time())
-        print >> sys.stderr, "Tool shed hgweb.config file is: ", self.hgweb_config_manager.hgweb_config
+        log.debug( "Tool shed hgweb.config file is: %s", self.hgweb_config_manager.hgweb_config )
 
     def shutdown( self ):
         pass
