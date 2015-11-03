@@ -12,7 +12,8 @@ define(['utils/utils', 'mvc/tools', 'mvc/upload/upload-view', 'mvc/ui/ui-misc',
                 var location = this.contentWindow && this.contentWindow.location;
                 if ( location && location.host ) {
                     $( this ).show();
-                    self.$( '#center-panel' ).empty().hide();
+                    self.prev && self.prev.remove();
+                    self.$( '#center-panel' ).hide();
                     Galaxy.trigger( 'galaxy_main:load', {
                         fullpath: location.pathname + location.search + location.hash,
                         pathname: location.pathname,
