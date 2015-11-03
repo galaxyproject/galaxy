@@ -111,7 +111,7 @@ Pull requests changing or clarifying the procedures governing this repository:
 - If the pull request adds or removes *committers*, there must be a separate
   pull request for each person added or removed.
 - Amendments may be made to the pull request by pushing additional changesets
-  but doing so restarts the moratorium and invalidates any votes which have
+  but doing so restarts the moratorium and invalidates any +1 votes which have
   already been cast, *requiring* reaffirmation of those votes prior to merge.
 
 Any other pull request requires at least 1 *+1* binding vote from someone other
