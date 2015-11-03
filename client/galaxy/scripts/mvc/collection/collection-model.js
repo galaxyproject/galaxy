@@ -3,6 +3,8 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( DATASET_MODEL, BASE_MVC, _l ){
+
+var logNamespace = 'collections';
 //==============================================================================
 /*
 Notes:
@@ -88,13 +90,16 @@ var DatasetCollectionElementMixin = {
 /** @class Concrete class of Generic DatasetCollectionElement */
 var DatasetCollectionElement = Backbone.Model
     .extend( BASE_MVC.LoggableMixin )
-    .extend( DatasetCollectionElementMixin );
+    .extend( DatasetCollectionElementMixin )
+    .extend({ _logNamespace : logNamespace });
 
 
 //==============================================================================
 /** @class Base/Abstract Backbone collection for Generic DCEs. */
 var DCECollection = Backbone.Collection.extend( BASE_MVC.LoggableMixin ).extend(
 /** @lends DCECollection.prototype */{
+    _logNamespace : logNamespace,
+
     model: DatasetCollectionElement,
 
     /** logger used to record this.log messages, commonly set to console */
@@ -210,7 +215,8 @@ var DatasetDCECollection = DCECollection.extend(
 var DatasetCollection = Backbone.Model
         .extend( BASE_MVC.LoggableMixin )
         .extend( BASE_MVC.SearchableModelMixin )
-.extend(/** @lends DatasetCollection.prototype */{
+        .extend(/** @lends DatasetCollection.prototype */{
+    _logNamespace : logNamespace,
 
     /** logger used to record this.log messages, commonly set to console */
     //logger              : console,

@@ -4,7 +4,7 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( LIST_ITEM, DATASET_LI, BASE_MVC, _l ){
-/* global Backbone, LoggableMixin */
+/* global Backbone */
 //==============================================================================
 var FoldoutListItemView = LIST_ITEM.FoldoutListItemView,
     ListItemView = LIST_ITEM.ListItemView;

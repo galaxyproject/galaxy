@@ -5,6 +5,8 @@ define([
     'mvc/base-mvc',
     'utils/localization'
 ], function( DATASET, DATASET_LIST, MODAL, BASE_MVC, _l ){
+
+var logNamespace = 'dataset';
 /* ============================================================================
 TODO:
     does this really work with mixed contents?
@@ -211,8 +213,7 @@ var DatasetChoiceModal = function( datasetJSON, options ){
  *      });
  */
 var DatasetChoice = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
-
-    //logger : console,
+    _logNamespace : logNamespace,
 
     className : 'dataset-choice',
 
