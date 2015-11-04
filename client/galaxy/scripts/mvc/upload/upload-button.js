@@ -76,11 +76,9 @@ var View = Backbone.View.extend({
     _template: function() {
         return  '<div class="upload-button">' +
                     '<div class="progress">' +
-                        '<div class="progress-bar"></div>' +
-                    '</div>' +
-                    '<div id="label" class="label">' +
+                        '<div class="progress-bar"/>' +
                         '<a class="panel-header-button" href="javascript:void(0)">' +
-                            '<span class="fa fa-upload"></span>' +
+                            '<span class="fa fa-upload"/>' +
                         '</a>' +
                     '</div>' +
                 '</div>';
