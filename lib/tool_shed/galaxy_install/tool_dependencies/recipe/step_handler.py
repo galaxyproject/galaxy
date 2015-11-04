@@ -1002,7 +1002,7 @@ class SetEnvironment( RecipeStep ):
         cmds = install_environment.environment_commands( 'set_environment' )
         env_var_dicts = action_dict.get( 'environment_variable', [] )
         root_dir_dict = dict( action='set_to',
-                              name='%s_ROOT_DIR' % tool_dependency.name.replace( '-', '_' ).upper(),
+                              name='%s_ROOT_DIR' % re.sub( r"[^A-Z0-9_\.]", "_", tool_dependency.name.upper() ),
                               value=install_environment.install_dir )
         env_var_dicts.append( root_dir_dict )
         for env_var_dict in env_var_dicts:
