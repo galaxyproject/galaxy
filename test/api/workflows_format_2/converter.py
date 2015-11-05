@@ -22,9 +22,14 @@ def yaml_to_workflow(has_yaml):
 
 
 def python_to_workflow(as_python):
+    if not isinstance(as_python, dict):
+        raise Exception("This is not a not a valid Galaxy workflow definition.")
 
-    if isinstance(as_python, list):
-        as_python = {"steps": as_python}
+    if "class" not in as_python:
+        raise Exception("This is not a not a valid Galaxy workflow definition, must define a class.")
+
+    if as_python["class"] != "GalaxyWorkflow":
+        raise Exception("This is not a not a valid Galaxy workflow definition, 'class' must be 'GalaxyWorkflow'.")
 
     __ensure_defaults(as_python, {
         "a_galaxy_workflow": "true",
