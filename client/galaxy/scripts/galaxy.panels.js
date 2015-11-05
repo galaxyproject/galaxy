@@ -4,8 +4,8 @@
 
 var ensure_dd_helper = function () {
     // Insert div that covers everything when dragging the borders
-    if ( $( "#DD-helper" ).length == 0 ) {
-        $( "<div id='DD-helper'/>" ).appendTo( "body" ).hide();
+    if ( $( "#dd-helper" ).length == 0 ) {
+        $( "<div id='dd-helper'/>" ).appendTo( "body" ).hide();
     }
 }
 
@@ -111,7 +111,7 @@ $.extend( Panel.prototype, {
         }
         this.$drag.on( "mousedown", function( e ) {
             prevX = e.pageX;
-            $( '#DD-helper' ).show()
+            $( '#dd-helper' ).show()
                 .on( 'mousemove', move )
                 .one( 'mouseup', function( e ){
                     $( this ).hide().off( 'mousemove', move );
@@ -259,7 +259,7 @@ $(function() {
     var $dropdowns = $("#masthead ul.nav > li.dropdown > .dropdown-menu");
     $("body").on( "click.nav_popups", function( e ) {
         $dropdowns.hide();
-        $("#DD-helper").hide();
+        $("#dd-helper").hide();
         // If the target is in the menu, treat normally
         if ( $(e.target).closest( "#masthead ul.nav > li.dropdown > .dropdown-menu" ).length ) {
             return;
@@ -267,7 +267,7 @@ $(function() {
         // Otherwise, was the click in a tab
         var $clicked = $(e.target).closest( "#masthead ul.nav > li.dropdown" );
         if ( $clicked.length ) {
-            $("#DD-helper").show();
+            $("#dd-helper").show();
             $clicked.children( ".dropdown-menu" ).show();
             e.preventDefault();
         }
