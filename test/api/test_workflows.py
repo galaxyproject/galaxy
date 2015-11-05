@@ -1,8 +1,9 @@
 from __future__ import print_function
 
 import time
+
 from collections import namedtuple
-from json import dumps
+from json import dumps, loads
 from uuid import uuid4
 
 import yaml
@@ -99,8 +100,24 @@ class BaseWorkflowsApiTestCase( api.ApiTestCase, ImporterGalaxyInterface ):
         self._assert_status_code_is( upload_response, 200 )
         return upload_response.json()
 
-    def _upload_yaml_workflow(self, has_yaml, **kwds):
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+    def import_tool(self, tool):
+        """ Import a workflow via POST /api/workflows or
+        comparable interface into Galaxy.
+        """
+        upload_response = self._import_tool_response(tool)
+        self._assert_status_code_is( upload_response, 200 )
+        return upload_response.json()
+
+    def _import_tool_response(self, tool):
+        tool_str = dumps(tool, indent=4)
+        data = {
+            'representation': tool_str
+        }
+        upload_response = self._post( "dynamic_tools", data=data, admin=True )
+        return upload_response
+
+    def _upload_yaml_workflow(self, has_yaml, source_type=None, **kwds):
+        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, source_type=source_type, **kwds)
         return workflow[ "id" ]
 
     def _setup_workflow_run( self, workflow, inputs_by='step_id', history_id=None ):
@@ -450,6 +467,46 @@ class WorkflowsApiTestCase( BaseWorkflowsApiTestCase ):
             other_import_response = self.__import_workflow( workflow_id )
             self._assert_status_code_is( other_import_response, 200 )
             self._assert_user_has_workflow_with_name( "imported: test_import_published_deprecated (imported from API)")
+
+    def test_import_export_dynamic( self ):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - type: input
+    label: input1
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: 0
+  - label: embed1
+    run:
+      class: GalaxyTool
+      command: echo 'hello world 2' > $output1
+      outputs:
+        output1:
+          format: txt
+  - tool_id: cat1
+    state:
+      input1:
+        $link: first_cat#out_file1
+      queries:
+        input2:
+          $link: embed1#output1
+test_data:
+  input1: "hello world"
+""")
+        downloaded_workflow = self._download_workflow(workflow_id)
+        downloaded_tool_step = downloaded_workflow["steps"]["1"]
+        tool_representation = downloaded_tool_step["tool_representation"]
+        import_response = self._import_tool_response(loads(tool_representation))
+        self._assert_status_code_is(import_response, 303)
+
+        response = self.workflow_populator.create_workflow_response( downloaded_workflow )
+
+        downloaded_second_workflow = self._download_workflow(response.json()["id"])
+        print downloaded_second_workflow
+        assert False
 
     def test_import_annotations( self ):
         workflow_id = self.workflow_populator.simple_workflow( "test_import_annotations", publish=True )

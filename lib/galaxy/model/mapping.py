@@ -96,6 +96,23 @@ model.PasswordResetToken.table = Table(
     Column( "expiration_time", DateTime ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ) )
 
+
+model.DynamicTool.table = Table(
+    "dynamic_tool", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "uuid", UUIDType() ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+    Column( "tool_id", Unicode(255) ),
+    Column( "tool_version", Unicode(255) ),
+    Column( "tool_format", Unicode(255) ),
+    Column( "tool_hash", Unicode(500), unique=True ),
+    Column( "hidden", Boolean ),
+    Column( "active", Boolean ),
+    Column( "value", JSONType() ),
+)
+
+
 model.History.table = Table(
     "history", metadata,
     Column( "id", Integer, primary_key=True),
@@ -811,8 +828,8 @@ model.WorkflowStep.table = Table(
     Column( "subworkflow_id", Integer, ForeignKey( "workflow.id" ), index=True, nullable=True ),
     Column( "type", String(64) ),
     Column( "tool_id", TEXT ),
-    # Reserved for future
     Column( "tool_version", TEXT ),
+    Column( "tool_hash", TEXT ),
     Column( "tool_inputs", JSONType ),
     Column( "tool_errors", JSONType ),
     Column( "position", JSONType ),
@@ -1567,7 +1584,9 @@ mapper( model.UserOpenID, model.UserOpenID.table, properties=dict(
         order_by=desc( model.UserOpenID.table.c.update_time ) )
 ) )
 
-mapper( model.ValidationError, model.ValidationError.table )
+simple_mapping( model.ValidationError )
+
+simple_mapping( model.DynamicTool )
 
 simple_mapping( model.HistoryDatasetAssociation,
     dataset=relation( model.Dataset,

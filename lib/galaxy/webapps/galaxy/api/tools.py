@@ -276,7 +276,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     def create( self, trans, payload, **kwd ):
         """
         POST /api/tools
-        Executes tool using specified inputs and returns tool's outputs.
+
+        If ``tool_id`` appears in the payload this executes tool using
+        specified inputs and returns tool's outputs. Otherwise, the payload
+        is expected to be a tool definition to dynamically load into Galaxy's
+        toolbox.
         """
         # HACK: for now, if action is rerun, rerun tool.
         action = payload.get( 'action', None )

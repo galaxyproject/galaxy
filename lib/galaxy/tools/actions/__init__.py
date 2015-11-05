@@ -542,6 +542,7 @@ class DefaultToolAction( object ):
             job.tool_version = tool.version
         except:
             job.tool_version = "1.0.0"
+        job.tool_hash = tool.tool_hash
         return job, galaxy_session
 
     def _record_inputs( self, trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles ):

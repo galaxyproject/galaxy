@@ -61,6 +61,7 @@ class SetMetadataToolAction( ToolAction ):
             job.tool_version = tool.version
         except:
             job.tool_version = "1.0.1"
+        job.tool_hash = tool.tool_hash
         job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         job.set_handler(tool.get_job_handler( job_params ))
         sa_session.add( job )

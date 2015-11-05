@@ -5,6 +5,11 @@
     "message": "Unknown error occurred while processing request."
    },
    {
+    "name": "OBJECT_HASH_EXISTS",
+    "code": 30301,
+    "message": "An object with this hash already exists."
+    },
+   {
     "name": "USER_CANNOT_RUN_AS",
     "code": 400001,
     "message": "User does not have permissions to run jobs as another user."

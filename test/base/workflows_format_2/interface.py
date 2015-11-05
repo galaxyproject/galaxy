@@ -22,6 +22,13 @@ class ImporterGalaxyInterface(object):
     def import_workflow(self, workflow, **kwds):
         """Import a workflow via POST /api/workflows or comparable interface into Galaxy."""
 
+    @abc.abstractmethod
+    def import_tool(self, tool):
+        """ Import a workflow via POST /api/workflows or
+        comparable interface into Galaxy.
+        """
+        pass
+
 
 class BioBlendImporterGalaxyInterface(object):
     """Implementation of :class:`ImporterGalaxyInterface` using bioblend."""
@@ -72,4 +79,4 @@ class BioBlendImporterGalaxyInterface(object):
 
     def import_tool(self, tool_representation):
         """Import Galaxy tool using instance :class:`bioblend.GalaxyInstance` object."""
-        pass
+        raise NotImplementedError()
