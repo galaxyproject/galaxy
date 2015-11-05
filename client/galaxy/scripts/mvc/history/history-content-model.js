@@ -3,6 +3,8 @@ define([
     "mvc/base-mvc",
     "utils/localization"
 ], function( STATES, BASE_MVC, _l ){
+
+var logNamespace = 'history';
 //==============================================================================
 /** How the type_id attribute is built for the history's mixed contents collection */
 var typeIdStr = function _typeIdStr( type, id ){
@@ -128,7 +130,10 @@ var HistoryContentMixin = {
 //TODO: needed?
 /** @class (Concrete/non-mixin) base model for content items.
  */
-var HistoryContent = Backbone.Model.extend( BASE_MVC.LoggableMixin ).extend( HistoryContentMixin );
+var HistoryContent = Backbone.Model
+        .extend( BASE_MVC.LoggableMixin )
+        .extend( HistoryContentMixin )
+        .extend({ _logNamespace : logNamespace });
 
 
 //==============================================================================

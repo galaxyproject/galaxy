@@ -62,16 +62,16 @@ class ToolMigrationManager( object ):
         # setting from migrated_tools_config.
         tree, error_message = xml_util.parse_xml( migrated_tools_config )
         if tree is None:
-            print error_message
+            log.error( error_message )
         else:
             root = tree.getroot()
             self.tool_path = root.get( 'tool_path' )
-            print "Repositories will be installed into configured tool_path location ", str( self.tool_path )
+            log.debug( "Repositories will be installed into configured tool_path location ", str( self.tool_path ) )
             # Parse tool_shed_install_config to check each of the tools.
             self.tool_shed_install_config = tool_shed_install_config
             tree, error_message = xml_util.parse_xml( tool_shed_install_config )
             if tree is None:
-                print error_message
+                log.error( error_message )
             else:
                 root = tree.getroot()
                 defined_tool_shed_url = root.get( 'name' )
@@ -157,12 +157,12 @@ class ToolMigrationManager( object ):
                             str( latest_migration_script_number )
                         message += "file%s named %s,\nso no repositories will be installed on disk.\n" % \
                             ( plural, file_names )
-                        print message
+                        log.info( message )
                 else:
                     message = "\nThe main Galaxy tool shed is not currently available, so skipped migration stage %s.\n" % \
                         str( latest_migration_script_number )
                     message += "Try again later.\n"
-                    print message
+                    log.error( message )
 
     def create_or_update_tool_shed_repository_record( self, name, owner, changeset_revision, description=None ):
 
@@ -403,8 +403,8 @@ class ToolMigrationManager( object ):
                             if tool_config not in tool_configs_to_filter:
                                 tool_configs_to_filter.append( tool_config )
                 else:
-                    print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
-                        % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
+                    log.error( 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).'
+                        % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) ) )
             if tool_configs_to_filter:
                 lock = threading.Lock()
                 lock.acquire( True )
@@ -489,8 +489,9 @@ class ToolMigrationManager( object ):
                                                                                     from_tool_migration_manager=True )
             for installed_tool_dependency in installed_tool_dependencies:
                 if installed_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
-                    print '\nThe ToolMigrationManager returned the following error while installing tool dependency ', installed_tool_dependency.name, ':'
-                    print installed_tool_dependency.error_message, '\n\n'
+                    log.error(
+                        'The ToolMigrationManager returned the following error while installing tool dependency %s: %s',
+                        installed_tool_dependency.name, installed_tool_dependency.error_message )
         if 'datatypes' in irmm_metadata_dict:
             cdl = custom_datatype_manager.CustomDatatypeLoader( self.app )
             tool_shed_repository.status = self.app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
@@ -544,7 +545,8 @@ class ToolMigrationManager( object ):
                                             self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED ]:
             is_installed = True
         if cloned_ok and is_installed:
-            print "Skipping automatic install of repository '", tool_shed_repository.name, "' because it has already been installed in location ", clone_dir
+            log.info( "Skipping automatic install of repository '%s' because it has already been installed in location %s",
+                     tool_shed_repository.name, clone_dir )
         else:
             irm = install_manager.InstallRepositoryManager( self.app, self.tpm )
             repository_clone_url = os.path.join( self.tool_shed_url, 'repos', tool_shed_repository.owner, tool_shed_repository.name )
@@ -614,7 +616,7 @@ class ToolMigrationManager( object ):
                 irm.update_tool_shed_repository_status( tool_shed_repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.INSTALLED )
             else:
-                print 'Error attempting to clone repository %s: %s' % ( str( tool_shed_repository.name ), str( error_message ) )
+                log.error('Error attempting to clone repository %s: %s', str( tool_shed_repository.name ), str( error_message ) )
                 irm.update_tool_shed_repository_status( tool_shed_repository,
                                                         self.app.install_model.ToolShedRepository.installation_status.ERROR,
                                                         error_message=error_message )

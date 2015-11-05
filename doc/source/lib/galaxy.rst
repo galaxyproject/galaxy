@@ -15,6 +15,7 @@ Subpackages
     galaxy.auth
     galaxy.dataset_collections
     galaxy.datatypes
+    galaxy.dependencies
     galaxy.eggs
     galaxy.exceptions
     galaxy.external_services

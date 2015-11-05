@@ -33,4 +33,12 @@ galaxy.auth.providers.localdb module
     :undoc-members:
     :show-inheritance:
 
+galaxy.auth.providers.pam_auth module
+-------------------------------------
+
+.. automodule:: galaxy.auth.providers.pam_auth
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

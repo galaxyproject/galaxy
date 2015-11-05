@@ -8,6 +8,8 @@ define([
     'utils/localization',
     'libs/d3'
 ], function( JobDAG, JOB, JOB_LI, HISTORY_CONTENT, DATASET_LI, BASE_MVC, _l ){
+
+var logNamespace = 'history';
 // ============================================================================
 /*
 TODO:
@@ -94,8 +96,7 @@ API: seems like this could be handled there - duplicating the input data in the 
  */
 window.JobDAG = JobDAG;
 var HistoryStructureComponent = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
-
-    //logger : console,
+    _logNamespace : logNamespace,
 
     className : 'history-structure-component',
 
@@ -482,8 +483,7 @@ var VerticalHistoryStructureComponent = HistoryStructureComponent.extend({
  *
  */
 var HistoryStructureView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
-
-    //logger : console,
+    _logNamespace : logNamespace,
 
     className : 'history-structure',
 

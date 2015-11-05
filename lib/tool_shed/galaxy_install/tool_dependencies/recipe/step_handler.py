@@ -460,7 +460,8 @@ class Autoconf( RecipeStep ):
             cmd = install_environment.build_command( basic_util.evaluate_template( pre_cmd, install_environment ) )
             install_environment.handle_command( tool_dependency=tool_dependency,
                                                 cmd=cmd,
-                                                return_output=False )
+                                                return_output=False,
+                                                job_name=package_name )
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
@@ -816,7 +817,8 @@ class MakeInstall( RecipeStep ):
             cmd = install_environment.build_command( 'make %s && make install' % make_opts )
             install_environment.handle_command( tool_dependency=tool_dependency,
                                                 cmd=cmd,
-                                                return_output=False )
+                                                return_output=False,
+                                                job_name=package_name )
             # The caller should check the status of the returned tool_dependency since this function
             # does nothing with the return_code.
             return tool_dependency, None, None
@@ -996,7 +998,7 @@ class SetEnvironment( RecipeStep ):
         cmds = install_environment.environment_commands( 'set_environment' )
         env_var_dicts = action_dict.get( 'environment_variable', [] )
         root_dir_dict = dict( action='set_to',
-                              name='%s_ROOT_DIR' % tool_dependency.name.replace( '-', '_' ).upper(),
+                              name='%s_ROOT_DIR' % re.sub( r"[^A-Z0-9_]", "_", tool_dependency.name.upper() ),
                               value=install_environment.install_dir )
         env_var_dicts.append( root_dir_dict )
         for env_var_dict in env_var_dicts:
@@ -1250,7 +1252,8 @@ class SetupPerlEnvironment( Download, RecipeStep ):
                             cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                             return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                               cmd=cmd,
-                                                                              return_output=False )
+                                                                              return_output=False,
+                                                                              job_name=package_name)
                             if return_code:
                                 if initial_download:
                                     return tool_dependency, filtered_actions, dir
@@ -1262,7 +1265,8 @@ class SetupPerlEnvironment( Download, RecipeStep ):
                         cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                         return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                           cmd=cmd,
-                                                                          return_output=False )
+                                                                          return_output=False,
+                                                                          job_name=package_name )
                         if return_code:
                             if initial_download:
                                 return tool_dependency, filtered_actions, dir
@@ -1374,7 +1378,8 @@ class SetupREnvironment( Download, RecipeStep ):
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                       cmd=cmd,
-                                                                      return_output=False )
+                                                                      return_output=False,
+                                                                      job_name=package_name )
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
@@ -1496,7 +1501,8 @@ class SetupRubyEnvironment( Download, RecipeStep ):
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                       cmd=cmd,
-                                                                      return_output=False )
+                                                                      return_output=False,
+                                                                      job_name=package_name )
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
@@ -1634,7 +1640,8 @@ class SetupPythonEnvironment( Download, RecipeStep ):
                     cmd = install_environment.build_command( basic_util.evaluate_template( cmd, install_environment ) )
                     return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                                       cmd=cmd,
-                                                                      return_output=False )
+                                                                      return_output=False,
+                                                                      job_name=package_name )
                     if return_code:
                         if initial_download:
                             return tool_dependency, filtered_actions, dir
@@ -1763,7 +1770,8 @@ class SetupVirtualEnv( Download, RecipeStep ):
         full_setup_command = "%s; %s; %s" % ( setup_command, activate_command, install_command )
         return_code = install_environment.handle_command( tool_dependency=tool_dependency,
                                                           cmd=full_setup_command,
-                                                          return_output=False )
+                                                          return_output=False,
+                                                          job_name=package_name)
         if return_code:
             log.error( "Failed to do setup_virtualenv install, exit code='%s'", return_code )
             # would it be better to try to set env variables anway, instead of returning here?
@@ -1835,7 +1843,8 @@ class SetupVirtualEnv( Download, RecipeStep ):
                                        os.path.join( venv_directory, "bin", "python" ) ]:
             output = install_environment.handle_command( tool_dependency=tool_dependency,
                                                          cmd=site_packages_command,
-                                                         return_output=True )
+                                                         return_output=True,
+                                                         job_name='_get_site_packages' )
             site_packages_directory_list.append( output.stdout )
             if not output.return_code and os.path.exists( output.stdout ):
                 return ( output.stdout, site_packages_directory_list )
@@ -1871,7 +1880,8 @@ class ShellCommand( RecipeStep ):
             # does nothing with return_code.
             install_environment.handle_command( tool_dependency=tool_dependency,
                                                 cmd=cmd,
-                                                return_output=False )
+                                                return_output=False,
+                                                job_name=package_name )
             if initial_download:
                 return tool_dependency, filtered_actions, dir
             return tool_dependency, None, None
@@ -1910,7 +1920,8 @@ class TemplateCommand( RecipeStep ):
                 # does nothing with return_code.
                 install_environment.handle_command( tool_dependency=tool_dependency,
                                                     cmd=cmd,
-                                                    return_output=False )
+                                                    return_output=False,
+                                                    job_name=package_name )
             return tool_dependency, None, None
 
     def prepare_step( self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download ):

@@ -3,12 +3,15 @@ define([
     'utils/localization'
 ], function( BASE_MVC, _l ){
 
+var logNamespace = 'list';
 //==============================================================================
 /** A view which, when first rendered, shows only summary data/attributes, but
  *      can be expanded to show further details (and optionally fetch those
  *      details from the server).
  */
 var ExpandableView = Backbone.View.extend( BASE_MVC.LoggableMixin ).extend({
+    _logNamespace : logNamespace,
+
 //TODO: Although the reasoning behind them is different, this shares a lot with HiddenUntilActivated above: combine them
     //PRECONDITION: model must have method hasDetails
     //PRECONDITION: subclasses must have templates.el and templates.details
