@@ -1,16 +1,12 @@
 define([
     'libs/underscore',
-    'libs/backbone/backbone',
+    'libs/backbone',
     'mvc/base-mvc',
     'mvc/user/user-model',
     'utils/metrics-logger',
     'utils/add-logging',
     'utils/localization'
 ], function( _, Backbone, BASE_MVC, userModel, metricsLogger, addLogging, localize ){
-    console.debug( 'app-base id', jQuery.id );
-    if( !jQuery.id ){
-        jQuery.id = 'app-base';
-    }
 
 // TODO: move into a singleton pattern and have dependents import Galaxy
 // ============================================================================

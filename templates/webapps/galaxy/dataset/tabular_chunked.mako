@@ -11,7 +11,7 @@
         require.config({
             baseUrl: "${h.url_for('/static/scripts')}",
             shim: {
-                "libs/backbone/backbone": { exports: "Backbone" },
+                "libs/backbone": { exports: "Backbone" },
             },
             urlArgs: 'v=${app.server_starttime}'
         });

@@ -569,8 +569,7 @@ function init_refresh_on_change () {
         .click( function() {
             return confirm( $(this).attr("confirm") );
         });
-};
-
+}
 
 // jQuery plugin to prevent double submission of forms
 // Ref: http://stackoverflow.com/questions/2830542/prevent-double-submission-of-forms-in-jquery
@@ -632,3 +631,15 @@ $(document).ready( function() {
     });
 
 });
+
+// globals from this file
+// TODO: move to not globals from this file
+window.obj_length = obj_length;
+window.make_popupmenu = make_popupmenu;
+window.make_popup_menus = make_popup_menus;
+window.replace_big_select_inputs = replace_big_select_inputs;
+window.async_save_text = async_save_text;
+window.commatize = commatize;
+window.reset_tool_search = reset_tool_search;
+window.GalaxyAsync = GalaxyAsync;
+window.init_refresh_on_change = init_refresh_on_change;

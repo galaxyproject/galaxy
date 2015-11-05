@@ -108,14 +108,14 @@
 
     ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
     ${h.js( "libs/require", "libs/jquery/jquery-ui" )}
-    
+
     <script type="text/javascript">
-        require.config({ 
+        require.config({
                 baseUrl: "${h.url_for('/static/scripts')}",
                 shim: {
                     "libs/underscore": { exports: "_" },
                     "libs/d3": { exports: "d3" },
-                    "libs/backbone/backbone": { exports: "Backbone" },
+                    "libs/backbone": { exports: "Backbone" },
                 },
                 urlArgs: 'v=${app.server_starttime}'
         });
@@ -123,8 +123,8 @@
         require(["libs/d3", "viz/sweepster"], function(d3, sweepster) {
 
             var viz;
-            $(function() {            
-                // -- Viz set up. --    
+            $(function() {
+                // -- Viz set up. --
                 var viz = new sweepster.SweepsterVisualization(
                     ${ h.dumps( config )}
                 );

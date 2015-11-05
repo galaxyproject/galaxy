@@ -3,18 +3,35 @@ var webpack = require( 'webpack' ),
     path = require( 'path' ),
     scriptsBase = path.join( __dirname, 'galaxy/scripts' ),
     libsBase = path.join( scriptsBase, 'libs' ),
-    // chunks
-    CommonsChunkPlugin = new webpack.optimize.CommonsChunkPlugin( 'common.js' );
+    // libraries used on almost every page
+    // TODO: reduce
+    commonLibs = [
+        // jquery et al
+        'jquery',
+        'libs/jquery/jquery.migrate',
+        'libs/jquery/select2',
+        'libs/jquery/jquery.event.hover',
+        'libs/jquery/jquery.form',
+        'libs/jquery/jquery.rating',
+        'libs/jquery.sparklines',
+        'libs/bootstrap',
+        // // mvc
+        'libs/underscore',
+        'libs/backbone',
+        'libs/handlebars.runtime',
+        // // all pages get these
+        'galaxy.base',
+        'galaxy.panels',
+        'galaxy.autocom_tagging'
+    ];
 
 
 module.exports = {
     devtool : 'source-map',
     entry   : {
-        galaxy      : './galaxy/scripts/apps/galaxy.js',
-        // remove when these are no longer needed from any pages
-        libs        : './galaxy/scripts/apps/libs.js',
-        analysis    : './galaxy/scripts/apps/analysis.js',
-        history     : './galaxy/scripts/apps/history-app.js'
+        galaxy  : './galaxy/scripts/apps/galaxy.js',
+        analysis: './galaxy/scripts/apps/analysis.js',
+        vendor  : commonLibs
     },
     output  : {
         path        : '../static/scripts/bundled',
@@ -28,14 +45,26 @@ module.exports = {
             jquery      : path.join( libsBase, 'jquery/jquery' ),
             underscore  : path.join( libsBase, 'underscore.js' ),
             // we import these (for now) from the libs dir
-            'libs/underscore'       : path.join( libsBase, 'underscore.js' ),
-            'libs/backbone/backbone': path.join( libsBase, 'backbone/backbone.js' ),
+            // TODO:?? needed?
+            'libs/underscore'   : path.join( libsBase, 'underscore.js' ),
+            'libs/backbone'     : path.join( libsBase, 'backbone.js' ),
             // requirejs' i18n doesn't play well with webpack
             // note: strangely, order does matter here - this must come before utils below
             'utils/localization' : path.join( scriptsBase, 'utils/webpack-localization' ),
         }
     },
     plugins : [
-        CommonsChunkPlugin
+        new webpack.optimize.CommonsChunkPlugin( 'vendor', 'vendor.bundled.js' ),
+        // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
+        // and webpack will automagically require them in the bundle for you
+        new webpack.ProvidePlugin({
+            $:                  'jquery',
+            jQuery:             'jquery',
+            'window.jQuery':    'jquery',
+            _:                  "underscore",
+            Backbone:           'libs/backbone',
+            Handlebars:         'libs/handlebars.runtime'
+        }),
+        // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
     ]
 };

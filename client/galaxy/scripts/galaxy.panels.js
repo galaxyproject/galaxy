@@ -1,4 +1,14 @@
-!function( exports, $ ){
+// HACK: add these to global scope until we stop asking for them there...
+// Via webpack: these are required here automatically by the provider plugin
+// Via script tag: these are redundant (identities) since they're already global
+window[ 'jQuery' ] = jQuery; // a weird form to prevent webpack from sub'ing 'window.jQuery' in the provider plugin
+window.$ = jQuery;
+window._ = _;
+window.Backbone = Backbone;
+window.Handlebars = Handlebars;
+console.debug('globals loaded:', window.jQuery, window.Backbone, '...');
+
+!function( exports ){
 
 "use strict"
 
@@ -86,7 +96,7 @@ $.extend( Panel.prototype, {
         }
     },
     force_panel: function( op ) {
-        if ( ( this.hidden && op == 'show' ) || ( ! this.hidden && op == 'hide' ) ) { 
+        if ( ( this.hidden && op == 'show' ) || ( ! this.hidden && op == 'hide' ) ) {
             this.do_toggle();
         }
     },
@@ -166,7 +176,7 @@ $.extend( Modal.prototype, {
         // Body
         var body = options.body;
         if ( body == "progress" ) {
-            body = $("<div class='progress progress-striped active'><div class='progress-bar' style='width: 100%'></div></div>"); 
+            body = $("<div class='progress progress-striped active'><div class='progress-bar' style='width: 100%'></div></div>");
         }
         this.$body.html( body );
     },
@@ -184,12 +194,12 @@ $.extend( Modal.prototype, {
             this.$body.css( "min-width", this.$body.width() );
             // Set max-height so that modal does not exceed window size and is in middle of page.
             // TODO: this could perhaps be handled better using CSS.
-            this.$body.css( "max-height", 
-                            $(window).height() - 
-                            this.$footer.outerHeight() - 
+            this.$body.css( "max-height",
+                            $(window).height() -
+                            this.$footer.outerHeight() -
                             this.$header.outerHeight() -
-                            parseInt( this.$dialog.css( "padding-top" ), 10 ) - 
-                            parseInt( this.$dialog.css( "padding-bottom" ), 10 ) 
+                            parseInt( this.$dialog.css( "padding-top" ), 10 ) -
+                            parseInt( this.$dialog.css( "padding-bottom" ), 10 )
                             );
         }
         // Callback on init
@@ -284,4 +294,4 @@ exports.show_message = show_message;
 exports.show_in_overlay = show_in_overlay;
 exports.user_changed = user_changed;
 
-}( window, window.jQuery );
+}( window );

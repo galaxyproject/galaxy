@@ -1,6 +1,6 @@
 define([
     'libs/underscore',
-    'libs/backbone/backbone',
+    'libs/backbone',
     'utils/add-logging',
     'utils/localization'
 ], function( _, Backbone, addLogging, _l ){

@@ -52,9 +52,8 @@
 
     ${h.js(
         'libs/require',
-        'bundled/common',
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled'
+        'bundled/vendor.bundled'
     )}
 
     <script type="text/javascript">
@@ -91,9 +90,8 @@
                 "libs/underscore": {
                     exports: "_"
                 },
-                "libs/backbone/backbone": {
+                "libs/backbone": {
                     deps: [ 'jquery', 'libs/underscore' ],
-                    // deps: [ 'libs/underscore' ],
                     exports: "Backbone"
                 }
             },

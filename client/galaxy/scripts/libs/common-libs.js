@@ -15,7 +15,7 @@ require( './bootstrap' );
 // MVC via backbone
 var _ = require( './underscore' );
 window._ = _;
-var Backbone = require( './backbone/backbone' );
+var Backbone = require( './backbone' );
 window.Backbone = Backbone;
 var Handlebars = require( './handlebars.runtime' );
 window.Handlebars = Handlebars;

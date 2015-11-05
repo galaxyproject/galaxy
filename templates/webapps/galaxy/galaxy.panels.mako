@@ -25,16 +25,46 @@
     self.galaxy_config.update(config)
 %>
 
+<%def name="stylesheets()">
+   ## load default style
+   ${h.css("base")}
+
+   ## modify default style
+    <style type="text/css">
+    #center {
+        %if not self.galaxy_config['left_panel']:
+            left: 0 !important;
+        %endif
+        %if not self.galaxy_config['right_panel']:
+            right: 0 !important;
+        %endif
+    }
+    </style>
+
+    <style type="text/css">
+        %if self.galaxy_config['message_box']:
+            #left, #left-border, #center, #right-border, #right {
+                top: 64px;
+            }
+        %endif
+    </style>
+
+</%def>
+
 <%def name="javascripts()">
 
     ## load jscript libraries
     ${h.js(
-        'libs/jquery/jquery-ui',
-        'libs/d3',
-        'libs/require',
-        'bundled/common',
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled'
+        'bundled/vendor.bundled',
+    )}
+    <script type="text/javascript">
+        console.debug( 'jQuery:', jQuery )
+    </script>
+    ${h.js(
+       'libs/jquery/jquery-ui',
+       'libs/d3',
+       'libs/require',
     )}
 
     ## send errors to Sntry server if configured
@@ -62,27 +92,6 @@
         };
     </script>
 
-    ## load default style
-    ${h.css("base")}
-
-    ## modify default style
-    <style type="text/css">
-    #center {
-        %if not self.galaxy_config['left_panel']:
-            left: 0 !important;
-        %endif
-            %if not self.galaxy_config['right_panel']:
-            right: 0 !important;
-        %endif
-    }
-    %if self.galaxy_config['message_box']:
-        #left, #left-border, #center, #right-border, #right
-        {
-            top: 64px;
-        }
-    %endif
-    </style>
-
     ## default script wrapper
     <script type="text/javascript">
         ## configure require
@@ -92,14 +101,18 @@
             baseUrl: "${h.url_for('/static/scripts') }",
             shim: {
                 "libs/underscore": { exports: "_" },
+                "libs/backbone": {
+                    deps: [ 'jquery', 'libs/underscore' ],
+                    exports: "Backbone"
+                },
                 "libs/d3": { exports: "d3" },
-                "libs/backbone/backbone": { exports: "Backbone" },
             },
             urlArgs: 'v=${app.server_starttime}'
         });
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
 
     </script>
+
 </%def>
 
 <%def name="javascript_app()">
@@ -170,7 +183,7 @@
         ## force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
-        ## load scripts
+        ${self.stylesheets()}
         ${self.javascripts()}
         ${self.javascript_app()}
     </head>

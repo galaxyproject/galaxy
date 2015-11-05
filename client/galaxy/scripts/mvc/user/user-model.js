@@ -1,6 +1,6 @@
 define([
     'libs/underscore',
-    'libs/backbone/backbone',
+    'libs/backbone',
     "mvc/base-mvc",
     "utils/localization"
 ], function( _, Backbone, baseMVC, _l ){

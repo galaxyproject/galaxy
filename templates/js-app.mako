@@ -29,9 +29,7 @@
     </head>
 
     <body>
-        <script type="text/javascript" src="/static/scripts/bundled/common.js"></script>
-        ## TODO: remove when all libs are required directly in modules
-        <script type="text/javascript" src="/static/scripts/bundled/libs.bundled.js"></script>
+        <script type="text/javascript" src="/static/scripts/bundled/vendor.bundled.js"></script>
         <script type="text/javascript" src="/static/scripts/bundled/galaxy.bundled.js"></script>
         <script type="text/javascript">
             window.Galaxy = new GalaxyApp(
