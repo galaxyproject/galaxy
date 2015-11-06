@@ -237,7 +237,7 @@ var View = Backbone.View.extend({
                         }
                     }
                 } catch (err) {
-                    console.debug('tools-select-content::value() - Skipped.');
+                    Galaxy.emit.debug('tools-select-content::value()', 'Skipped.');
                 }
             } else {
                 for (var i in this.list) {

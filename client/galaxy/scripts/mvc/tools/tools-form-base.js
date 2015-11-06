@@ -33,7 +33,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             this.$el.hide();
             this.deferred.execute(function(){
                 Backbone.View.prototype.remove.call(self);
-                console.debug('tools-form-base::remove() - Destroy view.');
+                Galaxy.emit.debug('tools-form-base::remove()', 'Destroy view.');
             });
         },
 
@@ -102,8 +102,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                         message     : 'Now you are using \'' + self.options.name + '\' version ' + self.options.version + '.',
                         persistent  : false
                     });
-                    console.debug('tools-form::initialize() - Initial tool model ready.');
-                    console.debug(new_model);
+                    Galaxy.emit.debug('tools-form-base::initialize()', 'Initial tool model ready.', new_model);
                     process.resolve();
 
                 },
@@ -127,8 +126,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                             }
                         });
                     }
-                    console.debug('tools-form::initialize() - Initial tool model request failed.');
-                    console.debug(response);
+                    Galaxy.emit.debug('tools-form::initialize()', 'Initial tool model request failed.', response);
                     process.reject();
                 }
             });
@@ -157,8 +155,7 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
             form.wait(true);
 
             // log tool state
-            console.debug('tools-form-base::_updateModel() - Sending current state (see below).');
-            console.debug(current_state);
+            Galaxy.emit.debug('tools-form-base::_updateModel()', 'Sending current state.', current_state);
 
             // post job
             Utils.request({
@@ -169,13 +166,11 @@ define(['utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view',
                     self.form.update(new_model['tool_model'] || new_model);
                     self.options.update && self.options.update(new_model);
                     form.wait(false);
-                    console.debug('tools-form-base::_updateModel() - Received new model (see below).');
-                    console.debug(new_model);
+                    Galaxy.emit.debug('tools-form-base::_updateModel()', 'Received new model.', new_model);
                     process.resolve();
                 },
                 error   : function(response) {
-                    console.debug('tools-form-base::_updateModel() - Refresh request failed.');
-                    console.debug(response);
+                    Galaxy.emit.debug('tools-form-base::_updateModel()', 'Refresh request failed.', response);
                     process.reject();
                 }
             });
