@@ -217,7 +217,7 @@ var View = Backbone.View.extend({
         // update to searchable field (in this case select2)
         if (this.options.searchable) {
             this.$select.select2('destroy');
-            this.$select.select2();
+            this.$select.select2({ closeOnSelect: !this.options.multiple });
             this.$( '.select2-container .select2-search input' ).off( 'blur' );
         }
 
